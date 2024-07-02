@@ -37,7 +37,7 @@
                                          0 ;initial dag-len
                                          (make-empty-array dag-parent-array-name 1000)
                                          nil  ;empty dag-constant-alist
-                                         nil  ;empty dag-variable-alist
+                                         (empty-dag-variable-alist)
                                          dag-array-name dag-parent-array-name
                                          interpreted-function-alist))
        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
@@ -84,8 +84,8 @@
                 (symbolp dag-parent-array-name)
                 (interpreted-function-alistp interpreted-function-alist)
                 (not (mv-nth 0 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))))
-           (< (mv-nth 3 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))
-              2147483647))
+           (<= (mv-nth 3 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))
+               *max-1d-array-length*))
   :hints (("Goal" :use (:instance wf-dagp-of-make-term-into-dag-array-basic)
            :in-theory (disable wf-dagp-of-make-term-into-dag-array-basic))))
 
@@ -148,7 +148,7 @@
                                     0 ;initial dag-len
                                     (make-empty-array dag-parent-array-name 1000)
                                     nil  ;empty dag-constant-alist
-                                    nil  ;empty dag-variable-alist
+                                    (empty-dag-variable-alist)
                                     dag-array-name dag-parent-array-name
                                     interpreted-function-alist))
 
@@ -174,13 +174,13 @@
                                 (mv-nth 3 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
   :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
 
-(defthm all-dargp-of-mv-nth-1-of-make-terms-into-dag-array-basic
+(defthm darg-listp-of-mv-nth-1-of-make-terms-into-dag-array-basic
   (implies (and (pseudo-term-listp terms)
                 (symbolp dag-array-name)
                 (symbolp dag-parent-array-name)
                 (interpreted-function-alistp interpreted-function-alist)
                 (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
-           (all-dargp (mv-nth 1 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (darg-listp (mv-nth 1 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
   :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
 
 (defthm alen1-of-mv-nth-4-of-make-terms-into-dag-array-basic

@@ -57,8 +57,8 @@
 
 (encapsulate
   nil
-  (local (defthm not-member-minus-char-dec-digit-char-listp
-           (implies (dec-digit-char-listp x)
+  (local (defthm not-member-minus-char-dec-digit-char-list*p
+           (implies (dec-digit-char-list*p x)
                     (not (member-equal #\- x)))))
 
   (local (defthm not-equal-cons-when-not-member-equal
@@ -79,15 +79,15 @@
     (equal (equal (stringify-integer x)
                   (stringify-integer y))
            (equal (ifix x) (ifix y)))
-    :hints (("goal" :use ((:instance not-member-minus-char-dec-digit-char-listp
+    :hints (("goal" :use ((:instance not-member-minus-char-dec-digit-char-list*p
                                      (x (coerce (nat-to-dec-string x) 'list)))
-                          (:instance not-member-minus-char-dec-digit-char-listp
+                          (:instance not-member-minus-char-dec-digit-char-list*p
                                      (x (coerce (nat-to-dec-string y) 'list)))
                           (:instance nat-to-dec-string-one-to-one
                                      (n x) (m 0))
                           (:instance nat-to-dec-string-one-to-one
                                      (n y) (m 0)))
-             :in-theory (disable not-member-minus-char-dec-digit-char-listp)))))
+             :in-theory (disable not-member-minus-char-dec-digit-char-list*p)))))
 
 
 (defthm stringify-integer-of-non-integer
@@ -96,8 +96,8 @@
   :hints(("Goal" :in-theory (enable nat-to-dec-string-of-non-natp))))
 
 (encapsulate nil
-  (local (defthm not-member-slash-char-dec-digit-char-listp
-           (implies (dec-digit-char-listp x)
+  (local (defthm not-member-slash-char-dec-digit-char-list*p
+           (implies (dec-digit-char-list*p x)
                     (not (member-equal #\/ x)))))
 
   (defthm not-member-/-stringify-integer
@@ -183,8 +183,8 @@
                                  rational-implies2)))))
 
 (encapsulate nil
-  (local (defthm not-member-sharp-char-dec-digit-char-listp
-           (implies (dec-digit-char-listp x)
+  (local (defthm not-member-sharp-char-dec-digit-char-list*p
+           (implies (dec-digit-char-list*p x)
                     (not (member-equal #\# x)))))
 
   (defthm not-member-sharp-nat-to-dec-string
@@ -198,8 +198,8 @@
     (not (member-equal #\# (explode (stringify-rational r))))))
 
 (encapsulate nil
-  (local (defthm not-member-space-char-dec-digit-char-listp
-           (implies (dec-digit-char-listp x)
+  (local (defthm not-member-space-char-dec-digit-char-list*p
+           (implies (dec-digit-char-list*p x)
                     (not (member-equal #\Space x)))))
 
   (defthm not-member-space-nat-to-dec-string
@@ -282,14 +282,14 @@
                                  realpart-imagpart-elim)))))
 
 
-(defun upper-case-or-dec-digit-char-listp (x)
+(defun upper-case-or-dec-digit-char-list*p (x)
   (declare (xargs :guard (character-listp x)))
   (if (atom x)
       t
     (and (or (up-alpha-p (car X)) (dec-digit-char-p (car x)))
-         (upper-case-or-dec-digit-char-listp (cdr x)))))
+         (upper-case-or-dec-digit-char-list*p (cdr x)))))
 
-(in-theory (disable upper-case-or-dec-digit-char-listp up-alpha-p))
+(in-theory (disable upper-case-or-dec-digit-char-list*p up-alpha-p))
 
 (local (defthm characterp-car-of-character-listp
          (implies (and (character-listp x)
@@ -314,7 +314,7 @@
   (let ((lst (explode x)))
     (and (consp lst) ;; not the empty string
          (up-alpha-p (car lst))
-         (upper-case-or-dec-digit-char-listp (cdr lst)))))
+         (upper-case-or-dec-digit-char-list*p (cdr lst)))))
 
 (local (defthm assoc-append
          (equal (append (append a b) c)

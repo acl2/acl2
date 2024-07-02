@@ -97,8 +97,6 @@
 (verify-termination logical-namep) ; and guards
 (verify-termination er-cmp-fn) ; and guards
 (verify-termination macro-args-er-cmp) ; and guards
-(verify-termination string-prefixp-1) ; and guards
-(verify-termination string-prefixp) ; and guards
 (verify-termination project-dir-prefix-entry) ; and guards
 (verify-termination filename-to-book-name-1) ; and guards
 (verify-termination filename-to-book-name) ; and guards
@@ -121,6 +119,13 @@
            (or (natp (car (assoc-equal-cdr r x)))
                (equal (car (assoc-equal-cdr r x)) nil)))
   :rule-classes :type-prescription)
+
+(defthm enabled-runep-guard-helper-2
+  (implies (and (car (assoc-equal-cdr r x))
+                (fixnat-alistp x))
+           (<= (car (assoc-equal-cdr r x))
+               (fixnum-bound)))
+  :rule-classes :linear)
 
 (verify-termination enabled-runep) ; and guards
 

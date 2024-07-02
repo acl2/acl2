@@ -30,13 +30,13 @@
            (equal (set::difference x y)
                   (set::emptyset)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable set::empty set::sfix))))
+           :in-theory (enable set::emptyp set::sfix))))
 
 (defthm difference-self
   (equal (set::difference x x)
          (set::emptyset))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable set::empty set::sfix))))
+           :in-theory (enable set::emptyp set::sfix))))
 
 (defthm intersect-difference-same
   (implies (and (set::setp s1)
@@ -137,13 +137,13 @@
   :hints (("Goal" :in-theory (e/d (;set::difference
                                                                       )
                                   (set::never-in-empty
-                                   set::empty-subset-2)))))
+                                   set::emptyp-subset-2)))))
 
 (defthm intersect-difference-both-ways
   (equal (set::intersect (set::difference s1 s0)
                          (set::difference s0 s1))
          (set::emptyset))
-  :hints (("Goal" :in-theory (e/d (set::empty) ( helper))
+  :hints (("Goal" :in-theory (e/d (set::emptyp) ( helper))
            :use (:instance helper))))
 
 (defthm union-with-difference-same
@@ -164,12 +164,12 @@
          (set::difference (set::intersect s2 s1) s3)))
 
 (defthm diffence-of-union-lemma
-  (implies (set::empty (set::difference s1 s3))
+  (implies (set::emptyp (set::difference s1 s3))
            (equal (set::difference (set::union s1 s2) s3)
                   (set::difference s2 s3))))
 
 (defthm diffence-of-union-lemma-alt
-  (implies (set::empty (set::difference s1 s3))
+  (implies (set::emptyp (set::difference s1 s3))
            (equal (set::difference (set::union s2 s1) s3)
                   (set::difference s2 s3))))
 
@@ -194,13 +194,13 @@
          (set::difference s1 s0)))
 
 (defthm helper--
-  (implies (set::empty (set::difference s1 s3))
+  (implies (set::emptyp (set::difference s1 s3))
            (set::subset (set::difference (set::difference s1 s2) s3)
                         (set::emptyset)))
-  :hints (("Goal" :in-theory (disable set::empty-subset-2))))
+  :hints (("Goal" :in-theory (disable set::emptyp-subset-2))))
 
 (defthm difference-empty-lemma
-  (implies (set::empty (set::difference s1 s3))
+  (implies (set::emptyp (set::difference s1 s3))
            (equal (set::difference (set::difference s1 s2) s3)
                   (set::emptyset)))
   :hints (("Goal" :use (:instance helper--)
@@ -235,7 +235,7 @@
   (not (equal (set::insert ad x) (set::delete ad y))))
 
 (defthmd head-not
-  (implies (and (not (set::empty ad-set))
+  (implies (and (not (set::emptyp ad-set))
                 (not (set::in ad ad-set)))
            (not (equal ad (set::head ad-set)))))
 
@@ -248,7 +248,7 @@
            (set::subset (set::insert a x) (set::insert a y))))
 
 (defthm insert-head-union-tail
-  (implies (not (set::empty x))
+  (implies (not (set::emptyp x))
            (equal (set::insert (set::head x) (set::union y (set::tail x)))
                   (set::union x y))))
 
@@ -269,7 +269,7 @@
 
 (defthmd subset-singleton-hack
    (equal (set::subset x (set::insert a nil))
-          (or (set::empty x)
+          (or (set::emptyp x)
               (equal x (make-set a))))
    :hints (("Goal" :in-theory (disable ;set::insert-never-empty
                                        ;set::map-subset-helper
@@ -290,7 +290,7 @@
 
 (defthm insert-when-empty
   (implies (and (syntaxp (not (equal y ''nil)))
-                (set::empty y))
+                (set::emptyp y))
            (equal (set::insert a y)
                   (set::insert a nil)))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 1))))
@@ -368,7 +368,7 @@
 ;isn't this defined in some set conversions.lisp book?
 (defun set::2list (set)
   (declare (type (satisfies set::setp) set))
-  (if (set::empty set) nil
+  (if (set::emptyp set) nil
     (cons (set::head set)
           (set::2list (set::tail set)))))
 
@@ -409,7 +409,7 @@
 (defthm consp-of-2list
   (implies (set::setp set)
            (equal (consp (set::2list set))
-                  (not (set::empty set)))))
+                  (not (set::emptyp set)))))
 
 
 (defthm set::mergesort-of-singleton

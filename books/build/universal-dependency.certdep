@@ -2,10 +2,8 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Forcing recertification 6/27/2023 for commit 5e894873ac, "Eliminated
-all traces of infix printing."  A fresh regression-everything
-completed without error before commiting that change and pushing it to
-master, yet testing failed for master.  I didn't see an obvious
-recertification to force so that books/kestrel/helpers,
-books/acl2s/mode-acl2s-dependencies, and books/acl2s/ccg/ccg would
-certify.
+Forcing recertification 4/19/2024 for commit, "Increased ACL2 analogue
+of maximum fixnum from 2^29-1 to 2^60-1."  The value of *fixnum-bits*
+has changed (and thus so have at least *fixnat-bits*, the-fixnum,
+fixnum-bound, and *default-step-limit*), making it potentially unsound
+to books certified with an earlier ACL2 version.

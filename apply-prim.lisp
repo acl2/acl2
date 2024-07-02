@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -419,8 +419,7 @@
 ; cd ACL2
 ; make devel-check ACL2=`pwd`/saved_acl2d
 
-  '((>=-LEN ACL2-COUNT X)
-    (ABBREV-EVISC-TUPLE)
+  '((ABBREV-EVISC-TUPLE)
     (ABSTRACT-PAT)
     (ABSTRACT-PAT1 ACL2-COUNT PAT)
     (ABSTRACT-PAT1-LST ACL2-COUNT PATS)
@@ -428,7 +427,6 @@
     (ADD-SUFFIX-TO-FN)
     (ALIST-TO-DOUBLETS ACL2-COUNT ALIST)
     (ALISTP-LISTP ACL2-COUNT X)
-    (ALL->=-LEN ACL2-COUNT LST)
     (ALL-FNNAMES1 ACL2-COUNT X)
     (ALWAYS$ ACL2-COUNT LST)
     (ALWAYS$+ ACL2-COUNT LST)
@@ -548,7 +546,7 @@
     (FLSZ-INTEGER IF
                   (NOT (IF (INTEGERP X)
                            (IF (NATP ACC)
-                               (IF (< ACC '536870911)
+                               (IF (< ACC '1152921504606846975)
                                    (PRINT-BASE-P PRINT-BASE)
                                    'NIL)
                                'NIL)
@@ -712,7 +710,6 @@
     (META-EXTRACT-CONTEXTUAL-FACT)
     (META-EXTRACT-GLOBAL-FACT+)
     (META-EXTRACT-RW+-TERM)
-    (MIN-FIXNAT$INLINE)
     (NEW-NAMEP)
     (NEWLINE)
     (NUMBER-OF-DIGITS IF
@@ -791,11 +788,9 @@
     (SPLAT-STRING)
     (SPLAT1 BINARY-* '2 (ACL2-COUNT X))
     (STANDARD-CO)
+    (STATE-P+)
     (STOBJP)
-    (STRING-PREFIXP)
-    (STRING-PREFIXP-1 ACL2-COUNT I)
     (STRIP-CADDRS ACL2-COUNT X)
-    (STRIP-CADRS ACL2-COUNT X)
     (STRIP-NON-HIDDEN-PACKAGE-NAMES ACL2-COUNT KNOWN-PACKAGE-ALIST)
     (SUBCOR-VAR ACL2-COUNT FORM)
     (SUBCOR-VAR-LST ACL2-COUNT FORMS)
@@ -916,7 +911,7 @@
                (classicalp fn wrld)
 
                (not (member-eq fn avoid-fns))
-               (all-nils (getpropc fn 'stobjs-in nil wrld))
+               (all-nils-or-dfs (getpropc fn 'stobjs-in nil wrld))
 
 ; We considered removing the conjunct immediately above when we started
 ; allowing warrants for functions that traffic in stobjs, including state, in
@@ -940,7 +935,7 @@
 ; hence will fail the test just above.  So we don't need to give special
 ; treatment to such functions.
 
-               (all-nils (getpropc fn 'stobjs-out nil wrld)))
+               (all-nils-or-dfs (getpropc fn 'stobjs-out nil wrld)))
 
 ; Note that stobj creators take no stobjs in but return stobjs.  We don't want
 ; any such functions in our answer!
@@ -1166,7 +1161,8 @@
                              :test 'eq)
                      fn)
                     (t (let ((*1*fn (*1*-symbol fn)))
-                         (assert (fboundp *1*fn))
+                         (or (fboundp *1*fn)
+                             (error "Not fboundp: ~s" *1*fn))
                          *1*fn)))))
         (setf (gethash fn ht)
               (list* fn-to-call
@@ -1219,7 +1215,10 @@
 #+acl2-loop-only
 (defun apply$-prim (fn args)
   (declare (xargs :guard (true-listp args) :mode :program))
-  (make-apply$-prim-body))
+
+; We use non-exec here to get around issues with passing around :df values.
+
+  (non-exec (make-apply$-prim-body)))
 
 )
 

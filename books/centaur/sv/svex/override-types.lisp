@@ -31,7 +31,7 @@
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "data-structures/no-duplicates" :dir :system))
-(local (std::add-default-post-define-hook :fix))  
+(local (std::add-default-post-define-hook :fix))
 
 
 (define svar->override-val ((x svar-p))
@@ -43,6 +43,14 @@
 
 (defenum svar-overridetype-p
   ( nil :val :test 3 4 5 6 7))
+
+(fty::deflist svar-overridetypelist :elt-type svar-overridetype-p :true-listp t)
+
+(local
+ (defthm equal-of-svar-overridetype-fix
+   (implies (Equal (svar-overridetype-fix x) (svar-overridetype-fix y))
+            (svar-overridetype-equiv x y))
+   :rule-classes :forward-chaining))
 
 
 (defthmd svar-overridetype-fix-possibilities
@@ -66,7 +74,30 @@
       ((nil) (eql bits 0))
       (:val (eql bits 1))
       (:test (eql bits 2))
-      (t (eql bits type)))))
+      (t (eql bits type))))
+  ///
+
+
+  (defthmd svar-override-p-when-other
+    (implies (and (svar-override-p x type2)
+                  (not (svar-overridetype-equiv type1 type2)))
+             (not (svar-override-p x type1)))
+    :hints(("Goal" :in-theory (enable svar-override-p)))))
+
+(define svar-override-p* ((x svar-p)
+                          (types svar-overridetypelist-p))
+  (if (atom types)
+      nil
+    (or (svar-override-p x (car types))
+        (svar-override-p* x (cdr types))))
+  ///
+  (defthm svar-override-p*-when-svar-override-p
+    (implies (svar-override-p x type)
+             (iff (svar-override-p* x types)
+                  (member-equal (svar-overridetype-fix type)
+                                (svar-overridetypelist-fix types))))
+    :hints(("Goal" :in-theory (enable svar-overridetypelist-fix
+                                      svar-override-p-when-other)))))
 
 (define svarlist-override-p ((x svarlist-p)
                              (type svar-overridetype-p))
@@ -87,6 +118,68 @@
                                     (acl2::element-list-p (lambda (x) (svarlist-override-p x type))))
                          (x x) (y x-equiv)))
            :in-theory (enable svarlist-override-p)))))
+
+(define svarlist-override-p* ((x svarlist-p)
+                              (types svar-overridetypelist-p))
+  (if (atom x)
+      t
+    (and (svar-override-p* (car x) types)
+         (svarlist-override-p* (cdr x) types)))
+  ///
+  (defthm svarlist-override-p*-of-append
+    (iff (svarlist-override-p* (append x y) types)
+         (and (svarlist-override-p* x types)
+              (svarlist-override-p* y types))))
+
+  (defcong set-equiv equal (svarlist-override-p* x types) 1
+  :hints (("goal" :use ((:instance (:functional-instance acl2::element-list-p-set-equiv-congruence
+                                    (acl2::element-p (lambda (x) (svar-override-p* x types)))
+                                    (acl2::element-list-final-cdr-p (lambda (x) t))
+                                    (acl2::element-list-p (lambda (x) (svarlist-override-p* x types))))
+                         (x x) (y x-equiv)))
+           :in-theory (enable svarlist-override-p*)))))
+
+
+(define svarlist-nonoverride-p ((x svarlist-p)
+                             (type svar-overridetype-p))
+  (if (atom x)
+      t
+    (and (not (svar-override-p (car x) type))
+         (svarlist-nonoverride-p (cdr x) type)))
+  ///
+  (defthm svarlist-nonoverride-p-of-append
+    (iff (svarlist-nonoverride-p (append x y) type)
+         (and (svarlist-nonoverride-p x type)
+              (svarlist-nonoverride-p y type))))
+
+  (defcong set-equiv equal (svarlist-nonoverride-p x type) 1
+  :hints (("goal" :use ((:instance (:functional-instance acl2::element-list-p-set-equiv-congruence
+                                    (acl2::element-p (lambda (x) (not (svar-override-p x type))))
+                                    (acl2::element-list-final-cdr-p (lambda (x) t))
+                                    (acl2::element-list-p (lambda (x) (svarlist-nonoverride-p x type))))
+                         (x x) (y x-equiv)))
+           :in-theory (enable svarlist-nonoverride-p)))))
+
+(define svarlist-nonoverride-p* ((x svarlist-p)
+                              (types svar-overridetypelist-p))
+  (if (atom x)
+      t
+    (and (not (svar-override-p* (car x) types))
+         (svarlist-nonoverride-p* (cdr x) types)))
+  ///
+  (defthm svarlist-nonoverride-p*-of-append
+    (iff (svarlist-nonoverride-p* (append x y) types)
+         (and (svarlist-nonoverride-p* x types)
+              (svarlist-nonoverride-p* y types))))
+
+  (defcong set-equiv equal (svarlist-nonoverride-p* x types) 1
+  :hints (("goal" :use ((:instance (:functional-instance acl2::element-list-p-set-equiv-congruence
+                                    (acl2::element-p (lambda (x) (not (svar-override-p* x types))))
+                                    (acl2::element-list-final-cdr-p (lambda (x) t))
+                                    (acl2::element-list-p (lambda (x) (svarlist-nonoverride-p* x types))))
+                         (x x) (y x-equiv)))
+           :in-theory (enable svarlist-nonoverride-p*)))))
+
 
 (define svar-change-override ((x svar-p)
                               (type svar-overridetype-p))
@@ -109,13 +202,22 @@
                          (integerp x))
                     (unsigned-byte-p 3 x))
            :hints(("Goal" :in-theory (enable unsigned-byte-p)))))
-  
+
   (defret svar-override-p-of-<fn>
     (iff (svar-override-p new-x other-type)
          (svar-overridetype-equiv other-type type))
     :hints(("Goal" :in-theory (enable svar-override-p
                                       bitops::loghead-identity
                                       svar-overridetype-fix-possibilities))))
+
+  (defret svar-override-p*-of-<fn>
+    (iff (svar-override-p* new-x types)
+         (member-equal (svar-overridetype-fix type)
+                       (svar-overridetypelist-fix types)))
+    :hints(("Goal" :in-theory (e/d (svar-overridetypelist-fix
+                                    svar-override-p*)
+                                   (<fn>))
+            :induct (svar-overridetypelist-fix types))))
 
   (local (in-theory (disable bitops::logapp-of-i-0)))
 
@@ -126,7 +228,7 @@
                        (equal (ifix y) (logtail n z))))
            :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
                                               bitops::ihsext-recursive-redefs)))))
-  
+
   (defthmd equal-of-svar-change-override
     (implies (syntaxp (not (and (equal type ''nil))))
              (equal (equal v1 (svar-change-override v2 type))
@@ -164,7 +266,7 @@
              (svar-overridetype-equiv other-type type)))
     :hints(("Goal" :in-theory (enable svarlist-override-p))))
 
-  
+
   (defthm svarlist-change-override-when-override-p
     (implies (svarlist-override-p x type)
              (equal (svarlist-change-override x type) (svarlist-fix x)))
@@ -372,7 +474,7 @@
                     (equal (svar-fix testvar1) (svar-fix testvar2)))))
 
 
-  
+
 
   (local (Defthm member-vars-when-member-has-test-var
            (implies (and (member-equal trip (svex-override-triplelist-fix x))
@@ -426,7 +528,7 @@
                     (svex-override-triplelist-lookup var x)))
     :hints (("goal" :use ((:instance lookup-test-when-set-equiv-and-no-duplicate-vars
                            (y (mergesort x)))))))
-  
+
 
 
   (local (Defthm member-vars-when-member-has-val-var
@@ -480,7 +582,7 @@
                       (equal k trip.valvar)
                       (member k (svex-override-triplelist-vars (sfix x))))))
            :hints(("Goal" :in-theory (enable svex-override-triplelist-vars
-                                             insert head empty tail sfix setp)))))
+                                             insert head emptyp tail sfix setp)))))
 
   (local (defthm insert-preserves-no-duplicate-vars
            (implies (b* (((svex-override-triple trip))
@@ -492,7 +594,7 @@
                     (no-duplicatesp-equal (svex-override-triplelist-vars (insert trip x))))
            :hints(("Goal" :in-theory (enable insert
                                              svex-override-triplelist-vars
-                                             head empty tail)))))
+                                             head emptyp tail)))))
 
   (defthm mergesort-preserves-member-vars
     (iff (member k (svex-override-triplelist-vars (mergesort x)))
@@ -567,8 +669,8 @@
                   (or (equal k trip.testvar)
                       (member k (svex-override-triplelist-testvars (sfix x))))))
            :hints(("Goal" :in-theory (enable svex-override-triplelist-testvars
-                                             insert head empty tail sfix setp)))))
-  
+                                             insert head emptyp tail sfix setp)))))
+
   (defthm mergesort-preserves-member-testvars
     (iff (member k (svex-override-triplelist-testvars (mergesort x)))
          (member k (svex-override-triplelist-testvars x)))
@@ -691,7 +793,7 @@
                                       svar->svex-override-triplelist
                                       svar->svex-override-triple))))
 
-  
+
   (defthm svar-override-triplelist->testvars-subset-of-override-vars
     (subsetp-equal (svar-override-triplelist->testvars x) (svar-override-triplelist-override-vars x))
     :hints(("Goal" :in-theory (enable svar-override-triplelist-override-vars svar-override-triplelist->testvars)))))
@@ -739,12 +841,6 @@
                                              svarlist-fix
                                              equal-of-svar-change-override)
                    :induct t))))
-
-  (defthmd svar-override-p-when-other
-    (implies (and (svar-override-p x type2)
-                  (not (svar-overridetype-equiv type1 type2)))
-             (not (svar-override-p x type1)))
-    :hints(("Goal" :in-theory (enable svar-override-p))))
 
   (local (defret member-non-override-test-testvars-of-<fn>
            (implies (not (svar-override-p v :test))

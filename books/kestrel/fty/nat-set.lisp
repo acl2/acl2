@@ -1,10 +1,10 @@
 ; FTY Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,6 +26,6 @@
 
   (defrule natp-of-head-when-nat-setp-type-prescription
     (implies (and (nat-setp x)
-                  (not (set::empty x)))
+                  (not (set::emptyp x)))
              (natp (set::head x)))
     :rule-classes :type-prescription))

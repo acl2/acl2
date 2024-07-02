@@ -1,7 +1,7 @@
 ; Utilities to make terms into dags
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,13 +14,10 @@
 
 (include-book "make-term-into-dag-array-simple")
 
-;;;
-;;; make-term-into-dag-simple
-;;;
+;; This utility does not evaluate ground terms.
+;; See also make-term-into-dag-basic.lisp.
 
 ;; Returns (mv erp dag-or-quotep).  Returns a dagp (a list) but uses arrays to do the work.
-;; This one does not evaluate ground terms.
-;; See also make-term-into-dag-basic.
 (defund make-term-into-dag-simple (term)
   (declare (xargs :guard (pseudo-termp term)
                   :guard-hints (("Goal" :use (:instance wf-dagp-of-make-term-into-dag-array-simple
@@ -36,37 +33,24 @@
           (mv (erp-nil) nodenum-or-quotep)
         (mv (erp-nil) (array-to-alist 'make-term-into-dag-simple-array dag-array dag-len))))))
 
-;; (local
-;;  (defthm equal-of-quote-and-car-when-dargp
-;;    (implies (dargp x)
-;;             (equal (equal 'quote (car x))
-;;                    (consp x)))))
-
-(defthm make-term-into-dag-simple-return-type
-  (implies (and (pseudo-termp term)
-                ;; no error:
-                (not (mv-nth 0 (make-term-into-dag-simple term))))
-           (or (pseudo-dagp (mv-nth 1 (make-term-into-dag-simple term)))
-               (myquotep (mv-nth 1 (make-term-into-dag-simple term)))))
-  :hints (("Goal" :in-theory (e/d (make-term-into-dag-simple) (natp myquotep)))))
-
 (defthm pseudo-dagp-of-mv-nth-1-of-make-term-into-dag-simple
   (implies (and (pseudo-termp term)
                 ;; no error:
                 (not (mv-nth 0 (make-term-into-dag-simple term)))
                 (not (myquotep (mv-nth 1 (make-term-into-dag-simple term)))))
            (pseudo-dagp (mv-nth 1 (make-term-into-dag-simple term))))
-  :hints (("Goal" :use (:instance make-term-into-dag-simple-return-type)
-           :in-theory (disable make-term-into-dag-simple-return-type))))
+  :hints (("Goal" :in-theory (e/d (make-term-into-dag-simple) (natp myquotep)))))
 
 (defthm <-of-len-of-mv-nth-1-of-make-term-into-dag-simple
   (implies (and (pseudo-termp term)
                 ;; no error:
                 (not (mv-nth 0 (make-term-into-dag-simple term)))
                 (not (myquotep (mv-nth 1 (make-term-into-dag-simple term)))))
-           (< (len (mv-nth 1 (make-term-into-dag-simple term)))
-              2147483647))
+           (<= (len (mv-nth 1 (make-term-into-dag-simple term)))
+               *max-1d-array-length*))
   :hints (("Goal" :in-theory (enable make-term-into-dag-simple))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp dag-or-quotep).  Returns the DAG as a list but uses arrays to do the work.
 ;; This wrapper has no invariant risk because it has a guard of t.
@@ -76,6 +60,8 @@
       (prog2$ (er hard? 'make-term-into-dag-simple-unguarded "Bad input.")
               (mv (erp-t) nil))
     (make-term-into-dag-simple term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns the dag-or-quotep.  Does not return erp.
 (defund make-term-into-dag-simple! (term)

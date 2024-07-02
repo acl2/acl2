@@ -1,7 +1,7 @@
 ; A function to turn an alist into an array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,34 +12,44 @@
 
 (in-package "ACL2")
 
-(include-book "acl2-arrays") ; todo: reduce
+(include-book "bounded-nat-alists")
+(include-book "constants")
+(include-book "alen1")
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "maximum-length"))
+(local (include-book "array1p"))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "header"))
+(local (include-book "default"))
+(local (include-book "dimensions"))
+(local (include-book "compress1"))
+(local (include-book "acl2-arrays")) ; todo: reduce, for aref1-of-compress1
 
 ;; Makes the ALIST, whose keys must be naturals, into an array named
 ;; ARRAY-NAME, which will have length LEN.  LEN must exceed the largest key in
-;; ALIST.  If LEN is greater than the largest key, the resulting array will
+;; ALIST.  If LEN is greater than one more than the largest key, the resulting array will
 ;; contain some slack space (empty slots) for the array to grow.
 ;rename make-into-array-with-slack?
 ;todo: add an option to reuse an existing array if large enough?
 ;todo: adapt this to use max-key like the one above?
 ;todo: take the default value as an option
 (defund make-into-array-with-len (array-name alist len)
-  (declare (type (integer 1 2147483646) len)
+  (declare (type (integer 1 1152921504606846974) len)
            (type symbol array-name)
            (xargs :guard (and (true-listp alist)
                               (bounded-natp-alistp alist len) ;todo: change this to imply true-listp
                               )
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))))
   (compress1 array-name
-             (acons-fast :header
-                         (list :dimensions (list len)
-                               ;; TODO: Can we do something better here?:
-                               :maximum-length (min (* 2 len)
-                                                    *maximum-positive-32-bit-integer* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
-                                                    )
-                               :default nil ; ;fixme?
-                               :name array-name)
-                         alist)))
+             (acons :header
+                    (list :dimensions (list len)
+                          ;; TODO: Can we do something better here?:
+                          :maximum-length (min (* 2 len)
+                                               *max-array-maximum-length* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
+                                               )
+                          :default nil ; ;fixme?
+                          :name array-name)
+                    alist)))
 
 (in-theory (disable (:e make-into-array-with-len))) ;blew up
 
@@ -57,7 +67,7 @@
   (implies (and (symbolp array-name)
                 (bounded-integer-alistp alist len)
                 (posp len)
-                (< len 2147483647))
+                (<= len *max-1d-array-length*))
            (array1p array-name (make-into-array-with-len array-name alist len)))
   :hints (("Goal" :in-theory (enable make-into-array-with-len array1p-rewrite))))
 
@@ -74,7 +84,7 @@
                 (natp index)
                 (< index len)
                 (integerp len)
-                (< len 2147483647) ; todo: drop?
+                (<= len *max-1d-array-length*) ; todo: drop?
                 )
            (equal (aref1 array-name (make-into-array-with-len array-name alist len) index)
                   (cdr (assoc-equal index alist))))
@@ -85,4 +95,5 @@
                             ARRAY-ORDER
                             make-into-array-with-len
                             ;;aref1
-                            ) (array1p NORMALIZE-AREF1-NAME)))))
+                            ) (aref1 array1p
+                               )))))

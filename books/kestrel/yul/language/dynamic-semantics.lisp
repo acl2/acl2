@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,7 +129,7 @@
        ((okf scope) (funscope-for-fundefs (cdr fundefs)))
        (fundef (car fundefs))
        (fun (fundef->name fundef))
-       (fun+info (omap::in fun scope))
+       (fun+info (omap::assoc fun scope))
        ((when (consp fun+info)) (reserrf (list :duplicate-function fun))))
     (omap::update fun (funinfo-for-fundef fundef) scope))
   :hooks (:fix)
@@ -232,7 +232,7 @@
   (b* (((when (endp funenv))
         (reserrf (list :function-not-found (identifier-fix fun))))
        (funscope (funscope-fix (car funenv)))
-       (fun+info (omap::in (identifier-fix fun) funscope))
+       (fun+info (omap::assoc (identifier-fix fun) funscope))
        ((when (consp fun+info))
         (make-funinfo+funenv :info (cdr fun+info) :env funenv)))
     (find-fun fun (cdr funenv)))
@@ -258,7 +258,7 @@
   (b* (((when (endp funenv)) nil)
        (overlap (set::intersect (omap::keys (funscope-fix funscope))
                                 (omap::keys (funscope-fix (car funenv)))))
-       ((unless (set::empty overlap))
+       ((unless (set::emptyp overlap))
         (reserrf (list :duplicate-functions overlap))))
     (ensure-funscope-disjoint funscope (cdr funenv)))
   :hooks (:fix)
@@ -371,7 +371,7 @@
    (xdoc::p
     "An error is returned if the variable does not exist."))
   (b* ((lstate (cstate->local cstate))
-       (var-val (omap::in (identifier-fix var) lstate))
+       (var-val (omap::assoc (identifier-fix var) lstate))
        ((unless (consp var-val))
         (reserrf (list :variable-not-found (identifier-fix var)))))
     (value-fix (cdr var-val)))
@@ -426,7 +426,7 @@
    (xdoc::p
     "An error is returned if the variable does not exist."))
   (b* ((lstate (cstate->local cstate))
-       (var-val (omap::in (identifier-fix var) lstate))
+       (var-val (omap::assoc (identifier-fix var) lstate))
        ((unless (consp var-val))
         (reserrf (list :variable-not-found (identifier-fix var))))
        (new-lstate (omap::update (identifier-fix var)
@@ -481,7 +481,7 @@
    (xdoc::p
     "An error is returned if the variable already exists."))
   (b* ((lstate (cstate->local cstate))
-       (var-val (omap::in (identifier-fix var) lstate))
+       (var-val (omap::assoc (identifier-fix var) lstate))
        ((when (consp var-val))
         (reserrf (list :variable-already-exists (identifier-fix var))))
        (new-lstate (omap::update (identifier-fix var)

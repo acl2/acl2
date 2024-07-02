@@ -170,7 +170,10 @@
   :hooks nil
   (b* ((pairs (fgetprop fn 'acl2::runic-mapping-pairs nil (w state)))
        (nume (find-executable-counterpart-nume pairs))
-       ((unless (natp nume)) nil)
+       ((unless (and (natp nume)
+; Matt K. addition 4/2024 to accommodate stronger guard on acl2::enabled-numep.
+                     (<= nume (acl2::fixnum-bound))))
+        nil)
        (ens (and (boundp-global 'urewrite-ens state)
                  (@ urewrite-ens))))
     (and (check-enabled-structure ens)

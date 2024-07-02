@@ -37,6 +37,7 @@
 ; Shilpi Goel         <shigoel@gmail.com>
 
 (in-package "X86ISA")
+
 (include-book "centaur/fty/bitstruct" :dir :system)
 
 (local (xdoc::set-default-parents structures))

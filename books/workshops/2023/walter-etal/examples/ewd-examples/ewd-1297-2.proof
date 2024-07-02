@@ -1,0 +1,530 @@
+#|
+
+ Author: Pete Manolios
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/transcriptions/EWD12xx/EWD1297.html
+
+ I first came up with a visual proof, and later with a calculational one. In both proofs we restrict ourselves to
+
+ (0)a/b < c/d
+
+ The visual proof
+
+ Connect the points (b, a) and (d, c) to the origin and complete the parallelogram
+
+ figure
+
+ Because of the monotonicity of the tangent in the 1st quadrant and the fact the diagonal of a parallelogram lies inside that parallelogram, i.e., between the two sides, we conclude
+
+ (1)a/b < (a+c)/(b+d) < c/d
+
+ The calculational proof
+
+ For the left inequality of (1) we observe
+
+ a/b < (a+c)/(b+d)
+
+ ≡{ b·(b+d) > 0 }
+
+ a·(b+d) < (a+c)·b
+
+ ≡{ algebra }
+
+ a·d < c·b
+
+ ≡{ b·d > 0 }
+
+ a/b < c/d
+
+
+|#
+
+
+; Dijkstra says that fractions are restricted to quotients of positive
+; integers, so the theorem he is trying to prove is this:
+
+(property (a b c d :pos)
+  :hyps (< (/ a b) (/ c d))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d)))
+  :hints (("goal" :in-theory (disable acl2::|(* (+ x y) z)|))))
+
+;; PETE: Drew, even with the commented out hint above, why does the
+;; proof checker complain about this property? I get this output:
+#|
+ERROR: This expression failed to run
+Line 49, Col 1
+(property (a b c d :pos)
+  :hyps (< (/ a b) (/ c d))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d)))
+  ;; PETE: Drew this isn't being handled correctly
+  ;;  :hints (("goal" :in-theory (disable acl2::|(* (+ x y) z)|)))
+  )
+|#
+
+
+; ACL2s does not get it automatically, unless I disable a rule as
+; shown above, so let's use proof checker. 
+
+#|
+
+Note also that conjecture EWD-1297-1 fails also.  This conjecture is
+how Dijkstra breaks up his proof.
+
+(thm
+  (=> (^ (posp a)
+         (posp b)
+         (posp c)
+         (posp d))
+      (== (< (/ a b) (/ c d))
+          (< (/ a b) (/ (+ a c) (+ b d))))))
+
+A few points to make in the paper.
+
+ 1. We can formalize Dijkstra's proof and it looks very close to what
+    he did; see EWD-1297-1. One difference is that we use "Arith"
+    instead of "algebra" and another is that we have
+    multiply-<-fractions which we instantiate instead of his hint
+    which was written for human consumption.
+
+ 2. We also formalized EWD-1297-2, which is the second part of the
+    argument. He didn't do that and he just said that the proof was
+    similar, which it is: the structure is the same and the first
+    three lines are different, but the last four lines are identical,
+    so "similar".
+
+ 3. We then generalize in two ways, both of which yielded the same
+    result. Not really. We need to update this file because this is
+    the generalization we get from Dijkstra:
+
+    (property (a b c d :rational)
+      :h (^ (< 0 (* b (+ b d)))
+            (< 0 (* b d))
+            (< (/ a b) (/ c d)))
+      (^ (< (/ a b) (/ (+ a c) (+ b d)))
+         (< (/ (+ a c) (+ b d)) (/ c d))))
+
+    and there is no counterexample, but it doesn't go through
+    automatically. See below.
+
+ 3a. We generalized by using ACL2s cgen ability. Ideally, cgen is like
+     an oracle, so we started by making everything an arbitrary number
+     and then we got counterexamples and used that to add minimal
+     hyps. See comments below.
+
+ 3b. We used Dijkstra's idea of generalizing a proof by looking at
+     what hyps/ assumption you actually used to get EWD-1297-3,
+     EWD-1297-4. These generalizations had, as you would expect,
+     exactly the same proofs, besides the hyps. So, notice that our
+     proof format makes that very clear because the context is
+     distinguished from the proof. Also, there is the "global"
+     assumption in Dijkstra's proof that a,b,c,d are pos. See if there
+     are any interesting things to say about that, e.g., the
+     generalization is probably not automatable without some inference
+     because you have to think about these global assumptions. For
+     example, if I look at Dijkstra's proof then I only need that
+     b*(b+d)>0 and b*d>0, so b and d could be negative. Does that
+     fail?
+
+ 4. We proved the full conjecture of EWD-1297 as well as its
+    generalization. Note that to do so, we just refered to the
+    previously proved conjectures.
+
+ 5. Aside relevant to proof engineers/the use of proof checkers like
+    this by experts: We note that using ACL2s without any hints,
+    EWD-1297-x and the original conjecture are not proved
+    automatically. We have a proof that just contains a hint that
+    disables one rule. To figure out what rule to disable can be a lot
+    of work, since there are many dozens of applicable rules and many
+    other classes of hints that are potentially useful. (Aside: the
+    more powerful the theorem prover, the less a user has to do and
+    the larger the steps they can take, so being able to prove this
+    with a single hint is nice.) A common pattern with arithmetic
+    reasoning is that ACL2/ACL2s, which primarily use rewriting, tend
+    to get stuck because existing rewrite rules, for the most part,
+    simplify expressions and try to put them into some kind of normal
+    form, but often you have key steps in arithmetic proofs that are
+    not in normal form, e.g., by complexifying an expression to enable
+    future simplifications.  For such conjectures, calculational
+    proofs can be useful, even for experts. The advantages are:
+
+ 5a. The calculational proofs are easier to modify/repair, since they
+     are designed for humans. Consider what happens if someone changes
+     a library. Then the theorem prover may go in a completely
+     different direction when trying a proof, so one has to try to
+     figure out how to steer the theorem prover and with arithmetic
+     and normal forms, this can be painful. In the case of a
+     calculational proof, the proof may go through and if it doesn't
+     you know exactly what steps failed, so you aren't investigating a
+     potentially completely different proof.
+
+ 5b. The calculational proofs are easier to read and understand than
+     proof builder proofs. Such proofs just have a list of
+     instructions and one can't see what happens after an
+     instruction. Show a proof builder proof? Note that we generate a
+     proof builder proof, but the human doesn't have to look at it.
+
+ 6. The proof suggested a some rewrite rules that we added to
+    ACL2s. What was interesting is that it was easier to use the proof
+    checker to do the proof rather than using the proof builder or
+    trying to figure out how to steer the rewriter in the way we
+    wanted. The arithmetic books are kind of robust, so using hints is
+    often not useful because the expressions get rewritten in ways
+    that don't help us and disabling rules just means that other rules
+    fire, leading to a lot of churn. Writing out a calculational proof
+    was much simpler.
+
+|#
+
+
+Conjecture EWD-1297-1:
+(=> (^ (posp a)
+       (posp b)
+       (posp c)
+       (posp d))
+    (== (< (/ a b) (/ (+ a c) (+ b d)))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (posp a)
+C2. (posp b)
+C3. (posp c)
+C4. (posp d)
+
+Goal: (== (< (/ a b) (/ (+ a c) (+ b d)))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ a b) (/ (+ a c) (+ b d)))
+== { Lemma multiply-<-fractions ((c (+ a c)) (d (+ b d))) }
+(< (* a (+ b d)) (* (+ a c) b))
+== { algebra }
+(< (* a d) (* c b))
+== { Lemma multiply-<-fractions }
+(< (/ a b) (/ c d))
+
+QED
+
+; Then Dijkstra says "A similar proof shows that also the right
+; inequality of (1) is equivalent to (0), to which we could restrict
+; ourselves “without loss of generality”." 
+;
+; We formalize that also.
+
+Conjecture EWD-1297-2:
+(=> (^ (posp a)
+       (posp b)
+       (posp c)
+       (posp d))
+    (== (< (/ (+ a c) (+ b d)) (/ c d))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (posp a)
+C2. (posp b)
+C3. (posp c)
+C4. (posp d)
+
+Goal: (== (< (/ (+ a c) (+ b d)) (/ c d))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ (+ a c) (+ b d)) (/ c d))
+== { Lemma multiply-<-fractions ((a (+ a c)) (b (+ b d))) }
+(< (* (+ a c) d) (* c (+ b d)))
+== { algebra }
+(< (* a d) (* c b))
+== { Lemma multiply-<-fractions }
+(< (/ a b) (/ c d))
+
+QED
+
+Conjecture EWD-1297:
+(=> (^ (posp a)
+       (posp b)
+       (posp c)
+       (posp d)
+       (< (/ a b) (/ c d)))
+    (^ (< (/ a b) (/ (+ a c) (+ b d)))
+       (< (/ (+ a c) (+ b d)) (/ c d))))
+
+Context:
+C1. (posp a)
+C2. (posp b)
+C3. (posp c)
+C4. (posp d)
+C5. (< (/ a b) (/ c d))
+
+Goal: (^ (< (/ a b) (/ (+ a c) (+ b d)))
+         (< (/ (+ a c) (+ b d)) (/ c d)))
+
+Proof:
+(^ (< (/ a b) (/ (+ a c) (+ b d)))
+   (< (/ (+ a c) (+ b d)) (/ c d)))
+== { Conjecture EWD-1297-1, Conjecture EWD-1297-2, C5 }
+t
+
+QED
+
+#|
+
+          *            *
+                *
+
+; But, what if we wan to generalize?
+; Start by assuming everything is a rational and
+; use counterexamples to fix.
+
+(property (a b c d :rational)
+  :hyps (< (/ a b) (/ c d))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d))))
+
+; but i get a counterexample when b=0
+
+(property (a c d :rational b :non-0-rational)
+  :hyps (< (/ a b) (/ c d))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d))))
+
+; but counterexample when b=-1, d=1, ...
+; and that's a problem because i'm dividing by b+d
+; so will add hyps that all denominators are not 0 at once.
+
+(property (a b c d :rational)
+  :h (^ (/= 0 b)
+        (/= 0 d)
+        (/= 0 (+ b d))
+        (< (/ a b) (/ c d)))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d))))
+
+; now we found counterexamples, when b<0 and d<0, so assume that they
+; are not <0 and wind up with the following, which isn't proved, but
+; which has no counterexample.
+
+
+(property (a b c d :rational)
+  :h (^ (< 0 b)
+        (< 0 d)
+        (/= 0 (+ b d))
+        (< (/ a b) (/ c d)))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d))))
+
+; Question: Can we prove it using the same proof as above?
+
+
+; After reviewing Dijkstra's proof, the above hypotheses are the only
+; hypotheses he used. Here's why 
+
+; The first hint gives us b, b+d>0 
+; The last hint gives us d>0 
+; Simplifying we get b, d >0 ;
+; And the /= 0 hyp comes from the use of b+d as a denominator ;
+; The < hyp was just a hypothesis. ;
+
+; To make the above proof go through note that ;
+
+ (property (x y :rational z :pos-rational) (iff (< x y) (< (* x z) (* y z))))
+
+; shows the name of the theorem we need, which is ;
+
+ (:rewrite acl2::|(< x (/ y)) with (< 0 y)|)
+
+|#
+
+
+Conjecture EWD-1297-3:
+(=> (^ (rationalp a)
+       (pos-rationalp b)
+       (rationalp c)
+       (pos-rationalp d))
+    (== (< (/ a b) (/ (+ a c) (+ b d)))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (pos-rationalp b)
+C3. (rationalp c)
+C4. (pos-rationalp d)
+
+Goal: (== (< (/ a b) (/ (+ a c) (+ b d)))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ a b) (/ (+ a c) (+ b d)))
+== { Lemma multiply-<-fractions ((c (+ a c)) (d (+ b d))) }
+(< (* a (+ b d)) (* (+ a c) b))
+== { algebra }
+(< (* a d) (* c b))
+== { Lemma multiply-<-fractions }
+(< (/ a b) (/ c d))
+
+QED
+
+Conjecture EWD-1297-4:
+(=> (^ (rationalp a)
+       (pos-rationalp b)
+       (rationalp c)
+       (pos-rationalp d))
+    (== (< (/ (+ a c) (+ b d)) (/ c d))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (pos-rationalp b)
+C3. (rationalp c)
+C4. (pos-rationalp d)
+
+Goal: (== (< (/ (+ a c) (+ b d)) (/ c d))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ (+ a c) (+ b d)) (/ c d))
+== { Lemma multiply-<-fractions ((a (+ a c)) (b (+ b d))) }
+(< (* (+ a c) d) (* c (+ b d)))
+== { algebra }
+(< (* a d) (* c b))
+== { Lemma multiply-<-fractions  }
+(< (/ a b) (/ c d))
+
+QED
+
+Conjecture EWD-1297-gen:
+(=> (^ (rationalp a)
+       (pos-rationalp b)
+       (rationalp c)
+       (pos-rationalp d)
+       (< (/ a b) (/ c d)))
+    (^ (< (/ a b) (/ (+ a c) (+ b d)))
+       (< (/ (+ a c) (+ b d)) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (pos-rationalp b)
+C3. (rationalp c)
+C4. (pos-rationalp d)
+C5. (< (/ a b) (/ c d))
+
+Goal: (^ (< (/ a b) (/ (+ a c) (+ b d)))
+         (< (/ (+ a c) (+ b d)) (/ c d)))
+
+Proof:
+(^ (< (/ a b) (/ (+ a c) (+ b d)))
+   (< (/ (+ a c) (+ b d)) (/ c d)))
+== { Conjecture EWD-1297-3, Conjecture EWD-1297-4, C5 }
+t
+
+QED
+
+;; Here is the general proof.
+;; Ankit, see if you can get this to work.
+;; Never mind, I did it.
+
+
+;; Adding 5,6 and gen2
+Conjecture EWD-1297-5:
+(=> (^ (rationalp a)
+       (rationalp b)
+       (rationalp c)
+       (rationalp d)
+       (< 0 (* b d)))
+    (== (< (/ a b) (/ (+ a c) (+ b d)))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+C3. (rationalp c)
+C4. (rationalp d)
+C5. (< 0 (* b d))
+
+Goal: (== (< (/ a b) (/ (+ a c) (+ b d)))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ a b) (/ (+ a c) (+ b d)))
+== { C5, Lemma multiply-<-fractions ((c (+ a c)) (d (+ b d))) }
+(< (* a (+ b d)) (* (+ a c) b))
+== { algebra }
+(< (* a d) (* c b))
+== { C5, Lemma multiply-<-fractions }
+(< (/ a b) (/ c d))
+
+QED
+
+
+Conjecture EWD-1297-6:
+(=> (^ (rationalp a)
+       (rationalp b)
+       (rationalp c)
+       (rationalp d)
+       (< 0 (* b d)))
+    (== (< (/ (+ a c) (+ b d)) (/ c d))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+C3. (rationalp c)
+C4. (rationalp d)
+C5. (< 0 (* b d))
+
+Goal: (== (< (/ (+ a c) (+ b d)) (/ c d))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ (+ a c) (+ b d)) (/ c d))
+== {C5, Lemma multiply-<-fractions ((a (+ a c)) (b (+ b d))) }
+(< (* (+ a c) d) (* c (+ b d)))
+== { algebra }
+(< (* a d) (* c b))
+== { C5, Lemma multiply-<-fractions }
+(< (/ a b) (/ c d))
+
+QED
+
+Conjecture EWD-1297-gen2:
+(=> (^ (rationalp a)
+       (rationalp b)
+       (rationalp c)
+       (rationalp d)
+       (< 0 (* b d))
+       (< (/ a b) (/ c d)))
+    (^ (< (/ a b) (/ (+ a c) (+ b d)))
+       (< (/ (+ a c) (+ b d)) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+C3. (rationalp c)
+C4. (rationalp d)
+C5. (< 0 (* b d))
+C6. (< (/ a b) (/ c d))
+
+Goal: (^ (< (/ a b) (/ (+ a c) (+ b d)))
+         (< (/ (+ a c) (+ b d)) (/ c d)))
+
+Proof:
+(^ (< (/ a b) (/ (+ a c) (+ b d)))
+   (< (/ (+ a c) (+ b d)) (/ c d)))
+== { Conjecture EWD-1297-5, Conjecture EWD-1297-6, C5, C6, PL }
+t
+
+QED
+       
+
+
+;; This is the generalization and an ACL2s proof
+(property (a b c d :rational)
+  :h (^ (< 0 (* b d))
+        (< (/ a b) (/ c d)))
+     (^ (< (/ a b) (/ (+ a c) (+ b d)))
+        (< (/ (+ a c) (+ b d)) (/ c d)))
+     :hints (("goal" :in-theory
+                     (disable acl2::|(* (+ x y) z)|))))

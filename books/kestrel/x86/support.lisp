@@ -1,7 +1,7 @@
 ; Mixed x86 supporting material
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,8 +11,10 @@
 
 (in-package "X86ISA") ;todo: use X package
 
-;TODO: Separate out the x86 rules in this file from liter utilities like normal-output-indicatorp
+;TODO: Organize this material.
 
+(include-book "support-x86") ;drop? for stuff about create-canonical-address-list
+(include-book "flags") ; reduce?
 (include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
 (in-theory (disable acl2::nth-when-zp)) ; can cause problems
 ;(include-book "projects/x86isa/tools/execution/top" :dir :system) ;todo don't even use init-x86-state?
@@ -22,16 +24,21 @@
 (include-book "kestrel/axe/rules2" :dir :system) ;drop?
 (include-book "kestrel/bv/rules3" :dir :system)
 (include-book "kestrel/utilities/mv-nth" :dir :system)
-(include-book "support32") ; drop? needed to prove rb-in-terms-of-nth-and-pos-eric-gen -- why?
-(include-book "support-x86") ; why?
-(include-book "kestrel/utilities/def-constant-opener" :dir :system)
-(local (include-book "kestrel/bv/arith" :dir :system))
+;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
+(local (include-book "linear-memory"))
+(local (include-book "kestrel/bv/logand-b" :dir :system))
+(local (include-book "kestrel/bv/logior-b" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;for logand-with-mask
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/idioms" :dir :system))
-
 
 ;; (in-theory (disable acl2::car-to-nth-0))
 ;; (in-theory (disable acl2::nth-of-cdr)) ;new
@@ -39,15 +46,32 @@
 ;; ;(local (in-theory (enable LIST::NTH-OF-CONS)))
 
 ;(in-theory (disable ACL2::MEMBER-OF-CONS)) ;potentially bad (matches constants)
-(in-theory (disable ACL2::SMALL-INT-HACK)) ;slow
-(in-theory (disable ACL2::ZP-WHEN-GT-0)) ;slow
-(in-theory (disable ACL2::ZP-WHEN-INTEGERP)) ;slow
-(in-theory (disable ACL2::SLICE-TOO-HIGH-IS-0)) ;slow
-(in-theory (disable mv-nth))
+(in-theory (disable ACL2::SMALL-INT-HACK ;slow
+                    ACL2::ZP-WHEN-GT-0   ;slow
+                    ACL2::ZP-WHEN-INTEGERP ;slow
+                    ACL2::SLICE-TOO-HIGH-IS-0 ;slow
+                    mv-nth))
+
+;; could expand the bvminus
+(defthmd canonical-address-p-becomes-bvlt-of-bvminus
+  (implies (signed-byte-p 64 x)
+           (equal (canonical-address-p x)
+                  (acl2::bvlt 64 (acl2::bvminus 64 x -140737488355328) 281474976710656)))
+  :hints (("Goal" :cases ((< x 0))
+           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+                              acl2::bvchop-when-negative-lemma))))
+
+(defthmd canonical-address-p-becomes-bvlt-of-bvminus-strong
+  (equal (canonical-address-p x)
+         (and (signed-byte-p 64 x)
+              (acl2::bvlt 64 (acl2::bvminus 64 x -140737488355328) 281474976710656)))
+  :hints (("Goal" :cases ((< x 0))
+           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+                              acl2::bvchop-when-negative-lemma))))
 
 ;; Seems needed because the model adds 7 to rsp-8 and tests whether
 ;; the result is canonical.  I guess it's testing the highest address
-;; of the 8 bit block.
+;; of the 8 byte block.
 (defthm canonical-address-p-of-minus-1
   (implies (equal 0 (mod x 8))
            (equal (canonical-address-p (+ -1 x))
@@ -101,33 +125,21 @@
            (< paddr addr))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0 nil nil))))
 
-
  ;try to get my rule to fire:
 (in-theory (disable ;rb-in-terms-of-nth-and-pos
                     ;rb-in-terms-of-rb-subset-p
                     ;combine-bytes-rb-in-terms-of-rb-subset-p
             ))
 
-
-
-
-
-
 ;(in-theory (enable create-canonical-address-list)) ;or rewrite it when the number of addrs is 1
 
 ;; (thm
-;;  (Implies (and (CANONICAL-ADDRESS-p rip)
+;;  (implies (and (CANONICAL-ADDRESS-p rip)
 ;;                (natp len)
 ;;                (natp k)
 ;;                (< k len)
 ;;                (CANONICAL-ADDRESS-p (+ len rip)))
 ;;           (MEMBER-P (BINARY-+ k RIP) (CREATE-CANONICAL-ADDRESS-LIST len RIP))))
-
-;how does this not already exist?
-(defthm len-of-append
-  (equal (len (append x y))
-         (+ (len x) (len y))))
-
 
 ;; simplify (this is reading the jump offset from the code?):
 ;; (CANONICAL-ADDRESS-P$INLINE
@@ -182,13 +194,6 @@
                       (equal k1 k3) ;gets computed
                     (equal k2 k3))))) ;gets computed
 
-;perhaps restrict
-(defthm mv-nth-of-if
-  (equal (mv-nth n (if test l1 l2))
-         (if test
-             (mv-nth n l1)
-           (mv-nth n l2))))
-
 ;todo: seems odd that we need this (I saw an access to bit 2)
 (defthm getbit-of-sub-af-spec64$inline
   (implies (posp n)
@@ -216,14 +221,14 @@
                   0))
   :hints (("Goal" :in-theory (enable x86isa::sf-spec32 bool->bit))))
 
-;move
-(defthmd bvshl-becomes-*-of-expt
-  (implies (and (integerp x)
-                (natp shift-amount)
-                (integerp width))
-           (equal (ACL2::BVSHL width x shift-amount)
-                  (acl2::bvchop width (* (expt 2 shift-amount) x))))
-  :hints (("Goal" :in-theory (enable acl2::bvshl acl2::bvcat))))
+(local
+  (defthmd bvshl-becomes-*-of-expt
+    (implies (and (integerp x)
+                  (natp shift-amount)
+                  (natp width))
+             (equal (acl2::bvshl width x shift-amount)
+                    (acl2::bvchop width (* (expt 2 shift-amount) x))))
+    :hints (("Goal" :in-theory (enable acl2::bvshl acl2::bvcat)))))
 
 ;slow?
 (defthmd rb-split
@@ -252,6 +257,19 @@
                                          )))))
 
 (local (in-theory (enable APP-VIEW)))
+
+; better than x86isa::size-of-rb-1
+(defthm unsigned-byte-p-of-mv-nth-1-of-rb-1
+  (implies (and (<= (* 8 n) m)
+                (natp m)
+                (x86p x86))
+           (unsigned-byte-p m (mv-nth 1 (rb-1 n addr r-x x86))))
+  :hints (("Goal" :use (:instance x86isa::size-of-rb-1
+                                  (X86ISA::ADDR addr)
+                                  (X86ISA::R-X r-x)
+                                  (m (* 8 n)))
+           :in-theory (e/d (ash rb-1 ifix)
+                           (x86isa::size-of-rb-1)))))
 
 ;to handle a multi-byte RB by peeling off one known byte at a time
 (defthm rb-in-terms-of-nth-and-pos-eric-gen
@@ -295,7 +313,8 @@
            :in-theory (e/d (;rb rb-1
                             program-at
                             ash
-
+                            acl2::bvchop-of-logtail-becomes-slice
+                            ;;rb-split ; looped
                             )
                            (;rb-1-when-not-r
                             distributivity ;blocks slice-of-combine-bytes
@@ -342,11 +361,11 @@
 ;;                             bitops::part-select-width-low
 ;;                             bitops::part-install-width-low)))))
 
-;sign flag
-(defthmd sf-spec32-rewrite
-  (equal (x86isa::sf-spec32 x)
-         (acl2::getbit 31 x))
-  :hints (("Goal" :in-theory (enable x86isa::sf-spec32))))
+;; ;sign flag
+;; (defthmd sf-spec32-rewrite
+;;   (equal (x86isa::sf-spec32 x)
+;;          (acl2::getbit 31 x))
+;;   :hints (("Goal" :in-theory (enable x86isa::sf-spec32))))
 
 ;TODO: need lemmas about logand, ash, etc. in order to prove the
 ;theorem that justifies the lift (why?)  TODO: try simpify-defun?
@@ -367,22 +386,10 @@
 (in-theory (enable acl2::bvplus-of-unary-minus acl2::bvplus-of-unary-minus-arg2))
 (in-theory (disable ACL2::BOUND-FROM-NATP-FACT)) ;slow
 
-;see also mv-nth-cons-meta, but axe can't use it
-(defthm mv-nth-of-cons
-  (implies (and (syntaxp (quotep n))
-                (natp n))
-           (equal (mv-nth n (cons a b))
-                  (if (zp n)
-                      a
-                    (mv-nth (+ -1 n) b))))
-  :hints (("Goal" :in-theory (enable mv-nth))))
-
 ;; (defthm rb-of-nil
 ;;   (equal (rb nil r-w-x x86)
 ;;          (mv nil nil x86))
 ;;   :hints (("Goal" :in-theory (enable rb))))
-
-
 
 ;is there a way to limit this?
 
@@ -398,12 +405,12 @@
   :hints (("Goal" :expand (x86isa::combine-bytes lst)
            :in-theory (enable x86isa::combine-bytes))))
 
-;move or drop?
-(defthm acl2::assoc-equal-of-cons-irrel
-  (implies (not (equal acl2::key (car a)))
-           (equal (assoc-equal acl2::key (cons a acl2::rst))
-                  (assoc-equal acl2::key acl2::rst)))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
+;; ;move or drop?
+;; (defthm acl2::assoc-equal-of-cons-irrel
+;;   (implies (not (equal acl2::key (car a)))
+;;            (equal (assoc-equal acl2::key (cons a acl2::rst))
+;;                   (assoc-equal acl2::key acl2::rst)))
+;;   :hints (("Goal" :in-theory (enable assoc-equal))))
 
 (defthm get-one-byte-prefix-array-code-rewrite-quotep
   (implies (syntaxp (quotep byte))
@@ -443,7 +450,8 @@
 
 (defthm canonical-address-p-of-logext-64
   (implies (canonical-address-p x)
-           (canonical-address-p (logext 64 x)))) ;when can we drop the logext completely?
+           (canonical-address-p (logext 64 x)))
+  :hints (("Goal" :in-theory (enable canonical-address-p)))) ;when can we drop the logext completely?
 
 (acl2::defopeners get-prefixes)
 
@@ -607,12 +615,11 @@
 ;todo: make defopeners use the untranslated body
 ;todo: make defopeners check for redundancy
 ;todo: make defopeners suppress printing
-;todo: use def-constant-opener?
 (acl2::defopeners one-byte-opcode-execute :hyps ((syntaxp (and (quotep x86isa::prefixes)
-                                                                (quotep x86isa::rex-byte)
-                                                                (quotep x86isa::opcode)
-                                                                (quotep x86isa::modr/m)
-                                                                (quotep x86isa::sib)))))
+                                                               (quotep x86isa::rex-byte)
+                                                               (quotep x86isa::opcode)
+                                                               (quotep x86isa::modr/m)
+                                                               (quotep x86isa::sib)))))
 
 (in-theory (disable x86isa::one-byte-opcode-execute))
 
@@ -623,7 +630,7 @@
 ;looped?
 (defthmd not-member-p-canonical-address-listp-when-disjoint-p-alt
   (implies (and (x86isa::disjoint-p (x86isa::create-canonical-address-list m addr)
-                            (x86isa::create-canonical-address-list n prog-addr))
+                                    (x86isa::create-canonical-address-list n prog-addr))
                 (x86isa::member-p e (x86isa::create-canonical-address-list m addr)))
            (equal (x86isa::member-p e (x86isa::create-canonical-address-list n prog-addr))
                   nil)))
@@ -733,10 +740,10 @@
                                    ;acl2::logapp
                                    acl2::logext-of-plus
                                    acl2::bvchop-of-sum-cases
-                                   acl2::getbit-of-plus
+                                   acl2::getbit-of-+
                                    acl2::bvchop-when-top-bit-1-cheap
                                    bvchop-when-signed-byte-p-one-more-and-negative-linear)
-                                  (acl2::bvplus-recollapse
+                                  (
                                    acl2::bvchop-identity-cheap
                                    acl2::bvchop-identity
                                    ;acl2::trim-to-n-bits-meta-rule-for-bvcat ;looped
@@ -750,7 +757,7 @@
            :use (:instance acl2::split-bv
                            (n 64)
                            (m 63)
-                           (y (acl2::bvchop 64 k))))))
+                           (x (acl2::bvchop 64 k))))))
 
 
 ;add one for the upper bound as well?
@@ -883,7 +890,7 @@
   :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::LOGEXT-CASES
                                                 acl2::bvcat ACL2::LOGAPP
                                                 ACL2::LOGEXT-OF-PLUS)
-                                  (ACL2::BVPLUS-RECOLLAPSE
+                                  (
                                    ACL2::BVCHOP-IDENTITY-CHEAP
                                    ACL2::BVCHOP-IDENTITY
                                    ;ACL2::TRIM-TO-N-BITS-META-RULE-FOR-BVCAT ;looped
@@ -894,7 +901,7 @@
            :use (:instance acl2::split-bv
                            (n 64)
                            (m 63)
-                           (y k)))))
+                           (x k)))))
 
 ;todo: fix this rule
 ;; (defthm signed-byte-p-of-+-between
@@ -998,7 +1005,7 @@
 ;;                       (ACL2::REPEATBIT (+ (- LOW) SIZE) 1))
 
 ;; (thm
-;;  (Implies (and (< n size)
+;;  (implies (and (< n size)
 ;;                (natp size)
 ;;                (natp n))
 ;;           (equal (acl2::bvplus size -1 (expt 2 n))
@@ -1007,14 +1014,14 @@
 ;;                               n
 ;;                               (+ -1 (expt 2 n)))))
 ;;  :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::REPEATBIT)
-;;                                  (ACL2::BVPLUS-RECOLLAPSE
+;;                                  (
 ;;                                   ACL2::BVCAT-OF-+-LOW ;looped
 ;;                                   )))))
 
 ;; ;a bunch of 0's followed by a bunch of 1's
 ;; instead, just drop the (expt 2 size)
 ;; (defthm bvplus-of-expt-and-all-ones
-;;  (Implies (and (< n size)
+;;  (implies (and (< n size)
 ;;                (natp size)
 ;;                (natp n))
 ;;           (equal (acl2::bvplus size (expt 2 n) (+ -1 (expt 2 size)))
@@ -1023,7 +1030,7 @@
 ;;                               n
 ;;                               (+ -1 (expt 2 n)))))
 ;;  :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::REPEATBIT)
-;;                                  (ACL2::BVPLUS-RECOLLAPSE
+;;                                  (
 ;;                                   ACL2::BVCAT-OF-+-LOW ;looped
 ;;                                   )))))
 
@@ -1045,7 +1052,7 @@
                             CANONICAL-ADDRESS-P-BETWEEN
                             ;x86isa::PART-SELECT-WIDTH-LOW-BECOMES-SLICE
                             ;x86isa::SLICE-OF-PART-INSTALL-WIDTH-LOW
-                            MV-NTH-OF-IF
+                            acl2::MV-NTH-OF-IF
                             x86isa::GET-PREFIXES-OPENER-LEMMA-NO-PREFIX-BYTE
                             )))))
 
@@ -1068,7 +1075,7 @@
                                    x86isa::get-prefixes-opener-lemma-no-prefix-byte ;for speed
                                    ;x86isa::part-select-width-low-becomes-slice ;for speed
                                    ACL2::ZP-OPEN
-                                   MV-NTH-OF-IF
+                                   acl2::MV-NTH-OF-IF
                                    )))))
 
 ;; A guess as to how the 32 bytes of shadow space for PE files looks: (TODO: Figure this all out!)
@@ -1161,19 +1168,6 @@
                       (equal k3 k1)
                     (equal k3 k2)))))
 
-;drop?  looped
-(defthmd if-x-nil-t
-  (equal (if x nil t)
-         (not x)))
-
-(defthm if-of-not
-  (equal (if (not test) tp ep)
-         (if test ep tp)))
-
-(defthm if-of-if-same-arg2
-  (equal (if test (if test tp ep) ep2)
-         (if test tp ep2)))
-
 ;could be bad
 (defthmd member-p-of-if-arg1
   (equal (member-p (if test tp ep) lst)
@@ -1224,65 +1218,66 @@
                       (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline tp)
                     (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline ep)))))
 
-(defthm one-byte-opcode-execute-of-if-arg1
-  (equal (one-byte-opcode-execute proc-mode (if test start-rip1 start-rip2) temp-rip prefixes rex-byte opcode modr/m sib x86)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip1 temp-rip prefixes rex-byte opcode modr/m sib x86)
-           (one-byte-opcode-execute proc-mode start-rip2 temp-rip prefixes rex-byte opcode modr/m sib x86))))
+;; ;drop?
+;; (defthm one-byte-opcode-execute-of-if-arg1
+;;   (equal (one-byte-opcode-execute proc-mode (if test start-rip1 start-rip2) temp-rip prefixes rex-byte opcode modr/m sib x86)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip1 temp-rip prefixes rex-byte opcode modr/m sib x86)
+;;            (one-byte-opcode-execute proc-mode start-rip2 temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
-(defthm one-byte-opcode-execute-of-if-arg2
-  (equal (one-byte-opcode-execute proc-mode start-rip (if test temp-rip1 temp-rip2) prefixes rex-byte opcode modr/m sib x86)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip temp-rip1 prefixes rex-byte opcode modr/m sib x86)
-           (one-byte-opcode-execute proc-mode start-rip temp-rip2 prefixes rex-byte opcode modr/m sib x86))))
+;; ;drop?
+;; (defthm one-byte-opcode-execute-of-if-arg2
+;;   (equal (one-byte-opcode-execute proc-mode start-rip (if test temp-rip1 temp-rip2) prefixes rex-byte opcode modr/m sib x86)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip temp-rip1 prefixes rex-byte opcode modr/m sib x86)
+;;            (one-byte-opcode-execute proc-mode start-rip temp-rip2 prefixes rex-byte opcode modr/m sib x86))))
 
-(defthm one-byte-opcode-execute-of-if-arg6
-  (equal (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode (if test modr/m1 modr/m2) sib x86)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m1 sib x86)
-           (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m2 sib x86))))
+;; ;drop?
+;; (defthm one-byte-opcode-execute-of-if-arg6
+;;   (equal (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode (if test modr/m1 modr/m2) sib x86)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m1 sib x86)
+;;            (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m2 sib x86))))
 
-;once this breaks the symmetry, the two one-byte-opcode-execute terms
-;resulting from a branch will be different (and perhaps each then will
-;get a nice context computed for it)
-(defthm if-of-one-byte-opcode-execute-of-if-arg2
-  (equal (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       (if test temp-rip1 temp-rip2) ;same test as above
-                                       prefixes rex-byte opcode modr/m sib
-                                       x86)
-           x)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       temp-rip1
-                                       prefixes rex-byte opcode modr/m sib
-                                       x86)
-           x)))
+;; ;once this breaks the symmetry, the two one-byte-opcode-execute terms
+;; ;resulting from a branch will be different (and perhaps each then will
+;; ;get a nice context computed for it)
+;; ;drop?
+;; (defthm if-of-one-byte-opcode-execute-of-if-arg2
+;;   (equal (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        (if test temp-rip1 temp-rip2) ;same test as above
+;;                                        prefixes rex-byte opcode modr/m sib
+;;                                        x86)
+;;            x)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        temp-rip1
+;;                                        prefixes rex-byte opcode modr/m sib
+;;                                        x86)
+;;            x)))
 
-(defthm if-of-one-byte-opcode-execute-of-if-arg5
-  (equal (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       temp-rip
-                                       prefixes rex-byte
-                                       (if test opcode1 opcode2) ;same test as above
-                                       modr/m sib
-                                       x86)
-           x)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       temp-rip
-                                       prefixes rex-byte opcode1 modr/m sib
-                                       x86)
-           x)))
+;; ;drop?
+;; (defthm if-of-one-byte-opcode-execute-of-if-arg5
+;;   (equal (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        temp-rip
+;;                                        prefixes rex-byte
+;;                                        (if test opcode1 opcode2) ;same test as above
+;;                                        modr/m sib
+;;                                        x86)
+;;            x)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        temp-rip
+;;                                        prefixes rex-byte opcode1 modr/m sib
+;;                                        x86)
+;;            x)))
 
 
 ;;TODO: Maybe we should have axe split the simulation instead of proving all these if lifting rules.
 
 ;why is axe reasoning about CHECK-DCL-GUARDIAN? it's mentioned in X86ISA::X86-FETCH-DECODE-EXECUTE
-
-(defthm if-of-if-arg3-same
-  (equal (if test x (if test y z))
-         (if test x z)))
 
 (defthm <-of-if-arg2
   (implies (syntaxp (and (quotep y)
@@ -1325,111 +1320,6 @@
 ;;          (64-bit-modep x86))
 ;;   :hints (("Goal" :in-theory (enable 64-bit-modep))))
 
-
-;; todo: drop these irrelevant params from separate
-(defthm separate-normalize-r-w-x-1
-  (implies (not (eq r-w-x-1 :r)) ;not using syntaxp since axe could not handle that
-           (equal (separate r-w-x-1 n-1 addr-1 r-w-x-2 n-2 addr-2)
-                  (separate :r n-1 addr-1 r-w-x-2 n-2 addr-2)))
-  :hints (("Goal" :in-theory (enable separate))))
-
-;; todo: drop these irrelevant params from separate
-(defthm separate-normalize-r-w-x-2
-  (implies (not (eq r-w-x-2 :r)) ;not using syntaxp since axe could not handle that
-           (equal (separate r-w-x-1 n-1 addr-1 r-w-x-2 n-2 addr-2)
-                  (separate r-w-x-1 n-1 addr-1 :r n-2 addr-2)))
-  :hints (("Goal" :in-theory (enable separate))))
-
-;(in-theory (enable x86-fetch-decode-execute)) ;needed for code proofs (no, use the opener?)
-
-(defthm not-separate-self
-  (implies (and (posp n)
-                (posp n2))
-           (not (separate rwx n addr rwx2 n2 addr)))
-  :hints (("Goal" :in-theory (enable separate))))
-
-;gen the 1 here:
-
-(defthm separate-of-plus
-  (implies (and (separate :r n text-offset ;n is a free var
-                          :r n2+ x)
-                (< k n)
-                (<= n2 n2+)
-                (natp n2+)
-                (natp k)
-                (natp n))
-           (separate :r 1 (+ k text-offset)
-                     :r n2 x))
-  :hints (("Goal" :in-theory (enable separate))))
-
-;reorders the hyp...
-(defthm separate-of-plus-alt
-  (implies (and (separate :r n2+ x
-                          :r n text-offset ;n is a free var
-                          )
-                (<= n2 n2+)
-                (natp n2+)
-                (< k n)
-                (natp k)
-                (natp n))
-           (separate :r 1 (+ k text-offset)
-                     :r n2 x))
-  :hints (("Goal" :in-theory (enable separate))))
-
-
-(defthm separate-below-and-above
-  (implies (and (<= k1 0)
-                (<= k2 (- k1))
-                (integerp k1)
-                (integerp k2)
-                )
-           (separate rwx1 k2 (+ k1 x) ;this stuff is below x
-                     rwx2 j x)) ;this stuff is above x
-  :hints (("Goal" :in-theory (enable separate))))
-
-(defthm separate-below-and-above-alt
-  (implies (and (<= k1 0)
-                (<= k2 (- k1))
-                (integerp k1)
-                (integerp k2)
-                )
-           (separate rwx2 j x
-                     rwx1 k2 (+ k1 x)))
-  :hints (("Goal" :in-theory (enable separate))))
-
-(defthm separate-below-and-above-offset
-  (implies (and (integerp k)
-                (integerp k2)
-                (<= (+ k n) k2))
-           (separate :r n2 (+ k2 x)
-                     :r n (+ k x)))
-  :hints (("Goal" :in-theory (enable separate))))
-
-(defthm separate-below-and-above-offset-alt
-  (implies (and (integerp k)
-                (integerp k2)
-                (<= (+ k n) k2))
-           (separate :r n (+ k x)
-                     :r n2 (+ k2 x)))
-  :hints (("Goal" :in-theory (enable separate))))
-
-(defthm separate-same-lemma-1
-  (implies (and (<= num off2)
-                (integerp num)
-                (integerp off2))
-           (separate :r num x
-                     :r num2 (+ off2 x)))
-  :hints (("Goal" :in-theory (enable separate))))
-
-(defthm separate-same-lemma-1-alt
-  (implies (and (<= num off2)
-                (integerp num)
-                (integerp off2))
-           (separate :r num2 (+ off2 x)
-                     :r num x))
-  :hints (("Goal" :in-theory (enable separate))))
-
-
 (in-theory (disable wb))
 (in-theory (disable x86isa::WB-BY-WB-1-FOR-APP-VIEW-INDUCTION-RULE))
 
@@ -1462,338 +1352,11 @@
                               (mv-nth 1 (wb n-2 addr-2 w val x86))))
                   (mv-nth 1 (rb n-1 addr-1 r-x x86)))))
 
-
-;gen?
-(defthm separate-lemma-1
-  (implies (and (separate :r n text-offset
-                          :r big (+ bigneg x))
-                (natp n)
-                (natp off)
-                (<= (+ num off) n)
-                (equal big (- bigneg))
-                (<= small (- smallneg))
-                (<= bigneg smallneg)
-                (<= 0 small)
-                (<= 0 big)
-                (integerp smallneg)
-                (integerp bigneg)
-                (integerp small)
-                (integerp big)
-                (integerp text-offset))
-           (separate :r num (+ off text-offset)
-                     :r small (+ smallneg x)))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-(defthm separate-lemma-1-alt
-  (implies (and (separate :r n text-offset
-                          :r big (+ bigneg x))
-                (natp n)
-                (natp off)
-                (<= (+ num off) n)
-                (equal big (- bigneg))
-                (<= small (- smallneg))
-                (<= bigneg smallneg)
-                (<= 0 small)
-                (<= 0 big)
-                (integerp smallneg)
-                (integerp bigneg)
-                (integerp small)
-                (integerp big)
-                (integerp text-offset))
-           (separate :r small (+ smallneg x)
-                     :r num (+ off text-offset)))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-;no offset
-(defthm separate-lemma-1b
-  (implies (and (separate :r n text-offset
-                          :r big (+ bigneg x))
-                (natp n)
-                (<= num n)
-                (equal big (- bigneg))
-                (<= small (- smallneg))
-                (<= bigneg smallneg)
-                (<= 0 small)
-                (<= 0 big)
-                (integerp smallneg)
-                (integerp bigneg)
-                (integerp small)
-                (integerp big)
-                (integerp text-offset))
-           (separate :r num text-offset
-                     :r small (+ smallneg x)))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-(defthm separate-lemma-1b-alt
-  (implies (and (separate :r n text-offset
-                          :r big (+ bigneg x))
-                (natp n)
-                (<= num n)
-                (equal big (- bigneg))
-                (<= small (- smallneg))
-                (<= bigneg smallneg)
-                (<= 0 small)
-                (<= 0 big)
-                (integerp smallneg)
-                (integerp bigneg)
-                (integerp small)
-                (integerp big)
-                (integerp text-offset))
-           (separate :r small (+ smallneg x)
-                     :r num text-offset))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-
-
-
-(defthm separate-of-if-arg3
-  (equal (separate rwx1 n1 (if test addr1a addr1b) rwx2 n2 addr2)
-         (if test
-             (separate rwx1 n1 addr1a rwx2 n2 addr2)
-           (separate rwx1 n1 addr1b rwx2 n2 addr2))))
-
-(defthm separate-of-if-arg6
-  (equal (separate rwx1 n1 addr1 rwx2 n2 (if test addr2a addr2b))
-         (if test
-             (separate rwx1 n1 addr1 rwx2 n2 addr2a)
-           (separate rwx1 n1 addr1 rwx2 n2 addr2b))))
-
 (defthm rb-of-if-arg2
   (equal (rb n (if test addr1 addr2) rx x86)
          (if test
              (rb n addr1 rx x86)
            (rb n addr2 rx x86))))
-
-(defthm separate-lemma-2b
-  (implies (and (separate :r n text-offset
-                          :r big x)
-                (natp n)
-                (natp off)
-                (<= (+ num off) n)
-                (integerp text-offset)
-                (natp big)
-                (natp off2)
-                (<= (+ off2 num2) big)
-                (natp num2)
-                )
-           (separate :r num (+ off text-offset)
-                     :r num2 (+ off2 x)))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-(defthm separate-lemma-2b-alt
-  (implies (and (separate :r n text-offset
-                          :r big x)
-                (natp n)
-                (natp off)
-                (<= (+ num off) n)
-                (integerp text-offset)
-                (natp big)
-                (natp off2)
-                (<= (+ off2 num2) big)
-                (natp num2)
-                )
-           (separate :r num2 (+ off2 x)
-                     :r num (+ off text-offset)))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-
-(defthm separate-lemma-3
-  (implies (and (separate :r n text-offset
-                          :r big x)
-                (natp n)
-                (<= num n)
-                (integerp text-offset)
-                (natp big)
-                (natp off2)
-                (<= (+ off2 num2) big)
-                (natp num2)
-                )
-           (separate :r num text-offset
-                     :r num2 (+ off2 x)))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-(defthm separate-lemma-3-alt
-  (implies (and (separate :r n text-offset
-                          :r big x)
-                (natp n)
-                (<= num n)
-                (integerp text-offset)
-                (natp big)
-                (natp off2)
-                (<= (+ off2 num2) big)
-                (natp num2)
-                )
-           (separate :r num2 (+ off2 x)
-                     :r num text-offset))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-
-
-;; In this series of lemmas, the assumption about separate contains no offsets:
-;; todo: these subsume some things above
-
-(defthm separate-from-separate-lemma-1
-  (implies (and (separate rwx3 num3 base1
-                          rwx4 num4 base2)
-                (<= (+ num1 off1) num3)
-                (<= (+ num2 off2) num4)
-                (natp num1)
-                (natp num2)
-                (natp off1)
-                (natp off2)
-                (integerp num3)
-                (integerp num4)
-                (integerp base1)
-                (integerp base2))
-           (separate rwx1 num1 (+ off1 base1)
-                     rwx2 num2 (+ off2 base2)))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-(defthm separate-from-separate-lemma-1-alt
-  (implies (and (separate rwx4 num4 base2
-                          rwx3 num3 base1)
-                (<= (+ num1 off1) num3)
-                (<= (+ num2 off2) num4)
-                (natp num1)
-                (natp num2)
-                (natp off1)
-                (natp off2)
-                (integerp num3)
-                (integerp num4)
-                (integerp base1)
-                (integerp base2))
-           (separate rwx1 num1 (+ off1 base1)
-                     rwx2 num2 (+ off2 base2)))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-;off1=0
-(defthm separate-from-separate-lemma-1b
-  (implies (and (separate rwx3 num3 base1
-                          rwx4 num4 base2)
-                (<= num1 num3)
-                (<= (+ num2 off2) num4)
-                (natp num1)
-                (natp num2)
-                (natp off2)
-                (integerp num3)
-                (integerp num4)
-                (integerp base1)
-                (integerp base2))
-           (separate rwx1 num1 base1
-                     rwx2 num2 (+ off2 base2)))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-(defthm separate-from-separate-lemma-1b-alt
-  (implies (and (separate rwx4 num4 base2
-                          rwx3 num3 base1)
-                (<= num1 num3)
-                (<= (+ num2 off2) num4)
-                (natp num1)
-                (natp num2)
-                (natp off2)
-                (integerp num3)
-                (integerp num4)
-                (integerp base1)
-                (integerp base2))
-           (separate rwx1 num1 base1
-                     rwx2 num2 (+ off2 base2)))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-;off2=0
-(defthm separate-from-separate-lemma-1c
-  (implies (and (separate rwx3 num3 base1
-                          rwx4 num4 base2)
-                (<= (+ num1 off1) num3)
-                (<= num2 num4)
-                (natp num1)
-                (natp num2)
-                (natp off1)
-                (integerp num3)
-                (integerp num4)
-                (integerp base1)
-                (integerp base2))
-           (separate rwx1 num1 (+ off1 base1)
-                     rwx2 num2 base2))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-(defthm separate-from-separate-lemma-1c-alt
-  (implies (and (separate rwx4 num4 base2
-                          rwx3 num3 base1)
-                (<= (+ num1 off1) num3)
-                (<= num2 num4)
-                (natp num1)
-                (natp num2)
-                (natp off1)
-                (integerp num3)
-                (integerp num4)
-                (integerp base1)
-                (integerp base2))
-           (separate rwx1 num1 (+ off1 base1)
-                     rwx2 num2 base2))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-;both off1 and odff2 are 0
-(defthm separate-from-separate-lemma-1d
-  (implies (and (separate rwx3 num3 base1
-                          rwx4 num4 base2)
-                (<= num1 num3)
-                (<= num2 num4)
-                (natp num1)
-                (natp num2)
-                (integerp num3)
-                (integerp num4)
-                (integerp base1)
-                (integerp base2))
-           (separate rwx1 num1 base1
-                     rwx2 num2 base2))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
-
-(defthm separate-from-separate-lemma-1d-alt
-  (implies (and (separate rwx4 num4 base2
-                          rwx3 num3 base1)
-                (<= num1 num3)
-                (<= num2 num4)
-                (natp num1)
-                (natp num2)
-                (integerp num3)
-                (integerp num4)
-                (integerp base1)
-                (integerp base2))
-           (separate rwx1 num1 base1
-                     rwx2 num2 base2))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
 
 ;; ;see also !flgi-and-wb-in-app-view (but that seems like a bad rule -- reuse of val -- tell shilpi)
 ;; (defthm !flgi-of-mv-nth-1-of-wb
@@ -1873,16 +1436,6 @@
          (if test
              (xw ':rip '0 pc1 x86)
            (xw ':rip '0 pc2 x86))))
-
-;move
-(defthm if-t-nil
-  (equal (if x t nil)
-         (acl2::bool-fix x)))
-
-(defthm if-x-x-y
-  (implies (booleanp x)
-           (equal (if x x y)
-                  (if x t y))))
 
 (defthm xr-of-myif
   (equal (xr fld index (acl2::myif test then else))
@@ -2069,22 +1622,77 @@
 ;;                   (if (equal x (+ -1 (expt 2 32)))
 ;;                       (- x)
 ;;                     1)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases) (ACL2::BVPLUS-RECOLLAPSE)))))
+;;   :hints (("Goal" :in-theory (enable bvplus acl2::bvchop-of-sum-cases))))
 
 (in-theory (enable x86isa::x86-operation-mode)) ;for non-axe symbolic execution
 
-(acl2::def-constant-opener x86isa::one-byte-opcode-modr/m-p$inline)
-(acl2::def-constant-opener x86isa::two-byte-opcode-modr/m-p$inline)
+(defthm x86isa::rflagsbits->of$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->of$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->of$inline tp) (x86isa::rflagsbits->of$inline ep)))))
 
-(acl2::def-constant-opener x86isa::rflagsbits->ac$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->af$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->cf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->of$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->pf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->sf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->zf$inline)
+(defthm x86isa::rflagsbits->sf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->sf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->sf$inline tp) (x86isa::rflagsbits->sf$inline ep)))))
 
-(acl2::def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
+(defthm x86isa::rflagsbits->cf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->cf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->cf$inline tp) (x86isa::rflagsbits->cf$inline ep)))))
+
+(defthm x86isa::rflagsbits->af$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->af$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->af$inline tp) (x86isa::rflagsbits->af$inline ep)))))
+
+(defthm x86isa::rflagsbits->zf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->zf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->zf$inline tp) (x86isa::rflagsbits->zf$inline ep)))))
+
+(defthm x86isa::rflagsbits->pf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->pf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->pf$inline tp) (x86isa::rflagsbits->pf$inline ep)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm x86isa::rflagsbits->of$inline-of-if
+  (equal (rflagsbits->of$inline (if test tp ep))
+         (if test (rflagsbits->of$inline tp) (rflagsbits->of$inline ep))))
+
+(defthm x86isa::rflagsbits->sf$inline-of-if
+  (equal (rflagsbits->sf$inline (if test tp ep))
+                  (if test (rflagsbits->sf$inline tp) (rflagsbits->sf$inline ep))))
+
+(defthm x86isa::rflagsbits->cf$inline-of-if
+  (equal (rflagsbits->cf$inline (if test tp ep))
+         (if test (rflagsbits->cf$inline tp) (rflagsbits->cf$inline ep))))
+
+(defthm x86isa::rflagsbits->af$inline-of-if
+  (equal (rflagsbits->af$inline (if test tp ep))
+         (if test (rflagsbits->af$inline tp) (rflagsbits->af$inline ep))))
+
+(defthm x86isa::rflagsbits->zf$inline-of-if
+  (equal (rflagsbits->zf$inline (if test tp ep))
+         (if test (rflagsbits->zf$inline tp) (rflagsbits->zf$inline ep))))
+
+(defthm x86isa::rflagsbits->pf$inline-of-if
+  (equal (rflagsbits->pf$inline (if test tp ep))
+         (if test (rflagsbits->pf$inline tp) (rflagsbits->pf$inline ep))))
 
 ;pretty gross (due to gross behaviour of bfix)
 (defthm RFLAGSBITS-rewrite
@@ -2155,32 +1763,49 @@
                                    ACL2::BVCAT-EQUAL-REWRITE
                                    ACL2::BFIX-WHEN-NOT-BITP)))))
 
-(defthm unsigned-byte-p-1-of-rflagsbits->cf$inline (unsigned-byte-p '1 (x86isa::rflagsbits->cf$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->res1$inline (unsigned-byte-p '1 (x86isa::rflagsbits->res1$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->pf$inline (unsigned-byte-p '1 (x86isa::rflagsbits->pf$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->ID$inline (unsigned-byte-p '1 (x86isa::rflagsbits->ID$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->VIP$inline (unsigned-byte-p '1 (x86isa::rflagsbits->VIP$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->VIF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->VIF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->AC$inline (unsigned-byte-p '1 (x86isa::rflagsbits->AC$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->VM$inline (unsigned-byte-p '1 (x86isa::rflagsbits->VM$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->RF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->RF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->RES4$inline (unsigned-byte-p '1 (x86isa::rflagsbits->RES4$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->NT$inline (unsigned-byte-p '1 (x86isa::rflagsbits->NT$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->OF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->OF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->DF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->DF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->INTF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->INTF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->TF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->TF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->SF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->SF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->ZF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->ZF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->RES3$inline (unsigned-byte-p '1 (x86isa::rflagsbits->RES3$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->AF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->AF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->RES2$inline (unsigned-byte-p '1 (x86isa::rflagsbits->RES2$inline rflags)))
-(defthm unsigned-byte-p-2-of-rflagsbits->iopl$inline (unsigned-byte-p '2 (x86isa::rflagsbits->iopl$inline rflags)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm 64-bit-modep-of-set-flag
-  (equal (64-bit-modep (x::set-flag flag val x86))
-         (64-bit-modep x86))
-  :hints (("Goal" :in-theory (enable x::set-flag))))
+;; (defthm set-rax-of-if-arg1
+;;   (equal (set-rax (if test val1 val2) x86)
+;;          (if test (set-rax val1 x86) (set-rax val2 x86))))
+
+(defthm unsigned-byte-p-1-of-rflagsbits->cf$inline (unsigned-byte-p 1 (x86isa::rflagsbits->cf$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->res1$inline (unsigned-byte-p 1 (x86isa::rflagsbits->res1$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->pf$inline (unsigned-byte-p 1 (x86isa::rflagsbits->pf$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->ID$inline (unsigned-byte-p 1 (x86isa::rflagsbits->ID$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->VIP$inline (unsigned-byte-p 1 (x86isa::rflagsbits->VIP$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->VIF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->VIF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->AC$inline (unsigned-byte-p 1 (x86isa::rflagsbits->AC$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->VM$inline (unsigned-byte-p 1 (x86isa::rflagsbits->VM$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RES4$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES4$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->NT$inline (unsigned-byte-p 1 (x86isa::rflagsbits->NT$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->OF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->OF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->DF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->DF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->INTF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->INTF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->TF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->TF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->SF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->SF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->ZF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->ZF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RES3$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES3$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->AF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->AF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RES2$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES2$inline rflags)))
+(defthm unsigned-byte-p-2-of-rflagsbits->iopl$inline (unsigned-byte-p 2 (x86isa::rflagsbits->iopl$inline rflags)))
+
+;apparently the AC flag affects alignment checking
+;todo: avoid get-flag here
+(defthm alignment-checking-enabled-p-of-xw-irrel
+  (implies (and (not (member-equal fld '(:ctr :seg-visible)))
+                (not (and (equal fld :rflags)
+                          (not (equal (x::get-flag :ac x86)
+                                      (x86isa::rflagsbits->ac val))))))
+           (equal (alignment-checking-enabled-p (xw fld index val x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :in-theory (enable alignment-checking-enabled-p
+                                     x86isa::segment-selectorbits->rpl
+                                     x86isa::rflags
+                                     x86isa::rflagsbits->ac
+                                     x86isa::rflagsbits-fix
+                                     x::get-flag))))
 
 (defthm alignment-checking-enabled-p-of-set-flag
   (implies (and (member-equal flag x::*flags*) ;drop?
@@ -2209,9 +1834,11 @@
                                      x86isa::!rflagsBits->id
                                      segment-selectorbits->rpl
                                      cr0bits->am
-                                     2bits-fix))))
+                                     2bits-fix
+                                     acl2::getbit-of-logand))))
 
 ;; goes to set-flag instead of exposing details of the flags
+;; todo: avoid IFs on states here
 (defthm write-user-rflags-rewrite
   (equal (write-user-rflags user-flags-vector undefined-mask x86)
          (b* ((user-flags-vector (n32 user-flags-vector))
@@ -2243,30 +1870,3 @@
                      (x::set-flag :of (rflagsbits->of user-flags-vector) x86))))
            x86))
   :hints (("Goal" :in-theory (enable x::set-flag))))
-
-(defthm program-at-of-set-flag
-  (implies (app-view x86)
-           (equal (program-at prog-addr x86isa::bytes (x::set-flag flag val x86))
-                  (program-at prog-addr x86isa::bytes x86)))
-  :hints (("Goal" :in-theory (enable x::set-flag program-at))))
-
-;apparently the AC flag affects alignment checking
-(defthm alignment-checking-enabled-p-of-xw-irrel
-  (implies (and (not (member-equal fld '(:ctr :seg-visible)))
-                (not (and (equal fld :rflags)
-                          (not (equal (x::get-flag :ac x86)
-                                      (x86isa::rflagsbits->ac val))))))
-           (equal (alignment-checking-enabled-p (xw fld index val x86))
-                  (alignment-checking-enabled-p x86)))
-  :hints (("Goal" :in-theory (enable alignment-checking-enabled-p
-                                     x86isa::segment-selectorbits->rpl
-                                     x86isa::rflags
-                                     x86isa::rflagsbits->ac
-                                     x86isa::rflagsbits-fix
-                                     x::get-flag))))
-
-(defthm x::segment-expand-down-bit-of-set-flag
-  (equal (x::segment-expand-down-bit seg-reg (x::set-flag flg val x86))
-         (x::segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (x::set-flag)
-                                  ()))))

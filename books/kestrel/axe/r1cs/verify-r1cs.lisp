@@ -1,6 +1,6 @@
 ; A tool to verify an R1CS
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,8 +31,11 @@
                        rule-lists ;todo: improve by building some in and allowing :extra-rules and :remove-rules? ;todo: what if we give these but no :rewrite tactic
                        global-rules ;; rules to be added to every rule-list
                        use
+                       var-ordering
                        interpreted-function-alist
                        no-splitp ; whether to prevent splitting into cases (note that we change the default here)
+                       print-as-clausesp
+                       no-print-fns
                        monitor
                        print)
   (declare (xargs :guard t))
@@ -56,8 +59,11 @@
       :rule-lists ,rule-lists     ;todo: use a default rule-list
       :global-rules ,global-rules ;todo: add some default global-rules
       :use ,use
+      :var-ordering ,var-ordering
       :interpreted-function-alist ,interpreted-function-alist ;todo
       :no-splitp ,no-splitp
+      :print-as-clausesp ,print-as-clausesp
+      :no-print-fns ,no-print-fns
       :monitor ,monitor
       :print ,print)))
 
@@ -73,22 +79,16 @@
                                 (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules? ;todo: what if we give these but no :rewrite tactic
                                 (global-rules 'nil) ;; rules to be added to every rule-list
                                 (use 'nil) ; :use hints
+                                (var-ordering 'nil)
                                 (interpreted-function-alist 'nil)
                                 (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
+                                (print-as-clausesp 'nil)
+                                (no-print-fns ''(fe-listp)) ; fe-listp terms can be huge
                                 (monitor 'nil)
                                 (print ':brief))
-  (verify-r1cs-fn lifted-r1cs
-                  spec-term
-                  prime
-                  bit-inputs
-                  tactic
-                  rule-lists
-                  global-rules
-                  use
-                  interpreted-function-alist
-                  no-splitp
-                  monitor
-                  print)
+  (verify-r1cs-fn lifted-r1cs spec-term prime
+                  bit-inputs tactic rule-lists global-rules use var-ordering interpreted-function-alist
+                  no-splitp print-as-clausesp no-print-fns monitor print)
   :parents (r1cs-verification-with-axe)
   :short "A tool to verify an R1CS"
   :description "See @(tsee r1cs-verification-with-axe)."
@@ -100,8 +100,11 @@
          (rule-lists "A sequence of Axe rule sets, each of which is a list of rule names and/or calls of 0-ary functions that return lists of rule names.  These are applied one after the other.")
          (global-rules "Rules to add to every rule-list in the sequence")
          (use "Axe :use hints for the proof (satisfies axe-use-hintp)")
+         (var-ordering "Ordering on the vars, to restrict substitutions that express earlier vars in terms of later vars.  Not all vars need to be mentioned.")
          (interpreted-function-alist "An interpreted-function-alist to evaluate ground terms") ;todo: document
          (no-splitp "Whether to split into cases") ;todo: switch it to :splitp? or :allow-splitting?  why is splitting not a tactic?!
+         (print-as-clausesp "Whether to print proof goals as clauses (disjunctions to be proved), rather than conjunctions of negated literals (to be proved contradictory)")
+         (no-print-fns "Functions to skip over when printing the current case.")
          (monitor "Rules to monitor during rewriting")
          (print "Axe print argument") ;todo: document
          ))

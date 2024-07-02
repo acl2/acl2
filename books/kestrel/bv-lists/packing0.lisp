@@ -27,12 +27,12 @@
 (defthmd bits-to-byte-becomes-packbv
   (equal (bits-to-byte bits)
          (packbv 8 1 bits))
-  :hints (("Goal" :in-theory (enable bits-to-byte packbv))))
+  :hints (("Goal" :in-theory (enable bits-to-byte packbv slice-becomes-getbit))))
 
 (defthmd packbv-becomes-bits-to-byte
   (equal (packbv 8 1 bits)
          (bits-to-byte bits))
-  :hints (("Goal" :in-theory (enable bits-to-byte packbv))))
+  :hints (("Goal" :in-theory (enable bits-to-byte packbv slice-becomes-getbit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

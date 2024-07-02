@@ -43,6 +43,7 @@
 
 (include-book "utilities")
 (include-book "basic-structs")
+
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (std::make-define-config
@@ -53,7 +54,7 @@
 
 (defsection structures
   :parents (utils)
-  :short "<b>@('x86')-specific bit structures</b>"
+  :short "<b>@('x86')-specific bit structures</b>."
 
   :long "<p>We define some bitstructures using @(see fty::defbitstruct) to
   describe the fields of registers and x86 data structures.</p>" )
@@ -71,7 +72,7 @@
 
 (defsection legacy-prefixes-layout-structure
 
-  :short "Functions to collect legacy prefix bytes from an x86 instruction"
+  :short "Functions to collect legacy prefix bytes from an x86 instruction."
 
   :long "<p>The field @('num') of @('prefixes') not only includes the number of
   legacy prefixes present in an instruction, but also the number of REX bytes,
@@ -97,7 +98,7 @@
 (defsection vex-prefixes-layout-structures
 
   :short "Functions to decode and collect VEX prefix bytes from an x86
-  instruction"
+  instruction."
 
   (defbitstruct vex-prefixes
     ((byte0  8bits "Can either be #xC4 or #xC5")
@@ -113,7 +114,7 @@
 
   (define vex-prefixes-byte0-p ((vex-prefixes vex-prefixes-p))
     :short "Returns @('t') if byte0 of the @('vex-prefixes') structure is
-    either @('*vex2-byte0*') or @('*vex3-byte0*'); returns @('nil') otherwise"
+    either @('*vex2-byte0*') or @('*vex3-byte0*'); returns @('nil') otherwise."
     :returns (ok booleanp)
     (let ((byte0 (vex-prefixes->byte0 vex-prefixes)))
       (or (equal byte0 #.*vex2-byte0*) (equal byte0 #.*vex3-byte0*))))
@@ -123,10 +124,11 @@
   ;; maintain compatibility with existing programs the VEX 2nd byte,
   ;; bits [7:6] must be 11b."
 
-  ;; So, in 32-bit mode, *vex2-byte1-layout* must have r and MSB of
-  ;; vvvv set to 1, and *vex3-byte1-layout* must have r and x set to 1
+  ;; So, in 32-bit mode, vex2-byte1 must have r and MSB of
+  ;; vvvv set to 1, and vex3-byte1 must have r and x set to 1
   ;; if VEX is to be used instead of LES/LDS.
 
+  ;; From Intel manual (Dec 2024) Vol 2 Sec 2.3.5.6:
   ;; "If an instruction does not use VEX.vvvv then it should be set to
   ;; 1111b otherwise instruction will #UD.  In 64-bit mode all 4 bits
   ;; may be used. See Table 2-8 for the encoding of the XMM or YMM
@@ -138,7 +140,7 @@
   ;; 32- and 16-bit modes.
 
   ;; Source for VEX layout constants:
-  ;; Intel Vol. 2 (May 2018), Figure 2-9 (VEX bit fields)
+  ;; Intel Vol. 2 (Dec 2023), Figure 2-9 (VEX bit fields)
 
   ;; Note that the 2-byte VEX implies a leading 0F opcode byte, and
   ;; the 3-byte VEX implies leading 0F, 0F 38, or 0F 3A bytes.
@@ -147,19 +149,19 @@
     ((pp 2bits
          "Opcode extension providing equivalent functionality of a SIMD
           prefix; <br/>
-         @('#b00 - None; #b01 - #x66; #b10 - #xF3; #b11 - #xF2')")
+          @('#b00 - None; #b01 - #x66; #b10 - #xF3; #b11 - #xF2')")
      (l  bitp
          "Vector Length; <br/>
           @('0 - scalar or 128-bit vector; 1 - 256-bit vector')")
      (vvvv 4bits
            "A register specifier (in 1's complement form) or @('1111') if
-           unused.")
+            unused.")
      (r    bitp
            "@('REX.R') in 1's complement (inverted) form;<br/>
-      @('1: Same as REX.R=0 (must be 1 in 32-bit mode);')<br/>
-      @('0: Same as REX.R=1 (64-bit mode only)').<br/>
-      In protected and compatibility modes, the bit must be set to @('1'),
-      otherwise the instruction is LES or LDS."))
+            @('1: Same as REX.R=0 (must be 1 in 32-bit mode);')<br/>
+            @('0: Same as REX.R=1 (64-bit mode only)').<br/>
+            In protected and compatibility modes, the bit must be set to @('1'),
+            otherwise the instruction is LES or LDS."))
     :msb-first nil
     :inline t)
 
@@ -184,8 +186,8 @@
         "REX.R in 1's complement (inverted) form <br/>
          @('1 - Same as REX.R=0') (must be 1 in 32-bit mode) <br/>
          @('0 - Same as REX.R=1') (64-bit mode only) <br/>
-          In protected and compatibility modes the bit must be set to @('1')
-          otherwise the instruction is LES or LDS."))
+         In protected and compatibility modes the bit must be set to @('1')
+         otherwise the instruction is LES or LDS."))
     :xvar vex3byte1
     :msb-first nil
     :inline t)
@@ -194,23 +196,23 @@
     ((pp 2bits
          "Opcode extension providing equivalent functionality of a SIMD
           prefix<br />
-           @('#b00: None') <br />
-           @('#b01: #x66') <br />
-           @('#b10: #xF3') <br />
-           @('#b11: #xF2')")
+          @('#b00: None') <br />
+          @('#b01: #x66') <br />
+          @('#b10: #xF3') <br />
+          @('#b11: #xF2')")
 
      (l bitp
         "Vector Length <br />
-          @('0: scalar or 128-bit vector') <br />
-          @('1: 256-bit vector')")
+         @('0: scalar or 128-bit vector') <br />
+         @('1: 256-bit vector')")
 
      (vvvv 4bits
            "A register specifier (in 1's complement form) or @('1111') if
-             unused.")
+            unused.")
 
      (w bitp
         "Opcode specific (use like REX.W, or used for opcode extension, or
-          ignored, depending on the opcode byte" ))
+         ignored, depending on the opcode byte." ))
     :msb-first nil
     :inline t)
 
@@ -223,7 +225,7 @@
     :returns (ok booleanp)
     :short "Returns @('t') if the @('vex-prefixes'), irrespective of whether
     they are two- or three-byte form, indicate the map that begins with the
-    escape bytes @('bytes')"
+    escape bytes @('bytes')."
     (b* ((byte0 (vex-prefixes->byte0 vex-prefixes))
          (byte1 (vex-prefixes->byte1 vex-prefixes)))
       (case bytes
@@ -242,7 +244,7 @@
 
   (define vex->vvvv ((vex-prefixes vex-prefixes-p))
     :short "Get the @('VVVV') field of @('vex-prefixes'); cognizant of the two-
-    or three-byte VEX prefixes form"
+    or three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (vvvv (unsigned-byte-p 4 vvvv)
                    :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -256,7 +258,7 @@
 
   (define vex->l ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('L') field of @('vex-prefixes'); cognizant of the two- or
-    three-byte VEX prefixes form"
+    three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (l (unsigned-byte-p 1 l)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -270,7 +272,7 @@
 
   (define vex->pp ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('PP') field of @('vex-prefixes'); cognizant of the two- or
-    three-byte VEX prefixes form"
+    three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (pp (unsigned-byte-p 2 pp)
                  :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -282,9 +284,23 @@
        (vex3-byte2->pp (vex-prefixes->byte2 vex-prefixes)))
       (otherwise -1)))
 
+  (define vex->r ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
+    :short "Get the @('R') field of @('vex-prefixes'); cognizant of the two- or
+    three-byte VEX prefixes form."
+    :guard (vex-prefixes-byte0-p vex-prefixes)
+    :returns (r (unsigned-byte-p 1 r)
+                :hyp (vex-prefixes-byte0-p vex-prefixes)
+                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+    (case (vex-prefixes->byte0 vex-prefixes)
+      (#.*vex2-byte0*
+       (vex2-byte1->r (vex-prefixes->byte1 vex-prefixes)))
+      (#.*vex3-byte0*
+       (vex3-byte1->r (vex-prefixes->byte1 vex-prefixes)))
+      (otherwise -1)))
+
   (define vex->w ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('W') field of @('vex-prefixes'); cognizant of the two- or
-    three-byte VEX prefixes form"
+    three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (w (unsigned-byte-p 1 w)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -304,12 +320,44 @@
 
     (defret if-not-vex3-byte0-then-vex-w=0
       (implies (not (equal (vex-prefixes->byte0 vex-prefixes) #.*vex3-byte0*))
-               (equal (vex->w vex-prefixes) 0)))))
+               (equal (vex->w vex-prefixes) 0))))
+
+  ;; Some convenient accessor functions for those fields of the VEX prefixes
+  ;; that only apply to the three-byte forms, but that can be extended to
+  ;; the two-byte forms:
+
+  (define vex->x ((vex-prefixes vex-prefixes-p))
+    :short "Get the @('X') field of @('vex-prefixes') for the three-byte form,
+            or 1 for the two-byte form."
+    :long "<p>Although the two-byte form has no @('X') bit,
+           as far as the VEX encoding of the REX byte is concerned,
+           the two-byte form can be regarded as encoding the value 0
+           for the @('X') bit of the REX byte.
+           Since the REX.X encoding in VEX is negated,
+           this function returns 1 for the two-byte form.</p>
+           <p>See Intel manual Volume 2 Figure 2-9 of Dec 2023.</p> "
+    (case (vex-prefixes->byte0 vex-prefixes)
+      (#.*vex3-byte0* (vex3-byte1->x (vex-prefixes->byte1 vex-prefixes)))
+      (otherwise 1)))
+
+  (define vex->b ((vex-prefixes vex-prefixes-p))
+    :short "Get the @('B') field of @('vex-prefixes') for the three-byte form,
+            or 1 for the two-byte form."
+    :long "<p>Although the two-byte form has no @('B') bit,
+           as far as the VEX encoding of the REX byte is concerned,
+           the two-byte form can be regarded as encoding the value 0
+           for the @('B') bit of the REX byte.
+           Since the REX.B encoding in VEX is negated,
+           this function returns 1 for the two-byte form.</p>
+           <p>See Intel manual Volume 2 Figure 2-9 of Dec 2023.</p> "
+    (case (vex-prefixes->byte0 vex-prefixes)
+      (#.*vex3-byte0* (vex3-byte1->b (vex-prefixes->byte1 vex-prefixes)))
+      (otherwise 1))))
 
 (defsection evex-prefixes-layout-structures
 
   :short "Functions to decode and collect EVEX prefix bytes from an x86
-  instruction"
+  instruction."
 
   ;; Sources: - Intel Vol. 2, Table 2-30
   ;;          - Sandpile, under "byte encodings" section:
@@ -372,43 +420,43 @@
   ;; functions' guard proofs simpler:
 
   (define evex->aaa ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('aaa') field (embedded opmask) of @('evex-prefixes')"
+    :short "Get the @('aaa') field (embedded opmask) of @('evex-prefixes')."
     :returns (aaa (unsigned-byte-p 3 aaa) :hyp :guard)
     (evex-byte3->aaa (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->z ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('z') field (embedded opmask) of @('evex-prefixes')"
+    :short "Get the @('z') field (embedded opmask) of @('evex-prefixes')."
     :returns (z (unsigned-byte-p 1 z) :hyp :guard)
     (evex-byte3->z (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->vvvv ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('VVVV') field of @('evex-prefixes')"
+    :short "Get the @('VVVV') field of @('evex-prefixes')."
     :returns (vvvv (unsigned-byte-p 4 vvvv) :hyp :guard)
     (evex-byte2->vvvv (evex-prefixes->byte2 evex-prefixes)))
 
   (define evex->v-prime ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('v-prime') field of @('evex-prefixes')"
+    :short "Get the @('v-prime') field of @('evex-prefixes')."
     :returns (v-prime (unsigned-byte-p 1 v-prime) :hyp :guard)
     (evex-byte3->v-prime (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->vl/rc ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('vl/rc') field of @('evex-prefixes')"
+    :short "Get the @('vl/rc') field of @('evex-prefixes')."
     :returns (vl/rc (unsigned-byte-p 2 vl/rc) :hyp :guard)
     (evex-byte3->vl/rc (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->pp ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('PP') field of @('evex-prefixes')"
+    :short "Get the @('PP') field of @('evex-prefixes')."
     :returns (pp (unsigned-byte-p 2 pp) :hyp :guard)
     (evex-byte2->pp (evex-prefixes->byte2 evex-prefixes)))
 
   (define evex->w ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('W') field of @('evex-prefixes')"
+    :short "Get the @('W') field of @('evex-prefixes')."
     :returns (w (unsigned-byte-p 1 w) :hyp :guard)
     (evex-byte2->w (evex-prefixes->byte2 evex-prefixes))))
 
 (defsection ModR/M-structures
   :parents (ModR/M-decoding structures)
-  :short "Bitstruct definitions to store a ModR/M byte and its fields"
+  :short "Bitstruct definitions to store a ModR/M byte and its fields."
 
   (local (xdoc::set-default-parents ModR/M-structures))
 
@@ -437,7 +485,7 @@
 (defsection SIB-structures
 
   :parents (SIB-decoding structures)
-  :short "Bitstruct definitions to store a SIB byte and its fields"
+  :short "Bitstruct definitions to store a SIB byte and its fields."
 
   (defbitstruct sib
     ((base  3bits)

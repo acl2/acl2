@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -455,6 +455,8 @@
 #-acl2-devel
 (encapsulate
   ()
+  (verify-termination-boot-strap stobj-print-name)
+  (verify-termination-boot-strap eviscerate-do$-alist)
   (local (defthm nfix-list-preserves-consp
            (implies (consp x)
                     (consp (nfix-list x)))))
@@ -523,6 +525,10 @@
  (defwarrant nfix-list)
  (defwarrant lex-fix)
  (defwarrant lexp)
+ (defwarrant stobj-print-name)
+ (defwarrant eviscerate-do$-alist)
+ (defwarrant loop$-default-values1)
+ (defwarrant loop$-default-values)
  (defwarrant do$)
 
  )
@@ -772,6 +778,15 @@
                     ppr
                     ppr1
                     ppr2))
+
+(defconst *df-pi*
+
+; This form would naturally be in float-a.lisp or float-b.lisp.  However, an
+; attempt to put it into float-b.lisp results in an erroneous attempt to
+; evaluate (constrained-df-pi).  So we punt and simply put this definition
+; here.
+
+  (from-df (df-pi)))
 
 ; The following two are necessary because after the defun-inline in
 ; basis-a.lisp for each of +f!-fn2 and +f!-fn3, the second pass of axioms.lisp

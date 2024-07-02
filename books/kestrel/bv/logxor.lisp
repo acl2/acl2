@@ -87,7 +87,7 @@
 (defthm logxor-commutative-2
   (equal (logxor j i k)
          (logxor i j k))
-  :hints (("Goal" :use ((:instance logxor-associative)
+  :hints (("Goal" :use (logxor-associative
                         (:instance logxor-associative (i j) (j i)))
            :in-theory (disable logxor-associative))))
 

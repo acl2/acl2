@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +94,7 @@
      :variable-multi (b* ((declared (set::mergesort stmt.names))
                           (shadowed (set::intersect declared
                                                     (identifier-set-fix vars))))
-                       (if (set::empty shadowed)
+                       (if (set::emptyp shadowed)
                            (set::union declared (identifier-set-fix vars))
                          (reserrf (list :shadowed-vars shadowed))))
      :assign-single (identifier-set-fix vars)
@@ -179,7 +179,8 @@
          (outputs (fundef->outputs fundef))
          (declared (set::mergesort (append inputs outputs)))
          (shadowed (set::intersect declared (identifier-set-fix vars)))
-         ((unless (set::empty shadowed)) (reserrf (list :shadowed-vars shadowed)))
+         ((unless (set::emptyp shadowed))
+          (reserrf (list :shadowed-vars shadowed)))
          (vars (set::union (identifier-set-fix vars) declared)))
       (check-shadow-block (fundef->body fundef) vars))
     :measure (fundef-count fundef))

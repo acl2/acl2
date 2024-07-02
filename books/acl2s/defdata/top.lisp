@@ -90,7 +90,7 @@ then you might have to prefix the basic typenames i.e. acl2s::pos.</p>
 @({
   (defdata cache-miss-ratio (range rational (0 < _ < 1)))
   
-  (defdata big-unsigned-num (range integer ((expt 2 32) < _)))
+  (defdata big-unsigned-num (range integer ((expt 2 64) < _)))
 })
 <p> 
 Macros are allowed and the meaning of the defdata body
@@ -134,7 +134,7 @@ is the given by its macroexpansion.
 
 <h4>Record (Struct) types</h4>
 @({
-  (defdata reg-num (range integer (0 <= _ < 32)))
+  (defdata reg-num (range integer (0 <= _ < 64)))
   (defdata immediate-range (range integer (0 <= _ < (expt 2 16))))
   
   (defdata inst (record (op  . op-code)
@@ -146,7 +146,7 @@ is the given by its macroexpansion.
 
 <h4>Map (unique and sorted entries) types</h4>
 @({
-  (defdata p-addr (range integer (0 <= _ < (expt 2 32))))
+  (defdata p-addr (range integer (0 <= _ < (expt 2 64))))
   (defdata imem (map p-addr inst))
 })
 

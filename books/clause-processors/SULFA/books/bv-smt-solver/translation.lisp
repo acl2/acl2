@@ -149,19 +149,19 @@
 (defun chars-to-num (char-list)
   (chars-to-num1 char-list 0))
 
-(defun digit-char-listp (x)
+(defun digit-char-list*p (x)
   (cond
    ((endp x)
     t)
    ((digit-char-p (car x))
-    (digit-char-listp (cdr x)))
+    (digit-char-list*p (cdr x)))
    (t
     nil)))
 
 (defun smt-bv-constp (expr)
   (and (symbolp expr)
        (< 0 (nfix (string< "bv" (string expr))))
-       (digit-char-listp (cddr (coerce (string expr) 'list)))))
+       (digit-char-list*p (cddr (coerce (string expr) 'list)))))
 
 (mutual-recursion
 (defun smt-to-acl2-expr-list (expr-list extra-fn-list var-alist acc-sizes acc)

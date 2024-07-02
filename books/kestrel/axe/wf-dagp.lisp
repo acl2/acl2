@@ -65,33 +65,35 @@
 
 (defthm wf-dagp-forward-to-<=-of-len
   (implies (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-           (<= dag-len 2147483646))
+           (<= dag-len *max-1d-array-length*))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
 (defthmd <-of-len-when-wf-dagp
   (implies (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-           (< dag-len 2147483647))
+           (<= dag-len *max-1d-array-length*))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
+;; drop if we switch to using empty-dag-array or empty-dag-array-with-name instead of make-empty-array.
 (defthm wf-dagp-of-make-empty-array
   (implies (and (symbolp dag-array-name)
                 (symbolp dag-parent-array-name)
                 (posp size)
-                (<= size 2147483646))
+                (<= size *max-1d-array-length*))
            (wf-dagp dag-array-name
                     (make-empty-array dag-array-name size)
                     0
                     dag-parent-array-name
                     (make-empty-array dag-parent-array-name size)
-                    nil nil))
+                    nil
+                    (empty-dag-variable-alist)))
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
 ;drop?
 (defthm wf-dagp-of-make-into-array-etc
   (implies (and (pseudo-dagp dag)
-                (< (LEN DAG) 2147483647))
+                (<= (LEN DAG) *max-1d-array-length*))
            (WF-DAGP 'DAG-ARRAY
                     (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
                     (LEN DAG)

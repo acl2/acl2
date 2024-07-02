@@ -847,7 +847,7 @@
 	   (equal (power x k (z* n))
 	          (mod (expt x k) n))))
 
-;; Euler's theorem follows from order-titient, power-z*, and power-order:
+;; Euler's theorem follows from order-totient, power-z*, and power-order:
 
 (defthmd euler-totient
   (implies (and (posp n) (> n 1)

@@ -1,7 +1,7 @@
 ; Supporting material for x86 code proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,12 +23,16 @@
 (include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-weaken
 (include-book "kestrel/bv/defs-arith" :dir :system) ;for bvplus
 (include-book "kestrel/bv/slice-def" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;for bvashr
+(include-book "kestrel/bv/bvashr-def" :dir :system)
+(include-book "kestrel/bv/defs" :dir :system) ;for sbvdiv
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
 (local (include-book "kestrel/bv/rules10" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, to deal with truncate
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -36,6 +40,18 @@
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/bv/getbit2" :dir :system))
+
+(defthm unsigned-byte-p-8-of-car-when-byte-listp
+  (implies (byte-listp bytes)
+           (equal (unsigned-byte-p 8 (car bytes))
+                  (consp bytes)))
+  :hints (("Goal" :in-theory (enable byte-listp))))
+
+(defthm integerp-of-car-when-byte-listp
+  (implies (byte-listp bytes)
+           (equal (integerp (car bytes))
+                  (consp bytes)))
+  :hints (("Goal" :in-theory (enable byte-listp))))
 
 (in-theory (disable GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)) ;for speed
 
@@ -243,6 +259,12 @@
              (XR :ms nil state1)
            (XR :ms nil state2))))
 
+(defthm x86isa::xr-of-if-special-case-for-fault
+  (equal (xr :fault nil (if test state1 state2))
+         (if test
+             (xr :fault nil state1)
+           (xr :fault nil state2))))
+
 (defthm canonical-address-p-of-if
   (equal (canonical-address-p (if test a1 a2))
          (if test
@@ -304,20 +326,10 @@
      x86isa::*VIP*
      x86isa::*ID*))))
 
-(in-theory (disable logcount))
-(in-theory (disable x86isa::WRITE-USER-RFLAGS-AND-XW))
-(in-theory (disable BYTE-LISTP))
-(in-theory (disable x86isa::COMBINE-BYTES))
-
-(defthm canonical-address-p-between
-  (implies (and (canonical-address-p low)
-                (canonical-address-p high)
-                (<= low ad)
-                (<= ad high))
-           (equal (canonical-address-p ad)
-                  (integerp ad)))
-  :hints (("Goal" :in-theory (enable canonical-address-p SIGNED-BYTE-P))))
-
+(in-theory (disable logcount
+                    x86isa::write-user-rflags-and-xw
+                    byte-listp
+                    x86isa::combine-bytes))
 
 (defun nth-of-create-canonical-address-list-induct (n count addr)
   (if (zp count)
@@ -332,11 +344,7 @@
            (equal (nth n (x86isa::create-canonical-address-list count addr))
                   (+ n addr)))
   :hints (("Goal" :induct (nth-of-create-canonical-address-list-induct n count addr)
-           :in-theory (e/d (x86isa::create-canonical-address-list
-                            ;nth ;list::nth-of-cons
-                            )
-                           (;acl2::nth-of-cdr
-                            )))))
+           :in-theory (enable x86isa::create-canonical-address-list canonical-address-p))))
 
 ;i wonder if not having this but instead considering opening up x86isa::canonical-address-listp could be slowing down acl2.
 (defthm canonical-address-listp-of-cons
@@ -346,20 +354,6 @@
 
 (defthm canonical-address-listp-of-nil
   (x86isa::canonical-address-listp nil))
-
-(defthm fix-when-integerp
-  (implies (integerp x)
-           (equal (fix x)
-                  x)))
-
-(defthm open-ash-positive-constants
-  (implies (and (syntaxp (quotep i))
-                (syntaxp (quotep c))
-                (natp c)
-                (integerp i))
-           (equal (ash i c)
-                  (* i (expt 2 c))))
-  :hints (("Goal" :in-theory (enable ash))))
 
 (defthm integerp-of-xr-rgf
   (implies (x86p x86)
@@ -403,130 +397,6 @@
            (integerp (memi i x86)))
   :hints (("Goal" :in-theory (enable memi))))
 
-(defthm unsigned-byte-p-of-combine-bytes-lemma
-  (implies (byte-listp bytes)
-           (unsigned-byte-p (* 8 (len bytes))
-                            (combine-bytes bytes)))
-  :hints (("Goal" :in-theory (enable combine-bytes byte-listp))))
-
-;move
-(defthm bvchop-of-+-of-*-of-256
-  (Implies (and (integerp x)
-                (integerp y))
-           (equal (acl2::BVCHOP 8 (+ x (* 256 y)))
-                  (acl2::BVCHOP 8 x))))
-
-;; ;replace the other one!
-;; (encapsulate ()
-;;   (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-;;   (defthm slice-of-times-of-expt-gen
-;;     (implies (and            ;(<= j n) ;drop?
-;;               (integerp x)   ;drop?
-;;               (natp n)
-;;               (natp j)
-;;               (natp m))
-;;              (equal (slice m n (* (expt 2 j) x))
-;;                     (slice (- m j) (- n j) x)))
-;;     :hints (("Goal" :in-theory (e/d (slice logtail nfix) ())))))
-
-;move
-;; ;avoids having to give a highsize
-;; (defthm slice-of-logapp
-;;   (implies (and (natp lowsize)
-;;                 (natp low)
-;;                 (natp high)
-;;                 (integerp highval))
-;;            (equal (slice high low (logapp lowsize lowval highval))
-;;                   (slice high low (bvcat (+ 1 high (- lowsize)) highval lowsize lowval))))
-;;   :otf-flg t
-;;   :hints (("Goal" :use (:instance ACL2::BVCAT-RECOMBINE
-;;                                   (acl2::lowsize lowsize)
-;;                                   (acl2::lowval lowval)
-;;                                   (acl2::highval highval)
-;;                                   (acl2::highsize (+ 1 high (- lowsize)))))))
-
-
-;;   :hints (("Goal" :in-theory (e/d (;bvcat logapp
-;;                                          ;acl2::slice-of-sum-cases
-;;                                          )
-;;                                   (acl2::slice-of-*)))))
-
-;move
-(defthm slice-of-logapp-case-1
-  (implies (and (natp high)
-                (natp low)
-                (natp lowsize)
-                (<= lowsize low) ; this case
-                (unsigned-byte-p lowsize lowval)
-                (integerp highval))
-           (equal (acl2::slice high low (logapp lowsize lowval highval))
-                  (acl2::slice (+ (- lowsize) high) (+ (- lowsize) low) highval)))
-  :hints (("Goal" :in-theory (e/d (acl2::slice logapp) (acl2::logtail-of-plus
-                                                  acl2::unsigned-byte-p-of-logapp-large-case))
-           :use (:instance acl2::unsigned-byte-p-of-logapp-large-case
-                           (size1 low)
-                           (size lowsize)
-                           (i lowval)
-                           (j (acl2::BVCHOP (+ LOW (- LOWSIZE)) HIGHVAL))))))
-
-(defthm slice-of-combine-bytes
-  (implies (and (natp n)
-                (< n (len bytes))
-                (byte-listp bytes) ;too bad
-                )
-           (equal (acl2::slice (+ 7 (* 8 n)) (* 8 n) (x86isa::combine-bytes bytes))
-                  (acl2::bvchop 8 (nth n bytes))))
-  :hints (("Goal" :in-theory (e/d (x86isa::combine-bytes
-                                   ACL2::BVCAT-RECOMBINE
-                                   ;;logapp
-                                   ;;ACL2::SLICE-OF-SUM-CASES
-                                   (:i nth)
-                                   BYTE-LISTP)
-                                  (;acl2::nth-of-cdr
-                                   )))))
-
-(defthmd mod-becomes-bvchop-8
-  (implies (integerp x)
-           (equal (mod x 256)
-                  (acl2::bvchop 8 x)))
-  :hints (("Goal" :in-theory (enable acl2::bvchop ifix))))
-
-(defthm unsigned-byte-p-8-of-car-when-byte-listp
-  (implies (byte-listp bytes)
-           (equal (unsigned-byte-p 8 (car bytes))
-                  (consp bytes)))
-  :hints (("Goal" :in-theory (enable byte-listp))))
-
-(defthm integerp-of-car-when-byte-listp
-  (implies (byte-listp bytes)
-           (equal (integerp (car bytes))
-                  (consp bytes)))
-  :hints (("Goal" :in-theory (enable byte-listp))))
-
-;move
-(defthm bvchop-upper-bound-strong
-  (implies (natp n)
-           (<= (acl2::bvchop n x) (+ -1 (expt 2 n))))
-  :rule-classes (:rewrite)
-  :hints (("Goal" :in-theory (enable acl2::bvchop))))
-
-(defthm bvplus-of-*-of-256
-  (implies (and (natp size)
-                (<= 8 size)
-                (unsigned-byte-p 8 byte)
-                (integerp val))
-           (equal (acl2::bvplus size byte (* 256 val))
-                  (acl2::bvcat (- size 8) val 8 byte)))
-  :hints (("Goal"
-           :use (:instance bvchop-upper-bound-strong (n (+ -8 SIZE))
-                           (x val))
-           :in-theory (e/d (acl2::bvcat acl2::bvplus
-                                        acl2::bvchop-of-sum-cases
-                                        logtail
-                                        ACL2::EXPT-OF-+)
-                           (acl2::bvchop-upper-bound
-                            bvchop-upper-bound-strong
-                            ACL2::BVCHOP-BOUND-2)))))
 
 ;; resolve a call to rb on a singleton list when we know the program
 ;; this rule seems simpler than rb-in-terms-of-nth-and-pos (which is now gone) since it has no extended bind-free hyp.
@@ -571,7 +441,7 @@
                             ash
                             ;x86isa::RB-RB-SUBSET
                             natp
-                            mod-becomes-bvchop-8
+                            acl2::mod-becomes-bvchop-8
                             ;;acl2::bvchop
                             ;;ACL2::CAR-BECOMES-NTH-OF-0
                             acl2::bvchop-of-logtail-becomes-slice
@@ -589,6 +459,15 @@
   :hints
   (("Goal"
     :in-theory (enable canonical-address-p signed-byte-p))))
+
+(defthm canonical-address-p-between
+  (implies (and (canonical-address-p low) ; low and high are free vars
+                (<= low ad)
+                (canonical-address-p high)
+                (<= ad high))
+           (equal (canonical-address-p ad)
+                  (integerp ad)))
+  :hints (("Goal" :in-theory (enable canonical-address-p SIGNED-BYTE-P))))
 
 ;; These are for showing that x plus an offset is canonical:
 
@@ -632,6 +511,55 @@
                 (integerp low-offset)
                 (integerp offset))
            (canonical-address-p (+ offset x))))
+
+(defthm canonical-address-p-between-special5
+  (implies (and (canonical-address-p text-offset)
+                (canonical-address-p (+ k2 text-offset)) ; k2 is a free var
+                (<= (+ k x) k2)
+                (natp k)
+                (natp x)
+                (natp k2))
+           ;; ex (+ 192 (+ text-offset (ash (bvchop 32 (rdi x86)) 2)))
+           (canonical-address-p (+ k text-offset x))))
+
+(defthm canonical-address-p-between-special5-alt
+  (implies (and (canonical-address-p text-offset)
+                (canonical-address-p (+ k2 text-offset)) ; k2 is a free var
+                (<= (+ k x) k2)
+                (natp k)
+                (natp x)
+                (natp k2))
+           (canonical-address-p (+ k x text-offset))))
+
+(defthm canonical-address-p-between-special6
+  (implies (and (canonical-address-p (+ k1 base))
+                (syntaxp (quotep k1))
+                (canonical-address-p (+ k2 base))
+                (syntaxp (quotep k2))
+                (< k1 k2) ; break symmetry
+                (<= k1 (+ x1 x2))
+                (<= (+ x1 x2) k2)
+                (integerp k1)
+                (integerp x1)
+                (integerp x2)
+                (integerp k2))
+           (canonical-address-p (+ x1 x2 base))))
+
+(defthm canonical-address-p-between-special7
+  (implies (and (canonical-address-p (+ k1 base)) ; k1 is a free var
+                (syntaxp (quotep k1))
+                (<= k1 (+ x1 x2))
+                (canonical-address-p (+ k2 base)) ; k2 is a free var
+                (syntaxp (quotep k2))
+                (< k1 k2) ; break symmetry (fail fast)
+                (<= (+ x1 x2) k2)
+                (integerp k1)
+                (integerp x1)
+                (integerp x2)
+                (integerp k2))
+           (canonical-address-p (+ x1 base x2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm integerp-of-xr-of-rsp
   (implies (x86p x86)
@@ -738,19 +666,6 @@
                                    acl2::bvchop-1-becomes-getbit
                                    acl2::bvchop-of-logtail-becomes-slice)))))
 
-;gen
-(defthm strengthen-upper-bound-when-top-bit-0
-  (implies (and (syntaxp (acl2::want-to-strengthen (< x 9223372036854775808)))
-                (equal (acl2::getbit 63 x) 1)
-                (integerp x))
-           (equal (< x 9223372036854775808)
-                  (<= x 0)))
-  :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::logtail)
-                                  (acl2::slice-becomes-getbit
-                                   acl2::bvchop-1-becomes-getbit
-                                   acl2::bvchop-of-logtail-becomes-slice)))))
-
-
 ;rewrite: (< (BVCHOP 64 Y) 9223372036854775808)
 ;rewrite: (<= (BVCHOP 64 Y) (BVCHOP 63 Y))
 
@@ -811,12 +726,6 @@
                   (acl2::bvchop 8 val)))
   :hints (("Goal" :in-theory (enable memi))))
 
-;; Since 0 and 1 are the only BVs less than 2
-(defthmd <-of-bvchop-and-2
-  (equal (< (ACL2::BVCHOP size x) 2)
-         (or (equal (ACL2::BVCHOP size x) 0)
-             (equal (ACL2::BVCHOP size x) 1))))
-
 ;gen
 (local
  (defthm +-of---of-bvchop-of-bvcat-same
@@ -830,329 +739,325 @@
 ;; the normal definition splits with an if!
 ;; well, this one has an if too, but it's perhaps less bad since the shift amount will often be constant
 ;;maybe improve bvashr
-(defthm SAR-SPEC-32-nice
-  (equal (SAR-SPEC-32 DST SRC INPUT-RFLAGS)
-         (B* ((DST (MBE :LOGIC (N-SIZE 32 DST)
-                        :EXEC DST))
-              (SRC (MBE :LOGIC (N-SIZE 6 SRC)
-                        :EXEC SRC))
-              (INPUT-RFLAGS
-               (MBE :LOGIC (N32 INPUT-RFLAGS)
-                    :EXEC INPUT-RFLAGS))
-              (RESULT
-               (if (<= 32 (ACL2::BVCHOP 6 SRC))
-                   (if (EQUAL 1 (ACL2::GETBIT 31 DST))
-                       (+ -1 (expt 2 32))
-                     0)
-                 (acl2::bvashr 32 dst SRC)))
-              ((MV (THE (UNSIGNED-BYTE 32)
-                        OUTPUT-RFLAGS)
-                   (THE (UNSIGNED-BYTE 32)
-                        UNDEFINED-FLAGS))
-               (CASE
-                 SRC
-                 (0 (MV INPUT-RFLAGS 0))
-                 (1
-                  (B*
-                      ((CF
-                        (MBE
-                         :LOGIC (ACL2::PART-SELECT DST
-                                                   :LOW 0
-                                                   :WIDTH 1)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 1)
-                          (LOGAND 1
-                                  (THE (UNSIGNED-BYTE 32) DST)))))
-                       (PF (GENERAL-PF-SPEC 32 RESULT))
-                       (ZF (ZF-SPEC RESULT))
-                       (SF
-                        (GENERAL-SF-SPEC 32 RESULT))
-                       (OF 0)
-                       (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC
-                         (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                            :CF CF
-                                            :PF PF
-                                            :ZF ZF
-                                            :SF SF
-                                            :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
-                           CF
-                           (!RFLAGSBITS->PF
-                            PF
-                            (!RFLAGSBITS->ZF
-                             ZF
-                             (!RFLAGSBITS->SF
-                              SF
-                              (!RFLAGSBITS->OF
-                               OF INPUT-RFLAGS))))))))
-                       (UNDEFINED-FLAGS
-                        (THE (UNSIGNED-BYTE 32)
-                             (!RFLAGSBITS->AF 1 0))))
-                    (MV OUTPUT-RFLAGS
-                        UNDEFINED-FLAGS)))
-                 (OTHERWISE
-                  (IF
-                   (<= 32 SRC)
-                   (B*
-                       ((PF (GENERAL-PF-SPEC 32 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF
-                         (GENERAL-SF-SPEC 32 RESULT))
-                        (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC
-                          (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                             :PF PF
-                                             :ZF ZF
-                                             :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->PF
-                            PF
-                            (!RFLAGSBITS->ZF
-                             ZF
-                             (!RFLAGSBITS->SF
-                              SF INPUT-RFLAGS))))))
-                        (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0
-                                                    :CF 1
-                                                    :AF 1
-                                                    :OF 1)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
-                            1
-                            (!RFLAGSBITS->AF
-                             1 (!RFLAGSBITS->OF 1 0)))))))
-                     (MV OUTPUT-RFLAGS
-                         UNDEFINED-FLAGS))
-                   (B*
-                       ((CF
-                         (MBE
-                          :LOGIC (ACL2::PART-SELECT DST
-                                                    :LOW (1- SRC)
-                                                    :WIDTH 1)
-                          :EXEC
-                          (LET*
-                           ((SHFT
-                             (THE
-                              (SIGNED-BYTE 32)
-                              (- 1
-                                 (THE (UNSIGNED-BYTE 32) SRC)))))
-                           (THE
-                            (UNSIGNED-BYTE 1)
-                            (LOGAND
-                             1
-                             (THE (UNSIGNED-BYTE 32)
-                                  (ASH (THE (UNSIGNED-BYTE 32) DST)
-                                       (THE (SIGNED-BYTE 32)
-                                            SHFT))))))))
-                        (PF (GENERAL-PF-SPEC 32 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF
-                         (GENERAL-SF-SPEC 32 RESULT))
-                        (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC
-                          (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                             :CF CF
-                                             :PF PF
-                                             :ZF ZF
-                                             :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
-                            CF
-                            (!RFLAGSBITS->PF
-                             PF
-                             (!RFLAGSBITS->ZF
-                              ZF
-                              (!RFLAGSBITS->SF
-                               SF INPUT-RFLAGS)))))))
-                        (UNDEFINED-FLAGS
-                         (MBE :LOGIC (CHANGE-RFLAGSBITS 0
-                                                        :AF 1
-                                                        :OF 1)
-                              :EXEC (!RFLAGSBITS->AF
-                                     1 (!RFLAGSBITS->OF 1 0)))))
-                     (MV OUTPUT-RFLAGS
-                         UNDEFINED-FLAGS))))))
-              (OUTPUT-RFLAGS
-               (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                    :EXEC OUTPUT-RFLAGS))
-              (UNDEFINED-FLAGS
-               (MBE :LOGIC (N32 UNDEFINED-FLAGS)
-                    :EXEC UNDEFINED-FLAGS)))
-           (MV RESULT OUTPUT-RFLAGS
-               UNDEFINED-FLAGS)))
-  :otf-flg t
-  :hints (("Goal" :in-theory (e/d (acl2::bvashr
-                                   ;;acl2::bvsx
-                                   SAR-SPEC-32 ACL2::BVSHR
-                                   ;;ACL2::LOGEXT-CASES
-                                   acl2::bvchop-of-logtail-becomes-slice
-                                   <-of-bvchop-and-2
-                                   acl2::slice-alt-def
-                                   )
-                                  ( ;ACL2::BVCAT-EQUAL-REWRITE ACL2::BVCAT-EQUAL-REWRITE-ALT
-                                   acl2::BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
-                                   )))))
-(DEFthm SAR-SPEC-64-nice
-  (equal (SAR-SPEC-64 DST SRC INPUT-RFLAGS)
-         (B*
-             ((DST (MBE :LOGIC (N-SIZE 64 DST) :EXEC DST))
-              (SRC (MBE :LOGIC (N-SIZE 6 SRC) :EXEC SRC))
-              (INPUT-RFLAGS (MBE :LOGIC (N32 INPUT-RFLAGS)
-                                 :EXEC INPUT-RFLAGS))
-              (RESULT
-               (if (<= 64 (ACL2::BVCHOP 7 SRC))
-                   (if (EQUAL 1 (ACL2::GETBIT 63 DST))
-                       (+ -1 (expt 2 64))
-                     0)
-                 (acl2::bvashr 64 dst SRC)))
-              ((MV (THE (UNSIGNED-BYTE 32) OUTPUT-RFLAGS)
-                   (THE (UNSIGNED-BYTE 32)
-                        UNDEFINED-FLAGS))
-               (CASE
-                 SRC (0 (MV INPUT-RFLAGS 0))
-                 (1
-                  (B*
-                      ((CF
-                        (MBE :LOGIC (PART-SELECT DST :LOW 0 :WIDTH 1)
-                             :EXEC
-                             (THE (UNSIGNED-BYTE 1)
-                                  (LOGAND 1 (THE (UNSIGNED-BYTE 64) DST)))))
-                       (PF (GENERAL-PF-SPEC 64 RESULT))
-                       (ZF (ZF-SPEC RESULT))
-                       (SF (GENERAL-SF-SPEC 64 RESULT))
-                       (OF 0)
-                       (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                   :CF CF
-                                                   :PF PF
-                                                   :ZF ZF
-                                                   :SF SF
-                                                   :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
-                           CF
-                           (!RFLAGSBITS->PF
-                            PF
-                            (!RFLAGSBITS->ZF
-                             ZF
-                             (!RFLAGSBITS->SF
-                              SF
-                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
-                       (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
-                                             (!RFLAGSBITS->AF 1 0))))
-                    (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-                 (OTHERWISE
-                  (IF
-                   (<= 64 SRC)
-                   (B*
-                       ((PF (GENERAL-PF-SPEC 64 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF (GENERAL-SF-SPEC 64 RESULT))
-                        (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->PF
-                            PF
-                            (!RFLAGSBITS->ZF
-                             ZF
-                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
-                        (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
-                            1
-                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))))
-                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
-                   (B*
-                       ((CF
-                         (MBE
-                          :LOGIC (PART-SELECT DST :LOW (1- SRC) :WIDTH 1)
-                          :EXEC
-                          (LET*
-                           ((SHFT (THE (SIGNED-BYTE 64)
-                                       (- 1 (THE (UNSIGNED-BYTE 64) SRC)))))
-                           (THE
-                            (UNSIGNED-BYTE 1)
-                            (LOGAND
-                             1
-                             (THE (UNSIGNED-BYTE 64)
-                                  (ASH (THE (UNSIGNED-BYTE 64) DST)
-                                       (THE (SIGNED-BYTE 64) SHFT))))))))
-                        (PF (GENERAL-PF-SPEC 64 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF (GENERAL-SF-SPEC 64 RESULT))
-                        (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :CF CF
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
-                            CF
-                            (!RFLAGSBITS->PF
-                             PF
-                             (!RFLAGSBITS->ZF
-                              ZF
-                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
-                        (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
-                          :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
-                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-              (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                  :EXEC OUTPUT-RFLAGS))
-              (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
-                                    :EXEC UNDEFINED-FLAGS)))
-           (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-  :otf-flg t
-  :hints (("Goal" :expand ()
-           :in-theory (e/d (acl2::bvashr ;acl2::bvsx
-                            SAR-SPEC-64 ACL2::BVSHR
-                                        ;;ACL2::LOGEXT-CASES
-                            acl2::bvchop-of-logtail-becomes-slice
-                            <-of-bvchop-and-2
-                            acl2::slice-alt-def
-                            )
-                           ( ;ACL2::BVCAT-EQUAL-REWRITE ACL2::BVCAT-EQUAL-REWRITE-ALT
-                            acl2::BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
-                            ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE ;loop
-                            ACL2::LOGtail-OF-LOGext ;loop
-                            )))))
-
-;move
-(defthm bitp-of-sf-spec32
-  (acl2::bitp (sf-spec32 result)))
+;; (defthm SAR-SPEC-32-nice
+;;   (equal (SAR-SPEC-32 DST SRC INPUT-RFLAGS)
+;;          (B* ((DST (MBE :LOGIC (N-SIZE 32 DST)
+;;                         :EXEC DST))
+;;               (SRC (MBE :LOGIC (N-SIZE 6 SRC)
+;;                         :EXEC SRC))
+;;               (INPUT-RFLAGS
+;;                (MBE :LOGIC (N32 INPUT-RFLAGS)
+;;                     :EXEC INPUT-RFLAGS))
+;;               (RESULT
+;;                (if (<= 32 (ACL2::BVCHOP 6 SRC))
+;;                    (if (EQUAL 1 (ACL2::GETBIT 31 DST))
+;;                        (+ -1 (expt 2 32))
+;;                      0)
+;;                  (acl2::bvashr 32 dst SRC)))
+;;               ((MV (THE (UNSIGNED-BYTE 32)
+;;                         OUTPUT-RFLAGS)
+;;                    (THE (UNSIGNED-BYTE 32)
+;;                         UNDEFINED-FLAGS))
+;;                (CASE
+;;                  SRC
+;;                  (0 (MV INPUT-RFLAGS 0))
+;;                  (1
+;;                   (B*
+;;                       ((CF
+;;                         (MBE
+;;                          :LOGIC (ACL2::PART-SELECT DST
+;;                                                    :LOW 0
+;;                                                    :WIDTH 1)
+;;                          :EXEC
+;;                          (THE
+;;                           (UNSIGNED-BYTE 1)
+;;                           (LOGAND 1
+;;                                   (THE (UNSIGNED-BYTE 32) DST)))))
+;;                        (PF (GENERAL-PF-SPEC 32 RESULT))
+;;                        (ZF (ZF-SPEC RESULT))
+;;                        (SF
+;;                         (GENERAL-SF-SPEC 32 RESULT))
+;;                        (OF 0)
+;;                        (OUTPUT-RFLAGS
+;;                         (MBE
+;;                          :LOGIC
+;;                          (CHANGE-RFLAGSBITS INPUT-RFLAGS
+;;                                             :CF CF
+;;                                             :PF PF
+;;                                             :ZF ZF
+;;                                             :SF SF
+;;                                             :OF OF)
+;;                          :EXEC
+;;                          (THE
+;;                           (UNSIGNED-BYTE 32)
+;;                           (!RFLAGSBITS->CF
+;;                            CF
+;;                            (!RFLAGSBITS->PF
+;;                             PF
+;;                             (!RFLAGSBITS->ZF
+;;                              ZF
+;;                              (!RFLAGSBITS->SF
+;;                               SF
+;;                               (!RFLAGSBITS->OF
+;;                                OF INPUT-RFLAGS))))))))
+;;                        (UNDEFINED-FLAGS
+;;                         (THE (UNSIGNED-BYTE 32)
+;;                              (!RFLAGSBITS->AF 1 0))))
+;;                     (MV OUTPUT-RFLAGS
+;;                         UNDEFINED-FLAGS)))
+;;                  (OTHERWISE
+;;                   (IF
+;;                    (<= 32 SRC)
+;;                    (B*
+;;                        ((PF (GENERAL-PF-SPEC 32 RESULT))
+;;                         (ZF (ZF-SPEC RESULT))
+;;                         (SF
+;;                          (GENERAL-SF-SPEC 32 RESULT))
+;;                         (OUTPUT-RFLAGS
+;;                          (MBE
+;;                           :LOGIC
+;;                           (CHANGE-RFLAGSBITS INPUT-RFLAGS
+;;                                              :PF PF
+;;                                              :ZF ZF
+;;                                              :SF SF)
+;;                           :EXEC
+;;                           (THE
+;;                            (UNSIGNED-BYTE 32)
+;;                            (!RFLAGSBITS->PF
+;;                             PF
+;;                             (!RFLAGSBITS->ZF
+;;                              ZF
+;;                              (!RFLAGSBITS->SF
+;;                               SF INPUT-RFLAGS))))))
+;;                         (UNDEFINED-FLAGS
+;;                          (MBE
+;;                           :LOGIC (CHANGE-RFLAGSBITS 0
+;;                                                     :CF 1
+;;                                                     :AF 1
+;;                                                     :OF 1)
+;;                           :EXEC
+;;                           (THE
+;;                            (UNSIGNED-BYTE 32)
+;;                            (!RFLAGSBITS->CF
+;;                             1
+;;                             (!RFLAGSBITS->AF
+;;                              1 (!RFLAGSBITS->OF 1 0)))))))
+;;                      (MV OUTPUT-RFLAGS
+;;                          UNDEFINED-FLAGS))
+;;                    (B*
+;;                        ((CF
+;;                          (MBE
+;;                           :LOGIC (ACL2::PART-SELECT DST
+;;                                                     :LOW (1- SRC)
+;;                                                     :WIDTH 1)
+;;                           :EXEC
+;;                           (LET*
+;;                            ((SHFT
+;;                              (THE
+;;                               (SIGNED-BYTE 32)
+;;                               (- 1
+;;                                  (THE (UNSIGNED-BYTE 32) SRC)))))
+;;                            (THE
+;;                             (UNSIGNED-BYTE 1)
+;;                             (LOGAND
+;;                              1
+;;                              (THE (UNSIGNED-BYTE 32)
+;;                                   (ASH (THE (UNSIGNED-BYTE 32) DST)
+;;                                        (THE (SIGNED-BYTE 32)
+;;                                             SHFT))))))))
+;;                         (PF (GENERAL-PF-SPEC 32 RESULT))
+;;                         (ZF (ZF-SPEC RESULT))
+;;                         (SF
+;;                          (GENERAL-SF-SPEC 32 RESULT))
+;;                         (OUTPUT-RFLAGS
+;;                          (MBE
+;;                           :LOGIC
+;;                           (CHANGE-RFLAGSBITS INPUT-RFLAGS
+;;                                              :CF CF
+;;                                              :PF PF
+;;                                              :ZF ZF
+;;                                              :SF SF)
+;;                           :EXEC
+;;                           (THE
+;;                            (UNSIGNED-BYTE 32)
+;;                            (!RFLAGSBITS->CF
+;;                             CF
+;;                             (!RFLAGSBITS->PF
+;;                              PF
+;;                              (!RFLAGSBITS->ZF
+;;                               ZF
+;;                               (!RFLAGSBITS->SF
+;;                                SF INPUT-RFLAGS)))))))
+;;                         (UNDEFINED-FLAGS
+;;                          (MBE :LOGIC (CHANGE-RFLAGSBITS 0
+;;                                                         :AF 1
+;;                                                         :OF 1)
+;;                               :EXEC (!RFLAGSBITS->AF
+;;                                      1 (!RFLAGSBITS->OF 1 0)))))
+;;                      (MV OUTPUT-RFLAGS
+;;                          UNDEFINED-FLAGS))))))
+;;               (OUTPUT-RFLAGS
+;;                (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+;;                     :EXEC OUTPUT-RFLAGS))
+;;               (UNDEFINED-FLAGS
+;;                (MBE :LOGIC (N32 UNDEFINED-FLAGS)
+;;                     :EXEC UNDEFINED-FLAGS)))
+;;            (MV RESULT OUTPUT-RFLAGS
+;;                UNDEFINED-FLAGS)))
+;;   :otf-flg t
+;;   :hints (("Goal" :in-theory (e/d (acl2::bvashr
+;;                                    ;;acl2::bvsx
+;;                                    SAR-SPEC-32 ACL2::BVSHR
+;;                                    ;;ACL2::LOGEXT-CASES
+;;                                    acl2::bvchop-of-logtail-becomes-slice
+;;                                    acl2::<-of-bvchop-and-2
+;;                                    acl2::slice-alt-def
+;;                                    )
+;;                                   ( ;ACL2::BVCAT-EQUAL-REWRITE ACL2::BVCAT-EQUAL-REWRITE-ALT
+;;                                    acl2::BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
+;;                                    )))))
+;; (DEFthm SAR-SPEC-64-nice
+;;   (equal (SAR-SPEC-64 DST SRC INPUT-RFLAGS)
+;;          (B*
+;;              ((DST (MBE :LOGIC (N-SIZE 64 DST) :EXEC DST))
+;;               (SRC (MBE :LOGIC (N-SIZE 6 SRC) :EXEC SRC))
+;;               (INPUT-RFLAGS (MBE :LOGIC (N32 INPUT-RFLAGS)
+;;                                  :EXEC INPUT-RFLAGS))
+;;               (RESULT
+;;                (if (<= 64 (ACL2::BVCHOP 7 SRC))
+;;                    (if (EQUAL 1 (ACL2::GETBIT 63 DST))
+;;                        (+ -1 (expt 2 64))
+;;                      0)
+;;                  (acl2::bvashr 64 dst SRC)))
+;;               ((MV (THE (UNSIGNED-BYTE 32) OUTPUT-RFLAGS)
+;;                    (THE (UNSIGNED-BYTE 32)
+;;                         UNDEFINED-FLAGS))
+;;                (CASE
+;;                  SRC (0 (MV INPUT-RFLAGS 0))
+;;                  (1
+;;                   (B*
+;;                       ((CF
+;;                         (MBE :LOGIC (PART-SELECT DST :LOW 0 :WIDTH 1)
+;;                              :EXEC
+;;                              (THE (UNSIGNED-BYTE 1)
+;;                                   (LOGAND 1 (THE (UNSIGNED-BYTE 64) DST)))))
+;;                        (PF (GENERAL-PF-SPEC 64 RESULT))
+;;                        (ZF (ZF-SPEC RESULT))
+;;                        (SF (GENERAL-SF-SPEC 64 RESULT))
+;;                        (OF 0)
+;;                        (OUTPUT-RFLAGS
+;;                         (MBE
+;;                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
+;;                                                    :CF CF
+;;                                                    :PF PF
+;;                                                    :ZF ZF
+;;                                                    :SF SF
+;;                                                    :OF OF)
+;;                          :EXEC
+;;                          (THE
+;;                           (UNSIGNED-BYTE 32)
+;;                           (!RFLAGSBITS->CF
+;;                            CF
+;;                            (!RFLAGSBITS->PF
+;;                             PF
+;;                             (!RFLAGSBITS->ZF
+;;                              ZF
+;;                              (!RFLAGSBITS->SF
+;;                               SF
+;;                               (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
+;;                        (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
+;;                                              (!RFLAGSBITS->AF 1 0))))
+;;                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
+;;                  (OTHERWISE
+;;                   (IF
+;;                    (<= 64 SRC)
+;;                    (B*
+;;                        ((PF (GENERAL-PF-SPEC 64 RESULT))
+;;                         (ZF (ZF-SPEC RESULT))
+;;                         (SF (GENERAL-SF-SPEC 64 RESULT))
+;;                         (OUTPUT-RFLAGS
+;;                          (MBE
+;;                           :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
+;;                                                     :PF PF
+;;                                                     :ZF ZF
+;;                                                     :SF SF)
+;;                           :EXEC
+;;                           (THE
+;;                            (UNSIGNED-BYTE 32)
+;;                            (!RFLAGSBITS->PF
+;;                             PF
+;;                             (!RFLAGSBITS->ZF
+;;                              ZF
+;;                              (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
+;;                         (UNDEFINED-FLAGS
+;;                          (MBE
+;;                           :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
+;;                           :EXEC
+;;                           (THE
+;;                            (UNSIGNED-BYTE 32)
+;;                            (!RFLAGSBITS->CF
+;;                             1
+;;                             (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))))
+;;                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
+;;                    (B*
+;;                        ((CF
+;;                          (MBE
+;;                           :LOGIC (PART-SELECT DST :LOW (1- SRC) :WIDTH 1)
+;;                           :EXEC
+;;                           (LET*
+;;                            ((SHFT (THE (SIGNED-BYTE 64)
+;;                                        (- 1 (THE (UNSIGNED-BYTE 64) SRC)))))
+;;                            (THE
+;;                             (UNSIGNED-BYTE 1)
+;;                             (LOGAND
+;;                              1
+;;                              (THE (UNSIGNED-BYTE 64)
+;;                                   (ASH (THE (UNSIGNED-BYTE 64) DST)
+;;                                        (THE (SIGNED-BYTE 64) SHFT))))))))
+;;                         (PF (GENERAL-PF-SPEC 64 RESULT))
+;;                         (ZF (ZF-SPEC RESULT))
+;;                         (SF (GENERAL-SF-SPEC 64 RESULT))
+;;                         (OUTPUT-RFLAGS
+;;                          (MBE
+;;                           :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
+;;                                                     :CF CF
+;;                                                     :PF PF
+;;                                                     :ZF ZF
+;;                                                     :SF SF)
+;;                           :EXEC
+;;                           (THE
+;;                            (UNSIGNED-BYTE 32)
+;;                            (!RFLAGSBITS->CF
+;;                             CF
+;;                             (!RFLAGSBITS->PF
+;;                              PF
+;;                              (!RFLAGSBITS->ZF
+;;                               ZF
+;;                               (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
+;;                         (UNDEFINED-FLAGS
+;;                          (MBE
+;;                           :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
+;;                           :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
+;;                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
+;;               (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+;;                                   :EXEC OUTPUT-RFLAGS))
+;;               (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
+;;                                     :EXEC UNDEFINED-FLAGS)))
+;;            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
+;;   :otf-flg t
+;;   :hints (("Goal" :expand ()
+;;            :in-theory (e/d (acl2::bvashr ;acl2::bvsx
+;;                             SAR-SPEC-64 ACL2::BVSHR
+;;                                         ;;ACL2::LOGEXT-CASES
+;;                             acl2::bvchop-of-logtail-becomes-slice
+;;                             acl2::<-of-bvchop-and-2
+;;                             acl2::slice-alt-def
+;;                             )
+;;                            ( ;ACL2::BVCAT-EQUAL-REWRITE ACL2::BVCAT-EQUAL-REWRITE-ALT
+;;                             acl2::BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
+;;                             ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE ;loop
+;;                             ACL2::LOGtail-OF-LOGext ;loop
+;;                             )))))
 
 (defthm unsigned-byte-p-1-of-sf-spec32
   (acl2::unsigned-byte-p 1 (sf-spec32 result)))
@@ -1162,10 +1067,116 @@
 
 (in-theory (disable zf-spec))
 
+;gen?
 (defthm integerp-of-xr-rgf-4
   (implies (x86p x86)
            (integerp (xr ':rgf '4 x86))))
 
+;gen?
 (defthm fix-of-xr-rgf-4
   (equal (fix (xr ':rgf '4 x86))
          (xr ':rgf '4 x86)))
+
+;gen
+(defthm xr-app-view-of-!memi
+  (equal (xr :app-view nil (!memi addr val x86))
+         (xr :app-view nil x86))
+  :hints (("Goal" :in-theory (enable !memi))))
+
+(defthm app-view-of-!memi
+  (equal (app-view (!memi addr val x86))
+         (app-view x86))
+  :hints (("Goal" :in-theory (enable !memi))))
+
+(defthm x86p-of-!memi
+  (implies (and (x86p x86)
+                (INTEGERP ADDR)
+                (UNSIGNED-BYTE-P 8 VAL))
+           (x86p (!memi addr val x86)))
+  :hints (("Goal" :in-theory (enable !memi))))
+
+;rename
+(defthm memi-of-!memi
+  (implies (unsigned-byte-p 48 addr)
+           (equal (memi addr (!memi addr val x86))
+                  (acl2::bvchop 8 val)))
+  :hints (("Goal" :in-theory (enable memi))))
+
+(defthm !memi-of-!memi-same
+  (equal (!memi addr val (!memi addr val2 x86))
+         (!memi addr val x86)))
+
+(defthm xw-of-xw-both
+  (implies (syntaxp (acl2::smaller-termp addr2 addr))
+           (equal (xw :mem addr val (xw :mem addr2 val2 x86))
+                  (if (equal addr addr2)
+                      (xw :mem addr val x86)
+                    (xw :mem addr2 val2 (xw :mem addr val x86)))))
+  :hints (("Goal" :in-theory (enable xw))))
+
+(defthm xw-of-xw-diff
+  (implies (and (syntaxp (acl2::smaller-termp addr2 addr))
+                (not (equal addr addr2)))
+           (equal (xw :mem addr val (xw :mem addr2 val2 x86))
+                  (xw :mem addr2 val2 (xw :mem addr val x86))))
+  :hints (("Goal" :in-theory (enable xw))))
+
+(defthm memi-of-xw-irrel
+  (implies (not (equal fld :mem))
+           (equal (memi addr (xw fld index val x86))
+                  (memi addr x86)))
+  :hints (("Goal" :in-theory (e/d (memi)
+                                  (;x86isa::memi-is-n08p ;does forcing
+                                   )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm app-view-of-if
+  (equal (app-view (if test x86 x86_2))
+         (if test (app-view x86) (app-view x86_2))))
+
+(defthm 64-bit-modep-of-if
+  (equal (64-bit-modep (if test x86_1 x86_2))
+         (if test (64-bit-modep x86_1)
+           (64-bit-modep x86_2))))
+
+(defthm program-at-of-if
+  (equal (program-at prog-addr bytes (if test x86 x86_2))
+         (if test (program-at prog-addr bytes x86) (program-at prog-addr bytes x86_2))))
+
+(defthm x86p-of-if
+  (equal (x86p (if test x86 x86_2))
+         (if test (x86p x86) (x86p x86_2))))
+
+(defthm ctri-of-if
+  (equal (ctri i (if test x86 x86_2))
+         (if test (ctri i x86) (ctri i x86_2))))
+
+(defthm alignment-checking-enabled-p-of-if
+  (equal (alignment-checking-enabled-p (if test x86 x86_2))
+         (if test (alignment-checking-enabled-p x86) (alignment-checking-enabled-p x86_2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This version has (canonical-address-p eff-addr) in the conclusion
+(defthm x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
+  (implies (and (not (equal seg-reg 4))
+                (not (equal seg-reg 5))
+                (or (not x86isa::check-alignment?)
+                    (x86isa::address-aligned-p eff-addr nbytes x86isa::mem-ptr?)))
+           (equal (rme-size 0 nbytes eff-addr seg-reg x86isa::r-x x86isa::check-alignment? x86 :mem-ptr? x86isa::mem-ptr?)
+                  (if (canonical-address-p eff-addr)
+                      (rml-size nbytes eff-addr x86isa::r-x x86)
+                    (list (list :non-canonical-address eff-addr) 0 x86)))))
+
+;; This version has (canonical-address-p eff-addr) in the conclusion
+(defthm x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
+  (implies (and (not (equal seg-reg 4))
+                (not (equal seg-reg 5))
+                (or (not x86isa::check-alignment?)
+                    (x86isa::address-aligned-p
+                      eff-addr nbytes x86isa::mem-ptr?)))
+           (equal (x86isa::wme-size 0 nbytes eff-addr seg-reg x86isa::val x86isa::check-alignment? x86 :mem-ptr? x86isa::mem-ptr?)
+                  (if (canonical-address-p eff-addr)
+                      (x86isa::wml-size nbytes eff-addr x86isa::val x86)
+                    (list (list :non-canonical-address eff-addr) x86)))))

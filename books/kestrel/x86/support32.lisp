@@ -1,7 +1,7 @@
 ; Utilities in support of reasoning about / lifting 32-bit code.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,8 +15,9 @@
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::read-*ip
 (include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
 (include-book "linear-memory")
-(include-book "flags" )
-(include-book "register-readers-and-writers")
+(include-book "flags")
+(include-book "readers-and-writers")
+(include-book "register-readers-and-writers32")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
@@ -25,12 +26,15 @@
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/bv/signed-byte-p" :dir :system)) ; so we can disable below
 (local (include-book "kestrel/bv/rules" :dir :system)) ; so we can disable below
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, for floor-mod-elim
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
@@ -51,6 +55,9 @@
                            acl2::unsigned-byte-p-of-logior-strong
                            bitops::signed-byte-p-of-ash-split
                            ;; acl2::signed-byte-p-logops
+                           ACL2::LOGEXT-WHEN-SIGNED-BYTE-P
+                           ACL2::ASH-0
+                           acl2::bvchop-identity
                            )))
 
 (defthm data-segment-descriptor-attributesbits->w-of-bvchop
@@ -91,20 +98,6 @@
   (implies (unsigned-byte-p 47 x86isa::ad)
            (canonical-address-p x86isa::ad))
   :hints (("Goal" :in-theory (enable canonical-address-p))))
-
-;;gen
-(defthm bvplus-subst-smaller-term
-  (implies (and (equal (bvchop 32 x) (bvchop 32 x2))
-                (syntaxp (acl2::smaller-termp x2 x)))
-           (equal (bvplus 32 x y)
-                  (bvplus 32 x2 y))))
-
-;dup in bv3
-(defthmd acl2::bvplus-recollapse
-  (implies (and (integerp x) (integerp y))
-           (equal (bvchop acl2::size (+ x y))
-                  (bvplus acl2::size x y)))
-  :hints (("Goal" :in-theory (enable bvplus))))
 
 ;(local (in-theory (disable X86ISA::MEMI-IS-N08P))) ;does forcing
 
@@ -156,6 +149,14 @@
                   (segment-expand-down-bit seg-reg1 x86)))
   :hints (("Goal" :in-theory (e/d (segment-expand-down-bit)
                                   (segment-expand-down-bit-intro)))))
+
+(defthm segment-expand-down-bit-of-set-flag
+  (equal (segment-expand-down-bit seg-reg (set-flag flg val x86))
+         (segment-expand-down-bit seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-flag))))
+
+(defthm segment-expand-down-bit-of-set-undef (equal (segment-expand-down-bit seg-reg (set-undef undef x86)) (segment-expand-down-bit seg-reg x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm segment-expand-down-bit-of-set-mxcsr (equal (segment-expand-down-bit seg-reg (set-mxcsr mxcsr x86)) (segment-expand-down-bit seg-reg x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 ;;;
 ;;; segment-base32
@@ -231,6 +232,9 @@
   :hints (("Goal" :in-theory (e/d (set-flag)
                                   ()))))
 
+(defthm segment-min-eff-addr32-of-set-undef (equal (segment-min-eff-addr32 seg-reg (set-undef undef x86)) (segment-min-eff-addr32 seg-reg x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm segment-min-eff-addr32-of-set-mxcsr (equal (segment-min-eff-addr32 seg-reg (set-mxcsr mxcsr x86)) (segment-min-eff-addr32 seg-reg x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+
 (defthm natp-of-segment-min-eff-addr32
   (implies (and (seg-regp seg-reg)
                 (x86p x86))
@@ -264,6 +268,16 @@
   (equal (segment-max-eff-addr32 seg-reg (set-flag flg val x86))
          (segment-max-eff-addr32 seg-reg x86))
   :hints (("Goal" :in-theory (e/d (set-flag) ()))))
+
+(defthm segment-max-eff-addr32-of-set-undef
+  (equal (segment-max-eff-addr32 seg-reg (set-undef undef x86))
+         (segment-max-eff-addr32 seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (set-undef) ()))))
+
+(defthm segment-max-eff-addr32-of-set-mxcsr
+  (equal (segment-max-eff-addr32 seg-reg (set-mxcsr mxcsr x86))
+         (segment-max-eff-addr32 seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (set-mxcsr) ()))))
 
 (defthm natp-of-segment-max-eff-addr32
   (implies (and (seg-regp seg-reg)
@@ -313,6 +327,16 @@
 
 (defthm segment-is-32-bitsp-of-set-flag
   (equal (segment-is-32-bitsp seg-reg (set-flag flg val x86))
+         (segment-is-32-bitsp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (segment-is-32-bitsp) ()))))
+
+(defthm segment-is-32-bitsp-of-set-undef
+  (equal (segment-is-32-bitsp seg-reg (set-undef undef x86))
+         (segment-is-32-bitsp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (segment-is-32-bitsp) ()))))
+
+(defthm segment-is-32-bitsp-of-set-mxcsr
+  (equal (segment-is-32-bitsp seg-reg (set-mxcsr mxcsr x86))
          (segment-is-32-bitsp seg-reg x86))
   :hints (("Goal" :in-theory (e/d (segment-is-32-bitsp) ()))))
 
@@ -378,6 +402,8 @@
                   4294967295))
   :hints (("Goal" :in-theory (enable 32-bit-segment-start-and-size))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund 32-bit-segment-size (seg-reg x86)
   (declare (xargs :stobjs x86
                   :guard (seg-regp seg-reg)))
@@ -402,6 +428,21 @@
            (equal (32-bit-segment-size code (xw fld index val x86))
                   (32-bit-segment-size code x86)))
   :hints (("Goal" :in-theory (enable 32-bit-segment-size))))
+
+(defthm 32-bit-segment-size-of-set-flag
+  (equal (32-bit-segment-size seg-reg (set-flag flg val x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
+
+(defthm 32-bit-segment-size-of-set-undef
+  (equal (32-bit-segment-size seg-reg (set-undef undef x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
+
+(defthm 32-bit-segment-size-of-set-mxcsr
+  (equal (32-bit-segment-size seg-reg (set-mxcsr mxcsr x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
 
 (defthm unsigned-byte-p-of-xr-of-seg-hidden-limit
   (implies (and ;(equal (segment-expand-down-bit seg-reg x86) 1)
@@ -587,6 +628,16 @@
          (code-segment-readable-bit x86))
   :hints (("Goal" :in-theory (e/d (code-segment-readable-bit) (code-segment-readable-bit-intro)))))
 
+(defthm code-segment-readable-bit-of-set-undef
+  (equal (code-segment-readable-bit (set-undef undex x86))
+         (code-segment-readable-bit x86))
+  :hints (("Goal" :in-theory (e/d (code-segment-readable-bit) (code-segment-readable-bit-intro)))))
+
+(defthm code-segment-readable-bit-of-set-mxcsr
+  (equal (code-segment-readable-bit (set-mxcsr undex x86))
+         (code-segment-readable-bit x86))
+  :hints (("Goal" :in-theory (e/d (code-segment-readable-bit) (code-segment-readable-bit-intro)))))
+
 ;;;
 ;;; code-segment-well-formedp
 ;;;
@@ -677,11 +728,6 @@
            :in-theory (e/d (code-segment-assumptions32-for-code)
                            (read-byte-from-segment-when-equal-of-read-byte-list-from-segment)))))
 
-;; Get the 32-bit instruction pointer:
-(defun eip (x86)
-  (declare (xargs :stobjs x86))
-  (rip x86))
-
 ;; Turn a call of read-*ip into a call of EIP, which is a much simpler function
 ;; Do we need the bvchop?
 (defthm read-*ip-becomes-eip
@@ -689,6 +735,11 @@
            (equal (x86isa::read-*ip *compatibility-mode* x86)
                   (bvchop 32 (eip x86))))
   :hints (("Goal" :in-theory (enable x86isa::read-*ip bvchop))))
+
+;; Introduces eip.
+(defthmd xr-becomes-eip
+  (equal (xr :rip nil x86)
+         (eip x86)))
 
 ;; Converting a valid effective address in the code segment to a linear address returns no error:
 (defthm not-mv-nth-0-of-ea-to-la-of-cs
@@ -702,7 +753,9 @@
                 )
            (not (mv-nth 0 (ea-to-la *compatibility-mode* eff-addr *cs* 1 x86))))
   :hints (("Goal" :in-theory (e/d (ea-to-la code-segment-assumptions32-for-code
-                                   segment-base-and-bounds) ()))))
+                                            segment-base-and-bounds
+                                            acl2::bvchop-identity)
+                                  ()))))
 
 ;; ;; Under suitable assumptions, we turn rme08 into a call of read-byte-from-segment, which is a much simpler function
 ;; (defthm mv-nth-1-of-rme08-of-cs-becomes-read-byte-from-segment
@@ -757,7 +810,8 @@
            (not (mv-nth 0 (x86isa::add-to-*ip *compatibility-mode* *ip delta x86))))
   :hints (("Goal" :in-theory (enable X86ISA::ADD-TO-*IP
                                      code-segment-assumptions32-for-code
-                                     segment-base-and-bounds))))
+                                     segment-base-and-bounds
+                                     acl2::bvchop-identity))))
 
 (defthm mv-nth-1-of-add-to-*ip
   (implies (and (not (64-bit-modep x86))
@@ -774,11 +828,8 @@
                   (+ *ip delta)))
   :hints (("Goal" :in-theory (enable x86isa::add-to-*ip
                                      code-segment-assumptions32-for-code
-                                     segment-base-and-bounds))))
-
-(defthm fix-of-ifix
-  (equal (fix (ifix x))
-         (ifix x)))
+                                     segment-base-and-bounds
+                                     acl2::bvchop-identity))))
 
 ;;;
 ;;; data-segment-writeable-bit
@@ -806,6 +857,16 @@
 
 (defthm data-segment-writeable-bit-of-set-flag
   (equal (data-segment-writeable-bit seg-reg (set-flag flg val x86))
+         (data-segment-writeable-bit seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (data-segment-writeable-bit) (data-segment-writeable-bit-intro)))))
+
+(defthm data-segment-writeable-bit-of-set-undef
+  (equal (data-segment-writeable-bit seg-reg (set-undef undef x86))
+         (data-segment-writeable-bit seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (data-segment-writeable-bit) (data-segment-writeable-bit-intro)))))
+
+(defthm data-segment-writeable-bit-of-set-mxcsr
+  (equal (data-segment-writeable-bit seg-reg (set-mxcsr mxcsr x86))
          (data-segment-writeable-bit seg-reg x86))
   :hints (("Goal" :in-theory (e/d (data-segment-writeable-bit) (data-segment-writeable-bit-intro)))))
 
@@ -880,6 +941,34 @@
                                      segment-max-eff-addr32
                                      segment-base-and-bounds))))
 
+;; in case we are going to bvlt instead of <
+(defthm not-bvlt-of-esp-when-stack-segment-assumptions32
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (natp stack-slots-needed)
+                (<= k (* 4 stack-slots-needed)) ;think about this
+                (x86p x86))
+           (not (bvlt 32 (esp x86) k)))
+  :hints (("Goal" :in-theory (e/d (bvlt esp) ()))))
+
+(defthm not-equal-of-esp-when-stack-segment-assumptions32
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (natp stack-slots-needed)
+                (< k (* 4 stack-slots-needed)) ;think about this
+                (x86p x86))
+           (not (equal (esp x86) k)))
+  :hints (("Goal" :in-theory (e/d (bvlt) (stack-segment-assumptions32)))))
+
+(defthm not-equal-of-esp-when-stack-segment-assumptions32-alt
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (natp stack-slots-needed)
+                (< k (* 4 stack-slots-needed)) ;think about this
+                (x86p x86))
+           (not (equal k (esp x86))))
+  :hints (("Goal" :in-theory (e/d (bvlt) (stack-segment-assumptions32)))))
+
 ;; Turn a call of read-*sp into a call of ESP, which is a much simpler function.
 (defthm read-*sp-becomes-esp
   (implies (and (segment-is-32-bitsp *ss* x86)
@@ -901,8 +990,9 @@
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
                                    esp
+                                   acl2::bvchop-identity
                                    )
-                                  (;acl2::bvplus-recollapse
+                                  (;
                                    )))))
 
 (defthm not-mv-nth-0-of-add-to-*sp-gen
@@ -924,8 +1014,9 @@
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
                                    ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION
+                                   acl2::bvchop-identity
                                    )
-                                  (;acl2::bvplus-recollapse
+                                  (;
                                    )))))
 
 ;ironic name
@@ -959,8 +1050,9 @@
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
                                    esp
+                                   acl2::bvchop-identity
                                    )
-                                  (;acl2::bvplus-recollapse
+                                  (;
                                    )))))
 
 (defthm mv-nth-1-of-add-to-*sp-gen
@@ -982,8 +1074,9 @@
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
                                    ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION
+                                   acl2::bvchop-identity
                                    )
-                                  (;acl2::bvplus-recollapse
+                                  (;
                                    )))))
 
 ;ironic name
@@ -1218,22 +1311,6 @@
 ;;                      4294967295)))
 ;;   :hints (("Goal" :in-theory (enable stack-segment-assumptions32))))
 
-(defthmd bvchop-when-negative-lemma
-  (implies (and (< x 0) ;stack is expanding downward (e.g., delta is -4)
-                (<= (- (expt 2 size)) x)
-                (integerp x)
-                (natp size))
-           (equal (bvchop size x)
-                  (+ (expt 2 size) x)))
-  :hints (("Goal"
-           :use (:instance acl2::bvchop-identity (acl2::size size) (i (+ (expt 2 size) X)))
-           :in-theory (e/d (bvchop
-                            UNSIGNED-BYTE-P
-                            ) (       ;acl2::mod-of-expt-of-2 ;mod
-                               ACL2::EQUAL-OF-+-AND-BV
-;                               ACL2::BVPLUS-RECOLLAPSE
-                               )))))
-
 (defthm <-when-<-one-of-less-strengthen
   (implies (and (syntaxp (acl2::want-to-strengthen (< x k)))
                 (syntaxp (quotep k))
@@ -1311,7 +1388,7 @@
 ;;                            ( ;ACL2::BVCHOP-IDENTITY
 ;; ;                            ACL2::BVCHOP-IDENTITY-cheap
 ;;                             x86isa::!memi$inline
-;; ;                            acl2::bvplus-recollapse
+;; ;
 ;;                             stack-segment-assumptions32
 ;;                             acl2::bvchop-of-sum-of-bvchop-same-alt acl2::bvchop-of-sum-of-bvchop-gen-arg3 ;todo: compare these
 ;;                             ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
@@ -1525,16 +1602,14 @@
                              (bvchop 32 eff-addr2))
                       (write-byte-to-segment eff-addr1 seg-reg val1 x86)
                     (write-byte-to-segment eff-addr2 seg-reg val2 (write-byte-to-segment eff-addr1 seg-reg val1 x86)))))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment ACL2::BVPLUS-RECOLLAPSE)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment acl2::bvchop-of-+-becomes-bvplus))))
 
 (defthm write-byte-to-segment-of-write-byte-to-segment-same
   (implies (and (integerp eff-addr)
                 (x86p x86))
            (equal (write-byte-to-segment eff-addr seg-reg val1 (write-byte-to-segment eff-addr seg-reg val2 x86))
                   (write-byte-to-segment eff-addr seg-reg val1 x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment ACL2::BVPLUS-RECOLLAPSE)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment acl2::bvchop-of-+-becomes-bvplus))))
 
 (defthmd write-to-segment-of-write-byte-to-segment
   (implies (and (integerp eff-addr1)
@@ -1549,7 +1624,7 @@
            :expand (write-to-segment n eff-addr1 seg-reg val1
                                      (write-byte-to-segment eff-addr2 seg-reg val2 x86))
            :in-theory (e/d (write-to-segment bvplus acl2::bvchop-of-sum-cases)
-                           (;acl2::bvplus-recollapse
+                           (;
                             )))))
 
 (defthm x86p-of-write-to-segment
@@ -1627,10 +1702,10 @@
                                                           acl2::bvchop-of-sum-cases
                                                           32-bit-segment-start
                                                           SEGMENT-MIN-EFF-ADDR32
-                                                          SEGMENT-MAX-EFF-ADDR32)
+                                                          SEGMENT-MAX-EFF-ADDR32
+                                                          acl2::bvchop-identity)
                                   ( ;acl2::bvchop-+-cancel-seconds
                                    ;x86isa::msri$inline
-                                   acl2::bvplus-recollapse
                                    acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
@@ -1733,6 +1808,12 @@
                   (well-formed-32-bit-segmentp seg-reg1 x86)))
   :hints (("Goal" :in-theory (enable well-formed-32-bit-segmentp))))
 
+(defthm bvchop-32-of-xr-seg-hidden-limit
+  (implies (x86p x86)
+           (equal (bvchop 32 (xr :seg-hidden-limit seg-reg x86))
+                  (xr :seg-hidden-limit seg-reg x86)))
+  :hints (("Goal" :in-theory (enable acl2::bvchop-identity))))
+
 (defthm mv-nth-1-of-rme08-of-ss-becomes-read-byte-from-segment
   (implies (and (stack-segment-assumptions32 stack-slots-needed x86) ;code is a free var and usually will be a constant
                 (not (64-bit-modep x86))
@@ -1763,9 +1844,11 @@
                                           BVMINUS
                                           acl2::bvchop-of-sum-cases
                                           ea-to-la
+                                          ACL2::ASH-0 ; why?
+                                          acl2::bvchop-identity
                                           )
                            (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                            ACL2::BVPLUS-RECOLLAPSE)))))
+                            )))))
 
 (defthm segment-is-32-bitsp-when-stack-segment-assumptions32
   (implies (stack-segment-assumptions32 stack-slots-needed x86)
@@ -1804,7 +1887,7 @@
                                    bvplus
                                    acl2::bvchop-of-sum-cases)
                                   (acl2::bvminus-becomes-bvplus-of-bvuminus
-                                   acl2::bvplus-recollapse)))))
+                                   )))))
 
 (defthm <-of-32-bit-segment-size
   (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
@@ -1833,7 +1916,7 @@
                                    acl2::bvchop-of-sum-cases
                                    esp)
                                   (acl2::bvminus-becomes-bvplus-of-bvuminus
-                                   acl2::bvplus-recollapse)))))
+                                   )))))
 
 (defthm segment-max-eff-addr32-bound-when-stack-segment-assumptions32
   (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
@@ -1850,7 +1933,7 @@
                                    acl2::bvchop-of-sum-cases
                                    esp)
                                   (acl2::bvminus-becomes-bvplus-of-bvuminus
-                                   acl2::bvplus-recollapse)))))
+                                   )))))
 
 (local (in-theory (disable esp))) ;prevents loops
 
@@ -2001,10 +2084,6 @@
                 (not (eff-addrs-okp nbytes eff-addr seg-reg x86))))
   :hints (("Goal" :in-theory (enable ea-to-la segment-max-eff-addr32 segment-base-and-bounds segment-min-eff-addr32))))
 
-(defthm integerp-of-if
-  (equal (integerp (if test tp ep))
-         (if test (integerp tp) (integerp ep))))
-
 ;; I wonder if this fact would let us drop come checks from the model
 (defthm canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
   (implies (and (signed-byte-p 33 k) ;gen?
@@ -2012,10 +2091,7 @@
            (canonical-address-p (+ k (mv-nth 1 (ea-to-la *compatibility-mode* eff-addr *ss* nbytes x86)))))
   :hints (("Goal" :in-theory (enable ea-to-la SIGNED-BYTE-P CANONICAL-ADDRESS-P))))
 
-(defthm 32-bit-segment-size-of-set-flag
-  (equal (32-bit-segment-size seg-reg (set-flag flg val x86))
-         (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
+
 
 (defthm 32-bit-segment-start-and-size-of-set-flag
   (equal (32-bit-segment-start-and-size seg-reg (set-flag flg val x86))
@@ -2031,6 +2107,16 @@
   (equal (well-formed-32-bit-segmentp seg-reg (set-flag flg val x86))
          (well-formed-32-bit-segmentp seg-reg x86))
   :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp) ()))))
+
+(defthm well-formed-32-bit-segmentp-of-set-undef
+  (equal (well-formed-32-bit-segmentp seg-reg (set-undef undef x86))
+         (well-formed-32-bit-segmentp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-undef) ()))))
+
+(defthm well-formed-32-bit-segmentp-of-set-mxcsr
+  (equal (well-formed-32-bit-segmentp seg-reg (set-mxcsr mxcsr x86))
+         (well-formed-32-bit-segmentp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-mxcsr) ()))))
 
 (defthm read-byte-from-segment-of-set-flag
   (equal (read-byte-from-segment eff-addr seg-reg (set-flag flg val x86))
@@ -2058,9 +2144,160 @@
                                    ;;                                  x86isa::seg-hidden-attri-is-n16p
                                                                     )))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defthm 32-bit-segment-start-and-size-of-set-flag
+;;   (equal (32-bit-segment-start-and-size seg-reg (set-flag flg val x86))
+;;          (32-bit-segment-start-and-size seg-reg x86))
+;;   :hints (("Goal" :in-theory (e/d (32-bit-segment-start-and-size) ()))))
+
+;; (defthm 32-bit-segment-start-of-set-flag
+;;   (equal (32-bit-segment-start seg-reg (set-flag flg val x86))
+;;          (32-bit-segment-start seg-reg x86))
+;;   :hints (("Goal" :in-theory (e/d (32-bit-segment-start) ()))))
+
+;; (defthm well-formed-32-bit-segmentp-of-set-flag
+;;   (equal (well-formed-32-bit-segmentp seg-reg (set-flag flg val x86))
+;;          (well-formed-32-bit-segmentp seg-reg x86))
+;;   :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp) ()))))
+
+;; (defthm well-formed-32-bit-segmentp-of-set-undef
+;;   (equal (well-formed-32-bit-segmentp seg-reg (set-undef undef x86))
+;;          (well-formed-32-bit-segmentp seg-reg x86))
+;;   :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-undef) ()))))
+
+;; (defthm well-formed-32-bit-segmentp-of-set-mxcsr
+;;   (equal (well-formed-32-bit-segmentp seg-reg (set-mxcsr mxcsr x86))
+;;          (well-formed-32-bit-segmentp seg-reg x86))
+;;   :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-mxcsr) ()))))
+
+;; (defthm read-byte-from-segment-of-set-flag
+;;   (equal (read-byte-from-segment eff-addr seg-reg (set-flag flg val x86))
+;;          (read-byte-from-segment eff-addr seg-reg x86))
+;;   :hints (("Goal" :in-theory (enable set-flag))))
+
+;; (defthm read-byte-list-from-segment-of-set-flag
+;;   (equal (read-byte-list-from-segment n eff-addr seg-reg (set-flag flg val x86))
+;;          (read-byte-list-from-segment n eff-addr seg-reg x86))
+;;   :hints (("Goal" :in-theory (enable read-byte-list-from-segment))))
+
+;; (defthm code-segment-assumptions32-for-code-of-set-flag
+;;   (equal (code-segment-assumptions32-for-code code offset (set-flag flg val x86))
+;;          (code-segment-assumptions32-for-code code offset x86))
+;;   :hints (("Goal" :in-theory (e/d (code-segment-assumptions32-for-code set-flag)
+;;                                   (;; x86isa::seg-hidden-basei-is-n64p x86isa::seg-hidden-limiti-is-n32pg
+;;                                    ;;                                  x86isa::seg-hidden-attri-is-n16p
+;;                                                                     )))))
+
+;; (defthm code-segment-well-formedp-of-set-flag
+;;   (equal (code-segment-well-formedp (set-flag flg val x86))
+;;          (code-segment-well-formedp x86))
+;;   :hints (("Goal" :in-theory (e/d (code-segment-well-formedp set-flag)
+;;                                   (;; x86isa::seg-hidden-basei-is-n64p x86isa::seg-hidden-limiti-is-n32p
+;;                                    ;;                                  x86isa::seg-hidden-attri-is-n16p
+;;                                                                     )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm 32-bit-segment-start-and-size-of-set-undef
+  (equal (32-bit-segment-start-and-size seg-reg (set-undef undef x86))
+         (32-bit-segment-start-and-size seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-start-and-size) ()))))
+
+(defthm 32-bit-segment-start-of-set-undef
+  (equal (32-bit-segment-start seg-reg (set-undef undef x86))
+         (32-bit-segment-start seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-start) ()))))
+
+(defthm well-formed-32-bit-segmentp-of-set-undef
+  (equal (well-formed-32-bit-segmentp seg-reg (set-undef undef x86))
+         (well-formed-32-bit-segmentp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp) ()))))
+
+(defthm well-formed-32-bit-segmentp-of-set-undef
+  (equal (well-formed-32-bit-segmentp seg-reg (set-undef undef x86))
+         (well-formed-32-bit-segmentp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-undef) ()))))
+
+(defthm read-byte-from-segment-of-set-undef
+  (equal (read-byte-from-segment eff-addr seg-reg (set-undef undef x86))
+         (read-byte-from-segment eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-undef))))
+
+(defthm read-byte-list-from-segment-of-set-undef
+  (equal (read-byte-list-from-segment n eff-addr seg-reg (set-undef undef x86))
+         (read-byte-list-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable read-byte-list-from-segment))))
+
+(defthm code-segment-assumptions32-for-code-of-set-undef
+  (equal (code-segment-assumptions32-for-code code offset (set-undef undef x86))
+         (code-segment-assumptions32-for-code code offset x86))
+  :hints (("Goal" :in-theory (e/d (code-segment-assumptions32-for-code set-undef)
+                                  (;; x86isa::seg-hidden-basei-is-n64p x86isa::seg-hidden-limiti-is-n32pg
+                                   ;;                                  x86isa::seg-hidden-attri-is-n16p
+                                                                    )))))
+
+(defthm code-segment-well-formedp-of-set-undef
+  (equal (code-segment-well-formedp (set-undef undef x86))
+         (code-segment-well-formedp x86))
+  :hints (("Goal" :in-theory (e/d (code-segment-well-formedp set-undef)
+                                  (;; x86isa::seg-hidden-basei-is-n64p x86isa::seg-hidden-limiti-is-n32p
+                                   ;;                                  x86isa::seg-hidden-attri-is-n16p
+                                   )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm 32-bit-segment-start-and-size-of-set-mxcsr
+  (equal (32-bit-segment-start-and-size seg-reg (set-mxcsr mxcsr x86))
+         (32-bit-segment-start-and-size seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-start-and-size) ()))))
+
+(defthm 32-bit-segment-start-of-set-mxcsr
+  (equal (32-bit-segment-start seg-reg (set-mxcsr mxcsr x86))
+         (32-bit-segment-start seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-start) ()))))
+
+(defthm read-byte-from-segment-of-set-mxcsr
+  (equal (read-byte-from-segment eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (read-byte-from-segment eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
+
+(defthm read-byte-list-from-segment-of-set-mxcsr
+  (equal (read-byte-list-from-segment n eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (read-byte-list-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable read-byte-list-from-segment))))
+
+(defthm code-segment-assumptions32-for-code-of-set-mxcsr
+  (equal (code-segment-assumptions32-for-code code offset (set-mxcsr mxcsr x86))
+         (code-segment-assumptions32-for-code code offset x86))
+  :hints (("Goal" :in-theory (e/d (code-segment-assumptions32-for-code set-mxcsr)
+                                  (;; x86isa::seg-hidden-basei-is-n64p x86isa::seg-hidden-limiti-is-n32pg
+                                   ;;                                  x86isa::seg-hidden-attri-is-n16p
+                                                                    )))))
+
+(defthm code-segment-well-formedp-of-set-mxcsr
+  (equal (code-segment-well-formedp (set-mxcsr mxcsr x86))
+         (code-segment-well-formedp x86))
+  :hints (("Goal" :in-theory (e/d (code-segment-well-formedp set-mxcsr)
+                                  (;; x86isa::seg-hidden-basei-is-n64p x86isa::seg-hidden-limiti-is-n32p
+                                   ;;                                  x86isa::seg-hidden-attri-is-n16p
+                                                                    )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm eff-addr-okp-of-set-flag
   (equal (eff-addr-okp eff-addr seg-reg (set-flag flg val x86))
          (eff-addr-okp eff-addr seg-reg x86)))
+
+(defthm eff-addr-okp-of-set-undef
+  (equal (eff-addr-okp eff-addr seg-reg (set-undef undef x86))
+         (eff-addr-okp eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-undef))))
+
+(defthm eff-addr-okp-of-set-mxcsr
+  (equal (eff-addr-okp eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (eff-addr-okp eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 (defthm eff-addr-okp-of-WRITE-TO-SEGMENT
   (equal (eff-addr-okp eff-addr seg-reg (WRITE-TO-SEGMENT N2 EFF-ADDR2 SEG-REG2 VAL2 X86))
@@ -2132,6 +2369,16 @@
          (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
   :hints (("Goal" :in-theory (enable set-flag))))
 
+(defthm ea-to-la-of-set-undef
+  (equal (ea-to-la proc-mode eff-addr seg-reg nbytes (set-undef undef x86))
+         (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+  :hints (("Goal" :in-theory (enable set-undef))))
+
+(defthm ea-to-la-of-set-mxcsr
+  (equal (ea-to-la proc-mode eff-addr seg-reg nbytes (set-mxcsr mxcsr x86))
+         (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
+
 ;; (defthm read-of-ea-to-la-becomes-read-from-segment
 ;;   (implies (and (eff-addrs-okp n eff-addr seg-reg x86-2)
 ;;                 (equal (ea-to-la *compatibility-mode* eff-addr seg-reg x86)
@@ -2202,8 +2449,8 @@
                                    esp
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
-                                   )
-                                  (acl2::bvplus-recollapse)))))
+                                   acl2::bvchop-identity)
+                                  ()))))
 
 ;;;
 ;;; read-from-segment
@@ -2245,8 +2492,6 @@
 
 (defthm read-from-segment-not-negative
   (not (< (read-from-segment n eff-addr seg-reg x86) 0)))
-
-(local (in-theory (disable acl2::bvplus-recollapse)))
 
 (defthm read-from-segment-of-xw
   (implies (and (not (equal :mem fld))
@@ -2307,9 +2552,31 @@
   (implies (and (stack-segment-assumptions32 stack-slots-needed x86-orig)
                 (stack-segment-assumptions32 stack-slots-needed x86)
                 (natp k)
-                (<= k 11)
+                (<= k 11) ;; ttodo: generalize the 11
                 )
            (unsigned-byte-p 32 (+ k (esp x86))))
+  :hints (("Goal" :in-theory (enable esp))))
+
+; special case of bvchop-identity
+(defthm bvchop-of-+-of-esp-becomes-+-of-esp
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86-orig)
+                (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (<= k 11) ;; todo: generalize the 11?
+                )
+           (equal (bvchop 32 (+ k (esp x86)))
+                  (+ k (esp x86))))
+  :hints (("Goal" :in-theory (enable esp))))
+
+;; enforces the normal form (+ x (esp x86)).
+(defthm bvplus-32-of-esp-becomes-+-of-esp
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86-orig)
+                (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (<= k 11) ;; todo: generalize the 11?
+                )
+           (equal (bvplus 32 k (esp x86))
+                  (+ k (esp x86))))
   :hints (("Goal" :in-theory (enable esp))))
 
 (defthm eff-addrs-okp-of-+-of-esp-positive-offset
@@ -2325,12 +2592,12 @@
                                      SEGMENT-BASE-AND-BOUNDS))))
 
 (defthm esp-bound
-  (implies  (and (stack-segment-assumptions32 stack-slots-needed x86-orig) ;binds the free var stack-slots-needed
-                 (stack-segment-assumptions32 stack-slots-needed x86)
-                 (natp k)
-                 (<= 4294967284 k) ;gen?
-                 )
-            (not (< k (ESP X86))))
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86-orig) ;binds the free var stack-slots-needed
+                (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (<= 4294967284 k) ;gen?
+                )
+           (not (< k (ESP X86))))
   :hints (("Goal" :in-theory (enable esp))))
 
 (defthm eff-addrs-okp-of-esp
@@ -2388,7 +2655,7 @@
                                    bvuminus
                                    bvminus
                                    acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))) )
+                                  ()))) )
 
 (defthm sep-eff-addr-ranges-of-all-but-first-alt
   (implies (and (sep-eff-addr-ranges eff-addr1 n1 eff-addr2 n2)
@@ -2403,7 +2670,7 @@
                             bvuminus
                             bvminus
                             acl2::bvchop-of-sum-cases)
-                           (acl2::bvplus-recollapse)))) )
+                           ()))) )
 
 (defthm sep-eff-addr-ranges-of-all-but-first-alt-alt
   (implies (and (sep-eff-addr-ranges eff-addr2 n2 eff-addr1 n1)
@@ -2417,7 +2684,7 @@
                                    bvuminus
                                    bvminus
                                    acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))) )
+                                  ()))) )
 
 ;; potentially could mess things up
 (defthmd sep-eff-addr-ranges-swap
@@ -2439,7 +2706,7 @@
                             bvuminus
                             bvminus
                             acl2::bvchop-of-sum-cases)
-                           (acl2::bvplus-recollapse)))))
+                           ()))))
 
 (defthm sep-eff-addr-ranges-of-1-arg2-adjacent
   (implies (and (integerp eff-addr)
@@ -2450,7 +2717,7 @@
                                    bvuminus
                                    bvminus
                                    acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))))
+                                  ()))))
 
 (local (acl2::limit-expt)) ;prevent crashes
 
@@ -2548,25 +2815,6 @@
                                   (eff-addr2 (bvchop 32 eff-addr)))
            :in-theory (disable write-to-segment-of-bvchop-helper))))
 
-(defthm logtail-of-logtail-gen
-  (equal (logtail m (logtail n x))
-         (logtail (+ (nfix m) (nfix n)) x))
-  :hints (("Goal" :in-theory (enable logtail acl2::expt-of-+))))
-
-;move
-(defthm acl2::bvchop-of-logtail-becomes-slice-gen
-  (implies (and (natp acl2::size1)
-                ;;(natp acl2::size2)
-                )
-           (equal (bvchop acl2::size1 (logtail acl2::size2 x))
-                  (slice (+ -1 acl2::size1 (nfix acl2::size2))
-                         (nfix acl2::size2)
-                         x)))
-  :hints (("Goal" :in-theory (enable nfix acl2::bvchop-of-logtail-becomes-slice))))
-
-(theory-invariant (incompatible (:definition slice)
-                                (:rewrite acl2::bvchop-of-logtail-becomes-slice-gen)))
-
 ;simple ordering
 (defthm read-byte-from-segment-of-write-to-segment-not-irrel-1
   (implies (and (<= eff-addr2 eff-addr1)
@@ -2588,7 +2836,8 @@
                               bvminus
                               acl2::bvchop-of-sum-cases
                               unsigned-byte-p
-                              write-to-segment-of-write-byte-to-segment))))
+                              write-to-segment-of-write-byte-to-segment
+                              acl2::bvchop-identity))))
 
 
 ;; (defthm read-byte-from-segment-of-write-to-segment-not-irrel
@@ -2783,7 +3032,7 @@
                             UNSIGNED-BYTE-P)
                            (sep-eff-addr-ranges
                             ACL2::BVCAT-EQUAL-REWRITE-ALT
-                            ACL2::BVPLUS-RECOLLAPSE
+
                             ACL2::BVCAT-EQUAL-REWRITE)))))
 
 (defthm unsigned-byte-p-of-+-of-esp-negative-offset-simple
@@ -2840,14 +3089,13 @@
   :hints (("Goal"
            :induct (WRITE-TO-SEGMENT N EFF-ADDR SEG-REG VAL X86)
            :expand ((write-to-segment n eff-addr seg-reg val x86))
-           :in-theory (e/d (WRITE-TO-SEGMENT
-                            WRITE-TO-SEGMENT-OF-WRITE-BYTE-TO-SEGMENT
-                            unsigned-byte-p)
-                           ((:e expt)
-                            acl2::bvcat-equal-rewrite-alt
-                            acl2::bvcat-equal-rewrite)))))
+           :in-theory (e/d (write-to-segment
+                            write-to-segment-of-write-byte-to-segment
+                            unsigned-byte-p
+                            acl2::bvchop-of-logtail-becomes-slice)
+                           ((:e expt))))))
 
-
+;rename, move?
 (defthm bvminus-cancel-2-2
   (implies (and (integerp a)
                 (integerp b)
@@ -2887,8 +3135,9 @@
                                    esp
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
+                                   acl2::bvchop-identity
                                    )
-                                  (acl2::bvplus-recollapse)))))
+                                  ()))))
 
 (defthm segments-separate-of-code-and-stack
   (implies (code-and-stack-segments-separate x86)
@@ -2959,26 +3208,13 @@
 
 ;gen
 
-
 (defthm canonical-address-p$inline-of-n-minus-2 ;gen
   (implies (and (natp n)
                 (< n (expt 2 32)))
            (canonical-address-p$inline (binary-+ '-2 n)))
   :hints (("Goal" :in-theory (enable canonical-address-p$inline signed-byte-p))))
 
-;move
-; better than x86isa::size-of-rb-1
-(defthm unsigned-byte-p-of-mv-nth-1-of-rb-1
-  (implies (and (<= (* 8 n) m)
-                (natp m)
-                (x86p x86))
-           (unsigned-byte-p m (mv-nth 1 (rb-1 n addr r-x x86))))
-  :hints (("Goal" :use (:instance x86isa::size-of-rb-1
-                                  (X86ISA::ADDR addr)
-                                  (X86ISA::R-X r-x)
-                                  (m (* 8 n)))
-           :in-theory (e/d (ash rb-1)
-                           (x86isa::size-of-rb-1)))))
+
 
 ;; (defthm bound-hack ;should not be needed (also, this should be proved automatically by linear)
 ;;   (implies (and (<= eff-addr 4294967296)
@@ -3081,15 +3317,14 @@
                             (:e expt)
                             ifix
                             rb-1
-                            )
+                            acl2::bvchop-identity)
                            (;;ea-to-la
                             ;mv-nth-1-of-rb-becomes-read
                             ;mv-nth-1-of-rb-1-becomes-read
                             ;acl2::bvcat-equal-rewrite-alt
                             acl2::bvcat-equal-rewrite
                             ;rvm08-becomes-read-byte
-                            ;acl2::slice-of-+
-                            acl2::bvplus-recollapse)))))
+                            )))))
 
 (defthm mv-nth-1-of-rme08-becomes-read-from-segment
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3127,6 +3362,8 @@
                                    (:e expt)
                                    ifix
                                    rb-1
+                                   acl2::ash-0 ; why?
+                                   acl2::bvchop-identity
                                    )
                                   (;;ea-to-la
 ;;mv-nth-1-of-rb-becomes-read
@@ -3134,8 +3371,7 @@
 ;;acl2::bvcat-equal-rewrite-alt
                                    acl2::bvcat-equal-rewrite
 ;;rvm08-becomes-read-byte
-                                   acl2::slice-of-+
-                                   acl2::bvplus-recollapse)))))
+                                   )))))
 
 (defthm mv-nth-1-of-rme16-becomes-read-from-segment
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3193,15 +3429,15 @@
                             (:e expt)
                             ifix
                             rb-1
-                            )
+                            acl2::ash-0 ; why?
+                            acl2::bvchop-identity)
                            ( ;;ea-to-la
                             ;;mv-nth-1-of-rb-becomes-read
                             ;;mv-nth-1-of-rb-1-becomes-read
 ;;;acl2::bvcat-equal-rewrite-alt
                             acl2::bvcat-equal-rewrite
                             ;;rvm08-becomes-read-byte
-                            acl2::slice-of-+
-                            acl2::bvplus-recollapse)))))
+                            )))))
 
 (defthm eff-addrs-okp-of-xw-irrel
   (implies (and (not (equal :seg-hidden-attr fld))
@@ -3216,21 +3452,17 @@
   (equal (eff-addrs-okp n eff-addr seg-reg (set-flag flg val x86))
          (eff-addrs-okp n eff-addr seg-reg x86)))
 
+(defthm eff-addrs-okp-of-set-undef
+  (equal (eff-addrs-okp n eff-addr seg-reg (set-undef undef x86))
+         (eff-addrs-okp n eff-addr seg-reg x86)))
+
+(defthm eff-addrs-okp-of-set-mxcsr
+  (equal (eff-addrs-okp n eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (eff-addrs-okp n eff-addr seg-reg x86)))
+
 (defthm eff-addrs-okp-of-write-to-segment
   (equal (eff-addrs-okp n eff-addr seg-reg (write-to-segment n2 eff-addr2 seg-reg2 val2 x86))
          (eff-addrs-okp n eff-addr seg-reg x86)))
-
-
-
-(defthm read-from-segment-of-set-flag
-  (equal (read-from-segment n eff-addr seg-reg (set-flag flg val x86))
-         (read-from-segment n eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (enable read-from-segment))))
-
-(defun set-eip (eip x86)
-  (declare (xargs :stobjs x86
-                  :guard (signed-byte-p 48 eip))) ;todo: tighten?
-  (x86isa::!rip eip x86))
 
 (defthm write-*ip-inline-becomes-xw
   (implies (segment-is-32-bitsp *cs* x86)
@@ -3244,35 +3476,10 @@
 ;;                   (set-eip (bvchop 32 eip) x86)))
 ;;   :hints (("Goal" :in-theory (enable x86isa::write-*ip$inline))))
 
-;; This introduces set-eip, if we want to.  We probably only want this for 32-bits!
-(defthmd xw-becomes-set-eip
-  (equal (xw :rip nil eip x86)
-         (set-eip eip x86)))
-
-(defthm eip-of-set-eip
-  (equal (eip (set-eip eip x86))
-         (logext 48 eip)))
-
-(defthm xr-of-set-eip-irrel
-  (implies (not (equal fld :rip))
-           (equal (xr fld index (set-eip eip x86))
-                  (xr fld index x86))))
-
-(defthm xr-of-set-eip-same
-  (equal (xr :rip nil (set-eip eip x86))
-         (logext 48 eip))
-  :hints (("Goal" :in-theory (enable set-eip))))
-
 (defthm segment-is-32-bitsp-of-set-eip
   (equal (segment-is-32-bitsp seg-reg (set-eip eip x86))
          (segment-is-32-bitsp seg-reg x86))
   :hints (("Goal" :in-theory (enable set-eip))))
-
-;open less in the proof?
-(defthm 32-bit-segment-size-of-set-eip
-  (equal (32-bit-segment-size seg-reg (set-eip eip x86))
-         (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-eip 32-bit-segment-size 32-bit-segment-start-and-size))))
 
 (defthm 32-bit-segment-start-of-set-eip
   (equal (32-bit-segment-start seg-reg (set-eip eip x86))
@@ -3316,6 +3523,8 @@
   :hints (("Goal" :in-theory (enable set-eip))))
 
 ;;;
+
+(local (in-theory (disable ea-to-la)))
 
 (defthm ea-to-la-of-set-eip
   (equal (ea-to-la proc-mode eff-addr seg-reg nbytes (set-eip eip x86))
@@ -3405,7 +3614,8 @@
                                      segment-base-and-bounds
                                      segment-min-eff-addr32
                                      segment-max-eff-addr32
-                                     rb))))
+                                     rb
+                                     ea-to-la))))
 
 (defthm mv-nth-2-of-rime-size$inline
   (implies (app-view x86)
@@ -3471,7 +3681,8 @@
                                      segment-base-and-bounds
                                      segment-min-eff-addr32
                                      segment-max-eff-addr32 rb (:e expt)
-                                     canonical-address-p signed-byte-p))))
+                                     canonical-address-p signed-byte-p
+                                     ea-to-la))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-1
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3526,14 +3737,16 @@
                             canonical-address-p$inline
                             signed-byte-p
                             (:e expt)
-                            )
+                            acl2::ash-0 ; why?
+                            acl2::bvchop-identity
+                            ea-to-la)
                            (;;ea-to-la
 ;                            mv-nth-1-of-rb-becomes-read
  ;                           mv-nth-1-of-rb-1-becomes-read
                             ;acl2::bvcat-equal-rewrite-alt
                             acl2::bvcat-equal-rewrite
                             ;rvm08-becomes-read-byte
-                            acl2::slice-of-+)))))
+                            )))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-2
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3584,11 +3797,11 @@
                             canonical-address-p$inline
                             ;signed-byte-p
                             (:e expt)
-                            )
-                           (acl2::bvplus-recollapse
+                            ea-to-la
+                            acl2::bvchop-identity)
+                           (
                             ;acl2::bvcat-equal-rewrite
                             ;acl2::bvcat-equal-rewrite-alt
-                            acl2::slice-of-+
                             ACL2::LOGEXT-OF-LOGIOR)))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-4
@@ -3641,9 +3854,9 @@
                             CANONICAL-ADDRESS-P$INLINE
                             ;SIGNED-BYTE-P
                             (:e expt)
-                            )
-                           (acl2::bvplus-recollapse
-                            ACL2::SLICE-OF-+
+                            ea-to-la
+                            acl2::bvchop-identity)
+                           (
                             ACL2::LOGEXT-OF-LOGIOR)))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-8
@@ -3696,9 +3909,9 @@
                             CANONICAL-ADDRESS-P$INLINE
                             ;SIGNED-BYTE-P
                             (:e expt)
-                            )
-                           (acl2::bvplus-recollapse
-                            ACL2::SLICE-OF-+
+                            ea-to-la
+                            acl2::bvchop-identity)
+                           (
                             ;for speed:
                             ACL2::LOGEXT-OF-LOGIOR
                             ACL2::UNSIGNED-BYTE-P-LOGIOR
@@ -3711,11 +3924,12 @@
                 (<= nbytes (expt 2 32))
                 (natp nbytes)
                 (app-view x86)
-                (or (equal seg-reg *cs*)
-                    (equal seg-reg *ss*)
-                    (not (< (xr :seg-visible seg-reg x86) 4)))
+                (equal seg-reg *ss*)
+                ;; (or (equal seg-reg *cs*)
+                ;;     (equal seg-reg *ss*)
+                ;;     (not (< (xr :seg-visible seg-reg x86) 4)))
                 (x86p x86)
-                (not (equal seg-reg *cs*))
+                ;; (not (equal seg-reg *cs*))
                 (equal 1 (data-segment-writeable-bit seg-reg x86)))
            (not (mv-nth 0 (x86isa::wme-size$inline *compatibility-mode*
                                                    nbytes
@@ -3732,9 +3946,11 @@
                                      x86isa::wml48
                                      x86isa::wml80
                                      x86isa::wml128
+                                     x86isa::wml256
                                      (:e expt)
                                      canonical-address-p
-                                     signed-byte-p))))
+                                     signed-byte-p
+                                     ea-to-la))))
 
 (acl2::defopeners write-to-segment)
 (in-theory (disable write-to-segment-unroll))
@@ -3770,8 +3986,10 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
+                                  ()))))
 
 (defthm mv-nth-1-of-wml16-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3803,8 +4021,10 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
+                                  ()))))
 
 (defthm mv-nth-1-of-wml32-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3836,8 +4056,10 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
+                                  ()))))
 
 (defthm mv-nth-1-of-wml48-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3869,8 +4091,10 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
+                                  ()))))
 
 (defthm mv-nth-1-of-wml64-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3902,8 +4126,10 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
+                                  ()))))
 
 (defthm mv-nth-1-of-wml80-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3935,8 +4161,11 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
+                                  (
+                                   x86isa::xw-of-xw-both)))))
 
 (defthm mv-nth-1-of-wml128-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3968,8 +4197,47 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
+                                  (
+                                   x86isa::xw-of-xw-both)))))
+
+(defthm mv-nth-1-of-wml256-of-mv-nth-1-of-ea-to-la
+  (implies (and (segment-is-32-bitsp seg-reg x86)
+                (eff-addrs-okp 32 eff-addr seg-reg x86)
+                (natp eff-addr)
+                (<= (+ 32 eff-addr) (expt 2 32))
+                (app-view x86)
+                (x86p x86)
+                (well-formed-32-bit-segmentp seg-reg x86))
+           (equal (mv-nth 1 (x86isa::wml256 (mv-nth 1 (ea-to-la 1 eff-addr seg-reg 32 x86)) val x86))
+                  (write-to-segment 32 eff-addr seg-reg val x86)))
+  :hints (("Goal" :in-theory (e/d (x86isa::wml256
+                                   write-to-segment-base
+                                   write-to-segment-unroll
+                                   wb
+                                   wvm08
+                                   write-byte-to-segment
+                                   bvplus
+                                   acl2::bvchop-of-sum-cases
+                                   well-formed-32-bit-segmentp
+                                   segment-base-and-bounds
+                                   segment-max-eff-addr32
+                                   segment-min-eff-addr32
+                                   32-bit-segment-start
+                                   32-bit-segment-size
+                                   32-bit-segment-start-and-size
+                                   n48
+                                   acl2::slice-too-high-is-0-new
+                                   canonical-address-p$inline
+                                   signed-byte-p
+                                   (:e expt)
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
+                                  (
+                                   x86isa::xw-of-xw-both)))))
 
 (defthm mv-nth-1-of-wb-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4002,8 +4270,10 @@
                             canonical-address-p$inline
                             signed-byte-p
                             (:e expt)
-                            ifix)
-                           (acl2::bvplus-recollapse)))))
+                            ifix
+                            ea-to-la
+                            acl2::bvchop-identity)
+                           ()))))
 
 (defthm canonical-address-p-of-+-of-ea-to-la-last-address
   (implies (and (eff-addrs-okp nbytes eff-addr seg-reg x86)
@@ -4019,7 +4289,8 @@
                                    signed-byte-p
                                    (:e expt)
                                    ifix
-                                   bvplus) (acl2::bvplus-recollapse)))))
+                                   bvplus
+                                   ea-to-la) ()))))
 
 (defthm mv-nth-1-of-wml-size-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4033,7 +4304,7 @@
            (equal (mv-nth 1 (x86isa::wml-size nbytes (mv-nth 1 (ea-to-la 1 eff-addr seg-reg nbytes x86)) val x86))
                   (write-to-segment nbytes eff-addr seg-reg val x86)))
   :hints (("Goal" :in-theory (e/d ()
-                                  (acl2::bvplus-recollapse
+                                  (
                                    x86isa::wml08
                                    x86isa::wml16
                                    x86isa::wml32
@@ -4109,8 +4380,6 @@
                             x86isa::wml128
                             ;;x86isa::wml-size
                             acl2::bvcat-equal-rewrite
-                            acl2::slice-of-+
-                            acl2::bvplus-recollapse
                             write-to-segment-unroll
                             write-to-segment-base)))))
 
@@ -4163,6 +4432,16 @@
          (segments-separate seg-reg1 seg-reg2 x86))
   :hints (("Goal" :in-theory (enable set-flag segments-separate segments-separate-helper))))
 
+(defthm segments-separate-of-set-undef
+  (equal (segments-separate seg-reg1 seg-reg2 (set-undef undef x86))
+         (segments-separate seg-reg1 seg-reg2 x86))
+  :hints (("Goal" :in-theory (enable set-undef segments-separate segments-separate-helper))))
+
+(defthm segments-separate-of-set-mxcsr
+  (equal (segments-separate seg-reg1 seg-reg2 (set-mxcsr mxcsr x86))
+         (segments-separate seg-reg1 seg-reg2 x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr segments-separate segments-separate-helper))))
+
 (defthm code-and-stack-segments-separate-of-set-eip
   (equal (code-and-stack-segments-separate (set-eip eip x86))
          (code-and-stack-segments-separate x86))
@@ -4177,6 +4456,16 @@
 
 (defthm code-and-stack-segments-separate-of-set-flag
   (equal (code-and-stack-segments-separate (set-flag flag val x86))
+         (code-and-stack-segments-separate x86))
+  :hints (("Goal" :in-theory (enable code-and-stack-segments-separate))))
+
+(defthm code-and-stack-segments-separate-of-set-undef
+  (equal (code-and-stack-segments-separate (set-undef undef x86))
+         (code-and-stack-segments-separate x86))
+  :hints (("Goal" :in-theory (enable code-and-stack-segments-separate))))
+
+(defthm code-and-stack-segments-separate-of-set-mxcsr
+  (equal (code-and-stack-segments-separate (set-mxcsr mxcsr x86))
          (code-and-stack-segments-separate x86))
   :hints (("Goal" :in-theory (enable code-and-stack-segments-separate))))
 
@@ -4283,7 +4572,6 @@
                             ;; LIST::EQUAL-APPEND-REDUCTION!
                             ACL2::TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                             ACL2::NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                            ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                             ;ACL2::<-OF-LEN-WHEN-INTEGERP-OF-NTH ACL2::<-OF-LEN-WHEN-NTH-NON-NIL ;why?
                             )))))
 
@@ -4452,7 +4740,7 @@
                             bvminus
                             acl2::bvchop-of-sum-cases)
                            (write-to-segment-of-write-byte-to-segment
-                            ACL2::BVPLUS-RECOLLAPSE)))))
+                            )))))
 
 (defun double-write-induct-two-vals (n eff-addr val1 val2 x86)
   (if (zp n)
@@ -4477,7 +4765,7 @@
                             unsigned-byte-p)
                            (sep-eff-addr-ranges
                             acl2::bvcat-equal-rewrite-alt
-                            acl2::bvplus-recollapse
+
                             acl2::bvcat-equal-rewrite)))))
 
 ;same segment (we don't know how other segmentes are laid out)
@@ -4508,7 +4796,6 @@
                             UNSIGNED-BYTE-P)
                            (sep-eff-addr-ranges
                             ACL2::BVCAT-EQUAL-REWRITE-ALT
-                            ACL2::BVPLUS-RECOLLAPSE
                             ACL2::BVCAT-EQUAL-REWRITE)))))
 
 (defthmd write-to-segment-of-write-to-segment-diff-axe
@@ -4562,8 +4849,16 @@
          (read-stack-dword eff-addr x86))
   :hints (("Goal" :in-theory (enable read-stack-dword))))
 
-;move
-;can help when the inner if returns an error (a cons) or nil
-(defthm if-of-if-of-cons-and-nil
-  (equal (if (if test (cons a b) nil) tp ep)
-         (if test tp ep)))
+; Helps resolve updates to ESP.
+; Note that this replaces BVPLUS with +.  TODO: Think about when we want this.
+;; todo: do we need a version for 64-bit?
+(defthmd bvplus-of-constant-and-esp-when-overflow
+  (implies (and (syntaxp (quotep k))
+                (<= (- (expt 2 32) k) (esp x86))
+                (unsigned-byte-p 32 (esp x86))
+                (unsigned-byte-p 32 k))
+           (equal (bvplus 32 k (esp x86))
+                  (+ (- (- (expt 2 32) k)) ;gets computed
+                     (esp x86))))
+  :hints (("Goal" ; :in-theory (disable acl2::plus-bvcat-with-0-alt) ; yuck
+           :use (:instance acl2::bvplus-of-constant-when-overflow (x (esp x86))))))

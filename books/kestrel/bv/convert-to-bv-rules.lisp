@@ -1,6 +1,6 @@
 ; Trim-based rules to convert functions to BV functions
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 (include-book "bv-syntax")
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
+(local (include-book "logand-b"))
 
 ;; These rules do step 1 of the conversion by inserting calls of trim.
 ;; Axe will need to have its own version of the rules, since they use syntaxp.
@@ -69,3 +70,26 @@
            (equal (trim size (+ x y))
                   (bvplus size x y)))
   :hints (("Goal" :in-theory (enable trim bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;; Use the trim scheme instead
+;; (defthm bvand-of-lognot-arg2
+;;   (equal (bvand size (lognot x) y)
+;;          (bvand size (bvnot size x) y))
+;;   :hints (("Goal" :in-theory (enable bvnot))))
+
+;; (defthm bvand-of-lognot-arg3
+;;   (equal (bvand size x (lognot y))
+;;          (bvand size x (bvnot size y)))
+;;   :hints (("Goal" :in-theory (enable bvnot))))
+
+;; (defthm bvxor-of-lognot-arg2
+;;   (equal (bvxor size (lognot x) y)
+;;          (bvxor size (bvnot size x) y))
+;;   :hints (("Goal" :in-theory (enable bvnot))))
+
+;; (defthm bvxor-of-lognot-arg3
+;;   (equal (bvxor size x (lognot y))
+;;          (bvxor size x (bvnot size y)))
+;;   :hints (("Goal" :in-theory (enable bvnot))))

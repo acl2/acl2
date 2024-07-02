@@ -577,14 +577,15 @@
         (cons (cdar D) (get-all key (cdr D)))
       (get-all key (cdr D)))))
 
-(defun apply-mget-to-x-lst (fields quotep)
-  (declare (xargs :guard (and (booleanp quotep)
+(defun apply-mget-to-xvar-lst (var fields quotep)
+  (declare (xargs :guard (and (symbolp var)
+                              (booleanp quotep)
                               (symbol-listp fields))))
   (if (endp fields)
     nil
     (let ((d-keyword-name (intern (symbol-name (car fields)) "KEYWORD")))
-      (cons (list 'acl2::mget (if quotep (kwote d-keyword-name) d-keyword-name) 'x)
-            (apply-mget-to-x-lst (cdr fields) quotep)))))
+      (cons (list 'acl2::mget (if quotep (kwote d-keyword-name) d-keyword-name) var)
+            (apply-mget-to-xvar-lst var (cdr fields) quotep)))))
 
 ;find recursive records
 (defun find-recursive-records (preds new-constructors)
@@ -698,7 +699,9 @@ see (defdata foo rational)
                   :put)
            (defmacro ,pred (,x) `(,',predicate ,,x))
            (defmacro ,alias-enum (,x) `(,',base-enum ,,x))
-           (defmacro ,alias-enum-acc (,x ,seed) `(,',base-enum/acc ,,x ,,seed))))))))
+           (defmacro ,alias-enum-acc (,x ,seed)
+             `(,',base-enum/acc ,,x ,,seed))
+           (add-macro-alias ,pred ,predicate)))))))
 
 #|
 (defmacro defdata-alias (alias type &rest args)

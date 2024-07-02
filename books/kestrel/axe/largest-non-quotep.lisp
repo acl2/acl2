@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "all-dargp")
+(include-book "darg-listp")
 
 ;;;
 ;;; largest-non-quotep
@@ -21,8 +21,7 @@
 ;; Return the largest nodenum in the ITEMS, each of which should be a nodenum
 ;; or a quoted constant.  If ITEMS contains no nodenums, return -1.
 (defund largest-non-quotep (items)
-  (declare (xargs :guard (and (true-listp items)
-                              (all-dargp items))))
+  (declare (xargs :guard (darg-listp items)))
   (if (endp items)
       -1 ;think about this as the default
     (let ((item (car items)))
@@ -35,7 +34,7 @@
 (defthm integerp-of-largest-non-quotep
   (integerp (largest-non-quotep items))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable all-dargp largest-non-quotep))))
+  :hints (("Goal" :in-theory (enable darg-listp largest-non-quotep))))
 
 (defthm <=-of--1-and-largest-non-quotep-linear
   (<= -1 (largest-non-quotep dags))
@@ -47,7 +46,7 @@
 
 (defthm largest-non-quotep-of-cons
   (implies (and (dargp arg)
-                (all-dargp args))
+                (darg-listp args))
            (equal (largest-non-quotep (cons arg args))
                   (if (consp arg)
                       (largest-non-quotep args)
@@ -78,19 +77,19 @@
            :in-theory (disable largest-non-quotep-bound))))
 
 (defthm natp-of-largest-non-quotep
-  (implies (and (all-dargp items)
+  (implies (and (darg-listp items)
                 (not (all-myquotep items)))
            (natp (largest-non-quotep items)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable ALL-DARGP LARGEST-NON-QUOTEP))))
+  :hints (("Goal" :in-theory (enable DARG-LISTP LARGEST-NON-QUOTEP))))
 
 (defthm natp-of-largest-non-quotep-2
-  (implies (all-dargp items)
+  (implies (darg-listp items)
            (equal (natp (largest-non-quotep items))
                   (not (equal -1 (largest-non-quotep items))))))
 
 (defthm equal-of--1-and-largest-non-quotep
-  (implies (all-dargp items)
+  (implies (darg-listp items)
            (equal (equal -1 (largest-non-quotep items))
                   (all-myquotep items)))
   :hints (("Goal" :in-theory (enable largest-non-quotep))))

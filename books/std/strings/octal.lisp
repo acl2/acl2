@@ -212,14 +212,14 @@ FX-8350.</p>
     :hints(("Goal" :in-theory (enable digit-to-char)))))
 
 
-(std::deflist oct-digit-char-listp (x)
+(std::deflist oct-digit-char-list*p (x)
   :short "Recognizes lists of @(see oct-digit-char-p) characters."
   (oct-digit-char-p x)
   ///
-  (defcong icharlisteqv equal (oct-digit-char-listp x) 1
+  (defcong icharlisteqv equal (oct-digit-char-list*p x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm character-listp-when-oct-digit-char-listp
-    (implies (oct-digit-char-listp x)
+  (defthm character-listp-when-oct-digit-char-list*p
+    (implies (oct-digit-char-list*p x)
              (equal (character-listp x)
                     (true-listp x)))
     :rule-classes ((:rewrite :backchain-limit-lst 1))))
@@ -227,7 +227,7 @@ FX-8350.</p>
 
 (define oct-digit-chars-value1
   :parents (oct-digit-chars-value)
-  ((x oct-digit-char-listp)
+  ((x oct-digit-char-list*p)
    (val :type unsigned-byte))
   :guard-debug t
   (if (consp x)
@@ -241,8 +241,8 @@ FX-8350.</p>
     (lnfix val)))
 
 (define oct-digit-chars-value
-  :short "Coerces a @(see oct-digit-char-listp) into a natural number."
-  ((x oct-digit-char-listp))
+  :short "Coerces a @(see oct-digit-char-list*p) into a natural number."
+  ((x oct-digit-char-list*p))
   :returns (value natp :rule-classes :type-prescription)
   :long "<p>For instance, @('(oct-digit-chars-value '(#\1 #\7))') is 15.  See
          also @(see parse-octal-from-charlist) for a more flexible function that
@@ -322,16 +322,16 @@ FX-8350.</p>
                                              char-fix)))))
   (defcong icharlisteqv equal (take-leading-oct-digit-chars x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm oct-digit-char-listp-of-take-leading-oct-digit-chars
-    (oct-digit-char-listp (take-leading-oct-digit-chars x)))
+  (defthm oct-digit-char-list*p-of-take-leading-oct-digit-chars
+    (oct-digit-char-list*p (take-leading-oct-digit-chars x)))
   (defthm bound-of-len-of-take-leading-oct-digit-chars
     (<= (len (take-leading-oct-digit-chars x)) (len x))
     :rule-classes :linear)
   (defthm equal-of-take-leading-oct-digit-chars-and-length
     (equal (equal (len (take-leading-oct-digit-chars x)) (len x))
-           (oct-digit-char-listp x)))
-  (defthm take-leading-oct-digit-chars-when-oct-digit-char-listp
-    (implies (oct-digit-char-listp x)
+           (oct-digit-char-list*p x)))
+  (defthm take-leading-oct-digit-chars-when-oct-digit-char-list*p
+    (implies (oct-digit-char-list*p x)
              (equal (take-leading-oct-digit-chars x)
                     (list-fix x))))
   (defthm consp-of-take-leading-oct-digit-chars
@@ -351,7 +351,7 @@ FX-8350.</p>
   :verify-guards nil
   :enabled t
   (mbe :logic
-       (oct-digit-char-listp (nthcdr n (explode x)))
+       (oct-digit-char-list*p (nthcdr n (explode x)))
        :exec
        (if (eql n xl)
            t
@@ -361,7 +361,7 @@ FX-8350.</p>
                                       xl))))
   ///
   (verify-guards oct-digit-string-p-aux
-    :hints(("Goal" :in-theory (enable oct-digit-char-listp)))))
+    :hints(("Goal" :in-theory (enable oct-digit-char-list*p)))))
 
 (define oct-digit-string-p
   :short "Recognizer for strings whose characters are octal digits."
@@ -370,7 +370,7 @@ FX-8350.</p>
   :long "<p>Corner case: this accepts the empty string since all of its
 characters are octal digits.</p>
 
-<p>Logically this is defined in terms of @(see oct-digit-char-listp).  But in the
+<p>Logically this is defined in terms of @(see oct-digit-char-list*p).  But in the
 execution, we use a @(see char)-based function that avoids exploding the
 string.  This provides much better performance, e.g., on an AMD FX-8350 with
 CCL:</p>
@@ -384,11 +384,11 @@ CCL:</p>
     ;; 1.36 seconds, 1.28 GB allocated
     (let ((x \"deadbeef\"))
       (time$ (loop for i fixnum from 1 to 10000000 do
-                   (str::oct-digit-char-listp (explode x)))))
+                   (str::oct-digit-char-list*p (explode x)))))
 })"
   :inline t
   :enabled t
-  (mbe :logic (oct-digit-char-listp (explode x))
+  (mbe :logic (oct-digit-char-list*p (explode x))
        :exec (oct-digit-string-p-aux x 0 (length x)))
   ///
   (defcong istreqv equal (oct-digit-string-p x) 1))
@@ -424,7 +424,7 @@ but @('octal-digit-to-char') is faster:</p>
   :parents (nat-to-oct-chars)
   :short "Logically simple definition that is similar to @(see nat-to-oct-chars)."
   ((n natp))
-  :returns (chars oct-digit-char-listp)
+  :returns (chars oct-digit-char-list*p)
   :long "<p>This <i>almost</i> computes @('(nat-to-oct-chars n)'), but when @('n') is
 zero it returns @('nil') instead of @('(#\\0)').  You would normally never call
 this function directly, but it is convenient for reasoning about @(see
@@ -517,7 +517,7 @@ nat-to-oct-chars).</p>"
 (define nat-to-oct-chars
   :short "Convert a natural number into a list of octal bits."
   ((n natp))
-  :returns (chars oct-digit-char-listp)
+  :returns (chars oct-digit-char-list*p)
   :long "<p>For instance, @('(nat-to-oct-chars 15)') is @('(#\\1 #\\7)').</p>
 
 <p>This is like ACL2's built-in function @(see explode-nonnegative-integer),
@@ -648,8 +648,8 @@ oct-digit-chars-value), and somewhat better performance:</p>
   :inline t
   (implode (nat-to-oct-chars n))
   ///
-  (defthm oct-digit-char-listp-of-nat-to-dec-string
-    (oct-digit-char-listp (explode (nat-to-oct-string n))))
+  (defthm oct-digit-char-list*p-of-nat-to-dec-string
+    (oct-digit-char-list*p (explode (nat-to-oct-string n))))
   (defthm nat-to-oct-string-one-to-one
     (equal (equal (nat-to-oct-string n) (nat-to-oct-string m))
            (equal (nfix n) (nfix m))))
@@ -806,7 +806,7 @@ of our logical definition.</p>"
   ;; Minor speed hint
   (local (in-theory (disable BOUND-OF-LEN-OF-TAKE-LEADING-OCT-DIGIT-CHARS
                              ACL2::RIGHT-SHIFT-TO-LOGTAIL
-                             OCT-DIGIT-CHAR-LISTP-OF-CDR-WHEN-OCT-DIGIT-CHAR-LISTP)))
+                             OCT-DIGIT-CHAR-LIST*P-OF-CDR-WHEN-OCT-DIGIT-CHAR-LIST*P)))
 
   (verify-guards parse-octal-from-string
     :hints(("Goal" :in-theory (enable parse-octal-from-charlist
@@ -828,7 +828,7 @@ or has any non octal digit characters (0-7), we return @('nil').</p>"
   (mbe :logic
        (let ((chars (explode x)))
          (and (consp chars)
-              (oct-digit-char-listp chars)
+              (oct-digit-char-list*p chars)
               (oct-digit-chars-value chars)))
        :exec
        (b* (((the unsigned-byte xl) (length x))

@@ -13,6 +13,7 @@
 
 (include-book "classes")
 (include-book "global-class-alist")
+(include-book "kestrel/utilities/mydefconst" :dir :system)
 
 (defund class-info-constant-name (class-name  ;fully qualified?
                                  )

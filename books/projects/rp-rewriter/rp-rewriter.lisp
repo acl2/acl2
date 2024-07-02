@@ -47,6 +47,7 @@
 (include-book "aux-functions")
 (include-book "rp-state-functions")
 (include-book "eval-functions")
+(include-book "std/strings/strsubst" :dir :system)
 
 (local
  (include-book "proofs/local-lemmas"))
@@ -480,6 +481,12 @@
         (('if & ''nil ''t) nil)
         (& (and nil (cw "WARNING! (if a b c) unsupported case-split may be required. ~%"))))
       (cons term nil)))
+    (('equal ''t x)
+     (cons `(equal ,x 't)
+           (rp-extract-context x)))
+    (('equal x ''t)
+     (cons term
+           (rp-extract-context x)))
     (''t
      nil)
     (&
@@ -1011,21 +1018,23 @@ returns (mv rule rules-rest bindings rp-context)"
       (('hard-error ('quote ctx) ('quote str) alist)
        (progn$
         (rp-state-print-rules-used rp-state)
-        (hard-error ctx str (rp-rw-fix-hard-error-alist alist))))
+        (hard-error ctx
+                    (if (stringp str) (str::strsubst "~s" "~x" (str::strsubst "~d" "~x" str)) str)
+                    (rp-rw-fix-hard-error-alist alist))))
       (('fmt-to-comment-window ('quote &) ('quote &)
                                ('quote &) ('quote &) ('quote &))
        ;; if all arguments are quoted, then executable counterpart will be
        ;; triggered anyways, so dont do anything.
        nil)
-      (('fmt-to-comment-window ('quote str) ('acl2::pairlis2 &
-                                                             list)
+      (('fmt-to-comment-window ('quote str)
+                               ('acl2::pairlis2 & list)
                                ('quote col)
                                ('quote evisc)
                                ('quote print-base))
        (progn$
         ;;(cw "here1 ~p0 ~%" term)
         (fmt-to-comment-window
-         str
+         (if (stringp str) (str::strsubst "~s" "~x" (str::strsubst "~d" "~x" str)) str)
          (acl2::pairlis2 acl2::*base-10-chars* (rp-rw-fix-cw-list list context))
          col evisc print-base)))
       (('fmt-to-comment-window ('quote str) alist
@@ -1033,7 +1042,8 @@ returns (mv rule rules-rest bindings rp-context)"
        (progn$
         ;;(cw "here2 ~p0 ~%" term)
         (fmt-to-comment-window
-         str (rp-rw-fix-hard-error-alist alist) col evisc print-base)))
+         (if (stringp str) (str::strsubst "~s" "~x" (str::strsubst "~d" "~x" str)) str)
+         (rp-rw-fix-hard-error-alist alist) col evisc print-base)))
       (& nil))))
 
 (local
@@ -2151,7 +2161,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           term))
       rp-state))
     ((or (eq (car term) 'quote)
-         (eq (car term) 'list)) ;; a list instance is created by a meta rule,
+         #|(eq (car term) 'list)|#) ;; a list instance is created by a meta rule,
      ;; do not try to rewrite it again.
      (mv term rp-state))
     ((should-not-rw dont-rw);; exit right away if said to not rewrite
@@ -2160,7 +2170,8 @@ relieving the hypothesis for ~x1! You can disable this error by running:
      (b* ((rp-state (limit-reached-action nil rp-state)))
        (mv term rp-state)))
     ((is-rp$ term)
-     (b* ((dont-rw (dont-rw-car
+     (b* ((rp-state (push-to-rw-recent-terms term rp-state))
+          (dont-rw (dont-rw-car
                     (dont-rw-cdr
                      (dont-rw-cdr dont-rw))))
           ((mv new-term rp-state)
@@ -2197,6 +2208,9 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           #|((mv term dont-rw)
           (rp-check-context term dont-rw context iff-flg))|#
 
+          (rp-state (push-to-rw-recent-terms term rp-state)) ;; save what term
+          ;; is being rewritten into a small stack for history tracking when necessary.
+          
           ((mv rule-rewritten-flg term dont-rw rp-state)
            (rp-rw-rule term dont-rw
                        (rules-alist-outside-in-get (car term) rp-state)

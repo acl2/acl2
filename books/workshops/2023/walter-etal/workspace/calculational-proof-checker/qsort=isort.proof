@@ -1,0 +1,299 @@
+(in-package "ACL2S")
+(include-book "../../checker/examples/ind-examples/pass/just-thms")
+
+#|
+(definec <<= (x :all y :all) :bool
+  (or (== x y)
+      (<< x y)))
+
+(definec insert (a :all x :tl) :tl
+  (match x
+    (() (list a))
+    ((e . es) (if (<<= a e)
+                  (cons a x)
+                (cons e (insert a es))))))
+
+(definec isort (x :tl) :tl
+  (match x
+    (() ())
+    ((e . es) (insert e (isort es)))))
+
+(definec less (a :all x :tl) :tl
+  (match x
+    (() ())
+    ((e . es) (if (<< e a)
+                  (cons e (less a es))
+                (less a es)))))
+
+(definec notless (a :all x :tl) :tl
+  (match x
+    (() ())
+    ((e . es) (if (<<= a e)
+                  (cons e (notless a es))
+                (notless a es)))))
+
+(definec qsort (x :tl) :tl
+  (match x 
+    (() ())
+    ((e . es) (app (qsort (less e es))
+                   (list e)
+                   (qsort (notless e es))))))
+
+#|
+
+Q4. Prove the following property.
+
+This is not easy, so I strongly recommend that you come up with a
+plan and use the professional method to sketch out a proof.
+
+|#
+
+;; we need to describe that elements in an isorted list are ordered
+(definec orderedp (x :tl) :boolean
+  (or (endp x)
+      (endp (cdr x))
+      (^ (<<= (first x) (second x))
+         (orderedp (cdr x)))))
+
+; We need the lemma that insert preserves order to avoid nested
+; indution in lemma 4
+(property insert-preserves-order (l :tl a :all)
+          :h (orderedp l)
+          :b (orderedp (insert a l)))
+
+(property isort-ordered (l :tl)
+          (orderedp (isort l)))
+
+
+; Helper Lemma from checkpoint
+(property less-insert-<<= (l :tl a :all b :all)
+          :h (<<= a b)
+          :b (== (less a (insert b l))
+                 (less a l)))
+
+;  We need the invariant that l is ordered!
+(property less-insert-<< (l :tl a :all b :all)
+          :h (^ (<< b a)
+                (orderedp l))
+          :b (== (less a (insert b l))
+                 (insert b (less a l))))
+
+; Lemma 1
+(property isort-less (l :tl a :all)
+          (== (isort (less a l))
+              (less a (isort l))))
+
+; Helper Lemmas for L2 (symmetric from L1)
+(property notless-insert-<<= (l :tl a :all b :all)
+          :h (<<= a b)
+          :b (== (insert b (notless a l))
+                 (notless a (insert b l))))
+
+; Helper Lemma
+(property notless-insert-<< (l :tl a :all b :all)
+          :h (<< b a)
+          :b (== (notless a (insert b l))
+                 (notless a l)))
+
+; Lemma 2 
+(property isort-notless (l :tl a :all)
+          (== (isort (notless a l))
+              (notless a (isort l))))
+
+; Helper Lemma
+(property orderedp-<=-less (l :tl a :all)
+          :h (^ (orderedp l) (<<= a (first l)))
+          :b (== (less a l) nil))
+
+; Lemma 3
+(property app-less-not-less (l :tl a :all)
+          :h (orderedp l)
+          :b (== (append (less a l)
+                         (cons a (notless a l)))
+                 (insert a l)))
+|#
+
+;; (property qsort=isort (x :tl)
+;;           (== (qsort x)
+;;               (isort x)))
+
+
+#|
+
+*** Proving qsort=isort using professional method
+Start with some abbreviations.
+
+  A is app,  Q is qsort,   L is less,    F is first,
+  R is rest, N is notless, In is insert, I is isort
+
+|#
+
+(defabbrev A (x y z) (app x y z))
+(defabbrev Q (x) (qsort x))
+(defabbrev I (x) (isort x))
+(defabbrev L (a x) (less a x))
+(defabbrev N (a x) (notless a x))
+(defabbrev F (x) (first x))
+(defabbrev R (x) (rest x))
+(defabbrev S (a x) (insert a x))
+
+Conjecture qsort=isort:
+(=> (tlp x)
+    (== (qsort x)
+        (isort x)))
+
+Proof by: Induction on (qsort x)
+
+Contract Case 0:
+(=> (not (tlp x))
+    (=> (tlp x)
+        (== (qsort x)
+            (isort x))))
+
+Exportation:
+(=> (^ (! (tlp x))
+       (tlp x))
+    (== (qsort x)
+        (isort x)))
+
+Context:
+C1. (! (tlp x))
+C2. (tlp x)
+
+Derived Context:
+D1. nil { C1, C2, PL }
+QED
+
+Base Case 0:
+(=> (^ (tlp x)
+       (eq x nil))
+    (=> (tlp x)
+        (== (qsort x)
+            (isort x))))
+
+Exportation:
+(=> (^ (tlp x)
+       (== x nil))
+    (== (qsort x)
+        (isort x)))
+
+Context:
+C1. (tlp x)
+C2. (== x nil)
+
+Goal:  (== (qsort x) (isort x))
+
+Proof:
+(qsort x)
+== { C1, C2, Def qsort }
+nil
+== { C1, C2, Def isort }
+(isort x)
+QED
+
+Base Case 1:
+(=> (^ (tlp x)
+       (not (eq x nil))
+       (not (consp x)))
+    (=> (tlp x)
+        (equal (qsort x) (isort x))))
+
+Exportation:
+(=> (^ (tlp x)
+       (!= x nil)
+       (! (consp x)))
+    (== (qsort x)
+        (isort x)))
+
+Context:
+C1. (tlp x)
+C2. (!= x nil)
+C3. (! (consp x))
+
+Derived Context:
+D1. nil { C2, C3, PL }
+QED
+
+Induction Case 0:
+(=> (^ (tlp x)
+       (not (eq x nil))
+       (consp x)
+       ;; Induction Hyp 1
+       (=> (tlp (less (first x) (rest x)))
+           (equal (qsort (less (first x) (rest x)))
+                  (isort (less (first x) (rest x)))))
+       ;; Induction Hyp 2
+       (=> (tlp (notless (first x) (rest x)))
+           (equal (qsort (notless (first x) (rest x)))
+                  (isort (notless (first x) (rest x))))))
+    (=> (tlp x)
+        (equal (qsort x)
+               (isort x))))
+
+;; We now switch to abbreviations
+Exportation:
+(=> (^ (tlp x)
+       (not (eq x nil))
+       (consp x)
+       (=> (tlp (L (F x) (R x)))
+           (== (Q (L (F x) (R x)))
+               (I (L (F x) (R x)))))
+       (=> (tlp (N (F x) (R x)))
+           (== (Q (N (F x) (R x)))
+               (I (N (F x) (R x))))))
+    (== (Q x)
+        (I x)))
+
+Context:
+C1. (tlp x)
+C2. (not (eq x nil))
+C3. (consp x)
+C4. (=> (tlp (L (F x) (R x)))
+        (== (Q (L (F x) (R x)))
+            (I (L (F x) (R x)))))
+C5. (=> (tlp (N (F x) (R x)))
+        (== (Q (N (F x) (R x)))
+            (I (N (F x) (R x)))))
+
+Derived Context:
+D1. (tlp (R x)) { C1, C2 }
+D2. (tlp (L (F x) (R x))) { D1, Def less }
+D3. (tlp (N (F x) (R x))) { D1, Def notless }
+D4. (== (Q (L (F x) (R x)))
+        (I (L (F x) (R x))))
+{ C4, D2, MP }
+D5. (== (Q (N (F x) (R x)))
+        (I (N (F x) (R x))))
+{ C5, D3, MP }
+D6. (tlp (I (R x))) { D1, Def isort }
+D7. (orderedp (I (R x)))
+{ Lemma isort-ordered ((l (R x))), D6 }
+
+Goal: (== (Q x) (I x))
+
+Proof:
+(Q x)
+== { C2, Def qsort }
+(A (Q (L (F x) (R x)))
+     (list (F x))
+     (Q (N (F x) (R x))))
+== { D4, D5 }
+(A (I (L (F x) (R x)))
+     (list (F x))
+     (I (N (F x) (R x))))
+== { Lemma isort-less ((a (F x)) (l (R x))),
+     Lemma isort-notless ((a (F x)) (l (R x))) }
+(A (L (F x) (I (R x)))
+     (list (F x))
+     (N (F x) (I (R x))))
+== { cons axioms, Def append, Def bin-app }
+(append (L (F x) (I (R x)))
+        (cons (F x) (N (F x) (I (R x)))))
+== { Prop app-less-not-less
+     ((l (I (R x))) (a (F x))), D6, D7 }
+(S (F x) (I (R x)))
+== { C2, Def isort }
+(I x)
+QED
+
+QED

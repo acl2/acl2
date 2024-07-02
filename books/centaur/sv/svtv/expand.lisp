@@ -126,7 +126,7 @@
 
   (local (in-theory (disable len nthcdr (:d svtv-parse-path-indices) cons-equal
                              string-listp member-equal default-car default-cdr
-                             str::take-leading-dec-digit-chars-when-dec-digit-char-listp
+                             str::take-leading-dec-digit-chars-when-dec-digit-char-list*p
                              str::explode-when-not-stringp
                              ;; acl2::member-when-atom
                              )))
@@ -206,7 +206,7 @@
     :otf-flg t)
   (local (in-theory (disable len nthcdr (:d svtv-parse-path/select-aux) cons-equal
                              string-listp member-equal default-car default-cdr
-                             str::take-leading-dec-digit-chars-when-dec-digit-char-listp
+                             str::take-leading-dec-digit-chars-when-dec-digit-char-list*p
                              str::explode-when-not-stringp
                              acl2::lower-bound-of-len-when-sublistp
                              ;; acl2::member-when-atom
@@ -488,13 +488,10 @@
   (b* (((svtv-fsm x))
        ((mv errs lhsmap)
         (svtv-namemap->lhsmap
-         names 
+         names
          (moddb-modname-get-index top moddb)
          moddb aliases))
        ((when errs)
         (mv (msg-list errs) nil)))
     (mv nil
         (change-svtv-fsm x :namemap (append lhsmap x.namemap)))))
-
-
-

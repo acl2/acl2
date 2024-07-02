@@ -22,6 +22,7 @@
 (local (include-book "times-and-divide"))
 (local (include-book "plus"))
 (local (include-book "floor")) ; because integer-length calls floor
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (defthm integerp-of-expt2
   (implies (integerp i)
@@ -122,9 +123,7 @@
            (< (expt 2 i) 1))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :induct (expt 2 i)
-           :in-theory (e/d (expt
-                            expt-of-+)
-                           ()))))
+           :in-theory (enable expt expt-of-+))))
 
 (defthm equal-of-1-and-expt
   (equal (equal 1 (expt 2 n))
@@ -150,8 +149,7 @@
            (equal (equal (+ -1 (expt 2 n))
                          (* 2 x))
                   nil))
-  :hints (("Goal" :in-theory (e/d (expt even-not-equal-odd-hack)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable expt even-not-equal-odd-hack))))
 
 (defthm expt-bound-linear
   (implies (and (< i1 i2)
@@ -159,15 +157,13 @@
                 (integerp i2))
            (< (expt 2 i1) (expt 2 i2)))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (e/d (expt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable expt))))
 
 (defthm integerp-of-*-of-1/2-and-expt-2
   (implies (integerp n)
            (equal (integerp (* 1/2 (expt 2 n)))
                   (< 0 n)))
-  :hints (("Goal" :in-theory (e/d (expt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable expt))))
 
 (defthmd expt-diff-collect
   (implies (and (integerp m)
@@ -270,3 +266,70 @@
            (equal (< (+ (expt 2 (+ -1 i)) x) (expt 2 i))
                   (< x (expt 2 (+ -1 i)))))
   :hints (("Goal" :cases ((< x (expt 2 (+ -1 i)))))))
+
+(defthm <-of-*-of-2-and-expt-and-expt
+  (implies (and (integerp n)
+                (integerp m))
+           (equal (< (* 2 (expt 2 m)) (expt 2 n))
+                  (< (+ 1 m) n)))
+  :hints (("Goal" :use (:instance <-of-expt-and-expt-same-base (r 2)
+                                  (i (+ 1 m))
+                                  (j n))
+           :in-theory (e/d (expt-of-+) (<-OF-EXPT-AND-EXPT-SAME-BASE)))))
+
+(defthm <-of-expt-and-*-of-2-and-expt
+  (implies (and (integerp n)
+                (integerp m))
+           (equal (< (expt 2 n) (* 2 (expt 2 m)))
+                  (< n (+ 1 m))))
+  :hints (("Goal" :use (:instance <-of-expt-and-expt-same-base (r 2)
+                                  (i (+ 1 m))
+                                  (j n))
+           :in-theory (e/d (expt-of-+) (<-OF-EXPT-AND-EXPT-SAME-BASE)))))
+
+;gen to any base?
+(defthm <-of-expt-and-2
+  (implies (integerp i)
+           (equal (< (expt 2 i) 2)
+                  (< i 1))))
+
+(defthm unsigned-byte-p-of-expt2
+  (implies (integerp i)
+           (equal (unsigned-byte-p size (expt 2 i))
+                  (and (natp size)
+                       (<= 0 i)
+                       (<= (+ 1 i) size))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;rename
+(defthm cancel-expts-from-<
+  (implies (integerp i)
+           (equal (< (+ (expt 2 (+ -1 i)) x) (expt 2 i))
+                  (< x (expt 2 (+ -1 i)))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
+;gen
+(defthm <-of-2-and-expt2
+  (implies (integerp i)
+           (equal (< 2 (expt 2 i))
+                  (< 1 i))))
+
+;could be expensive?
+(defthm <=-of-2-and-expt2-linear
+  (implies (and (< 0 i)
+                (integerp i))
+           (<= 2 (expt 2 i)))
+  :rule-classes :linear)
+
+;todo: rename
+(defthm expt-hack
+  (implies (integerp n)
+           (equal (* 2 (expt 2 (+ -1 n)))
+                  (expt 2 n)))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthm minus-two-expts
+  (implies (posp size)
+           (equal (+ (- (expt 2 (+ -1 size))) (- (expt 2 (+ -1 size))))
+                  (- (expt 2 size))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))

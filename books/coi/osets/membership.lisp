@@ -43,22 +43,13 @@
   (implies
    (and
     (syntaxp (quotep x))
-    (not (empty x)))
+    (not (emptyp x)))
    (equal (in a x)
           (or (equal a (head x))
               (in a (tail x))))))
 
 (defun find-not (X)
   (declare (xargs :guard (setp X)))
-  (cond ((empty X) nil)
+  (cond ((emptyp X) nil)
         ((not (predicate (head X))) (head X))
         (t (find-not (tail X)))))
-
-
-
-
-
-
-
-
-

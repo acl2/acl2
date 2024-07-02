@@ -24,7 +24,7 @@
 
 ;; TODO: Put this in when stable
 
-(include-book "ieee-floats-as-bvs")
+(include-book "kestrel/floats/ieee-floats-as-bvs" :dir :system)
 (include-book "kestrel/bv/getbit-def" :dir :system)
 
 

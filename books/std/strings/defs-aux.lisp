@@ -121,7 +121,7 @@
     dec-digit-char-p
     nonzero-dec-digit-char-p
     dec-digit-char-value
-    dec-digit-char-listp
+    dec-digit-char-list*p
     dec-digit-chars-value1
     dec-digit-chars-value
     skip-leading-digits
@@ -146,7 +146,7 @@
 
     ;; binary.lisp
     bin-digit-char-p
-    bin-digit-char-listp
+    bin-digit-char-list*p
     bin-digit-char-value
     bin-digit-chars-value1
     bin-digit-chars-value
@@ -168,7 +168,7 @@
 
     ;; hex.lisp
     hex-digit-char-p
-    hex-digit-char-listp
+    hex-digit-char-list*p
     hex-digit-char-value
     hex-digit-chars-value1
     hex-digit-chars-value
@@ -194,7 +194,7 @@
     oct-digit-char-p
     nonzero-oct-digit-char-p
     oct-digit-char-value
-    oct-digit-char-listp
+    oct-digit-char-list*p
     oct-digit-chars-value1
     oct-digit-chars-value
     skip-leading-octal-digits

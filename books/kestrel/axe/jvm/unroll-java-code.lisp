@@ -1,7 +1,7 @@
 ; A tool to unroll Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -217,8 +217,8 @@
           (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
-         ((mv erp dag-or-quotep state) (maybe-prune-dag-approximately prune-branches-approximately dag state)
-          )
+         ((mv erp dag-or-quotep state)
+          (maybe-prune-dag-approximately prune-branches-approximately dag assumptions print state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
@@ -228,10 +228,11 @@
                                                                   dag
                                                                   assumptions
                                                                   nil ; todo: use some rules?
+                                                                  :none ; todo: pass a rule-alist here?
                                                                   nil ; todo?
                                                                   nil
                                                                   t ; call-stp
-                                                                  nil
+                                                                  print
                                                                   state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
@@ -247,7 +248,7 @@
         (if nil ;todo: (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag state))
-          (if (equivalent-dags dag old-dag)
+          (if (equivalent-dagsp dag old-dag)
               (progn$ (cw "Note: Stopping the run because nothing changed.~%")
                       (and print
                            (prog2$ (cw "(DAG:~%")
@@ -439,6 +440,7 @@
                            (desugar-nice-output-indicatorp maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
        (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
+       ;; Decide which symbolic execution rule to use:
        (symbolic-execution-rules (if (eq :auto steps)
                                      (if (eq branches :smart)
                                          (run-until-return-from-stack-height-rules-smart)
@@ -447,20 +449,19 @@
                                          (er hard 'unroll-java-code-fn "Illegal value for :branches: ~x0.  Must be :smart or :split." branches)))
                                    (symbolic-execution-rules-for-run-n-steps) ;todo: add a :smart analogue of this rule set
                                    ))
-       ((mv erp default-rule-alist)
-        (make-rule-alist (append (unroll-java-code-rules)
-                                 symbolic-execution-rules)
-                         (w state)))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ;; todo: if rule-alists are applied, should we at least include the symbolic-execution-rules?
        (rule-alists (or rule-alists ;use user-supplied rule-alists, if any
                         ;; by default, we use 1 rule-alist:
-                        (list default-rule-alist)))
+                        ;; todo: pre-compute each possibility here (but what about priorities?)
+                        (list (make-rule-alist! (append (unroll-java-code-rules)
+                                                        symbolic-execution-rules)
+                                                (w state)))))
        ;; maybe add some rules (can't call add-to-rule-alists because these are not theorems in the world):
        (rule-alists (extend-rule-alists2 ;; Maybe include the ignore-XXX rules:
-                     (append (and ignore-exceptions *ignore-exception-axe-rule-set*)
-                             (and ignore-errors *ignore-error-state-axe-rule-set*))
-                     rule-alists
-                     (w state)))
+                      (append (and ignore-exceptions *ignore-exception-axe-rule-set*)
+                              (and ignore-errors *ignore-error-state-axe-rule-set*))
+                      rule-alists
+                      (w state)))
        ;; Include any :extra-rules given:
        ((mv erp rule-alists) (add-to-rule-alists extra-rules rule-alists (w state)))
        ((when erp) (mv erp nil nil nil nil nil state))
@@ -507,6 +508,7 @@
                                                  monitored-rules
                                                  call-stp
                                                  t ; check-fnsp
+                                                 print
                                                  state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))

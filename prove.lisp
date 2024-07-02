@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1176,7 +1176,7 @@
 ; are not stobjs and the st_ik are all stobjs.  Since we want to rule out
 ; stobjs, we therefore check that stobjs-out is (nil) or (nil nil).
 
-     (not (all-nils stobjs-out))
+     (not (all-nils-or-dfs stobjs-out))
      (not (cdr (assoc-eq 'hacks-enabled
                          (table-alist 'waterfall-parallelism-table
                                       (w state))))))
@@ -2228,6 +2228,28 @@
 ;     state))
 ; )
 
+(defun rune-names-from-assumptions-1 (assumnotes names)
+  (cond ((endp assumnotes) names)
+        (t (rune-names-from-assumptions-1
+            (cdr assumnotes)
+            (let* ((rune (access assumnote (car assumnotes) :rune))
+                   (name (and (consp rune)
+                              (base-symbol rune))))
+              (cond ((and (consp rune)
+                          name
+                          (not (member-eq name names)))
+                     (cons name names))
+                    (t names)))))))
+
+(defun rune-names-from-assumptions (assumptions names)
+  (cond ((endp assumptions)
+         names)
+        (t (rune-names-from-assumptions
+            (cdr assumptions)
+            (rune-names-from-assumptions-1
+             (access assumption (car assumptions) :assumnotes)
+             names)))))
+
 (defun waterfall-update-gag-state (cl-id clause proc signal ttree pspv
                                          state)
 
@@ -2257,7 +2279,7 @@
          (new-active-p ; true if we are to push a new gag-info frame
           (and (null active-cl-id)
                (null (cdr pool-lst)) ; not in a sub-induction
-               (or push-or-bye-p ; even if the next test fails
+               (or push-or-bye-p     ; even if the next test fails
                    (member-eq proc (f-get-global 'checkpoint-processors
                                                  state)))))
          (new-frame (and new-active-p
@@ -2283,10 +2305,16 @@
                       (t gagst)))
          (forcep-msg (and new-forcep
                           msg-p
-                          (msg "Forcing Round ~x0 is pending (caused first by ~
-                                ~@1)."
-                               (1+ (access clause-id cl-id :forcing-round))
-                               (tilde-@-clause-id-phrase cl-id)))))
+                          (let ((names
+                                 (rune-names-from-assumptions
+                                  (tagged-objects 'assumption ttree)
+                                  nil)))
+                            (msg "Forcing Round ~x0 is pending (caused first ~
+                                  by ~#1~[~/applying ~&2 to ~]~@3)."
+                                 (1+ (access clause-id cl-id :forcing-round))
+                                 (if names 1 0)
+                                 names
+                                 (tilde-@-clause-id-phrase cl-id))))))
     (cond
      (push-or-bye-p
       (let* ((top-ci (assert$ (consp new-stack)
@@ -2701,10 +2729,13 @@
     (increment-timer 'prove-time state)
     (fms "~@0~|~q1.~|"
          (list (cons #\0 (tilde-@-clause-id-phrase cl-id))
-               (cons #\1 (prettyify-clause
-                          clause
-                          (let*-abstractionp state)
-                          (w state))))
+               (cons #\1 (if (eq (f-get-global 'raw-proof-format state)
+                                 :clause)
+                             clause
+                           (prettyify-clause
+                            clause
+                            (let*-abstractionp state)
+                            (w state)))))
          (proofs-co state)
          state
          (term-evisc-tuple nil state))
@@ -4523,7 +4554,7 @@
            (t
             (io?-prove@par
              (goal-already-printed-p)
-             (fms "[Note:  A hint was supplied for our processing of the goal ~
+             (fms "[Note:  A hint was supplied for the goal ~
                    ~#0~[above~/below~/above, provided by a :backtrack hint ~
                    superseding ~@1~].  Thanks!]~%"
                   (list
@@ -5561,7 +5592,7 @@
   form)
 
 #+(and acl2-par (not acl2-loop-only))
-(defparameter *acl2p-starting-proof-time* 0.0d0)
+(defparameter *acl2p-starting-proof-time* 0.0D0)
 
 #+acl2-par
 (defun waterfall1-wrapper@par-before (cl-id state)

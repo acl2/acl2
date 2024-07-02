@@ -930,8 +930,7 @@
 ; r-and-i-answer-key-log.txt.  Notice that the output prints the
 ; induction scheme suggested by the hint.
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1036,8 +1035,7 @@ Rules: ((:DEFINITION APP)
 ; arithmetic we allow ourselves to use freely in Recursion
 ; and Induction.
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 

@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1212,8 +1212,8 @@
                           (loop for dcl in dcls
                                 when (eq (car dcl) 'type)
                                 append
-                                (loop for var in (cddr dcl)
-                                      with pred = (cadr dcl)
+                                (loop with pred = (cadr dcl)
+                                      for var in (cddr dcl)
                                       collect
                                       (oneify `(the ,pred ,var)
                                               fns w program-p)))))
@@ -1302,6 +1302,47 @@
     :temp-touchable-vars t
     :temp-touchable-fns t))
 
+(defun remove-double-floats (stobjs-out-with-dfs *1*body check)
+
+; WARNING: There should be at least one :DF member of stobjs-out-with-dfs,
+; which is the stobjs-out for *1*body.
+
+; This function converts a given expression *1*body to one that avoids
+; returning any double-floats.  If check is nil, then we expect double-floats
+; as indicated by stobjs-out-with-dfs; otherwise we check (as in the case that
+; we are returning from a *1* function call, where the corresponding raw Lisp
+; function might or might not have been called).
+
+  (cond
+   ((null (cdr stobjs-out-with-dfs)) ; stobjs-out-with-dfs is (:df)
+    (cond (check
+           `(let ((x ,*1*body))
+              (if (typep x 'double-float)
+                  (rational x)
+                x)))
+          (t `(rational ,*1*body))))
+   (t
+    (let ((xs (loop for s in stobjs-out-with-dfs as i from 0 collect
+                    (progn s ; avoid warning on ignored variable
+                           (packn (list 'x i))))))
+      `(multiple-value-bind
+        ,xs
+        ,*1*body
+        (values ,@(cond (check (loop for s in stobjs-out-with-dfs
+                                     as x in xs
+                                     collect
+                                     (if (eq s :df)
+                                         `(if (typep ,x 'double-float)
+                                              (rational ,x)
+                                            ,x)
+                                       x)))
+                        (t (loop for s in stobjs-out-with-dfs
+                                 as x in xs
+                                 collect
+                                 (if (eq s :df)
+                                     `(rational ,x)
+                                   x))))))))))
+
 (defun-one-output oneify (x fns w program-p)
 
 ; Warning: Keep this function in sync with the other functions listed in the
@@ -1384,6 +1425,7 @@
        t   ; stobjs-out
        nil ; bindings
        t   ; known-stobjs
+       nil ; known-dfs (irrelevant since stobjs-out = t)
        nil ; flet-alist
        x
        'oneify
@@ -1452,13 +1494,14 @@
                      (cadr x)))
            (return-last-fn (return-last-fn qfn))
            (fn (or return-last-fn 'progn))
-           (arg2 (return-last-arg2 return-last-fn
-                                   (oneify (caddr x) fns w program-p))))
+           (arg2 (and (not (eq fn 'ec-call1-raw)) ; else don't care
+                      (return-last-arg2 return-last-fn
+                                        (oneify (caddr x) fns w program-p)))))
       (cond ((eq fn 'ec-call1-raw)
 
-; In the case of ec-call1-raw, we are already oneifying the last argument -- we
-; don't want to call return-last on top of that, or we'll be attempting to take
-; the *1*-symbol of the *1*-symbol!
+; In the case of ec-call1-raw, we basically just oneify the last argument.  But
+; we give special treatment below for the case that are oneifying the body of a
+; function with respect to its having a true 'invariant-risk property.
 
              (cond
               ((not (eq program-p 'invariant-risk))
@@ -1469,11 +1512,14 @@
 ; oneifying the body of a :program mode function with invariant-risk, for which
 ; any call of an invariant-risk function is to execute with its *1* function
 ; but other calls should use raw Lisp functions; see the final case in oneify.
-; Here, though, we want to call the *1* function even if it does not have
-; invariant-risk, because of the ec-call wrapper.
+; Here, though, as in the case just above, we want to call the *1* function
+; even if it does not have invariant-risk, because of the ec-call wrapper.
 
-; We need to be careful in this case that ec-call really does invoke a *1*
-; function here, and does so properly.  Consider the following example.
+; We arrange here, in this invariant-risk case, that ec-call really does invoke
+; a *1* function in :logic-mode code, just like we would normally do without
+; invariant risk (where **1*-as-raw* is nil, both by default and as set by
+; raw-ev-fncall for logic-mode functions; see comments in **1*-as-raw*).
+; Consider the following example.
 
 ;   (defun f-log () (mbe :logic 'logic :exec 'exec))
 ;   (defstobj st (fld :type integer :initially 0))
@@ -1489,16 +1535,16 @@
 ;   (f-prog2 st) ; should return (MV LOGIC <updated-state>)
 
 ; If we use the oneify call above (from the case that (not (eq program-p
-; 'invariant-risk))), then EXEC would returned as a first value by the call of
-; f-prog2 just above, which is incorrect.  The EXEC return value would be OK if
-; f-prog2 were defined with the ec-call wrapper removed, because f-log has no
-; invariant-risk and hence we want it to execute fast using the :exec form from
-; its mbe.  But the ec-call means that we really want to call *1*f-log -- we
-; are no longer slipping into raw Lisp and hence we no longer want the special
-; **1*-as-raw* handling, which is inappropriate here since it is intended to
-; give the illusion that we are in raw Lisp.  Thus, we call *1*f-log and what's
-; more, we bind **1*-as-raw* to nil, to signify that we intend to execute the
-; function call in the logic.
+; 'invariant-risk))), then EXEC would be returned as a first value by the call
+; of f-prog2 just above, which we consider to be incorrect.  The EXEC return
+; value would be OK if f-prog2 were defined with the ec-call wrapper removed,
+; because f-log has no invariant-risk and hence we want it to execute fast
+; using the :exec form from its mbe.  But the ec-call means that we really want
+; to call *1*f-log -- we are no longer slipping into raw Lisp and hence we no
+; longer want the special **1*-as-raw* handling, which is inappropriate here
+; since it is intended to give the illusion that we are in raw Lisp.  Thus, we
+; call *1*f-log and what's more, we bind **1*-as-raw* to nil, to signify that
+; we intend to execute the function call in the logic.
 
                (let ((form (car (last x))))
                  `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
@@ -1648,10 +1694,10 @@
     (let ((len (length x)))
       (case len
         (3 `(with-global-stobj ,(cadr x)
-                               ,(oneify (caddr x) fns w program-p)))
+              ,(oneify (caddr x) fns w program-p)))
         (4 `(with-global-stobj ,(cadr x)
-                               ,(caddr x)
-                               ,(oneify (cadddr x) fns w program-p)))
+              ,(caddr x)
+              ,(oneify (cadddr x) fns w program-p)))
         (otherwise (error "Unexpected case for with-global-stobj,~|~x0" x)))))
    ((eq (car x) 'stobj-let)
 
@@ -1754,17 +1800,35 @@
                     (list 'lambda formals (oneify body fns w program-p)))
               *nil*)))))
    (t
-    (let ((arg-forms (oneify-lst (cdr x) fns w program-p))
-          (fn (cond ((and (eq program-p 'invariant-risk)
-                          (not (getpropc (car x) 'invariant-risk nil w)))
+    (let ((arg-forms (oneify-lst (cdr x) fns w program-p)))
+      (cond ((and (eq program-p 'invariant-risk)
+                  (not (getpropc (car x) 'invariant-risk nil w)))
+             (let ((stobjs-in (getpropc (car x) 'stobjs-in nil w)))
+
+; Make sure that any inputs that are expected to be double-floats are indeed
+; double-floats.
+
+               (when (member-eq :df stobjs-in)
+                 (setq arg-forms
+                       (loop for arg in arg-forms
+                             as s in stobjs-in
+                             collect (if (eq s :df)
+                                         `(to-df ,arg)
+                                       arg)))))
 
 ; Oneify was called at the top level with program-p 'invariant-risk.  There is
 ; no need for sub-functions with no invariant-risk to be called using their *1*
-; functions.
+; functions.  However, we are oneifying, so we expect no double-float return
+; values; hence we convert any of those to rationals.
 
-                     (car x))
-                    (t (*1*-symbol (car x))))))
-      (cons fn arg-forms)))))
+             (let ((stobjs-out (getpropc (car x) 'stobjs-out nil w)))
+               (if (member-eq :df stobjs-out)
+                   (remove-double-floats stobjs-out
+                                         (cons (car x) arg-forms)
+                                         nil)
+                 (cons (car x) arg-forms))))
+            (t (cons (*1*-symbol (car x))
+                     arg-forms)))))))
 
 (defun-one-output oneify-lst (lst fns w program-p)
   (cond ((atom lst) nil)
@@ -1877,8 +1941,23 @@
     `(labels (,*1*fn-binding)
              (,*1*fn ,@formals))))
 
-(defun oneify-cltl-code (defun-mode def stobj-flag wrld
-                          &optional trace-rec-for-none)
+(defun df-call (fn formals)
+  (let ((stobjs-in (stobjs-in fn (w *the-live-state*))))
+    (cons fn
+          (loop for f in formals
+                as s in stobjs-in
+                collect
+                (if (eq s :df)
+
+; Warning: Do not change the following to use a floating-point number, e.g.,
+; (float ,f 0.0D0).  The serialize writing will choke on that when writing the
+; expansion file, specifically when df-call has been use in generating a *1*
+; definition.
+
+                    `(to-df ,f)
+                  f)))))
+
+(defun oneify-cltl-code-1 (defun-mode def stobj-flag wrld trace-rec-for-none)
 
 ; Warning: Keep this in sync with intro-udf-lst2 for the case that defun-mode
 ; is nil (i.e., the non-executable case).
@@ -1896,6 +1975,9 @@
 ; See the template above for detailed comments, which however are not
 ; necessarily kept fully up-to-date.
 
+; Note that before the function defined here is called, double-float arguments
+; will have been converted to rationals.  See oneify-cltl-code.
+
   (when stobj-flag
     (cond
      ((null (cadr def))
@@ -1909,7 +1991,7 @@
 ; properties have not yet been laid down.  So we use the test above.  Keep this
 ; null test in sync with the one in stobj-creatorp.
 
-      (return-from oneify-cltl-code
+      (return-from oneify-cltl-code-1
                    `(,(*1*-symbol (car def)) nil
                      (throw-raw-ev-fncall ; as in oneify-fail-form
                       (list 'ev-fncall-creator-er ',(car def))))))))
@@ -1925,7 +2007,7 @@
 ; the raw Lisp function if we see that the guard is t, since then the guard of
 ; the attachment is also presumably true.
 
-    (return-from oneify-cltl-code
+    (return-from oneify-cltl-code-1
                  (case-match def
                    ((fn formals ('declare ('xargs ':non-executable ':program))
                         ('throw-or-attach fn formals))
@@ -2008,8 +2090,8 @@
 
                 (eq (symbol-class fn wrld) :common-lisp-compliant)))
           (formals (cadr def))
-          (optimize-dcls (loop for tail on (cddr def)
-                               with tmp = nil
+          (optimize-dcls (loop with tmp = nil
+                               for tail on (cddr def)
                                do
                                (if (null (cdr tail)) ; avoid the body
                                    (return (reverse tmp))
@@ -2062,11 +2144,10 @@
 
                (and (not super-stobjs-in) (ignore-vars dcls)))
               (ignorable-vars (ignorable-vars dcls))
+              (stobjs-out (getpropc fn 'stobjs-out nil wrld))
               (declared-stobjs (if stobj-flag
                                    (list stobj-flag)
                                  (get-declared-stobjs dcls)))
-              (user-stobj-is-arg (and declared-stobjs
-                                      (not (equal declared-stobjs '(state)))))
               (live-stobjp-test (create-live-user-stobjp-test declared-stobjs))
 
 ; We throw away most declarations and the doc string, keeping only ignore and
@@ -2096,7 +2177,7 @@
                (cond (super-stobjs-in
                       '(let ((temp (f-get-global 'guard-checking-on
                                                  *the-live-state*)))
-                         (cond ((or (eq temp :none) (eq temp nil))
+                         (cond ((gc-off1 temp)
 
 ; Calls of a stobj primitive that takes its stobj as an argument are always
 ; guard-checked.  If that changes, consider also changing
@@ -2139,16 +2220,13 @@
 ; skip-early-exit-code-when-none is true.
 
                       guard-checking-on-form)
-                     (t `(let ((x ,guard-checking-on-form))
-                           (and x
-                                (not (eq x :none)))))))
+                     (t `(not (gc-off1 ,guard-checking-on-form)))))
               (fail_guard ; form for reporting guard failure
                (oneify-fail-form
                 'ev-fncall-guard-er fn formals guard super-stobjs-in wrld
                 (and super-stobjs-in
-                     '(cond ((member-eq (f-get-global 'guard-checking-on
-                                                      *the-live-state*)
-                                        '(nil :none))
+                     '(cond ((gc-off1 (f-get-global 'guard-checking-on
+                                                    *the-live-state*))
                              :live-stobj)
                             (t
                              :live-stobj-gc-on)))))
@@ -2261,13 +2339,19 @@
                                          (list ,@formals)
                                          ,safe-form))))
               (early-exit-code-main
-               (let* ((*1*guard
+               (let* ((df-inputs-p
+                       (member-eq :df
+                                  (stobjs-in fn (w *the-live-state*))))
+                      (*1*guard
                        (cond
                         ((and cl-compliant-p-optimization
-                              (not live-stobjp-test))
+                              (not live-stobjp-test)
+                              (not df-inputs-p))
                          (assert$ (not guard-is-t) ; already handled way above
                                   :unused))        ; optimization
                         (t (oneify guard nil wrld program-p))))
+                      (guard0 (cond (df-inputs-p *1*guard)
+                                    (t guard)))
                       (cl-compliant-code-guard-not-t
                        (and (not program-only) ; optimization
 
@@ -2288,8 +2372,9 @@
                             `(cond
                               ,(cond
                                 ((eq live-stobjp-test t)
-                                 `(,guard
-                                   (return-from ,*1*fn (,fn ,@formals))))
+                                 `(,guard0
+                                   (return-from ,*1*fn
+                                                ,(df-call fn formals))))
                                 (t
                                  `((if ,live-stobjp-test
                                        ,(if stobj-flag
@@ -2374,16 +2459,14 @@
 ; performance benefit may be small, so for now at least we avoid complicating
 ; the code with that consideration.
 
-                                            (let ((stobjs-out
-                                                   (getpropc fn 'stobjs-out nil
-                                                             wrld)))
-                                              (cond
-                                               ((and stobjs-out ; property is there
-                                                     (all-nils stobjs-out))
-                                                guard)
-                                               (t `(let ((*aokp* nil))
-                                                     ,guard))))
-                                          guard)
+                                            (cond
+                                             ((and stobjs-out ; property is there
+                                                   (all-nils-or-dfs
+                                                    stobjs-out))
+                                              guard0)
+                                             (t `(let ((*aokp* nil))
+                                                   ,guard0)))
+                                          guard0)
                                      ,*1*guard)
                                    ,(assert$
 
@@ -2393,7 +2476,7 @@
                                      (not guarded-primitive-p)
                                      `(cond (,live-stobjp-test
                                              (return-from ,*1*fn
-                                                          (,fn ,@formals))))))))
+                                                          ,(df-call fn formals))))))))
                               ,@(cond (super-stobjs-in
                                        `((t ,fail_guard)))
                                       (guarded-primitive-p
@@ -2506,7 +2589,12 @@
 ; mode case.
 
                (append
-                (and user-stobj-is-arg
+                (and (set-difference-eq stobjs-out
+
+; This call is similar to (collect-non-nil-df stobjs-out), but it also removes
+; state.
+
+                                        '(nil :df state))
                      `((when *wormholep*
                          (wormhole-er (quote ,fn) (list ,@formals)))))
                 (and (eq defun-mode :logic) ; else :program
@@ -2515,7 +2603,7 @@
                       (not cl-compliant-p-optimization)
                       `((when (eq (symbol-class ',fn (w *the-live-state*))
                                   :common-lisp-compliant)
-                          (return-from ,*1*fn (,fn ,@formals))))))
+                          (return-from ,*1*fn ,(df-call fn formals))))))
                 (cond ((and skip-early-exit-code-when-none
                             early-exit-code) ; else nil; next case provides nil
                        (cond (super-stobjs-in early-exit-code) ; optimization
@@ -2605,13 +2693,13 @@
                                            ignore-vars ignorable-vars
                                            super-stobjs-in super-stobjs-chk
                                            guard wrld)))
-                                     (if cont-p
-                                         `(state-free-global-let*
+                                     `(if ,cont-p
+                                          (state-free-global-let*
                                            ((check-invariant-risk t))
                                            ,labels-form)
-                                       labels-form))))
-                                (t (,fn ,@formals)))))))
-                        (t `((,fn ,@formals))))))
+                                        ,labels-form))))
+                                (t ,(df-call fn formals)))))))
+                        (t `(,(df-call fn formals))))))
                      (trace-rec-for-none
                       main-body-before-final-call)
                      (t
@@ -2667,6 +2755,54 @@
                   `((declare ,@optimize-dcls)))
            ,@*1*-body-forms)))))))
 
+(defun oneify-cltl-code (defun-mode def stobj-flag wrld
+                          &optional trace-rec-for-none)
+
+; We convert double-float inputs and outputs to rationals.  Except, that isn't
+; necessary when the function symbol is in *stobjs-out-invalid*, since those
+; are built-in functions that do not traffic explicitly in double-floats.
+
+  (let* ((stobjs-out-invalid (member-eq (car def) *stobjs-out-invalid*))
+         (fn (car def))
+         (stobjs-out (and (not stobjs-out-invalid) ; else irrelevant
+                          (stobjs-out fn wrld)))
+         (stobjs-in (stobjs-in fn wrld))
+         (stobjs-in-df (member-eq :df stobjs-in))
+         (stobjs-out-df (member-eq :df stobjs-out)))
+    (when (or stobjs-out-invalid
+              (and (not stobjs-in-df)
+                   (not stobjs-out-df)))
+      (return-from oneify-cltl-code
+                   (oneify-cltl-code-1 defun-mode def stobj-flag wrld
+                                       trace-rec-for-none)))
+    (let* ((new-def (oneify-cltl-code-1 defun-mode def stobj-flag wrld
+                                        trace-rec-for-none))
+           (*1*fn (car new-def))
+           (formals (cadr new-def)) ; probably same as (cadr def)
+
+; Convert df inputs to rationals.
+
+           (formals-checks
+            (loop for f in formals
+                  as s in stobjs-in
+                  when (eq s :df)
+                  collect
+                  `(assert (not (typep ,f 'double-float)))))
+           *1*body *1*dcls/strings)
+      (loop for tail on (cddr new-def)
+            while (or (stringp (car tail))
+                      (and (consp (car tail))
+                           (eq (caar tail) 'declare)))
+            collect (car tail) into dcls
+            finally (setq *1*dcls/strings dcls
+                          *1*body `(block ,*1*fn ,@tail)))
+      `(,*1*fn ,formals
+               ,@*1*dcls/strings
+               ,@formals-checks
+               ,(if stobjs-out-df
+                    (remove-double-floats stobjs-out *1*body t)
+                  *1*body)))))
+             
 
 ;          PROMPTS
 
@@ -3647,7 +3783,9 @@
 ;     LEMMAS RUNIC-MAPPING-PAIRS MULTIPLICITY STATE-IN
 ;     RECURSIVEP DEF-BODIES CONSTRAINEDP LINEAR-LEMMAS
 ;     FORMALS MACRO-BODY FORWARD-CHAINING-RULES STATE-OUT TABLE-ALIST
-;     GUARD MACRO-ARGS ELIMINATE-DESTRUCTORS-RULE CONST LEVEL-NO
+;     GUARD MACRO-ARGS
+;     ELIMINATE-DESTRUCTORS-RULE ; as of 10/2023, ELIMINATE-DESTRUCTORS-RULES
+;     CONST LEVEL-NO
 ;     UNNORMALIZED-BODY THEOREM REDEFINED INDUCTION-MACHINE JUSTIFICATION
 ;     INDUCTION-RULES CONTROLLER-ALIST QUICK-BLOCK-INFO
 
@@ -3717,6 +3855,7 @@
 ; CONSTRAINEDP                                          50190
 ; FORWARD-CHAINING-RULES                                49839
 ; CONST                                                 25601
+;;; As of 10/2023, the following was replaced by ELIMINATE-DESTRUCTORS-RULES.
 ; ELIMINATE-DESTRUCTORS-RULE                            19922
 ; THEOREM                                                9234
 ; LINEAR-LEMMAS                                          9102
@@ -3828,6 +3967,7 @@
 ; FORMALS                                                1278
 ; MACRO-BODY                                             1216
 ; STOBJS-OUT                                             1199
+;;; As of 10/2023, the following was replaced by ELIMINATE-DESTRUCTORS-RULES.
 ; ELIMINATE-DESTRUCTORS-RULE                              962
 ;
 ; ============================================================
@@ -4015,22 +4155,24 @@
 ; Part 1: A more detailed introduction
 ; Part 2: Including a certified book
 ; Part 3: Writing an expansion file for compilation
+; Appendix: Saving space by eliding certain defconst forms
 
 ; Part 0: High-level summary
 
-; We strive for efficiency of include-book.  By doing all compilation at
-; certify-book time rather than include-book time, we may greatly speed up
-; definitional processing in lisps such as CCL and SBCL, which compile every
-; definition on the fly.  We were motivated by profiling results showing that
-; such processing can take 45% of include-book time: a test case from Centaur
-; using CCL was spending this proportion of time in the installation of a
-; Common Lisp symbol-function for each defun event, in add-trip.  The problem
-; was that the CCL compiler is called every time a defun is evaluated, and
-; although the CCL compiler is impressively fast, it's not instantaneous.  Dave
-; Greve has reported observing significant such slowdowns using CCL at Rockwell
-; Collins.
+; We strive for efficiency of include-book.  For lisps that compile every
+; definition on the fly, including CCL and SBCL, we may greatly speed up
+; definitional processing by doing all compilation at certify-book time rather
+; than include-book time.  Indeed, profiling results have shown that
+; compilation can take 45% of include-book time: a test case from Centaur using
+; CCL was spending this proportion of time in the installation of a Common Lisp
+; symbol-function for each defun event, in add-trip.  The problem was that the
+; CCL compiler is called every time a defun is evaluated, and although the CCL
+; compiler is impressively fast, it's not instantaneous.  Dave Greve has
+; reported observing significant such slowdowns using CCL at Rockwell Collins.
 
-; Happily, with this change we found the time cut roughly in half for two
+; Happily, with this change starting with Version  4.0 (July, 2010) --
+; compiling books even for CCL and SBCL, and loading them early in the
+; include-book process -- we found the time cut roughly in half for two
 ; include-book tests from Centaur provided by Sol Swords.  Other tests suggest
 ; no noticeable slowdown for certify-book or include-book for GCL or Allegro
 ; CL, which do not compile on the fly.  For additional tests, see community
@@ -4042,25 +4184,27 @@
 ; by include-book, by instead using existing code previously compiled by
 ; certify-book, which is loaded before processing of events by include-book.
 ; Thus, the main efficiency gains from this change are expected to be for ACL2
-; built on CCL or SBCL, as these are the Lisps we know of (as of March 2010)
-; that compile all definitions at submission time and therefore had been
-; compiling on behalf of add-trip.  However, this approach may also boost
-; efficiency in some cases even for Lisps other than CCL and SBCL.  For one
-; thing, include-book will now install a compiled symbol-function for each
-; defun, even for those other Lisps, which can speed up computations in ensuing
-; defconst forms and defmacro forms of the book.  Moreover, compiled code will
-; be installed for defmacro and defconst forms, which can avoid the need for
-; redoing macroexpansion of the bodies of such forms during add-trip.
+; built on CCL or SBCL, as these are the Lisps hosting ACL2 that compile all
+; definitions at submission time and therefore had been compiling on behalf of
+; add-trip.  However, this approach may also boost efficiency in some cases
+; even for Lisps other than CCL and SBCL.  For one thing, include-book will now
+; install a compiled symbol-function for each defun, even for those other
+; Lisps, which can speed up computations in ensuing defconst forms and defmacro
+; forms of the book.  Moreover, compiled code will be installed for defmacro
+; and defconst forms, which can avoid the need for redoing macroexpansion of
+; the bodies of such forms during add-trip.
 
-; A simple-minded approach is to load the compiled file for a book *before*
-; processing events in the book.  The obvious problem is that ACL2 demands that
-; a function not be pre-defined in raw Lisp when evaluating a defun event, and
-; for good reason: we want to protect against accidental previous definition in
-; raw Lisp.  So instead, our solution is to arrange that loading compiled files
-; does not actually install definitions, but rather, builds hash tables that
-; associate symbols with their definitions.  The file to be compiled thus has
-; roughly the following structure; the prefix "hcomp" is intended to refer to
-; "hash-table-supported compilation".
+; A simple-minded approach is simply to load the compiled file for a book
+; *before* processing events in the book.  The obvious problem is that ACL2
+; demands that a function not be pre-defined in raw Lisp when evaluating a
+; defun event, and for good reason: we want to protect against previous
+; definition in raw Lisp, both by accident and for system functions defined
+; only in raw Lisp, such as add-trip.  So instead, our solution is to arrange
+; that loading a book's compiled files does not ultimately install definitions,
+; but rather, builds hash tables that associate symbols with their compiled
+; symbol-functions.  The file to be compiled thus has roughly the following
+; structure; the prefix "hcomp" is intended to refer to "hash-table-supported
+; compilation".
 
 ; (in-package "ACL2")
 ;;; Introduce some packages, without any imports:
@@ -4069,8 +4213,8 @@
 ; (setq *hcomp-fn-alist* '((fn1 ..) (fn2 ..) ..))
 ; (setq *hcomp-const-alist* '((c1 ..) (c2 ..) ..))
 ; (setq *hcomp-macro-alist* '((mac1 ..) (mac2 ..) ..))
-;;; Build a hash table associating fni, ci, and maci with pre-existing
-;;; compiled definitions or special *unbound* mark:
+;;; Build hash tables, including "restore" hash tables that associate fni, ci,
+;;; and maci with pre-existing compiled definitions or special *unbound* mark:
 ; (hcomp-init)
 ;;; Generate declaim forms (depending on the Lisp):
 ; ...
@@ -4081,7 +4225,7 @@
 
 ; Let's focus on functions (macros and constants have similar handling).  The
 ; load of each book in raw Lisp (by function load-compiled-book) is followed by
-; code that saves the symbol-function for each fni in a hash table,
+; code that saves the new symbol-function for each fni in a hash table,
 ; *hcomp-fn-ht* (function hcomp-transfer-to-hash-tables), which in turn is
 ; associated with the full-book-name in a global hash table, *hcomp-book-ht*.
 ; But first, the (hcomp-init) form arranges to save -- in a global hash table,
@@ -4106,7 +4250,7 @@
 ; complications.
 
 ; We are breaking from ACL2 versions up through  3.6.1, by insisting that the
-; compiled file for a book is loaded "early" (if it is loaded at all), i.e.,
+; compiled file for a book be loaded "early" (if it is loaded at all), i.e.,
 ; before events are processed from that book.  This approach not only can boost
 ; efficiency of include-book, but it also provides a solution to a soundness
 ; bug in the redundancy of :program mode definitions with preceding :logic mode
@@ -4195,16 +4339,21 @@
 ; Of course, these issues disappear if the compiled file is not loaded at all;
 ; and we support that too, using state global 'compiler-enabled.
 
-; We conclude this Part (High-level summary) with a few words about handling of
-; the case that include-book argument :load-compiled-file has argument :comp.
-; The basic idea is to wait until the book is included, and then check that
-; either the compiled file or the expansion file exists and is not older than
-; the certificate; and only then, if the expansion file exists but the compiled
-; file does not, do we compile the expansion file and then load it in the
-; ordinary way (without messing with hash tables, by leaving the relevant
-; variables such as *hcomp-fn-ht* bound to nil).  We considered more complex
-; approaches but are quite happy with this simple solution, and we don't say
-; anything further about the case of :load-compiled-file :comp in this Essay.
+; Before concluding this Part (High-level summary), we say a few words about
+; handling of the case that include-book argument :load-compiled-file has
+; argument :comp.  The basic idea is to wait until the book is included, and
+; then check that either the compiled file or the expansion file exists and is
+; not older than the certificate; and only then, if the expansion file exists
+; but the compiled file does not, do we compile the expansion file and then
+; load it in the ordinary way (without messing with hash tables, by leaving the
+; relevant variables such as *hcomp-fn-ht* bound to nil).  We considered more
+; complex approaches but are quite happy with this simple solution, and we
+; don't say anything further about the case of :load-compiled-file :comp in
+; this Essay.
+
+; Not discussed above is an optimization that avoids duplicating quoted bodies
+; of generated defconst forms.  We defer all discussion of that optimization to
+; the Appendix.
 
 ; Part 1: A more detailed introduction
 
@@ -4246,14 +4395,14 @@
 ; for later use, when add-trip deals with 'cltl-command properties.  Those
 ; extra forms are based on information deduced during the include-book phase of
 ; book certification, at which time Lisp global *inside-include-book-fn* has
-; value 'hcomp-build.  Later, during subsequent include-books, that information
+; value 'hcomp-build.  During subsequent include-books, that information
 ; directs which definitions from the expansion file are to be stored in our
 ; hash tables.  Additional forms are evaluated after completion of the load of
 ; the compiled file, to transfer the compiled definitions to hash tables and
-; eventually to remove each definition installed by the expansion file
-; (restoring any pre-existing definitions).  This eventual removal occurs only
-; after a load completes for the top-level compiled file of a book, and hence
-; also for all books included therein.
+; eventually to remove all definitions installed by the expansion file,
+; restoring any pre-existing definitions.  This eventual removal occurs (in
+; include-book-raw-top) only after a load completes for the top-level compiled
+; file of a book, and hence also for all books included therein.
 
 ; Portcullis commands and included sub-books present challenges.  Consider for
 ; example a constant whose value is a symbol in a package defined in a
@@ -4298,25 +4447,22 @@
 ; (Aside: Why does it work to start the expansion file with the introduction of
 ; an empty package, say "MY-PKG", and then lay down forms like the
 ; *hcomp-fn-alist* form, above, that may refer to symbols written out at the
-; end of book certification?  The only symbols where one might imagine this is
-; an issue are ones that are printed differently when "MY-PKG" is fully defined
-; (near the end of certification) than when it is introduced with no imports by
-; an initial form that introduces the package as "empty" (no imports).  The
-; only such symbols are those written without a package prefix, hence included
-; in the "ACL2" package, that are in the import list for "MY-PKG".  But such
-; symbols aren't a problem after all, because any reference to such a symbol in
-; the "ACL2" package is really a reference to a symbol of that name in the
-; "MY-PKG" package, once that package is "truly" introduced by defpkg.  And
-; until such a defpkg form is evaluated, ACL2 will not dabble in symbols in the
-; "MY-PKG" package, other than to save them in *hcomp-fn-alist* and related
-; lists near the top of the expansion file.)
+; end of book certification, at which time all packages are defined?  The short
+; answer is that at that print time, the symbol is printed with respect to the
+; package in which it was introduced, and that doesn't change when the symbol
+; is later read.  Here is a longer answer.  The only symbols where one might
+; imagine this is an issue are ones whose printed representation is not in
+; "MY-PKG" before but not after that package is defined.  Any such symbol would
+; have to be in the import list for "MY-PKG".  But then such an imported symbol
+; is printed as "FOO::SYM" at the end of certification, which indeed also
+; signifies the "SYM" symbol in "MY-PKG" after "MY-PKG" is defined.)
 
-; Note that in a break from ACL2 versions up through  3.6.1, where ACL2 could
+; Note that in a break from ACL2 versions up through 3.6.1, where ACL2 could
 ; load compiled files for uncertified books, the write-date comparison of the
 ; compiled file (or expansion file) is against the certificate rather than the
-; source .lisp file.  (Well, that's not quite true: the comparison remains
-; against the source book when include-book is executed in raw mode, since raw
-; mode does not involve the certificate file.)
+; source .lisp file.  (Exception: the comparison remains against the source
+; book when include-book is executed in raw mode, since raw mode does not
+; involve the certificate file.)
 
 ; We designate three "add-trip contexts", according to whether processing of a
 ; 'cltl-command property by add-trip is assigning a function, a global variable
@@ -4329,11 +4475,12 @@
 ; symbol can be an add-trip symbol.  The final step after loading a top-level
 ; compiled file will be to undo the load's assignment of relevant values to
 ; add-trip symbols.  This step will be done in the cleanup form of an
-; unwind-protect, so as to clean up if an error or interrupt occurs during
-; loading of the compiled file.  (The clean-up won't be complete for functions
-; defined in raw-mode, just as it hasn't been in earlier versions of ACL2 that
-; did not load compiled files early.  But raw-mode is ultimately the user's
-; responsibility, and we expect problems from such aborts to be rare.)
+; acl2-unwind-protect (see the calls of hcomp-restore-defs in
+; include-book-raw-top), so as to clean up if an error or interrupt occurs
+; during loading of the compiled file.  (The clean-up won't be complete for
+; functions defined in raw-mode, just as it hasn't been in earlier versions of
+; ACL2 that did not load compiled files early.  But raw-mode is ultimately the
+; user's responsibility, and we expect problems from such aborts to be rare.)
 
 ; We next describe several variables and a constant, which we define before
 ; include-book-fn.
@@ -4363,8 +4510,8 @@
 ; describes the attempt to load the book's compiled file, and also has optional
 ; fields corresponding to values of *hcomp-fn-ht*, *hcomp-const-ht*, and
 ; *hcomp-macro-ht*.  When ACL2 encounters an include-book form during an early
-; raw-Lisp load of an include-book whose full-book-name is not already a key of
-; the world's 'include-book-alist or of *hcomp-book-ht*, then include-book
+; raw-Lisp load for an include-book whose full-book-name is not already a key
+; of the world's 'include-book-alist or of *hcomp-book-ht*, then include-book
 ; loads that sub-book's compiled file, hence with new let-bindings of the
 ; *hcomp-xxx-alist* and *hcomp-xxx-ht* variables, along with unwind protection
 ; using the *hcomp-xxx-restore-ht* values that can restore relevant values
@@ -4437,11 +4584,11 @@
 ; (load "tmp3") ; faster (some kind of memoization?)
 ; (quit)
 
-; We conclude this Part with a discussion of some tricky issues for the case
-; that an expansion or compiled file is loaded by include-book, i.e., the case
-; that a book is being included with a non-nil effective value of
-; :load-compiled-file, where by "effective value" we mean the value after
-; accounting for state global 'compiler-enabled.
+; We turn now to a discussion of some tricky issues for the case that an
+; expansion or compiled file is loaded by include-book, i.e., the case that a
+; book is being included with a non-nil effective value of :load-compiled-file,
+; where by "effective value" we mean the value after accounting for state
+; global 'compiler-enabled.
 
 ; If the compiled file or certificate is missing, or else if the compiled file
 ; is older than the certificate, we may print a warning and go on, assigning
@@ -4531,10 +4678,10 @@
 ; book certification.
 
 ; In this essay, while we occasionally mention the use of raw mode within a
-; book, presumably within a progn! form in the presence of a trust tag, we do
-; not consider explicitly the evaluation of include-book forms in raw Lisp.
-; This case is simpler than evaluation of include-book forms in the ACL2 loop;
-; for example, the value of *hcomp-book-ht* is irrelevant for include-book
+; book, perhaps within a progn! form in the presence of a trust tag, we do not
+; consider explicitly the evaluation of include-book forms in raw Lisp.  This
+; case is simpler than evaluation of include-book forms in the ACL2 loop; for
+; example, the value of *hcomp-book-ht* is irrelevant for include-book
 ; performed in raw mode.
 
 ; Part 2: Including a certified book
@@ -4668,6 +4815,29 @@
 ; because of redundancy, so the last value is the only one that can reliably be
 ; assigned (if the count ever gets down to 1).
 
+; We conclude this Part with discussion of a slight hole in our approach.  the
+; hole is that because of early loading of the compiled file, the user can
+; arrange to avoid printing a "TTAG NOTE" when including a certified book, for
+; example with the following book.
+
+;   (in-package "ACL2")
+;   (defttag t)
+
+;   (progn!
+;    (set-raw-mode t)
+;    (defun print-ttag-note (val active-book-name include-bookp deferred-p state)
+;      (declare (ignore val active-book-name include-bookp deferred-p))
+;      state)
+;    (set-raw-mode nil))
+
+; This isn't actually a hole, because the "TTAG NOTE" is still printed during
+; certification.  But can we eliminate this hole?  A possibility might seem to
+; be that we print ttag notes before the early load of the compiled file, say,
+; by moving the call of include-book-raw-top from include-book-fn into
+; include-book-fn1.  But that probably would not be helpful, since we rightly
+; populate hash tables before evaluation of the portcullis commands, but ttag
+; information is read from the certificate after that evaluation.
+
 ; Part 3: Writing an expansion file for compilation
 
 ; We next consider the writing of the expansion file by certify-book.  This
@@ -4778,9 +4948,68 @@
 ; Note that some of these are wrapped together in a progn to maximize sharing
 ; using #n# syntax.
 
+; Appendix: Saving space by eliding certain defconst forms
+
+; ACL2 provides the opportunity to use make-event to create very large defconst
+; forms, for example, (make-event `(defconst *c* ',(make-list 1000000))).
+; Consider certifying a book with just that form.  Before June 2024, CCL
+; created a compiled file of size 1,001,793 (bytes).  After June 2024 the size
+; was only 1965.  This was accomplished by eliding quoted bodies of defconst
+; forms generated by make-event.  The main idea is that those elided bodies
+; point to values stored in the book's certificate; thus, we are avoiding
+; duplication in such cases.  We thank Sol Swords for suggesting that
+; duplication of such large constants be avoided.  Here we summarize how that
+; works.
+
+; There are three stages in replacing such defconst events of a book with
+; elided forms.  First, for each defconst form (defconst *c* (quote val)) at
+; index i in the expansion-alist, including any such form within a progn or
+; encapsulate, function elided-defconst-forms replaces it with (defconst *c*
+; (cadr (elided-defconst i))); see elided-defconst-form.  Then later, when ACL2
+; reads the book's compiled file (or corresponding expansion file), the form
+; (hcomp-init) invokes chk-certificate-file to populate
+; *hcomp-elided-defconst-alist* with entries (i '*c* . (quote val)) for *c* and
+; val as above, by applying function hcomp-elided-defconst-alist to the
+; cert-obj that is based on the certificate file.  Finally, when the form
+; (elided-defconst '*c* i) is evaluated during load of the compiled (or
+; expansion) file, the next pair (i '*c* . (quote val)) is popped from
+; *hcomp-elided-defconst-alist*.  Note that a form (progn ... (defconst ...)
+; ...) at position i in an expansion-alist can generate several entries with
+; index i in *hcomp-elided-defconst-alist*.  The point of storing (i '*c*
+; . (quote val)) rather than just (quote val) in that variable is simply to add
+; a sanity check that the top form in *hcomp-elided-defconst-alist* is as
+; expected, when evaluating the form (elided-defconst i); see function
+; elided-defconst.
+
+; Note that we elide every quoted defconst body that appears in the
+; :expansion-alist of the .cert file.  A consequence is that such elision will
+; occur for a quoted defconst inside a progn or encapsulate form that contains
+; a make-event form -- even a local one.  Consider for example a book
+; containing the following form.
+
+;   (progn
+;     (defconst *c* '(a b))
+;     (local (make-event '(defun h (x) x))))
+
+; The expansion file then contains the following defconst form, even though the
+; defconst form would appear unchanged if it were at the top level.
+
+;   (DEFCONST *C* (CADR (ELIDED-DEFCONST '*C* 1)))
+
+; Finally we note a subtle issue: When the compiled (or expansion) file reads
+; the :expansion-alist from the .cert file, are all necessary packages defined?
+; In raw Lisp they are, because the expansion-file contains the necessary calls
+; of maybe-introduce-empty-pkg-1, and these are made at the top of the file,
+; before the call of hcomp-init (which calls chk-certificate-file).  Those
+; packages might not all be defined in ACL2, but chk-bad-lisp-objectp skips the
+; check for a bad-lisp-object when *bad-lisp-object-ok* is non-nil, and that
+; variable is set to a non-nil value in chk-certificate-file when the caller is
+; 'include-book-raw.  That check is done later; see the call of
+; chk-bad-lisp-object in chk-certificate-file.
+
 ; End of Essay on Hash Table Support for Compilation
 
-(defun hcomp-init ()
+(defun hcomp-init (&aux (state *the-live-state*))
 
 ; For context, see the Essay on Hash Table Support for Compilation.
 
@@ -4794,7 +5023,7 @@
 ; the eventual restoration of relevant values for add-trip symbols.  For
 ; details, see the Essay on Hash Table Support for Compilation.
 
-  (when (or (raw-mode-p *the-live-state*)
+  (when (or (raw-mode-p state)
             (null *hcomp-fn-ht*))
 
 ; In raw mode, or when loading before compiling for include-book with
@@ -4815,13 +5044,13 @@
             (cdr pair)))
     (when *hcomp-const-restore-ht*
       (multiple-value-bind (old present-p)
-          (gethash (car pair) *hcomp-const-restore-ht*)
-        (declare (ignore old))
-        (when (not present-p)
-          (setf (gethash (car pair) *hcomp-const-restore-ht*)
-                (cond ((boundp (car pair))
-                       (symbol-value (car pair)))
-                      (t *hcomp-fake-value*)))))))
+                           (gethash (car pair) *hcomp-const-restore-ht*)
+                           (declare (ignore old))
+                           (when (not present-p)
+                             (setf (gethash (car pair) *hcomp-const-restore-ht*)
+                                   (cond ((boundp (car pair))
+                                          (symbol-value (car pair)))
+                                         (t *hcomp-fake-value*)))))))
   (dolist (pair *hcomp-macro-alist*)
     (when (cdr pair)
       (setf (gethash (car pair) *hcomp-macro-ht*)
@@ -4829,16 +5058,39 @@
   (when *hcomp-fn-macro-restore-ht*
     (dolist (pair (append *hcomp-macro-alist* *hcomp-fn-alist*))
       (multiple-value-bind (old present-p)
-          (gethash (car pair) *hcomp-fn-macro-restore-ht*)
-        (declare (ignore old))
-        (when (not present-p)
-          (setf (gethash (car pair) *hcomp-fn-macro-restore-ht*)
-                (let ((mac (macro-function (car pair))))
-                  (cond (mac (cons 'macro mac))
-                        ((fboundp (car pair))
-                         (cons 'function
-                               (symbol-function (car pair))))
-                        (t *hcomp-fake-value*)))))))))
+                           (gethash (car pair) *hcomp-fn-macro-restore-ht*)
+                           (declare (ignore old))
+                           (when (not present-p)
+                             (setf (gethash (car pair) *hcomp-fn-macro-restore-ht*)
+                                   (let ((mac (macro-function (car pair))))
+                                     (cond (mac (cons 'macro mac))
+                                           ((fboundp (car pair))
+                                            (cons 'function
+                                                  (symbol-function (car pair))))
+                                           (t *hcomp-fake-value*))))))))
+
+; Defconst forms with quoted constants are elided when writing the certificate
+; file (by the call of function subst-by-position-eliding-defconst by function
+; write-expansion-file).  Such constants have their values read from the
+; certificate when loading the compiled file.  Those values may be needed by
+; macroexpansion.  At that load time, special variable *load-compiled-stack*
+; will be non-nil and special variables *hcomp-full-book-string*,
+; *hcomp-directory-name*, *hcomp-full-book-name*, and *hcomp-ctx* will be
+; bound.
+
+; On the other hand, when *load-compiled-stack* is nil, which is during
+; certify-book, we don't need to consult the certificate because the constant
+; values are in place at that time (because at that point in the certification
+; process, all events in the book have been evaluated).
+
+  (when *load-compiled-stack*
+    (assert (boundp '*hcomp-full-book-string*)) ; so other such are bound too
+    (chk-certificate-file *hcomp-full-book-string* *hcomp-directory-name*
+                          *hcomp-full-book-name* 'include-book-raw *hcomp-ctx*
+                          state
+                          nil ; suspect-book-action-alist, which is irrelevant
+                          nil))
+  nil)
 
 (defabbrev reclassifying-value-p (x)
 
@@ -5433,7 +5685,11 @@
 ; tables.  We therefore protect the one global managed by add-trip that is not
 ; managed by those hash tables: *user-stobj-alist*.
 
-                      *user-stobj-alist*))
+                      *user-stobj-alist*)
+                     (*hcomp-full-book-string* full-book-string)
+                     (*hcomp-full-book-name* full-book-name)
+                     (*hcomp-directory-name* directory-name)
+                     (*hcomp-ctx* ctx))
                  (load-compiled-book full-book-string full-book-name
                                      directory-name load-compiled-file
                                      ctx state))))
@@ -5442,7 +5698,9 @@
                       :status   status
                       :fn-ht    *hcomp-fn-ht*
                       :const-ht *hcomp-const-ht*
-                      :macro-ht *hcomp-macro-ht*))
+                      :macro-ht *hcomp-macro-ht*
+                      :cert-obj *hcomp-cert-obj*
+                      :cert-filename *hcomp-cert-filename*))
           (cond ((member-eq status '(to-be-compiled complete))
                  status)
                 (status
@@ -6133,10 +6391,11 @@
 
 ; For explanation of the special handling of the first three of the following
 ; function symbols, see the comments in their defun-*1* forms.  For
-; *defun-overrides*, we have already taken responsibility for defining *1*
-; functions that we don't want to override here.
+; *df-primitives* and *defun-overrides*, we have already taken responsibility
+; for defining *1* functions that we don't want to override here.
 
                                      `(mv-list return-last wormhole-eval
+                                               ,@*df-primitives*
                                                ,@*defun-overrides*))
                           (setq new-*1*-defs
                                 (cons (list* 'oneify-cltl-code
@@ -6168,10 +6427,16 @@
 ; *1* def; see the next comment about ignorep.
 
                       (maybe-push-undo-stack 'defun (car def) ignorep))
-                     ((and boot-strap-flg
+                     ((and boot-strap-flg ; hence pass 2 (pass 1 covered above)
                            (or (member-eq (car def)
                                           *boot-strap-pass-2-acl2-loop-only-fns*)
-                               (member-eq (car def) ; see comment above
+
+; As noted above, for *df-primitives* and *defun-overrides*, we take
+; responsibility elsewhere for defining their *1* functions.
+
+                               (member-eq (car def)
+                                          *df-primitives*)
+                               (member-eq (car def)
                                           *defun-overrides*))))
                      (t (maybe-push-undo-stack 'defun (car def) ignorep)
 
@@ -7425,6 +7690,8 @@
     "hons"
     "serialize"
     "boot-strap-pass-2-a"
+    "float-a"
+    "float-b"
     "apply-prim"
     "apply-constraints"
     "apply"
@@ -7462,11 +7729,12 @@
 
   (and (consp form)
        (case (car form)
-         ((defun defund defn defproxy defun-nx defun-one-output defstub
-            defmacro defmacro-untouchable defabbrev
-            defun@par defmacro-last defun-overrides
-            defun-with-guard-check defun-sk defdeprecate
-            defun-inline defund-inline defun-notinline defund-notinline)
+         ((defun defund defn defproxy defun-nx defun-one-output
+                 defun-df-unary defun-df-binary
+                 defstub defmacro defmacro-untouchable defabbrev
+                 defun@par defmacro-last defun-overrides
+                 defun-with-guard-check defun-sk defdeprecate
+                 defun-inline defund-inline defun-notinline defund-notinline)
           (our-update-ht (cadr form) form ht when-pass-2-p))
          (save-def
           (note-fns-in-form (cadr form) ht when-pass-2-p))
@@ -7507,6 +7775,12 @@
                           when-pass-2-p))
          (state-global-let* ; (state-global-let* (... (fn val [fn2]) ...) form)
           (note-fns-in-form (caddr form) ht when-pass-2-p))
+         (df-constrained-functions-intro
+          (strip-cars *df-function-sigs-exec*))
+         (df-non-constrained-functions-intro
+          (loop for ev in (df-non-constrained-functions-events)
+                when (eq (car ev) 'defun)
+                collect (cadr ev)))
          ((add-custom-keyword-hint
            add-macro-alias
            add-macro-fn
@@ -7535,6 +7809,9 @@
            defthmd
            deftype
            defun-*1*
+           defun-df-*1*-unary
+           defun-df-*1*-binary
+           defun-df-*1*-from-function-sigs
            defv
            defvar
            error
@@ -7549,6 +7826,7 @@
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
            memoize
+           pprogn ; for install-df-basic-primitives
            program
            push
            reset-future-parallelism-variables
@@ -8157,7 +8435,7 @@
                        They probably should be added to ~s.~%~%"
                       bad-logic
                       '*initial-logic-fns-with-raw-code*))
-            (error "Check failed!")))))
+            (exit-with-build-error "Check failed!")))))
     (let* ((wrld (w state))
            (fns (loop for fn in (append (strip-cars *ttag-fns*)
                                         *initial-untouchable-fns*)
@@ -8170,7 +8448,7 @@
 
                       (and #+acl2-save-unnormalized-bodies (logicp fn wrld)
                            (getpropc fn 'unnormalized-body nil wrld)
-                           (all-nils (stobjs-in fn wrld)))
+                           (all-nils-or-dfs (stobjs-in fn wrld)))
                       collect fn))
            (bad (set-difference-eq fns
 ; Avoid undefined constant warning during boot-strap by using symbol-value:
@@ -8224,7 +8502,7 @@
   (cond
    ((null trips)
     (cond ((null acc) nil)
-          (t (error
+          (t (exit-with-build-error
               "The following are :ideal mode functions that are not ~%~
                non-executable.  We rely in oneify-cltl-code on the absence ~%~
                of such functions in the boot-strap world (see the comment ~%~
@@ -8260,7 +8538,7 @@
            (push (cons acl2-sym (symbol-value sym))
                  bad)))))
     (when bad
-      (error
+      (exit-with-build-error
        "The following symbols, perhaps with the values shown, need to~%~
         be added to *initial-global-table*:~%~s~%"
        bad))))
@@ -8359,8 +8637,8 @@
   (check-none-ideal (w *the-live-state*) nil)
   (check-state-globals-initialized)
   (or (plist-worldp-with-formals (w *the-live-state*))
-      (error "The initial ACL2 world does not satisfy ~
-              plist-worldp-with-formals!"))
+      (exit-with-build-error
+       "The initial ACL2 world does not satisfy plist-worldp-with-formals!"))
   (check-slashable)
   (check-some-builtins-for-executability)
   nil)
@@ -8554,28 +8832,6 @@
           (state *the-live-state*)
           pass-2-alist)
      (enter-boot-strap-mode system-books-dir (get-os))
-     (setq pass-2-alist
-           (let ((ans nil))
-             (dolist
-               (fl acl2-pass-2-files)
-               (mv-let (erp val state)
-
-; Warning.  Because of the read-file here, we have to be careful not to define
-; any packages in the pass-2 files that contain symbols mentioned in those
-; files.  The read-file will break in any such case; the DEFPKG in such a file
-; must be processed first.
-
-                 (read-file (coerce
-                             (append (coerce fl 'list)
-                                     (cons #\. (coerce *lisp-extension*
-                                                       'list)))
-                             'string)
-                            *the-live-state*)
-                 (declare (ignore state))
-                 (cond (erp (interface-er "Unable to read file ~x0!"
-                                          fl))
-                       (t (push (cons fl val) ans)))))
-             ans))
      (dolist
        (fl *acl2-files*)
        (when (not (or (equal fl "boot-strap-pass-2-a")
@@ -8606,6 +8862,28 @@
 ; else so we are in the same state.
 
                         (return-from initialize-acl2 nil))))))
+     (setq pass-2-alist
+           (let ((ans nil))
+             (dolist
+               (fl acl2-pass-2-files)
+               (mv-let (erp val state)
+
+; Warning.  Because of the read-file here, we have to be careful not to define
+; any packages in the pass-2 files that contain symbols mentioned in those
+; files.  The read-file will break in any such case; the DEFPKG in such a file
+; must be processed first.
+
+                 (read-file (coerce
+                             (append (coerce fl 'list)
+                                     (cons #\. (coerce *lisp-extension*
+                                                       'list)))
+                             'string)
+                            *the-live-state*)
+                 (declare (ignore state))
+                 (cond (erp (interface-er "Unable to read file ~x0!"
+                                          fl))
+                       (t (push (cons fl val) ans)))))
+             ans))
      (enter-boot-strap-pass-2)
      (dolist
        (fl acl2-pass-2-files)
@@ -8818,15 +9096,15 @@
                       acl2-customization):~&~s~&"
                      '(set-debugger-enable t)))
            (force-output t)
-           (let* ((x (standard-oi state))
-                  (chan (if (and (consp x)
-                                 (symbolp (cdr (last x))))
-                            (cdr (last x))
-                            (and (symbolp x)
-                                 x))))
-             (when (and chan
-                        (open-input-channel-p chan :object state))
-               (clear-input (get-input-stream-from-channel chan))))
+           (when (eq (standard-oi state) *standard-oi*)
+
+; In Version_8.5 we called clear-input regardless of the non-nil value of
+; (standard-oi state).  But that could lead to discarding of valid input or an
+; attempt to read values from within a comment, as illustrated respectively in
+; community book files clear-input-1.lsp and clear-input-2.lsp in directory
+; books/system/tests/.
+
+             (clear-input (get-input-stream-from-channel *standard-oi*)))
            (cond (continue-p
                   (setq *acl2-time-limit* 0)
                   (invoke-restart 'continue))
@@ -9419,6 +9697,8 @@
     #+gcl
     (save-acl2-in-gcl nil nil nil t))
 
+  (setq *read-default-float-format* 'double-float)
+
   (with-more-warnings-suppressed
 
 ; Parallelism wart: we currently reset the parallelism variables twice on
@@ -9493,6 +9773,11 @@
 
            #-(and gcl (not cltl2))
            (setq *debugger-hook* 'our-abort)
+
+; See the comment about the following call in acl2.lisp for why we make this
+; call both there and here.
+
+           (break-on-overflow-and-nan)
 
 ; We have found it necessary to extend the LispWorks stack size, in particular
 ; for community books books/concurrent-programs/bakery/stutter2 and
@@ -10147,6 +10432,7 @@ such that feature :acl2-loop-only is true."))
                         (when (not (member-eq
                                     (car x)
                                     `(mv-list return-last wormhole-eval
+                                              ,@*df-primitives*
                                               ,@*defun-overrides*)))
                           (let ((*1*fn (*1*-symbol (car x))))
                             (cond
@@ -10421,14 +10707,6 @@ such that feature :acl2-loop-only is true."))
     (car alist))
    (t (assoc-eq-trace-alist val (cdr alist)))))
 
-(defun-one-output replace-live-stobjs-in-list (lst &optional rawp)
-  (loop for x in lst
-        collect
-        (if (live-state-p x)
-            '|<state>|
-          (or (stobj-print-symbol x *user-stobj-alist* rawp)
-              x))))
-
 (defun-one-output stobj-print-symbol (x user-stobj-alist-tail &optional rawp)
   (and (live-stobjp x)
        (loop for pair in user-stobj-alist-tail
@@ -10443,9 +10721,17 @@ such that feature :acl2-loop-only is true."))
                            (find-package-fast
                             (current-package *the-live-state*))))))))
 
+(defun-one-output replace-live-stobjs-in-list (lst &optional rawp)
+  (loop for x in lst
+        collect
+        (if (live-state-p x)
+            '|<state>|
+          (or (stobj-print-symbol x *user-stobj-alist* rawp)
+              x))))
+
 (defun trace-hide-world-and-state (l &optional no-stobj-hiding)
 
-; This function intuitively belongs over in init.lisp but it is here so
+; this function intuitively belongs over in init.lisp but it is here so
 ; that it will get compiled so we won't get stack overflow when
 ; tracing large objects.  It is used to replace certain offensive
 ; objects by less offensive ones before trace prints the args and
@@ -10608,7 +10894,7 @@ such that feature :acl2-loop-only is true."))
   (assert (or (null arg)
               (stringp arg)))
   (or
-   (with-standard-io-syntax
+   (our-with-standard-io-syntax
     (case (our-uname)
       (:linux
        (let ((arg (or arg  "MemTotal:")))

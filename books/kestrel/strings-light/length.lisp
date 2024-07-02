@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function LENGTH applied to strings
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,4 +34,10 @@
                 (stringp x))
            (< 0 (length x)))
   :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable length))))
+
+(defthm length-when-not-stringp
+  (implies (not (stringp x))
+           (equal (length x)
+                  (len x)))
   :hints (("Goal" :in-theory (enable length))))

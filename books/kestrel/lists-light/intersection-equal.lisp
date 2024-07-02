@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (local (include-book "remove1-equal"))
+(local (include-book "member-equal"))
 
 (in-theory (disable intersection-equal))
 
@@ -22,10 +23,16 @@
            (intersection-equal x y)))
   :hints (("Goal" :in-theory (enable intersection-equal))))
 
-(defthm intersection-equal-of-append
+(defthm intersection-equal-of-append-arg1
   (equal (intersection-equal (append x y) z)
          (append (intersection-equal x z)
                  (intersection-equal y z)))
+  :hints (("Goal" :in-theory (enable intersection-equal append))))
+
+(defthm intersection-equal-of-append-arg2-iff
+  (iff (intersection-equal x (append y z))
+       (or (intersection-equal x y)
+           (intersection-equal x z)))
   :hints (("Goal" :in-theory (enable intersection-equal append))))
 
 (local
@@ -97,6 +104,18 @@
   (implies (intersection-equal (cdr x) y)
            (intersection-equal x y))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthm intersection-equal-when-intersection-equal-of-cdr-arg2-cheap
+  (implies (intersection-equal x (cdr y))
+           (intersection-equal x y))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthm intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
+  (implies (and (not (intersection-equal x (cdr y)))
+                (consp y))
+           (iff (intersection-equal x y)
+                (member-equal (car y) x)))
   :hints (("Goal" :in-theory (enable intersection-equal))))
 
 (defthmd intersection-equal-when-subsetp-equal-swapped-iff

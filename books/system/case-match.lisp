@@ -15,7 +15,7 @@
  (defthm symbol-doublet-listp--mv-nth-1-match-tests-and-bindings
    (implies (symbol-doublet-listp bindings)
             (symbol-doublet-listp
-             (mv-nth 1 (match-tests-and-bindings x pat tests bindings))))))
+             (mv-nth 1 (match-tests-and-bindings x pat tests bindings dups))))))
 
 (local
  (defthm cdr-assoc-equal-type-for-symbol-doublet-listp
@@ -42,13 +42,18 @@
    (implies (character-listp x)
             (character-listp (cdr x)))))
 
+(local
+ (defthm true-listp-mv-nth-2-match-tests-and-bindings
+   (implies (true-listp dups)
+            (true-listp (mv-nth 2 (match-tests-and-bindings x pat tests bindings dups))))))
+
 (verify-guards match-tests-and-bindings)
 
 ; Lemma for match-clause guard verification:
 (local
  (defthm true-listp-car-match-tests-and-bindings
    (implies (true-listp tests)
-            (true-listp (car (match-tests-and-bindings x pat tests bindings))))))
+            (true-listp (car (match-tests-and-bindings x pat tests bindings dups))))))
 
 (verify-termination match-clause) ; and guards
 

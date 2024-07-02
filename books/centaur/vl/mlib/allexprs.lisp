@@ -96,6 +96,8 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
                   (equal nrev1
                          (append nrev (<type>-allexprs x)))
                   :hints ((and stable-under-simplificationp
+                               (or (not (acl2::recursivep '<fn> nil world))
+                                   (acl2::access acl2::clause-id id :pool-lst))
                                '(:expand ((<type>-allexprs x))))))
   :type-fns ((vl-expr (lambda (x nrev) (nrev-push (vl-expr-fix x) nrev))))
   :field-fns ((atts :skip))

@@ -810,10 +810,10 @@
     (case proc-mode
       (#.*64-bit-mode*
        (64-bit-compute-mandatory-prefix-for-two-byte-opcode
-	opcode prefixes))
+        opcode prefixes))
       (otherwise
        (32-bit-compute-mandatory-prefix-for-two-byte-opcode
-	opcode prefixes))))
+        opcode prefixes))))
 
   (define compute-mandatory-prefix-for-0F-38-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
@@ -829,10 +829,10 @@
     (case proc-mode
       (#.*64-bit-mode*
        (64-bit-compute-mandatory-prefix-for-0F-38-three-byte-opcode
-	opcode prefixes))
+        opcode prefixes))
       (otherwise
        (32-bit-compute-mandatory-prefix-for-0F-38-three-byte-opcode
-	opcode prefixes))))
+        opcode prefixes))))
 
   (define compute-mandatory-prefix-for-0F-3A-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
@@ -849,10 +849,10 @@
     (case proc-mode
       (#.*64-bit-mode*
        (64-bit-compute-mandatory-prefix-for-0F-3A-three-byte-opcode
-	opcode prefixes))
+        opcode prefixes))
       (otherwise
        (32-bit-compute-mandatory-prefix-for-0F-3A-three-byte-opcode
-	opcode prefixes))))
+        opcode prefixes))))
 
   (define compute-mandatory-prefix-for-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
@@ -866,7 +866,7 @@
     :inline t
     :no-function t
     :guard (or (equal second-escape-byte #x38)
-	       (equal second-escape-byte #x3A))
+               (equal second-escape-byte #x3A))
 
     :returns (mandatory-prefix
               (unsigned-byte-p 8 mandatory-prefix)
@@ -878,10 +878,10 @@
     (case second-escape-byte
       (#x38
        (compute-mandatory-prefix-for-0F-38-three-byte-opcode
-	proc-mode opcode prefixes))
+        proc-mode opcode prefixes))
       (#x3A
        (compute-mandatory-prefix-for-0F-3A-three-byte-opcode
-	proc-mode opcode prefixes))
+        proc-mode opcode prefixes))
       (otherwise 0))))
 
 ;; ----------------------------------------------------------------------
@@ -1044,7 +1044,7 @@
    (b* ((precomputed-table
          '(
            1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0
-           1 1 1 1 1 1 1 1 1 0 1 1 0 0 1 1 
+           1 1 1 1 1 1 1 1 1 0 1 1 0 0 0 1 
            1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1 
            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
@@ -1284,7 +1284,7 @@
          ;;   )
          '(
            1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0
-           1 1 1 1 1 1 1 1 1 0 1 1 0 0 1 1
+           1 1 1 1 1 1 1 1 1 0 1 1 0 0 0 1
            1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1 
            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 

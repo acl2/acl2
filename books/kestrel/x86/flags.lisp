@@ -1,7 +1,7 @@
 ; An interface to processor flags
 ;
 ; Copyright (C) 2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,9 @@
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
 ;(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
+(local (include-book "kestrel/bv/rules" :dir :system)) ; to tighten a bvcat?
+(local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bitops" :dir :system))
 
 (set-compile-fns t) ; Matt K. mod for GCL to avoid exhausting storage
 
@@ -64,23 +67,23 @@
   (let* ((rflags (rflags x86))
          (new-rflags
           (case flag
-            (:cf   (x86isa::!rflagsBits->cf   val rflags))
-            (:pf   (x86isa::!rflagsBits->pf   val rflags))
-            (:af   (x86isa::!rflagsBits->af   val rflags))
-            (:zf   (x86isa::!rflagsBits->zf   val rflags))
-            (:sf   (x86isa::!rflagsBits->sf   val rflags))
-            (:tf   (x86isa::!rflagsBits->tf   val rflags))
-            (:if   (x86isa::!rflagsBits->intf val rflags))
-            (:df   (x86isa::!rflagsBits->df   val rflags))
-            (:of   (x86isa::!rflagsBits->of   val rflags))
-            (:iopl (x86isa::!rflagsBits->iopl val rflags))
-            (:nt   (x86isa::!rflagsBits->nt   val rflags))
-            (:rf   (x86isa::!rflagsBits->rf   val rflags))
-            (:vm   (x86isa::!rflagsBits->vm   val rflags))
-            (:ac   (x86isa::!rflagsBits->ac   val rflags))
-            (:vif  (x86isa::!rflagsBits->vif  val rflags))
-            (:vip  (x86isa::!rflagsBits->vip  val rflags))
-            (:id   (x86isa::!rflagsBits->id   val rflags))
+            (:cf   (!rflagsbits->cf   val rflags))
+            (:pf   (!rflagsbits->pf   val rflags))
+            (:af   (!rflagsbits->af   val rflags))
+            (:zf   (!rflagsbits->zf   val rflags))
+            (:sf   (!rflagsbits->sf   val rflags))
+            (:tf   (!rflagsbits->tf   val rflags))
+            (:if   (!rflagsbits->intf val rflags)) ; note mismatch between :if and "intf" -- maybe to avoid the name "if"
+            (:df   (!rflagsbits->df   val rflags))
+            (:of   (!rflagsbits->of   val rflags))
+            (:iopl (!rflagsbits->iopl val rflags))
+            (:nt   (!rflagsbits->nt   val rflags))
+            (:rf   (!rflagsbits->rf   val rflags))
+            (:vm   (!rflagsbits->vm   val rflags))
+            (:ac   (!rflagsbits->ac   val rflags))
+            (:vif  (!rflagsbits->vif  val rflags))
+            (:vip  (!rflagsbits->vip  val rflags))
+            (:id   (!rflagsbits->id   val rflags))
             (otherwise (er hard 'set-flag "illegal flag keyword: ~x0.~%" flag)))))
     (!rflags new-rflags x86)))
 
@@ -89,23 +92,23 @@
                   :stobjs x86))
   (let ((rflags (rflags x86)))
     (case flag
-      (:cf   (x86isa::rflagsBits->cf   rflags))
-      (:pf   (x86isa::rflagsBits->pf   rflags))
-      (:af   (x86isa::rflagsBits->af   rflags))
-      (:zf   (x86isa::rflagsBits->zf   rflags))
-      (:sf   (x86isa::rflagsBits->sf   rflags))
-      (:tf   (x86isa::rflagsBits->tf   rflags))
-      (:if   (x86isa::rflagsBits->intf rflags))
-      (:df   (x86isa::rflagsBits->df   rflags))
-      (:of   (x86isa::rflagsBits->of   rflags))
-      (:iopl (x86isa::rflagsBits->iopl rflags))
-      (:nt   (x86isa::rflagsBits->nt   rflags))
-      (:rf   (x86isa::rflagsBits->rf   rflags))
-      (:vm   (x86isa::rflagsBits->vm   rflags))
-      (:ac   (x86isa::rflagsBits->ac   rflags))
-      (:vif  (x86isa::rflagsBits->vif  rflags))
-      (:vip  (x86isa::rflagsBits->vip  rflags))
-      (:id   (x86isa::rflagsBits->id   rflags))
+      (:cf   (rflagsbits->cf   rflags))
+      (:pf   (rflagsbits->pf   rflags))
+      (:af   (rflagsbits->af   rflags))
+      (:zf   (rflagsbits->zf   rflags))
+      (:sf   (rflagsbits->sf   rflags))
+      (:tf   (rflagsbits->tf   rflags))
+      (:if   (rflagsbits->intf rflags)) ; see above note on name mismatch
+      (:df   (rflagsbits->df   rflags))
+      (:of   (rflagsbits->of   rflags))
+      (:iopl (rflagsbits->iopl rflags))
+      (:nt   (rflagsbits->nt   rflags))
+      (:rf   (rflagsbits->rf   rflags))
+      (:vm   (rflagsbits->vm   rflags))
+      (:ac   (rflagsbits->ac   rflags))
+      (:vif  (rflagsbits->vif  rflags))
+      (:vip  (rflagsbits->vip  rflags))
+      (:id   (rflagsbits->id   rflags))
       (otherwise (er hard 'get-flag "illegal flag keyword: ~x0.~%" flag)))))
 
 ;;
@@ -113,87 +116,87 @@
 ;;
 
 (defthmd rflagsbits->cf$inline-of-xr
-  (equal (x86isa::rflagsbits->cf$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->cf$inline (xr :rflags nil x86))
          (get-flag :cf x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->pf$inline-of-xr
-  (equal (x86isa::rflagsbits->pf$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->pf$inline (xr :rflags nil x86))
          (get-flag :pf x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->af$inline-of-xr
-  (equal (x86isa::rflagsbits->af$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->af$inline (xr :rflags nil x86))
          (get-flag :af x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->zf$inline-of-xr
-  (equal (x86isa::rflagsbits->zf$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->zf$inline (xr :rflags nil x86))
          (get-flag :zf x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->sf$inline-of-xr
-  (equal (x86isa::rflagsbits->sf$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->sf$inline (xr :rflags nil x86))
          (get-flag :sf x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->tf$inline-of-xr
-  (equal (x86isa::rflagsbits->tf$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->tf$inline (xr :rflags nil x86))
          (get-flag :tf x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->intf$inline-of-xr
-  (equal (x86isa::rflagsbits->intf$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->intf$inline (xr :rflags nil x86))
          (get-flag :if x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->df$inline-of-xr
-  (equal (x86isa::rflagsbits->df$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->df$inline (xr :rflags nil x86))
          (get-flag :df x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->of$inline-of-xr
-  (equal (x86isa::rflagsbits->of$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->of$inline (xr :rflags nil x86))
          (get-flag :of x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->iopl$inline-of-xr
-  (equal (x86isa::rflagsbits->iopl$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->iopl$inline (xr :rflags nil x86))
          (get-flag :iopl x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->nt$inline-of-xr
-  (equal (x86isa::rflagsbits->nt$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->nt$inline (xr :rflags nil x86))
          (get-flag :nt x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->rf$inline-of-xr
-  (equal (x86isa::rflagsbits->rf$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->rf$inline (xr :rflags nil x86))
          (get-flag :rf x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->vm$inline-of-xr
-  (equal (x86isa::rflagsbits->vm$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->vm$inline (xr :rflags nil x86))
          (get-flag :vm x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->ac$inline-of-xr
-  (equal (x86isa::rflagsbits->ac$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->ac$inline (xr :rflags nil x86))
          (get-flag :ac x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->vif$inline-of-xr
-  (equal (x86isa::rflagsbits->vif$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->vif$inline (xr :rflags nil x86))
          (get-flag :vif x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->vip$inline-of-xr
-  (equal (x86isa::rflagsbits->vip$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->vip$inline (xr :rflags nil x86))
          (get-flag :vip x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
 (defthmd rflagsbits->id$inline-of-xr
-  (equal (x86isa::rflagsbits->id$inline (xr ':rflags nil x86))
+  (equal (rflagsbits->id$inline (xr :rflags nil x86))
          (get-flag :id x86))
   :hints (("Goal" :in-theory (enable get-flag))))
 
@@ -202,47 +205,45 @@
 ;;
 
 (defthmd !rflags-of-!rflagsbits->af
-  (equal (x86isa::!rflags (x86isa::!rflagsbits->af$inline val flags) x86)
-         (set-flag :af val (x86isa::!rflags flags x86)))
-  :hints (("Goal" :in-theory (enable set-flag x86isa::!rflagsbits->af x86isa::rflagsbits-fix))))
+  (equal (!rflags (!rflagsbits->af val flags) x86)
+         (set-flag :af val (!rflags flags x86)))
+  :hints (("Goal" :in-theory (enable set-flag !rflagsbits->af rflagsbits-fix))))
 
 (defthmd !rflags-of-!rflagsbits->cf
-  (equal (x86isa::!rflags (x86isa::!rflagsbits->cf$inline val flags) x86)
-         (set-flag :cf val (x86isa::!rflags flags x86)))
-  :hints (("Goal" :in-theory (enable set-flag x86isa::!rflagsbits->cf x86isa::rflagsbits-fix))))
+  (equal (!rflags (!rflagsbits->cf val flags) x86)
+         (set-flag :cf val (!rflags flags x86)))
+  :hints (("Goal" :in-theory (enable set-flag !rflagsbits->cf rflagsbits-fix))))
 
 (defthmd !rflags-of-!rflagsbits->pf
-  (equal (x86isa::!rflags (x86isa::!rflagsbits->pf$inline val flags) x86)
-         (set-flag :pf val (x86isa::!rflags flags x86)))
-  :hints (("Goal" :in-theory (enable set-flag x86isa::!rflagsbits->pf x86isa::rflagsbits-fix))))
+  (equal (!rflags (!rflagsbits->pf val flags) x86)
+         (set-flag :pf val (!rflags flags x86)))
+  :hints (("Goal" :in-theory (enable set-flag !rflagsbits->pf rflagsbits-fix))))
 
 (defthmd !rflags-of-!rflagsbits->of
-  (equal (x86isa::!rflags (x86isa::!rflagsbits->of$inline val flags) x86)
-         (set-flag :of val (x86isa::!rflags flags x86)))
-  :hints (("Goal" :in-theory (enable set-flag x86isa::!rflagsbits->of x86isa::rflagsbits-fix))))
+  (equal (!rflags (!rflagsbits->of val flags) x86)
+         (set-flag :of val (!rflags flags x86)))
+  :hints (("Goal" :in-theory (enable set-flag !rflagsbits->of rflagsbits-fix))))
 
 (defthmd !rflags-of-!rflagsbits->sf
-  (equal (x86isa::!rflags (x86isa::!rflagsbits->sf$inline val flags) x86)
-         (set-flag :sf val (x86isa::!rflags flags x86)))
-  :hints (("Goal" :in-theory (enable set-flag x86isa::!rflagsbits->sf x86isa::rflagsbits-fix))))
+  (equal (!rflags (!rflagsbits->sf val flags) x86)
+         (set-flag :sf val (!rflags flags x86)))
+  :hints (("Goal" :in-theory (enable set-flag !rflagsbits->sf rflagsbits-fix))))
 
 (defthmd !rflags-of-!rflagsbits->zf
-  (equal (x86isa::!rflags (x86isa::!rflagsbits->zf$inline val flags) x86)
-         (set-flag :zf val (x86isa::!rflags flags x86)))
-  :hints (("Goal" :in-theory (enable set-flag x86isa::!rflagsbits->zf x86isa::rflagsbits-fix))))
+  (equal (!rflags (!rflagsbits->zf val flags) x86)
+         (set-flag :zf val (!rflags flags x86)))
+  :hints (("Goal" :in-theory (enable set-flag !rflagsbits->zf rflagsbits-fix))))
 
 
 
 (local (include-book "kestrel/bv/logapp" :dir :system))
 (defthm unsigned-byte-p-of-rflagsbits
-  (unsigned-byte-p 32 (x86isa::rflagsbits x86isa::cf x86isa::res1
-                                          pf x86isa::res2 x86isa::af x86isa::res3
-                                          x86isa::zf x86isa::sf x86isa::tf
-                                          x86isa::intf x86isa::df x86isa::of
-                                          x86isa::iopl x86isa::nt x86isa::res4
-                                          x86isa::rf x86isa::vm x86isa::ac
-                                          x86isa::vif x86isa::vip id x86isa::res5))
-  :hints (("Goal" :in-theory (e/d (X86ISA::RFLAGSBITS) (UNSIGNED-BYTE-P logapp)))))
+  (unsigned-byte-p 32 (rflagsbits cf res1 pf res2 af res3 zf sf tf intf df of iopl nt res4 rf vm ac vif vip id res5))
+  :hints (("Goal" :in-theory (e/d (rflagsbits) (unsigned-byte-p logapp)))))
+
+(defthm get-flag-of-if
+  (equal (get-flag flag (if test x86 x86_2))
+         (if test (get-flag flag x86) (get-flag flag x86_2))))
 
 (defthm get-flag-of-xw
   (implies (not (equal fld :rflags))
@@ -262,40 +263,30 @@
                   (xw fld index val2 (set-flag flag val1 x86))))
   :hints (("Goal" :in-theory (enable set-flag))))
 
-;; (local (include-book "kestrel/bv/logand" :dir :system))
-;; (local (include-book "kestrel/bv/logior" :dir :system))
-;; (defthm logior-combine-constants
-;;   (implies (syntaxp (and (quotep i)
-;;                          (quotep j)))
-;;            (equal (logior i (logior j k))
-;;                   (logior (logior i j) k))))
-
-(local (include-book "bitops"))
-
 (defthm set-flag-of-set-flag-same
   (equal (set-flag flag val1 (set-flag flag val2 x86))
          (set-flag flag val1 x86))
   :hints (("Goal" :in-theory (e/d (set-flag
                                    acl2::bfix
-                                   x86isa::rflagsBits->ac
-                                   x86isa::!rflagsBits->cf
-                                   x86isa::!rflagsBits->pf
-                                   x86isa::!rflagsBits->af
-                                   x86isa::!rflagsBits->zf
-                                   x86isa::!rflagsBits->sf
-                                   x86isa::!rflagsBits->tf
-                                   x86isa::!rflagsBits->intf
-                                   x86isa::!rflagsBits->df
-                                   x86isa::!rflagsBits->of
-                                   x86isa::!rflagsBits->iopl
-                                   x86isa::!rflagsBits->nt
-                                   x86isa::!rflagsBits->rf
-                                   x86isa::!rflagsBits->vm
-                                   x86isa::!rflagsBits->ac
-                                   x86isa::!rflagsBits->vif
-                                   x86isa::!rflagsBits->vip
-                                   x86isa::!rflagsBits->id)
-                                  (BITOPS::PART-INSTALL-WIDTH-LOW$INLINE)))))
+                                   ;rflagsbits->ac
+                                   !rflagsbits->cf
+                                   !rflagsbits->pf
+                                   !rflagsbits->af
+                                   !rflagsbits->zf
+                                   !rflagsbits->sf
+                                   !rflagsbits->tf
+                                   !rflagsbits->intf
+                                   !rflagsbits->df
+                                   !rflagsbits->of
+                                   !rflagsbits->iopl
+                                   !rflagsbits->nt
+                                   !rflagsbits->rf
+                                   !rflagsbits->vm
+                                   !rflagsbits->ac
+                                   !rflagsbits->vif
+                                   !rflagsbits->vip
+                                   !rflagsbits->id)
+                                  (part-install-width-low$inline)))))
 
 (defthm set-flag-of-set-flag-diff
   (implies (and (syntaxp (and (quotep flag1)
@@ -311,26 +302,26 @@
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (e/d (set-flag
                                    acl2::bfix
-                                   x86isa::2bits-fix
-                                   x86isa::rflagsBits->ac
-                                   x86isa::!rflagsBits->cf
-                                   x86isa::!rflagsBits->pf
-                                   x86isa::!rflagsBits->af
-                                   x86isa::!rflagsBits->zf
-                                   x86isa::!rflagsBits->sf
-                                   x86isa::!rflagsBits->tf
-                                   x86isa::!rflagsBits->intf
-                                   x86isa::!rflagsBits->df
-                                   x86isa::!rflagsBits->of
-                                   x86isa::!rflagsBits->iopl
-                                   x86isa::!rflagsBits->nt
-                                   x86isa::!rflagsBits->rf
-                                   x86isa::!rflagsBits->vm
-                                   x86isa::!rflagsBits->ac
-                                   x86isa::!rflagsBits->vif
-                                   x86isa::!rflagsBits->vip
-                                   x86isa::!rflagsBits->id)
-                                  (bitops::part-install-width-low$inline)))))
+                                   2bits-fix
+                                   ;rflagsbits->ac
+                                   !rflagsbits->cf
+                                   !rflagsbits->pf
+                                   !rflagsbits->af
+                                   !rflagsbits->zf
+                                   !rflagsbits->sf
+                                   !rflagsbits->tf
+                                   !rflagsbits->intf
+                                   !rflagsbits->df
+                                   !rflagsbits->of
+                                   !rflagsbits->iopl
+                                   !rflagsbits->nt
+                                   !rflagsbits->rf
+                                   !rflagsbits->vm
+                                   !rflagsbits->ac
+                                   !rflagsbits->vif
+                                   !rflagsbits->vip
+                                   !rflagsbits->id)
+                                  (part-install-width-low$inline)))))
 
 (local (include-book "kestrel/bv/rules10" :dir :system))
 
@@ -344,351 +335,341 @@
                     (get-flag flag1 x86))))
   :hints (("Goal" :in-theory (enable get-flag
                                      set-flag
-                                     x86isa::!rflagsbits->af
-                                     x86isa::!rflagsbits->cf
-                                     x86isa::!rflagsbits->pf
-                                     x86isa::!rflagsbits->of
-                                     x86isa::!rflagsbits->sf
-                                     x86isa::!rflagsbits->zf
-                                     x86isa::!rflagsBits->tf
-                                     x86isa::!rflagsBits->intf
-                                     x86isa::!rflagsBits->df
-                                     x86isa::!rflagsBits->of
-                                     x86isa::!rflagsBits->iopl
-                                     x86isa::!rflagsBits->nt
-                                     x86isa::!rflagsBits->rf
-                                     x86isa::!rflagsBits->vm
-                                     x86isa::!rflagsBits->ac
-                                     x86isa::!rflagsBits->vif
-                                     x86isa::!rflagsBits->vip
-                                     x86isa::!rflagsBits->id
-                                     x86isa::rflagsBits->cf
-                                     x86isa::rflagsBits->pf
-                                     x86isa::rflagsBits->af
-                                     x86isa::rflagsBits->zf
-                                     x86isa::rflagsBits->sf
-                                     x86isa::rflagsBits->tf
-                                     x86isa::rflagsBits->intf
-                                     x86isa::rflagsBits->df
-                                     x86isa::rflagsBits->of
-                                     x86isa::rflagsBits->iopl
-                                     x86isa::rflagsBits->nt
-                                     x86isa::rflagsBits->rf
-                                     x86isa::rflagsBits->vm
-                                     x86isa::rflagsBits->ac
-                                     x86isa::rflagsBits->vif
-                                     x86isa::rflagsBits->vip
-                                     x86isa::rflagsBits->id
-                                     x86isa::rflagsbits-fix))))
+                                     !rflagsbits->af
+                                     !rflagsbits->cf
+                                     !rflagsbits->pf
+                                     !rflagsbits->of
+                                     !rflagsbits->sf
+                                     !rflagsbits->zf
+                                     !rflagsbits->tf
+                                     !rflagsbits->intf
+                                     !rflagsbits->df
+                                     !rflagsbits->of
+                                     !rflagsbits->iopl
+                                     !rflagsbits->nt
+                                     !rflagsbits->rf
+                                     !rflagsbits->vm
+                                     !rflagsbits->ac
+                                     !rflagsbits->vif
+                                     !rflagsbits->vip
+                                     !rflagsbits->id
+                                     rflagsbits->cf
+                                     rflagsbits->pf
+                                     rflagsbits->af
+                                     rflagsbits->zf
+                                     rflagsbits->sf
+                                     rflagsbits->tf
+                                     rflagsbits->intf
+                                     rflagsbits->df
+                                     rflagsbits->of
+                                     rflagsbits->iopl
+                                     rflagsbits->nt
+                                     rflagsbits->rf
+                                     rflagsbits->vm
+                                     rflagsbits->ac
+                                     rflagsbits->vif
+                                     rflagsbits->vip
+                                     rflagsbits->id
+                                     rflagsbits-fix))))
 
 (defthm rflagsbits->cf$inline-of-bvchop-32
-  (equal (x86isa::rflagsbits->cf$inline (bvchop 32 rflags))
-         (x86isa::rflagsbits->cf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->cf x86isa::rflagsbits-fix))))
+  (equal (rflagsbits->cf$inline (bvchop 32 rflags))
+         (rflagsbits->cf$inline rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->cf rflagsbits-fix))))
 
 (defthm rflagsbits->af$inline-of-bvchop-32
-  (equal (x86isa::rflagsbits->af$inline (bvchop 32 rflags))
-         (x86isa::rflagsbits->af$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->af x86isa::rflagsbits-fix))))
+  (equal (rflagsbits->af$inline (bvchop 32 rflags))
+         (rflagsbits->af$inline rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->af rflagsbits-fix))))
 
 (defthm rflagsbits->pf$inline-of-bvchop-32
-  (equal (x86isa::rflagsbits->pf$inline (bvchop 32 rflags))
-         (x86isa::rflagsbits->pf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->pf x86isa::rflagsbits-fix))))
+  (equal (rflagsbits->pf$inline (bvchop 32 rflags))
+         (rflagsbits->pf$inline rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->pf rflagsbits-fix))))
 
 (defthm rflagsbits->of$inline-of-bvchop-32
-  (equal (x86isa::rflagsbits->of$inline (bvchop 32 rflags))
-         (x86isa::rflagsbits->of$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->of x86isa::rflagsbits-fix))))
+  (equal (rflagsbits->of$inline (bvchop 32 rflags))
+         (rflagsbits->of$inline rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->of rflagsbits-fix))))
 
 (defthm rflagsbits->sf$inline-of-bvchop-32
-  (equal (x86isa::rflagsbits->sf$inline (bvchop 32 rflags))
-         (x86isa::rflagsbits->sf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->sf x86isa::rflagsbits-fix))))
+  (equal (rflagsbits->sf$inline (bvchop 32 rflags))
+         (rflagsbits->sf$inline rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->sf rflagsbits-fix))))
 
 (defthm rflagsbits->zf$inline-of-bvchop-32
-  (equal (x86isa::rflagsbits->zf$inline (bvchop 32 rflags))
-         (x86isa::rflagsbits->zf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->zf x86isa::rflagsbits-fix))))
+  (equal (rflagsbits->zf$inline (bvchop 32 rflags))
+         (rflagsbits->zf$inline rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->zf rflagsbits-fix))))
 
 ;;;
 
 (defthm flags-af-af
-  (equal (x86isa::rflagsbits->af$inline (x86isa::!rflagsbits->af$inline val rflags))
+  (equal (rflagsbits->af$inline (!rflagsbits->af$inline val rflags))
          (acl2::bfix val))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->af$inline x86isa::rflagsbits->af))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->af$inline rflagsbits->af))))
 
 (defthm flags-cf-cf
-  (equal (x86isa::rflagsbits->cf$inline (x86isa::!rflagsbits->cf$inline val rflags))
+  (equal (rflagsbits->cf$inline (!rflagsbits->cf$inline val rflags))
          (acl2::bfix val))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->cf$inline x86isa::rflagsbits->cf))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->cf$inline rflagsbits->cf))))
 
 (defthm flags-pf-pf
-  (equal (x86isa::rflagsbits->pf$inline (x86isa::!rflagsbits->pf$inline val rflags))
+  (equal (rflagsbits->pf$inline (!rflagsbits->pf$inline val rflags))
          (acl2::bfix val))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->pf$inline x86isa::rflagsbits->pf))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->pf$inline rflagsbits->pf))))
 
 (defthm flags-of-of
-  (equal (x86isa::rflagsbits->of$inline (x86isa::!rflagsbits->of$inline val rflags))
+  (equal (rflagsbits->of$inline (!rflagsbits->of$inline val rflags))
          (acl2::bfix val))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->of$inline x86isa::rflagsbits->of))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->of$inline rflagsbits->of))))
 
 (defthm flags-sf-sf
-  (equal (x86isa::rflagsbits->sf$inline (x86isa::!rflagsbits->sf$inline val rflags))
+  (equal (rflagsbits->sf$inline (!rflagsbits->sf$inline val rflags))
          (acl2::bfix val))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->sf$inline x86isa::rflagsbits->sf))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->sf$inline rflagsbits->sf))))
 
 (defthm flags-zf-zf
-  (equal (x86isa::rflagsbits->zf$inline (x86isa::!rflagsbits->zf$inline val rflags))
+  (equal (rflagsbits->zf$inline (!rflagsbits->zf$inline val rflags))
          (acl2::bfix val))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->zf$inline x86isa::rflagsbits->zf))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->zf$inline rflagsbits->zf))))
 
 ;;;
 
 
 (defthm flags-af-cf
-  (equal (x86isa::rflagsbits->af$inline (x86isa::!rflagsbits->cf$inline val rflags))
-         (x86isa::rflagsbits->af$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->cf$inline x86isa::rflagsbits->af))))
+  (equal (rflagsbits->af$inline (!rflagsbits->cf$inline val rflags))
+         (rflagsbits->af$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->cf$inline rflagsbits->af))))
 
 (defthm flags-af-pf
-  (equal (x86isa::rflagsbits->af$inline (x86isa::!rflagsbits->pf$inline val rflags))
-         (x86isa::rflagsbits->af$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->pf$inline x86isa::rflagsbits->af))))
+  (equal (rflagsbits->af$inline (!rflagsbits->pf$inline val rflags))
+         (rflagsbits->af$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->pf$inline rflagsbits->af))))
 
 (defthm flags-af-of
-  (equal (x86isa::rflagsbits->af$inline (x86isa::!rflagsbits->of$inline val rflags))
-         (x86isa::rflagsbits->af$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->of$inline x86isa::rflagsbits->af))))
+  (equal (rflagsbits->af$inline (!rflagsbits->of$inline val rflags))
+         (rflagsbits->af$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->of$inline rflagsbits->af))))
 
 (defthm flags-af-sf
-  (equal (x86isa::rflagsbits->af$inline (x86isa::!rflagsbits->sf$inline val rflags))
-         (x86isa::rflagsbits->af$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->sf$inline x86isa::rflagsbits->af))))
+  (equal (rflagsbits->af$inline (!rflagsbits->sf$inline val rflags))
+         (rflagsbits->af$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->sf$inline rflagsbits->af))))
 
 (defthm flags-af-zf
-  (equal (x86isa::rflagsbits->af$inline (x86isa::!rflagsbits->zf$inline val rflags))
-         (x86isa::rflagsbits->af$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->zf$inline x86isa::rflagsbits->af))))
+  (equal (rflagsbits->af$inline (!rflagsbits->zf$inline val rflags))
+         (rflagsbits->af$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->zf$inline rflagsbits->af))))
 
 ;;;
 
 (defthm flags-cf-af
-  (equal (x86isa::rflagsbits->cf$inline (x86isa::!rflagsbits->af$inline val rflags))
-         (x86isa::rflagsbits->cf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->af$inline x86isa::rflagsbits->cf))))
+  (equal (rflagsbits->cf$inline (!rflagsbits->af$inline val rflags))
+         (rflagsbits->cf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->af$inline rflagsbits->cf))))
 
 (defthm flags-cf-pf
-  (equal (x86isa::rflagsbits->cf$inline (x86isa::!rflagsbits->pf$inline val rflags))
-         (x86isa::rflagsbits->cf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->pf$inline x86isa::rflagsbits->cf))))
+  (equal (rflagsbits->cf$inline (!rflagsbits->pf$inline val rflags))
+         (rflagsbits->cf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->pf$inline rflagsbits->cf))))
 
 (defthm flags-cf-of
-  (equal (x86isa::rflagsbits->cf$inline (x86isa::!rflagsbits->of$inline val rflags))
-         (x86isa::rflagsbits->cf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->of$inline x86isa::rflagsbits->cf))))
+  (equal (rflagsbits->cf$inline (!rflagsbits->of$inline val rflags))
+         (rflagsbits->cf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->of$inline rflagsbits->cf))))
 
 (defthm flags-cf-sf
-  (equal (x86isa::rflagsbits->cf$inline (x86isa::!rflagsbits->sf$inline val rflags))
-         (x86isa::rflagsbits->cf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->sf$inline x86isa::rflagsbits->cf))))
+  (equal (rflagsbits->cf$inline (!rflagsbits->sf$inline val rflags))
+         (rflagsbits->cf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->sf$inline rflagsbits->cf))))
 
 (defthm flags-cf-zf
-  (equal (x86isa::rflagsbits->cf$inline (x86isa::!rflagsbits->zf$inline val rflags))
-         (x86isa::rflagsbits->cf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->zf$inline x86isa::rflagsbits->cf))))
+  (equal (rflagsbits->cf$inline (!rflagsbits->zf$inline val rflags))
+         (rflagsbits->cf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->zf$inline rflagsbits->cf))))
 
 ;;;
 
 (defthm flags-pf-af
-  (equal (x86isa::rflagsbits->pf$inline (x86isa::!rflagsbits->af$inline val rflags))
-         (x86isa::rflagsbits->pf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->af$inline x86isa::rflagsbits->pf))))
+  (equal (rflagsbits->pf$inline (!rflagsbits->af$inline val rflags))
+         (rflagsbits->pf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->af$inline rflagsbits->pf))))
 
 (defthm flags-pf-cf
-  (equal (x86isa::rflagsbits->pf$inline (x86isa::!rflagsbits->cf$inline val rflags))
-         (x86isa::rflagsbits->pf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->cf$inline x86isa::rflagsbits->pf))))
+  (equal (rflagsbits->pf$inline (!rflagsbits->cf$inline val rflags))
+         (rflagsbits->pf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->cf$inline rflagsbits->pf))))
 
 (defthm flags-pf-of
-  (equal (x86isa::rflagsbits->pf$inline (x86isa::!rflagsbits->of$inline val rflags))
-         (x86isa::rflagsbits->pf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->of$inline x86isa::rflagsbits->pf))))
+  (equal (rflagsbits->pf$inline (!rflagsbits->of$inline val rflags))
+         (rflagsbits->pf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->of$inline rflagsbits->pf))))
 
 (defthm flags-pf-sf
-  (equal (x86isa::rflagsbits->pf$inline (x86isa::!rflagsbits->sf$inline val rflags))
-         (x86isa::rflagsbits->pf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->sf$inline x86isa::rflagsbits->pf))))
+  (equal (rflagsbits->pf$inline (!rflagsbits->sf$inline val rflags))
+         (rflagsbits->pf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->sf$inline rflagsbits->pf))))
 
 (defthm flags-pf-zf
-  (equal (x86isa::rflagsbits->pf$inline (x86isa::!rflagsbits->zf$inline val rflags))
-         (x86isa::rflagsbits->pf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->zf$inline x86isa::rflagsbits->pf))))
+  (equal (rflagsbits->pf$inline (!rflagsbits->zf$inline val rflags))
+         (rflagsbits->pf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->zf$inline rflagsbits->pf))))
 
 ;;;
 
 (defthm flags-of-af
-  (equal (x86isa::rflagsbits->of$inline (x86isa::!rflagsbits->af$inline val rflags))
-         (x86isa::rflagsbits->of$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->af$inline x86isa::rflagsbits->of))))
+  (equal (rflagsbits->of$inline (!rflagsbits->af$inline val rflags))
+         (rflagsbits->of$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->af$inline rflagsbits->of))))
 
 (defthm flags-of-cf
-  (equal (x86isa::rflagsbits->of$inline (x86isa::!rflagsbits->cf$inline val rflags))
-         (x86isa::rflagsbits->of$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->cf$inline x86isa::rflagsbits->of))))
+  (equal (rflagsbits->of$inline (!rflagsbits->cf$inline val rflags))
+         (rflagsbits->of$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->cf$inline rflagsbits->of))))
 
 (defthm flags-of-pf
-  (equal (x86isa::rflagsbits->of$inline (x86isa::!rflagsbits->pf$inline val rflags))
-         (x86isa::rflagsbits->of$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->pf$inline x86isa::rflagsbits->of))))
+  (equal (rflagsbits->of$inline (!rflagsbits->pf$inline val rflags))
+         (rflagsbits->of$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->pf$inline rflagsbits->of))))
 
 (defthm flags-of-sf
-  (equal (x86isa::rflagsbits->of$inline (x86isa::!rflagsbits->sf$inline val rflags))
-         (x86isa::rflagsbits->of$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->sf$inline x86isa::rflagsbits->of))))
+  (equal (rflagsbits->of$inline (!rflagsbits->sf$inline val rflags))
+         (rflagsbits->of$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->sf$inline rflagsbits->of))))
 
 (defthm flags-of-zf
-  (equal (x86isa::rflagsbits->of$inline (x86isa::!rflagsbits->zf$inline val rflags))
-         (x86isa::rflagsbits->of$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->zf$inline x86isa::rflagsbits->of))))
+  (equal (rflagsbits->of$inline (!rflagsbits->zf$inline val rflags))
+         (rflagsbits->of$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->zf$inline rflagsbits->of))))
 
 ;;;
 
 (defthm flags-sf-af
-  (equal (x86isa::rflagsbits->sf$inline (x86isa::!rflagsbits->af$inline val rflags))
-         (x86isa::rflagsbits->sf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->af$inline x86isa::rflagsbits->sf))))
+  (equal (rflagsbits->sf$inline (!rflagsbits->af$inline val rflags))
+         (rflagsbits->sf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->af$inline rflagsbits->sf))))
 
 (defthm flags-sf-cf
-  (equal (x86isa::rflagsbits->sf$inline (x86isa::!rflagsbits->cf$inline val rflags))
-         (x86isa::rflagsbits->sf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->cf$inline x86isa::rflagsbits->sf))))
+  (equal (rflagsbits->sf$inline (!rflagsbits->cf$inline val rflags))
+         (rflagsbits->sf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->cf$inline rflagsbits->sf))))
 
 (defthm flags-sf-pf
-  (equal (x86isa::rflagsbits->sf$inline (x86isa::!rflagsbits->pf$inline val rflags))
-         (x86isa::rflagsbits->sf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->pf$inline x86isa::rflagsbits->sf))))
+  (equal (rflagsbits->sf$inline (!rflagsbits->pf$inline val rflags))
+         (rflagsbits->sf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->pf$inline rflagsbits->sf))))
 
 (defthm flags-sf-of
-  (equal (x86isa::rflagsbits->sf$inline (x86isa::!rflagsbits->of$inline val rflags))
-         (x86isa::rflagsbits->sf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->of$inline x86isa::rflagsbits->sf))))
+  (equal (rflagsbits->sf$inline (!rflagsbits->of$inline val rflags))
+         (rflagsbits->sf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->of$inline rflagsbits->sf))))
 
 (defthm flags-sf-zf
-  (equal (x86isa::rflagsbits->sf$inline (x86isa::!rflagsbits->zf$inline val rflags))
-         (x86isa::rflagsbits->sf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->zf$inline x86isa::rflagsbits->sf))))
+  (equal (rflagsbits->sf$inline (!rflagsbits->zf$inline val rflags))
+         (rflagsbits->sf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->zf$inline rflagsbits->sf))))
 
 ;;;
 
 (defthm flags-zf-af
-  (equal (x86isa::rflagsbits->zf$inline (x86isa::!rflagsbits->af$inline val rflags))
-         (x86isa::rflagsbits->zf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->af$inline x86isa::rflagsbits->zf))))
+  (equal (rflagsbits->zf$inline (!rflagsbits->af$inline val rflags))
+         (rflagsbits->zf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->af$inline rflagsbits->zf))))
 
 (defthm flags-zf-cf
-  (equal (x86isa::rflagsbits->zf$inline (x86isa::!rflagsbits->cf$inline val rflags))
-         (x86isa::rflagsbits->zf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->cf$inline x86isa::rflagsbits->zf))))
+  (equal (rflagsbits->zf$inline (!rflagsbits->cf$inline val rflags))
+         (rflagsbits->zf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->cf$inline rflagsbits->zf))))
 
 (defthm flags-zf-pf
-  (equal (x86isa::rflagsbits->zf$inline (x86isa::!rflagsbits->pf$inline val rflags))
-         (x86isa::rflagsbits->zf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->pf$inline x86isa::rflagsbits->zf))))
+  (equal (rflagsbits->zf$inline (!rflagsbits->pf$inline val rflags))
+         (rflagsbits->zf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->pf$inline rflagsbits->zf))))
 
 (defthm flags-zf-of
-  (equal (x86isa::rflagsbits->zf$inline (x86isa::!rflagsbits->of$inline val rflags))
-         (x86isa::rflagsbits->zf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->of$inline x86isa::rflagsbits->zf))))
+  (equal (rflagsbits->zf$inline (!rflagsbits->of$inline val rflags))
+         (rflagsbits->zf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->of$inline rflagsbits->zf))))
 
 (defthm flags-zf-sf
-  (equal (x86isa::rflagsbits->zf$inline (x86isa::!rflagsbits->sf$inline val rflags))
-         (x86isa::rflagsbits->zf$inline rflags))
-  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->sf$inline x86isa::rflagsbits->zf))))
+  (equal (rflagsbits->zf$inline (!rflagsbits->sf$inline val rflags))
+         (rflagsbits->zf$inline rflags))
+  :hints (("Goal" :in-theory (enable !rflagsbits->sf$inline rflagsbits->zf))))
 
 ;;;
 
 (defthm !rflags-of-xr-rflags-of-set-flag
   (implies (member-equal flag '(:af :cf :pf :of :sf :zf))
-           (equal (x86isa::!rflags (xr ':rflags nil (set-flag flag val x86)) x86-2)
-                  (set-flag flag val (x86isa::!rflags (xr ':rflags nil  x86) x86-2))))
+           (equal (!rflags (xr :rflags nil (set-flag flag val x86)) x86-2)
+                  (set-flag flag val (!rflags (xr :rflags nil  x86) x86-2))))
   :hints (("Goal" :in-theory (enable set-flag
-                                     x86isa::!rflagsbits->af
-                                     x86isa::!rflagsbits->cf
-                                     x86isa::!rflagsbits->pf
-                                     x86isa::!rflagsbits->of
-                                     x86isa::!rflagsbits->sf
-                                     x86isa::!rflagsbits->zf
-                                     x86isa::rflagsbits-fix))))
+                                     !rflagsbits->af
+                                     !rflagsbits->cf
+                                     !rflagsbits->pf
+                                     !rflagsbits->of
+                                     !rflagsbits->sf
+                                     !rflagsbits->zf
+                                     rflagsbits-fix))))
 
 (defthm xr-rflags-of-!rflags
-  (equal (XR ':RFLAGS NIL (X86ISA::!RFLAGS rflags x86))
+  (equal (XR :RFLAGS NIL (!RFLAGS rflags x86))
          (bvchop 32 rflags))
-  :hints (("Goal" :in-theory (enable X86ISA::!RFLAGS))))
+  :hints (("Goal" :in-theory (enable !rflags))))
 
 (defthm !rflags-of-xw
   (implies (not (equal fld :rflags))
-           (equal (x86isa::!rflags rflags (xw fld index val x86))
-                  (xw fld index val (x86isa::!rflags rflags x86))))
-  :hints (("Goal" :in-theory (enable x86isa::!rflags))))
+           (equal (!rflags rflags (xw fld index val x86))
+                  (xw fld index val (!rflags rflags x86))))
+  :hints (("Goal" :in-theory (enable !rflags))))
 
 (defthm !rflags-of-set-flag
-  (equal (x86isa::!rflags rflags (set-flag flag val x86))
-         (x86isa::!rflags rflags x86))
-  :hints (("Goal" :in-theory (enable x86isa::!rflags set-flag))))
+  (equal (!rflags rflags (set-flag flag val x86))
+         (!rflags rflags x86))
+  :hints (("Goal" :in-theory (enable !rflags set-flag))))
 
 (defthm !rflags-of-!rflags
-  (equal (x86isa::!rflags rflags (x86isa::!rflags rflags2 x86))
-         (x86isa::!rflags rflags x86))
-  :hints (("Goal" :in-theory (enable x86isa::!rflags))))
+  (equal (!rflags rflags (!rflags rflags2 x86))
+         (!rflags rflags x86))
+  :hints (("Goal" :in-theory (enable !rflags))))
 
 (defthm !rflags-does-nothing
   (implies (and (equal (XR :RFLAGS nil X86)
                        (XR :RFLAGS nil X86-2)
                        )
                 (x86p x86-2))
-           (equal (X86ISA::!RFLAGS (XR :RFLAGS nil X86) X86-2)
+           (equal (!RFLAGS (XR :RFLAGS nil X86) X86-2)
                   x86-2))
-  :hints (("Goal" :in-theory (enable x86isa::!rflags ))))
-
-(defthm app-view-of-set-flag
-  (equal (app-view (set-flag flag val x86))
-         (app-view x86))
-  :hints (("Goal" :in-theory (enable set-flag))))
-
-(defthm x86p-of-set-flag
-  (implies (x86p x86)
-           (x86p (set-flag flag val x86)))
-  :hints (("Goal" :in-theory (enable set-flag))))
+  :hints (("Goal" :in-theory (enable !rflags))))
 
 (defthm xr-rflags-of-set-flag-af
   (equal (xr :rflags nil (set-flag :af val x86))
-         (x86isa::!rflagsbits->af$inline val (xr :rflags nil x86)))
+         (!rflagsbits->af$inline val (xr :rflags nil x86)))
   :hints (("Goal" :in-theory (enable set-flag))))
 
 (defthm xr-rflags-of-set-flag-cf
   (equal (xr :rflags nil (set-flag :cf val x86))
-         (x86isa::!rflagsbits->cf$inline val (xr :rflags nil x86)))
+         (!rflagsbits->cf$inline val (xr :rflags nil x86)))
   :hints (("Goal" :in-theory (enable set-flag))))
 
 (defthm xr-rflags-of-set-flag-pf
   (equal (xr :rflags nil (set-flag :pf val x86))
-         (x86isa::!rflagsbits->pf$inline val (xr :rflags nil x86)))
+         (!rflagsbits->pf$inline val (xr :rflags nil x86)))
   :hints (("Goal" :in-theory (enable set-flag))))
 
 (defthm xr-rflags-of-set-flag-of
   (equal (xr :rflags nil (set-flag :of val x86))
-         (x86isa::!rflagsbits->of$inline val (xr :rflags nil x86)))
+         (!rflagsbits->of$inline val (xr :rflags nil x86)))
   :hints (("Goal" :in-theory (enable set-flag))))
 
 (defthm xr-rflags-of-set-flag-sf
   (equal (xr :rflags nil (set-flag :sf val x86))
-         (x86isa::!rflagsbits->sf$inline val (xr :rflags nil x86)))
+         (!rflagsbits->sf$inline val (xr :rflags nil x86)))
   :hints (("Goal" :in-theory (enable set-flag))))
 
 (defthm xr-rflags-of-set-flag-zf
   (equal (xr :rflags nil (set-flag :zf val x86))
-         (x86isa::!rflagsbits->zf$inline val (xr :rflags nil x86)))
+         (!rflagsbits->zf$inline val (xr :rflags nil x86)))
   :hints (("Goal" :in-theory (enable set-flag))))
 
 ;todo: are there more flags to clear.
@@ -702,3 +683,125 @@
          (x86 (set-flag :sf 0 x86))
          (x86 (set-flag :zf 0 x86)))
     x86))
+
+(defthm set-flag-of-if
+  (equal (set-flag flag val (if test x y))
+         (if test
+             (set-flag flag val x)
+           (set-flag flag val y))))
+
+(defthm set-flag-of-get-flag-same
+  (implies (member-equal flag *flags*)
+           (equal (set-flag flag (get-flag flag x86) x86)
+                  x86))
+  :hints (("Goal" :in-theory (enable get-flag set-flag
+                                     !rflagsbits->af rflagsbits->af
+                                     !rflagsbits->cf rflagsbits->cf
+                                     !rflagsbits->of rflagsbits->of
+                                     !rflagsbits->pf rflagsbits->pf
+                                     !rflagsbits->sf rflagsbits->sf
+                                     !rflagsbits->zf rflagsbits->zf
+                                     !rflagsbits->id rflagsbits->id
+                                     !rflagsbits->tf rflagsbits->tf
+                                     !rflagsbits->nt rflagsbits->nt
+                                     !rflagsbits->df rflagsbits->df
+                                     !rflagsbits->vm rflagsbits->vm
+                                     !rflagsbits->ac rflagsbits->ac
+                                     !rflagsbits->rf rflagsbits->rf
+                                     !rflagsbits->vif rflagsbits->vif
+                                     !rflagsbits->vip rflagsbits->vip
+                                     !rflagsbits->iopl rflagsbits->iopl
+                                     !rflagsbits->intf rflagsbits->intf))))
+
+(defthm if-of-set-flag-and-set-flag
+  (equal (if test (set-flag flag val1 x86) (set-flag flag val2 x86))
+         (set-flag flag (if test val1 val2) x86)))
+
+(defthm get-flag-of-!rflags-of-xr
+  (equal (get-flag flag (!rflags (xr ':rflags 'nil x86_1) x86_2))
+         (get-flag flag x86_1))
+  :hints (("Goal" :in-theory (enable !rflags get-flag))))
+
+(defthm get-flag-of-xw-rflags-of-xr-rflags
+  (equal (get-flag flag (xw :rflags nil (xr ':rflags 'nil x86_1) x86_2))
+         (get-flag flag x86_1))
+  :hints (("Goal" :in-theory (enable !rflags get-flag))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm rflagsbits->af-of-bvif
+  (implies (and (<= 5 size)
+                (integerp size))
+           (equal (rflagsbits->af (bvif size test tp ep))
+                  (if test (rflagsbits->af tp) (rflagsbits->af ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->af rflagsbits-fix))))
+
+(defthm rflagsbits->cf-of-bvif
+  (implies (and (<= 1 size)
+                (integerp size))
+           (equal (rflagsbits->cf (bvif size test tp ep))
+                  (if test (rflagsbits->cf tp) (rflagsbits->cf ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->cf rflagsbits-fix))))
+
+(defthm rflagsbits->of-of-bvif
+  (implies (and (<= 12 size)
+                (integerp size))
+           (equal (rflagsbits->of (bvif size test tp ep))
+                  (if test (rflagsbits->of tp) (rflagsbits->of ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->of rflagsbits-fix))))
+
+(defthm rflagsbits->pf-of-bvif
+  (implies (and (<= 3 size)
+                (integerp size))
+           (equal (rflagsbits->pf (bvif size test tp ep))
+                  (if test (rflagsbits->pf tp) (rflagsbits->pf ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->pf rflagsbits-fix))))
+
+(defthm rflagsbits->sf-of-bvif
+  (implies (and (<= 8 size)
+                (integerp size))
+           (equal (rflagsbits->sf (bvif size test tp ep))
+                  (if test (rflagsbits->sf tp) (rflagsbits->sf ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->sf rflagsbits-fix))))
+
+(defthm rflagsbits->zf-of-bvif
+  (implies (and (<= 7 size)
+                (integerp size))
+           (equal (rflagsbits->zf (bvif size test tp ep))
+                  (if test (rflagsbits->zf tp) (rflagsbits->zf ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->zf rflagsbits-fix))))
+
+(defthmd !rflags-becomes-xw
+  (equal (!rflags rflags x86)
+         (xw :rflags nil rflags x86)))
+
+(defthmd rflags-becomes-xr
+  (equal (rflags x86)
+         (xr :rflags nil x86)))
+
+;needed?
+(defthm xr-of-rflags-and-xw-of-rflags
+  (equal (xr :rflags nil (xw :rflags nil rflags x86))
+         (bvchop 32 rflags)))
+
+(defthm xw-of-rflags-and-set-flag
+  (equal (xw :rflags nil rflags (set-flag flag val x86))
+         (xw :rflags nil rflags x86))
+  :hints (("Goal" :in-theory (enable set-flag))))
+
+;gen?
+(defthm xw-of-rflags-does-nothing
+  (implies (equal rflags (xr :rflags nil x86))
+           (equal (xw :rflags nil rflags x86)
+                  x86)))
+
+(defthm xw-of-rflags-of-xw
+  (implies (not (equal fld :rflags))
+           (equal (xw :rflags nil rflags (xw fld index val x86))
+                  (xw fld index val (xw :rflags nil rflags x86))))
+  :hints (("Goal" :in-theory (enable set-flag))))
+
+(defthm xw-rflags-of-set-flag
+  (equal (xw :rflags nil rflags (set-flag flag val x86))
+         (xw :rflags nil rflags x86))
+  :hints (("Goal" :in-theory (enable !rflags set-flag))))

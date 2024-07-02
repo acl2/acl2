@@ -111,7 +111,8 @@ Goal''
                                      (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                                (CONS 'LST
                                      (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
-                 NIL NIL NIL)
+                 '(NIL)
+                 NIL)
             (APPEND (REV XXX) ANS0)))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -147,7 +148,8 @@ to accommodate
                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                    (CONS 'LST
                          (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 These suggestions were produced using the :induction rules DO$ and
 REV.  If we let (:P ANS0 LST XXX) denote *1 above then the induction
@@ -181,6 +183,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
         (:DEFINITION PAIRLIS$)
@@ -191,6 +195,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
@@ -249,7 +254,8 @@ Goal''
                                      (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                                (CONS 'LST
                                      (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
-                 NIL NIL NIL)
+                 '(NIL)
+                 NIL)
             (APPEND (REV LST) ANS0)))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -282,7 +288,8 @@ We will induct according to a scheme suggested by
                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                    (CONS 'LST
                          (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P ANS0 LST) denote *1 above then the induction scheme we'll use
@@ -326,6 +333,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
         (:DEFINITION PAIRLIS$)
@@ -399,7 +408,8 @@ Goal''
                                      (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                                (CONS 'LST
                                      (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
-                 NIL NIL NIL)
+                 '(NIL)
+                 NIL)
             (APPEND (REV XXX) ANS0)))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -432,7 +442,8 @@ We will induct according to a scheme suggested by
                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                    (CONS 'LST
                          (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P ANS0 XXX) denote *1 above then the induction scheme we'll use
@@ -476,6 +487,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
         (:DEFINITION PAIRLIS$)
@@ -538,7 +551,8 @@ Goal''
                 (LIST NIL NIL
                       (LIST (CONS 'III
                                   (CDR (ASSOC-EQ-SAFE 'III ALIST))))))
-              NIL NIL NIL)
+              '(NIL)
+              NIL)
          'SILLY))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -564,7 +578,8 @@ We will induct according to a scheme suggested by
        (LIST NIL NIL
              (LIST (CONS 'III
                          (CDR (ASSOC-EQ-SAFE 'III ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P III) denote *1 above then the induction scheme we'll use is
@@ -617,6 +632,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
@@ -685,7 +702,8 @@ We will induct according to a scheme suggested by
        (LIST NIL NIL
              (LIST (CONS 'III
                          (CDR (ASSOC-EQ-SAFE 'III ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P III) denote *1 above then the induction scheme we'll use is
@@ -752,6 +770,8 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
@@ -829,7 +849,8 @@ Goal''
                         (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                               (CONS 'N
                                     (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-                NIL NIL NIL)
+                '(NIL)
+                NIL)
            T))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -868,7 +889,8 @@ We will induct according to a scheme suggested by
              (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                    (CONS 'N
                          (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P III NNN) denote *1 above then the induction scheme we'll use
@@ -954,6 +976,8 @@ Rules: ((:DEFINITION DO$)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
@@ -964,6 +988,7 @@ Rules: ((:DEFINITION DO$)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
@@ -1009,10 +1034,10 @@ We will induct according to a scheme suggested by
  (LAMBDA$ (ALIST)
   (DECLARE
    (XARGS
-        :GUARD
-        (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
-                                    (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-                                    (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+    :GUARD (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
+                                       (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                       (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                  'NIL)))
   (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
         (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
     (DECLARE (IGNORABLE I N))
@@ -1021,10 +1046,10 @@ We will induct according to a scheme suggested by
  (LAMBDA$ (ALIST)
   (DECLARE
    (XARGS
-        :GUARD
-        (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
-                                    (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-                                    (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+    :GUARD (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
+                                       (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                       (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                  'NIL)))
   (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
         (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
     (DECLARE (IGNORABLE I N))
@@ -1043,7 +1068,8 @@ We will induct according to a scheme suggested by
                               (CONS (CONS 'N N) 'NIL))
                         'NIL))))))
  (LAMBDA$ (ALIST)
-   (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))))
+   (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST)
+                                                 'NIL)))
    (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
          (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
      (DECLARE (IGNORABLE I N))
@@ -1052,7 +1078,8 @@ We will induct according to a scheme suggested by
                  (CONS (CONS (CONS 'I I)
                              (CONS (CONS 'N N) 'NIL))
                        'NIL)))))
- NIL NIL NIL).
+ '(NIL)
+ NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P III NNN) denote *1 above then the induction scheme we'll use
@@ -1132,6 +1159,8 @@ Rules: ((:DEFINITION DO$)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
@@ -1142,6 +1171,7 @@ Rules: ((:DEFINITION DO$)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
@@ -1210,7 +1240,8 @@ Goal''
                         (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                               (CONS 'N
                                     (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-                NIL NIL NIL)
+                '(NIL)
+                NIL)
            T))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -1249,7 +1280,8 @@ We will induct according to a scheme suggested by
              (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                    (CONS 'N
                          (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P III) denote *1 above then the induction scheme we'll use is
@@ -1324,6 +1356,8 @@ Rules: ((:DEFINITION DO$)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
@@ -1384,7 +1418,7 @@ ACL2 !>>(THM
                     (LIST NIL NIL
                           (LIST (CONS 'N
                                       (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-                  NIL NIL NIL)
+                  NIL NIL)
              (+ (CDR (ASSOC-EQ-SAFE 'N ALIST))
                 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
 Goal'
@@ -1418,7 +1452,7 @@ Goal''
             (LIST NIL NIL
                   (LIST (CONS 'N
                               (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-          NIL NIL NIL)
+          NIL NIL)
      (+ (CDR (ASSOC-EQ-SAFE 'M ALIST))
         (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
 
@@ -1452,7 +1486,7 @@ We will induct according to a scheme suggested by
        (LIST NIL NIL
              (LIST (CONS 'N
                          (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-     NIL NIL NIL).
+     NIL NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P ALIST) denote *1 above then the induction scheme we'll use
@@ -1773,6 +1807,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
@@ -1860,7 +1896,8 @@ Goal''
                     (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
                           (CONS 'ANS
                                 (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
-            NIL NIL NIL)
+            '(NIL)
+            NIL)
        (REV1 LST ANS0))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -1902,6 +1939,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
         (:DEFINITION PAIRLIS$)
@@ -1912,6 +1951,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
@@ -1967,7 +2007,8 @@ Goal''
                     (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
                           (CONS 'E
                                 (CDR (ASSOC-EQ-SAFE 'E ALIST))))))
-            NIL NIL NIL)
+            '(NIL)
+            NIL)
        (MEMBER-EQUAL E LST))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -2014,6 +2055,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION MEMBER-EQL-EXEC$GUARD-CHECK)
         (:DEFINITION MEMBER-EQUAL)
         (:DEFINITION NFIX)
@@ -2025,6 +2068,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
@@ -2077,7 +2121,8 @@ Goal''
                     (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
                           (CONS 'ANS
                                 (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
-            NIL NIL NIL)
+            '(NIL)
+            NIL)
        (+ ANS0 (LEN LST))))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -2107,7 +2152,8 @@ We will induct according to a scheme suggested by
              (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
                    (CONS 'ANS
                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rules DO$ and LEN.
 If we let (:P ANS0 LST) denote *1 above then the induction scheme we'll
@@ -2147,6 +2193,8 @@ Rules: ((:DEFINITION DO$)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
@@ -2157,6 +2205,7 @@ Rules: ((:DEFINITION DO$)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
@@ -2218,7 +2267,8 @@ Goal''
                   (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
                         (CONS 'I
                               (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
-          NIL NIL NIL)
+          '(NIL)
+          NIL)
      (NTH N LST)))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -2270,6 +2320,8 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
@@ -2343,7 +2395,8 @@ Goal''
            (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
                  (CONS 'ANS
                        (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
-   NIL NIL NIL)
+   '(NIL)
+   NIL)
   (APPEND ANS0 LST)))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -2377,7 +2430,8 @@ We will induct according to a scheme suggested by
            (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
                  (CONS 'ANS
                        (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
-   NIL NIL NIL).
+   '(NIL)
+   NIL).
 
 This suggestion was produced using the :induction rules DO$ and TRUE-LISTP.
 If we let (:P ANS0 LST) denote *1 above then the induction scheme we'll
@@ -2419,6 +2473,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
         (:DEFINITION PAIRLIS$)
@@ -2499,7 +2555,8 @@ Goal''
                   (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                         (CONS 'J
                               (CDR (ASSOC-EQ-SAFE 'J ALIST))))))
-          NIL NIL NIL)
+          '(NIL)
+          NIL)
      (+ M N)))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -2534,7 +2591,8 @@ We will induct according to a scheme suggested by
              (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                    (CONS 'J
                          (CDR (ASSOC-EQ-SAFE 'J ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P M N) denote *1 above then the induction scheme we'll use is
@@ -2590,6 +2648,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
@@ -2715,7 +2775,8 @@ Goal''
                   (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                         (CONS 'ANS
                               (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
-          NIL NIL NIL)
+          '(NIL)
+          NIL)
      (* ANS0 (FACT N))))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -2752,7 +2813,8 @@ to accommodate
              (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                    (CONS 'ANS
                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 These suggestions were produced using the :induction rules DO$ and
 FACT.  If we let (:P ANS0 N) denote *1 above then the induction scheme
@@ -2796,6 +2858,8 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
@@ -2909,7 +2973,8 @@ Goal''
                        (CONS 'U (CDR (ASSOC-EQ-SAFE 'U ALIST)))
                        (CONS 'V
                              (CDR (ASSOC-EQ-SAFE 'V ALIST))))))
-         NIL NIL NIL)
+         '(NIL)
+         NIL)
     (CONS (+ U0
              (SUM$ (LAMBDA$ (LOOP$-IVAR) LOOP$-IVAR)
                    LST0))
@@ -2961,7 +3026,8 @@ to accommodate
                    (CONS 'U (CDR (ASSOC-EQ-SAFE 'U ALIST)))
                    (CONS 'V
                          (CDR (ASSOC-EQ-SAFE 'V ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 These suggestions were produced using the :induction rules DO$, INTEGER-LISTP
 and SUM$.  If we let (:P LST0 U0 V0) denote *1 above then the induction
@@ -3016,6 +3082,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
         (:DEFINITION PAIRLIS$)
@@ -3130,7 +3198,8 @@ Goal''
                              (CDR (ASSOC-EQ-SAFE 'SYMS ALIST)))
                        (CONS 'NON-SYMS
                              (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST))))))
-         NIL NIL NIL)
+         '(NIL)
+         NIL)
     (CONS (APPEND (REV (COLLECT$ (LAMBDA$ (LOOP$-IVAR) LOOP$-IVAR)
                                  (WHEN$ (LAMBDA$ (LOOP$-IVAR)
                                           (SYMBOLP LOOP$-IVAR))
@@ -3192,7 +3261,8 @@ We will induct according to a scheme suggested by
                          (CDR (ASSOC-EQ-SAFE 'SYMS ALIST)))
                    (CONS 'NON-SYMS
                          (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rules DO$ and WHEN$.
 If we let (:P LST NON-SYMS SYMS) denote *1 above then the induction
@@ -3249,6 +3319,8 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)
         (:DEFINITION PAIRLIS$)
@@ -3261,6 +3333,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART COLLECT$)
+        (:EXECUTABLE-COUNTERPART CONS)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART LAMBDA-OBJECT-FORMALS)
@@ -3420,7 +3493,8 @@ Goal''
                                      (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                                (CONS 'N
                                      (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-                 NIL NIL NIL)
+                 '(NIL)
+                 NIL)
             (NATS-AC-UP I0 N ANS0)))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -3469,7 +3543,8 @@ We will induct according to a scheme suggested by
                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                    (CONS 'N
                          (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P ANS0 I0 N) denote *1 above then the induction scheme we'll
@@ -3558,6 +3633,8 @@ Rules: ((:DEFINITION DO$)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NATS-AC-UP)
         (:DEFINITION NFIX)
@@ -3570,6 +3647,7 @@ Rules: ((:DEFINITION DO$)
         (:EXECUTABLE-COUNTERPART BINARY-+)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
@@ -3741,7 +3819,8 @@ Goal''
                                      (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                                (CONS 'I
                                      (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
-                 NIL NIL NIL)
+                 '(NIL)
+                 NIL)
             (APDH2 I JMAX ANS0)))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -3782,7 +3861,8 @@ We will induct according to a scheme suggested by
                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                    (CONS 'I
                          (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
-     NIL NIL NIL).
+     '(NIL)
+     NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P ANS0 I JMAX) denote *1 above then the induction scheme we'll
@@ -3842,6 +3922,8 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION MAKE-PAIR)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
@@ -3959,7 +4041,8 @@ Goal''
                                      (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                                (CONS 'I
                                      (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
-                 NIL NIL NIL))
+                 '(NIL)
+                 NIL))
        (CONS 'JMAX
              (CDR (ASSOC-EQ-SAFE 'JMAX ALIST)))))))
    (LAMBDA$ (ALIST)
@@ -3969,7 +4052,8 @@ Goal''
                        (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                  (CONS 'JMAX
                        (CDR (ASSOC-EQ-SAFE 'JMAX ALIST))))))
-   NIL NIL NIL)
+   '(NIL)
+   NIL)
   (APDH1 IMAX JMAX ANS0)))
 
 *1 (Goal'') is pushed for proof by induction.
@@ -4033,7 +4117,8 @@ We will induct according to a scheme suggested by
                                      (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                                (CONS 'I
                                      (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
-                 NIL NIL NIL))
+                 '(NIL)
+                 NIL))
       (CONS 'JMAX
             (CDR (ASSOC-EQ-SAFE 'JMAX ALIST)))))))
  (LAMBDA$ (ALIST)
@@ -4043,7 +4128,8 @@ We will induct according to a scheme suggested by
                      (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                (CONS 'JMAX
                      (CDR (ASSOC-EQ-SAFE 'JMAX ALIST))))))
- NIL NIL NIL).
+ '(NIL)
+ NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P ANS0 IMAX JMAX) denote *1 above then the induction scheme we'll
@@ -4080,7 +4166,8 @@ use is
                                      (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                                (CONS 'I
                                      (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
-                 NIL NIL NIL)
+                 '(NIL)
+                 NIL)
             (+ -1 IMAX)
             JMAX)
         (APPLY$-WARRANT-DO$)
@@ -4146,6 +4233,8 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION L<)
         (:DEFINITION LEN)
         (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
         (:DEFINITION NATP)
         (:DEFINITION NFIX)
         (:DEFINITION NOT)

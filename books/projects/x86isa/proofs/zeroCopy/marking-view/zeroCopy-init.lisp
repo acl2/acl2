@@ -517,7 +517,7 @@
     (:rewrite bitops::logbitp-when-bitmaskp)
     (:type-prescription all-xlation-governing-entries-paddrs)
     (:type-prescription set::setp-type)
-    (:type-prescription set::empty-type)
+    (:type-prescription set::emptyp-type)
     (:rewrite acl2::equal-constant-+)
     (:definition byte-listp)
     (:rewrite unsigned-byte-p-of-ash)

@@ -164,7 +164,7 @@
                 A
                 (G A R))
            (EQUAL (CAAR R) A))
-  :hints (("Goal" :in-theory (e/d (g wfr WFKEYED) ()))))
+  :hints (("Goal" :in-theory (enable g wfr wfkeyed))))
 
 (defthm g-of-caar
   (IMPLIES (AND (not (ifrp r))
@@ -235,7 +235,7 @@
 ;move to sets
 ;expensive?
 (defthm head-when-empty
-  (implies (set::empty ads)
+  (implies (set::emptyp ads)
            (equal (set::head ads)
                   nil))
   :hints (("Goal" :in-theory (enable set::head set::sfix))))
@@ -291,7 +291,7 @@
 ;return the keys of the map as a list
 (defun key-list (map)
   (declare (type t map))
-  (set::2list (acl2::rkeys map)))
+  (set::2list (rkeys map)))
 
 ;fixme flesh out - or use a different version of maps
 (defund mapp (map)

@@ -1,6 +1,6 @@
 ; Checking whether a string ends with another string
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 (include-book "kestrel/lists-light/prefixp-def" :dir :system)
 (local (include-book "kestrel/lists-light/prefixp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
+(local (include-book "kestrel/utilities/coerce" :dir :system))
 
 ;; See also community book std/strings/suffixp.lisp but that brings in many books.
 
@@ -38,4 +39,11 @@
                 (stringp suffix))
            (<= (length suffix) (length str)))
   :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable string-ends-withp))))
+
+(defthm string-ends-withp-when-not-stringp-arg1
+  (implies (not (stringp str))
+           (equal (string-ends-withp str suffix)
+                  (or (not (stringp suffix))
+                      (equal suffix ""))))
   :hints (("Goal" :in-theory (enable string-ends-withp))))

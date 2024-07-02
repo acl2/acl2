@@ -1,7 +1,7 @@
 ; The BV (bit vector) library.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,7 +31,7 @@
 ;; Underlying functions:
 (include-book "lognot")
 (include-book "logand")
-(include-book "logand2")
+(include-book "logand-b")
 (include-book "logior")
 (include-book "logior-b")
 (include-book "logorc1")
@@ -59,6 +59,8 @@
 (include-book "bvcat2")
 (include-book "putbits")
 
+(include-book "bvequal")
+
 ;; Bit-wise operations:
 (include-book "bvnot")
 (include-book "bvand")
@@ -78,6 +80,7 @@
 (include-book "bvminus-rules")
 (include-book "bvuminus")
 (include-book "bvmult")
+(include-book "bvmult-rules")
 (include-book "bvmod")
 (include-book "bvdiv")
 (include-book "bvdiv-rules")
@@ -99,6 +102,7 @@
 (include-book "bvsx")
 
 ;; Comparison operations:
+(include-book "bvequal")
 (include-book "bvlt")
 (include-book "sbvlt")
 
@@ -118,6 +122,7 @@
 ;; Shift operations:
 (include-book "bvshl")
 (include-book "bvshr")
+(include-book "bvashr-def")
 (include-book "bvashr")
 
 ;; Counting one bits:
@@ -142,6 +147,7 @@
 (include-book "defs")
 
 ;; Conversions between booleans and bits
+(include-book "bool-to-bit-def")
 (include-book "bool-to-bit")
 (include-book "bit-to-bool")
 
@@ -158,6 +164,7 @@
 (include-book "single-bit")
 
 ;; Mixed rules:
+(include-book "unsigned-byte-p-forced-rules")
 (include-book "bvcat-rules")
 (include-book "bvsx-rules")
 (include-book "rules0")
@@ -176,6 +183,12 @@
 (include-book "if-becomes-bvif-rules")
 
 (include-book "intro")
+(include-book "bitops")
+
+(include-book "validation-stp")
+(include-book "validation-smt-lib")
+
+(include-book "rtl")
 
 ;; (include-book "tests") ; not including this one because it just contains tests
 

@@ -18,7 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc built-ins
+(defxdoc builtins
   :parents (acl2::kestrel-books acl2::projects)
   :short "A library about the ACL2 built-ins."
   :long

@@ -1,0 +1,31 @@
+Manifest-Version: 1.0
+Automatic-Module-Name: org.neu.acl2.handproof
+Bundle-ManifestVersion: 2
+Bundle-Name: org.neu.acl2.handproof
+Bundle-Vendor: ACL2s Developers
+Bundle-Version: 1.0.4.qualifier
+Bundle-SymbolicName: org.neu.acl2.handproof; singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.eclipse.xtext,
+ org.eclipse.xtext.xbase,
+ org.eclipse.equinox.common;bundle-version="3.16.0",
+ org.eclipse.emf.ecore,
+ org.eclipse.xtext.xbase.lib;bundle-version="2.14.0",
+ org.eclipse.xtext.util,
+ org.eclipse.emf.common,
+ org.antlr.runtime;bundle-version="[3.2.0,3.2.1)"
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Export-Package: org.neu.acl2.handproof.scoping,
+ org.neu.acl2.handproof.services,
+ org.neu.acl2.handproof.validation,
+ org.neu.acl2.handproof.generator,
+ org.neu.acl2.handproof.serializer,
+ org.neu.acl2.handproof.handProof,
+ org.neu.acl2.handproof.handProof.impl,
+ org.neu.acl2.handproof.handProof.util,
+ org.neu.acl2.handproof.parser.antlr,
+ org.neu.acl2.handproof,
+ org.neu.acl2.handproof.parser.antlr.internal,
+ org.neu.acl2.handproof.parser.antlr.lexer,
+ org.neu.acl2.handproof.formatting2
+Import-Package: org.apache.log4j

@@ -46,17 +46,18 @@
                (implies lines (stringp (car lines))))))
 
     (local (in-theory (enable string-or-symbol-p)))
-    (define make-fname ((dir stringp) (fname stringp))
-      :returns (full-fname stringp)
+    (define make-fname ((dir stringp) (fname stringp) state)
+      :returns (mv (full-fname stringp)
+                   state)
       :guard-debug t
       (b* ((dir (str-fix dir))
            (fname (str-fix fname))
            (dir (if (equal dir "") "/tmp/py_file" dir))
            ((unless (equal fname ""))
-            (concatenate 'string dir "/" fname))
+            (mv (concatenate 'string dir "/" fname) state))
            (cmd (concatenate 'string "mkdir -p " dir " && "
                              "mktemp " dir "/smtlink.XXXXX")))
-        (mv-let (exit-status lines)
+        (mv-let (exit-status lines state)
           (time$ (tshell-call cmd
                               :print nil
                               :save t)
@@ -64,11 +65,11 @@
                  :msg ""
                  :args (list cmd))
           (if (and (equal exit-status 0) (not (equal lines nil)))
-              (car lines)
+              (mv (car lines) state)
             (prog2$ (er hard? 'SMT-prove=>make-fname "Error: Command ~x0 ~
                                                       failed."
                         cmd)
-                    "")))))
+                    (mv "" state))))))
     )
 
   (define SMT-prove ((term pseudo-termp) (smtlink-hint smtlink-hint-p) (state))
@@ -87,7 +88,7 @@
          (smtlink-hint2 (generate-fty-types-top smtlink-hint1 flextypes-table))
          ((smtlink-hint h) smtlink-hint2)
          (c h.smt-cnf)
-         (smt-file (make-fname h.smt-dir h.smt-fname))
+         ((mv smt-file state) (make-fname h.smt-dir h.smt-fname state))
          ((mv smt-term smt-precond) (SMT-translation term h state))
          ((mv head import) (SMT-head c))
          ;; (state (SMT-write-file smt-file (cons head (ACL22SMT)) import smt-term state))

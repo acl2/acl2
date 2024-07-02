@@ -1,7 +1,7 @@
 ; A function to add an item to the end of a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 ;; See also the function rcons in std/lists/rcons.
 
 ;maybe this should always be expanded?
-(defun add-to-end (item lst)
+(defund add-to-end (item lst)
   (declare (xargs :guard (true-listp lst)))
   (append lst (list item)))
 
@@ -24,4 +24,20 @@
 (defthm len-of-add-to-end
   (equal (len (add-to-end a x))
          (+ 1 (len x)))
+  :hints (("Goal" :in-theory (enable add-to-end))))
+
+(defthm nth-of-add-to-end
+  (implies (natp n)
+           (equal (nth n (add-to-end item lst))
+                  (if (> n (len lst))
+                      nil
+                    (if (< n (len lst))
+                        (nth n lst)
+                      item))))
+  :hints (("Goal" :in-theory (enable add-to-end))))
+
+(defthm nat-listp-of-add-to-end
+  (equal (nat-listp (add-to-end a x))
+         (and (nat-listp (true-list-fix x))
+              (natp a)))
   :hints (("Goal" :in-theory (enable add-to-end))))

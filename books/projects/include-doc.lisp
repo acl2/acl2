@@ -22,7 +22,7 @@
      (include-book "sat/dimacs-reader/reader")
      (include-book "irv/top")
      (include-book "rp-rewriter/top")
-     (include-book "rp-rewriter/lib/mult3/doc")
+     (include-book "vescmul/doc")
      (include-book "vwsim/vwsim-doc")
 
      (include-book "smtlink/doc")
@@ -32,8 +32,8 @@
      (ifdef "OS_HAS_SMTLINK"
             (include-book "smtlink/examples/ringosc")
             :endif)
-
-
+     (include-book "pfcs/top")
+     (include-book "poseidon/top")
 
      (defxdoc projects
        :parents (top)

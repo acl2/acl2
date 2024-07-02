@@ -1,7 +1,7 @@
 ; A lightweight book about mv-nth
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -40,6 +40,15 @@
          (if (zp n)
              a
            (mv-nth (+ -1 n) b)))
+  :hints (("Goal" :in-theory (enable mv-nth))))
+
+;see also mv-nth-cons-meta, but axe can't use it
+(defthm mv-nth-of-cons-safe
+  (implies (syntaxp (quotep n))
+           (equal (mv-nth n (cons a b))
+                  (if (zp n)
+                      a
+                    (mv-nth (+ -1 n) b))))
   :hints (("Goal" :in-theory (enable mv-nth))))
 
 ;; Consider restricting this

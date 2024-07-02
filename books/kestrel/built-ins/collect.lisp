@@ -449,6 +449,88 @@
     distributivity-of-minus-over-+
     pos-listp-forward-to-integer-listp))
 
+(defconst *builtin-defaxiom/defthm-dfs*
+  '(stringp-df-string
+    to-dfp-of-rize to-df-of-df-rationalize
+    rationalp-df-rationalize rationalp-df-pi
+    dfp-df-pi rationalp-df-abs-fn
+    dfp-df-abs-fn rationalp-df-atanh-fn
+    dfp-df-atanh-fn rationalp-df-acosh-fn
+    dfp-df-acosh-fn rationalp-df-asinh-fn
+    dfp-df-asinh-fn rationalp-df-tanh-fn
+    dfp-df-tanh-fn rationalp-df-cosh-fn
+    dfp-df-cosh-fn rationalp-df-sinh-fn
+    dfp-df-sinh-fn rationalp-df-atan-fn
+    dfp-df-atan-fn rationalp-df-acos-fn
+    dfp-df-acos-fn rationalp-df-asin-fn
+    dfp-df-asin-fn rationalp-df-tan-fn
+    dfp-df-tan-fn rationalp-df-cos-fn
+    dfp-df-cos-fn rationalp-df-sin-fn
+    dfp-df-sin-fn rationalp-unary-df-log
+    dfp-unary-df-log rationalp-binary-df-log
+    dfp-binary-df-log
+    rationalp-df-sqrt-fn dfp-df-sqrt-fn
+    rationalp-df-exp-fn dfp-df-exp-fn
+    rationalp-df-expt-fn dfp-df-expt-fn
+    stringp-constrained-df-string
+    to-df-of-constrained-df-rationalize
+    rationalp-constrained-df-rationalize
+    rationalp-constrained-df-pi
+    dfp-constrained-df-pi
+    rationalp-constrained-df-abs-fn
+    dfp-constrained-df-abs-fn
+    rationalp-constrained-df-atanh-fn
+    dfp-constrained-df-atanh-fn
+    rationalp-constrained-df-acosh-fn
+    dfp-constrained-df-acosh-fn
+    rationalp-constrained-df-asinh-fn
+    dfp-constrained-df-asinh-fn
+    rationalp-constrained-df-tanh-fn
+    dfp-constrained-df-tanh-fn
+    rationalp-constrained-df-cosh-fn
+    dfp-constrained-df-cosh-fn
+    rationalp-constrained-df-sinh-fn
+    dfp-constrained-df-sinh-fn
+    rationalp-constrained-df-atan-fn
+    dfp-constrained-df-atan-fn
+    rationalp-constrained-df-acos-fn
+    dfp-constrained-df-acos-fn
+    rationalp-constrained-df-asin-fn
+    dfp-constrained-df-asin-fn
+    rationalp-constrained-df-tan-fn
+    dfp-constrained-df-tan-fn
+    rationalp-constrained-df-cos-fn
+    dfp-constrained-df-cos-fn
+    rationalp-constrained-df-sin-fn
+    dfp-constrained-df-sin-fn
+    rationalp-constrained-unary-df-log
+    dfp-constrained-unary-df-log
+    rationalp-constrained-binary-df-log
+    dfp-constrained-binary-df-log
+    rationalp-constrained-df-sqrt-fn
+    dfp-constrained-df-sqrt-fn
+    rationalp-constrained-df-exp-fn
+    dfp-constrained-df-exp-fn
+    rationalp-constrained-df-expt-fn
+    dfp-constrained-df-expt-fn
+    dfp-implies-to-df-is-identity
+    dfp-implies-rationalp
+    dfp-minus
+    dfp-to-df
+    to-df-default to-df-idempotent
+    rationalp-to-df constrained-to-df-0
+    constrained-to-df-default
+    constrained-to-df-idempotent
+    constrained-to-df-monotonicity
+    rationalp-constrained-to-df
+    df-round-idempotent
+    df-round-monotonicity
+    df-round-is-identity-for-dfp
+    dfp-df-round
+    rationalp-df-round
+    to-df-minus
+    to-df-monotonicity))
+
 (defconst *builtin-defaxiom/defthm-characters*
   '(booleanp-characterp
     characterp-page
@@ -465,10 +547,23 @@
     upper-case-p-char-upcase
     lower-case-p-forward-to-alpha-char-p
     upper-case-p-forward-to-alpha-char-p
-    alpha-char-p-forward-to-standard-char-p
+    char-upcase/downcase-non-standard-inverses
+    char-upcase-maps-non-standard-to-non-standard
+    char-downcase-maps-non-standard-to-non-standard
+    characterp-char-downcase-non-standard
+    characterp-char-upcase-non-standard
     standard-char-p-forward-to-characterp
     characterp-char-downcase
     characterp-char-upcase
+    lower/upper-case-p-non-standard-disjointness
+    upper-case-p-non-standard-char-upcase-non-standard
+    lower-case-p-non-standard-char-downcase-non-standard
+    alpha-char-p-non-standard-implies-characterp
+    lower-case-p-non-standard-implies-alpha-char-p-non-standard
+    upper-case-p-non-standard-implies-alpha-char-p-non-standard
+    booleanp-lower-case-p-non-standard
+    booleanp-upper-case-p-non-standard
+    booleanp-alpha-char-p-non-standard
     characterp-nth
     standard-char-listp-append
     character-listp-append
@@ -560,7 +655,6 @@
     atom-listp-forward-to-true-listp
     eqlable-listp-forward-to-atom-listp
     true-listp-revappend-type-prescription
-    true-listp-take
     keyword-value-listp-forward-to-true-listp
     true-list-listp-forward-to-true-listp
     true-listp-nthcdr-type-prescription
@@ -618,7 +712,8 @@
     symbol-alistp-forward-to-eqlable-alistp
     character-alistp-forward-to-eqlable-alistp
     nat-alistp-forward-to-eqlable-alistp
-    standard-string-alistp-forward-to-alistp
+    fixnat-alistp-forward-to-nat-alistp
+    string-alistp-forward-to-alistp
     consp-assoc-equal
     known-package-alistp-forward-to-true-list-listp-and-alistp
     true-list-listp-forward-to-true-listp-assoc-equal
@@ -859,7 +954,18 @@
     apply$-do$
     fn-equal-implies-equal-do$-1
     fn-equal-implies-equal-do$-3
-    fn-equal-implies-equal-do$-4))
+    fn-equal-implies-equal-do$-4
+    apply$-eviscerate-do$-alist apply$-warrant-eviscerate-do$-alist-necc
+    apply$-warrant-eviscerate-do$-alist-definition
+    apply$-stobj-print-name
+    apply$-warrant-stobj-print-name-necc
+    apply$-warrant-stobj-print-name-definition
+    apply$-loop$-default-values apply$-warrant-loop$-default-values-necc
+    apply$-warrant-loop$-default-values-definition
+    apply$-loop$-default-values1
+    apply$-warrant-loop$-default-values1-necc
+    apply$-warrant-loop$-default-values1-definition
+))
 
 ; Put all the above names together, and check that
 ; (1) they are all built-in axiom and theorem names and
@@ -870,6 +976,7 @@
           *builtin-defaxiom/defthm-booleans*
           *builtin-defaxiom/defthm-cons-pairs*
           *builtin-defaxiom/defthm-numbers*
+          *builtin-defaxiom/defthm-dfs*
           *builtin-defaxiom/defthm-characters*
           *builtin-defaxiom/defthm-strings*
           *builtin-defaxiom/defthm-symbols*

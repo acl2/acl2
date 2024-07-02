@@ -216,8 +216,8 @@ Rules: NIL
 ACL2 !>>(EVAL-FORM (UPDATE2 3 ST2))
 
 ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
-on the term (UPDATE2 '3 ST2) has modified the user stobj ST2.  See
-:DOC user-stobjs-modified-warnings.
+on the term (UPDATE2 '3 ST2) may have modified the user stobj ST2.
+See :DOC user-stobjs-modified-warnings.
 
 
 Summary
@@ -234,8 +234,8 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (LIST (HALT1 ST1)
 ACL2 !>>(EVAL-FORM (UPDATE2 7 ST1))
 
 ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
-on the term (UPDATE2 '7 ST1) has modified the user stobj ST1.  See
-:DOC user-stobjs-modified-warnings.
+on the term (UPDATE2 '7 ST1) may have modified the user stobj ST1.
+See :DOC user-stobjs-modified-warnings.
 
 
 Summary
@@ -272,8 +272,8 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ACL2 !>>(EVAL-FORM (SWAP-ST1-ST2 ST1 ST2))
 
 ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
-on the term (SWAP-ST1-ST2 ST1 ST2) has modified the user stobjs ST2
-and ST1.  See :DOC user-stobjs-modified-warnings.
+on the term (SWAP-ST1-ST2 ST1 ST2) may have modified the user stobjs
+ST2 and ST1.  See :DOC user-stobjs-modified-warnings.
 
 
 Summary
@@ -290,8 +290,8 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (LIST (HALT1 ST1)
 ACL2 !>>(EVAL-FORM (SWAP-ST1-ST2 ST2 ST1))
 
 ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
-on the term (SWAP-ST1-ST2 ST2 ST1) has modified the user stobjs ST1
-and ST2.  See :DOC user-stobjs-modified-warnings.
+on the term (SWAP-ST1-ST2 ST2 ST1) may have modified the user stobjs
+ST1 and ST2.  See :DOC user-stobjs-modified-warnings.
 
 
 Summary
@@ -458,11 +458,11 @@ ACL2 !>>(MUST-NOT-TRANSLATE (MV-LET (ST1 ST2)
                               (MV ST1 ST2)))
 
 
-ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  It is illegal to invoke
-SWAP-ST1-ST2 here because of a signature mismatch.  This function call
-returns a result of shape (MV ST2 ST1) where a result of shape (MV ST1 ST2)
-is required.  Note:  this error occurred in the context 
-(SWAP-ST1-ST2 ST1 ST2).
+ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  The bound variable list
+(ST1 ST2) from an MV-LET expression has been found not to be compatible
+with the ``types'' (each a stobj name or an indicator of a non-stobj
+object) computed for them, (ST2 ST1).  Note:  this error occurred in
+the context (MV-LET (ST1 ST2) (SWAP-ST1-ST2 ST1 ST2) (MV ST1 ST2)).
 
 
 Summary
@@ -474,12 +474,11 @@ ACL2 !>>(MUST-NOT-TRANSLATE (MV-LET (ST2 ST1)
                               (MV ST1 ST2)))
 
 
-ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  It is illegal to invoke
-SWAP-ST1-ST2 here because of a signature mismatch.  This function call
-returns a result of shape (MV ST1 ST2) (after accounting for the replacement
-of some input stobjs by congruent stobjs) where a result of shape 
-(MV ST2 ST1) is required.  Note:  this error occurred in the context
-(SWAP-ST1-ST2 ST2 ST1).
+ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  The bound variable list
+(ST2 ST1) from an MV-LET expression has been found not to be compatible
+with the ``types'' (each a stobj name or an indicator of a non-stobj
+object) computed for them, (ST1 ST2).  Note:  this error occurred in
+the context (MV-LET (ST2 ST1) (SWAP-ST1-ST2 ST2 ST1) (MV ST1 ST2)).
 
 
 Summary
@@ -579,7 +578,8 @@ evaluator on the term
 (RETURN-LAST 'WITH-GUARD-CHECKING1-RAW
              (CHK-WITH-GUARD-CHECKING-ARG 'T)
              (UPDATE3 'A ST2))
-has modified the user stobj ST2.  See :DOC user-stobjs-modified-warnings.
+may have modified the user stobj ST2.  See :DOC user-stobjs-modified-
+warnings.
 
 
 
@@ -603,7 +603,8 @@ evaluator on the term
 (RETURN-LAST 'WITH-GUARD-CHECKING1-RAW
              (CHK-WITH-GUARD-CHECKING-ARG 'T)
              (UPDATE3 'A ST1))
-has modified the user stobj ST1.  See :DOC user-stobjs-modified-warnings.
+may have modified the user stobj ST1.  See :DOC user-stobjs-modified-
+warnings.
 
 
 

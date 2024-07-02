@@ -1,0 +1,3 @@
+; Matt K. addtion: Avoid useless runes failure by
+; adding to the cert-flags in cert.acl2.
+; cert-flags: ? t :ttags :all :skip-proofs-okp t :useless-runes nil

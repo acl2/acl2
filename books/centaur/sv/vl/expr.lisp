@@ -226,6 +226,20 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
     (implies (not (member v (sv::svex-vars x)))
              (not (member v (sv::svex-vars (svex-extend type width x)))))))
 
+(define 4vec-extend ((type vl-exprsign-p)
+                     (width natp)
+                     (x sv::4vec-p))
+  :short "Returns an 4vec representing the sign- or zero-extension of x at the given width."
+
+  :long "<p>We don't have to extend/truncate operands when translating VL
+expressions like @('a & b'), but we do need to do it to the inputs of
+expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
+
+  :returns (sv sv::4vec-p)
+  (if (vl-exprsign-equiv type :vl-signed)
+      (sv::4vec-sign-ext (sv::2vec (lnfix width)) x)
+    (sv::4vec-zero-ext (sv::2vec (lnfix width)) x)))
+
 
 
 #!sv
@@ -303,6 +317,75 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
 
   (memoize 'svex-reduce-consts :condition '(svex-case x :call)))
 
+#!sv
+(define svexlist-args-extract-constants ((x svexlist-p))
+  :returns (vals maybe-4veclist-p)
+  (if (Atom x)
+      nil
+    (cons (b* ((new (svex-reduce-consts (car x))))
+            (svex-case new
+              :quote new.val
+              :otherwise nil))
+          (svexlist-args-extract-constants (cdr x)))))
+
+(define vl-function-map-check-matching ((specialization sv::maybe-4veclist-p)
+                                        (actuals sv::maybe-4veclist-p))
+  :returns (match maybe-natp :rule-classes :type-prescription)
+  (b* (((when (atom specialization))
+        (and (atom actuals) 0))
+       ((unless (consp actuals)) nil)
+       (spec1 (car specialization))
+       (act1 (car actuals))
+       ((when (not spec1))
+        (vl-function-map-check-matching (cdr specialization) (cdr actuals)))
+       ((unless (and act1 (sv::4vec-equiv spec1 act1)))
+        nil)
+       (rest (vl-function-map-check-matching (cdr specialization) (cdr actuals))))
+    (and rest (+ 1 rest)))
+  ///
+  (local (defthm car-of-maybe-4veclist-fix
+           (equal (car (sv::maybe-4veclist-fix x))
+                  (sv::maybe-4vec-fix (car x)))
+           :hints(("Goal" :in-theory (enable sv::maybe-4veclist-fix
+                                             sv::maybe-4vec-fix)))))
+
+  (local (defthm maybe-4vec-fix-when-exists
+           (implies x
+                    (equal (sv::maybe-4vec-fix x)
+                           (sv::4vec-fix x)))
+           :hints(("Goal" :in-theory (enable sv::maybe-4vec-fix))))))
+        
+    
+
+(define vl-function-map-find-matching-aux ((x vl-function-specialization-map-p)
+                                           (args sv::maybe-4veclist-p))
+  :returns (mv (score maybe-natp :rule-classes :type-prescription)
+               (match (implies score (vl-function-specialization-p match))))
+  (b* (((when (atom x)) (mv nil nil))
+       ((unless (mbt (consp (car x))))
+        (vl-function-map-find-matching-aux (cdr x) args))
+       ((cons specxn (vl-function-specialization match)) (car x))
+       ((unless match.successp)
+        (vl-function-map-find-matching-aux (cdr x) args))
+       (score (vl-function-map-check-matching specxn args))
+       ((unless score)
+        (vl-function-map-find-matching-aux (cdr x) args))
+       ((mv rest-score rest-match) (vl-function-map-find-matching-aux (cdr x) args))
+       ((unless (and rest-score (> rest-score score)))
+        (mv score (vl-function-specialization-fix match))))
+    (mv rest-score rest-match))
+  ///
+  (local (in-theory (enable vl-function-specialization-map-fix)))
+  (local #!fty (set-deffixequiv-default-hints
+                ((deffixequiv-expand-hint fnname)))))
+
+
+(define vl-function-map-find-matching ((x vl-function-specialization-map-p)
+                                       (args sv::maybe-4veclist-p))
+  :returns (match (implies match (vl-function-specialization-p match)))
+  (b* (((mv score match) (vl-function-map-find-matching-aux x args)))
+    (and score match)))
+
 ;; #!sv
 ;; (define svex-maybe-reduce-to-const ((x svex-p))
 ;;   :returns (x1 svex-p)
@@ -346,27 +429,36 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
     (logior (ash rest 8) charval)))
 
 
+(define vl-value-to-4vec ((x vl-value-p))
+  :prepwork ((local (defthm vl-bit-p-of-vl-extint->value-forward
+                      (vl-bit-p (vl-extint->value x))
+                      :rule-classes ((:forward-chaining :trigger-terms ((vl-extint->value x)))))))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (val sv::4vec-p))
+  (vl-value-case x
+    :vl-constint (mv nil (4vec-extend x.origsign x.origwidth (sv::2vec x.value)))
+    :vl-weirdint (mv nil (4vec-extend x.origsign (len x.bits)
+                                      (vl-bitlist->4vec (vl-weirdint->bits x))))
+    :vl-extint   (mv nil (case x.value
+                           (:vl-1val (sv::2vec -1))
+                           (:vl-0val (sv::2vec 0))
+                           (:vl-xval (sv::4vec-x))
+                           (:vl-zval (sv::4vec-z))))
+    :vl-string   (mv nil (sv::2vec (vl-string->bits x.value (length x.value))))
+    :otherwise   (mv (vmsg "Unsupported value type: ~a0" (make-vl-literal :val x))
+                     (sv::4vec-x))))
+
 (define vl-value-to-svex ((x vl-value-p))
   :prepwork ((local (defthm vl-bit-p-of-vl-extint->value-forward
                       (vl-bit-p (vl-extint->value x))
                       :rule-classes ((:forward-chaining :trigger-terms ((vl-extint->value x)))))))
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex sv::svex-p))
-  (vl-value-case x
-    :vl-constint (mv nil (svex-extend x.origsign x.origwidth (svex-int x.value)))
-    :vl-weirdint (mv nil (svex-extend x.origsign (len x.bits)
-                                      (sv::svex-quote (vl-bitlist->4vec (vl-weirdint->bits x)))))
-    :vl-extint   (mv nil (case x.value
-                           (:vl-1val (svex-int -1))
-                           (:vl-0val (svex-int 0))
-                           (:vl-xval (svex-x))
-                           (:vl-zval (sv::svex-quote (sv::4vec-z)))))
-    :vl-string   (mv nil (svex-int (vl-string->bits x.value (length x.value))))
-    :otherwise   (mv (vmsg "Unsupported value type: ~a0" (make-vl-literal :val x))
-                     (svex-x)))
+  (b* (((mv err 4vec) (vl-value-to-4vec x)))
+    (mv err (sv::svex-quote 4vec)))
   ///
-  (defret vars-of-vl-value-to-svex
-    (not (member v (sv::svex-vars svex)))))
+  (defret vars-of-<fn>
+    (Equal (sv::svex-vars svex) nil)))
 
 (define vl-select-resolved-p ((x vl-select-p))
   (vl-select-case x
@@ -3994,6 +4086,109 @@ functions can assume all bits of it are good.</p>"
               (svex-multiconcat reps svexes sizes)))
           (mv (vttree-fix vttree) svex))
 
+        :vl-bitselect-expr
+        (b* (((vmv vttree subexp-svex subexp-size)
+              (vl-expr-to-svex-selfdet x.subexp nil ss scopes))
+             ((unless subexp-size)
+              (mv vttree (svex-x)))
+             ((when (vl-expr-resolved-p x.index))
+              (b* ((index (vl-resolved->val x.index))
+                   ((unless (<= 0 index))
+                    (mv (vfatal :type :vl-expr-bitselect-negative
+                                :msg "Negative bitselect on expression: ~a0"
+                                :args (list x))
+                        (svex-x)))
+                   (vttree (if (<= subexp-size index)
+                               (vwarn :type :vl-expr-bitselect-out-of-bounds
+                                      :msg "Selecting bit ~x0 of an expression of size ~x1: ~a2"
+                                      :args (list index subexp-size x))
+                             vttree)))
+                (mv vttree (sv::svcall sv::partsel (svex-int index) 1
+                                       (sv::svex-concat subexp-size
+                                                        subexp-svex (svex-x))))))
+             ((vmv vttree index-svex ?index-size) (vl-expr-to-svex-selfdet x.index nil ss scopes)))
+          (mv (vttree-fix vttree)
+              (sv::svcall sv::partsel index-svex 1
+                          (sv::svex-concat subexp-size subexp-svex (svex-x)))))
+
+        :vl-partselect-expr
+        (b* (((vmv vttree subexp-svex subexp-size) (vl-expr-to-svex-selfdet x.subexp nil ss scopes))
+             ((unless subexp-size)
+              (mv vttree (svex-x))))
+          (vl-partselect-case x.part
+            :none (mv vttree subexp-svex)
+            :range
+            (b* (((unless (vl-range-resolved-p x.part.range))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Unresolved range in partselect expression ~a0"
+                              :args (list x))
+                      (svex-x)))
+                 ((vl-range x.part.range))
+                 (msb (vl-resolved->val x.part.range.msb))
+                 (lsb (vl-resolved->val x.part.range.lsb))
+                 ((unless (<= lsb msb))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Backward range in partselect expression ~a0"
+                              :args (list x))
+                      (svex-x)))
+                 ((unless (<= 0 lsb))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Negative index in partselect expression ~a0"
+                              :args (list x))
+                      (svex-x)))
+                 ((unless (< msb subexp-size))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "MSB out of range in partselect expression ~a0 (subexp width ~x1)"
+                              :args (list x subexp-size))
+                      (svex-x))))
+              (mv (vttree-fix vttree)
+                  (sv::svcall sv::partsel (svex-int lsb) (svex-int (+ 1 (- msb lsb)))
+                              (sv::svex-concat subexp-size subexp-svex (svex-x)))))
+            :plusminus
+            (b* (((unless (vl-expr-resolved-p x.part.width))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Unresolved width in partselect expression ~a0"
+                              :args (list x))
+                      (svex-x)))
+                 (width (vl-resolved->val x.part.width))
+                 ((unless (<= 0 width))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Negative width in partselect expression ~a0"
+                              :args (list x))
+                      (svex-x)))
+                 ((unless (<= width subexp-size))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Partselect width greater than expression size: ~a0 (subexp size: ~x1)"
+                              :args (list x subexp-size))
+                      (svex-x)))
+                 ((when (vl-expr-resolved-p x.part.base))
+                  (b* ((base (vl-resolved->val x.part.base))
+                       (lsb (if x.part.minusp
+                                (+ 1 (- base width))
+                              base))
+                       ((unless (<= 0 lsb))
+                        (mv (vfatal :type :vl-expr-to-svex-fail
+                                    :msg "Negative LSB in partselect expression ~a0"
+                                    :args (list x))
+                            (svex-x)))
+                       ((unless (<= (+ lsb width) subexp-size))
+                        (mv (vfatal :type :vl-expr-to-svex-fail
+                                    :msg "MSB out of range in partselect expression ~a0"
+                                    :args (list x))
+                            (svex-x))))
+                    (mv (vttree-fix vttree)
+                        (sv::svcall sv::partsel (svex-int lsb) (svex-int width)
+                                    (sv::svex-concat subexp-size subexp-svex (svex-x))))))
+                 ((vmv vttree base-svex ?base-size) (vl-expr-to-svex-selfdet x.part.base nil ss scopes))
+                 (lsb (if x.part.minusp
+                          (sv::svcall + base-svex
+                                      (sv::svcall + (svex-int 1)
+                                                  (sv::svcall sv::u- (svex-int width))))
+                        base-svex)))
+              (mv (vttree-fix vttree)
+                  (sv::svcall sv::partsel lsb (svex-int width)
+                              (sv::svex-concat subexp-size subexp-svex (svex-x)))))))
+
         :vl-inside
         (b* (((wvmv vttree elem-selfsize) (vl-expr-selfsize x.elem ss scopes))
              ((wvmv vttree elem-class)    (vl-expr-typedecide x.elem ss scopes))
@@ -4306,22 +4501,24 @@ functions can assume all bits of it are good.</p>"
                       :msg "Bad arguments in function call ~a0: ~@1"
                       :args (list x err))
               (svex-x) nil))
-         ((unless item.function)
-          (mv (vfatal :type :vl-expr-to-svex-fail
-                      :msg "Function hasn't been preprocessed (unresolved ~
-                           body function): ~a0"
-                      :args (list x))
-              (svex-x) nil))
          ((vmv vttree type-errs args-svex)
           (vl-exprlist-to-svex-datatyped
            x.args
            port-types
            ss scopes :compattype :assign))
          ((wvmv vttree) (vl-subexpr-type-error-list-warn x type-errs ss))
+         (const-args (sv::svexlist-args-extract-constants args-svex))
+         (function (vl-function-map-find-matching item.function-map const-args))
+         ((unless function)
+          (mv (vfatal :type :vl-expr-to-svex-fail
+                      :msg "Function ~a0 had no compilation for arguments with the following constants: ~a1"
+                      :args (list x.name const-args))
+              (svex-x) nil))
+         ((vl-function-specialization function))
          (comp-alist (vl-function-pair-inputs-with-actuals item.portdecls args-svex))
          ((with-fast comp-alist))
-         (ans (sv::svex-subst-memo item.function comp-alist))
-         (constraints (sv::constraintlist-subst-memo item.constraints comp-alist))
+         (ans (sv::svex-subst-memo function.function comp-alist))
+         (constraints (sv::constraintlist-subst-memo function.constraints comp-alist))
          (vttree (vttree-add-constraints constraints vttree)))
       (clear-memoize-table 'sv::svex-subst-memo)
       (mv (vttree-fix vttree) ans item.rettype)))

@@ -376,7 +376,7 @@
 
             (flush (and denormalp
                         (equal (mxcsrBits->um mxcsr) 1)
-                        (equal (mxcsrBits->fz mxcsr) 1)))
+                        (equal (mxcsrBits->ftz mxcsr) 1)))
             (fp-result
              (rat-to-fp rounded-rat sign overflowp
                         denormalp flush rc exp-width2 frac-width2)))
@@ -530,7 +530,7 @@
         (sse-cvt-int-to-fp op mxcsr
                            #.*IEEE-DP-EXP-WIDTH* #.*IEEE-DP-FRAC-WIDTH*))
 
-       (result (n32 result)))
+       (result (n64 result)))
     (mv flg result mxcsr))
   ///
 

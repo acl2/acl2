@@ -1,6 +1,6 @@
 ; Top file for Axe
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,10 @@
 
 (in-package "ACL2")
 
+;; Note that this file brings in all 3 versions of Axe (JVM, x86, and R1CS).
+;; Instead of including this file, consider just including the parts of Axe
+;; that you need.
+
 ;; Supporting utilities:
 (include-book "add-and-normalize-expr")
 (include-book "add-bitxor-nest-to-dag-array")
@@ -18,7 +22,6 @@
 (include-book "add-bvxor-nest-to-dag-array-with-name")
 (include-book "add-to-dag")
 (include-book "alist-suitable-for-hypsp")
-(include-book "all-dargp")
 (include-book "arrays-of-alists")
 (include-book "assumption-array")
 (include-book "axe-bind-free-evaluator-basic")
@@ -42,6 +45,8 @@
 (include-book "bv-list-rules-axe")
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
+(include-book "logops-rules-axe")
+(include-book "bv-intro-rules")
 (include-book "cars-increasing-by-1")
 (include-book "check-equivs")
 (include-book "concretize-with-contexts")
@@ -57,6 +62,7 @@
 (include-book "dag-array-builders2")
 (include-book "dag-array-builders3")
 (include-book "dag-array-builders")
+(include-book "dag-array-info")
 (include-book "dag-array-printing2")
 (include-book "dag-array-printing")
 (include-book "dag-arrays")
@@ -72,6 +78,7 @@
 (include-book "dag-size-sparse")
 (include-book "dag-size-fast")
 (include-book "dag-size")
+(include-book "dag-stobj")
 (include-book "dag-to-term")
 (include-book "dag-to-term-with-lets")
 (include-book "dag-variable-alist")
@@ -91,7 +98,11 @@
 (include-book "equivs")
 (include-book "evaluator-basic")
 (include-book "extract-dag-array")
+(include-book "evaluate-test-case")
+(include-book "evaluate-test-case-simple")
+(include-book "find-probable-facts-common")
 (include-book "find-probable-facts")
+(include-book "find-probable-facts-simple")
 (include-book "fixup-context")
 (include-book "get-args-not-done")
 (include-book "get-disjuncts")
@@ -101,7 +112,7 @@
 (include-book "instantiate-hyp-basic")
 (include-book "interpreted-function-alistp")
 (include-book "interpreted-function-alists")
-(include-book "keep-atoms")
+(include-book "keep-nodenum-dargs")
 (include-book "known-booleans")
 (include-book "known-predicates")
 (include-book "largest-non-quotep")
@@ -141,6 +152,7 @@
 (include-book "math-rules")
 (include-book "memoization")
 (include-book "merge-and-remove-dups")
+(include-book "merge-less-than-and-remove-dups")
 (include-book "merge-dag-into-dag-quick")
 (include-book "merge-nodes-into-dag-array")
 (include-book "merge-sort-by-cdr-greater")
@@ -150,7 +162,6 @@
 (include-book "merge-term-into-dag-array-basic")
 (include-book "merge-tree-into-dag-array-basic")
 (include-book "sublis-var-and-eval-basic")
-(include-book "no-atoms")
 (include-book "node-replacement-alist")
 (include-book "node-info")
 (include-book "node-replacement-array")
@@ -177,6 +188,7 @@
 (include-book "refined-assumption-alists")
 (include-book "refined-assumption-alists2")
 (include-book "remove-duplicates-from-sorted-list")
+(include-book "remove-gaps")
 (include-book "renaming-array")
 (include-book "replace-node")
 (include-book "replace-using-assumptions")
@@ -203,6 +215,7 @@
 (include-book "substitute-vars")
 (include-book "supporting-nodes")
 (include-book "supporting-vars")
+(include-book "sweep-and-merge-support")
 (include-book "tailtohead")
 (include-book "term-equal-dag")
 (include-book "test-cases")
@@ -237,6 +250,7 @@
 (include-book "stp-counterexamples")
 (include-book "translate-dag-to-stp")
 (include-book "prove-with-stp")
+(include-book "prove-with-stp-tester")
 (include-book "stp-clause-processor")
 (include-book "defthm-stp")
 

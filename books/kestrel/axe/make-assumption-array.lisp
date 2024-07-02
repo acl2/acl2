@@ -38,7 +38,8 @@
                   :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0
                                                          natp-of-+-of-1
                                                          <-of-+-of-1-strengthen-2
-                                                         consp-when-true-listp-and-non-nil)
+                                                         ;consp-when-true-listp-and-non-nil
+                                                         )
                                                         (natp)))))
            (ignore dag-len) ;only used in the guard
            )
@@ -136,7 +137,8 @@
                             car-becomes-nth-of-0
                             natp-of-+-of-1
                             <-of-+-of-1-strengthen-2
-                            consp-when-true-listp-and-non-nil)
+                            ;consp-when-true-listp-and-non-nil
+                            )
                            (natp)))))
 
 (defthm <-of-mv-nth-0-of-assumption-array-info-for-literal-gen
@@ -231,7 +233,8 @@
                                  :in-theory (e/d (car-becomes-nth-of-0
                                                   natp-of-+-of-1
                                                   <-of-+-of-1-strengthen-2
-                                                  consp-when-true-listp-and-non-nil)
+                                                  ;consp-when-true-listp-and-non-nil
+                                                  )
                                                  (assumption-itemp
                                                   MYQUOTEP
                                                   natp
@@ -350,7 +353,8 @@
                             car-becomes-nth-of-0
                             natp-of-+-of-1
                             <-of-+-of-1-strengthen-2
-                            consp-when-true-listp-and-non-nil)
+                            ;consp-when-true-listp-and-non-nil
+                            )
                            (quotep
                             myquotep
                             natp)))))
@@ -363,7 +367,8 @@
                             car-becomes-nth-of-0
                             natp-of-+-of-1
                             <-of-+-of-1-strengthen-2
-                            consp-when-true-listp-and-non-nil)
+                            ;consp-when-true-listp-and-non-nil
+                            )
                            (quotep
                             myquotep
                             natp)))))
@@ -383,7 +388,8 @@
                             car-becomes-nth-of-0
                             natp-of-+-of-1
                             <-of-+-of-1-strengthen-2
-                            consp-when-true-listp-and-non-nil)
+                            ;consp-when-true-listp-and-non-nil
+                            )
                            (quotep
                             myquotep
                             natp)))))
@@ -405,7 +411,8 @@
                             car-becomes-nth-of-0
                             natp-of-+-of-1
                             <-of-+-of-1-strengthen-2
-                            consp-when-true-listp-and-non-nil)
+                            ;consp-when-true-listp-and-non-nil
+                            )
                            (quotep
                             MYQUOTEP
                             natp)))))
@@ -425,7 +432,8 @@
                             car-becomes-nth-of-0
                             natp-of-+-of-1
                             <-of-+-of-1-strengthen-2
-                            consp-when-true-listp-and-non-nil)
+                            ;consp-when-true-listp-and-non-nil
+                            )
                            (quotep
                             MYQUOTEP
                             natp)))))
@@ -447,7 +455,8 @@
                             car-becomes-nth-of-0
                             natp-of-+-of-1
                             <-of-+-of-1-strengthen-2
-                            consp-when-true-listp-and-non-nil)
+                            ;consp-when-true-listp-and-non-nil
+                            )
                            (quotep
                             MYQUOTEP
                             natp)))))

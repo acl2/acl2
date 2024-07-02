@@ -1,7 +1,7 @@
 ; Rules about memory
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,24 +15,30 @@
 ;; RB-1, RML-size, and RML-<xx> where <xx> is 08/16/32/48/64/80/128.
 
 (include-book "projects/x86isa/machine/linear-memory" :dir :system)
+(include-book "projects/x86isa/machine/top-level-memory" :dir :system) ; for rme-size
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; todo: use byte-listp instead below?
 (include-book "kestrel/bv/bvcat" :dir :system)
+(include-book "support-bv")
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-(local (include-book "kestrel/bv/rules" :dir :system))
+(local (include-book "kestrel/bv/rules" :dir :system)) ; for slice-too-high-is-0-new (todo: move it)
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/lists-light/nth" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 (in-theory (disable rb rb-1 rml-size))
-
-;move
-(defthm unsigned-byte-p-of-0
-  (equal (unsigned-byte-p size 0)
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm mv-nth-0-of-rb-1-of-xw
   (implies (not (equal :mem fld))
            (equal (mv-nth 0 (rb-1 n addr r-x (xw fld index val x86)))
                   (mv-nth 0 (rb-1 n addr r-x x86))))
+  :hints (("Goal" :in-theory (e/d (rb-1) ()))))
+
+(defthm mv-nth-1-of-rb-1-of-xw
+  (implies (not (equal :mem fld))
+           (equal (mv-nth 1 (rb-1 n addr r-x (xw fld index val x86)))
+                  (mv-nth 1 (rb-1 n addr r-x x86))))
   :hints (("Goal" :in-theory (e/d (rb-1) (x86p-xw)))))
 
 (defthm mv-nth-0-of-rb-of-xw-when-app-view
@@ -49,14 +55,13 @@
                 (app-view x86))
            (equal (mv-nth 0 (rml-size nbytes addr r-x (xw fld index val x86)))
                   (mv-nth 0 (rml-size nbytes addr r-x x86))))
-  :hints (("Goal" :in-theory (e/d (rml-size
-                                   rml16
-                                   rml32
-                                   rml48
-                                   rml64
-                                   rml80
-                                   rml128)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable rml-size
+                                     rml16
+                                     rml32
+                                     rml48
+                                     rml64
+                                     rml80
+                                     rml128))))
 
 ;TODO: The r-x param of rb-1 is irrelevant (drop it?)
 ;; This clearly shows that the param is irrelevant, but this would loop as a rewrite rule.
@@ -87,7 +92,8 @@
                                      rml48
                                      rml64
                                      rml80
-                                     rml128))))
+                                     rml128
+                                     rml256))))
 
 (defthm mv-nth-1-of-rml-size-of-0
   (equal (mv-nth 1 (rml-size 0 addr r-x x86))
@@ -95,6 +101,7 @@
   :hints (("Goal" :in-theory (enable rml-size))))
 
 ;; Take advance of the fact that the r-w-x param is irrelevant to normalize it.
+
 (defthm mv-nth-1-of-rb-1-when-not-natp-cheap
   (implies (not (natp n))
            (equal (mv-nth 1 (rb-1 n addr r-x x86))
@@ -203,18 +210,6 @@
 ;;   :RULE-CLASSES :TYPE-PRESCRIPTION
 ;;   :hints (("Goal" :in-theory (e/d (COMBINE-BYTES) ( NATP-COMBINE-BYTES)))))
 
-;; (DEFTHM ACL2::UNSIGNED-BYTE-P-LOGIOR-better
-;;   (IMPLIES (AND ;(FORCE (INTEGERP I))
-;;                 (FORCE (INTEGERP J)))
-;;            (EQUAL (UNSIGNED-BYTE-P ACL2::SIZE (LOGIOR I J))
-;;                   (AND (UNSIGNED-BYTE-P ACL2::SIZE I)
-;;                        (UNSIGNED-BYTE-P ACL2::SIZE J))))
-;;   :hints (("Goal"
-;;            :use (:instance ACL2::UNSIGNED-BYTE-P-LOGIOR (i (ifix i)))
-;;            :in-theory (e/d (LOGIOR ifix) ( ACL2::UNSIGNED-BYTE-P-LOGIOR
-;;                                              ACL2::LOGNOT-OF-LOGAND))))
-;; )
-
 ;also uses better bvops
 (defthmd combine-bytes-unroll-better
   (implies (and (not (endp bytes))
@@ -233,3 +228,42 @@
                             ACL2::SLICE-TOO-HIGH-IS-0-NEW)
                            (;ACL2::UNSIGNED-BYTE-P-LOGIOR ;caused forcing
                             )))))
+
+(defthm unsigned-byte-p-of-combine-bytes-lemma
+  (implies (byte-listp bytes)
+           (unsigned-byte-p (* 8 (len bytes))
+                            (combine-bytes bytes)))
+  :hints (("Goal" :in-theory (enable combine-bytes byte-listp))))
+
+(defthm slice-of-combine-bytes
+  (implies (and (natp n)
+                (< n (len bytes))
+                (byte-listp bytes) ;too bad
+                )
+           (equal (acl2::slice (+ 7 (* 8 n)) (* 8 n) (x86isa::combine-bytes bytes))
+                  (acl2::bvchop 8 (nth n bytes))))
+  :hints (("Goal" :in-theory (e/d (x86isa::combine-bytes
+                                   ACL2::BVCAT-RECOMBINE
+                                   ;;logapp
+                                   ;;ACL2::SLICE-OF-SUM-CASES
+                                   (:i nth)
+                                   BYTE-LISTP)
+                                  (;acl2::nth-of-cdr
+                                   )))))
+
+;; where should this go?
+(defthm mv-nth-2-of-rme-size-when-app-view
+  (implies (app-view x86)
+           (equal (mv-nth 2 (rme-size p n e s r c x86))
+                  x86))
+  :hints (("Goal" :in-theory (enable rme-size))))
+
+;; generalize to multi-byte read
+;; See also x86isa::rb-returns-no-error-app-view
+(defthmd mv-nth-0-of-rb-of-1
+  (implies (app-view x86)
+           (equal (mv-nth 0 (rb 1 x86isa::addr x86isa::r-x x86))
+                  (if (canonical-address-p x86isa::addr)
+                      nil
+                    'rb-1)))
+  :hints (("Goal" :in-theory (enable rb rb-1))))

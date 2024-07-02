@@ -237,12 +237,13 @@
 
 (defthm member-equal-of-map-symbol-name-when-member-equal-of-map-symbol-name-of-set-difference-equal
   (implies (member-equal str (map-symbol-name (set-difference-equal syms1 syms2)))
-           (member-equal str (map-symbol-name syms1))))
+           (member-equal str (map-symbol-name syms1)))
+  :hints (("Goal" :in-theory (enable map-symbol-name))))
 
 (defthm member-equal-of-symbol-name
   (implies (member-equal sym syms)
            (member-equal (symbol-name sym) (map-symbol-name syms)))
-  :hints (("Goal" :in-theory (enable member-equal))))
+  :hints (("Goal" :in-theory (enable member-equal map-symbol-name))))
 
 (defthmd symbol-equality-cheap
   (implies (and (equal (symbol-name s1)
@@ -262,7 +263,7 @@
                 (symbol-listp syms))
            (iff (member-equal (symbol-name sym) (map-symbol-name syms))
                 (member-equal sym syms)))
-  :hints (("Goal" :in-theory (e/d (member-equal symbol-equality-cheap)
+  :hints (("Goal" :in-theory (e/d (member-equal symbol-equality-cheap map-symbol-name)
                                   (SYMBOL-PACKAGE-NAME-WHEN-MEMBER-EQUAL-OF-COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE ;looped
                                    )))))
 
@@ -303,7 +304,7 @@
                 (all-symbols-have-packagep syms "COMMON-LISP"))
            (equal (car (member-symbol-name str syms))
                   (intern str "COMMON-LISP")))
-  :hints (("Goal" :in-theory (enable member-symbol-name))))
+  :hints (("Goal" :in-theory (enable member-symbol-name map-symbol-name))))
 
 ;; (defthm
 ;;  (implies (member-equal str (map-symbol-name (common-lisp-symbols-from-main-lisp-package)))
@@ -378,22 +379,27 @@
 (defthm member-equal-of-map-symbol-name-when-subsetp
   (implies (and (member-equal str (map-symbol-name x))
                 (subsetp x y))
-           (member-equal str (map-symbol-name y))))
+           (member-equal str (map-symbol-name y)))
+  :hints (("Goal" :in-theory (enable map-symbol-name))))
 
+;; todo: also in intern-in-package-of-symbol.lisp
 (local
  (defthm member-symbol-name-iff
    (iff (member-symbol-name str l)
         (member-equal str (map-symbol-name l)))
    :hints (("Goal" :in-theory (enable member-symbol-name
-                                      member-equal)))))
+                                      member-equal
+                                      map-symbol-name)))))
 
+;; todo: also in intern-in-package-of-symbol.lisp
 (local
  (defthm car-of-member-symbol-name-iff
    (implies (not (equal "NIL" str))
             (iff (car (member-symbol-name str l))
                  (member-equal str (map-symbol-name l))))
    :hints (("GOAL" :in-theory (enable member-symbol-name
-                                      member-equal)))))
+                                      member-equal
+                                      map-symbol-name)))))
 
 ;; Precisely characterizes when interning a symbol in the ACL2 package results
 ;; in a legal variable.

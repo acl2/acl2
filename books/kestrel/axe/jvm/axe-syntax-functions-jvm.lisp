@@ -1,7 +1,7 @@
 ; JVM-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,6 +28,8 @@
 (in-theory (disable member-equal-becomes-memberp)) ;causes problems
 
 (local (in-theory (disable myquotep natp-of-nth-from-all-natp))) ; for speed
+
+(local (in-theory (enable rationalp-when-natp)))
 
 ;call-stack is now either a nodenum or a quotep
 ;now pops count as -1 (because terms are often represented as a push of a new frame onto a pop of the old stack)
@@ -88,37 +90,37 @@
 
 ;move
 ;not a great linear rule due to the free var
-(defthm maxelem-of-keep-atoms-bound
+(defthm maxelem-of-keep-nodenum-dargs-bound
   (implies (and (bounded-darg-listp items n)
                 (natp n)
-                (consp (keep-atoms items)) ;there must be at least one atom
+                (consp (keep-nodenum-dargs items)) ;there must be at least one atom
                 )
-           (< (maxelem (keep-atoms items)) n))
+           (< (maxelem (keep-nodenum-dargs items)) n))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 ;;move
 ;;not a great linear rule due to the free var
-(defthm <-of-maxelem-of-keep-atoms-of-dargs-when-bounded-dag-exprp
+(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp
   (implies (and (bounded-dag-exprp n expr)
                 (consp expr)
                 (natp n)
                 (consp (dargs expr))
                 (not (eq 'quote (car expr)))
-                (consp (keep-atoms (dargs expr))))
-           (< (maxelem (keep-atoms (dargs expr)))
+                (consp (keep-nodenum-dargs (dargs expr))))
+           (< (maxelem (keep-nodenum-dargs (dargs expr)))
               n))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
 ;move
-(defthm <-of-maxelem-of-keep-atoms-of-dargs-when-pseudo-dag-arrayp-aux
+(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-pseudo-dag-arrayp-aux
   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array n)
                 (consp (aref1 dag-array-name dag-array n))
                 (not (equal 'quote (car (aref1 dag-array-name dag-array n))))
-                (consp (keep-atoms (dargs (aref1 dag-array-name dag-array n))))
+                (consp (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
                 (natp n))
-           (< (maxelem (keep-atoms (dargs (aref1 dag-array-name dag-array n))))
+           (< (maxelem (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
               n))
   :rule-classes (:rewrite :linear))
 
@@ -143,9 +145,9 @@
                 (if (or (quotep expr)
                         (not (consp expr)))
                     (cw "~x0" expr)
-                  (if (not (keep-atoms (dargs expr)))
+                  (if (not (keep-nodenum-dargs (dargs expr)))
                       (cw "All args are constants so not printing a DAG.~%")
-                    (print-dag-array-nodes-and-supporters 'dag-array dag-array (keep-atoms (dargs expr)))))
+                    (print-dag-array-nodes-and-supporters 'dag-array dag-array (+ 1 frame) (keep-nodenum-dargs (dargs expr)))))
                 (er hard? 'get-pc-from-frame "Unexpected frame: ~x0.  See DAG just above." expr)
                 (mv (erp-t) nil))))))
 
@@ -324,7 +326,7 @@
                          (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
                 (not (consp (strip-steps nest dag-array))))
            (<= 0 (strip-steps nest dag-array)))
-  :hints (("Goal" :in-theory (enable <=-of-0-when-0-natp))))
+  :hints (("Goal" :in-theory (enable <=-of-0-when-natp))))
 
 (local
  (defthm not-consp-when-not-consp-of-strip-steps
@@ -401,10 +403,9 @@
                             (get-stack-height-and-pc-to-step-from-myif-nest-helper else-branch base-stack dag-array))
                            ((when (eq :error right-status)) (mv :error nil nil))
                            ;; There is a :step-present, so there is an unsimplified step around a make-state!
-                           ;; TODO: How can this happen?
+                           ;; Maybe we hit a step limit.
                            ((when (or (eq :step-present left-status) (eq :step-present right-status)))
-                            (mv :step-present nil nil))
-                           )
+                            (mv :step-present nil nil)))
                         (if (eq :ready left-status)
                             (if (eq :ready right-status)
                                 ;; First compare the stack heights (preferring to
@@ -425,9 +426,7 @@
                               ;; Only right is ready:
                               (mv :ready right-sh right-pc)
                             ;; Neither is ready: ;; todo: this is now already checked above
-                            (if (or (eq :step-present left-status) (eq :step-present right-status))
-                                (mv :step-present nil nil)
-                              (mv :finished nil nil)))))))
+                            (mv :finished nil nil))))))
                 (if (eq 'jvm::obtain-and-throw-exception fn)
                     (progn$ (cw "(Exception branch detected (will try to prune it later).)~%")
                             (mv :finished nil nil))
@@ -459,18 +458,15 @@
                                   (if (eq 'jvm::make-state stripped-expr-fn)
                                       (mv :step-present nil nil)
                                     ;; Avoid printing anything here, because steps can stack up around a call to jvm::obtain-and-throw-exception.
-                                    (if (member-eq stripped-expr-fn '(jvm::obtain-and-throw-exception jvm::execute-new))
+                                    (if (member-eq stripped-expr-fn '(jvm::obtain-and-throw-exception jvm::execute-new)) ; todo: what about jvm::error-state?
                                         (mv :finished nil nil)
                                       (prog2$ (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~x0, after stripping step calls.~%" stripped-expr)
                                               (mv :error nil nil)))))))))
                       (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array nest)
-                              (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~X01.~%" expr nil)
+                              ;;(er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~X01.~%" expr nil)
+                              ;; When this was an error, symbolic execution failures were harder to debug.
+                              (cw "WARNING: Unexpected state term: ~X01.~%" expr nil)
                               (mv :error nil nil))))))))))))))
-
-(local
- (defthm rationalp-when-natp
-   (implies (natp x)
-            (rationalp x))))
 
 (defthm rationalp-of-mv-nth-1-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
   (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)))

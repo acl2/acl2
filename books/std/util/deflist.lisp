@@ -165,13 +165,13 @@
   (defthmd deflist-lemma-sfix-when-not-setp
     (implies (not (setp x))
              (equal (sfix x) nil))
-    :hints(("Goal" :in-theory (enable sfix empty))))
+    :hints(("Goal" :in-theory (enable sfix emptyp))))
 
   (defthmd deflist-lemma-sfix-when-setp
     (implies (setp x)
              (equal (sfix x)
                     x))
-    :hints(("Goal" :in-theory (enable sfix empty))))
+    :hints(("Goal" :in-theory (enable sfix emptyp))))
 
   (defthmd deflist-lemma-subsetp-of-difference
     (subsetp-equal (difference x y) x))

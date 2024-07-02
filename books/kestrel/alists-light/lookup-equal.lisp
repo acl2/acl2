@@ -1,7 +1,7 @@
 ; Lookup a key in an alist using EQUAL
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -83,5 +83,17 @@
   (implies (not (assoc-equal key alist))
            (equal (lookup-equal key alist)
                   nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable lookup-equal))))
+
+(defthm lookup-equal-forward-to-assoc-equal
+  (implies (lookup-equal key alist)
+           (assoc-equal key alist))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable lookup-equal))))
+
+(defthm assoc-equal-when-lookup-equal-cheap
+  (implies (lookup-equal term alist)
+           (assoc-equal term alist))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable lookup-equal))))

@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -64,26 +64,23 @@
 
 (verify-termination-boot-strap packn1) ; and guards
 
-(encapsulate ()
-
 (local
- (defthm character-listp-explode-nonnegative-integer
+ (defthm character-listp-explode-atom-lemma
    (implies (character-listp z)
-            (character-listp (explode-nonnegative-integer x y z)))
-   :rule-classes ((:forward-chaining :trigger-terms
-                                     ((explode-nonnegative-integer x y z))))))
+            (characterp (car (explode-nonnegative-integer x y z))))))
 
 (local
  (defthm character-listp-explode-atom
    (character-listp (explode-atom x y))
-   :rule-classes ((:forward-chaining :trigger-terms
+   :hints (("Goal" :in-theory (enable explode-atom)))
+   :rule-classes (:rewrite
+                  (:forward-chaining :trigger-terms
                                      ((explode-atom x y))))))
 
 (verify-termination-boot-strap packn-pos) ; and guards
 (verify-termination-boot-strap find-first-non-cl-symbol) ; and guards
 (verify-termination-boot-strap packn) ; and guards
 (verify-termination-boot-strap pack-to-string) ; and guards
-)
 
 (verify-termination-boot-strap read-file-into-string1) ; and guards
 
@@ -108,6 +105,9 @@
 (verify-termination-boot-strap remove-lisp-suffix) ; and guards
 
 (verify-guards warranted-fns-of-world)
+
+(verify-termination-boot-strap string-prefixp-1) ; and guards
+(verify-termination-boot-strap string-prefixp) ; and guards
 
 ; Convert defproxy events to :logic mode.
 (defstub initialize-event-user (* * state) => state)
@@ -538,9 +538,9 @@
 
 ;;; (defthm-occur-cnt-bounded signed-byte-p-30-occur-cnt-bounded-flg
 ;;;   (term
-;;;    (implies (and (force (signed-byte-p 30 a))
-;;;                  (signed-byte-p 30 m)
-;;;                  (signed-byte-p 30 (+ bound-m m))
+;;;    (implies (and (force (signed-byte-p *fixnum-bits* a))
+;;;                  (signed-byte-p *fixnum-bits* m)
+;;;                  (signed-byte-p *fixnum-bits* (+ bound-m m))
 ;;;                  (force (<= 0 a))
 ;;;                  (<= 0 m)
 ;;;                  (<= 0 bound-m)
@@ -549,9 +549,9 @@
 ;;;                  (<= (occur-cnt-bounded term1 term2 a m bound-m) (+ bound-m m))))
 ;;;    :rule-classes :linear)
 ;;;   (list
-;;;    (implies (and (force (signed-byte-p 30 a))
-;;;                  (signed-byte-p 30 m)
-;;;                  (signed-byte-p 30 (+ bound-m m))
+;;;    (implies (and (force (signed-byte-p *fixnum-bits* a))
+;;;                  (signed-byte-p *fixnum-bits* m)
+;;;                  (signed-byte-p *fixnum-bits* (+ bound-m m))
 ;;;                  (force (<= 0 a))
 ;;;                  (<= 0 m)
 ;;;                  (<= 0 bound-m)
@@ -563,11 +563,11 @@
 ;;;                                                  bound-m))))
 
  (local
-  (defthm signed-byte-p-30-occur-cnt-bounded-flg
+  (defthm signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg
     (case flg
-      (term (implies (and (force (signed-byte-p 30 a))
-                          (signed-byte-p 30 m)
-                          (signed-byte-p 30 (+ bound-m m))
+      (term (implies (and (force (signed-byte-p *fixnum-bits* a))
+                          (signed-byte-p *fixnum-bits* m)
+                          (signed-byte-p *fixnum-bits* (+ bound-m m))
                           (force (<= 0 a))
                           (<= 0 m)
                           (<= 0 bound-m)
@@ -577,9 +577,9 @@
                           (<= (occur-cnt-bounded term1 term2 a m bound-m)
                               (+ bound-m m)))))
       (otherwise
-       (implies (and (force (signed-byte-p 30 a))
-                     (signed-byte-p 30 m)
-                     (signed-byte-p 30 (+ bound-m m))
+       (implies (and (force (signed-byte-p *fixnum-bits* a))
+                     (signed-byte-p *fixnum-bits* m)
+                     (signed-byte-p *fixnum-bits* (+ bound-m m))
                      (force (<= 0 a))
                      (<= 0 m)
                      (<= 0 bound-m)
@@ -592,10 +592,10 @@
     :hints
     (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m bound-m)))))
  (local
-  (defthm signed-byte-p-30-occur-cnt-bounded-flg-term
-    (implies (and (force (signed-byte-p 30 a))
-                  (signed-byte-p 30 m)
-                  (signed-byte-p 30 (+ bound-m m))
+  (defthm signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg-term
+    (implies (and (force (signed-byte-p *fixnum-bits* a))
+                  (signed-byte-p *fixnum-bits* m)
+                  (signed-byte-p *fixnum-bits* (+ bound-m m))
                   (force (<= 0 a))
                   (<= 0 m)
                   (<= 0 bound-m)
@@ -606,13 +606,13 @@
                       (+ bound-m m))))
     :rule-classes :linear
     :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-             :use ((:instance signed-byte-p-30-occur-cnt-bounded-flg
+             :use ((:instance signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg
                               (flg 'term)))))))
  (local
-  (defthm signed-byte-p-30-occur-cnt-bounded-flg-list
-    (implies (and (force (signed-byte-p 30 a))
-                  (signed-byte-p 30 m)
-                  (signed-byte-p 30 (+ bound-m m))
+  (defthm signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg-list
+    (implies (and (force (signed-byte-p *fixnum-bits* a))
+                  (signed-byte-p *fixnum-bits* m)
+                  (signed-byte-p *fixnum-bits* (+ bound-m m))
                   (force (<= 0 a))
                   (<= 0 m)
                   (<= 0 bound-m)
@@ -623,7 +623,7 @@
                       (+ bound-m m))))
     :rule-classes :linear
     :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-             :use ((:instance signed-byte-p-30-occur-cnt-bounded-flg
+             :use ((:instance signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg
                               (flg 'list)))))))
 
  (verify-guards occur-cnt-bounded)
@@ -666,7 +666,7 @@
 
 (verify-termination-boot-strap evg-occur)
 
-(verify-termination-boot-strap min-fixnum$inline)
+(verify-termination-boot-strap min-fixnat$inline)
 
 (verify-termination-boot-strap fn-count-evg-rec ; but not guards
                                (declare (xargs :verify-guards nil)))
@@ -1053,22 +1053,6 @@
 
 (encapsulate
  ()
-
-; The following local events create perfectly good rewrite rules, but we avoid
-; the possibility of namespace clashes for existing books by making them local
-; as we add them after Version_4.3.
-
- (local
-  (defthm character-listp-explode-nonnegative-integer
-    (implies
-     (character-listp ans)
-     (character-listp (explode-nonnegative-integer n print-base ans)))))
-
- (local
-  (defthm character-listp-explode-atom
-    (character-listp (explode-atom n print-base))
-    :hints ; need to disable this local lemma from axioms.lisp
-    (("Goal" :in-theory (disable character-listp-cdr)))))
 
  (local
   (defthm character-listp-chars-for-tilde-@-clause-id-phrase/periods

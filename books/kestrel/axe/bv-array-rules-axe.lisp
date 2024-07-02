@@ -1,7 +1,7 @@
 ; Axe rules about BV arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,12 +19,16 @@
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv/trim" :dir :system)
+(include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 ;(include-book "kestrel/bv/bvplus" :dir :system)
 ;(include-book "list-rules") ;for EQUAL-OF-UPDATE-NTH
 (include-book "known-booleans")
 ;(local (include-book "kestrel/bv/bvlt" :dir :system))
+(include-book "kestrel/lists-light/prefixp-def" :dir :system)
+(local (include-book "kestrel/lists-light/prefixp" :dir :system))
+(local (include-book "kestrel/lists-light/prefixp2" :dir :system))
 (local (include-book "list-rules")) ; for equal-of-update-nth
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -249,12 +253,24 @@
                                                   )))))
 
 ;gen!  may need a new syntax function
+;drop?
 (defthmd bv-array-read-trim-index-dag-256
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe '8 index 'non-arithmetic dag-array)) ;fixme had x here instead of index which caused a crash - check for that!
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe '8 index 'non-arithmetic dag-array))
                 ;(natp size)
                 )
            (equal (bv-array-read element-width 256 index data)
                   (bv-array-read element-width 256 (trim 8 index) data)))
+  :hints (("Goal" :in-theory (e/d (trim) nil))))
+
+(defthmd bv-array-read-trim-index-axe-gen
+  (implies (and (syntaxp (quotep len))
+                (axe-bind-free (bind-bv-size-axe index 'indexsize dag-array) '(indexsize))
+                (< (ceiling-of-lg len) indexsize)
+                (axe-syntaxp (term-should-be-trimmed-axe '8 index 'non-arithmetic dag-array))
+                ;(natp size)
+                )
+           (equal (bv-array-read element-width len index data)
+                  (bv-array-read element-width len (trim (ceiling-of-lg len) index) data)))
                :hints (("Goal" :in-theory (e/d (trim) nil))))
 
 ;move
@@ -297,3 +313,30 @@
                   (bv-array-read element-size (expt 2 isize) index (take (expt 2 isize) data))))
   :hints (("Goal" :use (:instance bv-array-read-shorten-core)
            :in-theory (disable bv-array-read-shorten-core))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm prefixp-of-bv-array-write-when-prefixp
+  (implies (and (< (len x) len)
+                (all-unsigned-byte-p 8 data)
+                (prefixp x data)
+                (natp len))
+           (equal (prefixp x (bv-array-write '8 len (len x) val data))
+                  t))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :use (:instance ALL-UNSIGNED-BYTE-P-OF-TRUE-LIST-FIX
+                           (size 8)
+                           (lst x))
+           :in-theory (e/d (bv-array-write ceiling-of-lg UPDATE-NTH2 PREFIXP-REWRITE-gen
+                                           equal-of-true-list-fix-and-true-list-fix-forward)
+                           (ALL-UNSIGNED-BYTE-P-OF-TRUE-LIST-FIX
+                            )))))
+
+(defthm bvlt-of-len-and-len-when-prefixp
+  (implies (and (prefixp x free)
+                (equal y free)
+                (unsigned-byte-p size (len x))
+                (unsigned-byte-p size (len y)))
+           (equal (bvlt size (len y) (len x))
+                  nil))
+  :hints (("Goal" :in-theory (enable bvlt prefixp))))

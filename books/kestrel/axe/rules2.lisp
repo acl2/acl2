@@ -2189,7 +2189,7 @@
 ;;   (implies t;(not (unsigned-byte-p 1 x)) ;helps prevent loops (if it's just 1 bit, then we can substitute using (equal x blah) just fine without the getbit
 ;;            (equal (bvxor 1 x y)
 ;;                   (bvxor 1 (getbit 0 x) y)))
-;;   :hints (("Goal" :in-theory (e/d (bvxor-1-of-getbit-arg1) ()))))
+;;   :hints (("Goal" :in-theory (enable bvxor-1-of-getbit-arg1))))
 
 ;; (theory-invariant (incompatible (:rewrite bvxor-1-of-getbit-arg1) (:rewrite bvxor-1-add-getbit-arg1)))
 
@@ -2495,21 +2495,6 @@
 ;;                                   )
 ;;                            (update-nth-of-update-subrange-diff car-becomes-nth-of-0)))))
 
-;bozo gen?
-(defthm update-nth-equal-update-subrange-special
-  (implies (and (<= n end)
-                (< end (len lst))
-                (natp n)
-                (natp end)
-                (equal val1 val2)
-                (equal lst1 (update-subrange (+ 1 n) end rst lst2))
-                )
-           (equal (equal (update-nth n val1 lst1)
-                         (update-subrange n end (cons val2 rst) lst2))
-                  t))
-  :hints (("Goal" :in-theory (e/d (;list::update-nth-equal-rewrite
-                                   update-subrange) ( update-nth-of-update-subrange-diff)))))
-
 ;; (defthm update-nth-equal-update-subrange-special
 ;;   (implies (and (<= n end)
 ;;                 (< end (len lst))
@@ -2620,30 +2605,10 @@
                          (nth n y))))
   :hints (("Goal" :in-theory (enable take))))
 
-(in-theory (disable update-nth-of-update-nth-becomes-update-subrange))
 ;(in-theory (disable UPDATE-NTH-WITH-last-VAL))
 ;(in-theory (disable MEMBERP-NTH-AND-CDR)) ;bozo
 ;(in-theory (disable LEN-OF-UPDATE-NTH-REWRITE-2)) ;bozo think about this...
 ;(in-theory (disable FIRSTN-OF-ONE-MORE)) ;think about this more...
-
-(defthm subrange-of-update-subrange-contained
-  (implies (and (<= start2 start1)
-                (<= end1 end2)
-                (<= start1 end1)
-                (<= start2 end2)
-                (< end2 (len lst))
-                (equal (len vals) (+ end2 1 (- start2)))
-                (natp start1)
-                (natp start2)
-                (natp end1)
-                (natp end2)
-                )
-           (equal (SUBRANGE start1 end1 (UPDATE-SUBRANGE start2 end2 vals lst))
-                  (SUBRANGE (- start1 start2) (- end1 start2) vals)))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE) (;anti-subrange
-                                              )))))
-
-;(local (in-theory (disable BVPLUS-RECOLLAPSE)))
 
 ;; (defun indu (n start vals)
 ;;   (if (endp vals)
@@ -2652,113 +2617,9 @@
 
 ;BOZO think about this
 
-;bozo gen
-(defthm subrange-of-update-subrange-not-quite-skew
-  (implies (and (natp start)
-                (<= start end)
-                (< end (len lst))
-                (natp end)
-;;                 (equal (+ end (- start))
-;;                        (len vals))
-                )
-           (equal (subrange start end (update-subrange (+ 1 start) end vals lst))
-                  (cons (nth start lst)
-                        (subrange 0 (+ end -1 (- start)) vals))))
-  :hints (("Goal" :in-theory (e/d (update-subrange-rewrite
-                                   ;EQUAL-CONS-CASES2
-                                   SUBRANGE-OF-CONS
-                                   )
-                                  (;anti-subrange; take-of-nthcdr-becomes-subrange
-                                   ))
-           :cases ((equal end (+ start 1)))
-           :do-not '(generalize eliminate-destructors)
-           :expand ((subrange start end
-                              (update-subrange (+ 1 start)
-                                               end vals
-                                               lst))))))
-
-
-(defthmd subrange-differs-hack
-  (implies (and (not (equal (subrange start end lst1) ;binds start and end
-                            lst2))
-                (not (equal (subrange start end x)
-                            (subrange start end y))))
-           (equal (equal x y)
-                  nil)))
-
-;; (defthmd update-subrange-rewrite
-;;   (implies (and
-;;             (natp start)
-;;             (natp end)
-;;             (true-listp lst)
-;;             (true-listp vals)
-;;             (<= start end)
-;;             (equal (+ 1 end (- start)) (len vals))
-;;             (< end (len lst)))
-;;            (equal (update-subrange start end vals lst)
-;;                   (append (take start lst)
-;;                           vals
-;;                           (nthcdr (+ 1 end) lst))))
-;;   :otf-flg t
-;;   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-
-(defthm update-subrange-equal-rewrite
-   (implies (and (equal (len lst1) (len lst2))
-                 (natp start)
-                 (natp end)
-                 (true-listp lst1)
-                 (true-listp lst2)
-                 (true-listp vals)
-                 (<= start end)
-                 (equal (+ 1 end (- start)) (len vals))
-                 (< end (len lst1))
-    ;                (= start 2) (= end 5) (equal vals '(1 2 3 4)) (equal lst1 '(a b c d e f)) (equal lst2 '(aa bb cc dd ee ff))
-                 )
-            (equal (equal (update-subrange start end vals lst1) lst2)
-                   (and (equal vals (subrange start end lst2))
-                        (equal (take start lst1)
-                               (take start lst2))
-                        (equal (nthcdr (+ 1 end) lst1)
-                               (nthcdr (+ 1 end) lst2)))))
-   :hints (("Goal" :do-not-induct t
-            :in-theory (enable update-subrange-rewrite
-                               equal-of-append
-                               take-of-nthcdr-becomes-subrange))))
-
 ;(in-theory (disable mod-cancel))
 
-;BBOZO see the loop below:
-(local (in-theory (disable <-unary-/-positive-right)))
-;; 970. Attempting to apply (:REWRITE COLLECT-CONSTANTS-<-/-TWO) to
-;;      (< (BINARY-* '32
-;;                   (MOD (BINARY-* '1/32 (LOCALVAR '2 S0))
-;;                        '1))
-;;         '1)
-;; 971. Rewriting (to establish) the rhs of the conclusion,
-;;      (< X (BINARY-* A (UNARY-/ B))),
-;;    under the substitution
-;;      A : '1
-;;      X : (MOD (BINARY-* '1/32 (LOCALVAR '2 S0))
-;;               '1)
-;;      B : '32
-;; 972. Attempting to apply (:REWRITE <-UNARY-/-POSITIVE-RIGHT) to
-;;      (< (MOD (BINARY-* '1/32 (LOCALVAR '2 S0))
-;;              '1)
-;;         '1/32)
-;; 973. Rewriting (to establish) the rhs of the conclusion,
-;;      (< (BINARY-* X Y) '1),
-;;    under the substitution
-;;      X : '32
-;;      Y : (MOD (BINARY-* '1/32 (LOCALVAR '2 S0))
-;;               '1)
-;; 974. Attempting to apply (:REWRITE COLLECT-CONSTANTS-<-/-TWO) to
-;;      (< (BINARY-* '32
-;;                   (MOD (BINARY-* '1/32 (LOCALVAR '2 S0))
-;;                        '1))
-;;         '1)
-
-(in-theory (disable UPDATE-SUBRANGE-SPLIT-OFF-LAST-ELEM));bozo move?
-(theory-invariant (incompatible (:rewrite UPDATE-SUBRANGE-SPLIT-OFF-LAST-ELEM) (:rewrite UPDATE-NTH-OF-UPDATE-SUBRANGE)))
+(local (in-theory (disable <-unary-/-positive-right))) ; avoid loops
 
 ;; (defthm bvchophack6
 ;;    (implies (and (integerp x)
@@ -3022,7 +2883,6 @@
   ;; :hints (("Goal" :use (:instance take-split (n (+ 1 n)))
   ;;          :in-theory (disable take-split
   ;;                              ;cdr-of-take
-  ;;                              cdr-of-take-becomes-subrange-better ;new after i added a guard to maxelem...
   ;;                              )))
   )
 
@@ -3163,12 +3023,6 @@
 ;;                   (slice 30 2 x)))
 ;;   :hints (("Goal" :in-theory (e/d (jvm::idiv LOGAPP-0) ( TIMES-4-BECOMES-LOGAPp)))))
 
-
-
-;(in-theory (enable update-nth-of-update-nth-becomes-update-subrange))
-
-(theory-invariant (incompatible (:rewrite update-subrange) (:rewrite UPDATE-NTH-OF-UPDATE-SUBRANGE)))
-
 ;may help during backchaining...
 (defthm not-equal-when-less
   (implies (< x y)
@@ -3178,6 +3032,7 @@
 
 (local (in-theory (disable true-listp))) ;bozo
 
+;; todo: compare to the rules below
 (defthm impossible-value-1
   (implies (and (<= free x)
                 (< k free))
@@ -3194,21 +3049,12 @@
 ;;   (implies (unsigned-byte-p 8 x)
 ;;            (signed-byte-p 32 x)))
 
-;; (defund iushr32 (r s)
-;;   (bvchop 32 (jvm::iushr r s)))
-
-;; (defthm iushr32-recoll
-;;   (equal (bvchop 32 (jvm::iushr r s))
-;;          (iushr32 r s))
-;;   :hints (("Goal" :in-theory (enable iushr32))))
-
 ;bozo move
 (defthm not-equal-from-bound
   (implies (and (<= free x)
                 (< k free)
                 )
-           (equal (EQUAL x k)
-                  nil)))
+           (not (EQUAL x k))))
 
 ;the syntaxps are new
 (defthm not-equal-constant-when-bound-forbids-it
@@ -3238,13 +3084,6 @@
 ;;
 ;; stuff about arrays of unsigned bytes (BOZO gen to array of arbitrary type elements - we have that notion in ../bvseq/arrays)
 ;;
-(in-theory (disable ;true-listp
-                    )) ;bozo
-
-(in-theory (disable ;take
-                    ;;BV-ARRAYP-LIST
-                    ))
-
 (defthm take-when-<-of-len
   (implies (< (len x) n) ;could be expensive?
            (equal (take n x)
@@ -3262,127 +3101,6 @@
                 (<= k free)
                 )
            (< (+ k y) x)))
-
-(defthm signed-byte-p-of-plus-constant
-  (implies (and (syntaxp (quotep k))
-                (natp k)
-                (< x (- 2147483648 k))
-                (SIGNED-BYTE-P 32 x))
-           (SIGNED-BYTE-P 32 (+ k x)))
-  :hints (("Goal" :in-theory (enable SIGNED-BYTE-P))))
-
-(DEFTHM TAKE-OF-UPDATE-SUBRANGE-LEMMA-better
-  (IMPLIES
-   (AND (<= N (+ 1 END))
-        (< END (LEN LST))
-;        (EQUAL (+ 1 END (- START)) (LEN VALS))
-        (NATP START)
-        (NATP END)
-        (NATP N)
-        (<= START N))
-   (EQUAL (TAKE N (UPDATE-SUBRANGE START END VALS LST))
-          (APPEND (TAKE START LST)
-                  (TAKE (- N START) VALS))))
-  :HINTS
-  (("Goal" :DO-NOT '(GENERALIZE ELIMINATE-DESTRUCTORS)
-    :IN-THEORY
-    (E/D (;LIST::EQUAL-CONS-CASES
-          ;LIST::LEN-UPDATE-NTH-BETTER
-          ;CONS-CAR-SELF-EQUAL-SELF
-          TAKE UPDATE-SUBRANGE
-          UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF-BACK)
-         (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
-
-;drop?
-(defthmd update-subrange-rewrite-better2
-  (implies (and (< end (len lst))
-                (natp start)
-                (natp end)
-                (<= start end)
-                )
-           (equal (update-subrange start end vals lst)
-                  (append (take start lst)
-                          (take (+ 1 end (- start)) vals)
-                          (nthcdr (+ 1 end) lst))))
-  :hints (("Goal" :use (:instance update-subrange-rewrite
-                                  (lst (true-list-fix lst))
-                                  (vals (take (+ 1 end (- start)) vals)))
-           :in-theory (e/d (nthcdr-of-true-list-fix equal-of-append)
-                           ( take-of-nthcdr-becomes-subrange
-                             ;list::fix-of-nthcdr
-                             update-subrange-rewrite ;update-subrange-equiv
-                             )))))
-
-;; (DEFTHM UPDATE-SUBRANGE-when-extends
-;;   (IMPLIES (AND (not (< END (LEN LST)))
-;;                 (<= start end)
-;;                 (NATP END)
-;;                 (NATP START))
-;;            (EQUAL (UPDATE-SUBRANGE START END VALS LST)
-;;                   (UPDATE-SUBRANGE START END VALS (take (+ 1 end) LST))))
-;;   :hints (("Goal" :in-theory (enable update-subrange-rewrite-better take-rewrite))))
-
-;;   :HINTS
-;;   (("Goal"
-;;     :IN-THEORY
-;;     (E/D
-;;      (UPDATE-SUBRANGE UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF-BACK)
-;;      (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
-
-;; (DEFTHM LEN-OF-UPDATE-SUBRANGE-better
-;;   (IMPLIES (AND (not (< END (LEN LST)))
-;;                 (<= start end)
-;;             (NATP END)
-;;             (NATP START))
-;;            (EQUAL (LEN (UPDATE-SUBRANGE START END VALS LST))
-;;                   (+ 1 end)))
-;;   :HINTS
-;;   (("Goal"
-;;     :IN-THEORY
-;;     (E/D
-;;      (UPDATE-SUBRANGE UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF-BACK)
-;;      (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
-
-
-
-
-;BOZO why so many cases?
-;BOZO gen!
-(defthm update-subrange-of-update-subrange-when-outer-is-one-smaller
-  (implies (and; (equal (len vals) (- n start))
-                (equal m (+ 1 start))
-                (<= m n)
-       ;         (< n (len lst))
- ;               (true-listp lst)
-;                (true-listp vals)
-                (natp start)
-                (natp n)
-                )
-           (equal (update-subrange m n vals (update-subrange start n vals2 lst))
-                  (update-subrange m n vals (update-nth start (nth 0 vals2) lst))))
-  :hints (("Goal" :in-theory (enable update-subrange-rewrite-better))))
-
-
-;; ;BOZO challenges:
-;; (UPDATE-NTH
-;;         4
-;;         x
-;;         (UPDATE-SUBRANGE
-;;            3 6 vals
-;;            (UPDATE-SUBRANGE
-;;                 2 6 vals2 lst)))
-
-(defthm update-nth-of-UPDATE-SUBRANGE-last
-  (implies (and (equal (+ 1 n (- m)) (len vals))
-                (natp m)
-                (< m n)
-                (true-listp vals)
-                (true-listp lst)
-                (natp n)
-                (< n (len lst)))
-           (equal (UPDATE-NTH n val (UPDATE-SUBRANGE m n vals lst))
-                  (UPDATE-NTH n val (UPDATE-SUBRANGE m (- n 1) (take (- n m) vals) lst))))
-  :hints (("Goal" :in-theory (enable UPDATE-SUBRANGE-REWRITE CDR-OF-NTHCDR))))
 
 ;move?
 (theory-invariant (incompatible (:rewrite TAKE-EQUAL-LENGTHEN) (:rewrite NTHS-EQUAL-WHEN-TAKES-EQUAL)))
@@ -3419,24 +3137,16 @@
   :HINTS (("Goal" :DO-NOT '(GENERALIZE ELIMINATE-DESTRUCTORS)
            :IN-THEORY (E/d (TAKE NTH) (nth-of-cdr)))))
 
-(defthm UPDATE-NTH-of-UPDATE-subrange-contained
-  (implies (and (<= start n)
-                (<= n end)
-                (natp start)
-                (natp end)
-                (natp n))
-           (equal (UPDATE-NTH n val (UPDATE-SUBRANGE start end vals lst))
-                  (UPDATE-SUBRANGE start end (update-nth (- n start) val vals) lst)))
-  :hints (("Goal" :in-theory (enable UPDATE-SUBRANGE-rewrite))))
+
 
 ;gen  (LEN (TAKE N L))
 
 ;when i need this, lst is the call-stack
 ;or just use + of if
-(defthmd len-pop-push-hack
-  (equal (equal (len lst)
-                (+ 1 (if (consp lst) (+ -1 (len lst)) 0)))
-         (consp lst)))
+;; (defthmd len-pop-push-hack
+;;   (equal (equal (len lst)
+;;                 (+ 1 (if (consp lst) (+ -1 (len lst)) 0)))
+;;          (consp lst)))
 
 ;; ;slow?
 ;; (defthm nthcdr-of-byte-fix-list
@@ -3459,22 +3169,7 @@
 ;;                   (byte-fix-list (subrange start end lst))))
 ;;   :hints (("Goal" :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange
 ;;                                               anti-subrange
-;;                                               cdr-of-take-becomes-subrange-better)))))
-
-
-;move
-;slow?
-(defthm UPDATE-SUBRANGE-of-UPDATE-SUBRANGE-reorder
-  (implies (and (< end2 start1)
-                (natp start1)
-                (natp start2)
-                (natp end1)
-                (natp end2))
-           (equal (UPDATE-SUBRANGE start1 end1 vals1 (UPDATE-SUBRANGE start2 end2 vals2 lst))
-                  (UPDATE-SUBRANGE start2 end2 vals2 (UPDATE-SUBRANGE start1 end1 vals1 lst))))
-  :rule-classes ((:rewrite :loop-stopper nil))
-  :hints (("Goal" :in-theory (e/d (UPDATE-SUBRANGE-rewrite-better TAKE-OF-NTHCDR-BECOMES-SUBRANGE)
-                                  (<-OF-IF-ARG1 IF-BACKCHAIN-RULE2 IF-BACKCHAIN-RULE TAKE-WHEN-<-OF-LEN)))))
+;;                                               )))))
 
 (defthm equal-if-<-hack
   (implies (and (rationalp x)
@@ -3567,7 +3262,7 @@
 ;;   (implies (not (endp l))
 ;;            (equal (mv-nth 0 l)
 ;;                   (car l)))
-;;   :hints (("Goal" :in-theory (e/d (mv-nth) ()))))
+;;   :hints (("Goal" :in-theory (enable mv-nth))))
 
 ;stuff from rc6  - file this stuff!
 
@@ -3584,7 +3279,7 @@
 ;;                 )
 ;;            (equal (bvminus n x (bvplus m y z))
 ;;                   (bvminus n x (bvplus n y z))))
-;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) (anti-bvplus)))))
+;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) ()))))
 
 ;; ;bozo handle this better
 ;; (defthm bvplus-of-bvminus
@@ -3592,7 +3287,7 @@
 ;;                 (integerp y))
 ;;            (equal (bvplus 5 x (bvminus 5 y x))
 ;;                   (bvchop 5 y)))
-;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) (anti-bvplus))))
+;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) ())))
 ;;   )
 
 ;; (defthm iushr-constant-opener
@@ -3726,11 +3421,11 @@
 ;;                            )
 ;;            :in-theory (disable bv-array-read BITXOR-OF-BVCHOP-ARG2 BITXOR-OF-GETBIT-ARG2))))
 
-(defthmd lookup-of-bvif
-  (equal (lookup (bvif size test a b) program)
-         (myif test (lookup (bvchop size a) program)
-               (lookup (bvchop size b) program)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
+;; (defthmd lookup-of-bvif
+;;   (equal (lookup (bvif size test a b) program)
+;;          (myif test (lookup (bvchop size a) program)
+;;                (lookup (bvchop size b) program)))
+;;   :hints (("Goal" :in-theory (enable bvif myif))))
 
 ;; ;turns a bvif into a myif...
 ;; (defthm INDEX-INTO-PROGRAM-of-bvif
@@ -3810,9 +3505,7 @@
 ;;                  (integerp i))
 ;;             (equal (getbit N (ASH i c))
 ;;                    (getbit (- n c) i)))
-;;  :hints (("Goal" :in-theory (e/d (ash logbitp LOGAPP ) ())))))
-
-
+;;  :hints (("Goal" :in-theory (enable ash logbitp LOGAPP))))
 
 
 ;; ;bozo what about associativity?
@@ -3831,11 +3524,6 @@
 
 ;;                 nil)))
 ;;     nil))
-
-
-
-
-
 
 
 ;; (defthm true-listp-of-get-field-contents-of-initialize-2d-array-same-2

@@ -1,7 +1,7 @@
-; Tools to rebuild DAGs while variable substitutions
+; Tools to rebuild DAGs while applying variable substitutions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,22 +16,16 @@
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/all-less-rules" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system)) ;needed for reasoning about sort
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
-(local
- ;; Disabled by default
- (defthmd acl2-numberp-when-integerp
-   (implies (integerp x)
-            (acl2-numberp x))))
-
-;;;
-;;; translate-literals
-;;;
+(local (in-theory (e/d (acl2-numberp-when-integerp integerp-when-natp rationalp-when-natp) (natp))))
 
 ;; This throws an error if a node translates to a constant (or to nothing).
 ;; Returns (mv provedp changed-nodes unchanged-nodes), where PROVEDP is t iff
@@ -41,7 +35,7 @@
 (defund translate-literals (literal-nodenums translation-array changed-acc unchanged-acc)
   (declare (xargs :guard (and (true-listp literal-nodenums)
                               (array1p 'translation-array translation-array)
-                              (all-natp literal-nodenums)
+                              (nat-listp literal-nodenums)
                               (all-< literal-nodenums (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                               (true-listp changed-acc)
@@ -109,7 +103,7 @@
                 (all-< changed-acc bound)
                 ;(all-< unchanged-acc bound)
                 (array1p 'translation-array translation-array)
-                (all-natp literal-nodenums)
+                (nat-listp literal-nodenums)
                 (all-< literal-nodenums (alen1 'translation-array translation-array))
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
@@ -121,7 +115,7 @@
                 (all-< literal-nodenums bound)
                 (all-< unchanged-acc bound)
                 (array1p 'translation-array translation-array)
-                (all-natp literal-nodenums)
+                (nat-listp literal-nodenums)
                 (all-< literal-nodenums (alen1 'translation-array translation-array))
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
@@ -136,9 +130,7 @@
            :in-theory (disable <-OF-AREF1-WHEN-BOUNDED-TRANSLATION-ARRAYP-AUX))
           ("Goal" :in-theory (enable translate-literals))))
 
-;;;
-;;; rebuild-nodes-with-var-subst-aux
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Rebuilds all the nodes in WORKLIST, and their supporters, while performing the substitution to variable nodes indicated by TRANSLATION-ARRAY (which, as we go, also tracks changes to function call nodes that depend on those var nodes).
 ;; Returns (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
@@ -172,7 +164,7 @@
   (if (or (endp worklist)
           ;; for termination: -- still needed?
           (not (and (mbt (array1p 'worklist-array worklist-array))
-                    (mbt (all-natp worklist))
+                    (mbt (nat-listp worklist))
                     (mbt (all-< worklist (alen1 'worklist-array worklist-array))))))
       (mv (erp-nil) translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (let* ((nodenum (first worklist))
@@ -231,8 +223,9 @@
                                                 ;; This node has now been examined:
                                                 (aset1 'worklist-array worklist-array nodenum :examined)))))))))
 
-(verify-guards rebuild-nodes-with-var-subst-aux :hints (("Goal" :in-theory (e/d (<-of-car-when-all-< dargp-of-car-when-all-natp
-                                                                                      all-<=-when-all-<)
+(verify-guards rebuild-nodes-with-var-subst-aux :hints (("Goal" :in-theory (e/d (<-of-car-when-all-<
+                                                                                 ;dargp-of-car-when-all-natp
+                                                                                 all-<=-when-all-<)
                                                                  (dargp
                                                                   dargp-less-than
                                                                   SORTEDP-<=)))))
@@ -302,9 +295,7 @@
                                            (mv-nth 3 (rebuild-nodes-with-var-subst-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array))))
   :hints (("Goal" :in-theory (e/d (rebuild-nodes-with-var-subst-aux) (dargp)))))
 
-;;;
-;;; rebuild-nodes-with-var-subst
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Rebuilds all the nodes in WORKLIST, and their supporters, while performing
 ;; the substitution indicated by TRANSLATION-ARRAY.
@@ -395,9 +386,7 @@
                                            (mv-nth 3 (rebuild-nodes-with-var-subst worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :hints (("Goal" :in-theory (enable rebuild-nodes-with-var-subst))))
 
-;;;
-;;; rebuild-literals-with-substitution
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist), where the literal-nodenums are in
 ;; arbitrary order.
@@ -417,7 +406,8 @@
                               (natp nodenum-to-replace)
                               (< nodenum-to-replace dag-len)
                               (dargp-less-than new-nodenum-or-quotep dag-len))
-                  :guard-hints (("Goal" :in-theory (e/d (all-integerp-when-all-natp all-rationalp-when-all-natp)
+                  :guard-hints (("Goal" :in-theory (e/d (;all-integerp-when-all-natp all-rationalp-when-all-natp
+                                                         )
                                                         (myquotep dargp dargp-less-than))))))
   (b* (((when (not (consp literal-nodenums))) ;must check since we take the max below
         (mv (erp-nil) ;or perhaps this is an error.  can it happen?
@@ -469,9 +459,10 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable rebuild-literals-with-substitution))))
 
-(local (in-theory (enable all-integerp-when-all-natp
+(local (in-theory (enable ;all-integerp-when-all-natp
                           acl2-numberp-when-integerp
-                          natp-of-+-of-1-alt))) ;for the call of def-dag-builder-theorems just below
+                          ;natp-of-+-of-1-alt
+                          ))) ;for the call of def-dag-builder-theorems just below
 
 (def-dag-builder-theorems
   (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)
@@ -494,14 +485,12 @@
                 ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)))
                 )
            (nat-listp (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))
-  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
-                                                                                                     natp)))))
+  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (natp)))))
 
 (defthm true-listp-of-mv-nth-2-of-rebuild-literals-with-substitution
   (implies (true-listp literal-nodenums)
            (true-listp (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))
-  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
-                                                                                                     natp)))))
+  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (natp)))))
 
 (defthm all-<-of-mv-nth-2-of-rebuild-literals-with-substitution
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -516,5 +505,4 @@
                 )
            (all-< (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))
                   (mv-nth 4 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))
-  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
-                                                                                                     natp)))))
+  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (natp)))))

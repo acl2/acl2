@@ -20,6 +20,7 @@
 (verify-termination standard-co) ; and guards
 (verify-termination error-fms) ; and guards
 (verify-termination error1-state-p) ; and guards
+(verify-termination state-p+) ; and guards
 (verify-termination error1) ; and guards
 (verify-termination error1-safe) ; and guards
 

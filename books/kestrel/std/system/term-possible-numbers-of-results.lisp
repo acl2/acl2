@@ -70,7 +70,7 @@
      "If the term is a call of @(tsee if),
       we recursively process its second and third arguments,
       and intersect the possible numbers for the two branches.
-      Note that @(tsee if) is in @('*stojbjs-out-invalid*'),
+      Note that @(tsee if) is in @('*stobjs-out-invalid*'),
       because it returns the same number of results as its branches.
       Thus, for example,
       if one branch is a @(tsee list) call

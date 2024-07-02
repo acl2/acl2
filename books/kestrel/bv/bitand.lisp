@@ -1,7 +1,7 @@
 ; Taking the and of two bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,17 @@
            (type integer y)
            (xargs :type-prescription (bitp (bitand x y))))
   (bvand 1 x y))
+
+;; This version requires bitp inputs and so may be faster and may also help
+;; catch bugs via stricter guard obligations.  We intened to keep this enabled
+;; for reasoning.
+(defun bitand$ (x y)
+  (declare (xargs :guard (and (bitp x) (bitp y))
+                  :split-types t
+                  :type-prescription (bitp (bitand$ x y)))
+           (type bit x y))
+  (mbe :logic (bitand x y)
+       :exec (the bit (logand x y))))
 
 (defthm bitand-associative
   (equal (bitand (bitand x y) z)
@@ -41,7 +52,7 @@
   (implies (syntaxp (quotep y))
            (equal (bitand x y)
                   (bitand y x)))
-  :hints (("Goal" :use (:instance bitand-commutative)
+  :hints (("Goal" :use bitand-commutative
            :in-theory (disable bitand-commutative))))
 
 (defthm bitand-of-0-arg1
@@ -62,7 +73,7 @@
 (defthm bitand-of-1-arg1
   (equal (bitand 1 x)
          (getbit 0 x))
-  :hints (("Goal" :use (:instance bitand-of-1-arg2)
+  :hints (("Goal" :use bitand-of-1-arg2
            :in-theory (disable bitand-of-1-arg2))))
 
 (defthm bitand-same
@@ -74,6 +85,9 @@
   (equal (bitand x (bitand x y))
          (bitand x y))
   :hints (("Goal" :in-theory (enable bitand))))
+
+(defthm bitp-of-bitand
+  (bitp (bitand x y)))
 
 (defthm integerp-of-bitand
   (integerp (bitand x y)))
@@ -189,7 +203,7 @@
                   (bitand x y))))
 
 (defthmd bitand-cases
-  (equal (acl2::bitand x y)
+  (equal (bitand x y)
          (if (and (equal (bvchop 1 x) 1)
                   (equal (bvchop 1 y) 1))
              1

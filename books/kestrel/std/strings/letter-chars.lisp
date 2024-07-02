@@ -29,5 +29,5 @@
   (xdoc::topstring
    (xdoc::p
     "The built-in @(tsee alpha-char-p)
-     has a guard requiring characters that are standard.
+     has a guard requiring characters.
      In contrast, this recognizer has guard @('t').")))

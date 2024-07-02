@@ -38,23 +38,16 @@
 
 (in-package "X86ISA")
 
+(local (include-book "arithmetic/top-with-meta" :dir :system))
+
 ;; ----------------------------------------------------------------------
 
 ; Some misc. functions used throughout the formal model:
 
-(local (include-book "arithmetic/top-with-meta" :dir :system))
-
-; Measure for log-2 below.
-(defun log-2-measure (x)
-  (cond ((or (not (natp x))
-             (<= x 1))
-         0)
-        (t (floor x 1))))
-
 ; On powers of 2, this function is a base 2 logarithm:
 ; it maps 2^n to n+count -- count is the accumulator.
 (defun log-2 (x count)
-  (declare (xargs :measure (log-2-measure x)
+  (declare (xargs :measure (nfix x)
                   :guard (natp count)))
   (if (natp x)
       (if (<= x 1)

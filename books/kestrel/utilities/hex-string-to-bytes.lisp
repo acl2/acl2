@@ -1,6 +1,6 @@
 ; Tools to convert hex chars and strings to bytes
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -66,3 +66,11 @@
     (hex-string-to-bytes s)
     (declare (ignore erp))
     val))
+
+(defthm all-unsigned-byte-p-of-hex-string-to-bytes!
+  (all-unsigned-byte-p 8 (hex-string-to-bytes! s))
+  :hints (("Goal" :in-theory (enable hex-string-to-bytes!))))
+
+(defthm true-listp-of-hex-string-to-bytes!
+  (true-listp (hex-string-to-bytes! s))
+  :hints (("Goal" :in-theory (enable hex-string-to-bytes!))))

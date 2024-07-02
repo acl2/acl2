@@ -50,8 +50,7 @@
                               (consecutivep (strip-cars rev-dag-lst)))
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
                                  :expand (weak-dagp-aux rev-dag-lst)
-                                 :in-theory (e/d (car-of-cadr-when-consecutivep-of-strip-cars strip-cars dag-exprp)
-                                                 ())))))
+                                 :in-theory (enable car-of-cadr-when-consecutivep-of-strip-cars strip-cars dag-exprp)))))
   (if (endp rev-dag-lst)
       (mv (erp-nil) renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (let* ((entry (first rev-dag-lst))
@@ -216,7 +215,7 @@
   (implies (and (weak-dagp rev-dag-lst)
                 (array1p 'dag-array dag-array)
                 (not (mv-nth 0 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)))
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (natp dag-len))
            (array1p 'dag-array (mv-nth 2 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))))
   :hints (("Goal" :in-theory (enable merge-nodes-into-dag-array))))
@@ -245,7 +244,7 @@
 ;drop?
 (defthm merge-nodes-into-dag-array-bound-lemma
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (bounded-dag-constant-alistp dag-constant-alist dag-len)
                 (bounded-dag-variable-alistp dag-variable-alist dag-len)
                 (consecutivep (strip-cars rev-dag-lst))

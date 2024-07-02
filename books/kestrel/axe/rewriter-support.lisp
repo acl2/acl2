@@ -1,7 +1,7 @@
 ; Stuff that supports the (simple) rewriter.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -48,11 +48,11 @@
   :hints (("Goal" :expand (axe-treep tree)
            :in-theory (enable axe-treep))))
 
-(defthm all-dargp-of-if
-  (equal (all-dargp (if test items1 items2))
+(defthm darg-listp-of-if
+  (equal (darg-listp (if test items1 items2))
          (if test
-             (all-dargp items1)
-           (all-dargp items2))))
+             (darg-listp items1)
+           (darg-listp items2))))
 
 (defthm bounded-darg-listp-of-if
   (equal (bounded-darg-listp (if test items1 items2) bound)
@@ -100,11 +100,6 @@
            (EQUAL (INTEGERP ITEM)
                   (NOT (CONSP ITEM)))))
 
-(DEFTHMd natp-WHEN-DARGP
-  (IMPLIES (DARGP ITEM)
-           (EQUAL (natp ITEM)
-                  (NOT (CONSP ITEM)))))
-
 (defthmd quotep-when-dargp
   (implies (dargp item)
            (equal (quotep item)
@@ -138,12 +133,6 @@
   :hints
   (("Goal" :in-theory (enable dargp))))
 
-(defthm integerp-of-if
-  (equal (integerp (if test tp ep))
-         (if test
-             (integerp tp)
-           (integerp ep))))
-
 (defthm symbol-listp-of-cons
   (equal (symbol-listp (cons a x))
          (and (symbolp a)
@@ -163,9 +152,9 @@
                 (<= z y))
            (< x y)))
 
-(defthm equal-of-quote-and-nth-1-of-assoc-equal-when-all-dargp-of-strip-cdrs
-  (implies (and (all-dargp (strip-cdrs node-replacement-alist))
+(defthm equal-of-quote-and-nth-1-of-assoc-equal-when-darg-listp-of-strip-cdrs
+  (implies (and (darg-listp (strip-cdrs node-replacement-alist))
                 (assoc-equal tree node-replacement-alist))
            (equal (equal 'quote (nth 1 (assoc-equal tree node-replacement-alist)))
                   (consp (cdr (assoc-equal tree node-replacement-alist)))))
-  :hints (("Goal" :in-theory (enable assoc-equal all-dargp strip-cdrs))))
+  :hints (("Goal" :in-theory (enable assoc-equal darg-listp strip-cdrs))))

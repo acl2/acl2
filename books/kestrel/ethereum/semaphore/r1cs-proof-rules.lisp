@@ -1,6 +1,6 @@
 ; Rules to support R1CS proofs
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,25 +11,31 @@
 (in-package "ZKSEMAPHORE")
 
 ;todo: reduce:
-(include-book "kestrel/ethereum/semaphore/printing" :dir :system) ; so we can refer to the constants below
+(include-book "printing") ; so we can refer to the constants below
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system) ; for acl2::axe-bind-free
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ; for acl2::bind-bv-size-axe
+(include-book "kestrel/axe/priorities" :dir :system)
 (local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
 (local (include-book "kestrel/prime-fields/bv-rules" :dir :system))
 (include-book "kestrel/crypto/r1cs/gadgets/xor-rules" :dir :system)
 ;(include-book "kestrel/crypto/r1cs/tools/axe-rules-r1cs" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system) ; for ACL2::BVXOR-WITH-SMALLER-ARG-1, drop
 ;(include-book "kestrel/axe/rules3" :dir :system) ;for ACL2::PLUS-OF-BVCAT-FITS-IN-LOW-BITS-CORE-NEGATIVE-K1
-(include-book "kestrel/utilities/fix" :dir :system)
+(local (include-book "kestrel/utilities/fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system)) ;for ACL2::COMMUTATIVITY-2-OF-+-WHEN-CONSTANT??
 (local (include-book "kestrel/bv/logtail" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system)
+
+;(local (in-theory (enable acl2::*-of---arg1-gen)))
 
 ;todo: file these:
 
@@ -281,7 +287,7 @@
                        (mul *-2^32-neg* y p)
                        p))))
 
-(table acl2::axe-rule-priorities-table 'mul-of-add-constant-special-alt 1) ;try this late
+(acl2::set-axe-rule-priority mul-of-add-constant-special-alt 1) ;try this late
 
 (defthm bitp-of-mul-of-1/2^32
   (implies (and                               ;(posp p)
@@ -299,7 +305,7 @@
                 (integerp y))
            (equal (equal (+ y (bvchop 32 x)) x)
                   (equal y (* (expt 2 32) (getbit 32 x)))))
-  :hints (("Goal" :use (:instance acl2::split-bv (y x)
+  :hints (("Goal" :use (:instance acl2::split-bv (x x)
                                   (n 33)
                                   (m 32))
            :in-theory (enable bvcat acl2::logapp))))
@@ -434,7 +440,7 @@
            (equal (add (mul *-2^33* bit p) (bvplus '34 x y) p)
                   (bvplus 33 x y)))
   :hints (("Goal"
-           :use (:instance acl2::split-bv (y (BVPLUS 34 X Y))
+           :use (:instance acl2::split-bv (x (BVPLUS 34 X Y))
                            (n 34) (m 33))
            :in-theory (enable add mul bvcat acl2::logapp ACL2::MOD-SUM-CASES))))
 
@@ -469,6 +475,12 @@
                   (slice 32 0 x)))
   :hints (("Goal" :in-theory (enable slice))))
 
+(local
+  (defthm *-of-2-and-slice-bound
+    (implies (natp x)
+             (not (< x (* 2 (slice 33 1 x)))))
+    :hints (("Goal" :in-theory (enable slice acl2::logtail)))))
+
 (defthmd bitp-of-add-of-mul-of--2-becomes-equal-of-slice
   (implies (and (syntaxp (quotep k))
                 (equal k (- p 2)) ;to make this rule not prime-specific
@@ -478,7 +490,7 @@
                 (posp p))
            (equal (bitp (add bv34 (mul k bv33 p) p))
                   (equal bv33 (slice 33 1 bv34))))
-  :hints (("Goal" :in-theory (e/d (bitp add mul acl2::mod-sum-cases)
+  :hints (("Goal" :in-theory (e/d (bitp add mul acl2::mod-sum-cases acl2::*-of---arg1-gen)
                                   (ACL2::BITP-BECOMES-UNSIGNED-BYTE-P)))))
 
 (defthm bitp-of-add-of-mul-of--2-becomes-equal-of-slice-extra
@@ -934,7 +946,7 @@
                    (equal 1 (SLICE 34 33 BV35))
                    (equal 2 (SLICE 34 33 BV35)))
            :use (:instance acl2::split-bv
-                           (y bv35)
+                           (x bv35)
                            (n 35)
                            (m 33))
            :in-theory (enable add mul bvcat acl2::logapp ACL2::MOD-SUM-CASES slice ACL2::BVCHOP-OF-SUM-CASES
@@ -1193,7 +1205,7 @@
 (defthm *-of-2-and-slice-of-1
   (equal (* 2 (slice 33 1 x))
          (- (bvchop 34 x) (getbit 0 x)))
-  :hints (("Goal" :use (:instance acl2::split-bv (y (bvchop 34 x)) (n 34) (m 1))
+  :hints (("Goal" :use (:instance acl2::split-bv (x (bvchop 34 x)) (n 34) (m 1))
            :in-theory (enable bvcat acl2::logapp getbit))))
 
 (defthm mul-of-2-and-slice-of-1
@@ -1217,7 +1229,7 @@
 (defthmd mul-of--2-becomes-neg-of-mul-of-2
   (equal (mul -2 x p)
          (neg (mul 2 x p) p))
-  :hints (("Goal" :in-theory (enable neg mul))))
+  :hints (("Goal" :in-theory (enable neg mul acl2::*-of---arg1-gen))))
 
 (defthm mul-of--2-and-slice-of-1
   (implies (and (< (expt 2 34) p)

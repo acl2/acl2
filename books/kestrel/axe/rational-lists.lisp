@@ -140,7 +140,7 @@
            (all-rationalp acc))
   :hints (("Goal" :in-theory (enable all-natp))))
 
-(defthm natp-of-maxelem
+(defthm natp-of-maxelem-when-all-natp
   (implies (and (all-natp items)
                 (consp items))
            (natp (maxelem items)))

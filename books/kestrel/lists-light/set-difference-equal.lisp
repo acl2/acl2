@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function set-difference-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -133,3 +133,28 @@
            (equal (set-difference-equal x y)
                   (true-list-fix x)))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+;; This may be all we need for dealing with len of set-difference-equal, but it
+;; does introduce intersection-equal.
+(defthm len-of-set-difference-equal
+  (equal (len (set-difference-equal x y))
+         (- (len x) (len (intersection-equal x y))))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+;; Disabled because the :linear rule may suffice
+(defthmd <=-of-len-of-set-difference-equal-and-len
+  (<= (len (set-difference-equal x y))
+      (len x))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(defthm len-of-set-difference-equal-linear
+  (<= (len (set-difference-equal x y))
+      (len x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(defthm equal-of-len-of-set-difference-equal-and-len-same
+  (equal (equal (len (set-difference-equal x y))
+                (len x))
+         (not (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal intersection-equal))))

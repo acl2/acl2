@@ -214,6 +214,9 @@
   (true-listp (car (tree-nonleaf->branches x)))
   :rule-classes :type-prescription)
 
+(defruled true-list-listp-of-tree-nonleaf->branches
+  (true-list-listp (tree-nonleaf->branches tree)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption tree-option

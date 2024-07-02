@@ -309,12 +309,14 @@
                                  ())))
   :prepwork ((create-case-match-macro concat-of-unfloat-pattern
                                       ('sv::concat size ('sv::unfloat x) ('sv::unfloat y))
+                                      :extra-cond
                                       (natp size))
 
              (create-case-match-macro concat-of-conseq-partsel-pattern
                                       ('sv::concat size
                                                    ('sv::partsel st1 sz1 x)
                                                    ('sv::partsel st2 sz2 x))
+                                      :extra-cond
                                       (and (natp size)
                                            (natp st1) (natp st2)
                                            (natp sz1) (natp sz2)
@@ -347,6 +349,7 @@
                                  ())))
   :prepwork ((create-case-match-macro rsh-of-partsel
                                       ('sv::rsh size ('sv::partsel start2 size2 var))
+                                      :extra-cond
                                       (and (natp size)
                                            (natp start2)
                                            (natp size2)))
@@ -746,6 +749,7 @@
                              svex-kind
                              svex-call->fn
                              svex-call->args
+                             sv::svex-quote->val
                              svexlist-eval
                              svex-eval
                              RSH-REDUCE

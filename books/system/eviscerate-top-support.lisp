@@ -254,7 +254,8 @@
   (implies (and (state-p1 state)
                 (symbolp name)
                 (not (eq name 'current-acl2-world))
-                (not (eq name 'timer-alist)))
+                (not (eq name 'timer-alist))
+                (not (eq name 'print-base)))
            (state-p1 (update-nth 2
                                  (add-pair name val (nth 2 state))
                                  state)))
@@ -342,7 +343,8 @@
   (implies (and (state-p1 state)
                 (symbolp name)
                 (not (eq name 'current-acl2-world))
-                (not (eq name 'timer-alist)))
+                (not (eq name 'timer-alist))
+                (not (eq name 'print-base)))
            (state-p1 (put-global name value state)))
   :hints (("Goal" :in-theory (enable state-p1))))
 
@@ -415,12 +417,12 @@
   (implies (<= (* 4
                   (+ 1
                      (get-global 'iprint-hard-bound state)))
-               *maximum-positive-32-bit-integer*)
+               (array-maximum-length-bound))
            (<= (* 4
                   (+ 1
                      (get-global 'iprint-hard-bound
                                  (composed-oracle-updates state))))
-               *maximum-positive-32-bit-integer*))
+               (array-maximum-length-bound)))
   :hints (("Goal" :in-theory (enable put-global)))
   :rule-classes :linear)
 

@@ -1,7 +1,7 @@
 ; Mixed rules about packing and grouping
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,16 +36,6 @@
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 
-;move
-(defthm floor-of-*-same-arg2
-  (implies (and (rationalp i)
-                (rationalp j)
-                (not (equal 0 j)))
-           (equal (floor (* i j) j)
-                  (floor i 1)))
-  :hints (("Goal" :use (:instance floor-of-*-same)
-           :in-theory (disable floor-of-*-same))))
-
 ;ffixme get rid of bytes-to-bits using this fact:
 (defthm bytes-to-bits-rewrite
   (equal (bytes-to-bits x)
@@ -67,10 +57,7 @@
   :hints (("subgoal *1/4" :use (:instance list-split (n n)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (all-all-unsigned-byte-p group2)
-                           (;LIST::EQUAL-APPEND-REDUCTION!
-                            ;LIST::EQUAL-APPEND-REDUCTION!-ALT
-                            APPEND-OF-TAKE-AND-NTHCDR-2
-                            )))))
+                           (append-of-take-and-nthcdr-2)))))
 
 (defthm all-all-unsigned-byte-p-of-group2-rewrite
   (implies (and (equal 0 (mod (len x) n)) ;handle better
@@ -100,7 +87,7 @@
                 (posp b))
            (equal (group2 c (ungroup b x))
                   (map-ungroup b (group2 a x))))
-  :hints (("Goal" :in-theory (e/d (ungroup map-ungroup group2 posp) ())
+  :hints (("Goal" :in-theory (enable ungroup map-ungroup group2 posp)
            :do-not '(generalize eliminate-destructors))))
 
 ;restrict to constants?
@@ -123,9 +110,7 @@
                 (posp b))
            (equal (group c (ungroup b x))
                   (map-ungroup b (group (/ c b) x))))
-  :hints (("Goal" :in-theory (e/d (posp
-                                   equal-of-0-and-mod)
-                                  ())
+  :hints (("Goal" :in-theory (enable posp equal-of-0-and-mod)
 ;           :cases ((equal b 1))
            :do-not '(generalize eliminate-destructors))))
 

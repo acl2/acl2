@@ -1,7 +1,7 @@
 ; "Write over write" rules for our 32-bit x86 state writers
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 (in-package "X")
 
 (include-book "support32")
-(include-book "register-readers-and-writers")
+(include-book "register-readers-and-writers32")
 
 (defthm write-byte-to-segment-of-set-eip
   (equal (write-byte-to-segment eff-addr seg-reg val (set-eip eip x86))
@@ -52,32 +52,32 @@
 (defthm write-byte-to-segment-of-set-eax
   (equal (write-byte-to-segment eff-addr seg-reg val (set-eax eax x86))
          (set-eax eax (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-eax) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-eax))))
 
 (defthm write-byte-to-segment-of-set-ebx
   (equal (write-byte-to-segment eff-addr seg-reg val (set-ebx ebx x86))
          (set-ebx ebx (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-ebx))))
 
 (defthm write-byte-to-segment-of-set-ecx
   (equal (write-byte-to-segment eff-addr seg-reg val (set-ecx ecx x86))
          (set-ecx ecx (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-ecx))))
 
 (defthm write-byte-to-segment-of-set-edx
   (equal (write-byte-to-segment eff-addr seg-reg val (set-edx edx x86))
          (set-edx edx (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-edx) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-edx))))
 
 (defthm write-byte-to-segment-of-set-esp
   (equal (write-byte-to-segment eff-addr seg-reg val (set-esp esp x86))
          (set-esp esp (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-esp) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-esp))))
 
 (defthm write-byte-to-segment-of-set-ebp
   (equal (write-byte-to-segment eff-addr seg-reg val (set-ebp ebp x86))
          (set-ebp ebp (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-ebp))))
 
 ;;; write-to-segment of write-<reg>
 
@@ -174,3 +174,27 @@
   (equal (set-ebp ebp (set-eip eip x86))
          (set-eip eip (set-ebp ebp x86)))
   :hints (("Goal" :in-theory (enable set-eip))))
+
+
+;; These push set-undef inward:
+(defthm set-undef-of-set-eip (equal (set-undef undef (set-eip rip x86)) (set-eip rip (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm set-undef-of-set-eax (equal (set-undef undef (set-eax rax x86)) (set-eax rax (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-eax))))
+(defthm set-undef-of-set-ebx (equal (set-undef undef (set-ebx rbx x86)) (set-ebx rbx (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-ebx))))
+(defthm set-undef-of-set-ecx (equal (set-undef undef (set-ecx rcx x86)) (set-ecx rcx (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-ecx))))
+(defthm set-undef-of-set-edx (equal (set-undef undef (set-edx rdx x86)) (set-edx rdx (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-edx))))
+;; (defthm set-undef-of-set-esi (equal (set-undef undef (set-esi rsi x86)) (set-esi rsi (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-esi))))
+;; (defthm set-undef-of-set-edi (equal (set-undef undef (set-edi rdi x86)) (set-edi rdi (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-edi))))
+(defthm set-undef-of-set-esp (equal (set-undef undef (set-esp rsp x86)) (set-esp rsp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-esp))))
+(defthm set-undef-of-set-ebp (equal (set-undef undef (set-ebp rbp x86)) (set-ebp rbp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-ebp))))
+
+
+;; These push set-mxcsr inward:
+(defthm set-mxcsr-of-set-eip (equal (set-mxcsr mxcsr (set-eip rip x86)) (set-eip rip (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm set-mxcsr-of-set-eax (equal (set-mxcsr mxcsr (set-eax rax x86)) (set-eax rax (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-eax))))
+(defthm set-mxcsr-of-set-ebx (equal (set-mxcsr mxcsr (set-ebx rbx x86)) (set-ebx rbx (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-ebx))))
+(defthm set-mxcsr-of-set-ecx (equal (set-mxcsr mxcsr (set-ecx rcx x86)) (set-ecx rcx (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-ecx))))
+(defthm set-mxcsr-of-set-edx (equal (set-mxcsr mxcsr (set-edx rdx x86)) (set-edx rdx (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-edx))))
+;; (defthm set-mxcsr-of-set-esi (equal (set-mxcsr mxcsr (set-esi rsi x86)) (set-esi rsi (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-esi))))
+;; (defthm set-mxcsr-of-set-edi (equal (set-mxcsr mxcsr (set-edi rdi x86)) (set-edi rdi (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-edi))))
+(defthm set-mxcsr-of-set-esp (equal (set-mxcsr mxcsr (set-esp rsp x86)) (set-esp rsp (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-esp))))
+(defthm set-mxcsr-of-set-ebp (equal (set-mxcsr mxcsr (set-ebp rbp x86)) (set-ebp rbp (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-ebp))))

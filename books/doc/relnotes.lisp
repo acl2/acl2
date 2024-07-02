@@ -123,6 +123,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Gaussian Elimination Library")
+
+   (xdoc::p
+    "This is a work in progress for solving Ax = b, for sparse matrices A.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Group Theory Library")
 
    (xdoc::p
@@ -189,6 +196,11 @@
      @(':untranslate t'), removes some unused @(tsee let) bindings and @(tsee
      let*) bindings that formerly remained.")
 
+   (xdoc::p
+    "The @(tsee apt::restrict) transformation has been improved
+     to generate more robust proofs,
+     which get around certain ACL2 heuristics.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
@@ -216,6 +228,19 @@
 
    (xdoc::p
     "An ABNF grammar for a subset of C has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented Syntax"))
+
+   (xdoc::p
+    "A new sub-library has been added,
+     which contains an abstract syntax,
+     and accompanying concrete syntax formulation,
+     intended for use by tools like code generators and transformers.
+     This sub-library also includes
+     a parser from the concrete to the abstract syntax,
+     as well as an ACL2 tool to invoke an external C preprocessor.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -282,6 +307,10 @@
     (xdoc::seetopic "fty::defresult" "result types")
     ", some names have been improved.")
 
+   (xdoc::p
+    "A fixtype @(tsee pos-set) for sets of positive integers has been added,
+     along with some operations on these sets.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
@@ -307,6 +336,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "obag::obags" "Ordered Bags (Obags) Library"))
+
+   (xdoc::p
+    "Renamed @('obag::empty') to @(tsee obag::emptyp).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
@@ -318,10 +354,21 @@
    (xdoc::p
     "Improved documentation and organization.")
 
+   (xdoc::p
+    "Renamed @('omap::empty') to @(tsee omap::emptyp).")
+
+   (xdoc::p
+    "Renamed @('omap::in') to @(tsee omap::assoc).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
                              "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "The library has been moved
+     from @('[books]/kestrel/crypto/pfcs')
+     to @('[books]/projects/pfcs').")
 
    (xdoc::p
     "A concrete syntax for PFCSes, in the form of an ABNF grammar,
@@ -385,6 +432,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/strings" "Standard Strings Library"))
+
+   (xdoc::p
+    "The recognizers of digit characters in various bases
+     have been renamed to have the suffix @('-list*p'),
+     because they are loose list recognizers.
+     New recognizers have been added with suffix @('-listp')
+     for true lists of such digit characters.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
 
    (xdoc::p
@@ -428,6 +486,18 @@
 
    (xdoc::p
     "Theorems about the built-in @(tsee fsubcor-var) have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "set::std/osets" "Standard Osets Library"))
+
+   (xdoc::p
+    "The @('set::empty') function has been renamed to @(tsee set::emptyp).")
+
+   (xdoc::p
+    "A variant without backchain limit
+     of the @(tsee set::double-containment) rule
+     has been added, disabled by default.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -487,6 +557,41 @@
      functions and macros, respectively, that were introduced after a given
      name.")
 
+   (xdoc::p
+    "@(tsee Make-flag) now causes a user-friendly error when the formal
+     parameters list is changed by an alternative definition specified by the
+     @(':BODY') argument.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
+
+   (xdoc::p
+    "Support has been added for the following VEX instructions:")
+   (xdoc::ul
+    (xdoc::li
+     "SHL, SHRX, SARX")
+    (xdoc::li
+     "VMOVUPS")
+    (xdoc::li
+     "VZEROUPPER")
+    (xdoc::li
+     "VANDPD, VANDPS,
+      VANDNPD, VANDNPS,
+      VORPD, VORPS,
+      VXORPD, VXORPS,
+      VPAND,
+      VPANDN,
+      VPOR,
+      VPXOR")
+    (xdoc::li
+     "VPADDB, VPADDW, VPADDD, VPADDQ (VEX versions)")
+    (xdoc::li
+     "VPSUBB, VPSUBW, VPSUBD, VPSUBQ (VEX versions)"))
+
+   (xdoc::p
+    "Some memory accessing functions for larger sizes have been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
@@ -529,6 +634,12 @@
      book has changed significantly.  The lemmas formerly in @('fmx-cw') are
      now in a new book, @('fmx-cw-support'), which is not included in
      @('system/top.lisp').")
+
+   (xdoc::p
+    "The behavior of function @('computed-hint-rewrite') in @(see
+     community-book) @('books/misc/computed-hint-rewrite.lisp') has been
+     tweaked to be properly in sync with that of source function
+     @('simplify-clause').")
 
    ))
 

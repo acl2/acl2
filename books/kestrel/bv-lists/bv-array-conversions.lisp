@@ -1,7 +1,7 @@
 ; Conversions between lists and bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bv-arrays")
+(include-book "kestrel/utilities/defopeners" :dir :system)
 (local (include-book "all-unsigned-byte-p2"))
 ;(local (include-book "all-unsigned-byte-p"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
@@ -273,8 +274,7 @@
                   (bv-array-read width total-len n x)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (list-to-bv-array-aux width elements-left total-len x)
-           :in-theory (e/d (bv-array-read bv-array-read-of-bv-array-write-both-better list-to-bv-array-aux)
-                           ()))))
+           :in-theory (enable bv-array-read bv-array-read-of-bv-array-write-both-better list-to-bv-array-aux))))
 
 (defthm bv-array-read-of-list-to-bv-array
   (implies (and (natp n)
@@ -284,3 +284,7 @@
                   (bv-array-read width (len x) n x)))
   :hints (("Goal"
            :in-theory (e/d (list-to-bv-array) (list-to-bv-array-aux-unroll)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defopeners bv-array-to-list-aux)

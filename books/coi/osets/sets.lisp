@@ -73,17 +73,17 @@
     (or (equal a (car x))
 	(in-list a (cdr x)))))
 
-(defthm tail-preserves-empty
-  (implies (empty X)
-           (empty (tail X))))
+(defthm tail-preserves-emptyp
+  (implies (emptyp X)
+           (emptyp (tail X))))
 
-(defthm head-insert-empty
-  (implies (empty X)
+(defthm head-insert-emptyp
+  (implies (emptyp X)
            (equal (head (insert a X)) a)))
 
-(defthm tail-insert-empty
-  (implies (empty X)
-           (empty (tail (insert a X)))))
+(defthm tail-insert-emptyp
+  (implies (emptyp X)
+           (emptyp (tail (insert a X)))))
 
 
 (defthm intersect-cardinality-subset
@@ -163,4 +163,3 @@
                    insert-cardinality
                    delete-cardinality
                    ))
-

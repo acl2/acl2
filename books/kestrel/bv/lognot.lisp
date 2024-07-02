@@ -180,3 +180,10 @@
 (defthm signed-byte-p-of-lognot
   (implies (signed-byte-p size i)
            (signed-byte-p size (lognot i))))
+
+(defthm equal-of-lognot-and-lognot
+  (equal (equal (lognot i) (lognot j))
+         (equal (ifix i) (ifix j)))
+  :hints (("Goal" :in-theory (enable lognot))))
+
+

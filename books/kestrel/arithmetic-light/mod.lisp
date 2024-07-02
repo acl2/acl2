@@ -131,8 +131,17 @@
                   x))
   :hints (("Goal" :in-theory (enable mod floor))))
 
+;; Trying to avoid name clash
+(defthm floor-mod-elim-rule
+  (implies (acl2-numberp i)
+           (equal (+ (mod i j) (* j (floor i j)))
+                  i))
+  :rule-classes :elim
+  :hints (("Goal" :in-theory (enable mod))))
+
 (local (include-book "../../arithmetic-3/floor-mod/floor-mod")) ;todo
 (local (in-theory (disable INTEGERP-MINUS-X))) ;slow
+;(local (include-book "plus-and-times"))
 
 (defthm mod-of-mod-same-arg2
   (implies (and (rationalp x)
@@ -223,26 +232,24 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable equal-of-0-and-mod))))
 
+;rename?
 (defthm mod-of-*-lemma
   (implies (and (integerp x)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (* x y) y)
-                  0))
-  :hints (("Goal" :cases ((posp y)))))
+                  0)))
 
+;rename?
 (defthm mod-of-*-lemma-alt
   (implies (and (integerp x)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (* y x) y)
                   0)))
 
 (defthm mod-of-+-of-*-same-arg1-arg1
   (implies (and (rationalp x1)
                 (integerp x2)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (+ (* y x2) x1) y)
                   (mod x1 y)))
   :hints (("Goal" :cases ((posp y)))))
@@ -250,8 +257,7 @@
 (defthm mod-of-+-of-*-same-arg1-arg2
   (implies (and (rationalp x1)
                 (integerp x2)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (+ (* x2 y) x1) y)
                   (mod x1 y)))
   :hints (("Goal" :cases ((posp y)))))
@@ -259,8 +265,7 @@
 (defthm mod-of-+-of-*-same-arg2-arg2
   (implies (and (rationalp x1)
                 (integerp x2)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (+ x1 (* x2 y)) y)
                   (mod x1 y)))
   :hints (("Goal" :cases ((posp y)))))
@@ -268,8 +273,7 @@
 (defthm mod-of-+-of-*-same-arg2-arg1
   (implies (and (rationalp x1)
                 (integerp x2)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (+ x1 (* y x2)) y)
                   (mod x1 y)))
   :hints (("Goal" :cases ((posp y)))))
@@ -292,8 +296,7 @@
 
 (defthm integerp-of-mod-of-1
   (equal (integerp (mod x 1))
-         (or (integerp x)
-             (not (acl2-numberp x))))
+         (integerp (fix x)))
   :hints (("Goal" :in-theory (enable mod))))
 
 ;quite aggressive
@@ -373,22 +376,6 @@
          0)
   :hints (("Goal" :in-theory (enable mod))))
 
-
-;move
-(local
- (defthm floor-of---special-case
-   (implies (and (acl2-numberp i)
-                 ;; (not (rationalp i))
-                 (acl2-numberp j)
-                 (not (rationalp j)))
-            (equal (floor (- i) j)
-                   (if (rationalp (* i (/ j)))
-                       (if (integerp (* i (/ j)))
-                           (- (floor i j))
-                           (+ -1 (- (floor i j))))
-                     0)))
-   :hints (("Goal" :in-theory (enable floor)))))
-
 ;; TODO: Improve the form of the RHS?
 (defthm mod-of-minus-arg1
   (equal (mod (- x) y)
@@ -409,7 +396,7 @@
                    (- x)))
              (- x))))
   :hints (("Goal"
-           :in-theory (e/d (mod floor-when-integerp-of-quotient)
+           :in-theory (e/d (mod floor-when-integerp-of-quotient floor-of---special-case)
                            (prefer-positive-addends-equal))
            :cases ((not (acl2-numberp y))
                    (rationalp y)
@@ -422,16 +409,27 @@
                   (- (mod (- x) y))))
   :hints (("Goal" :cases ((equal '0 y)))))
 
-
-(defthm mod-when-multiple
-  (implies (and (integerp (* x (/ y)))
-                ;; (rationalp x)
-                (acl2-numberp y)
-                (not (equal 0 y)))
+(defthm mod-when-integerp-of-quotient
+  (implies (integerp (* x (/ y)))
            (equal (mod x y)
-                  0))
-  :hints (("Goal" :in-theory (enable mod
-                                     floor-when-multiple))))
+                  (if (or (not (acl2-numberp x))
+                          (and (acl2-numberp y)
+                               (not (equal 0 y))))
+                      0
+                    x)))
+  :hints (("Goal" :cases ((acl2-numberp x))
+           :in-theory (enable mod
+                              floor-when-integerp-of-quotient))))
+
+;; (defthmd mod-when-multiple
+;;   (implies (and (integerp (* x (/ y)))
+;;                 ;; (rationalp x)
+;;                 (acl2-numberp y)
+;;                 (not (equal 0 y)))
+;;            (equal (mod x y)
+;;                   0))
+;;   :hints (("Goal" :in-theory (enable mod
+;;                                      floor-when-multiple))))
 
 (defthm mod-of-+-of-mod-arg1
   (implies (and (rationalp x1)
@@ -658,17 +656,7 @@
                   (fix x)))
   :hints (("Goal" :in-theory (enable mod floor))))
 
-(defthm mod-when-integerp-of-quotient
-  (implies (integerp (* x (/ y)))
-           (equal (mod x y)
-                  (if (or (not (acl2-numberp x))
-                          (and (acl2-numberp y)
-                               (not (equal 0 y))))
-                      0
-                    x)))
-  :hints (("Goal" :cases ((acl2-numberp x))
-           :in-theory (enable mod
-                              floor-when-integerp-of-quotient))))
+
 
 (defthmd mod-when-equal-of-mod-and-0-free
   (implies (and (equal 0 (mod x y2)) ;y2 is a free var
@@ -677,11 +665,11 @@
            (equal (mod x y)
                   0))
   :hints (("Goal"
-           :use (:instance acl2::integerp-of-*
+           :use (:instance integerp-of-*
                            (x (* x (/ y2)))
                            (y (* (/ y) y2)))
-           :in-theory (e/d (acl2::equal-of-0-and-mod)
-                           (acl2::integerp-of-*)))))
+           :in-theory (e/d (equal-of-0-and-mod)
+                           (integerp-of-*)))))
 
 (defthm mod-when-equal-of-mod-and-0-free-cheap
   (implies (and (syntaxp (quotep y))
@@ -702,7 +690,7 @@
                 (not (equal 0 y1)))
            (equal (mod (mod x y1) y2)
                   (mod x y2)))
-  :hints (("Goal" :in-theory (enable acl2::equal-of-0-and-mod
+  :hints (("Goal" :in-theory (enable equal-of-0-and-mod
                                      mod-sum-cases ; why?
                                      ))))
 
@@ -787,10 +775,10 @@
                 (integerp y))
            (equal (mod x y)
                   (+ x y)))
-  :hints (("Goal" :use (:instance acl2::mod-when-<
+  :hints (("Goal" :use (:instance mod-when-<
                                   (x (+ x y))
                                   (y y))
-           :in-theory (disable acl2::mod-when-<))))
+           :in-theory (disable mod-when-<))))
 
 (defthm mod-of-*-and-*-cancel-arg2-arg2
   (equal (mod (* x z) (* y z))
@@ -830,11 +818,11 @@
                  (integerp p))
             (equal (mod (* x y (mod z p)) p)
                    (mod (* x y z) p)))
-   :hints (("Goal" :use (:instance acl2::mod-of-*-of-mod
+   :hints (("Goal" :use (:instance mod-of-*-of-mod
                                    (z p)
                                    (x (* x y))
                                    (x1 z))
-            :in-theory (disable acl2::mod-of-*-of-mod))))
+            :in-theory (disable mod-of-*-of-mod))))
 
 ;; Disabled by default for speed
 (defthmd equal-when-equal-of-floors-and-equal-of-mods
@@ -857,3 +845,15 @@
                 (integerp i))
            (equal (floor i j)
                   (/ (- i k) j))))
+
+(defthm mod-of-+-same-three
+  (implies (and (rationalp x)
+                (rationalp y)
+                (rationalp z)
+                (<= 0 z))
+           (equal (mod (+ x y z) z)
+                  (mod (+ x y) z)))
+  :hints (("Goal" :in-theory (e/d (mod-sum-cases)
+                                  ;; these looped:
+                                  (prefer-positive-addends-equal
+                                   simplify-sums-equal)))))

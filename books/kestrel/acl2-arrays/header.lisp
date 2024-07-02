@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function header
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -58,3 +58,15 @@
   (equal (header name nil)
          nil)
   :hints (("Goal" :in-theory (enable header))))
+
+(defthmd normalize-header-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (header name l)
+                  (header :fake-name l)))
+  :hints (("Goal" :in-theory (enable header))))
+
+(defthm car-of-header
+  (equal (car (header name l))
+         (if (header name l)
+             :header
+           nil)))

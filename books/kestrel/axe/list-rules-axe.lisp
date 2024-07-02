@@ -17,10 +17,20 @@
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
 (include-book "kestrel/lists-light/nth-to-unroll" :dir :system)
+(include-book "kestrel/lists-light/prefixp-def" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
+(include-book "axe-syntax")
+(include-book "known-booleans")
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+
+(add-known-boolean prefixp)
+
+(def-constant-opener memberp)
+
+(defthmd consp-of-cons
+  (consp (cons a x)))
 
 ;;Only needeed for Axe.
 (defthmd equal-of-cons-alt
@@ -68,6 +78,21 @@
 (defthmd integerp-of-len
   (integerp (len x)))
 
+(defthmd acl2-numberp-of-len
+  (acl2-numberp (len x)))
+
+;; could be used outside axe, but we have better rules for fix
+;; deprecate: use fix-when-acl2-numberp and acl2-numberp-of-len
+(defthmd fix-of-len
+  (equal (fix (len x))
+         (len x)))
+
+(defthmd len-equal-impossible
+  (implies (and (syntaxp (quotep k))
+                (not (natp k)))
+           (equal (equal k (len x))
+                  nil)))
+
 ;rename
 (defthmd len-non-negative
   (not (< (len x) 0)))
@@ -83,8 +108,6 @@
               (equal (nthcdr (len y) x) z)))
   :hints (("Goal" :use (:instance equal-of-append)
            :in-theory (disable equal-of-append))))
-
-(def-constant-opener memberp)
 
 ;; Only needed for Axe
 (defthmd booleanp-of-items-have-len
@@ -133,3 +156,25 @@
   :hints (("Goal" :use (:instance nth-becomes-nth-to-unroll-helper
                                   (low 0)
                                   (high (+ -1 (len l)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd prefixp-when-longer-work-hard
+  (implies (work-hard (< (len x) (len y)))
+           (equal (prefixp y x)
+                  nil))
+  :hints (("Goal" :in-theory (enable prefixp))))
+
+(defthmd prefixp-when-not-shorter-work-hard
+  (implies (work-hard (<= (len x) (len y)))
+           (equal (prefixp y x)
+                  (equal (true-list-fix x) (true-list-fix y))))
+  :hints (("Goal" :in-theory (enable prefixp))))
+
+(defthmd true-listp-subst-rule
+  (implies (equal x (take free free2))
+           (equal (true-listp x)
+                  t)))
+
+(defthmd true-listp-of-take
+  (true-listp (take n x)))

@@ -53,7 +53,7 @@
             :in-theory (e/d (repeatbit slice
                              ;bvplus bvchop logtail
                                        )
-                            (;anti-slice BVPLUS-RECOLLAPSE
+                            (;anti-slice
                              BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                              BVCHOP-OF-MASK-OTHER
                              )))))

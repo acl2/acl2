@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -343,9 +343,9 @@
                                 (cdr proof-tree))))))
 
 (defun print-string-repeat (increment level col channel state)
-  (declare (type (signed-byte 30) col level))
+  (declare (type #.*fixnat-type* col level))
   (the2s
-   (signed-byte 30)
+   #.*fixnat-type*
    (if (= level 0)
        (mv col state)
      (mv-letc (col state)
@@ -460,7 +460,7 @@
             (pprogn (princ$ "     " channel state)
                     (print-string-repeat
                      increment
-                     (the-fixnum! level 'format-goal-tree-lst)
+                     (the-fixnat! level 'format-goal-tree-lst)
                      5 channel state))
             (mv-let (col state)
                     (fmt1 "<~x0 ~#1~[~/more ~]subgoal~#2~[~/s~]>~%"
@@ -505,7 +505,7 @@
                           (cons #\1 (cons fanout 3)))
                     0 channel state nil)
               (print-string-repeat increment
-                                   (the-fixnum! level 'format-goal-tree)
+                                   (the-fixnat! level 'format-goal-tree)
                                    col channel state)))
      (mv-letc
       (col state)
@@ -1670,7 +1670,7 @@
                '(GLOBAL-VALUE
                  LINEAR-LEMMAS
                  FORWARD-CHAINING-RULES
-                 ELIMINATE-DESTRUCTORS-RULE
+                 ELIMINATE-DESTRUCTORS-RULES
                  COARSENINGS
                  CONGRUENCES
                  RECOGNIZER-ALIST
@@ -1886,7 +1886,6 @@
   (cond
    ((endp alist) nil)
    ((and (stringp (car (car alist)))
-         (standard-string-p (car (car alist)))
          (member-string-equal (car (car alist))
                               *tracked-warning-summaries*))
     (clear-warning-summaries-alist (cdr alist)))
@@ -4764,20 +4763,6 @@
                     (chk-theory-expr-value@par (cdr trans-ans) wrld expr ctx state)
                     (value@par (runic-theory (cdr trans-ans) wrld)))))))))
 
-(defun append-strip-cars (x y)
-
-; This is (append (strip-cars x) y).
-
-  (cond ((null x) y)
-        (t (cons (car (car x)) (append-strip-cars (cdr x) y)))))
-
-(defun append-strip-cdrs (x y)
-
-; This is (append (strip-cdrs x) y).
-
-  (cond ((null x) y)
-        (t (cons (cdr (car x)) (append-strip-cdrs (cdr x) y)))))
-
 (defun no-rune-based-on (runes symbols)
   (cond ((null runes) t)
         ((member-eq (base-symbol (car runes)) symbols)
@@ -4863,18 +4848,18 @@
 ; result and traffics in fixnums -- more efficient if you want the reversed
 ; result.
 
-  (declare (type (unsigned-byte 29) i)
+  (declare (type #.*fixnat-type* i)
            (xargs :guard (and (true-listp l)
                               (true-listp ac))))
   (cond ((zpf i)
          ac)
-        (t (first-n-ac-rev (the (unsigned-byte 29)
-                                (1- (the (unsigned-byte 29) i)))
+        (t (first-n-ac-rev (the #.*fixnat-type*
+                                (1- (the #.*fixnat-type* i)))
                            (cdr l)
                            (cons (car l) ac)))))
 
 (defun longest-common-tail-length-rec (old new len-old acc)
-  (declare (type (signed-byte 30) acc len-old))
+  (declare (type #.*fixnat-type* acc len-old))
   #-acl2-loop-only
   (when (eq old new)
     (return-from longest-common-tail-length-rec (+ len-old acc)))
@@ -5120,8 +5105,7 @@
                 'portcullis)))
         ((f-get-global 'certify-book-info state)
          nil)
-        ((not (member-eq (f-get-global 'guard-checking-on state)
-                         '(t :nowarn :all)))
+        ((gc-off1 (f-get-global 'guard-checking-on state))
          (and (not (global-val 'cert-replay wrld))
               'portcullis))
         (t nil)))
@@ -5292,9 +5276,9 @@
                           (let ((old (global-val 'skip-proofs-seen wrld)))
                             (or (not old)
 
-; In certify-book-fn we find a comment stating that "we are trying to record
-; whether there was a skip-proofs form in the present book, not merely on
-; behalf of an included book".  That is why here, we replace value
+; In certify-book-step-2 we find a comment stating that "we are trying to
+; record whether there was a skip-proofs form in the present book, not merely
+; on behalf of an included book".  That is why here, we replace value
 ; (:include-book ...) for 'skip-proofs-seen.
 
                                 (eq (car old) :include-book))))
@@ -6477,21 +6461,25 @@
                     (declare (ignore erp val))
                     state))))
 
-(defun print-ldd-formula-column ()
-  14)
+(defmacro print-ldd-formula-column (&optional (skip-ldd-n 'nil skip-ldd-n-p))
+  (cond (skip-ldd-n-p `(if ,skip-ldd-n 7 14))
+        (t '(if (eq (f-get-global 'script-mode state) 'skip-ldd-n)
+                7
+              14))))
 
 (defun print-ldd (ldd channel state)
 
 ; This is the general purpose function for printing out an ldd.
 
   (with-base-10
-   (let ((formula-col
-          (if (eq (access-ldd-class ldd) 'command)
-              (print-ldd-formula-column)
-            (+ (print-ldd-formula-column)
-               (access-ldd-n ldd))))
-         (status (access-ldd-status ldd)))
-     (declare (type (signed-byte 30) formula-col))
+   (let* ((skip-ldd-n (eq (f-get-global 'script-mode state) 'skip-ldd-n))
+          (formula-col
+           (if (eq (access-ldd-class ldd) 'command)
+               (print-ldd-formula-column skip-ldd-n)
+             (+ (print-ldd-formula-column skip-ldd-n)
+                (access-ldd-n ldd))))
+          (status (access-ldd-status ldd)))
+     (declare (type #.*fixnum-type* formula-col))
      (pprogn
       (princ$ (if (access-ldd-markp ldd)
                   (access-ldd-markp ldd)
@@ -6510,33 +6498,38 @@
       (let ((cur-col 5))
         (if (eq (access-ldd-class ldd) 'command)
             (mv-let
-             (col state)
-             (fmt1 "~c0~s1"
-                   (list
-                    (cons #\0 (cons (access-ldd-n ldd) 7))
-                    (cons #\1 (cond
-                               ((= (access-ldd-n ldd)
-                                   (absolute-to-relative-command-number
-                                    (max-absolute-command-number (w state))
-                                    (w state)))
-                                ":x")
-                               (t "  "))))
-                   cur-col channel state nil)
-             (declare (ignore col))
-             state)
+              (col state)
+              (let ((arg1 (cond
+                           ((= (access-ldd-n ldd)
+                               (absolute-to-relative-command-number
+                                (max-absolute-command-number (w state))
+                                (w state)))
+                            ":x")
+                           (t "  "))))
+                (if skip-ldd-n
+                    (fmt1 "~s1"
+                          (list (cons #\1 arg1))
+                          cur-col channel state nil)
+                  (fmt1 "~c0~s1"
+                        (list
+                         (cons #\0 (cons (access-ldd-n ldd) 7))
+                         (cons #\1 arg1))
+                        cur-col channel state nil)))
+              (declare (ignore col))
+              state)
           (spaces (- formula-col cur-col) cur-col channel state)))
       (mv-let
-       (form state)
-       (print-ldd-full-or-sketch (access-ldd-fullp ldd)
-                                 (access-ldd-form ldd)
-                                 state)
-       (fmt-ppr
-        form
-        (+f (fmt-hard-right-margin state) (-f formula-col))
-        0
-        formula-col channel state
-        (not (and (access-ldd-fullp ldd)
-                  (null (ld-evisc-tuple state))))))
+        (form state)
+        (print-ldd-full-or-sketch (access-ldd-fullp ldd)
+                                  (access-ldd-form ldd)
+                                  state)
+        (fmt-ppr
+         form
+         (+f (fmt-hard-right-margin state) (-f formula-col))
+         0
+         formula-col channel state
+         (not (and (access-ldd-fullp ldd)
+                   (null (ld-evisc-tuple state))))))
       (newline channel state)))))
 
 (defun print-ldds (ldds channel state)
@@ -8891,12 +8884,12 @@
 (defun get-guardsp (lst wrld)
 
 ; Note that get-guards always returns a list of untranslated terms as long as
-; lst and that if a guard is not specified (via either a :GUARD or :STOBJS XARG
-; declaration or a TYPE declaration) then *t* is used.  But in order to default
-; the verify-guards flag in defuns we must be able to decide whether no such
-; declaration was specified.  That is the role of this function.  It returns t
-; or nil according to whether at least one of the 5-tuples in lst specifies a
-; guard (or stobj) or a type.
+; lst and that if a guard is not specified (via either a :GUARD, :STOBJS, or
+; :DFS XARG declaration or a TYPE declaration) then *t* is used.  But in order
+; to default the verify-guards flag in defuns we must be able to decide whether
+; no such declaration was specified.  That is the role of this function.  It
+; returns t or nil according to whether at least one of the 5-tuples in lst
+; specifies a guard (or stobj) or a type.
 
 ; Thus, specification of a type is sufficient for this function to return t,
 ; even if :split-types t was specified.  If that changes, adjust :doc
@@ -9147,12 +9140,16 @@
                ((subsetp-eq (evens (cdar edcls)) keywords)
                 (chk-xargs-keywords1 (cdr edcls) keywords ctx state))
                (t (er soft ctx
-                      "The only acceptable XARGS keyword~#0~[ in this ~
-                       context is~/s in this context are~] ~&0.  Thus, ~
-                       the keyword~#1~[ ~&1 is~/s ~&1 are~] illegal."
+                      "The only acceptable XARGS keyword~#0~[ in this context ~
+                       is~/s in this context are~] ~&0.  Thus, the ~
+                       keyword~#1~[ ~&1 is~/s ~&1 are~] illegal.~#2~[~/  ~
+                       Perhaps you meant :HINTS instead of :MEASURE-HINTS.~]"
                       keywords
                       (set-difference-eq (evens (cdar edcls))
-                                         keywords)))))
+                                         keywords)
+                      (if (member-eq :measure-hints (evens (cdar edcls)))
+                          1
+                        0)))))
         (t (chk-xargs-keywords1 (cdr edcls) keywords ctx state))))
 
 (defun chk-xargs-keywords (lst keywords ctx state)
@@ -12732,7 +12729,7 @@
 ; arity for the style of the loop$ scion.
 
   (case-match term
-    (('do$ & & ('quote obj1) ('quote obj2) & & &)
+    (('do$ & & ('quote obj1) ('quote obj2) & &)
      (and (well-formed-lambda-objectp obj1 wrld)
           (well-formed-lambda-objectp obj2 wrld)
           (equal (length (lambda-object-formals obj1)) 1)
@@ -13146,12 +13143,13 @@
 ; establishes that all of the guards in term are satisfied.  We discuss the
 ; second result in the next paragraph.  The third result is a ttree justifying
 ; the simplification we do and extending ttree.  Stobj-optp indicates whether
-; we are to optimize away stobj recognizers.  Call this with stobj-optp = t
-; only when it is known that the term in question has been translated with full
-; enforcement of the stobj rules.  Clause is the list of accumulated, negated
-; tests passed so far on this branch, possibly enhanced by facts known about
-; evaluation as discussed in the next paragraph.  Clause is maintained in
-; reverse order, but reversed before we return it.
+; we are to optimize away stobj recognizers and dfp calls.  Call this with
+; stobj-optp = t only when it is known that the term in question has been
+; translated with full enforcement of the stobj rules (which include df
+; restrictions).  Clause is the list of accumulated, negated tests passed so
+; far on this branch, possibly enhanced by facts known about evaluation as
+; discussed in the next paragraph.  Clause is maintained in reverse order, but
+; reversed before we return it.
 
 ; The second result is a list of terms, which we think of as an "environment"
 ; or "env" for short.  To understand the environment result, consider what we
@@ -16032,11 +16030,11 @@
                                       hist pspv ctx))))))))
           (t (er@par soft ctx
                "When you give a hint that is a symbol, it must be a function ~
-                symbol of three, four or seven arguments (not involving STATE ~
-                or other single-threaded objects) that returns a single ~
-                value.  The allowable arguments are ID, CLAUSE, WORLD, ~
-                STABLE-UNDER-SIMPLIFICATIONP, HIST, PSPV, and CTX. See :DOC ~
-                computed-hints.  ~x0 is not such a symbol."
+                symbol of three, four or seven ordinary arguments (so, not ~
+                involving STATE or other single-threaded objects) that ~
+                returns a single ordinary value.  The allowable arguments are ~
+                ID, CLAUSE, WORLD, STABLE-UNDER-SIMPLIFICATIONP, HIST, PSPV, ~
+                and CTX. See :DOC computed-hints.  ~x0 is not such a symbol."
                term))))
    (t
     (er-let*@par
@@ -18268,14 +18266,30 @@
                            name key val)))
             ((if mvp (car ev-result) ev-result)
              (value nil))
-            ((and mvp (cadr ev-result))
+            ((and mvp
+                  (msgp (cadr ev-result)))
              (er soft ctx
                  "~@0"
                  (cadr ev-result)))
             (t (er soft ctx
                    "The TABLE :guard for ~x0 disallows the combination of key ~
-                   ~x1 and value ~x2.  The :guard is ~x3.  See :DOC table."
-                   name key val (untranslate term t wrld)))))
+                    ~x1 and value ~x2.  The :guard~#3~[~/~@4~] is ~x5.  See :DOC ~
+                    table.~#6~[~/~@7~]"
+                   name key val
+                   (if mvp 1 0)
+                   ", representing multiple values (mv okp msg),"
+                   (untranslate term t wrld)
+                   (if (and mvp ; not (msgp (cadr ev-result))
+                            (cadr ev-result))
+                       1
+                     0)
+                   (msg "  Note:  You are seeing this generic error message ~
+                         even though the TABLE guard for ~x0 evaluated to ~
+                         multiple values ~x1, because the second value does ~
+                         not satisfy ~x2."
+                        name
+                        (list 'mv (car ev-result) (cadr ev-result))
+                        'msgp)))))
          (if (and (eq name 'acl2-defaults-table)
                   (eq key :ttag))
              (chk-acceptable-ttag val nil ctx wrld state)
@@ -18590,19 +18604,23 @@
                           (equal stobjs-out '(nil nil))))
                  (er soft 'table
                      "The table :guard must return either one or two ~
-                      values~@0, but ~x1 ~@2."
+                      values~@0; but ~x1 ~@2."
                      (if (all-nils stobjs-out)
                          ""
-                       ", none of them STATE or stobjs")
+                       ", none of them STATE, other stobjs, or :DF values")
                      term
                      (if (cdr stobjs-out)
                          (msg "has output signature"
                               (cons 'mv stobjs-out))
-                       (assert$
 ; See comment above about stobj creators.
-                        (eq (car stobjs-out) 'state)
-                        (msg "returns STATE"
-                             (car stobjs-out))))))
+                       (msg "returns ~#0~[a :DF value~/STATE~]"
+                            (if (eq (car stobjs-out) :DF)
+                                0
+                              (assert$
+                               (eq (car stobjs-out) 'state)
+                               1))))))
+; See comment above about stobj creators.
+
                 (t
 
 ; Known-stobjs includes only STATE.  No variable other than STATE is treated

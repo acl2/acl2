@@ -42,10 +42,13 @@
                                 (rewrite 't)
                                 (repeat '1000)
                                 (backchain-limit '1000)
+                                (untrans-result 't)
                                 (state 'state))
   :mode :program
   (b* (((When (atom hints)) (value term))
-       ((er next-term) (acl2::easy-simplify-term-fn term hyp (car hints) equiv normalize rewrite repeat backchain-limit state)))
+       ((er next-term)
+        (acl2::easy-simplify-term-fn term hyp (car hints) equiv normalize
+                                     rewrite repeat backchain-limit untrans-result state)))
     (easy-simplify-sequence
      next-term (cdr hints)
      :hyp hyp :equiv equiv :normalize normalize :rewrite rewrite :repeat repeat :backchain-limit backchain-limit)))
@@ -177,8 +180,14 @@
          (margin (min (nfix (and (boundp-global 'fmt-hard-right-margin state)
                                  (f-get-global 'fmt-hard-right-margin state)))
                       120)))
-       (and lower-bound (cw "Lower bound: ~t0~s1~%" (- margin (length lower-str)) lower-str))
-       (and upper-bound (cw "Upper bound: ~t0~s1~%" (- margin (length upper-str)) upper-str)))))
+       (and lower-bound
+            (cw "Lower bound: ~t0~s1~%"
+                (nfix (- margin (length lower-str)))
+                lower-str))
+       (and upper-bound
+            (cw "Upper bound: ~t0~s1~%"
+                (nfix (- margin (length upper-str)))
+                upper-str)))))
   ///
   (defattach (defbounds-print-case-bounds defbounds-print-case-bounds-default)))
 
@@ -459,7 +468,8 @@ rewrite-bounds) to find an upper and lower bound for the resulting expression.
 Then it replicates these steps in a @('defthm') to prove the bounds, creating a
 linear rule by default (but the rule-classes may be overridden).</p>")
 
-
+; Matt K. mod 2/2/2024 to avoid ACL2(p) error:
+(set-waterfall-parallelism nil)
 
 ;; Move to a tests book
 (local
@@ -552,3 +562,121 @@ linear rule by default (but the rule-classes may be overridden).</p>")
              :user-bounds ((:free (a) (>= (foo a) 3))))
 
            (assert-event (equal *foo-square-good2-lower-bound* 9)))))))))
+
+
+(local
+ (encapsulate nil
+   (local
+    (progn
+
+(defund foo (x)
+  (- (* x x) (* 3 x)))
+
+(encapsulate nil
+  (local
+   (progn
+(def-bounds foo-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo))))
+
+(assert-event (and (equal *foo-lower-bound* -8)
+                   (equal *foo-upper-bound* 10)))
+)))
+
+
+(encapsulate nil
+  (local
+   (progn
+(def-bounds foo-case-split-2-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo)))
+  :cases ((:ranges x 3)))
+
+(assert-event (and (equal *foo-case-split-2-lower-bound* -5)
+                   (equal *foo-case-split-2-upper-bound* 7)))
+)))
+
+(encapsulate nil
+  (local
+   (progn
+(def-bounds foo-case-split-128-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo)))
+  :cases ((:ranges-from-to-by x 2 4 1/64))
+  :integerp nil)
+
+(assert-event (and (equal *foo-case-split-128-lower-bound* -131/64)
+                   (equal *foo-case-split-128-upper-bound* 259/64)))
+)))
+
+(encapsulate nil
+  (local
+   (progn
+
+(defthmd my-factor
+  (equal (+ (- (* 3 x)) (* x x))
+         (* x (- x 3))))
+
+(local (in-theory (disable distributivity)))
+
+(encapsulate nil
+  (local
+   (progn
+
+(def-bounds foo-better-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo))
+               (:in-theory (enable my-factor))))
+
+(assert-event (and (equal *foo-better-lower-bound* -4)
+                   (equal *foo-better-upper-bound* 4)))
+)))
+
+
+(encapsulate nil
+  (local
+   (progn
+(def-bounds foo-better-case-split-2-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo))
+               (:in-theory (enable my-factor)))
+  :cases ((:ranges x 3)))
+
+(assert-event (and (equal *foo-better-case-split-2-lower-bound* -3)
+                   (equal *foo-better-case-split-2-upper-bound* 4)))
+)))
+
+
+(encapsulate nil
+  (local
+   (progn
+(def-bounds foo-better-case-split-128-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo))
+               (:in-theory (enable my-factor)))
+  :cases ((:ranges-from-to-by x 2 4 1/64))
+  :integerp nil)
+
+(assert-event (and (equal *foo-better-case-split-128-lower-bound* -129/64)
+                   (equal *foo-better-case-split-128-upper-bound* 4)))
+)))
+)))
+))))

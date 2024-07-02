@@ -16,7 +16,7 @@
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
 ;(include-book "../utilities/basic")
-(include-book "kestrel/utilities/clean-up-lambdas" :dir :system) ; for drop-unused-lambda-bindings
+(include-book "kestrel/terms-light/clean-up-lambdas" :dir :system) ; for drop-unused-lambda-bindings
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
@@ -45,6 +45,7 @@
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
 
 (in-theory (disable ilks-plist-worldp
                     plist-worldp)) ;move
@@ -1423,6 +1424,14 @@
                 (body (remove-guard-holders-and-clean-up-lambdas body) ;(strip-return-last body)
                       )
                 (body (drop-unused-lambda-bindings body))
+                (clique (true-list-fix ; drop?
+                          (recursivep rule-name nil wrld))) ; todo: consider :definition rules and the flg option here
+                (body-fns (all-fnnames body))
+                (- (if (member-eq rule-name body-fns)
+                       (cw "Warning: Make safe openers for recursive function ~x0.~%" rule-name)
+                     (if (intersection-eq clique body-fns)
+                         (cw "Warning: Make safe openers for mut. rec. function ~x0.~%" rule-name)
+                       nil)))
                 (lhs (cons rule-name formals))
                 ;; Make a rule equating a call of the function (on its formals)
                 ;; with its body (note: for recursive functions, it may be
@@ -1539,6 +1548,7 @@
     (mv (erp-nil)
         (union-equal rules rule-set))))
 
+;; this is really axe-rule-setsp:
 (defforall-simple axe-rule-listp)
 (verify-guards all-axe-rule-listp)
 

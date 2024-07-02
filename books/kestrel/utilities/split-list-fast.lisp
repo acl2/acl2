@@ -41,7 +41,7 @@
                 (<= (len tail) (len lst)))
            (< (len (mv-nth 1 (split-list-fast-aux lst tail acc)))
               (len lst)))
-  :hints (("Goal" :in-theory (e/d (len) ()))))
+  :hints (("Goal" :in-theory (enable len))))
 
 (defthm len-of-split-list-fast-aux-bound3
   (implies (and ;(consp tail)
@@ -49,7 +49,7 @@
                 (<= (len tail) (len lst)))
            (< (len (mv-nth 0 (split-list-fast-aux lst tail acc)))
               (+ (len lst) (len acc))))
-  :hints (("Goal" :in-theory (e/d (len) ()))))
+  :hints (("Goal" :in-theory (enable len))))
 
 (defthm split-list-fast-aux-len-theorem
   (implies (<= (len tail) (len lst))
@@ -104,11 +104,29 @@
   :hints (("Goal" :use (:instance len-of-split-list-fast-aux-bound2 (tail lst) (acc nil))
            :in-theory (e/d (split-list-fast) (len-of-split-list-fast-aux-bound2)))))
 
+(defthm len-of-split-list-fast-bound-linear
+  (implies (and ;(consp lst)
+                (consp (cdr lst)))
+           (< (len (mv-nth 1 (split-list-fast lst)))
+              (len lst)))
+  :rule-classes :linear
+  :hints (("Goal" :use (:instance len-of-split-list-fast-aux-bound2 (tail lst) (acc nil))
+           :in-theory (e/d (split-list-fast) (len-of-split-list-fast-aux-bound2)))))
+
 (defthm len-of-split-list-fast-bound2
   (implies (and ;(consp lst)
                 (consp (cdr lst)))
            (< (len (mv-nth 0 (split-list-fast lst)))
               (len lst)))
+  :hints (("Goal" :use (:instance len-of-split-list-fast-aux-bound3 (tail lst) (acc nil))
+           :in-theory (e/d (split-list-fast) (len-of-split-list-fast-aux-bound3)))))
+
+(defthm len-of-split-list-fast-bound2-linear
+  (implies (and ;(consp lst)
+                (consp (cdr lst)))
+           (< (len (mv-nth 0 (split-list-fast lst)))
+              (len lst)))
+  :rule-classes :linear
   :hints (("Goal" :use (:instance len-of-split-list-fast-aux-bound3 (tail lst) (acc nil))
            :in-theory (e/d (split-list-fast) (len-of-split-list-fast-aux-bound3)))))
 

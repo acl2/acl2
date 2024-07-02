@@ -349,7 +349,7 @@ data necessary to compute the pipeline, but not the unrolled cycle FSM or
 pipeline itself.  It can be shown that an @(see svtv-run) of an SVTV is equal
 to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
 "
-  ((fsm base-fsm-p "The FSM to be run")
+  ((fsm fsm-p "The FSM to be run")
    (cycle-phases svtv-cyclephaselist-p
                  "The list of @(see svtv-cyclephase) objects representing the clock cycle")
    (namemap svtv-name-lhs-map-p "Mapping from namemap names to @(see lhs) objects in terms of FSM signal names")
@@ -365,7 +365,7 @@ to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
        (svtv-fsm-ins (svex-alistlist-eval x.in-alists pipe-env))
        (svtv-fsm-tests (svex-alistlist-eval x.override-test-alists pipe-env))
        (svtv-fsm-vals (svex-alistlist-eval x.override-val-alists pipe-env))
-       (cycle-ins (svtv-fsm-to-base-fsm-inputs
+       (cycle-ins (svtv-fsm-to-fsm-inputs
                    (take (len (svtv-probealist-outvars x.probes))
                          svtv-fsm-ins)
                    svtv-fsm-vals svtv-fsm-tests x.namemap)))
@@ -401,21 +401,165 @@ to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
   :parents (svtv-spec)
   :short "Run an @(see svtv-spec) object and return its outputs"
   :returns (pipe-out svex-env-p)
-  :guard (and (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm x)))))
+  :guard (and (not (hons-dups-p (svex-alist-keys (fsm->nextstate (svtv-spec->fsm x)))))
               (equal (svex-alist-keys (svtv-spec->initst-alist x))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm x))))
+                     (svex-alist-keys (fsm->nextstate (svtv-spec->fsm x))))
               (svtv-cyclephaselist-has-outputs-captured (svtv-spec->cycle-phases x)))
   (b* (((svtv-spec x))
        (phase-ins (svtv-spec-pipe-env->phase-envs x pipe-env))
        (full-ins (svex-envlist-x-override phase-ins base-ins))
        (full-initst (svex-env-x-override (svex-alist-eval x.initst-alist pipe-env) initst))
-       (phase-outs (mbe :logic (base-fsm-eval full-ins full-initst x.fsm)
-                        :exec (base-fsm-eval full-ins (svex-env-extract (svex-alist-keys (base-fsm->nextstate x.fsm)) full-initst)
+       (phase-outs (mbe :logic (fsm-eval full-ins full-initst x.fsm)
+                        :exec (fsm-eval full-ins (svex-env-extract (svex-alist-keys (fsm->nextstate x.fsm)) full-initst)
                                              x.fsm))))
     (svtv-spec-phase-outs->pipe-out x phase-outs))
   ///
   (defret keys-of-<fn>
     (equal (alist-keys pipe-out)
            (alist-keys (svtv-spec->probes x)))))
+
+
+
+
+
+
+
+
+(define svtv-spec-pipe-env->cycle-envs ((x svtv-spec-p)
+                                        (pipe-env svex-env-p))
+  :returns (cycle-envs svex-envlist-p)
+  (b* (((svtv-spec x))
+       (svtv-fsm-ins (svex-alistlist-eval x.in-alists pipe-env))
+       (svtv-fsm-tests (svex-alistlist-eval x.override-test-alists pipe-env))
+       (svtv-fsm-vals (svex-alistlist-eval x.override-val-alists pipe-env)))
+    (svtv-fsm-to-fsm-inputs
+     (take (len (svtv-probealist-outvars x.probes))
+           svtv-fsm-ins)
+     svtv-fsm-vals svtv-fsm-tests x.namemap))
+  ///
+
+  (defret len-of-<fn>
+    (b* (((svtv-spec x)))
+      (equal (len cycle-envs)
+             (len (svtv-probealist-outvars x.probes)))))
+  
+  (defretd svtv-spec-pipe-env->phase-envs-in-terms-of-cycle-envs
+    (equal (svtv-spec-pipe-env->phase-envs x pipe-env)
+           (svtv-cycle-run-fsm-inputs cycle-envs (svtv-spec->cycle-phases x)))
+    :hints(("Goal" :in-theory (enable svtv-spec-pipe-env->phase-envs)))))
+
+
+(define svtv-spec-cycle-outs->pipe-out ((x svtv-spec-p) (cycle-outs svex-envlist-p))
+  :returns (pipe-out svex-env-p)
+  (b* (((svtv-spec x))
+       (svtv-fsm-outs (svtv-name-lhs-map-eval-list x.namemap cycle-outs)))
+    (svtv-probealist-extract x.probes svtv-fsm-outs))
+  ///
+  (defret keys-of-<fn>
+    (equal (alist-keys pipe-out)
+           (alist-keys (svtv-spec->probes x))))
+
+  (defthmd svtv-spec-phase-outs->pipe-out-in-terms-of-cycle-outs
+    (equal (svtv-spec-phase-outs->pipe-out x phase-outs)
+           (svtv-spec-cycle-outs->pipe-out
+            x (svex-envlist-phase-outputs-extract-cycle-outputs
+               (svtv-spec->cycle-phases x) phase-outs)))
+    :hints(("Goal" :in-theory (enable svtv-spec-phase-outs->pipe-out)))))
+
+
+(local (defthm svex-envlist-x-override-of-append
+         (implies (equal (len x1) (len y1))
+                  (equal (svex-envlist-x-override (append x1 x2) (append y1 y2))
+                         (append (svex-envlist-x-override x1 y1) (svex-envlist-x-override x2 y2))))
+         :hints(("Goal" :in-theory (enable svex-envlist-x-override)))))
+
+(local (defthm svex-envlists-equivalent-of-append
+         (implies (equal (len x1) (len y1))
+                  (equal (svex-envlists-equivalent (append x1 x2) (append y1 y2))
+                         (and (svex-envlists-equivalent x1 y1)
+                              (svex-envlists-equivalent x2 y2))))
+         :hints(("Goal" :in-theory (enable svex-envlists-equivalent-redef
+                                           svex-envlist-x-override)
+                 :induct (svex-envlist-x-override x1 y1)))))
+
+
+(defthm svex-env-x-override-same
+  (svex-envs-equivalent (svex-env-x-override a a)
+                        a)
+  :hints(("Goal" :in-theory (enable svex-envs-equivalent))))
+
+(defthm svex-env-x-override-of-append-same
+  (svex-envs-equivalent (svex-env-x-override (append a b) (append a c))
+                        (append a (svex-env-x-override b c)))
+  :hints(("Goal" :in-theory (enable svex-envs-equivalent))))
+
+(defthm svex-envlist-x-override-of-cycle-step-fsm-inputs
+  (svex-envs-equivalent (svex-env-x-override (svtv-cycle-step-fsm-inputs pipe-cycle-ins cycle-phase)
+                                             (svtv-cycle-step-fsm-inputs orig-cycle-ins cycle-phase))
+                        (svtv-cycle-step-fsm-inputs (svex-env-x-override pipe-cycle-ins orig-cycle-ins) cycle-phase))
+  :hints(("Goal" :in-theory (enable svtv-cycle-step-fsm-inputs svex-envlist-x-override svex-envlists-equivalent-redef))))
+
+(defthm svex-envlist-x-override-of-cycle-fsm-inputs
+  (svex-envlists-equivalent (svex-envlist-x-override (svtv-cycle-fsm-inputs pipe-cycle-ins cycle-phases)
+                                                     (svtv-cycle-fsm-inputs orig-cycle-ins cycle-phases))
+                            (svtv-cycle-fsm-inputs (svex-env-x-override pipe-cycle-ins orig-cycle-ins) cycle-phases))
+  :hints(("Goal" :in-theory (enable svtv-cycle-fsm-inputs svex-envlist-x-override svex-envlists-equivalent-redef))))
+
+(defthm svex-envlist-x-override-of-cycle-run-fsm-inputs
+  (svex-envlists-equivalent (svex-envlist-x-override (svtv-cycle-run-fsm-inputs pipe-cycle-ins cycle-phases)
+                                                     (svtv-cycle-run-fsm-inputs orig-cycle-ins cycle-phases))
+                            (svtv-cycle-run-fsm-inputs (svex-envlist-x-override pipe-cycle-ins orig-cycle-ins) cycle-phases))
+  :hints(("Goal" :in-theory (enable svtv-cycle-run-fsm-inputs svex-envlist-x-override)
+          :induct t
+          :do-not-induct t)))
+
+
+(encapsulate nil
+  (local (include-book "arithmetic/top" :dir :system))
+  (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+
+  (local (defthm outputs-captured-implies-consp
+           (implies (svtv-cyclephaselist-has-outputs-captured cycle-phases)
+                    (consp cycle-phases))
+           :rule-classes :forward-chaining))
+  
+  (defthm fsm-eval-of-fsm-to-cycle
+    (implies (and (svtv-cyclephaselist-has-outputs-captured cycle-phases))
+             (equal (fsm-eval ins initst (fsm-to-cycle cycle-phases x simp))
+                    (svex-envlist-phase-outputs-extract-cycle-outputs
+                     cycle-phases
+                     (fsm-eval
+                      (svtv-cycle-run-fsm-inputs ins cycle-phases)
+                      initst x))))
+    :hints ((acl2::equal-by-nths-hint)
+            '(:in-theory (enable mod)))))
+
+(define svtv-spec->cycle-fsm ((x svtv-spec-p))
+  :guard (not (hons-dups-p (svex-alist-keys (fsm->nextstate (svtv-spec->fsm x)))))
+  :returns (cycle fsm-p)
+  (b* (((svtv-spec x)))
+    (fsm-to-cycle x.cycle-phases x.fsm nil))
+  ///
+  (defthmd svtv-spec-run-in-terms-of-cycle-fsm
+    (implies (svtv-cyclephaselist-has-outputs-captured (svtv-spec->cycle-phases x))
+             (equal (svtv-spec-run x pipe-env :base-ins (svtv-cycle-run-fsm-inputs cycle-base-ins
+                                                                                   (svtv-spec->cycle-phases x))
+                                   :initst initst)
+                    (b* ((cycle-envs-from-pipe (svtv-spec-pipe-env->cycle-envs x pipe-env))
+                         (cycle-envs-full (svex-envlist-x-override cycle-envs-from-pipe cycle-base-ins))
+                         (initst-from-pipe (svex-alist-eval (svtv-spec->initst-alist x) pipe-env))
+                         (initst-full (svex-env-x-override initst-from-pipe initst))
+                         (cycle-outs (fsm-eval cycle-envs-full initst-full (svtv-spec->cycle-fsm x))))
+                      (svtv-spec-cycle-outs->pipe-out x cycle-outs))))
+    :hints(("Goal" :in-theory (enable svtv-spec-run
+                                      svtv-spec-pipe-env->phase-envs-in-terms-of-cycle-envs svtv-spec-phase-outs->pipe-out-in-terms-of-cycle-outs))))
+
+  (defthm nextstate-keys-of-svtv-spec->cycle-fsm
+    (equal (svex-alist-keys (fsm->nextstate (svtv-spec->cycle-fsm x)))
+           (svex-alist-keys (fsm->nextstate (svtv-spec->fsm x))))))
+
+
+
+
 
 

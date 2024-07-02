@@ -965,6 +965,8 @@
         nil)
        ((linear-lemma lemma))
        ((unless (and (natp lemma.nume)
+; Matt K. addition 4/2024 to accommodate stronger guard on enabled-numep.
+                     (<= lemma.nume (fixnum-bound))
                      (enabled-numep lemma.nume ens)))
         nil)
        ((unless (and (pseudo-termp lemma.concl)
@@ -1528,18 +1530,21 @@
 ;;                        )))
 
 (encapsulate
-  (((boundrw-rewrite-trace * * state) => *
-    :formals (x new-x state)
-    :guard (and (pseudo-termp x) (pseudo-termp new-x))))
-  (local (defun boundrw-rewrite-trace (x new-x state)
+  (((boundrw-rewrite-trace * * * state) => *
+    :formals (x upper lower state)
+    :guard (and (pseudo-termp x)
+                (maybe-rationalp upper)
+                (maybe-rationalp lower))))
+  (local (defun boundrw-rewrite-trace (x upper lower state)
            (declare (xargs :stobjs state)
-                    (ignorable x new-x state))
+                    (ignorable x upper lower state))
            nil)))
 
 (define boundrw-rewrite-trace-default ((x pseudo-termp)
-                                       (new-x pseudo-termp)
+                                       (upper maybe-rationalp)
+                                       (lower maybe-rationalp)
                                        state)
-  (declare (ignore x new-x state))
+  (declare (ignore x upper lower state))
   nil
   ///
   (defattach boundrw-rewrite-trace boundrw-rewrite-trace-default))
@@ -2518,7 +2523,10 @@
             x
             ((binary-+ (:? a) (:? b))
              (b* (((mv a-upper a-lower) (constbounds-rec a upper-bound-substs lower-bound-substs))
-                  ((mv b-upper b-lower) (constbounds-rec b upper-bound-substs lower-bound-substs)))
+                  (- (boundrw-rewrite-trace a a-upper a-lower state))
+                  ((mv b-upper b-lower) (constbounds-rec b upper-bound-substs lower-bound-substs))
+                  (- (and (not (treematch b ((binary-+ (:? a) (:? b)) t) (& nil)))
+                          (boundrw-rewrite-trace b b-upper b-lower state))))
                (mv (and a-upper b-upper (+ a-upper b-upper))
                    (and a-lower b-lower (+ a-lower b-lower)))))
             ((unary-- (:? a))
@@ -4032,6 +4040,8 @@
        ((unless (and (pseudo-termp x.concl)
                      (not x.hyps)
                      (natp x.nume)
+; Matt K. addition 4/2024 to accommodate stronger guard on enabled-numep.
+                     (<= x.nume (fixnum-bound))
                      (enabled-numep x.nume ens)))
         (mv upper-bound-acc lower-bound-acc))
        ((mv shape-ok negatedp lhs rhs) ;; (< lhs rhs) or (not (< lhs rs))

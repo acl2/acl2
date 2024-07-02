@@ -1,7 +1,7 @@
 ; A formal model of the JVM
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,6 +45,7 @@
 (include-book "locals")
 (include-book "float-to-bits")
 (include-book "array-building")
+(include-book "kestrel/booleans/bool-fix-def" :dir :system)
 (include-book "kestrel/bv/defs-arith" :dir :system)
 (include-book "kestrel/bv/bvsx-def" :dir :system)
 (include-book "kestrel/bv/defs" :dir :system) ;overkill
@@ -3927,7 +3928,7 @@
       nil)))
 
 ;returns a method-info/class-name pair, or nil
-(defun lookup-method-in-classes (method-id class-names class-table)
+(defund lookup-method-in-classes (method-id class-names class-table)
   (declare (xargs :guard (and (method-idp method-id)
                               (true-listp class-names)
                               (all-class-namesp class-names)

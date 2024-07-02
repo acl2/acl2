@@ -288,7 +288,7 @@
        (used-vars            (4v-sexpr-vars-1pass-list sexprs))  ;; a set
        (bound-vars           (set::mergesort (alist-keys onoff)))
        (unbound-vars         (set::difference used-vars bound-vars))
-       ((unless (set::empty unbound-vars))
+       ((unless (set::emptyp unbound-vars))
         (raise "variables used in relevant sexprs, but not bound in onoff: ~x0."
                unbound-vars))
        ;; Else looks okay, go ahead and translate.  We'll at least do

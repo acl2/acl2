@@ -117,17 +117,17 @@ data last modified: [2015-06-09 Tue]
   (declare (xargs :guard (symbolp enum)))
   `((defund ,name (m seed)
      (declare (ignorable m))
-     (declare (type (unsigned-byte 31) seed))
+     (declare (type (unsigned-byte 63) seed))
      (declare (xargs :verify-guards nil ;todo
                      :mode :program ;todo
                      :guard (and (natp m)
-                                 (unsigned-byte-p 31 seed))))
+                                 (unsigned-byte-p 63 seed))))
 ; 12 July 2013 - adding uniform random seed distribution to cgen enum
 ; we will take advantage of the recent addition for an uniform
 ; interface to both infinite and finite enum (defconsts)
      (mv-let (n seed)
              (random-natural-seed seed)
-             (mv (,enum n) (the (unsigned-byte 31) seed))))))
+             (mv (,enum n) (the (unsigned-byte 63) seed))))))
 
 (defun defdata-attach/equiv (name kwd-alist verbosep wrld)
   (declare (ignorable name kwd-alist verbosep wrld))

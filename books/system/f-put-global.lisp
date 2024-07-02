@@ -75,6 +75,7 @@
                 (symbolp key)
                 (cond ((eq key 'current-acl2-world) (state-p1-good-worldp val))
                       ((eq key 'timer-alist) (timer-alistp val))
+                      ((eq key 'print-base) (print-base-p val))
                       (t)))
            (state-p1 (put-global key val state)))
   :hints(("Goal" :in-theory (enable state-p1 state-p1-good-worldp))))

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function compress11
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,8 +25,7 @@
    :hints (("Goal" :in-theory (enable assoc-equal)))))
 
 (defthm assoc-equal-of-header-and-compress11
-  (implies (and (integerp i)
-                (integerp n))
+  (implies (integerp i)
            (equal (assoc-equal :header (compress11 name l i n default))
                   nil))
   :hints (("Goal" :in-theory (enable compress11))))
@@ -37,6 +36,12 @@
                  nil))
   :hints (("Goal" :in-theory (enable compress11))))
 
+(defthm dimensions-of-compress11
+  (implies (integerp i)
+           (equal (dimensions name (compress11 name2 array i n default))
+                 nil))
+  :hints (("Goal" :in-theory (enable compress11))))
+
 (defthm default-of-compress11
   (implies (integerp i)
            (equal (default name (compress11 name2 array i n default))
@@ -44,9 +49,10 @@
   :hints (("Goal" :in-theory (enable compress11))))
 
 (defthm alistp-of-compress11
-  (implies (alistp array)
+  (implies (or (alistp array)
+               (not default))
            (alistp (compress11 name array i n default)))
-  :hints (("Goal" :in-theory (enable compress11))))
+  :hints (("Goal" :induct t :in-theory (enable compress11))))
 
 (defthm assoc-equal-of-compress11-when-too-small
   (implies (< index i)
@@ -56,7 +62,8 @@
 
 (defthm bounded-integer-alistp-of-compress11
   (implies (and (bounded-integer-alistp array n)
-                (natp n))
+                ;(natp n)
+                )
            (bounded-integer-alistp (compress11 name array i index default) n))
   :hints (("Goal" :in-theory (e/d (compress11 bounded-integer-alistp
                                               assoc-equal-forward-when-bounded-integer-alistp)
@@ -70,10 +77,11 @@
                 (< index n)
                 (integerp i)
                 (integerp index)
-                (integerp n)
+                ;(integerp n)
                 )
            (equal (assoc-equal index (compress11 name l i n default))
-                  (if (equal default (cdr (assoc-equal index l)))
+                  (if (or (not (integerp (- n i)))
+                          (equal default (cdr (assoc-equal index l))))
                       nil
                     (assoc-equal index l))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -85,7 +93,7 @@
                 (<= i index)
                 (integerp i)
                 (integerp index)
-                (integerp n)
+;                (integerp n)
                 )
            (equal (assoc-equal index (compress11 name l i n default))
                   nil))
@@ -95,15 +103,28 @@
 (defthm assoc-equal-of-compress11-both
   (implies (and (integerp i)
                 (integerp index)
-                (integerp n))
+                ;(integerp n)
+                )
            (equal (assoc-equal index (compress11 name l i n default))
                   (if (or (< index i)
-                          (<= n index))
+                          (<= n index)
+                          (not (integerp (- n i))))
                       nil
                     (if (equal default (cdr (assoc-equal index l)))
                         nil
                       (assoc-equal index l)))))
   :hints (("Goal" :use (assoc-equal-of-compress11-too-high
                         (:instance assoc-equal-of-compress11))
-           :in-theory (e/d ()
-                           (assoc-equal)))))
+           :in-theory (disable assoc-equal))))
+
+(defthmd normalize-compress11-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (compress11 name l i n default)
+                  (compress11 :fake-name l i n default)))
+  :hints (("Goal" :in-theory (enable compress11))))
+
+(defthm no-duplicatesp-of-strip-cars-of-compress11
+  (implies (integerp i)
+           (no-duplicatesp (strip-cars (compress11 name l i n default))))
+  :hints (("Goal" :in-theory (enable compress11
+                                     member-equal-of-strip-cars-iff-assoc-equal))))

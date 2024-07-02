@@ -158,106 +158,138 @@
       x86))
 
 (def-inst x86-call-FF/2-Op/En-M
-          ;; Call near, absolute indirect, address given in r/m16/32/64.
-          ;; Op/En: M
-          ;; FF/2 r/m16
-          ;; FF/2 r/m32
-          ;; FF/2 r/m64
-          ;; Note that FF/2 r/m16 and r/m32 are N.E. in 64-bit mode.
 
-          :parents (one-byte-opcodes)
+  ;; Call near, absolute indirect, address given in r/m16/32/64.
+  ;; Op/En: M
+  ;; FF/2 r/m16
+  ;; FF/2 r/m32
+  ;; FF/2 r/m64
+  ;; Note that FF/2 r/m16 and r/m32 are N.E. in 64-bit mode.
 
-          :guard-hints (("Goal" :in-theory (e/d (riml08
-                                                  riml32
-                                                  select-address-size)
-                                                ())))
+  :parents (one-byte-opcodes)
 
-          :returns (x86 x86p :hyp (x86p x86))
+  :guard-debug t
 
-          :modr/m t
+  :guard-hints (("Goal" :in-theory (e/d (riml08
+                                         riml32
+                                         select-address-size)
+                                        ())))
 
-          :body
+  :returns (x86 x86p :hyp (x86p x86))
 
-          (b* (((the (integer 2 8) operand-size)
-                (select-operand-size proc-mode nil rex-byte nil prefixes t t t x86))
+  :modr/m t
 
-               (p2 (prefixes->seg prefixes))
-               (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
-               (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+  :body
 
-               ;; Note that the reg field serves as an opcode extension for
-               ;; this instruction.  The reg field will always be 2 when this
-               ;; function is called.
-               (inst-ac? t)
-               ((mv flg0
-                    call-rip
-                    (the (unsigned-byte 3) increment-rip-by)
-                    (the (signed-byte 64) ?addr)
-                    x86)
-                (x86-operand-from-modr/m-and-sib-bytes
-                  proc-mode #.*gpr-access* operand-size inst-ac?
-                  nil ;; Not a memory pointer operand
-                  seg-reg p4? temp-rip rex-byte r/m mod sib
-                  0 ;; No immediate operand
-                  x86))
-               ((when flg0)
-                (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+  (b* (((the (integer 2 8) operand-size)
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t t x86))
 
-               ((mv flg (the (signed-byte #.*max-linear-address-size*) next-rip))
-                (add-to-*ip proc-mode temp-rip increment-rip-by x86))
-               ((when flg) (!!ms-fresh :rip-increment-error next-rip))
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-               (badlength? (check-instruction-length start-rip next-rip 0))
-               ((when badlength?)
-                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+       ;; Note that the reg field serves as an opcode extension for
+       ;; this instruction.  The reg field will always be 2 when this
+       ;; function is called.
+       (inst-ac? t)
+       ((mv flg0
+            call-rip
+            (the (unsigned-byte 3) increment-rip-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-               ;; Note that instruction pointers are modeled as signed in 64-bit mode,
-               ;; but unsigned in 32-bit mode.
-               (call-rip (if (equal proc-mode #.*64-bit-mode*)
-                           (i64 call-rip)
-                           call-rip))
-               ;; Ensure that the return address is canonical (for 64-bit mode) and
-               ;; within code segment limits (for 32-bit mode). See pseudocode in Intel
-               ;; manual.
-               ((unless (if (equal proc-mode #.*64-bit-mode*)
-                          (canonical-address-p call-rip)
-                          (and (<= 0 call-rip)
-                               (<= call-rip
-                                   (the (unsigned-byte 32)
-                                        (seg-hidden-limiti #.*cs* x86))))))
-                (!!fault-fresh :gp 0 :bad-return-address call-rip)) ;; #GP(0)
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) next-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error next-rip))
 
-               (rsp (read-*sp proc-mode x86))
-               ((the (integer 2 8) addr-size) (select-address-size proc-mode nil x86))
-               ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- addr-size) x86))
-               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+       (badlength? (check-instruction-length start-rip next-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-               ;; Update the x86 state:
-               ;; Push the return address on the stack.
-               (check-alignment? (alignment-checking-enabled-p x86))
-               ((mv flg x86)
-                ;; Note that instruction pointers are modeled as signed in 64-bit mode,
-                ;; but unsigned in 32-bit mode.
-                (if (equal proc-mode #.*64-bit-mode*)
-                  ;; Note that we need check-canonicity t only for operand-size = 8,
-                  ;; because we get this size only in 64-bit mode.
-                  (wime-size-opt
-                    #.*64-bit-mode* addr-size new-rsp #.*ss* next-rip check-alignment? x86
-                    :check-canonicity t)
-                  (wme-size-opt
-                    proc-mode addr-size new-rsp #.*ss* 
-                    ;; the following coercions (N16 and N32) should not be
-                    ;; necessary, but they make the guard proofs easier for now:
-                    (if (= addr-size 2)
-                      (n16 next-rip)
-                      (n32 next-rip))
-                    check-alignment? x86)))
-               ((when flg) (!!ms-fresh :stack-writing-error flg))
-               ;; Update the rip to point to the called procedure.
-               (x86 (write-*ip proc-mode call-rip x86))
-               ;; Decrement the stack pointer.
-               (x86 (write-*sp proc-mode new-rsp x86)))
-              x86))
+       ;; Note that instruction pointers are modeled as signed in 64-bit mode,
+       ;; but unsigned in 32-bit mode.
+       (call-rip (if (equal proc-mode #.*64-bit-mode*)
+                     (i64 call-rip)
+                   call-rip))
+       ;; Ensure that the return address is canonical (for 64-bit mode) and
+       ;; within code segment limits (for 32-bit mode). See pseudocode in Intel
+       ;; manual.
+       ((unless (if (equal proc-mode #.*64-bit-mode*)
+                    (canonical-address-p call-rip)
+                  (and (<= 0 call-rip)
+                       (<= call-rip
+                           (the (unsigned-byte 32)
+                             (seg-hidden-limiti #.*cs* x86))))))
+        (!!fault-fresh :gp 0 :bad-return-address call-rip)) ;; #GP(0)
+
+       (rsp (read-*sp proc-mode x86))
+
+       ;; The size of the RIP/EIP/IP is determined by
+       ;; the processor mode and the CS.D bit (see READ-*IP).
+       ;; It is not (necessarily) the result of SELECT-ADDRESS-SIZE,
+       ;; which may be subject to address size overrides.
+       (rip-size (case proc-mode
+                   (#.*64-bit-mode* 8)
+                   (#.*compatibility-mode*
+                    (b* (((the (unsigned-byte 16) cs-attr)
+                          (seg-hidden-attri #.*cs* x86))
+                         (cs.d (code-segment-descriptor-attributesbits->d
+                                cs-attr)))
+                      (if (= cs.d 1) 4 2)))
+                   (t 0))) ; other modes not implemented yet
+
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- rip-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+
+       ;; Update the x86 state:
+       ;; Push the return address on the stack.
+       (check-alignment? (alignment-checking-enabled-p x86))
+       ((mv flg x86)
+        ;; Note that instruction pointers are modeled as signed in 64-bit mode,
+        ;; but unsigned in 32-bit mode.
+        (case rip-size
+          ;; Note that we need check-canonicity t only for rip-size = 8,
+          ;; because we get this size only in 64-bit mode.
+          (8 (wime-size-opt proc-mode
+                            rip-size
+                            new-rsp
+                            #.*ss*
+                            next-rip
+                            check-alignment?
+                            x86
+                            :check-canonicity t))
+          ;; It should be an invariant that, if rip-size = 4,
+          ;; next-rip is 32 bits, but since at the moment
+          ;; we don't have that invariant, we coerce next-rip.
+          (4 (wme-size-opt proc-mode
+                           rip-size
+                           new-rsp
+                           #.*ss*
+                           (n32 next-rip)
+                           check-alignment?
+                           x86))
+          (2 (wme-size-opt proc-mode
+                           rip-size
+                           new-rsp
+                           #.*ss*
+                           (n16 next-rip)
+                           check-alignment?
+                           x86))
+          (t (mv :not-implemented x86))))
+       ((when flg) (!!ms-fresh :stack-writing-error flg))
+       ;; Update the rip to point to the called procedure.
+       (x86 (write-*ip proc-mode call-rip x86))
+       ;; Decrement the stack pointer.
+       (x86 (write-*sp proc-mode new-rsp x86)))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: RET

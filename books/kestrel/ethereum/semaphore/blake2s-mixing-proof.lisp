@@ -1215,7 +1215,7 @@
                  acl2::unsigned-byte-p-of-bvcat
                  acl2::unsigned-byte-p-of-bvnot
                  ;; bitp rules:
-                 r1cs::bitp-of-bitxor
+                 acl2::bitp-of-bitxor
                  acl2::bitp-of-bitnot
                  acl2::bitp-of-getbit
                  ;; acl2::bitp-of-bvchop-of-1 ; drop?
@@ -1440,8 +1440,8 @@
                 acl2::bitxor-of-bvcat-low-arg1
                 acl2::bitxor-of-bvcat-low-arg2
                 acl2::bitxor-commutative-increasing-axe
-                acl2::bvplus-of-plus-arg2
-                acl2::bvplus-of-plus-arg3
+                acl2::bvplus-of-+-arg2
+                acl2::bvplus-of-+-arg3
                 acl2::getbit-of-bvplus-tighten-to-32
                 acl2::slice-of-bvplus-tighten-to-32
                 acl2::getbit-of-0-when-bitp

@@ -20,7 +20,7 @@
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/x86/lifter" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
-(include-book "kestrel/bv/rules3" :dir :system) ;for bvplus-recollapse
+(include-book "kestrel/bv/rules3" :dir :system) ;for bvchop-of-+-becomes-bvplus
 (include-book "kestrel/apt/wrap-output" :dir :system)
 (include-book "kestrel/apt/simplify" :dir :system)
 (include-book "kestrel/apt/drop-irrelevant-params" :dir :system)
@@ -32,7 +32,7 @@
 
 (apt::set-default-input-old-to-new-enable t) ; for tailrec
 
-(local (in-theory (enable acl2::bvplus-recollapse)))
+(local (in-theory (enable acl2::bvchop-of-+-becomes-bvplus)))
 (local (in-theory (disable acl2::sbvlt-rewrite))) ;todo
 
 ;; TODO: Consider using a higher-level spec that doesn't use BV operations.
@@ -106,7 +106,7 @@
            (equal (factorial-spec.2 n acc)
                   (factorial-loop-1.4 n acc)))
   :hints (("Goal" :induct t
-           :expand ((factorial-spec.2 n acc)))))
+           :in-theory (enable factorial-spec.2))))
 
 ;; Final correctness theorem linking the lifted code and the spec.
 ;; (The initial undef value in the code is unused.)

@@ -662,12 +662,12 @@ No longer needed.
 
 (defun nth-character-uniform-builtin (m seed)
     (declare (ignorable m))
-     (declare (type (unsigned-byte 31) seed))
+     (declare (type (unsigned-byte 63) seed))
      (declare (xargs :guard (and (natp m)
-                                 (unsigned-byte-p 31 seed))))
+                                 (unsigned-byte-p 63 seed))))
      (mv-let (n seed)
              (defdata::random-natural-seed seed)
-             (mv (nth-character-builtin n) (the (unsigned-byte 31) seed))))
+             (mv (nth-character-builtin n) (the (unsigned-byte 63) seed))))
    
 (defdata::register-type character :domain-size 62 :enumerator nth-character-builtin :predicate characterp :enum/acc nth-character-uniform-builtin)
 
@@ -734,12 +734,12 @@ No longer needed.
 
 (defun nth-z-uniform-builtin (m seed)
     (declare (ignorable m))
-     (declare (type (unsigned-byte 31) seed))
+     (declare (type (unsigned-byte 63) seed))
      (declare (xargs :guard (and (natp m)
-                                 (unsigned-byte-p 31 seed))))
+                                 (unsigned-byte-p 63 seed))))
      (mv-let (n seed)
              (defdata::random-natural-seed seed)
-             (mv (nth-z-builtin n) (the (unsigned-byte 31) seed))))
+             (mv (nth-z-builtin n) (the (unsigned-byte 63) seed))))
 (defdata::register-type z :domain-size t :enumerator nth-z-builtin :predicate zp :enum/acc nth-z-uniform-builtin)
 
 ;Subtype relations betweem the above
@@ -944,8 +944,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-proper-cons-uniform-builtin (m seed.)
   (declare (xargs :mode :program))
-  (declare (ignorable m) (type (unsigned-byte 31) seed.))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed.))))
+  (declare (ignorable m) (type (unsigned-byte 63) seed.))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed.))))
 
   (b* (((mv n seed.) (defdata::random-natural-seed seed.))
        ((mv choice n)
@@ -1140,8 +1140,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-all-uniform-builtin (m seed)
   (declare (xargs :mode :program))
-  (declare (type (unsigned-byte 31) seed))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+  (declare (type (unsigned-byte 63) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed))))
 
   (b* (((mv n seed) (defdata::random-natural-seed seed))
        ((mv choice ?rest)
@@ -1204,8 +1204,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-quote-uniform-builtin (m seed)
   (declare (xargs :mode :program))
-  (declare (type (unsigned-byte 31) seed))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+  (declare (type (unsigned-byte 63) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed))))
   (b* (((mv val seed)
         (nth-all-uniform-builtin m seed)))
     (mv `(quote ,val) seed)))
@@ -1296,10 +1296,10 @@ The corresponding rules do not seem to help, at all.
                        (nth-tl-builtin x))))))))
 
 (defun nth-tl/acc-builtin (i1 seed.)
-  (declare (type (unsigned-byte 31) seed.))
+  (declare (type (unsigned-byte 63) seed.))
   (declare (xargs :mode :program
                   :guard (and (natp i1)
-                              (unsigned-byte-p 31 seed.))))
+                              (unsigned-byte-p 63 seed.))))
   (b* (((mv _choice i1) (switch 2 i1)))
     (case _choice
       (0 (mv 'nil seed.))
@@ -1345,8 +1345,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-true-list-uniform-builtin (m seed)
   (declare (xargs :mode :program))
-  (declare (type (unsigned-byte 31) seed))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+  (declare (type (unsigned-byte 63) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed))))
 
   (b* (((mv n seed) (defdata::random-natural-seed seed))
        ((mv choice ?rest)
@@ -1466,8 +1466,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-all-but-zero-nil-t-uniform-builtin (m seed.)
   (declare (xargs :mode :program))
-  (declare (type (unsigned-byte 31) seed.))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed.))))
+  (declare (type (unsigned-byte 63) seed.))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed.))))
   (b* (((mv ans seed.) (nth-all-uniform-builtin m seed.)))
     (if (or (booleanp ans)
             (equal ans 0))
@@ -1577,8 +1577,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-improper-cons-uniform-builtin (m seed)
   (declare (xargs :mode :program))
-  (declare (type (unsigned-byte 31) seed))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+  (declare (type (unsigned-byte 63) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed))))
 
   (b* (((mv n seed) (defdata::random-natural-seed seed))
        ((mv choice ?rest)

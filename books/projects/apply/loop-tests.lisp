@@ -324,14 +324,14 @@
        (LET ((LOOP$-LO LOWER)
              (LOOP$-HI UPPER)
              (LOOP$-BY 1))
-            (DECLARE (TYPE INTEGER LOOP$-LO LOOP$-HI LOOP$-BY))
-            (PROG2$ (LET ((LOOP$-FINAL (+ LOOP$-LO LOOP$-BY
-                                          (* LOOP$-BY
-                                             (FLOOR (+ LOOP$-HI (- LOOP$-LO))
-                                                    LOOP$-BY)))))
-                         (DECLARE (TYPE INTEGER LOOP$-FINAL))
-                         LOOP$-FINAL)
-                    (FROM-TO-BY LOOP$-LO LOOP$-HI LOOP$-BY)))))
+         (DECLARE (TYPE INTEGER LOOP$-LO LOOP$-HI LOOP$-BY))
+         (PROG2$ (LET ((LOOP$-FINAL (+ LOOP$-LO LOOP$-BY
+                                       (* LOOP$-BY
+                                          (FLOOR (+ LOOP$-HI (- LOOP$-LO))
+                                                 LOOP$-BY)))))
+                   (DECLARE (TYPE INTEGER LOOP$-FINAL))
+                   LOOP$-FINAL)
+                 (FROM-TO-BY LOOP$-LO LOOP$-HI LOOP$-BY)))))
      (INTEGERP NEWV)))))
 
 (must-fail
@@ -892,7 +892,7 @@
 ; only used in an irrelevant arg of return-last.
 
 (must-fail
- (defthm my-natp-test0 
+ (defthm my-natp-test0
   (implies (and (natp y)
                 (natp z))
            (equal (ev$ '(return-last 'progn
@@ -1574,7 +1574,7 @@
 ; Repeating an experiment shown above, but on a different laptop:
 #|
 ACL2 !>(time$ (do-loop-counting-up 1 1000000))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 57.72 seconds realtime, 57.71 seconds runtime
 ; (4,080,550,752 bytes allocated).
 (FROM 1 TO 1000000 IS 999999 STEPS)
@@ -1583,7 +1583,7 @@ ACL2 !>(verify-guards do-loop-counting-up)
 Prover steps counted:  400639
  DO-LOOP-COUNTING-UP
 ACL2 !>(time$ (do-loop-counting-up 1 1000000))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 0.00 seconds realtime, 0.00 seconds runtime
 ; (144 bytes allocated).
 (FROM 1 TO 1000000 IS 999999 STEPS)
@@ -1592,7 +1592,7 @@ ACL2 !>
 ; And now repeating that experiment for the new version.
 #|
 ACL2 !>(time$ (do-loop-counting-up-mv 1 1000000 st))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 67.41 seconds realtime, 67.39 seconds runtime
 ; (4,688,677,328 bytes allocated).
 ((FROM 1 TO 1000000
@@ -1603,7 +1603,7 @@ ACL2 !>(verify-guards do-loop-counting-up-mv)
 Prover steps counted:  634086
  DO-LOOP-COUNTING-UP-MV
 ACL2 !>(time$ (do-loop-counting-up-mv 1 1000000 st))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 0.01 seconds realtime, 0.01 seconds runtime
 ; (256 bytes allocated).
 ((FROM 1 TO 1000000
@@ -1618,160 +1618,153 @@ ACL2 !>
  (equal
   (nth 3 (body 'do-mv-2 nil (w state)))
   '(DO$
-    '(LAMBDA
-      (ALIST)
-      (DECLARE
-       (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
-                      (IF (ALISTP ALIST)
-                          (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                              'NIL)
-                          'NIL))
-              :SPLIT-TYPES T)
-       (IGNORABLE ALIST))
-      (RETURN-LAST
-       'PROGN
-       '(LAMBDA$
-         (ALIST)
-         (DECLARE
-          (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
-                         (AND (ALISTP ALIST)
-                              (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
-         (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-               (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
-               (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
-              (DECLARE (IGNORABLE TEMP RESULT LEN))
-              (ACL2-COUNT TEMP)))
-       ((LAMBDA (TEMP RESULT LEN)
-                (ACL2-COUNT TEMP))
-        (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
-        (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
-        (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+    '(LAMBDA (ALIST)
+             (DECLARE
+              (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                             (IF (ALISTP ALIST)
+                                 (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                     (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                                     'NIL)
+                                 'NIL)
+                             'NIL)
+                     :SPLIT-TYPES T)
+              (IGNORABLE ALIST))
+             (RETURN-LAST
+              'PROGN
+              '(LAMBDA$ (ALIST)
+                        (DECLARE
+                         (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                                        (AND (ALISTP ALIST)
+                                             (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                             (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                                        'NIL)))
+                        (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                              (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                          (DECLARE (IGNORABLE TEMP RESULT LEN))
+                          (ACL2-COUNT TEMP)))
+              ((LAMBDA (TEMP RESULT LEN)
+                       (ACL2-COUNT TEMP))
+               (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+               (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+               (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
     (CONS (CONS 'TEMP X)
           (CONS (CONS 'RESULT 'NIL)
                 (CONS (CONS 'LEN '0) 'NIL)))
-    '(LAMBDA
-      (ALIST)
-      (DECLARE
-       (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
-                      (IF (ALISTP ALIST)
-                          (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                              'NIL)
-                          'NIL))
-              :SPLIT-TYPES T)
-       (IGNORABLE ALIST))
-      (RETURN-LAST
-       'PROGN
-       '(LAMBDA$
-         (ALIST)
-         (DECLARE
-          (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
-                         (AND (ALISTP ALIST)
-                              (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
-         (LET
-          ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-           (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
-           (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
-          (DECLARE (IGNORABLE TEMP RESULT LEN))
-          (IF
-           (NULL TEMP)
-           (CONS ':LOOP-FINISH
-                 (CONS 'NIL
-                       (CONS (CONS (CONS 'TEMP TEMP)
-                                   (CONS (CONS 'RESULT RESULT)
-                                         (CONS (CONS 'LEN LEN) 'NIL)))
-                             'NIL)))
-           (CONS
-            'NIL
-            (CONS
-             'NIL
-             (CONS ((LAMBDA (MV0)
-                            ((LAMBDA (TEMP RESULT LEN)
-                                     (CONS (CONS 'TEMP TEMP)
-                                           (CONS (CONS 'RESULT RESULT)
-                                                 (CONS (CONS 'LEN LEN) 'NIL))))
-                             (MV-NTH '0 MV0)
-                             (MV-NTH '1 MV0)
-                             (MV-NTH '2 MV0)))
-                    (CONS (CDR TEMP)
-                          (CONS (CONS (CAR TEMP) RESULT)
-                                (CONS (BINARY-+ '1 LEN) 'NIL))))
-                   'NIL))))))
-       ((LAMBDA
-         (TEMP RESULT LEN)
-         (IF
-          (NULL TEMP)
-          (CONS ':LOOP-FINISH
-                (CONS 'NIL
-                      (CONS (CONS (CONS 'TEMP TEMP)
-                                  (CONS (CONS 'RESULT RESULT)
-                                        (CONS (CONS 'LEN LEN) 'NIL)))
-                            'NIL)))
-          (CONS
-           'NIL
-           (CONS
-            'NIL
-            (CONS ((LAMBDA (MV0)
-                           ((LAMBDA (TEMP RESULT LEN)
-                                    (CONS (CONS 'TEMP TEMP)
-                                          (CONS (CONS 'RESULT RESULT)
-                                                (CONS (CONS 'LEN LEN) 'NIL))))
-                            (MV-NTH '0 MV0)
-                            (MV-NTH '1 MV0)
-                            (MV-NTH '2 MV0)))
-                   (CONS (CDR TEMP)
-                         (CONS (CONS (CAR TEMP) RESULT)
-                               (CONS (BINARY-+ '1 LEN) 'NIL))))
-                  'NIL)))))
-        (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
-        (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
-        (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
-    '(LAMBDA
-      (ALIST)
-      (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))
-                      :SPLIT-TYPES T)
-               (IGNORABLE ALIST))
-      (RETURN-LAST
-       'PROGN
-       '(LAMBDA$
-         (ALIST)
-         (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))))
-         (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-               (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
-               (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
-              (DECLARE (IGNORABLE TEMP RESULT LEN))
-              (CONS ':RETURN
-                    (CONS (CONS LEN (CONS RESULT 'NIL))
-                          (CONS (CONS (CONS 'TEMP TEMP)
-                                      (CONS (CONS 'RESULT RESULT)
-                                            (CONS (CONS 'LEN LEN) 'NIL)))
-                                'NIL)))))
-       ((LAMBDA (TEMP RESULT LEN)
-                (CONS ':RETURN
-                      (CONS (CONS LEN (CONS RESULT 'NIL))
-                            (CONS (CONS (CONS 'TEMP TEMP)
-                                        (CONS (CONS 'RESULT RESULT)
-                                              (CONS (CONS 'LEN LEN) 'NIL)))
-                                  'NIL))))
-        (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
-        (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
-        (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+    '(LAMBDA (ALIST)
+             (DECLARE
+              (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                             (IF (ALISTP ALIST)
+                                 (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                     (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                                     'NIL)
+                                 'NIL)
+                             'NIL)
+                     :SPLIT-TYPES T)
+              (IGNORABLE ALIST))
+             (RETURN-LAST
+              'PROGN
+              '(LAMBDA$ (ALIST)
+                        (DECLARE
+                         (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                                        (AND (ALISTP ALIST)
+                                             (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                             (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                                        'NIL)))
+                        (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                              (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                          (DECLARE (IGNORABLE TEMP RESULT LEN))
+                          (IF (NULL TEMP)
+                              (CONS ':LOOP-FINISH
+                                    (CONS 'NIL
+                                          (CONS (CONS (CONS 'TEMP TEMP)
+                                                      (CONS (CONS 'RESULT RESULT)
+                                                            (CONS (CONS 'LEN LEN) 'NIL)))
+                                                'NIL)))
+                              (CONS 'NIL
+                                    (CONS 'NIL
+                                          (CONS ((LAMBDA (MV0)
+                                                         ((LAMBDA (TEMP RESULT LEN)
+                                                                  (CONS (CONS 'TEMP TEMP)
+                                                                        (CONS (CONS 'RESULT RESULT)
+                                                                              (CONS (CONS 'LEN LEN) 'NIL))))
+                                                          (MV-NTH '0 MV0)
+                                                          (MV-NTH '1 MV0)
+                                                          (MV-NTH '2 MV0)))
+                                                 (CONS (CDR TEMP)
+                                                       (CONS (CONS (CAR TEMP) RESULT)
+                                                             (CONS (BINARY-+ '1 LEN) 'NIL))))
+                                                'NIL))))))
+              ((LAMBDA (TEMP RESULT LEN)
+                       (IF (NULL TEMP)
+                           (CONS ':LOOP-FINISH
+                                 (CONS 'NIL
+                                       (CONS (CONS (CONS 'TEMP TEMP)
+                                                   (CONS (CONS 'RESULT RESULT)
+                                                         (CONS (CONS 'LEN LEN) 'NIL)))
+                                             'NIL)))
+                           (CONS 'NIL
+                                 (CONS 'NIL
+                                       (CONS ((LAMBDA (MV0)
+                                                      ((LAMBDA (TEMP RESULT LEN)
+                                                               (CONS (CONS 'TEMP TEMP)
+                                                                     (CONS (CONS 'RESULT RESULT)
+                                                                           (CONS (CONS 'LEN LEN) 'NIL))))
+                                                       (MV-NTH '0 MV0)
+                                                       (MV-NTH '1 MV0)
+                                                       (MV-NTH '2 MV0)))
+                                              (CONS (CDR TEMP)
+                                                    (CONS (CONS (CAR TEMP) RESULT)
+                                                          (CONS (BINARY-+ '1 LEN) 'NIL))))
+                                             'NIL)))))
+               (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+               (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+               (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+    '(LAMBDA (ALIST)
+             (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST)
+                                                           'NIL)
+                             :SPLIT-TYPES T)
+                      (IGNORABLE ALIST))
+             (RETURN-LAST
+              'PROGN
+              '(LAMBDA$ (ALIST)
+                        (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST)
+                                                                      'NIL)))
+                        (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                              (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                          (DECLARE (IGNORABLE TEMP RESULT LEN))
+                          (CONS ':RETURN
+                                (CONS (CONS LEN (CONS RESULT 'NIL))
+                                      (CONS (CONS (CONS 'TEMP TEMP)
+                                                  (CONS (CONS 'RESULT RESULT)
+                                                        (CONS (CONS 'LEN LEN) 'NIL)))
+                                            'NIL)))))
+              ((LAMBDA (TEMP RESULT LEN)
+                       (CONS ':RETURN
+                             (CONS (CONS LEN (CONS RESULT 'NIL))
+                                   (CONS (CONS (CONS 'TEMP TEMP)
+                                               (CONS (CONS 'RESULT RESULT)
+                                                     (CONS (CONS 'LEN LEN) 'NIL)))
+                                         'NIL))))
+               (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+               (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+               (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
     '(NIL NIL)
-    '(ACL2-COUNT TEMP)
-    '(LOOP$ WITH TEMP = X WITH RESULT
-            = NIL WITH LEN = 0 DO :VALUES (NIL NIL)
-            :GUARD
-            (AND (TRUE-LISTP TEMP) (NATP LEN))
-            (IF (NULL TEMP)
-                (LOOP-FINISH)
-                (MV-SETQ (TEMP RESULT LEN)
-                         (MV (CDR TEMP)
-                             (CONS (CAR TEMP) RESULT)
-                             (1+ LEN))))
-            FINALLY (RETURN (MV LEN RESULT))))))
+    '(NIL (ACL2-COUNT TEMP)
+          .
+          (LOOP$ WITH TEMP = X WITH RESULT
+                 = NIL WITH LEN = 0 DO :VALUES (NIL NIL)
+                 :GUARD
+                 (AND (TRUE-LISTP TEMP) (NATP LEN))
+                 (IF (NULL TEMP)
+                     (LOOP-FINISH)
+                     (MV-SETQ (TEMP RESULT LEN)
+                              (MV (CDR TEMP)
+                                  (CONS (CAR TEMP) RESULT)
+                                  (1+ LEN))))
+                 FINALLY (RETURN (MV LEN RESULT)))))))
 
 ; Below, we take the DO$ call from what is just above, unchanged.
 (assert-event
@@ -1779,160 +1772,153 @@ ACL2 !>
    (len result)
    (let ((x '(4 6 8)))
      (DO$
-      '(LAMBDA
-        (ALIST)
-        (DECLARE
-         (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
-                        (IF (ALISTP ALIST)
-                            (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                                'NIL)
-                            'NIL))
-                :SPLIT-TYPES T)
-         (IGNORABLE ALIST))
-        (RETURN-LAST
-         'PROGN
-         '(LAMBDA$
-           (ALIST)
-           (DECLARE
-            (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
-                           (AND (ALISTP ALIST)
-                                (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
-           (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                 (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
-                 (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
-                (DECLARE (IGNORABLE TEMP RESULT LEN))
-                (ACL2-COUNT TEMP)))
-         ((LAMBDA (TEMP RESULT LEN)
-                  (ACL2-COUNT TEMP))
-          (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
-          (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
-          (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+      '(LAMBDA (ALIST)
+               (DECLARE
+                (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                               (IF (ALISTP ALIST)
+                                   (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                       (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                                       'NIL)
+                                   'NIL)
+                               'NIL)
+                       :SPLIT-TYPES T)
+                (IGNORABLE ALIST))
+               (RETURN-LAST
+                'PROGN
+                '(LAMBDA$ (ALIST)
+                          (DECLARE
+                           (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                                          (AND (ALISTP ALIST)
+                                               (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                                          'NIL)))
+                          (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                                (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                            (DECLARE (IGNORABLE TEMP RESULT LEN))
+                            (ACL2-COUNT TEMP)))
+                ((LAMBDA (TEMP RESULT LEN)
+                         (ACL2-COUNT TEMP))
+                 (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+                 (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+                 (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
       (CONS (CONS 'TEMP X)
             (CONS (CONS 'RESULT 'NIL)
                   (CONS (CONS 'LEN '0) 'NIL)))
-      '(LAMBDA
-        (ALIST)
-        (DECLARE
-         (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
-                        (IF (ALISTP ALIST)
-                            (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                                'NIL)
-                            'NIL))
-                :SPLIT-TYPES T)
-         (IGNORABLE ALIST))
-        (RETURN-LAST
-         'PROGN
-         '(LAMBDA$
-           (ALIST)
-           (DECLARE
-            (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
-                           (AND (ALISTP ALIST)
-                                (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
-           (LET
-            ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-             (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
-             (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
-            (DECLARE (IGNORABLE TEMP RESULT LEN))
-            (IF
-             (NULL TEMP)
-             (CONS ':LOOP-FINISH
-                   (CONS 'NIL
-                         (CONS (CONS (CONS 'TEMP TEMP)
-                                     (CONS (CONS 'RESULT RESULT)
-                                           (CONS (CONS 'LEN LEN) 'NIL)))
-                               'NIL)))
-             (CONS
-              'NIL
-              (CONS
-               'NIL
-               (CONS ((LAMBDA (MV0)
-                              ((LAMBDA (TEMP RESULT LEN)
-                                       (CONS (CONS 'TEMP TEMP)
-                                             (CONS (CONS 'RESULT RESULT)
-                                                   (CONS (CONS 'LEN LEN) 'NIL))))
-                               (MV-NTH '0 MV0)
-                               (MV-NTH '1 MV0)
-                               (MV-NTH '2 MV0)))
-                      (CONS (CDR TEMP)
-                            (CONS (CONS (CAR TEMP) RESULT)
-                                  (CONS (BINARY-+ '1 LEN) 'NIL))))
-                     'NIL))))))
-         ((LAMBDA
-           (TEMP RESULT LEN)
-           (IF
-            (NULL TEMP)
-            (CONS ':LOOP-FINISH
-                  (CONS 'NIL
-                        (CONS (CONS (CONS 'TEMP TEMP)
-                                    (CONS (CONS 'RESULT RESULT)
-                                          (CONS (CONS 'LEN LEN) 'NIL)))
-                              'NIL)))
-            (CONS
-             'NIL
-             (CONS
-              'NIL
-              (CONS ((LAMBDA (MV0)
-                             ((LAMBDA (TEMP RESULT LEN)
-                                      (CONS (CONS 'TEMP TEMP)
-                                            (CONS (CONS 'RESULT RESULT)
-                                                  (CONS (CONS 'LEN LEN) 'NIL))))
-                              (MV-NTH '0 MV0)
-                              (MV-NTH '1 MV0)
-                              (MV-NTH '2 MV0)))
-                     (CONS (CDR TEMP)
-                           (CONS (CONS (CAR TEMP) RESULT)
-                                 (CONS (BINARY-+ '1 LEN) 'NIL))))
-                    'NIL)))))
-          (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
-          (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
-          (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
-      '(LAMBDA
-        (ALIST)
-        (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))
-                        :SPLIT-TYPES T)
-                 (IGNORABLE ALIST))
-        (RETURN-LAST
-         'PROGN
-         '(LAMBDA$
-           (ALIST)
-           (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))))
-           (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                 (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
-                 (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
-                (DECLARE (IGNORABLE TEMP RESULT LEN))
-                (CONS ':RETURN
-                      (CONS (CONS LEN (CONS RESULT 'NIL))
-                            (CONS (CONS (CONS 'TEMP TEMP)
-                                        (CONS (CONS 'RESULT RESULT)
-                                              (CONS (CONS 'LEN LEN) 'NIL)))
-                                  'NIL)))))
-         ((LAMBDA (TEMP RESULT LEN)
-                  (CONS ':RETURN
-                        (CONS (CONS LEN (CONS RESULT 'NIL))
-                              (CONS (CONS (CONS 'TEMP TEMP)
-                                          (CONS (CONS 'RESULT RESULT)
-                                                (CONS (CONS 'LEN LEN) 'NIL)))
-                                    'NIL))))
-          (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
-          (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
-          (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+      '(LAMBDA (ALIST)
+               (DECLARE
+                (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                               (IF (ALISTP ALIST)
+                                   (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                       (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                                       'NIL)
+                                   'NIL)
+                               'NIL)
+                       :SPLIT-TYPES T)
+                (IGNORABLE ALIST))
+               (RETURN-LAST
+                'PROGN
+                '(LAMBDA$ (ALIST)
+                          (DECLARE
+                           (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                                          (AND (ALISTP ALIST)
+                                               (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                                          'NIL)))
+                          (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                                (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                            (DECLARE (IGNORABLE TEMP RESULT LEN))
+                            (IF (NULL TEMP)
+                                (CONS ':LOOP-FINISH
+                                      (CONS 'NIL
+                                            (CONS (CONS (CONS 'TEMP TEMP)
+                                                        (CONS (CONS 'RESULT RESULT)
+                                                              (CONS (CONS 'LEN LEN) 'NIL)))
+                                                  'NIL)))
+                                (CONS 'NIL
+                                      (CONS 'NIL
+                                            (CONS ((LAMBDA (MV0)
+                                                           ((LAMBDA (TEMP RESULT LEN)
+                                                                    (CONS (CONS 'TEMP TEMP)
+                                                                          (CONS (CONS 'RESULT RESULT)
+                                                                                (CONS (CONS 'LEN LEN) 'NIL))))
+                                                            (MV-NTH '0 MV0)
+                                                            (MV-NTH '1 MV0)
+                                                            (MV-NTH '2 MV0)))
+                                                   (CONS (CDR TEMP)
+                                                         (CONS (CONS (CAR TEMP) RESULT)
+                                                               (CONS (BINARY-+ '1 LEN) 'NIL))))
+                                                  'NIL))))))
+                ((LAMBDA (TEMP RESULT LEN)
+                         (IF (NULL TEMP)
+                             (CONS ':LOOP-FINISH
+                                   (CONS 'NIL
+                                         (CONS (CONS (CONS 'TEMP TEMP)
+                                                     (CONS (CONS 'RESULT RESULT)
+                                                           (CONS (CONS 'LEN LEN) 'NIL)))
+                                               'NIL)))
+                             (CONS 'NIL
+                                   (CONS 'NIL
+                                         (CONS ((LAMBDA (MV0)
+                                                        ((LAMBDA (TEMP RESULT LEN)
+                                                                 (CONS (CONS 'TEMP TEMP)
+                                                                       (CONS (CONS 'RESULT RESULT)
+                                                                             (CONS (CONS 'LEN LEN) 'NIL))))
+                                                         (MV-NTH '0 MV0)
+                                                         (MV-NTH '1 MV0)
+                                                         (MV-NTH '2 MV0)))
+                                                (CONS (CDR TEMP)
+                                                      (CONS (CONS (CAR TEMP) RESULT)
+                                                            (CONS (BINARY-+ '1 LEN) 'NIL))))
+                                               'NIL)))))
+                 (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+                 (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+                 (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
+      '(LAMBDA (ALIST)
+               (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST)
+                                                             'NIL)
+                               :SPLIT-TYPES T)
+                        (IGNORABLE ALIST))
+               (RETURN-LAST
+                'PROGN
+                '(LAMBDA$ (ALIST)
+                          (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST)
+                                                                        'NIL)))
+                          (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
+                                (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
+                            (DECLARE (IGNORABLE TEMP RESULT LEN))
+                            (CONS ':RETURN
+                                  (CONS (CONS LEN (CONS RESULT 'NIL))
+                                        (CONS (CONS (CONS 'TEMP TEMP)
+                                                    (CONS (CONS 'RESULT RESULT)
+                                                          (CONS (CONS 'LEN LEN) 'NIL)))
+                                              'NIL)))))
+                ((LAMBDA (TEMP RESULT LEN)
+                         (CONS ':RETURN
+                               (CONS (CONS LEN (CONS RESULT 'NIL))
+                                     (CONS (CONS (CONS 'TEMP TEMP)
+                                                 (CONS (CONS 'RESULT RESULT)
+                                                       (CONS (CONS 'LEN LEN) 'NIL)))
+                                           'NIL))))
+                 (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))
+                 (CDR (ASSOC-EQ-SAFE 'RESULT ALIST))
+                 (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
       '(NIL NIL)
-      '(ACL2-COUNT TEMP)
-      '(LOOP$ WITH TEMP = X WITH RESULT
-              = NIL WITH LEN = 0 DO :VALUES (NIL NIL)
-              :GUARD
-              (AND (TRUE-LISTP TEMP) (NATP LEN))
-              (IF (NULL TEMP)
-                  (LOOP-FINISH)
-                  (MV-SETQ (TEMP RESULT LEN)
-                           (MV (CDR TEMP)
-                               (CONS (CAR TEMP) RESULT)
-                               (1+ LEN))))
-              FINALLY (RETURN (MV LEN RESULT)))))
+      '(NIL (ACL2-COUNT TEMP)
+            .
+            (LOOP$ WITH TEMP = X WITH RESULT
+                   = NIL WITH LEN = 0 DO :VALUES (NIL NIL)
+                   :GUARD
+                   (AND (TRUE-LISTP TEMP) (NATP LEN))
+                   (IF (NULL TEMP)
+                       (LOOP-FINISH)
+                       (MV-SETQ (TEMP RESULT LEN)
+                                (MV (CDR TEMP)
+                                    (CONS (CAR TEMP) RESULT)
+                                    (1+ LEN))))
+                   FINALLY (RETURN (MV LEN RESULT))))))
    (and (eql len 3)
         (equal result '(8 6 4)))))
 
@@ -2711,3 +2697,26 @@ scope containing (SETQ ANS ANS2).
          finally
          (return lst))
   '(1 A C)))
+
+; See the comment below about a failure based on the following defun.
+(defun v8-5-problem-loop (lst)
+  (declare (xargs :guard t))
+  (loop$ with temp = lst
+         with  ans of-type rational = 0
+         do
+         :values (nil nil)
+         (cond ((atom temp) (return (mv ans temp)))
+               (t (progn (setq ans (+  (rfix (car temp)) ans))
+                         (setq temp (cdr temp)))))))
+
+(assert-event (mv-let (x y)
+                  (v8-5-problem-loop '(3 1/2 4 . a))
+                (and (= x 15/2)
+                     (eq y 'a))))
+
+; The following failed in ACL2 8.5.
+(thm (mv-let (x y)
+         (v8-5-problem-loop '(3 1/2 4 . a))
+       (and (= x 15/2)
+            (eq y 'a)))
+     :hints (("Goal" :do-not '(preprocess))))

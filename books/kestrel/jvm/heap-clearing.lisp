@@ -69,12 +69,12 @@
   (implies (not (equal pair (class-pair)))
            (equal (get-class ref (clear-field ref2 pair heap))
                   (get-class ref heap)))
-  :hints (("Goal" :in-theory (e/d (get-class clear-field) ()))))
+  :hints (("Goal" :in-theory (enable get-class clear-field))))
 
 (defthm clear-field-of-s
- (equal (clear-field ad pair (s ad obj heap))
-        (s ad (clr pair obj) heap))
- :hints (("Goal" :in-theory (e/d (clear-field) ()))))
+  (equal (clear-field ad pair (s ad obj heap))
+         (s ad (clr pair obj) heap))
+  :hints (("Goal" :in-theory (enable clear-field))))
 
 ;more theorems needed about clr?
 

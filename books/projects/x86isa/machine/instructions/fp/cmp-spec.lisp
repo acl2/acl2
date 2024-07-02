@@ -64,7 +64,7 @@
                          (frac-width posp)
                          (operation :type (integer 0 38)))
   :long "<p>This function checks whether operands are NaN and then
-  return the corresponding results. It also handles the
+  returns the corresponding results. It also handles the
   infinities.</p>
 <p>Return values: <tt>(mv flag integer-result invalid)</tt></p>"
   (let ((invalid (or (eq kind1 'snan)
@@ -276,7 +276,7 @@
                     (mxcsr     :type (unsigned-byte 32)))
   (b* (((mv flg result mxcsr)
         (sse-cmp operation op1 op2 mxcsr #.*IEEE-DP-EXP-WIDTH* #.*IEEE-DP-FRAC-WIDTH*))
-       (result (n32 result)))
+       (result (n64 result)))
     (mv flg result mxcsr))
   ///
   (defthm-unsigned-byte-p n64p-result-dp-sse-cmp

@@ -1,7 +1,7 @@
 ; Rules about sbvrem
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,18 +21,19 @@
 (local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/floor2" :dir :system)) ;for mod-is-0-when-multiple
 
 (local (in-theory (disable ;bound-from-natp-fact
                            bvchop-upper-bound-linear-strong)))
 
 ;TODO: really it's "non-negative"
+;See also sbvrem-rewrite.
 (defthmd sbvrem-when-positive
   (implies (and (sbvle size 0 x)
                 (sbvle size 0 y)
@@ -125,7 +126,8 @@
                                             ;;bvchop-of-sum-cases
                                             bvchop-when-top-bit-1
                                             bvchop-when-top-bit-not-1
-                                            rem-becomes-mod)
+                                            rem-becomes-mod
+                                            unsigned-byte-p)
                                   (;bvminus-becomes-bvplus-of-bvuminus
                                    ;mod-type ;led to forcing
                                    )))))

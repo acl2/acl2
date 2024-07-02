@@ -18,14 +18,14 @@
 
 (defxdoc+ hexadecimal-digits
   :parents (syntax)
-  :short "Java hexadecimal digits [JLS:3.10.1]."
+  :short "Java hexadecimal digits [JLS14:3.10.1]."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection hex-digit
-  :short "Fixtype of Java hexadecimal digits [JLS:3.10.1]."
+  :short "Fixtype of Java hexadecimal digits [JLS14:3.10.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -33,7 +33,7 @@
      either a decimal digit (i.e. between `0' and `9')
      or an (uppercase or lowercase) letter
      between `A' and `F' or between `a' and `f'.
-     See the grammar rule @('hex-digit') (also in [JLS:3.3]).")
+     See the grammar rule @('hex-digit') (also in [JLS14:3.3]).")
    (xdoc::p
     "This is a type introduced by @(tsee fty::deffixtype)."))
 

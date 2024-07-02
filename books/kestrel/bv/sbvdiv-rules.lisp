@@ -1,7 +1,7 @@
 ; Rules about sbvdiv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -53,7 +53,7 @@
                     (bvminus (+ 1 high (- low)) (+ -1 (expt 2 (+ 1 high (- low)))) (slice high low x)))))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus slice-of-sum-cases
                                             bvchop-of-sum-cases
-                                            ) (;bvchop-of-*
+                                            ) (
 ;BVMULT-OF-2-GEN ;why?
 ;EQUAL-OF-BVMULT-AND-*-ALT
 ;EQUAL-OF-BVMULT-AND-*
@@ -70,7 +70,7 @@
                       (getbit low x)
                     (bitnot (getbit low x)))))
   :hints (("Goal" :use (:instance slice-of-bvuminus (high low))
-           :in-theory (disable slice-of-bvuminus))))
+           :in-theory (e/d (slice-becomes-getbit) (slice-of-bvuminus)))))
 
 (defthm equal-of-bvchop-and-bvchop-same-diff-sizes
   (implies (natp size)
@@ -79,7 +79,7 @@
                       t
                     (equal 0 (getbit (+ -1 size) x)))))
   :hints (("Goal" :cases ((equal 0 size))
-           :use (:instance split-bv (y (bvchop size x))
+           :use (:instance split-bv (x (bvchop size x))
                                   (m (+ -1 size))
                                   (n size)))))
 
@@ -155,7 +155,7 @@
                            ( floor-of-minus-and-minus
                              ;floor-minus
                              ;PLUS-BVCAT-WITH-0
-                             ;bvplus-recollapse
+                             ;
                              ;BVCAT-OF-+-LOW
                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                              ;<-Y-*-Y-X
@@ -305,7 +305,7 @@
   :otf-flg t
   :hints (("Goal" :cases ((equal y1 0)
                           (and (not (equal y1 0))
-                               (EQUAL (BVCHOP (BINARY-+ '-1 SIZE) X) '0)))
+                               (EQUAL (BVCHOP (+ '-1 SIZE) X) '0)))
            :in-theory (e/d (;SBVDIV-WHEN-BOTH-POSITIVE
                             sbvlt
                             bvdiv

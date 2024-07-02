@@ -82,7 +82,10 @@
               'fty::deffixequiv-mutual
               '((big-mutrec-default-hint 'fty::fnname id nil world))))
 
-
+(local (defthm len-cdr-when-consp
+         (implies (consp x)
+                  (< (len (cdr x)) (len x)))
+         :rule-classes :linear))
 
 ;; This visitor will collect all the (parameterized) static classes referenced by function
 ;; calls in this class, e.g. myclass#(

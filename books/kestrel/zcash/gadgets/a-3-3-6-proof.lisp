@@ -604,11 +604,11 @@
                                      ZCASH::JUBJUB-q
                                      ZCASH::JUBJUB-a))))
 
-(defthm POINT-KIND-of-TWISTED-EDWARDS-ADD-when-finite
-  (Implies (EQUAL (ECURVE::POINT-KIND POINT) :FINITE)
-           (EQUAL (ECURVE::POINT-KIND (ECURVE::TWISTED-EDWARDS-ADD POINT POINT (ZCASH::JUBJUB-CURVE)))
-                  :FINITE))
-  :hints (("Goal" :in-theory (enable ECURVE::TWISTED-EDWARDS-ADD))))
+(defthm point-kind-of-twisted-edwards-add-when-finite
+  (implies (equal (ecurve::point-kind point) :finite)
+           (equal (ecurve::point-kind (ecurve::twisted-edwards-add point point (zcash::jubjub-curve)))
+                  :finite))
+  :hints (("Goal" :in-theory (enable ecurve::twisted-edwards-add))))
 
 ;;gen?
 (defthm twisted-edwards-add-of-twisted-edwards-zero
@@ -878,7 +878,7 @@
                  pfield::mul-of-1-arg1-gen
                  pfield::mod-when-fep
                  pfield::neg-of-neg-gen
-                 ACL2::INTEGERP-WHEN-NATP-FOR-AXE
+                 ACL2::INTEGERP-WHEN-NATP
                  pfield::add-of-0-arg1
                  pfield::add-of-0-arg2
                  PFIELD::DIV-OF-0-ARG1

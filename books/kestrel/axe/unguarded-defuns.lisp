@@ -1,7 +1,7 @@
 ; Versions of functions with guards of t
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,7 +20,7 @@
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/leftrotate" :dir :system)
 (include-book "kestrel/bv/leftrotate32" :dir :system)
-(include-book "kestrel/bv/bvlt" :dir :system)
+;(include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/bv/sbvlt" :dir :system)
 (include-book "kestrel/bv/bitnot" :dir :system)
 (include-book "kestrel/bv/bitor" :dir :system)
@@ -34,6 +34,8 @@
 (include-book "kestrel/bv/bvshl" :dir :system)
 (include-book "kestrel/bv/bvshr" :dir :system)
 (include-book "kestrel/bv/bvashr" :dir :system)
+(include-book "kestrel/bv/bvequal" :dir :system)
+(include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
@@ -163,6 +165,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund bvequal-unguarded (size x y)
+  (declare (xargs :guard t))
+  (equal (bvchop-unguarded size x) (bvchop-unguarded size y)))
+
+(defthm bvequal-unguarded-correct
+  (equal (bvequal-unguarded size x y)
+         (bvequal size x y))
+  :hints (("Goal" :in-theory (enable bvequal bvequal-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund nthcdr-unguarded (n l)
   (declare (xargs :guard t))
   (if (or (not (natp n))
@@ -188,7 +201,7 @@
 (defthm take-unguarded-correct
   (equal (take-unguarded n lst)
          (take n lst))
-  :hints (("Goal" :in-theory (e/d (take-unguarded take) ()))))
+  :hints (("Goal" :in-theory (enable take-unguarded take))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -403,7 +416,7 @@
 (defthm bitand-unguarded-correct
   (equal (bitand-unguarded x y)
          (bitand x y))
-  :hints (("Goal" :in-theory (e/d (bitand-unguarded bitand bvand getbit-when-val-is-not-an-integer) ()))))
+  :hints (("Goal" :in-theory (enable bitand-unguarded bitand bvand getbit-when-val-is-not-an-integer))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -511,7 +524,7 @@
 (defthm bvcat-unguarded-correct
   (equal (bvcat-unguarded highsize highval lowsize lowval)
          (bvcat highsize highval lowsize lowval))
-  :hints (("Goal" :in-theory (e/d (bvcat bvcat-unguarded) ()))))
+  :hints (("Goal" :in-theory (enable bvcat bvcat-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -624,7 +637,8 @@
 
 (defund bvshl-unguarded (width x shift-amount)
   (declare (xargs :guard t))
-  (bvcat-unguarded (- (fix width) (fix shift-amount)) x shift-amount 0))
+  (let ((shift-amount (nfix shift-amount)))
+    (bvcat-unguarded (- (nfix width) shift-amount) x shift-amount 0)))
 
 (defthm bvshl-unguarded-correct
   (equal (bvshl-unguarded width x shift-amount)
@@ -635,7 +649,8 @@
 
 (defund bvshr-unguarded (width x shift-amount)
   (declare (xargs :guard t))
-  (slice-unguarded (+ -1 (fix width)) shift-amount x))
+  (let ((shift-amount (nfix shift-amount)))
+    (slice-unguarded (+ -1 (nfix width)) shift-amount x)))
 
 (defthm bvshr-unguarded-correct
   (equal (bvshr-unguarded width x shift-amount)
@@ -654,3 +669,62 @@
   (equal (bvashr-unguarded width x shift-amount)
          (bvashr width x shift-amount))
   :hints (("Goal" :in-theory (enable bvashr bvashr-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund ceiling-of-lg-unguarded (x)
+  (declare (xargs :guard t))
+  (if (integerp x)
+      (ceiling-of-lg x)
+    0))
+
+(defthm ceiling-of-lg-unguarded-correct
+  (equal (ceiling-of-lg-unguarded x)
+         (ceiling-of-lg x))
+  :hints (("Goal" :cases ((acl2-numberp x))
+           :in-theory (enable ceiling-of-lg ceiling-of-lg-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun logext-unguarded (size i)
+  (declare (xargs :guard t))
+  (if (integerp size)
+      (if (not (posp size))
+          ;; unusual case:
+          (if (equal (getbit 0 (ifix i)) 0) 0 -1)
+        ;; usual case:
+        (logext size (ifix i)))
+    (if (not (acl2-numberp size))
+        ;; unusual case:
+        (if (equal (getbit 0 (ifix i)) 0) 0 -1)
+      ;; unusual case:
+      (if (equal 0 (if (integerp i) (getbit 0 i) 0)) 0 -1))))
+
+(defthm logext-unguarded-correct
+  (equal (logext-unguarded size i)
+         (logext size i))
+  :hints (("Goal" :in-theory (enable logext logext-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund firstn-unguarded (n lst)
+  (declare (xargs :guard t))
+  (if (true-listp lst)
+      (firstn (nfix n) lst)
+    (firstn (nfix n) (true-list-fix lst))))
+
+(defthm firstn-unguarded-correct
+  (equal (firstn-unguarded n lst)
+         (firstn n lst))
+  :hints (("Goal" :in-theory (enable firstn-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund logapp-unguarded (size i j)
+  (declare (xargs :guard t))
+  (logapp (nfix size) (ifix i) (ifix j)))
+
+(defthm logapp-unguarded-correct
+  (equal (logapp-unguarded size i j)
+         (logapp size i j))
+  :hints (("Goal" :in-theory (enable logapp-unguarded logapp))))

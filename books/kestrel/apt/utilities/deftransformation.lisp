@@ -36,19 +36,10 @@
 
 (include-book "kestrel/utilities/defmacrodoc" :dir :system) ; for xdoc-for-macro-general-form
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
+(include-book "kestrel/utilities/add-prefix" :dir :system)
 (include-book "transformation-table2")
 (include-book "generate-print-events")
 (include-book "print-specifiers")
-
-(defun add-prefix (str sym)
-
-; This is based on ACL2 source function add-suffix.
-
-  (declare (xargs :guard (and (symbolp sym)
-                              (stringp str))))
-  (intern-in-package-of-symbol
-   (concatenate 'string str (symbol-name sym))
-   sym))
 
 (defun maybe-wrap-with-revert-world (revert-world form)
   (if revert-world

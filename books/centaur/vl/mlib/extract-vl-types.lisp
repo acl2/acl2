@@ -30,7 +30,7 @@
 (include-book "../loader/filemap")
 (include-book "../loader/read-file")
 
-(include-book "centaur/sv/svex/4vec" :dir :system)
+(include-book "extract-vl-types-support")
 
 ;;(include-book "centaur/bitops/part-select" :dir :system)
 ;;(include-book "centaur/bitops/part-install" :dir :system)
@@ -65,10 +65,10 @@
              :in-theory (e/d (sv::4vec-p) ()))))
 
   (defthm TRUE-LIST-LISTP-of-PAIRLIS$
-    (implies (true-list-listp lst)
-             (true-list-listp (pairlis$ x lst)))
+    (implies (acl2::true-list-listp lst)
+             (acl2::true-list-listp (pairlis$ x lst)))
     :hints (("Goal"
-             :in-theory (e/d (pairlis$ true-list-listp) ()))))
+             :in-theory (e/d (pairlis$ acl2::true-list-listp) ()))))
 
   (defthmd 4VEC-P-WHEN-INTEGERP
     (Implies (integerp x)
@@ -272,7 +272,7 @@
                       (equal x.name :vl-bit)))
           (mv (raise "(or (equal x.name :vl-logic)
                     (equal x.name :vl-bit))
- failed for: " x) 0))
+ failed for: ~p0~%" x) 0))
          ((unless (equal x.signedp nil))
           (mv (raise "(equal x.signedp nil) failed for: " x) 0))
 
@@ -284,15 +284,7 @@
 
   )
 
-(define collect-and-cdr-lists-that-start-with (x (lst true-list-listp))
-  :returns (result true-list-listp :hyp (true-list-listp lst))
-  (if (atom lst)
-      nil
-    (b* ((rest (collect-and-cdr-lists-that-start-with x (cdr lst))))
-      (if (and (consp (car lst))
-               (equal (caar lst) x))
-          (cons (cdar lst) rest)
-        rest))))
+
 
 #!VL
 (define vl-enum-values->acl2-types-cases ((values vl-exprlist-p)
@@ -320,7 +312,7 @@
                      '(equal (vl-value-kind x.val) :vl-constint))
               nil))
 
-         
+
          (value (vl-constint->value x.val))
          ((vl-enumitem cur) (car items))
          ((unless (equal cur.range nil))
@@ -333,55 +325,6 @@
       (mv (cons string-to-int-case string-to-int-cases)
           (cons int-to-string-case int-to-string-cases)))))
 
-#!VL
-(define vl-types->acl2-types-parse-args ((args stringp)
-                                         (pkg-sym symbolp))
-  :mode :program
-  (b* (((when (equal args ""))
-        nil)
-       (bracket-i (search "[" args))
-       (dot-i (search "." args)))
-    (cond ((and (not bracket-i)
-                (not dot-i))
-           (list (intern-in-package-of-symbol args pkg-sym)))
-          ((equal dot-i 0)
-           (vl-types->acl2-types-parse-args (subseq args 1 nil) pkg-sym))
-          ((or (not bracket-i)
-               (and dot-i
-                    (equal (min bracket-i dot-i) dot-i)))
-           (b* ((this (subseq args 0 dot-i))
-                (rest (subseq args (1+ dot-i) nil))
-                (rest (vl-types->acl2-types-parse-args rest pkg-sym)))
-             (cons (intern-in-package-of-symbol this pkg-sym)
-                   rest)))
-          ((equal bracket-i 0)
-           (b* ((close-bracket-i (search "]" args))
-                ((Unless close-bracket-i)
-                 (raise "Could not find close bracket for args: ~s0~%" args))
-                (num (explode (subseq args 1 close-bracket-i)))
-                ((unless (str::dec-digit-char-listp num))
-                 (raise "Invalid sequence of indices are given: ~p0. There needs to be a positive integer between brackets.~%" args))
-
-                ((mv num & &) (Str::parse-nat-from-charlist num 0 0))
-
-                (rest (vl-types->acl2-types-parse-args
-                       (subseq args (1+ close-bracket-i) nil)
-                       pkg-sym)))
-             (cons num rest)))
-          (t (b* ((this (subseq args 0 bracket-i))
-                  (rest (subseq args bracket-i nil))
-                  (rest (vl-types->acl2-types-parse-args rest pkg-sym)))
-               (cons (intern-in-package-of-symbol this pkg-sym)
-                     rest))))))
-
-(define vl-types->acl2-types-parse-args-list ((args-lst string-listp)
-                                              (pkg-sym symbolp))
-  :mode :program
-  (if (atom args-lst)
-      nil
-    (cons (vl-types->acl2-types-parse-args (car args-lst) pkg-sym)
-          (vl-types->acl2-types-parse-args-list (cdr args-lst) pkg-sym))))
-
 (define extract-vl-types-generate-macros
   (&key
    ((name stringp) 'name)
@@ -390,7 +333,7 @@
    (changer-macro-name 'changer-macro-name)
    (ranges-fn-name 'ranges-fn-name)
    ((pkg-sym symbolp) 'pkg-sym)
-   (constant-value 'nil))
+   (constant-value 'constant-value))
   (declare (ignorable name constant-value))
   `(
     (define ,changer-macro-name-aux (args)
@@ -456,118 +399,6 @@
         value :low start :width width)|#))
     ;;    )
     ))
-
-(define str::hexify-4vec ((x sv::4vec-p))
-  :returns (res stringp)
-  (if (integerp x)
-      (str::hexify x)
-    (str::cat "(" (str::hexify (sv::4vec->upper x))
-              " . " (str::hexify (sv::4vec->lower x))
-              ")")))
-
-(define str::binify-4vec ((x sv::4vec-p))
-  :returns (res stringp)
-  (if (integerp x)
-      (str::binify x)
-    (str::cat "(" (str::binify (sv::4vec->upper x))
-              " . " (str::binify (sv::4vec->lower x))
-              ")")))
-
-(define extract-vl-types-generate-debug-vector-functions ((debug-fn-name symbolp)
-                                                          (debug-vector-fn-name symbolp)
-                                                          (pkg-sym symbolp))
-  (b* ((debug-vector-fn-name (or debug-vector-fn-name 'debug-extracted-vl-type-array))
-       (debug-vector-loop-fn-name
-        (intern-in-package-of-symbol
-         (str::cat (symbol-name debug-vector-fn-name) "-LOOP")
-         pkg-sym)))
-    `(defines ,debug-vector-fn-name
-
-       (define ,debug-vector-fn-name ((value sv::4vec-p)
-                                      (dims vl-coretype-collected-dims-p)
-                                      (excludes (and (true-list-listp excludes)
-                                                     (true-listp excludes)))
-                                      (depth-limit integerp)
-                                      &optional
-                                      ((trace stringp) '"")
-                                      ((measure-cnt natp) '0) ;; only here to prove the measure.
-                                      )
-         :measure (acl2::nat-list-measure (list (len dims) measure-cnt))
-         :no-function t
-         (declare (ignorable measure-cnt))
-         (cond ((atom dims)
-                (b* ((result ,(if debug-fn-name `(,debug-fn-name value excludes depth-limit) 'value))
-                     ((when (equal trace "")) (list result)))
-                  (list (,(if debug-fn-name 'cons 'list) trace result))))
-               ((< depth-limit 1)
-                (b* ((result `(:value ,value
-                                      :hex ,(str::hexify-4vec value)
-                                      :limit-reached))
-                     ((when (equal trace "")) (list result)))
-                  (list (cons trace result))))
-               (t (b* (((list* slice-size msb lsb) (car dims))
-                       (result (,debug-vector-loop-fn-name lsb
-                                                           slice-size
-                                                           (1+ (- msb lsb))
-                                                           value
-                                                           (cdr dims)
-                                                           excludes
-                                                           (1- depth-limit)
-                                                           trace)))
-                    result))))
-
-       (define ,debug-vector-loop-fn-name ((lsb-offset natp)
-                                           (slice-size natp)
-                                           (cnt natp)
-                                           (value sv::4vec-p)
-                                           (dims vl-coretype-collected-dims-p)
-                                           (excludes (and (true-list-listp excludes)
-                                                          (true-listp excludes)))
-                                           (depth-limit integerp)
-                                           (trace stringp))
-         :measure (acl2::nat-list-measure (list (len dims) cnt))
-         :no-function t
-         (if (zp cnt)
-             nil
-           (b* ((cnt (1- cnt))
-                (rest (,debug-vector-loop-fn-name lsb-offset
-                                                  slice-size
-                                                  cnt
-                                                  value
-                                                  dims
-                                                  excludes
-                                                  depth-limit
-                                                  trace))
-                (user-index (+ cnt lsb-offset))
-                (cur-slice-value
-                 (sv::4vec-part-select (* slice-size cnt) slice-size value)
-                 #|(acl2::part-select value
-                 :low (* slice-size cnt)
-                 :width slice-size)|#)
-                (cur-slice-trace (str::cat trace
-                                           "["
-                                           (str::nat-to-dec-string user-index)
-                                           "]"))
-                ((when (member-equal (list user-index) excludes))
-                 rest)
-                ((when (member-equal (list user-index '*) excludes))
-                 (append rest
-                         `((,cur-slice-trace :value ,cur-slice-value
-                                             :hex ,(str::hexify-4vec cur-slice-value)
-                                             :fields-excluded))))
-
-                (excludes (collect-and-cdr-lists-that-start-with user-index excludes))
-
-                (cur-slice-res (,debug-vector-fn-name cur-slice-value
-                                                      dims
-                                                      excludes
-                                                      depth-limit
-                                                      cur-slice-trace
-                                                      cnt)))
-             (append rest cur-slice-res)))))))
-
-(make-event
- (extract-vl-types-generate-debug-vector-functions nil nil 'pkg-sym))
 
 (defines vl-types->acl2-types
 
@@ -728,13 +559,15 @@
 
               ;; accessor function expects indices only in a list such as '(1 2 3)
               (events
-               `((defsection ,symbol
-                   :autodoc nil
-                   :set-as-default-parent t
-                   :short ,(str::cat "Accessor, modifier, and debug functions for the extracted " name " VL coretype.")
-                   :long ,(str::cat
-                           (if (assoc-equal name orig-def-alist) (cdr (assoc-equal name orig-def-alist)) "")
-                           "<p>For this type, 3 ACL2 functions/macros are created for users. An accessor: @({(|" name "| value field),})</p> <p>A modifier: @({(change-|"name"| value field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"name"|-debug value optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions.</p>")
+               `((,@(if constant-value
+                        '(progn)
+                      `(defsection ,symbol
+                         :autodoc nil
+                         :set-as-default-parent t
+                         :short ,(str::cat "Accessor, modifier, and debug functions for the extracted " name " VL coretype.")
+                         :long ,(str::cat
+                                 (if (assoc-equal name orig-def-alist) (cdr (assoc-equal name orig-def-alist)) "")
+                                 "<p>For this type, 3 ACL2 functions/macros are created for users. An accessor: @({(|" name "| value field),})</p> <p>A modifier: @({(change-|"name"| value field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"name"|-debug value optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions.</p>")))
 
                    (define ,ranges-fn-name ((start natp) (args true-listp))
                      ;;:short ,(str::cat "Calculate the bit locations that a
@@ -749,10 +582,11 @@
                    ,@(extract-vl-types-generate-macros)
 
                    (define ,debug-fn-name ((value sv::4vec-p)
-                                           (excludes (and (true-list-listp excludes)
+                                           (excludes (and (acl2::true-list-listp excludes)
                                                           (true-listp excludes)))
                                            (depth-limit integerp))
                      :parents nil
+                     :normalize nil
                      ;;:short ,(str::cat "Debug aux function for  @(see " name ") VL coretype. Not intended to be called by users.")
                      (declare (ignorable excludes depth-limit))
                      (b* ((value (sv::4vec-part-select 0 ,size value)))
@@ -773,10 +607,23 @@
                    ;;short ,(str::cat "Debug macro for  @(see " name ") VL coretype.")
                    ;;:long "<p>See @(see vl::extract-vl-types) for explanation of arguments and how to use the debug functionality.</p>"
 
-                   (defmacro ,debug-macro-name (value &key exclude (depth-limit '1000))
+                   (defmacro ,debug-macro-name (,@(if constant-value nil '(value))
+                                               &key exclude (depth-limit '1000)
+                                               ,@(and constant-value `((value ',constant-value))))
                      (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
                        (list ',debug-fn-name value (list 'quote excludes)
                              depth-limit)))
+
+                   (table extracted-vl-types ',symbol
+                          '((:type :vl-coretype)
+                            (:constant-value ,constant-value)
+                            (:accessor-macro-name ,accessor-macro-name)
+                            (:changer-macro-name ,changer-macro-name)
+                            (:ranges-fn-name ,ranges-fn-name)
+                            (:debug-macro-name ,debug-macro-name)
+                            (:debug-fn-name ,debug-fn-name)
+                            (:debug-vector-fn-name ,debug-vector-fn-name)))
+
                    ;;  )
                    ))))
            (mv events size)))
@@ -816,10 +663,11 @@
                    ,@(extract-vl-types-generate-macros)
 
                    (define ,debug-fn-name ((value sv::4vec-p)
-                                           (excludes (and (true-list-listp excludes)
+                                           (excludes (and (acl2::true-list-listp excludes)
                                                           (true-listp excludes)))
                                            (depth-limit integerp))
                      :parents nil
+                     :normalize nil
                      ;;:short ,(str::cat "Debug aux function for  @(see |" name "|) VL struct type. Not intended to be called by users.")
                      (declare (ignorable excludes))
                      (cond ((< depth-limit 1)
@@ -843,6 +691,16 @@
                      (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
                        (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
                    ;;)
+
+                   (table extracted-vl-types ',symbol
+                          '((:type :vl-struct)
+                            (:accessor-macro-name ,accessor-macro-name)
+                            (:changer-macro-name ,changer-macro-name)
+                            (:ranges-fn-name ,ranges-fn-name)
+                            (:debug-macro-name ,debug-macro-name)
+                            (:debug-fn-name ,debug-fn-name)
+                            (:debug-vector-fn-name ,debug-vector-fn-name)
+                            ))
 
                    ))))
            (mv (append member-events this-events) size)))
@@ -883,10 +741,11 @@
                    ,@(extract-vl-types-generate-macros)
 
                    (define ,debug-fn-name ((value sv::4vec-p)
-                                           (excludes (and (true-list-listp excludes)
+                                           (excludes (and (acl2::true-list-listp excludes)
                                                           (true-listp excludes)))
                                            (depth-limit integerp))
                      :parents nil
+                     :normalize nil
                      (declare (ignorable excludes))
                      (cond ((< depth-limit 1)
                             (list :value value
@@ -908,6 +767,17 @@
                      (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
                        (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
                    ;;)
+
+                   (table extracted-vl-types ',symbol
+                          '((:type :vl-union)
+                            (:accessor-macro-name ,accessor-macro-name)
+                            (:changer-macro-name ,changer-macro-name)
+                            (:ranges-fn-name ,ranges-fn-name)
+                            (:debug-macro-name ,debug-macro-name)
+                            (:debug-fn-name ,debug-fn-name)
+                            (:debug-vector-fn-name ,debug-vector-fn-name)
+                            ))
+
                    ))))
            (mv (append member-events this-events) size)))
         (:vl-enum
@@ -954,7 +824,7 @@
                                          )))
                            ((sv::4vec-p value)
                             value)
-                           (t 
+                           (t
                             (case-match value
                               ,@string-to-int-cases
                               (& (progn$ (cw "Invalid enum type given: ~s0 ~%" value)
@@ -967,6 +837,7 @@
                                            (depth-limit integerp))
                      (declare (ignorable excludes depth-limit))
                      :parents nil
+                     :normalize nil
                      (list :value value
                            :string
                            (,accessor-macro-name value)))
@@ -976,7 +847,18 @@
                                                                       pkg-sym)
 
                    (defmacro ,debug-macro-name (value &key (depth-limit '1000))
-                     (list ',debug-fn-name value nil depth-limit))))))
+                     (list ',debug-fn-name value nil depth-limit))
+
+
+                   (table extracted-vl-types ',symbol
+                          '((:type :vl-enum)
+                            (:accessor-macro-name ,accessor-macro-name)
+                            (:ranges-fn-name ,ranges-fn-name)
+                            (:debug-macro-name ,debug-macro-name)
+                            (:debug-fn-name ,debug-fn-name)
+                            (:debug-vector-fn-name ,debug-vector-fn-name)
+                            ))
+                   ))))
            (mv this-events size)))
 
         (:vl-usertype
@@ -1008,10 +890,11 @@
                   ,@(extract-vl-types-generate-macros :constant-value constant-value)
 
                   (define ,debug-fn-name ((value sv::4vec-p)
-                                          (excludes (and (true-list-listp excludes)
+                                          (excludes (and (acl2::true-list-listp excludes)
                                                          (true-listp excludes)))
                                           (depth-limit integerp))
                     :parents nil
+                    :normalize nil
                     (declare (ignorable excludes))
                     ,debug-clause)
 
@@ -1026,6 +909,17 @@
                                                ,@(and constant-value `((value ',constant-value))))
                     (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
                       (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
+
+                  (table extracted-vl-types ',symbol
+                         '((:type :vl-usertype)
+                           (:constant-value ,constant-value)
+                           (:accessor-macro-name ,accessor-macro-name)
+                           (:changer-macro-name ,changer-macro-name)
+                           (:ranges-fn-name ,ranges-fn-name)
+                           (:debug-macro-name ,debug-macro-name)
+                           (:debug-fn-name ,debug-fn-name)
+                           (:debug-vector-fn-name ,debug-vector-fn-name)
+                           ))
                   ;;)
                   ))))
            (mv (append member-events
@@ -1159,7 +1053,7 @@ nil
                    (mv (change-vl-location loc :col 0) nil)))
                 (t (mv (raise "Unexpected vl-type for x: ~p0" x) nil))))
 
-         
+
          ((mv okp result & state) (vl-read-file (vl-location->filename minloc)))
          ((unless okp)
           (progn$ (cw "Couldn't read file ~p0 for ~p1 ~%"
@@ -1184,7 +1078,7 @@ nil
                                                   :col 0)))))
                    (subseq string start (min (length string) end))))))
 
-         
+
 
          ;; insert xdoc hyperlinks to quickly navigate children types.
          (string (extract-vl-types-insert-xdoc-links string all-vl-type-names))
@@ -1215,9 +1109,18 @@ nil
           (:vl-explicitvalueparam
            (b* (((vl-explicitvalueparam x) x.type)
                 (constant-value-name (intern-in-package-of-symbol (str::cat "*"x.name"*") pkg-sym))
-
                 ((mv extra-events &)
-                 (if (equal (vl-datatype-kind x.type) :vl-usertype)
+                 (if (or (equal (vl-datatype-kind x.type) :vl-usertype)
+                         (and (equal (vl-datatype-kind x.type) :vl-coretype)
+                              (equal (vl-coretype->name x.type) :vl-logic)
+                              ;; make sure  it is nit just a bit vector:
+                              (b* (((mv collected-dims &)
+                                    (vl-coretype-collect-dims x.type)))
+                                (and (consp collected-dims)
+                                     (vl-coretype-collected-dims-p collected-dims)
+                                     ;; slice size for the first dimension should be greater than 1.
+                                     (> (caar collected-dims) 1)))
+                              (not (cw "A constant value (~p0) (a :vl-coretype) is getting its debug/change/access macros~%" x.name))))
                      (vl-types->acl2-types-new-type x.name x.type
                                                     orig-def-alist pkg-sym
                                                     :constant-value constant-value-name)
@@ -1237,7 +1140,7 @@ nil
                          (if (assoc-equal x.name orig-def-alist) (cdr (assoc-equal x.name orig-def-alist)) "")
                          "@(def *|"x.name"|*)"
                          (if extra-events
-                             (str::cat "<p>Since this constant value is a special user type, 3 ACL2 functions/macros are created for users: an accessor, a modifier and a debugger.</p><p> An accessor: @({(|" x.name "| optional-field),})</p> <p>A modifier: @({(change-|"x.name"| field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"x.name"|-debug optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions. Note that since this type is a constant, these functions/macros do not explicitly take the \"value\". Instead, it uses the value of <tt>*|"x.name"|*</tt> by default. Passing an extra key argument \":value\" to any one of these macros/functions can override the value used.</p>")
+                             (str::cat "<p>Since this constant value is a special user type/an array, 3 ACL2 functions/macros are created for users: an accessor, a modifier and a debugger.</p><p> An accessor: @({(|" x.name "| optional-field),})</p> <p>A modifier: @({(change-|"x.name"| field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"x.name"|-debug optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions. Note that since this type is a constant, these functions/macros do not explicitly take the \"value\". Instead, it uses the value of <tt>*|"x.name"|*</tt> by default. Passing an extra key argument \":value\" to any one of these macros/functions can override the value used.</p>")
                            ""))
                  :autodoc nil
                  :set-as-default-parent t
@@ -1329,7 +1232,7 @@ nil
     ;;(:rewrite acl2::consp-under-iff-when-true-listp)
     (:type-prescription nfix)
     (:definition str::fast-string-append-lst)
-    (:type-prescription vl::true-list-listp)
+    (:type-prescription acl2::true-list-listp)
     (:definition not)
     (:type-prescription vl::collect-and-cdr-lists-that-start-with)
     (:type-prescription natp)
@@ -1410,6 +1313,7 @@ nil
        (names-to-extract (throw-away-keyword-parts args)))
 
     `(encapsulate nil
+       (local (include-book "std/lists/len" :dir :system))
        (with-output
          :off :all
          :on (comment error)
@@ -1512,6 +1416,29 @@ When there is a \".*\" at the end of a skipped argument (e.g., \"data[2].*\"), t
 </li>
 
 </ul>
+
+<h3>Minimal Non-local Book Inclusion</h3>
+
+<p>The extract-vl-types event requires a significant part of the VL library to be loaded, but the generated macros only require a few utilities.  Those requirements are included in the book \"centaur/vl/mlib/extract-vl-types-support\".  Therefore, you can do the following in a book if you want to minimize what that book nonlocally includes:</p>
+
+@({
+ (include-book \"centaur/vl/mlib/extract-vl-types-support\" :dir :system)
+ (local (include-book \"centaur/vl/mlib/extract-vl-types\" :dir :system))
+
+ (vl::extract-vl-types ...)
+ })
+
+<p>Similarly, vl-extract-types can be used locally to an encapsulate as
+follows (note the use of make-event to wrap the macro call of
+extract-vl-types:</p>
+
+@({
+ (include-book \"centaur/vl/mlib/extract-vl-types-support\" :dir :system)
+ (encapsulate nil
+   (local (include-book \"centaur/vl/mlib/extract-vl-types\" :dir :system))
+   (make-event '(vl::extract-vl-types ...)))
+ })
+
 "
 
   )

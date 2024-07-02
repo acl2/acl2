@@ -1,7 +1,7 @@
 ; Utilities to merge terms into dags (and to convert terms into dags).
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,11 @@
 (in-package "ACL2")
 
 ;; The functions in this book use the basic evaluator to evaluate ground terms.
+;; This version does not handle embedded dags.
+;; See also merge-term-into-dag-array.
 ;; See also merge-term-into-dag-array-simple.lisp.
+
+;; TODO: Add support for BOOLIF, BVIF, and BV-ARRAY-IF.
 
 (include-book "dag-array-builders2")
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
@@ -30,37 +34,34 @@
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
-;; this version does not handle embedded dags
-
-(local (in-theory (enable integerp-when-natp)))
-
-(local (in-theory (disable consp-from-len-cheap
-                           use-all-consp-for-car
-                           USE-ALL-CONSP
-                           USE-ALL-CONSP-2
-                           NTH-WHEN-NOT-CONSP-CHEAP
-                           NTH-WHEN-ZP-CHEAP
-                           ALL-CONSP-WHEN-NOT-CONSP
-                           NAT-LISTP
-                           BOUNDED-DARG-LISTP-WHEN-ALL-< ;limit?
-                           ALL-<-OF-ALEN1-WHEN-PSEUDO-DAG-ARRAYP-LIST
-                           NTH-WHEN-<=-LEN-CHEAP
-                           default-+-2
-                           default-car
-                           default-cdr
-                           quote-lemma-for-bounded-darg-listp-gen-alt
-                           symbol-alistp ;don't induct
-                           wf-dagp-expander
-                           wf-dagp
-                           member-equal
-                           use-all-<-for-car
-                           bounded-darg-listp-when-<-of-largest-non-quotep
-                           ;;bounded-darg-listp-when-all-consp
-                           strip-cdrs
-                           )))
+(local (in-theory (e/d (integerp-when-natp)
+                       (consp-from-len-cheap
+                        use-all-consp-for-car
+                        use-all-consp
+                        use-all-consp-2
+                        nth-when-not-consp-cheap
+                        nth-when-zp-cheap
+                        all-consp-when-not-consp
+                        nat-listp
+                        bounded-darg-listp-when-all-< ;limit?
+                        all-<-of-alen1-when-pseudo-dag-arrayp-list
+                        nth-when-<=-len-cheap
+                        default-+-2
+                        default-car
+                        default-cdr
+                        quote-lemma-for-bounded-darg-listp-gen-alt
+                        symbol-alistp ;don't induct
+                        wf-dagp-expander
+                        wf-dagp
+                        member-equal
+                        use-all-<-for-car
+                        bounded-darg-listp-when-<-of-largest-non-quotep
+                        ;;bounded-darg-listp-when-all-consp
+                        strip-cdrs))))
 
 (defthmd true-listp-of-nth-1-of-nth-0-when-pseudo-termp
   (implies (and (pseudo-termp term)
@@ -72,26 +73,13 @@
            :in-theory (enable pseudo-termp nth-of-0
                               nth-when-not-consp-cheap))))
 
-(defthm lookup-equal-forward-to-assoc-equal
-  (implies (lookup-equal key alist)
-           (assoc-equal key alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
-;dup
-(defthm assoc-equal-when-lookup-equal-cheap
-  (implies (lookup-equal term var-replacement-alist)
-           (assoc-equal term var-replacement-alist))
-  :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
 ;dup
 (defthm dargp-less-than-of-lookup-equal
   (implies (and (lookup-equal term var-replacement-alist)
                 (bounded-darg-listp (strip-cdrs var-replacement-alist)
                                                 dag-len))
            (dargp-less-than (lookup-equal term var-replacement-alist) dag-len))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
+  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs))))
 
 (defthmd consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs
   (implies (and (all-myquotep (strip-cdrs var-replacement-alist))
@@ -107,19 +95,13 @@
 ;;  :hints (("Goal" :in-theory (e/d (pseudo-termp nth) (NTH-OF-CDR)))))
 
 ;dup, needed?
-(defthm dargp-of-lookup-equal-when-all-dargp-of-strip-cdrs
-  (implies (all-dargp (strip-cdrs alist))
+(defthm dargp-of-lookup-equal-when-darg-listp-of-strip-cdrs
+  (implies (darg-listp (strip-cdrs alist))
            (iff (dargp (lookup-equal var alist))
                 (assoc-equal var alist)))
   :hints (("Goal" :induct t
-           :in-theory (e/d (all-dargp lookup-equal strip-cdrs)
+           :in-theory (e/d (darg-listp lookup-equal strip-cdrs)
                            (myquotep)))))
-
-;dup
-(defthmd not-equal-of-len-and-1-when-dargp
-  (implies (dargp x)
-           (not (equal (len x) 1)))
-  :hints (("Goal" :in-theory (enable dargp myquotep))))
 
 ;; TODO: Consider handling other versions of IF top-down.
 ;; TODO: Include subst in the name since this also substitutes for vars.
@@ -269,6 +251,24 @@
   :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
 
 (defthm-flag-merge-term-into-dag-array-basic
+  (defthm integerp-of-mv-nth-3-of-merge-term-into-dag-array-basic
+    (implies (integerp dag-len)
+             (integerp (mv-nth 3 (merge-term-into-dag-array-basic
+                              term var-replacement-alist dag-array dag-len dag-parent-array
+                              dag-constant-alist dag-variable-alist
+                              dag-array-name dag-parent-array-name
+                              interpreted-function-alist))))
+    :flag merge-term-into-dag-array-basic)
+  (defthm integerp-of-mv-nth-3-of-merge-terms-into-dag-array-basic
+    (implies (integerp dag-len)
+             (integerp (mv-nth 3 (merge-terms-into-dag-array-basic
+                              terms var-replacement-alist
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                              interpreted-function-alist))))
+    :flag merge-terms-into-dag-array-basic)
+  :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
+
+(defthm-flag-merge-term-into-dag-array-basic
   (defthm dag-variable-alistp-of-mv-nth-6-of-merge-term-into-dag-array-basic
     (implies (and (pseudo-termp term)
                   (dag-variable-alistp dag-variable-alist)
@@ -337,7 +337,7 @@
                   ;;                var-replacement-alist
                   ;;                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                   ;;                interpreted-function-alist))
-                  ;;     2147483646)
+                  ;;     *max-1d-array-length*)
 
                   ))
     :flag merge-term-into-dag-array-basic)
@@ -359,7 +359,7 @@
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                          interpreted-function-alist)))
                          (len terms))
-                  (all-dargp (mv-nth 1 (merge-terms-into-dag-array-basic
+                  (darg-listp (mv-nth 1 (merge-terms-into-dag-array-basic
                                                    terms
                                                    var-replacement-alist
                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -412,7 +412,7 @@
                   ;;                var-replacement-alist
                   ;;                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                   ;;                interpreted-function-alist))
-                  ;;     2147483646)
+                  ;;     *max-1d-array-length*)
                   ))
     :flag merge-terms-into-dag-array-basic)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -465,7 +465,7 @@
                           var-replacement-alist
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                           interpreted-function-alist))
-               2147483646))
+               *max-1d-array-length*))
   :rule-classes (:linear :rewrite)
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
            :in-theory (e/d (wf-dagp) (merge-term-into-dag-array-basic-return-type)))))
@@ -573,9 +573,9 @@
                          var-replacement-alist
                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                          interpreted-function-alist))
-              2147483646))
+              *max-1d-array-length*))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type-corollary3-gen
-                                  (bound 2147483646)
+                                  (bound *max-1d-array-length*)
                                   )
            :in-theory (disable merge-term-into-dag-array-basic-return-type
                                dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic
@@ -633,7 +633,7 @@
                                                       not-equal-of-len-and-1-when-dargp
                                                       <-of-nth-when-bounded-darg-listp
                                                       true-listp-of-nth-1-of-nth-0-when-pseudo-termp
-                                                      ALL-MYQUOTEP-WHEN-ALL-DARGP)
+                                                      ALL-MYQUOTEP-WHEN-DARG-LISTP)
                            (natp dargp pseudo-term-listp pseudo-termp)))))
 
 (defthm wf-dagp-of-merge-term-into-dag-array-basic
@@ -675,6 +675,23 @@
              (declare (ignore erp nodenums-or-quoteps))
              (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))
   :hints (("Goal" :use (:instance merge-terms-into-dag-array-basic-return-type)
+           :in-theory (disable merge-terms-into-dag-array-basic-return-type))))
+
+(defthm merge-terms-into-dag-array-basic-return-type-linear
+    (implies (and (pseudo-term-listp terms)
+                  (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                  (symbol-alistp var-replacement-alist)
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+                  ;;no errors:
+                  (not (mv-nth 0 (merge-terms-into-dag-array-basic terms var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
+             (<= dag-len
+                      (mv-nth 3 (merge-terms-into-dag-array-basic
+                                 terms
+                                 var-replacement-alist
+                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                 interpreted-function-alist))))
+  :rule-classes :linear
+  :hints (("Goal" :use merge-terms-into-dag-array-basic-return-type
            :in-theory (disable merge-terms-into-dag-array-basic-return-type))))
 
 (defthm pseudo-dag-arrayp-after-merge-terms-into-dag-array-basic
@@ -758,12 +775,5 @@
                                    merge-terms-into-dag-array-basic
                                    consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs)
                                   (natp))
-           :expand ((MERGE-TERM-INTO-DAG-ARRAY-BASIC TERM VAR-REPLACEMENT-ALIST
-                                        DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY
-                                        DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
-                                        DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                        INTERPRETED-FUNCTION-ALIST)
-                    (MERGE-TERM-INTO-DAG-ARRAY-BASIC TERM var-replacement-alist DAG-ARRAY 0 DAG-PARENT-ARRAY
-                                                    DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
-                                                    DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                                    INTERPRETED-FUNCTION-ALIST)))))
+           :expand ((merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)
+                    (merge-term-into-dag-array-basic term var-replacement-alist dag-array 0 dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))))

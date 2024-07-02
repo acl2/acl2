@@ -1,7 +1,7 @@
 ; Clearing values in bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,7 +45,7 @@
 (defthm len-of-bv-array-clear
   (equal (len (bv-array-clear element-size len key lst))
          (nfix len))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear))))
 
 (defthm nth-of-bv-array-clear
   (implies (and (< n len)
@@ -53,7 +53,7 @@
                 (natp n))
            (equal (nth n (bv-array-clear elem-size len n lst))
                   0))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2 ceiling-of-lg) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write update-nth2 ceiling-of-lg))))
 
 (defthm nth-of-bv-array-clear-better
   (implies (and (natp len)
@@ -62,10 +62,7 @@
                   (if (< n len)
                       0
                     nil)))
-  :hints
-  (("Goal" :in-theory
-    (e/d (bv-array-clear bv-array-write ceiling-of-lg update-nth2)
-         ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write ceiling-of-lg update-nth2))))
 
 (defthm nth-of-bv-array-clear-diff
   (implies (and (natp len)
@@ -78,10 +75,7 @@
                 )
            (equal (nth n (bv-array-clear elem-size len index lst))
                   (bvchop elem-size (nth n lst))))
-  :hints
-  (("Goal" :in-theory
-    (e/d (bv-array-clear bv-array-write-opener update-nth2)
-         ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write-opener update-nth2))))
 
 (defthm nth-of-bv-array-clear-both
   (implies (and (natp len)
@@ -94,10 +88,7 @@
                   (if (equal n index)
                       0
                   (bvchop elem-size (nth n lst)))))
-  :hints
-  (("Goal" :in-theory
-    (e/d (bv-array-clear bv-array-write-opener update-nth2)
-         ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write-opener update-nth2))))
 
 (defthm all-integerp-of-bv-array-clear
   (all-integerp (bv-array-clear element-size len key lst))
@@ -161,10 +152,7 @@
                 )
            (equal (nth n (bv-array-clear-range elem-size len lowindex highindex lst))
                   0))
-  :hints
-  (("Goal" :in-theory
-    (e/d (bv-array-clear-range bv-array-write update-nth2)
-         ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear-range bv-array-write update-nth2))))
 
 ;; (thm
 ;;  (equal (BV-ARRAY-CLEAR ELEM-SIZE len len LST)
@@ -188,8 +176,7 @@
                 (< highindex len))
            (equal (nth n (bv-array-clear-range elem-size len lowindex highindex lst))
                   (bvchop elem-size (nth n lst))))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear-range bv-array-write update-nth2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear-range bv-array-write update-nth2))))
 
 (defthm len-of-bv-array-clear-range
   (equal (len (bv-array-clear-range esize len lowindex highindex data))
@@ -203,12 +190,11 @@
 (defthm bv-array-clear-of-repeat-same
   (equal (bv-array-clear 8 len start (repeat len 0))
          (repeat len 0))
-  :hints (("Goal" :in-theory (e/d (;update-nth-when-equal-of-nth
-                                   bv-array-clear
-                                   bv-array-write ;fixme
-                                   update-nth2
-                                   )
-                                  ()))))
+  :hints (("Goal" :in-theory (enable ;update-nth-when-equal-of-nth
+                              bv-array-clear
+                              bv-array-write ;fixme
+                              update-nth2
+                              ))))
 
 (defthm bv-array-clear-range-of-repeat-same
   (equal (bv-array-clear-range '8 len start end (repeat len 0))
@@ -225,7 +211,8 @@
                   data))
   :hints (("Goal" :use (:instance bv-array-clear-range-of-repeat-same)
            :in-theory (e/d (ALL-EQUAL$-WHEN-TRUE-LISTP)
-                           (bv-array-clear-range-of-repeat-same)))))
+                           (bv-array-clear-range-of-repeat-same
+                            equal-of-repeat-of-len-same)))))
 
 (defthm bv-array-clear-of-true-list-fix
   (equal (bv-array-clear elem-size len index (true-list-fix lst))

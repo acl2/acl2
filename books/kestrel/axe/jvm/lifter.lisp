@@ -41,7 +41,8 @@
 ;; TODO: Print a warning or error if user attempts to lift a recursive function
 
 (include-book "kestrel/jvm/control-flow" :dir :system)
-(include-book "kestrel/jvm/read-class" :dir :system)
+(include-book "kestrel/jvm/read-class" :dir :system) ; convenient to have, if not strictly needed
+(include-book "kestrel/jvm/read-jar" :dir :system) ; convenient to have, if not strictly needed
 (include-book "rule-lists-jvm")
 (include-book "output-indicators")
 (include-book "rules-in-rule-lists-jvm") ;include less?  but some of these rules are now used during decompilation?
@@ -54,7 +55,7 @@
 (include-book "../make-axe-rules2")
 (include-book "../dag-to-term-with-lets")
 (include-book "../add-to-dag")
-;(include-book "kestrel/bv/arith" :dir :system) ;todo?
+(include-book "kestrel/bv/arith" :dir :system) ;todo ; for equal-of-same-cancel-1
 (include-book "jvm-rules-axe2") ;for smart if handling
 (include-book "../math-rules") ; todo: why?
 (include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
@@ -68,6 +69,7 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
@@ -137,7 +139,7 @@
                             interpreted-function-alist ;todo, check that this includes definitions for all non-built-in functions (and all functions they call, etc.)
                             )
   (declare (xargs :guard (and (or (and (pseudo-dagp dag)
-                                       (< (len dag) 2147483647))
+                                       (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))
                               (or (null max-term-size)
                                   (natp max-term-size))
@@ -433,14 +435,11 @@
 ;;; The :excluded-locals option:
 ;;;
 
-(defforall-simple nat-listp)
-(verify-guards all-nat-listp)
-
 (defun excluded-localsp (x)
   (declare (xargs :guard t))
   (and (doublet-listp x)
        (all-loop-function-idp (strip-cars x))
-       (all-nat-listp (strip-cadrs x))))
+       (nat-list-listp (strip-cadrs x))))
 
 ;;;
 ;;; The :postludes option:
@@ -2659,10 +2658,10 @@
                                                      monitored-symbols
                                                      print
                                                      "INVAR"
+                                                     nil ;context ;a contextp over nodes in context-array
                                                      nil ;context-array-name
                                                      nil ;context-array
                                                      0
-                                                     nil ;context ;a contextp over nodes in context-array
                                                      6000 ;max-conflicts
                                                      nil  ;print-max-conflicts-goalp
                                                      nil  ;options
@@ -3332,7 +3331,7 @@
       nil
     (let* ((entry (car alist-with-dag-keys))
            (key (car entry)))
-      (if (equivalent-dags dag key)
+      (if (equivalent-dagsp dag key)
           (cdr entry)
         (lookup-equivalent-dag dag (cdr alist-with-dag-keys))))))
 
@@ -5157,14 +5156,14 @@
                            (make-axe-rules! (set-difference-eq
                                             (append (map-rules)
                                                     (jvm-simplification-rules)
-                                                    (jvm-rules-list)
-                                                    (jvm-rules-alist)
+                                                    (list-rules3)
+                                                    (alist-rules)
                                                     (bv-array-rules)
                                                     (jvm-rules-unfiled-misc)
                                                     (boolean-rules)
                                                     '(IF-BECOMES-MYIF
                                                       MYIF-BECOMES-BOOLIF-AXE
-                                                      UBP-LONGER-BETTER
+                                                      UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER
                                                       sbvlt-of-bvplus-of-minus-1-and-minus-1
                                                       sbvlt-of-bvminus-of-1-and-minus-1
                                                       sbvlt-of-bvplus-of-minus-1-and-1
@@ -6009,6 +6008,7 @@
                                              (jvm-simplification-rules)
                                              (g :extra-rules options))
                                      (g :remove-rules options))
+                                    :none ; todo: pass a rule-alist here?
                                     nil ; interpreted-fns
                                     (g :monitor options)
                                     (g :call-stp options)
@@ -6537,6 +6537,7 @@
                                             (jvm-simplification-rules)
                                             (g :extra-rules options))
                                     (g :remove-rules options))
+                                   :none ; todo: pass a rule-alist here?
                                    nil ; interpreted-fns
                                    (g :monitor options)
                                    (g :call-stp options)

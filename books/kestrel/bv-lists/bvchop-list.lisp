@@ -1,7 +1,7 @@
 ; BV Lists Library: bvchop-list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -262,9 +262,7 @@
            (equal (bvchop-list m (update-nth n val lst))
                   (update-nth n (bvchop m val)  (bvchop-list m lst))))
   :hints (("Goal" :expand (UPDATE-NTH 1 VAL LST)
-           :in-theory (e/d (bvchop-list update-nth) (;LIST::UPDATE-NTH-EQUAL-REWRITE
-                                                     )))))
-
+           :in-theory (enable bvchop-list update-nth))))
 
 ;move?
 (defthm bvchop-list-does-nothing-better
@@ -299,3 +297,12 @@
   :hints (("Goal" :use (:instance bvchop-list-does-nothing-rewrite)
            :in-theory (disable bvchop-list-does-nothing-rewrite
                                bvchop-list-does-nothing-better))))
+
+(defthmd bvchop-list-of-take-of-bvchop-list-gen
+  (implies (and (<= size2 size1)
+                (natp size1)
+                (natp size2))
+           (equal (bvchop-list size1 (take len (bvchop-list size2 lst)))
+                  (bvchop-list size2 (take len lst))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable take bvchop-list))))

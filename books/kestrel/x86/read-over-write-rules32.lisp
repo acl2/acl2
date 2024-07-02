@@ -1,7 +1,7 @@
 ; "Read over write" rules for our x86 state readers and writers
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,48 +11,9 @@
 
 (in-package "X")
 
-(include-book "support32")
-(include-book "register-readers-and-writers")
+(include-book "support32") ; reduce?  but we need at least the memory readers
+(include-book "register-readers-and-writers32")
 
-;; read-<reg> of set-eip
-
-(defthm eax-of-set-eip
-  (equal (eax (set-eip eip x86))
-         (eax x86))
-  :hints (("Goal" :in-theory (enable eax))))
-
-;;;
-
-(defthm ebx-of-set-eip
-  (equal (ebx (set-eip eip x86))
-         (ebx x86))
-  :hints (("Goal" :in-theory (enable ebx))))
-
-;;;
-
-(defthm ecx-of-set-eip
-  (equal (ecx (set-eip eip x86))
-         (ecx x86))
-  :hints (("Goal" :in-theory (enable ecx))))
-
-;;;
-
-(defthm edx-of-set-eip
-  (equal (edx (set-eip eip x86))
-         (edx x86))
-  :hints (("Goal" :in-theory (enable edx))))
-
-;;;
-
-(defthm esp-of-set-eip
-  (equal (esp (set-eip eip x86))
-         (esp x86))
-  :hints (("Goal" :in-theory (enable esp))))
-
-(defthm esp-of-set-flag
-  (equal (esp (set-flag flg val x86))
-         (esp x86))
-  :hints (("Goal" :in-theory (enable esp))))
 
 (defthm esp-of-write-byte-to-segment
   (equal (esp (write-byte-to-segment eff-addr seg-reg val x86))
@@ -63,13 +24,6 @@
   (equal (esp (write-to-segment n eff-addr seg-reg val x86))
          (esp x86))
   :hints (("Goal" :in-theory (enable write-to-segment))))
-
-;;;
-
-(defthm ebp-of-set-eip
-  (equal (ebp (set-eip eip x86))
-         (ebp x86))
-  :hints (("Goal" :in-theory (enable ebp))))
 
 ;;;
 
@@ -108,6 +62,11 @@
          (read-byte-from-segment eff-addr seg-reg x86))
   :hints (("Goal" :in-theory (enable set-ebp))))
 
+(defthm read-byte-from-segment-of-set-mxcsr
+  (equal (read-byte-from-segment eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (read-byte-from-segment eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
+
 ;;;
 
 (defthm read-from-segment-of-set-eip
@@ -145,69 +104,20 @@
          (read-from-segment n eff-addr seg-reg x86))
   :hints (("Goal" :in-theory (enable set-ebp))))
 
-;;;
+(defthm read-from-segment-of-set-flag
+  (equal (read-from-segment n eff-addr seg-reg (set-flag flg val x86))
+         (read-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable read-from-segment))))
 
-(defthm x86p-of-set-eax
-  (implies (x86p x86)
-           (x86p (set-eax eax x86)))
-  :hints (("Goal" :in-theory (enable set-eax))))
+(defthm read-from-segment-of-set-undef
+  (equal (read-from-segment n eff-addr seg-reg (set-undef undef x86))
+         (read-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable read-from-segment))))
 
-(defthm x86p-of-set-ebx
-  (implies (x86p x86)
-           (x86p (set-ebx ebx x86)))
-  :hints (("Goal" :in-theory (enable set-ebx))))
-
-(defthm x86p-of-set-ecx
-  (implies (x86p x86)
-           (x86p (set-ecx ecx x86)))
-  :hints (("Goal" :in-theory (enable set-ecx))))
-
-(defthm x86p-of-set-edx
-  (implies (x86p x86)
-           (x86p (set-edx edx x86)))
-  :hints (("Goal" :in-theory (enable set-edx))))
-
-(defthm x86p-of-set-esp
-  (implies (x86p x86)
-           (x86p (set-esp esp x86)))
-  :hints (("Goal" :in-theory (enable set-esp))))
-
-(defthm x86p-of-set-ebp
-  (implies (x86p x86)
-           (x86p (set-ebp ebp x86)))
-  :hints (("Goal" :in-theory (enable set-ebp))))
-
-;;;
-
-(defthm eip-of-set-eax
-  (equal (eip (set-eax eax x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-eax))))
-
-(defthm eip-of-set-ebx
-  (equal (eip (set-ebx ebx x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-ebx))))
-
-(defthm eip-of-set-ecx
-  (equal (eip (set-ecx ecx x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-ecx))))
-
-(defthm eip-of-set-edx
-  (equal (eip (set-edx edx x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-edx))))
-
-(defthm eip-of-set-esp
-  (equal (eip (set-esp esp x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-esp))))
-
-(defthm eip-of-set-ebp
-  (equal (eip (set-ebp ebp x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-ebp))))
+(defthm read-from-segment-of-set-mxcsr
+  (equal (read-from-segment n eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (read-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable read-from-segment))))
 
 ;;;
 
@@ -272,6 +182,12 @@
   (equal (32-bit-segment-size seg-reg (set-ebp ebp x86))
          (32-bit-segment-size seg-reg x86))
   :hints (("Goal" :in-theory (enable set-ebp))))
+
+;open less in the proof?
+(defthm 32-bit-segment-size-of-set-eip
+  (equal (32-bit-segment-size seg-reg (set-eip eip x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-eip 32-bit-segment-size 32-bit-segment-start-and-size))))
 
 ;open less in the proof?
 (defthm 32-bit-segment-size-of-write-byte-to-segment
@@ -1006,7 +922,7 @@
                             unsigned-byte-p)
                            (sep-eff-addr-ranges
                             acl2::bvcat-equal-rewrite-alt
-                            acl2::bvplus-recollapse
+
                             acl2::bvcat-equal-rewrite)))))
 
 (defthm write-to-segment-of-write-to-segment-included
@@ -1025,7 +941,7 @@
                             unsigned-byte-p)
                            (sep-eff-addr-ranges
                             acl2::bvcat-equal-rewrite-alt
-                            acl2::bvplus-recollapse
+
                             acl2::bvcat-equal-rewrite)))))
 
 ;;;
@@ -1084,3 +1000,117 @@
            (equal (read-stack-dword eff-addr1 (write-to-segment n2 eff-addr2 seg-reg2 val x86))
                   (read-stack-dword eff-addr1 x86)))
   :hints (("Goal" :in-theory (enable read-stack-dword))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm eax-of-set-flag (equal (eax (set-flag flag val x86)) (eax x86)) :hints (("Goal" :in-theory (enable set-flag))))
+(defthm ebx-of-set-flag (equal (ebx (set-flag flag val x86)) (ebx x86)) :hints (("Goal" :in-theory (enable set-flag))))
+(defthm ecx-of-set-flag (equal (ecx (set-flag flag val x86)) (ecx x86)) :hints (("Goal" :in-theory (enable set-flag))))
+(defthm edx-of-set-flag (equal (edx (set-flag flag val x86)) (edx x86)) :hints (("Goal" :in-theory (enable set-flag))))
+(defthm ebp-of-set-flag (equal (ebp (set-flag flag val x86)) (ebp x86)) :hints (("Goal" :in-theory (enable set-flag))))
+(defthm esp-of-set-flag (equal (esp (set-flag flag val x86)) (esp x86)) :hints (("Goal" :in-theory (enable set-flag))))
+;; (defthm esi-of-set-flag (equal (esi (set-flag flag val x86)) (esi x86)) :hints (("Goal" :in-theory (enable set-flag))))
+;; (defthm edi-of-set-flag (equal (edi (set-flag flag val x86)) (edi x86)) :hints (("Goal" :in-theory (enable set-flag))))
+;;todo: more?
+
+(defthm eax-of-set-undef (equal (eax (set-undef undef x86)) (eax x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm ebx-of-set-undef (equal (ebx (set-undef undef x86)) (ebx x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm ecx-of-set-undef (equal (ecx (set-undef undef x86)) (ecx x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm edx-of-set-undef (equal (edx (set-undef undef x86)) (edx x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm ebp-of-set-undef (equal (ebp (set-undef undef x86)) (ebp x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm esp-of-set-undef (equal (esp (set-undef undef x86)) (esp x86)) :hints (("Goal" :in-theory (enable set-undef))))
+;; (defthm esi-of-set-undef (equal (esi (set-undef undef x86)) (esi x86)) :hints (("Goal" :in-theory (enable set-undef))))
+;; (defthm edi-of-set-undef (equal (edi (set-undef undef x86)) (edi x86)) :hints (("Goal" :in-theory (enable set-undef))))
+;todo: more?
+
+(defthm eax-of-set-mxcsr (equal (eax (set-mxcsr mxcsr x86)) (eax x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm ebx-of-set-mxcsr (equal (ebx (set-mxcsr mxcsr x86)) (ebx x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm ecx-of-set-mxcsr (equal (ecx (set-mxcsr mxcsr x86)) (ecx x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm edx-of-set-mxcsr (equal (edx (set-mxcsr mxcsr x86)) (edx x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm ebp-of-set-mxcsr (equal (ebp (set-mxcsr mxcsr x86)) (ebp x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm esp-of-set-mxcsr (equal (esp (set-mxcsr mxcsr x86)) (esp x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+;; (defthm esi-of-set-mxcsr (equal (esi (set-mxcsr mxcsr x86)) (esi x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+;; (defthm edi-of-set-mxcsr (equal (edi (set-mxcsr mxcsr x86)) (edi x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+;todo: more?
+
+(defthm undef-of-set-eip (equal (undef (set-eip val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-eip))))
+(defthm undef-of-set-eax (equal (undef (set-eax val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-eax))))
+(defthm undef-of-set-ebx (equal (undef (set-ebx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-ebx))))
+(defthm undef-of-set-ecx (equal (undef (set-ecx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-ecx))))
+(defthm undef-of-set-edx (equal (undef (set-edx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-edx))))
+;; (defthm undef-of-set-esi (equal (undef (set-esi val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-esi))))
+;; (defthm undef-of-set-edi (equal (undef (set-edi val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-edi))))
+(defthm undef-of-set-esp (equal (undef (set-esp val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-esp))))
+(defthm undef-of-set-ebp (equal (undef (set-ebp val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-ebp))))
+
+(defthm mxcsr-of-set-eip (equal (mxcsr (set-eip val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-eip))))
+(defthm mxcsr-of-set-eax (equal (mxcsr (set-eax val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-eax))))
+(defthm mxcsr-of-set-ebx (equal (mxcsr (set-ebx val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-ebx))))
+(defthm mxcsr-of-set-ecx (equal (mxcsr (set-ecx val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-ecx))))
+(defthm mxcsr-of-set-edx (equal (mxcsr (set-edx val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-edx))))
+;; (defthm mxcsr-of-set-esi (equal (mxcsr (set-esi val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-esi))))
+;; (defthm mxcsr-of-set-edi (equal (mxcsr (set-edi val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-edi))))
+(defthm mxcsr-of-set-esp (equal (mxcsr (set-esp val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-esp))))
+(defthm mxcsr-of-set-ebp (equal (mxcsr (set-ebp val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-ebp))))
+
+(defthm undef-of-write-byte-to-segment
+  (equal (undef (write-byte-to-segment eff-addr seg-reg val x86))
+         (undef x86))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+
+(defthm undef-of-write-to-segment
+  (equal (undef (write-to-segment n eff-addr seg-reg val x86))
+         (undef x86))
+  :hints (("Goal" :in-theory (enable write-to-segment))))
+
+(defthm mxcsr-of-write-byte-to-segment
+  (equal (mxcsr (write-byte-to-segment eff-addr seg-reg val x86))
+         (mxcsr x86))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+
+(defthm mxcsr-of-write-to-segment
+  (equal (mxcsr (write-to-segment n eff-addr seg-reg val x86))
+         (mxcsr x86))
+  :hints (("Goal" :in-theory (enable write-to-segment))))
+
+
+(defthm ms-of-set-eip (equal (ms (set-eip val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-eip))))
+(defthm ms-of-set-eax (equal (ms (set-eax val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-eax))))
+(defthm ms-of-set-ebx (equal (ms (set-ebx val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-ebx))))
+(defthm ms-of-set-ecx (equal (ms (set-ecx val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-ecx))))
+(defthm ms-of-set-edx (equal (ms (set-edx val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-edx))))
+;; (defthm ms-of-set-esi (equal (ms (set-esi val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-esi))))
+;; (defthm ms-of-set-edi (equal (ms (set-edi val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-edi))))
+(defthm ms-of-set-esp (equal (ms (set-esp val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-esp))))
+(defthm ms-of-set-ebp (equal (ms (set-ebp val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-ebp))))
+
+(defthm ms-of-write-byte-to-segment (equal (ms (write-byte-to-segment eff-addr seg-reg val x86)) (ms x86)) :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+(defthm ms-of-write-to-segment (equal (ms (write-to-segment n eff-addr seg-reg val x86)) (ms x86)) :hints (("Goal" :in-theory (enable write-to-segment))))
+
+
+(defthm fault-of-set-eip (equal (fault (set-eip val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-eip))))
+(defthm fault-of-set-eax (equal (fault (set-eax val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-eax))))
+(defthm fault-of-set-ebx (equal (fault (set-ebx val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-ebx))))
+(defthm fault-of-set-ecx (equal (fault (set-ecx val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-ecx))))
+(defthm fault-of-set-edx (equal (fault (set-edx val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-edx))))
+;; (defthm fault-of-set-esi (equal (fault (set-esi val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-esi))))
+;; (defthm fault-of-set-edi (equal (fault (set-edi val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-edi))))
+(defthm fault-of-set-esp (equal (fault (set-esp val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-esp))))
+(defthm fault-of-set-ebp (equal (fault (set-ebp val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-ebp))))
+
+(defthm fault-of-write-byte-to-segment (equal (fault (write-byte-to-segment eff-addr seg-reg val x86)) (fault x86)) :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+(defthm fault-of-write-to-segment (equal (fault (write-to-segment n eff-addr seg-reg val x86)) (fault x86)) :hints (("Goal" :in-theory (enable write-to-segment))))
+
+(defthm program-at-of-set-eip
+  (equal (program-at prog-addr bytes (set-eip eip x86))
+         (program-at prog-addr bytes x86))
+  :hints (("Goal" :in-theory (enable set-eip program-at))))
+
+(defthm program-at-of-set-eax (equal (program-at addr bytes (set-eax val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-eax))))
+(defthm program-at-of-set-ebx (equal (program-at addr bytes (set-ebx val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-ebx))))
+(defthm program-at-of-set-ecx (equal (program-at addr bytes (set-ecx val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-ecx))))
+(defthm program-at-of-set-edx (equal (program-at addr bytes (set-edx val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-edx))))
+;; (defthm program-at-of-set-esi (equal (program-at addr bytes (set-esi val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-esi))))
+;; (defthm program-at-of-set-edi (equal (program-at addr bytes (set-edi val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-edi))))
+(defthm program-at-of-set-esp (equal (program-at addr bytes (set-esp val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-esp))))
+(defthm program-at-of-set-ebp (equal (program-at addr bytes (set-ebp val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-ebp))))

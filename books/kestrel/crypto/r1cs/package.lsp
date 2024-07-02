@@ -26,17 +26,21 @@
             pfield::fe-listp
             lookup-equal
             lookup-eq
-	    b*
+            b*
             keywords-to-acl2-package
             ;; some bv concepts:
             getbit
             bvchop
             slice
             bvcat
-            bitxor
-            bvxor
             bitnot
+            bitand
+            bitor
+            bitxor
             bvnot
+            bvand
+            bvor
+            bvxor
             bvshr
             bvshl
             bvplus

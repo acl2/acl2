@@ -126,9 +126,7 @@
 #+sbcl
 (require :sb-sprof)
 
-#+(and sbcl acl2-mv-as-values)
-; We expect acl2-mv-as-values to be set for every sbcl installation these days
-; (June 2011).  If not, someone can complain and we can fix this.
+#+sbcl
 (defmacro with-sprofiling-internal-raw (&whole whole options form)
 
 ; A good value for options is (:report :graph :loop nil).  See
@@ -146,7 +144,7 @@
        (format t "~%")
        (values-list ,result-var))))
 
-#-(and sbcl acl2-mv-as-values)
+#-sbcl
 (defmacro with-sprofiling-internal-raw (options form)
   (declare (ignore options))
   `(with-profiling-no-op-warning with-sprofiling (:sbcl) ,form))

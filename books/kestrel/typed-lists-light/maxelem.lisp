@@ -1,7 +1,7 @@
 ; A function to get the maximum of a list of numbers
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -106,6 +106,11 @@
                 (consp lst))
            (integerp (maxelem lst))))
 
+(defthm natp-of-maxelem
+  (implies (and (nat-listp lst)
+                (consp lst))
+           (natp (maxelem lst))))
+
 ;bozo make a theory of this for a generic (numeric?) type?
 (defthm acl2-numberp-of-maxelem
   (implies (and (integer-listp lst) ;weaken?
@@ -140,10 +145,10 @@
                           val))))))
   :hints (("Goal" ;:do-not-induct t
         ;   :expand (MAXELEM (CDR LST))
-           :in-theory (e/d (update-nth-rw;update-nth-rewrite nth-when-n-is-zp
-                            ;update-nth
-                            )
-                           ()))))
+           :in-theory (enable update-nth-rw
+                              ;;update-nth-rewrite nth-when-n-is-zp
+                              ;;update-nth
+                              ))))
 
 ;expensive?
 ;newly disabled
@@ -193,3 +198,8 @@
            (<= (maxelem (cdr lst)) (maxelem lst)))
   :rule-classes ((:linear :trigger-terms ((maxelem (cdr lst)))))
   :hints (("Goal" :in-theory (enable maxelem))))
+
+(defthm member-equal-of-maxelem-same
+  (iff (member-equal (maxelem x) x)
+       (consp x))
+  :hints (("Goal" :in-theory (enable maxelem member-equal))))

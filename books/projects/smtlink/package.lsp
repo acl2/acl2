@@ -72,7 +72,7 @@
       str::strval
       str::search
       str::nat-to-hex-chars
-      str::hex-digit-char-listp
+      str::hex-digit-char-list*p
       str::charlisteqv
       str::character-list-fix
       str::str-fix

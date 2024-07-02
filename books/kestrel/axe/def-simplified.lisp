@@ -1,7 +1,7 @@
 ; A tool to simplify a term and store the resulting DAG in a constant
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -32,6 +32,7 @@
 (include-book "list-rules-axe") ;for BOOLEANP-OF-ITEMS-HAVE-LEN
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe") ;for MYIF-SAME-ARG1-ARG2-WHEN-BOOLEANP-AXE
+(include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
 (include-book "kestrel/bv/rules3" :dir :system) ; for ifix-does-nothing
@@ -40,12 +41,18 @@
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
-(include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
+(include-book "kestrel/bv/bvsx-rules" :dir :system)
+(include-book "kestrel/bv/leftrotate-rules" :dir :system)
+(include-book "kestrel/bv/bvequal-rules" :dir :system)
+(include-book "kestrel/bv/putbits" :dir :system)
+(include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
+;(include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
 ;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
 (include-book "rules2") ;for LOOKUP-OF-BVIF -- drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system) ; for LIST-TO-BV-ARRAY
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
-(include-book "kestrel/utilities/mv-nth" :dir :system) ; for MV-NTH-OF-CONS-ALT
+(include-book "kestrel/utilities/mv-nth" :dir :system) ; for MV-NTH-OF-CONS-SAFE
+(include-book "kestrel/utilities/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
@@ -76,6 +83,7 @@
 
 ;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
+;; TODO: Compare to the generated ,def-simplified-dag-name.
 (defund def-simplified-fn (defconst-name ;should begin and end with *
                             term
                             rules
@@ -124,6 +132,7 @@
                              rule-alist
                              interpreted-function-alist
                              monitor
+                             nil ; fns-to-elide
                              memoizep
                              count-hits
                              print

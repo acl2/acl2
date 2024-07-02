@@ -26,9 +26,9 @@
      a Java implementation may provide support for either or both of
      a float-extended-exponent value set and
      a double-extended-exponent value set
-     [JLS:4.2.3].
+     [JLS14:4.2.3].
      The support for each extended-exponent value set, if present,
-     is described by a parameter @($K$) [JLS:4.2.3].")
+     is described by a parameter @($K$) [JLS14:4.2.3].")
    (xdoc::p
     "Thus, we parameterize our formal model of Java with an indication,
      for each extended-exponent value set,
@@ -46,13 +46,13 @@
   :returns (yes/no booleanp)
   :short "Recognize the possible parameters that describe
           a Java implementation's support of
-          the float-extended-exponent value set [JLS:4.2.3]."
+          the float-extended-exponent value set [JLS14:4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
     "A Java implementation
      may support a float-extended-exponent value set or not.
-     If it does, an implementation-dependent constant @($K$) [JLS:4.2.3]
+     If it does, an implementation-dependent constant @($K$) [JLS14:4.2.3]
      determines the exact values supported.")
    (xdoc::p
     "Our Java formalization is parameterized over the specifics of this support,
@@ -67,7 +67,7 @@
 
 (defsection floatx-param
   :short "Parameter that describes the support of
-          the float-extended-exponent value set [JLS:4.2.3]."
+          the float-extended-exponent value set [JLS14:4.2.3]."
   :long (xdoc::topstring-@def "floatx-param")
 
   (encapsulate
@@ -97,13 +97,13 @@
   :returns (yes/no booleanp)
   :short "Recognize the possible parameters that describe
           a Java implementation's support of
-          the double-extended-exponent value set [JLS:4.2.3]."
+          the double-extended-exponent value set [JLS14:4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
     "A Java implementation
      may support a double-extended-exponent value set or not.
-     If it does, an implementation-dependent constant @($K$) [JLS:4.2.3]
+     If it does, an implementation-dependent constant @($K$) [JLS14:4.2.3]
      determines the exact values supported.")
    (xdoc::p
     "Our Java formalization is parameterized over the specifics of this support,

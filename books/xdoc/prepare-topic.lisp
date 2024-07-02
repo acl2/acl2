@@ -88,7 +88,8 @@
 
 ; Warning: Keep this in sync with *entity-strings* and
 ; *entitytok-as-plaintext-fal* in parse-xml.lisp, wrapXdocFragment in
-; fancy/xslt.js, and (defxdoc entities ...) in topics.lisp.
+; fancy/xslt.js, (defxdoc entities ...) in topics.lisp, and
+; wrap_xdoc_fragment in fancy/xdata2html.pl
 
 ; The decimal values below for Greek letters were obtained from
 ; https://www.htmlhelp.com/reference/html40/entities/symbols.html.
@@ -97,6 +98,7 @@
 ; https://www.w3schools.com/html/html_symbols.asp.
 
   "<!DOCTYPE xdoc [
+  <!ENTITY nbsp \"&#160;\">
   <!ENTITY ndash \"&#8211;\">
   <!ENTITY mdash \"&#8212;\">
   <!ENTITY larr \"&#8592;\">
@@ -105,7 +107,6 @@
   <!ENTITY lang \"&#9001;\">
   <!ENTITY rang \"&#9002;\">
   <!ENTITY hellip \"&#8230;\">
-  <!ENTITY nbsp \"&#160;\">
   <!ENTITY lsquo \"&#8216;\">
   <!ENTITY rsquo \"&#8217;\">
   <!ENTITY ldquo \"&#8220;\">

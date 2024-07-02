@@ -218,6 +218,31 @@
                 (open-output-channel-p1 channel :character state))
            (fmt-state-p (princ$ x channel state))))
 
+; (local (in-theory (enable print-base-p)))
+
+(local
+ (defthm state-p1-implies-print-base-p-rewrite
+   (implies (state-p1 state)
+            (and (print-base-p (cdr (assoc-equal 'print-base (nth 2 state))))
+                 (natp (cdr (assoc-equal 'print-base (nth 2 state))))
+                 (<= (cdr (assoc-equal 'print-base (nth 2 state)))
+                     16)))
+   :hints (("Goal" :in-theory '(state-p1 print-base-p natp member-equal
+                                         global-table)))
+   :rule-classes
+   (:rewrite
+    (:type-prescription
+     :corollary
+     (implies (state-p1 state)
+              (integerp (cdr (assoc-equal 'print-base (nth 2 state))))))
+    (:linear
+     :corollary
+     (implies (state-p1 state)
+              (and (<= 0
+                       (cdr (assoc-equal 'print-base (nth 2 state))))
+                   (<= (cdr (assoc-equal 'print-base (nth 2 state)))
+                       16))))))) 
+
 (defthm fmt-state-p-forward
   (implies (fmt-state-p state)
            (and (state-p1 state)
@@ -443,7 +468,8 @@
 (encapsulate
   ()
   (local (include-book "arithmetic-5/top" :dir :system))
-  (local (in-theory (disable functional-commutativity-of-minus-*-left)))
+  (local (in-theory (e/d (print-base-p)
+                         (functional-commutativity-of-minus-*-left))))
   (verify-termination flsz-integer
     (declare (xargs :verify-guards nil))))
 
@@ -766,6 +792,8 @@
 
   (local (include-book "arithmetic-5/top" :dir :system))
 
+  (local (in-theory (enable print-base-p)))
+
   (verify-termination number-of-digits
     (declare (xargs :verify-guards nil)))
 
@@ -981,7 +1009,7 @@
 ; Signed- and Unsigned-byte-p Rules
 
 ; Note that the :forward-chaining version of the rule below only applies to
-; bits = 30.
+; bits = #.*fixnum-bits*.
 
 (defthm unsigned-byte-p-implies-signed-byte-p
   (implies (and (natp bits)
@@ -993,7 +1021,7 @@
    (:forward-chaining
     :corollary
     (implies (unsigned-byte-p #.*fixnat-bits* x)
-             (signed-byte-p 30 x)))))
+             (signed-byte-p #.*fixnum-bits* x)))))
 
 ; The tau system can prove
 ; (implies (and (integerp x)
@@ -1006,21 +1034,21 @@
 ; UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP, that unsigned-byte-p implies
 ; natp.  So we just need:
 
-(defthm signed-byte-p-30-t
+(defthm signed-byte-p-#.*fixnum-bits*-t
   (implies (and (integerp x)
                 (<= (- (+ 1 (fixnum-bound))) x)
                 (<= x (fixnum-bound)))
-           (signed-byte-p 30 x)))
+           (signed-byte-p #.*fixnum-bits* x)))
 
 ; The built-in rule SIGNED-BYTE-P-FORWARD-TO-INTEGERP tells us
 ; the obvious.  But we need:
 (defthm signed-byte-p-lower-bound
-  (implies (signed-byte-p 30 x)
+  (implies (signed-byte-p #.*fixnum-bits* x)
            (<= (- (+ 1 (fixnum-bound))) x))
   :rule-classes :forward-chaining)
 
 (defthm signed-byte-p-upper-bound
-  (implies (signed-byte-p 30 x)
+  (implies (signed-byte-p #.*fixnum-bits* x)
            (<= x (fixnum-bound)))
   :rule-classes :forward-chaining)
 
@@ -1045,25 +1073,25 @@
 
 (defthm sums-of-smalls
   (and (implies (signed-byte-p *small-bits* x)
-                (signed-byte-p 30 x))
+                (signed-byte-p #.*fixnum-bits* x))
        (implies (and (signed-byte-p *small-bits* x)
                      (signed-byte-p *small-bits* y))
-                (signed-byte-p 30 (+ x y)))
+                (signed-byte-p #.*fixnum-bits* (+ x y)))
        (implies (and (signed-byte-p *small-bits* x)
                      (signed-byte-p *small-bits* y)
                      (signed-byte-p *small-bits* z))
-                (signed-byte-p 30 (+ x y z)))
+                (signed-byte-p #.*fixnum-bits* (+ x y z)))
        (implies (and (signed-byte-p *small-bits* x)
                      (signed-byte-p *small-bits* y)
                      (signed-byte-p *small-bits* z)
                      (signed-byte-p *small-bits* u))
-                (signed-byte-p 30 (+ x y z u)))
+                (signed-byte-p #.*fixnum-bits* (+ x y z u)))
        (implies (and (signed-byte-p *small-bits* x)
                      (signed-byte-p *small-bits* y)
                      (signed-byte-p *small-bits* z)
                      (signed-byte-p *small-bits* u)
                      (signed-byte-p *small-bits* v))
-                (signed-byte-p 30 (+ x y z u v)))))
+                (signed-byte-p #.*fixnum-bits* (+ x y z u v)))))
 
 (defthm small-nat-implies-fixnum
   (implies (unsigned-byte-p *small-nat-bits* x)
@@ -1155,8 +1183,8 @@
 
 (defthm general-type-of-max-width
   (implies (and (ppr-tuple-lst-p lst)
-		(signed-byte-p #.*small-bits* maximum))
-	   (if (consp lst)
+                (signed-byte-p #.*small-bits* maximum))
+           (if (consp lst)
                (unsigned-byte-p #.*small-nat-bits* (max-width lst maximum))
                (equal (max-width lst maximum) maximum)))
   :hints (("Goal" :in-theory (enable signed-byte-p unsigned-byte-p)))
@@ -1288,9 +1316,11 @@
 
 (verify-termination ppr1)
 
-(make-flag flag-ppr1 ppr1)
+(make-flag flag-ppr1 ppr1
+; Eliminates nearly 2/3 of the time for flag-lemma-for-ppr-tuple-p-ppr1:
+           :ruler-extenders (:lambdas))
 
-; I now develop a computed hint for this the theorem that ppr1/ppr1-lst 
+; I now develop a computed hint for this the theorem that ppr1/ppr1-lst
 ; produces ppr-tuple-ps.
 
 (mutual-recursion
@@ -1299,7 +1329,7 @@
          ((fquotep term) ans)
          ((eq (ffn-symb term) fn)
           (cond ((member-equal term ans) ans)
-                (t (find-all-calls-lst fn (fargs term) (cons term ans))))) 
+                (t (find-all-calls-lst fn (fargs term) (cons term ans)))))
          (t (find-all-calls-lst fn (fargs term) ans))))
  (defun find-all-calls-lst (fn lst ans)
    (cond ((endp lst) ans)
@@ -1368,6 +1398,9 @@
      (t (value nil))))
    (t (value nil))))
 
+; Avoid ACL2(p) error.
+(set-waterfall-parallelism nil)
+
 (defthm-flag-ppr1
   (defthm ppr-tuple-p-ppr1
     (implies (and
@@ -1388,7 +1421,7 @@
     :flag ppr1-lst)
   :hints ((when-stable-open-concl-and-later-enable
            nil nil clause stable-under-simplificationp state)
-          ("Goal" 
+          ("Goal"
            :in-theory (disable fix ppr1 ppr1-lst)
            :do-not-induct t) ; to stop on first checkpoint
           ))
@@ -1518,7 +1551,7 @@
 (defthm integerp-max-width
   (implies (and (ppr-tuple-lst-p lst)
                 (integerp ac))
-	   (integerp (max-width lst ac)))
+           (integerp (max-width lst ac)))
   :hints (("Goal" :in-theory (enable max-width)))
   :rule-classes (:rewrite :type-prescription))
 
@@ -1528,7 +1561,7 @@
 (defthm difference-of-smalls
   (implies (and (signed-byte-p *small-bits* x)
                 (signed-byte-p *small-bits* y))
-           (signed-byte-p 30 (+ x (- y))))
+           (signed-byte-p #.*fixnum-bits* (+ x (- y))))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
 (defun make-use-lst (calls lemma-name lemma-vars)
@@ -1630,7 +1663,10 @@
           'dot))
   :hints (("Goal"
            :expand
-           ((ppr1 x print-base print-radix width rpc state eviscp)))))
+           ((ppr1 x print-base print-radix width rpc state eviscp))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (defthm ppr-tuple-lst-p-list-list
   (implies (and (unsigned-byte-p #.*small-nat-bits* width)
@@ -1646,10 +1682,13 @@
                                  PRINT-BASE
                                  PRINT-RADIX (ROUND-TO-SMALL T (+ -1 WIDTH))
                                  RPC STATE EVISCP)
-			   (PPR1 (CADR X)
+                           (PPR1 (CADR X)
                                  PRINT-BASE
                                  PRINT-RADIX (ROUND-TO-SMALL T (+ -1 WIDTH))
-                                 RPC STATE NIL)))))
+                                 RPC STATE NIL))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (defthm small-nat-max-difference-0
   (implies (and (unsigned-byte-p #.*small-nat-bits* x)
@@ -1668,7 +1707,10 @@
                              PRINT-RADIX WIDTH RPC STATE NIL))))
   :hints (("Goal" :expand ((PPR1 x
                                  PRINT-BASE
-                                 PRINT-RADIX WIDTH RPC STATE NIL)))))
+                                 PRINT-RADIX WIDTH RPC STATE NIL))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (defthm not-cdddr-ppr1-flat-not-evisceration-mark
   (implies (and (NOT (EQUAL x :EVISCERATION-MARK))
@@ -1681,7 +1723,10 @@
                              PRINT-RADIX WIDTH RPC STATE eviscp))))
   :hints (("Goal" :expand ((PPR1 x
                                  PRINT-BASE
-                                 PRINT-RADIX WIDTH RPC STATE eviscp)))))
+                                 PRINT-RADIX WIDTH RPC STATE eviscp))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (verify-guards ppr1
   :hints ((verify-guards-ppr1/ppr1-lst-strategy nil nil clause stable-under-simplificationp state)
@@ -1766,12 +1811,12 @@
 ; princ$.  Princ$ requires state-p1 in its guard.  So we set up a backchaining
 ; rule to get that from fmt-state-p.
 
-(defthm fmt-state-p-implies-state-p1-ppr2-column
+(defthm fmt-state-p-implies-state-p-ppr2-column
     (implies (and (fmt-state-p state)
                   (open-output-channel-p1 channel :character state))
              (state-p (ppr2-column lst loc col channel state eviscp))))
 
-(defthm fmt-state-p-implies-state-p1-ppr2
+(defthm fmt-state-p-implies-state-p-ppr2
     (implies (and (fmt-state-p state)
                   (open-output-channel-p1 channel :character state))
              (state-p (ppr2 lst col channel state eviscp))))
@@ -1815,7 +1860,7 @@
            (unsigned-byte-p 5
                             (cdr (assoc-equal 'print-base
                                               (nth 2 state)))))
-  :hints (("Goal" :in-theory (enable print-base-p fmt-state-p))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (verify-termination ppr
 ; Hints weren't needed here during development of this book, but we
@@ -1836,8 +1881,8 @@
 (in-theory (disable flsz1))
 
 (verify-termination flsz ; and guards
-  (declare (xargs :guard-hints (("Goal" :in-theory (enable fmt-state-p
-                                                           print-base-p))))))
+  (declare (xargs :guard-hints
+                  (("Goal" :in-theory (enable unsigned-byte-p))))))
 
 (in-theory (disable table-alist))
 
@@ -1880,6 +1925,7 @@
                 (state-p1 state2)
                 (symbolp sym)
                 (not (equal sym 'timer-alist))
+                (not (equal sym 'print-base))
                 (not (equal sym 'current-acl2-world)))
            (state-p1 (update-nth 2
                                  (add-pair sym val (nth 2 state2))
@@ -1898,6 +1944,7 @@
                                 all-boundp
                                 plist-worldp
                                 timer-alistp
+                                print-base-p
                                 known-package-alistp
                                 file-clock-p
                                 readable-files-p
@@ -1914,6 +1961,7 @@
   (implies (and (state-p1 (update-nth 2 alist state1))
                 (symbolp sym)
                 (not (equal sym 'timer-alist))
+                (not (equal sym 'print-base))
                 (not (equal sym 'current-acl2-world)))
            (state-p1 (update-nth 2
                                  (add-pair sym val alist)
@@ -1932,6 +1980,7 @@
                                 all-boundp
                                 plist-worldp
                                 timer-alistp
+                                print-base-p
                                 known-package-alistp
                                 file-clock-p
                                 readable-files-p
@@ -2290,7 +2339,7 @@
            (state-p1
             (update-iprint-ar-fal iprint-alist iprint-fal-new iprint-fal-old
                                   state))))
-  
+
 
 (in-theory (disable (:definition array-order)
                     (:definition aset1)
@@ -2404,7 +2453,7 @@
          (assoc-equal sym (nth 2 state)))
   :hints (("Goal"
            :in-theory (enable fmt-tilde-s1)
-           :expand ((fmt-tilde-s1 s i (+ 1 i) 536870911 channel state)))))
+           :expand ((fmt-tilde-s1 s i (+ 1 i) (fixnum-bound) channel state)))))
 
 (defthm open-output-channel-fmt-tilde-s1
   (implies (open-output-channel-p1 channel :character state)
@@ -2477,7 +2526,7 @@
                  (<= (* 4
                         (1+ (cdr (assoc-equal 'iprint-hard-bound
                                               (nth 2 state)))))
-                     *maximum-positive-32-bit-integer*)
+                     (array-maximum-length-bound))
                  (< (cdr (assoc-equal 'iprint-hard-bound
                                       (nth 2 state)))
                     (car (dimensions 'iprint-ar
@@ -2600,13 +2649,13 @@
                    (* 4
                       (cdr (assoc-equal 'iprint-hard-bound
                                         (nth 2 state)))))
-                *maximum-positive-32-bit-integer*)
+                (array-maximum-length-bound))
             (<= (+ 4
                    (* 4
                       (cdr (assoc-equal 'iprint-hard-bound
                                         (nth 2 (composed-oracle-updates
                                                 state))))))
-                *maximum-positive-32-bit-integer*))
+                (array-maximum-length-bound)))
    :hints (("Goal"
             :use iprint-hard-bound-inequality-preserved-by-iprint-oracle-updates?
             :in-theory (enable get-global)))))
@@ -2788,7 +2837,7 @@
                                         iprint-alist last-index state)))))
           (let ((new-max-len (* 4 (1+ (max (iprint-hard-bound state)
                                            last-index)))))
-            (if (< *maximum-positive-32-bit-integer*
+            (if (< (array-maximum-length-bound)
                    new-max-len)
                 (maximum-length 'iprint-ar
                                 (cdr (assoc-equal 'iprint-ar (nth 2 state))))
@@ -2865,7 +2914,7 @@
    (equal (iprint-last-index (rollover-iprint-ar
                               iprint-alist (caar iprint-alist) state))
           (if (<= (* 4 (1+ (max (iprint-hard-bound state) (caar iprint-alist))))
-                  *maximum-positive-32-bit-integer*)
+                  (array-maximum-length-bound))
               0
             (iprint-last-index state)))
    :hints (("Goal" :in-theory (enable aref1 assoc-equal acons
@@ -2920,7 +2969,7 @@
           (let* ((new-dim (1+ (max (iprint-hard-bound state)
                                    (car (car iprint-alist)))))
                  (new-max-len (* 4 new-dim)))
-            (if (< *maximum-positive-32-bit-integer* new-max-len)
+            (if (< (array-maximum-length-bound) new-max-len)
                 (dimensions 'iprint-ar
                             (cdr (assoc-equal 'iprint-ar (nth 2 state))))
               (list new-dim))))
@@ -2952,7 +3001,7 @@
  (defthm rollover-iprint-ar-iprint-array-p-max-1
    (implies
     (and (<= (+ 4 (* 4 (car (car iprint-alist))))
-             2147483647)
+             (array-maximum-length-bound))
          (< (cdr (assoc-equal 'iprint-hard-bound
                               (nth 2 state)))
             (car (car iprint-alist))))
@@ -3114,7 +3163,7 @@
             (iprint-array-p (aset1-lst name iprint-alist ar)
                             max))
    :hints (("Goal" :in-theory (enable aset1-lst aset1 iprint-alistp1
-                                      iprint-array-p))))) 
+                                      iprint-array-p)))))
 (local
  (defthm main-1-2-3
    (implies (and (iprint-array-p ar max)
@@ -3557,7 +3606,7 @@
             min
             fix
             member-equal
-            integer-range-p unsigned-byte-p min mv-nth punctp
+            integer-range-p unsigned-byte-p min
             left-pad-with-blanks
             len msgp length keywordp
             ))
@@ -3804,8 +3853,8 @@
            :in-theory (defthm-flag-fmt0-theory)))
   )
 
-(defthm unsigned-byte-p-29-forward
-  (implies (unsigned-byte-p 29 x)
+(defthm unsigned-byte-p-*fixnat-bits*-forward
+  (implies (unsigned-byte-p *fixnat-bits* x)
            (and (natp x)
                 (<= x (fixnum-bound))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p)))

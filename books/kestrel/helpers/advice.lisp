@@ -1,6 +1,6 @@
 ; A tool to get proof advice from a server over the web
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -92,6 +92,7 @@
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/untranslated-terms/conjuncts-of-uterm" :dir :system)
 (include-book "kestrel/alists-light/string-string-alistp" :dir :system)
+(include-book "kestrel/alists-light/acons-all-to-val" :dir :system)
 (include-book "kestrel/htclient/post-light" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages that might arise are known ; todo: very slow
@@ -128,15 +129,6 @@
 
 (defconst *step-limit* 100000)
 (defconst *time-limit* 5)
-
-;;move
-;; does this already exist somewhere?
-(defund acons-all-to-val (keys val alist)
-  (declare (xargs :guard (and (true-listp keys)
-                              (alistp alist))))
-  (if (endp keys)
-      alist
-    (acons (first keys) val (acons-all-to-val (rest keys) val alist))))
 
 ;; See :doc lemma-instance
 (defund symbol-that-can-be-usedp (sym wrld)
@@ -381,7 +373,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(acl2::defmergesort merge-recs-by-confidence merge-sort-recs-by-confidence rec-confidence> recommendationp :extra-theorems nil)
+(acl2::defmergesort merge-sort-recs-by-confidence merge-recs-by-confidence rec-confidence> recommendationp :extra-theorems nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -676,28 +668,30 @@
       (cw "~s0" english-rec))))
 
 ;; Always returns nil.
-(defun show-successful-recommendations-aux (recs)
-  (declare (xargs :guard (successful-recommendation-listp recs)
+(defun show-successful-recommendations-aux (recs print-namesp)
+  (declare (xargs :guard (and (successful-recommendation-listp recs)
+                              (booleanp print-namesp))
                   :mode :program))
   (if (endp recs)
       nil
     (let* ((rec (first recs))
            (name (successful-recommendation-name rec)))
       (progn$ (show-successful-recommendation rec)
-              (cw " (~S0)~%" name)
+              (and print-namesp (cw " (~S0)~%" name))
               ;; todo: drop the sources:
               ;; (and (< 1 (len sources))
               ;;      (cw "~x0" sources))
               ;;(cw ": ")
-              (show-successful-recommendations-aux (rest recs))))))
+              (show-successful-recommendations-aux (rest recs) print-namesp)))))
 
 ;; Returns state (because of the change to the margins).
-(defun show-successful-recommendations (recs state)
-  (declare (xargs :guard (successful-recommendation-listp recs)
+(defun show-successful-recommendations (recs print-namesp state)
+  (declare (xargs :guard (and (successful-recommendation-listp recs)
+                              (booleanp print-namesp))
                   :mode :program
                   :stobjs state))
   (let ((state (acl2::widen-margins state)))
-    (progn$ (show-successful-recommendations-aux recs)
+    (progn$ (show-successful-recommendations-aux recs print-namesp)
             (cw "~%")
             (let ((state (acl2::unwiden-margins state)))
               state))))
@@ -3089,7 +3083,6 @@
        ((when (not (stringp model-string)))
         (er hard? 'advice-fn "Model name for server is not a string: ~x0." model-string)
         (mv :no-server nil state))
-       (- (and print (cw "Server for ~x0 is ~s1.~%" model server-url)))
        ;; Send query to server:
        ((mv erp semi-parsed-response state) ;; semi-parsed means the JSON has been parsed
         (if (zp num-recs) ;handle this higher up?
@@ -3098,18 +3091,15 @@
                         nil ; no server response
                         state))
           (b* ((- (and (acl2::print-level-at-least-tp print)
-                       (cw "Asking server for ~x0 recommendations from ~x1 on ~x2 ~s3: " ; the line is ended below when we print the time
-                           num-recs
-                           model
-                           (len checkpoint-clauses-top)
-                           (if (< 1 (len checkpoint-clauses-top)) "checkpoints" "checkpoint"))))
+                       (cw "Model ~x0 (on ~s1): " ; the line is ended in get-recs-from-models when we print the time
+                           model server-url)))
                ;; Assemble the data to send with the POST request (an alist):
                (post-data (acons "use-group" model-string ; the name of the model to use (often a group of models, one for each action type)
                                  (acons "n" (acl2::nat-to-string num-recs)
                                         (acons "broken-theorem" (fms-to-string "~X01" (acons #\0 broken-theorem (acons #\1 nil nil))) ;; todo: should we translate this?
                                                (make-numbered-checkpoint-entries 0 checkpoint-clauses-top)))))
                ;; Turn off certain recommendation types (TODO: Could a generative model return something like :exact-hints?):
-               (post-data (acons-all-to-val (rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types)) ; todo: drop this?  can the models handle disallowed unknown rec types?
+               (post-data (acl2::acons-all-to-val (rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types)) ; todo: drop this?  can the models handle disallowed unknown rec types?
                                             "off"
                                             post-data))
                (post-data (if (eq :start phase)
@@ -3135,7 +3125,7 @@
            (- (if (not (consp semi-parsed-recommendations))
                   (cw " WARNING: No recommendations returned from server for ~x0.~%" model)
                 (if (not (equal num-recs (len semi-parsed-recommendations)))
-                    (cw " WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
+                    (cw " WARNING: Got only ~x0 of ~x1 recs for ~x2.~%" (len semi-parsed-recommendations) num-recs model)
                   nil)))
            ;; Parse the individual strings in the recs:
            ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
@@ -3256,7 +3246,7 @@
                             (acons model recs acc)
                             state))))
 
-;; Returns (mv erp state)
+;; Returns state.
 (defun startup-models (model-info-alist
                        num-recs-per-model
                        disallowed-rec-types
@@ -3281,40 +3271,45 @@
            (irrelevant translated-theorem-body) ; todo!
            )
   (if (endp model-info-alist)
-      (mv nil state) ; no error
-    (b* ((entry (first model-info-alist))
-         (model (car entry))
-         (model-info (cdr entry))
-         (print-timep (acl2::print-level-at-least-tp print))
-         ;; Record the start time (if we will need it):
-         ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-         ;; Dispatch to the model:
-         ((mv erp
-              & ; recs should be nil
-              state)
-          (case model
-            ;; TODO: Make the dispatch to heursitics generic, so we don't have to mention them all here:
-            ((:enable-fns-body :enable-fns-top-cps :enable-fns-non-top-cps
-              :enable-rules-body :enable-rules-top-cps :enable-rules-non-top-cps
-              :history :induct :cases)
-             (mv nil nil state) ; no need to start the model
-             )
-            (otherwise
-             ;; It's a normal ML model:
-             (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print :start state))))
-         ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-         (- (and erp (cw "Error using ~x0.~%" model))) ; but continue
-         (- (if print-timep
-                (let* ((time-diff (- done-time start-time))
-                       (time-diff (if (< time-diff 0)
-                                      (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
-                                              0)
-                                    time-diff)))
-                  (progn$ (cw "Started model in ")
-                          (acl2::print-to-hundredths time-diff)
-                          (cw "s~%") ; s = seconds
-                          ))
-              nil)))
+      state
+    (let ((state
+            (b* ((entry (first model-info-alist))
+                 (model (car entry))
+                 (ml-modelp (not (member-eq model
+                                            ;; TODO: Avoiding listing all these here:
+                                            '(:enable-fns-body :enable-fns-top-cps :enable-fns-non-top-cps
+                                              :enable-rules-body :enable-rules-top-cps :enable-rules-non-top-cps
+                                              :history :induct :cases))))
+                 ((when (not ml-modelp))
+                  state ; no need to start the model
+                  )
+                 ;; It's an ML model on a server, so start it:
+                 (model-info (cdr entry))
+                 (print-timep (acl2::print-level-at-least-tp print))
+                 ;; Record the start time (if we will need it):
+                 ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+                 ;; Dispatch to the model to start it:
+                 ((mv erp
+                      & ; recs (should be nil)
+                      state)
+                  (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print :start state))
+                 ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+                 ((when erp)
+                  (cw "Error using ~x0.~%" model)
+                  state ; but continue...
+                  )
+                 (- (if (and print-timep ml-modelp)
+                        (let* ((time-diff (- done-time start-time))
+                               (time-diff (if (< time-diff 0)
+                                              (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
+                                                      0)
+                                            time-diff)))
+                          (progn$ (cw "Started model in ")
+                                  (acl2::print-to-hundredths time-diff)
+                                  (cw "s~%") ; s = seconds
+                                  ))
+                      nil)))
+              state)))
       (startup-models (rest model-info-alist)
                       num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top translated-theorem-body broken-theorem
                       timeout debug print
@@ -3342,9 +3337,40 @@
               t
             nil))))))
 
-(acl2::defmergesort merge-recs-by-quality merge-sort-recs-by-quality better-recp successful-recommendationp :extra-theorems nil)
+(acl2::defmergesort merge-sort-recs-by-quality merge-recs-by-quality better-recp successful-recommendationp :extra-theorems nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp checkpoint-clauses-top checkpoint-clauses-non-top).
+(defun checkpoints-for-failed-proof (theorem-name translated-theorem-body state)
+  (declare (xargs :guard (and (symbolp theorem-name)
+                              (pseudo-termp translated-theorem-body))
+                  :mode :program ; because of clausify-term
+                  :stobjs state))
+  (b* (;; First the top-level checkpoints:
+       (raw-checkpoint-clauses-top (acl2::checkpoint-list t ; top-level checkpoints
+                                                          state))
+       ((when (eq :unavailable raw-checkpoint-clauses-top))
+        ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
+        (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
+        (mv :no-checkpoints nil nil))
+       ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
+       ;; TODO: Or use :otf-flg to get the real checkpoints?
+       (checkpoint-clauses-top (if (equal raw-checkpoint-clauses-top '((acl2::<goal>)))
+                                   (prog2$ (cw "Note: Replacing bogus checkpoints.~%") ; todo: eventually remove this?
+                                           (clausify-term translated-theorem-body (w state)))
+                                 raw-checkpoint-clauses-top))
+       ((when (null checkpoint-clauses-top))
+        ;; A step-limit may fire before checkpoints can be generated:
+        (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
+        (mv :no-checkpoints nil nil))
+       ;; Now the non-top checkpoints, of which there may be none:
+       (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
+                                                          state))
+       ;; todo: any special values to handle here?
+       )
+    (mv nil ; no error
+        checkpoint-clauses-top checkpoint-clauses-non-top)))
 
 ;; Attempts to prove the given theorem using the given hints.  If the proof
 ;; worked, returns a recommendation that includes the hints that worked.
@@ -3388,28 +3414,9 @@
             nil ; checkpoints, meaningless
             nil ; checkpoints, meaningless
             state))
-       ;; The proof failed, so get the checkpoints:
-       (raw-checkpoint-clauses-top (acl2::checkpoint-list t ; top-level checkpoints
-                                                          state))
-       ((when (eq :unavailable raw-checkpoint-clauses-top))
-        ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
-        (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
-        (mv :no-checkpoints nil nil nil nil state))
-       ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
-       ;; TODO: Or use :otf-flg to get the real checkpoints?
-       (checkpoint-clauses-top (if (equal raw-checkpoint-clauses-top '((acl2::<goal>)))
-                               (prog2$ (cw "Note: Replacing bogus checkpoints.~%") ; todo: eventually remove this?
-                                       (clausify-term translated-theorem-body (w state)))
-                             raw-checkpoint-clauses-top))
-       ((when (null checkpoint-clauses-top))
-        ;; A step-limit may fire before checkpoints can be generated:
-        (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
-        (mv :no-checkpoints nil nil nil nil state))
-       ;; Now the non-top checkpoints, of which there may be none:
-       (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
-                                                          state))
-       ;; todo: any special values to handle here?
-       )
+       ((mv erp checkpoint-clauses-top checkpoint-clauses-non-top)
+        (checkpoints-for-failed-proof theorem-name translated-theorem-body state))
+       ((when erp) (mv erp nil nil nil nil state)))
     (mv nil ; no error
         nil ; didn't prove
         nil ; meaningless
@@ -3469,15 +3476,18 @@
   (b* ((state (acl2::widen-margins state))
        ;; Start all the models working, in parallel:
        (translated-theorem-body (acl2::translate-term theorem-body 'best-rec-for-checkpoints (w state)))
-
+       (- (cw "Asking for ~x0 recs per model on ~x1 top-level ~s2 and ~x3 non-top-level ~s4.~%"
+              num-recs-per-model
+              (len checkpoint-clauses-top) (if (= 1 (len checkpoint-clauses-top)) "checkpoint" "checkpoints")
+              (len checkpoint-clauses-non-top) (if (= 1 (len checkpoint-clauses-non-top)) "checkpoint" "checkpoints")))
+       ((mv models-start-time state) (acl2::get-real-time state))
        ;; Maybe start the models working:
-       ((mv erp state)
+       (state
         (if start-and-return
             (prog2$ (cw "Starting the models:~%")
                     (startup-models model-info-alist num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top
                                     translated-theorem-body broken-theorem timeout debug print state))
-          (mv nil state)))
-       ((when erp) (mv erp nil nil state))
+          state))
 
        ;; Go back and get the recs from the models (TODO: Could reduce waiting even more by trying some recs first):
        ;; WARNING: Keep args in sync between startup-models and get-recs-from-models (except startup-models has no acc)!
@@ -3488,6 +3498,11 @@
                               (if start-and-return :retrieve :all)
                               nil state))
        ((when erp) (mv erp nil nil state))
+       ((mv models-end-time state) (acl2::get-real-time state))
+       (- (progn$ (cw "Total model time: ")
+                  (acl2::print-to-hundredths (- models-end-time models-start-time))
+                  (cw "s~%") ; s = seconds
+                  ))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs model-rec-alist))
        (recommendations (merge-rec-lists-into-recs recommendation-lists nil)) ; also removes duplicates
@@ -3526,7 +3541,7 @@
                                   (cw "~%PROOF FOUND (~x0 successful recommendations):~%" num-successful-recs)
                                 (cw "~%PROOF FOUND (1 successful recommendation):~%"))
                               (progn$ ;; (cw "~%SUCCESSFUL RECOMMENDATIONS:~%")
-                               (let ((state (show-successful-recommendations sorted-successful-recs state))) ; why does this return state?
+                               (let ((state (show-successful-recommendations sorted-successful-recs t state))) ; why does this return state?
                                  state)))
                     state)
                 (prog2$ (and print (cw "~%NO PROOF FOUND~%~%"))
@@ -3536,7 +3551,10 @@
         (first sorted-successful-recs)
         state)))
 
-;; Tries the theorem with the supplied hints.  If that doesn't prove the theorem, this requests and tries advice.
+;; Tries the theorem with the supplied hints.  If that doesn't prove the
+;; theorem, this requests and tries advice.  Other integration mechanisms seem
+;; possible, e.g., trying advice via a clause-processor, perhaps one that is
+;; invoked by a computed hint that checks stable-under-simplificationp.
 ;; Returns (mv erp successp best-rec state).
 (defun best-rec-for-theorem (theorem-name
                              theorem-body
@@ -3676,7 +3694,7 @@
                                (set-difference-eq (set-difference-eq models function-models) server-models))))
         (if unknown-models
             (er hard? 'make-model-info-alist "Unknown models: ~x0." unknown-models)
-          (append (acons-all-to-val function-models :function nil)
+          (append (acl2::acons-all-to-val function-models :function nil)
                   (filter-advice-server-alist advice-server-alist server-models)))))))
 
 ;; Returns (mv erp event state).
@@ -3783,7 +3801,7 @@
                          (max-wins ':auto)
                          (models ':all)
                          (rule-classes '(:rewrite))
-                         (start-and-return 'nil) ; todo: make the default t (here and elsewhere)
+                         (start-and-return 't)
                          )
   `(acl2::make-event-quiet
     (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models ',start-and-return state)))
@@ -3889,7 +3907,7 @@
                       (models ':all)
                       (improve-recsp 't)
                       ;; no rule-classes
-                      (start-and-return 'nil)
+                      (start-and-return 't)
                       )
   `(acl2::make-event-quiet
     (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models ',start-and-return  state)))
@@ -3958,7 +3976,7 @@
               (caddr most-recent-failed-theorem)
               (cadr (assoc-keyword :hints (cdddr most-recent-failed-theorem)))
               (cadr (assoc-keyword :otf-flg (cdddr most-recent-failed-theorem))))))
-       (- (and print (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil)))
+       (- (and print (cw "~%Generating advice for:~%~X01:~%" most-recent-failed-theorem nil)))
        (- (and (acl2::print-level-at-least-tp print) (cw "Original hints were:~%~X01.~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
        ;; TODO: Consider trying again with no hints, in case the user gave were wrongheaded.
@@ -3977,8 +3995,8 @@
                                raw-checkpoint-clauses-top))
        (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
                                                           state))
-       (- (and (acl2::print-level-at-least-tp print) (cw "Top-level Proof checkpoints to use: ~X01.~%" checkpoint-clauses-top nil)))
-       (- (and (acl2::print-level-at-least-tp print) (cw "Non-top-level Proof checkpoints to use: ~X01.~%" checkpoint-clauses-non-top nil)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "Top-level checkpoints to use: ~X01.~%" checkpoint-clauses-top nil)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "Non-top-level checkpoints to use: ~X01.~%" checkpoint-clauses-non-top nil)))
        ((mv erp
             & ;; successp
             & ;; best-rec
@@ -4047,7 +4065,7 @@
                        (disallowed-rec-types 'nil)
                        (max-wins ':auto)
                        (models ':all)
-                       (start-and-return 'nil))
+                       (start-and-return 't))
   `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models ',start-and-return state)))
 
 ;; Just a synonym in ACL2 package

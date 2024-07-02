@@ -44,7 +44,12 @@
               (symbolp x.equiv)
               (not (eq x.equiv 'quote))
               (not (eq x.subclass 'acl2::meta))
-              (natp x.nume))))
+              (natp x.nume)
+; Matt K. addition 4/2024 to accommodate stronger guard on acl2::enabled-numep,
+; so that rule.nume computed in filter-enabled-abbrev-rules (in urewrite.lisp)
+; satisfies the guard on acl2::enabled-numep.
+              (<= x.nume (acl2::fixnum-bound))
+              )))
   ///
   (defthm pseudo-rewrite-rule-p-implies
     (implies (pseudo-rewrite-rule-p x)
@@ -56,12 +61,26 @@
                          (symbolp x.equiv)
                          (not (equal x.equiv 'quote))
                          (not (equal x.subclass 'acl2::meta))
-                         (natp x.nume))))))
+                         (natp x.nume)
+                         ;; See "Matt K. addition 4/2024" above:
+                         (<= x.nume (acl2::fixnum-bound)))))))
 
   (defthm pseudo-rewrite-rule-p-implies-natp-nume
     (implies (pseudo-rewrite-rule-p x)
              (natp (acl2::rewrite-rule->nume x)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defthm pseudo-rewrite-rule-p-implies-natp-nume
+    (implies (pseudo-rewrite-rule-p x)
+             (natp (acl2::rewrite-rule->nume x)))
+    :rule-classes :type-prescription)
+
+  ;; See "Matt K. addition 4/2024" above:
+  (defthm pseudo-rewrite-rule-p-implies-small-nume
+    (implies (pseudo-rewrite-rule-p x)
+             (<= (acl2::rewrite-rule->nume x)
+                 (acl2::fixnum-bound)))
+    :rule-classes :linear))
 
 
 (define mextract-good-rewrite-rulesp (rules)

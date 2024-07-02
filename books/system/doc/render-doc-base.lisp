@@ -229,7 +229,7 @@
        (merged-tokens
         (reverse (merge-text tokens nil 0 nil
                              topic-to-rendered-table
-                             xdoc-tag-alist imgp)))
+                             xdoc-tag-alist imgp nil)))
        (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
        (terminal (str::trim (str::rchars-to-string acc))))
 

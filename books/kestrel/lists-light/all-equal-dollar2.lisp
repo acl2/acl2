@@ -1,7 +1,7 @@
 ; More rules about all-equal$
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -35,3 +35,20 @@
            (equal (all-equal$ k1 k2)
                   (equal k2 (repeat (len k2) k1))))
   :hints (("Goal" :in-theory (enable all-equal$ repeat))))
+
+(defthm equal-of-repeat-of-len-same
+  (equal (equal x (repeat (len x) item))
+         (and (true-listp x)
+              (all-equal$ item x)))
+  :hints (("Goal" :in-theory (enable true-listp))))
+
+(theory-invariant (incompatible (:rewrite all-equal$-when-true-listp) (:rewrite equal-of-repeat-of-len-same)))
+
+(defthm nthcdr-when-all-equal$
+  (implies (and (all-equal$ x lst)
+                (natp n)
+                (< n (len lst))
+                (true-listp lst))
+           (equal (nthcdr n lst)
+                  (repeat (- (len lst) n) x)))
+  :hints (("Goal" :in-theory (e/d (all-equal$-when-true-listp) (equal-of-repeat-of-len-same)))))

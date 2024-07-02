@@ -136,7 +136,7 @@
   ;; that frequently need to be enabled/disabled.
   '(<<
     setp
-    empty
+    emptyp
     sfix
     head
     tail

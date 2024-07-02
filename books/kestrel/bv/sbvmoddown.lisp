@@ -83,7 +83,7 @@
                                    ;MOD-BOUNDED-BY-MODULUS
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;sbvrem-rewrite
-                                   ;;anti-bvplus
+                                   ;;
                                    )))))
 
 (defthm equal-of-+-of-expt-of-one-less-and-expt-cancel
@@ -128,7 +128,7 @@
                                    sbvrem-rewrite
                                    ;mod-sum-cases
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;anti-bvplus
+                                   ;
                                    ;;SBVREM-BECOMES-BVMOD
                                    sbvlt
                                    bvmod
@@ -192,10 +192,11 @@
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    mod-sum-cases
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;anti-bvplus
+                                   ;
                                    ;;SBVREM-BECOMES-BVMOD
                                    EXPT-HALF-LINEAR
                                    EQUAL-OF-BVCHOP-AND-BVCHOP-ONE-WIDER
+                                   UNSIGNED-BYTE-P-OF-+
                                    )))))
 
 ;todo: simplify the rhs (do we know what sbvrem does in each case?)
@@ -224,8 +225,7 @@
                               sbvmoddown-rewrite-case-3
                               sbvmoddown-rewrite-case-4
                               sbvmoddown-rewrite-case-5
-                              sbvlt-rewrite
-                              ))))
+                              sbvlt-rewrite))))
 
 ;todo: gen the 16
 (defthm sbvmoddown-of-16

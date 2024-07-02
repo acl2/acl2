@@ -1,10 +1,10 @@
 ; Ordered Bags (Obags) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,7 +53,7 @@
     "The obag operations
      @(tsee bagp),
      @(tsee bfix),
-     @(tsee empty),
+     @(tsee emptyp),
      @(tsee head),
      @(tsee tail), and
      @(tsee insert)
@@ -163,61 +163,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define empty ((bag bagp))
+(define emptyp ((bag bagp))
   :returns (yes/no booleanp)
   :short "Check if an obag is empty."
   :long
   (xdoc::topstring-p
-   "This is similar to @(tsee set::empty) for osets.")
+   "This is similar to @(tsee set::emptyp) for osets.")
   (null (bfix bag))
   ///
 
-  (defrule bagp-when-not-empty
-    (implies (not (empty bag))
+  (defrule bagp-when-not-emptyp
+    (implies (not (emptyp bag))
              (bagp bag))
     :enable (bfix))
 
-  (defrule bfix-when-empty
-    (implies (empty x)
+  (defrule bfix-when-emptyp
+    (implies (emptyp x)
              (equal (bfix x) nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head ((bag bagp))
-  :guard (not (empty bag))
+  :guard (not (emptyp bag))
   :short "Smallest element of a non-empty obag."
   :long
   (xdoc::topstring-p
    "This is similar to @(tsee head) for osets.")
   (mbe :logic (car (bfix bag))
        :exec (car bag))
-  :guard-hints (("Goal" :in-theory (enable bagp empty)))
+  :guard-hints (("Goal" :in-theory (enable bagp emptyp)))
   ///
 
-  (defrule head-when-empty
-    (implies (empty bag)
+  (defrule head-when-emptyp
+    (implies (emptyp bag)
              (equal (head bag) nil))
     :rule-classes (:rewrite :type-prescription)
-    :enable (empty bfix bagp))
+    :enable (emptyp bfix bagp))
 
   (defrule head-count
-    (implies (not (empty bag))
+    (implies (not (emptyp bag))
              (< (acl2-count (head bag))
                 (acl2-count bag)))
     :rule-classes (:rewrite :linear)
-    :enable (empty bfix bagp))
+    :enable (emptyp bfix bagp))
 
   (defrule head-count-built-in
-    (implies (not (empty bag))
+    (implies (not (emptyp bag))
              (o< (acl2-count (head bag))
                  (acl2-count bag)))
     :rule-classes :built-in-clause
-    :enable (empty bfix bagp)))
+    :enable (emptyp bfix bagp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tail ((bag bagp))
-  :guard (not (empty bag))
+  :guard (not (emptyp bag))
   :returns (bag1 bagp :hints (("Goal" :in-theory (enable bfix bagp))))
   :short "Rest of a non-empty obag after removing
           an occurrence of its smallest element."
@@ -226,40 +226,40 @@
    "This is similar to @(tsee set::tail) on osets.")
   (mbe :logic (cdr (bfix bag))
        :exec (cdr bag))
-  :guard-hints (("Goal" :in-theory (enable bagp empty)))
+  :guard-hints (("Goal" :in-theory (enable bagp emptyp)))
   ///
 
-  (defrule tail-when-empty
-    (implies (empty bag)
+  (defrule tail-when-emptyp
+    (implies (emptyp bag)
              (equal (tail bag) nil))
     :rule-classes (:rewrite :type-prescription)
-    :enable (empty bfix bagp))
+    :enable (emptyp bfix bagp))
 
   (defrule tail-count
-    (implies (not (empty bag))
+    (implies (not (emptyp bag))
              (< (acl2-count (tail bag))
                 (acl2-count bag)))
     :rule-classes (:rewrite :linear)
-    :enable (empty bfix bagp))
+    :enable (emptyp bfix bagp))
 
   (defrule tail-count-built-in
-    (implies (not (empty bag))
+    (implies (not (emptyp bag))
              (o< (acl2-count (tail bag))
                  (acl2-count bag)))
     :rule-classes :built-in-clause
-    :enable (empty bfix bagp)))
+    :enable (emptyp bfix bagp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define insert (x (bag bagp))
   :returns (bag1 bagp
                  :hints (("Goal"
-                          :in-theory (enable bagp bfix empty head tail))))
+                          :in-theory (enable bagp bfix emptyp head tail))))
   :short "Add (an occurrence of) a value to an obag."
   :long
   (xdoc::topstring-p
    "This is similar to @(tsee set::insert) on osets.")
-  (cond ((empty bag) (list x))
+  (cond ((emptyp bag) (list x))
         ((equal x (head bag)) (cons x bag))
         ((<< x (head bag)) (cons x bag))
         (t (cons (head bag) (insert x (tail bag))))))
@@ -269,12 +269,12 @@
 (define delete (x (bag bagp))
   :returns (bag1 bagp
                  :hints (("Goal"
-                          :in-theory (enable bagp bfix empty head tail))))
+                          :in-theory (enable bagp bfix emptyp head tail))))
   :short "Remove (an occurrence of) a value from an obag."
   :long
   (xdoc::topstring-p
    "This is similar to @(tsee set::delete) for osets.")
-  (cond ((empty bag) nil)
+  (cond ((emptyp bag) nil)
         ((equal x (head bag)) (tail bag))
         (t (cons (head bag) (delete x (tail bag))))))
 
@@ -286,7 +286,7 @@
   :long
   (xdoc::topstring-p
    "This is similar to @(tsee set::in) on osets.")
-  (and (not (empty bag))
+  (and (not (emptyp bag))
        (or (equal x (head bag))
            (in x (tail bag)))))
 
@@ -295,7 +295,7 @@
 (define occs (x (bag bagp))
   :returns (occs natp)
   :short "Number of occurrences of a value in an obag."
-  (cond ((empty bag) 0)
+  (cond ((emptyp bag) 0)
         ((equal x (head bag)) (1+ (occs x (tail bag))))
         (t (occs x (tail bag)))))
 
@@ -307,7 +307,7 @@
   :long
   (xdoc::topstring-p
    "This is similar to @(tsee set::cardinality) on osets.")
-  (if (empty bag)
+  (if (emptyp bag)
       0
     (1+ (cardinality (tail bag)))))
 
@@ -320,7 +320,7 @@
   :long
   (xdoc::topstring-p
    "This is similar to @(tsee set::subset) for osets.")
-  (or (empty sub)
+  (or (emptyp sub)
       (and (in (head sub) sup)
            (subbag (tail sub)
                    (delete (head sub) sup)))))
@@ -333,7 +333,7 @@
   :long
   (xdoc::topstring-p
    "This is similar to @(tsee set::union) for osets.")
-  (if (empty bag1)
+  (if (emptyp bag1)
       (bfix bag2)
     (insert (head bag1)
             (union (tail bag1) bag2)))
@@ -348,7 +348,7 @@
   :long
   (xdoc::topstring-p
    "This is similar to @(tsee set::intersect) for osets.")
-  (cond ((empty bag1) nil)
+  (cond ((emptyp bag1) nil)
         ((in (head bag1) bag2)
          (insert (head bag1)
                  (intersect (tail bag1) bag2)))
@@ -361,7 +361,7 @@
   :returns (bag bagp)
   :short "Remove from the first obag
           all (the occurrences of) the elements of the second obag."
-  (cond ((empty bag1) nil)
+  (cond ((emptyp bag1) nil)
         ((in (head bag1) bag2)
          (difference (tail bag1) bag2))
         (t (insert (head bag1)

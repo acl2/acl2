@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -116,7 +116,7 @@
    (t
     (mv-let (badge warrantp)
       (get-badge-and-warrantp fn wrld)
-      (let ((needs-warrant
+       (let ((needs-warrant
 
 ; Fn has no warrant and either
 ; (a) we're in the prover, or any setting where attachments are not allowed; or
@@ -134,7 +134,9 @@
                    (if needs-warrant "warranted" "badged"))
               nil nil))
          (needs-warrant ; hence warrantp = nil
-          (mv (msg "~x0 has not been warranted" fn) badge warrantp))
+          (mv (msg "~x0 has not been warranted, and its badge is insufficient ~
+                    because it is in :logic mode"
+                   fn) badge warrantp))
          (t (mv nil badge warrantp))))))))
 
 ; The (extensible) attachments for badge-userfn and apply$-userfn are
@@ -224,12 +226,19 @@
 ; from badge-userfn.
 
                     (msg "The value of ~x0 is not specified on ~x1 because ~
-                          ~@2."
+                          ~@2.~@3"
                          'BADGE-USERFN
                          fn
                          (cond (bad-fn-msg bad-fn-msg)
                                (t (msg "~x0 has not been warranted"
-                                       fn))))
+                                       fn)))
+                         (if *inside-do$*
+                             (msg "  This error has occurred in the scope of ~
+                                   a call of ~x0, which generally comes from ~
+                                   an expression of the form (loop$ with ~
+                                   ...).  See :DOC loop$ and :DOC apply$."
+                                  'do$)
+                           ""))
                     (replace-live-stobjs-in-list
                      (list fn))))))))))
 

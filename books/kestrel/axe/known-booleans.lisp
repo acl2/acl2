@@ -1,6 +1,6 @@
 ; A tool to track functions that are known to return only t or nil
 ;
-; Copyright (C) 2016-2020 Kestrel Institute
+; Copyright (C) 2016-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,7 +26,11 @@
 ;; check that a function does in fact always return a boolean before adding it
 ;; to the table.
 
-;; TODO: Can we somehow protect the table from a user modifying it?
+;; See tests in known-booleans-tests.lisp
+
+;; TODO: Can we somehow protect the table from a user modifying it?  Another
+;; idea would be to simply check, at the start of each Axe run, that each
+;; claimed boolean function is in fact boolean.
 
 (defun all-t (items)
   (declare (xargs :guard (true-listp items)))
@@ -104,6 +108,8 @@
 
 (add-known-boolean not)
 (add-known-boolean equal)
+(add-known-boolean eql) ; but we should usually replace eql with equal
+(add-known-boolean eq) ; but we should usually replace eq with equal
 (add-known-boolean =) ; but we should usually replace = with equal
 (add-known-boolean unsigned-byte-p)
 (add-known-boolean signed-byte-p)
@@ -113,18 +119,23 @@
 (add-known-boolean rationalp)
 (add-known-boolean complex-rationalp)
 (add-known-boolean acl2-numberp)
+(add-known-boolean symbolp)
+(add-known-boolean stringp)
+(add-known-boolean characterp)
 (add-known-boolean consp)
 (add-known-boolean atom) ; but we should usually open to expose consp
 (add-known-boolean endp) ; but we should usually open to expose consp
+(add-known-boolean null) ; but we should usually open to expose equal
 (add-known-boolean booleanp)
 (add-known-boolean true-listp)
 (add-known-boolean iff)
-(add-known-boolean <)
+(add-known-boolean <) ; note that >, <=, and >= are macros
 (add-known-boolean alistp)
 (add-known-boolean symbol-alistp)
 (add-known-boolean logbitp)
 (add-known-boolean evenp)
 (add-known-boolean oddp)
 (add-known-boolean bitp)
-
-;; See tests in known-booleans-tests.lisp
+(add-known-boolean no-duplicatesp-equal)
+(add-known-boolean subsetp-equal)
+(add-known-boolean keywordp)

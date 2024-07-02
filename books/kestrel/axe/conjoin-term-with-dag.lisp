@@ -9,7 +9,7 @@
   (declare (xargs :guard (and (pseudo-termp term)
                               (or (myquotep dag)
                                   (and (pseudo-dagp dag)
-                                       (<= (len dag) 2147483646))))
+                                       (<= (len dag) *max-1d-array-length*))))
                   :guard-hints (("Goal" :in-theory (disable myquotep quotep)))))
   (mv-let (erp dag-or-quotep)
     (make-term-into-dag-basic term
@@ -18,7 +18,7 @@
     (if erp
         (er hard? 'conjoin-term-with-dag! "Error making term into dag.")
       (if (and (not (myquotep dag-or-quotep))
-               (< 2147483646 (len dag-or-quotep)))
+               (< *max-1d-array-length* (len dag-or-quotep)))
           ;; todo: can this happen?
           (er hard? 'conjoin-term-with-dag! "DAG too long.")
         (make-conjunction-dag! dag-or-quotep dag)))))

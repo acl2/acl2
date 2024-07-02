@@ -1806,46 +1806,53 @@ ACL2 !>>>(APPLY$ 'HELLO '(JOHN))
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of APPLY$-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(EV$ '(HELLO E) '((E . JOHN)))
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of BADGE-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of BADGE-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
                  '(JOHN))
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of BADGE-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of BADGE-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
                 COLLECT (HELLO E))
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of BADGE-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
                 COLLECT (HELLO E))
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of BADGE-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -1858,7 +1865,8 @@ ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of BADGE-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 >>>(SET-GUARD-CHECKING T)
 
@@ -1905,14 +1913,16 @@ ACL2 !>>>(CALLER1 'JOHN)
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of APPLY$-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(CALLER1 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of APPLY$-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -1925,7 +1935,8 @@ ACL2 >>>(CALLER1 "Mary and Tom")
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of APPLY$-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 >>>(SET-GUARD-CHECKING T)
 
@@ -1976,7 +1987,8 @@ ACL2 !>>>(CALLER2 'JOHN)
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of BADGE-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(CALLER2 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
@@ -2000,7 +2012,8 @@ ACL2 >>>(CALLER2 "Mary and Tom")
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of BADGE-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 >>>(SET-GUARD-CHECKING T)
 
@@ -2283,13 +2296,15 @@ ACL2 !>>>(CALLER3 'JOHN)
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of APPLY$-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(CALLER3 "Mary and Tom")
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of APPLY$-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -2301,7 +2316,8 @@ ACL2 >>>(CALLER3 "Mary and Tom")
 
 
 ACL2 Error [Evaluation] in TOP-LEVEL:  The value of APPLY$-USERFN is
-not specified on HELLO because HELLO has not been warranted.
+not specified on HELLO because HELLO has not been warranted, and its
+badge is insufficient because it is in :logic mode.
 
 ACL2 >>>(SET-GUARD-CHECKING T)
 
@@ -2558,7 +2574,8 @@ ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal).
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal).
 
 q.e.d. (given one forced hypothesis)
 
@@ -2611,7 +2628,8 @@ Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -2666,7 +2684,8 @@ Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -2720,7 +2739,8 @@ ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal).
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal).
 Goal'
 
 ([ A key checkpoint:
@@ -2783,7 +2803,8 @@ Goal'
   2> (ACL2_*1*_ACL2::HELLO JOHN)
   <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -2838,7 +2859,8 @@ Goal'
   2> (ACL2_*1*_ACL2::HELLO JOHN)
   <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -2954,7 +2976,8 @@ Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -3278,7 +3301,8 @@ ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal).
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal).
 
 q.e.d. (given one forced hypothesis)
 
@@ -3333,7 +3357,8 @@ Goal'
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -3390,7 +3415,8 @@ Goal'
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -3446,7 +3472,8 @@ ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal).
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal).
 Goal'
 
 ([ A key checkpoint:
@@ -3514,7 +3541,8 @@ Goal'
       <4 (HELLO (HI JOHN))
     <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -3572,7 +3600,8 @@ Goal'
       <4 (HELLO (HI JOHN))
     <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -3692,7 +3721,8 @@ Goal'
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -4477,7 +4507,8 @@ ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL
                     '(HI JOHN)))
 Goal'
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying 
+APPLY$-LOGIC-MODE-WITH-BADGE-AND-WARRANT to Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -4906,7 +4937,8 @@ ACL2 !>>(THM (EQUAL (RUN-THIS-VERSION-3 'JOHN)
                     '((HI JOHN))))
 Goal'
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying 
+APPLY$-LOGIC-MODE-WITH-BADGE-AND-WARRANT to Goal').
 
 q.e.d. (given one forced hypothesis)
 

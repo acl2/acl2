@@ -1,3 +1,7 @@
+; Copyright (C) 2019, ForrestHunt, Inc.
+; Written by Matt Kaufmann and J Moore
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Weights and Measures for the Doppelganger Construction
 
 ; The doppelganger construction requires analysis of the user-defined
@@ -238,7 +242,7 @@
 
 (defun make-max-internal-weight (fn g2-fns wrld)
 
-; We return a list containing all 
+; We return a list containing all
 ; * :fn and :expr formals of fn
 ; * quoted evgs in :fn and :expr slots of the (beta-reduced) body of fn, and
 ; * quoted names of all all partially instantiated *g2-fns* called in that body

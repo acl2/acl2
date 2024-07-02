@@ -52,46 +52,46 @@
   (setp (list-to-set X))
   :hints (("Goal" :in-theory (enable insert))))
 
-(defthm head-empty-same
-  (implies (and (empty X)
-                (empty Y))
+(defthm head-emptyp-same
+  (implies (and (emptyp X)
+                (emptyp Y))
            (equal (equal (head X) (head Y)) t)))
 
-(defthm tail-empty-same
-  (implies (and (empty X)
-                (empty Y))
+(defthm tail-emptyp-same
+  (implies (and (emptyp X)
+                (emptyp Y))
            (equal (equal (tail X) (tail Y)) t)))
 
-(defthm insert-empty-same
-  (implies (and (empty X)
-                (empty Y))
+(defthm insert-emptyp-same
+  (implies (and (emptyp X)
+                (emptyp Y))
            (equal (equal (insert a X) (insert a Y)) t)))
 
-(defthm sfix-empty-same
-  (implies (and (empty X)
-                (empty Y))
+(defthm sfix-emptyp-same
+  (implies (and (emptyp X)
+                (emptyp Y))
            (equal (equal (sfix X) (sfix Y)) t)))
 
-(defthm tail-preserves-empty
-  (implies (empty X)
-           (empty (tail X))))
+(defthm tail-preserves-emptyp
+  (implies (emptyp X)
+           (emptyp (tail X))))
 
-(defthm head-insert-empty
-  (implies (empty X)
+(defthm head-insert-emptyp
+  (implies (emptyp X)
            (equal (head (insert a X)) a)))
 
-(defthm tail-insert-empty
-  (implies (empty X)
-           (empty (tail (insert a X)))))
+(defthm tail-insert-emptyp
+  (implies (emptyp X)
+           (emptyp (tail (insert a X)))))
 
 (defthm head-not-whole
-  (implies (not (empty X))
+  (implies (not (emptyp X))
            (not (equal (head X) X)))
-  :hints(("Goal" :in-theory (enable head empty))))
+  :hints(("Goal" :in-theory (enable head emptyp))))
 
 (deftheory primitives-theory
   '(setp
-    empty
+    emptyp
     head
     tail
     sfix
@@ -109,4 +109,3 @@
 
 (in-theory (disable primitives-theory
                     primitive-order-theory))
-

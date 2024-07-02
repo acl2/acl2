@@ -83,4 +83,6 @@
              fty::defflexsum
              fty::defenum
 
-             disjoin conjoin conjoin-clauses clauses-result)))
+             disjoin conjoin conjoin-clauses clauses-result
+             
+             force-execute)))

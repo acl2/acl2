@@ -71,7 +71,6 @@
                             ;consp-cdr
                             )
                            (len ;take-of-nthcdr-becomes-subrange
-                            ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
 ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
                             ))
            :do-not '(generalize eliminate-destructors))))
@@ -85,8 +84,7 @@
                 (<= k (minelem (subrange (+ 1 n) end lst))))
            (<= k (minelem (subrange n end lst))))
   :hints (("Goal" :in-theory (e/d (subrange minelem)
-                                  (;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
-                                   ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
+                                  (;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
                                    ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
 ;list::equal-cons-cases
                                    ))

@@ -1,7 +1,7 @@
 ; Rules about that turn IF into BVIF inside BV ops
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,14 +26,15 @@
 (include-book "sbvlt")
 (include-book "sbvdiv")
 (include-book "sbvrem")
+(local (include-book "bvlt"))
 
 ;; TODO: Add rules for bv-array operators?
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvchop-of-if-becomes-bvchop-of-bvif
+(defthmd bvchop-of-if-becomes-bvif
   (equal (bvchop size (if test x1 x2))
-         (bvchop size (bvif size test x1 x2)))
+         (bvif size test x1 x2))
   :hints (("Goal" :in-theory (enable bvif))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -19,7 +19,6 @@
 (include-book "std/util/define-sk" :dir :system)
 
 (local (include-book "../library-extensions/alists"))
-(local (include-book "../library-extensions/omaps"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -110,10 +109,10 @@
      and the function information for the same function name must be related."))
   (b* ((old (funscope-fix old))
        (new (funscope-fix new)))
-    (and (or (and (omap::empty old)
-                  (omap::empty new))
-             (and (not (omap::empty old))
-                  (not (omap::empty new))
+    (and (or (and (omap::emptyp old)
+                  (omap::emptyp new))
+             (and (not (omap::emptyp old))
+                  (not (omap::emptyp new))
                   (b* (((mv old-fun old-info) (omap::head old))
                        ((mv new-fun new-info) (omap::head new)))
                     (and (equal old-fun new-fun)
@@ -161,8 +160,8 @@
   (forall (old-var new-var)
           (implies (member-equal (cons old-var new-var)
                                  (renaming->list ren))
-                   (equal (cdr (omap::in old-var (lstate-fix old)))
-                          (cdr (omap::in new-var (lstate-fix new))))))
+                   (equal (cdr (omap::assoc old-var (lstate-fix old)))
+                          (cdr (omap::assoc new-var (lstate-fix new))))))
   ///
 
   (fty::deffixequiv-sk lstate-match-renamevarp
@@ -174,8 +173,8 @@
                   (lstatep new)
                   (member-equal (cons old-var new-var)
                                 (renaming->list ren)))
-             (equal (cdr (omap::in old-var old))
-                    (cdr (omap::in new-var new))))
+             (equal (cdr (omap::assoc old-var old))
+                    (cdr (omap::assoc new-var new))))
     :use lstate-match-renamevarp-necc
     :disable (lstate-match-renamevarp lstate-match-renamevarp-necc))
 
@@ -210,7 +209,7 @@
                                 (renaming->list ren)))
              (iff (set::in old-var (omap::keys old-lstate))
                   (set::in new-var (omap::keys new-lstate))))
-    :enable omap::set-in-keys-to-in
+    :enable omap::in-of-keys-to-assoc
     :use ((:instance lstate-match-renamevarp-rewrite
            (old old-lstate)
            (new new-lstate))
@@ -432,8 +431,8 @@
     (implies (and (funscopep old-scope)
                   (funscopep new-scope)
                   (funscope-renamevarp old-scope new-scope))
-             (b* ((old-fun+info (omap::in fun old-scope))
-                  (new-fun+info (omap::in fun new-scope)))
+             (b* ((old-fun+info (omap::assoc fun old-scope))
+                  (new-fun+info (omap::assoc fun new-scope)))
                (implies (and (consp old-fun+info)
                              (consp new-fun+info))
                         (funinfo-renamevarp (cdr old-fun+info)
@@ -444,8 +443,8 @@
     (implies (and (funscopep old-scope)
                   (funscopep new-scope)
                   (funscope-renamevarp old-scope new-scope))
-             (equal (consp (omap::in fun old-scope))
-                    (consp (omap::in fun new-scope))))
+             (equal (consp (omap::assoc fun old-scope))
+                    (consp (omap::assoc fun new-scope))))
     :enable funscope-renamevarp)
 
   (defruled same-funscope-keys-when-renamevar
@@ -656,8 +655,8 @@
                         (new-lstate1 (omap::update new-var val new-lstate)))
                      (implies (member-equal (cons old-var1 new-var1)
                                             (renaming->list ren))
-                              (equal (cdr (omap::in old-var1 old-lstate1))
-                                     (cdr (omap::in new-var1 new-lstate1))))))
+                              (equal (cdr (omap::assoc old-var1 old-lstate1))
+                                     (cdr (omap::assoc new-var1 new-lstate1))))))
           :enable (lstate-renamevarp
                    lstate-match-renamevarp-rewrite
                    var-renamevar)
@@ -747,8 +746,8 @@
                      (implies (and (not (reserrp ren1))
                                    (member-equal (cons old-var1 new-var1)
                                                  (renaming->list ren1)))
-                              (equal (cdr (omap::in old-var1 old-lstate1))
-                                     (cdr (omap::in new-var1 new-lstate1))))))
+                              (equal (cdr (omap::assoc old-var1 old-lstate1))
+                                     (cdr (omap::assoc new-var1 new-lstate1))))))
           :enable (lstate-renamevarp
                    lstate-match-renamevarp-rewrite
                    add-var-to-var-renaming
@@ -896,11 +895,11 @@
                                                      new-lstate1)))
                      (implies (member-equal (cons old-var new-var)
                                             (renaming->list ren))
-                              (equal (cdr (omap::in old-var old-lstate2))
-                                     (cdr (omap::in new-var new-lstate2))))))
+                              (equal (cdr (omap::assoc old-var old-lstate2))
+                                     (cdr (omap::assoc new-var new-lstate2))))))
           :enable (lstate-renamevarp
                    lstate-match-renamevarp-rewrite
-                   omap::in-of-restrict-2
+                   omap::assoc-of-restrict
                    old-var-in-renaming-old-when-in-renaming)
           :disable acl2::subsetp-member
           :use ((:instance acl2::subsetp-member
@@ -1026,11 +1025,11 @@
                                                      new-lstate2)))
                      (implies (member-equal (cons old-var new-var)
                                             (renaming->list ren))
-                              (equal (cdr (omap::in old-var old-lstate3))
-                                     (cdr (omap::in new-var new-lstate3))))))
+                              (equal (cdr (omap::assoc old-var old-lstate3))
+                                     (cdr (omap::assoc new-var new-lstate3))))))
           :enable (lstate-renamevarp
                    lstate-match-renamevarp-rewrite
-                   omap::in-of-restrict-2
+                   omap::assoc-of-restrict
                    old-var-in-renaming-old-when-in-renaming)
           :disable acl2::subsetp-member
           :use ((:instance acl2::subsetp-member
@@ -1225,12 +1224,12 @@
                                     (renaming->list ren1)))
                 (implies (member-equal (cons old-var new-var)
                                        (renaming->list ren1))
-                         (equal (cdr (omap::in old-var old-lstate))
-                                (cdr (omap::in new-var new-lstate)))))
+                         (equal (cdr (omap::assoc old-var old-lstate))
+                                (cdr (omap::assoc new-var new-lstate)))))
        :enable (lstate-renamevarp
                 lstate-match-renamevarp-rewrite
                 old-var-in-renaming-old-when-in-renaming
-                omap::set-in-keys-to-in
+                omap::in-of-keys-to-assoc
                 set::subset-in)
        :use ((:instance lemma1
               (a old-var)

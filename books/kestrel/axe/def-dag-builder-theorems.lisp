@@ -32,7 +32,7 @@
   (b* ((dag-array-name (if dag-array-name dag-array-name ''dag-array))
        (dag-parent-array-name (if dag-parent-array-name dag-parent-array-name ''dag-parent-array))
        (return-vals (cdr ret-spec))
-       (expected-return-vals '(erp dag-len dag-array dag-parent-array dag-variable-alist dag-constant-alist))
+       (expected-return-vals '(erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ((when (not (subsetp-eq expected-return-vals ret-spec)))
         (er hard? 'def-dag-builder-theorems-fn "Missing return values: ~x0." (set-difference-eq expected-return-vals ret-spec)))
        (fn (ffn-symb call))
@@ -124,7 +124,7 @@
                        (not (mv-nth ,erp-rv ,call)) ;no error
                        ,@hyps)
                   (<= (mv-nth ,dag-len-rv ,call)
-                      2147483646))
+                      *max-1d-array-length*))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of- fn))
                   :in-theory '(wf-dagp-forward-to-<=-of-len))))
 
@@ -205,7 +205,7 @@
        ;;   (implies (and (dag-pseudo-dag-arrayp2 ,dag-array-name dag-array dag-len)
        ;;                 (bounded-dag-parent-arrayp ,dag-parent-array-name dag-parent-array dag-len)
        ;;                 (not (mv-nth ,erp-rv ,call))
-       ;;                 (<= dag-len 2147483646)
+       ;;                 (<= dag-len *max-1d-array-length*)
        ;;                 (dag-constant-alistp dag-constant-alist)
        ;;                 (equal (alen1 ,dag-array-name dag-array)
        ;;                        (alen1 ,dag-parent-array-name dag-parent-array))
@@ -219,7 +219,7 @@
        ;;                                    bounded-dag-parent-arrayp
        ;;                                    natp
        ;;                                    index-in-bounds-after-expand-array))
-       ;;            :cases ((< (car (dimensions ,dag-array-name dag-array)) '2147483646))
+       ;;            :cases ((< (car (dimensions ,dag-array-name dag-array)) *max-1d-array-length*))
        ;;            :use (:instance index-in-bounds-after-expand-array
        ;;                            (name ,dag-array-name)
        ;;                            (l dag-array)

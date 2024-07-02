@@ -13,7 +13,7 @@
 
 (include-book "bvchop")
 (include-book "logext") ;todo: include less?
-(include-book "kestrel/booleans/boolor" :dir :system) ;todo
+(include-book "kestrel/utilities/polarity" :dir :system)
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "unsigned-byte-p"))
@@ -167,28 +167,6 @@
                 (not (sbvlt size free k)) ; gets computed
                 )
            (not (sbvlt size x k)))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
-(defthm boolor-of-sbvlt-of-constant-and-sbvlt-of-constant
-  (implies (syntaxp (and (quotep k1)
-                         (quotep k2)
-                         (quotep size)))
-           (equal (boolor (sbvlt size x k1)
-                          (sbvlt size x k2))
-                  (if (sbvle size k1 k2) ;gets computed
-                      (sbvlt size x k2)
-                    (sbvlt size x k1))))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
-(defthm boolor-of-sbvlt-of-constant-and-sbvlt-of-constant-2
-  (implies (syntaxp (and (quotep k1)
-                         (quotep k2)
-                         (quotep size)))
-           (equal (boolor (sbvlt size k1 x)
-                          (sbvlt size k2 x))
-                  (if (sbvle size k2 k1) ;gets computed
-                      (sbvlt size k2 x)
-                    (sbvlt size k1 x))))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 (defthm sbvlt-when-not-integerp-arg2
@@ -449,3 +427,39 @@
                 (natp size))
            (sbvlt size k x))
   :hints (("Goal" :in-theory (enable sbvlt))))
+
+;; When do we want this?
+(defthmd sbvlt-of-0-arg3
+  (implies (posp size)
+           (equal (sbvlt size x 0)
+                  (equal 1 (getbit (+ -1 size) x))))
+  :hints (("Goal" :in-theory (enable sbvlt logext-cases))))
+
+;; In case we don't want to rewrite the sbvlt.
+(defthm getbit-when-not-sbvlt-of-0-cheap
+  (implies (not (sbvlt 32 x 0))
+           (equal (getbit 31 x)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;; In case we don't want to rewrite the sbvlt.
+(defthm getbit-when-sbvlt-of-0-cheap
+  (implies (sbvlt 32 x 0)
+           (equal (getbit 31 x)
+                  1))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;todo: gen the 0
+(defthm sbvlt-unique-weaken
+  (implies (and (syntaxp (want-to-weaken (sbvlt 32 i 0)))
+                (not (sbvlt 32 0 i)))
+           (equal (sbvlt 32 i 0)
+                  (not (equal 0 (bvchop 32 i)))))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;gen
+(defthm sbvlt-of-maxint-when-sbvlt
+  (implies (sbvlt 32 n free)
+           (sbvlt 32 n 2147483647)))

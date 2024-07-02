@@ -221,7 +221,7 @@
                   :stobjs state))
   ;; Record the start time:
   (mv-let (start-time state)
-    (acl2::get-real-time state)
+    (get-real-time state)
     ;; Try the event with the rune disabled::
     (mv-let (erp state)
       (submit-and-revert-event `(saving-event-data (progn (in-theory (disable ,rune))
@@ -229,7 +229,7 @@
                                nil nil state)
       ;; Record the end time:
       (mv-let (end-time state)
-        (acl2::get-real-time state)
+        (get-real-time state)
         (if erp
             state ; the event failed after doing the disable
           (if (member-equal rune (get-event-data 'rules state))
@@ -282,13 +282,13 @@
   (let ((name (cadr event)))
     ;; Record the start time:
     (mv-let (start-time state)
-      (acl2::get-real-time state)
+      (get-real-time state)
       ;; Do the proof and time it (todo: do it twice, like we do for defthm, for better timings):
       (mv-let (erp state)
         (submit-and-revert-event `(saving-event-data ,event) nil nil state)
         ;; Record the end time:
         (mv-let (end-time state)
-          (acl2::get-real-time state)
+          (get-real-time state)
           (if erp
               (prog2$ (er hard? 'speed-up-defrule "~x0 was expected to prove, but it failed." name)
                       (mv erp state))

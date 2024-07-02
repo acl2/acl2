@@ -33,6 +33,12 @@
            (+ 1 (nfix n)))))
 (in-theory (disable len-update-nth))
 
+;; Avoids a case split
+(defthm <-of-len-of-update-nth
+  (implies (natp n)
+           (< n (len (update-nth n val l))))
+  :hints (("Goal" :in-theory (enable update-nth nfix))))
+
 ;; Match what's in STD
 (defthm update-nth-of-update-nth-same
   (equal (update-nth n v1 (update-nth n v2 x))
@@ -69,7 +75,7 @@
                 (< n (len lst)))
            (equal (update-nth n val lst)
                   lst))
-  :hints (("Goal" :in-theory (enable UPDATE-NTH))))
+  :hints (("Goal" :in-theory (enable update-nth))))
 
 ;rename
 (defthm cdr-of-update-nth-0
@@ -97,10 +103,7 @@
 (defthm true-list-fix-of-update-nth-2
   (equal (true-list-fix (update-nth key val l))
          (update-nth key val (true-list-fix l)))
-  :hints (("Goal" :in-theory (e/d (;repeat
-                                   update-nth)
-                                  (;list::list-equiv-hack
-                                   )))))
+  :hints (("Goal" :in-theory (enable update-nth))))
 
 ;todo dup?
 (defthm take-update-nth
@@ -112,9 +115,7 @@
                   (if (<= n n2)
                       (take n l)
                       (update-nth n2 v (take n l)))))
-  :hints
-  (("Goal" :in-theory (enable TAKE; repeat
-                              update-nth))))
+  :hints (("Goal" :in-theory (enable take update-nth))))
 
 ;; Often we'll know (true-listp l) and no case split will occur.
 ;; Not quite the same as true-listp-of-update-nth in std.
@@ -190,7 +191,7 @@
                        (equal (nthcdr (+ 1 n) x)
                               (nthcdr (+ 1 n) y)))))
   :hints (("Goal" :induct (sub1-cdr-cdr-induct n x y)
-           :in-theory (e/d (update-nth) ()))))
+           :in-theory (enable update-nth))))
 
 (defthm update-nth-of-take-of-+-of-1-same
   (implies (and (<= (len lst) n)

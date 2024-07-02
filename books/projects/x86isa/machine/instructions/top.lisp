@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2018, Kestrel Technology, LLC
+; Copyright (C) 2024, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -35,7 +35,7 @@
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 ; Contributing Author(s):
-; Alessandro Coglio   <coglio@kestrel.edu>
+; Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
 
@@ -49,6 +49,8 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "divide"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "endbranch"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "exchange"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "jump-and-loop"
@@ -56,6 +58,10 @@
 (include-book "move"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "multiply"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "padd"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "psub"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "push-and-pop"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
@@ -105,6 +111,11 @@
 (defsection two-byte-opcodes
   :parents (instructions)
   :short "Instruction semantic functions for Intel's instructions with two-byte
+  opcodes" )
+
+(defsection three-byte-opcodes
+  :parents (instructions)
+  :short "Instruction semantic functions for Intel's instructions with three-byte
   opcodes" )
 
 (defsection fp-opcodes

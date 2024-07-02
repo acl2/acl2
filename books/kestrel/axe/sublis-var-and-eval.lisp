@@ -29,12 +29,12 @@
 ;;   :hints (("Goal" :in-theory (enable bounded-axe-treep dargp-less-than))))
 
 ;; ;dup
-;; (defthm axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
-;;   (implies (and (all-dargp (strip-cdrs alist))
+;; (defthm axe-treep-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs
+;;   (implies (and (darg-listp (strip-cdrs alist))
 ;;                 ;; (assoc-equal form alist)
 ;;                 )
 ;;            (axe-treep (cdr (assoc-equal form alist))))
-;;   :hints (("Goal" :in-theory (enable all-dargp assoc-equal))))
+;;   :hints (("Goal" :in-theory (enable darg-listp assoc-equal))))
 
 ;this one evaluates applications of known functions on constant arguments
 ;todo: try cons-with-hint here?
@@ -44,7 +44,7 @@
                                  form interpreted-function-alist)
    (declare (xargs :verify-guards nil ;done below
                    :guard (and (symbol-alistp alist)
-                               (all-dargp (strip-cdrs alist))
+                               (darg-listp (strip-cdrs alist))
                                (pseudo-termp form)
                                (interpreted-function-alistp interpreted-function-alist))))
    (cond ((variablep form)
@@ -94,7 +94,7 @@
    (declare (xargs
              :verify-guards nil
              :guard (and (symbol-alistp alist)
-                         (all-dargp (strip-cdrs alist)) ;gen?  really just need that things whose cars are 'quote are myquoteps
+                         (darg-listp (strip-cdrs alist)) ;gen?  really just need that things whose cars are 'quote are myquoteps
                          (pseudo-term-listp l)
                          (interpreted-function-alistp interpreted-function-alist))))
    (if (atom l)
@@ -137,14 +137,14 @@
 (defthm-flag-sublis-var-and-eval
   (defthm myquotep-of-sublis-var-and-eval
     (implies (and (eq 'quote (car (sublis-var-and-eval alist form interpreted-function-alist)))
-                  (all-dargp (strip-cdrs alist))
+                  (darg-listp (strip-cdrs alist))
                   (pseudo-termp form)
                   )
              (myquotep (sublis-var-and-eval alist form interpreted-function-alist)))
     :flag sublis-var-and-eval)
   (defthm all-myquotep-of-mv-nth-1-of-sublis-var-and-eval-lst
     (implies (and (mv-nth 0 (sublis-var-and-eval-lst alist l interpreted-function-alist))
-                  (all-dargp (strip-cdrs alist))
+                  (darg-listp (strip-cdrs alist))
                   (pseudo-term-listp l))
              (all-myquotep (mv-nth 1 (sublis-var-and-eval-lst alist l interpreted-function-alist))))
     :flag sublis-var-and-eval-lst)
@@ -154,22 +154,20 @@
 (verify-guards sublis-var-and-eval
   :hints (("Goal"
            :use (:instance myquotep-of-sublis-var-and-eval
-                           (form (CADR FORM)))
-           :in-theory (e/d ()
-                           (;list::memberp-of-cons
-                            myquotep SYMBOL-ALISTP STRIP-CDRS myquotep-of-sublis-var-and-eval)))))
+                           (form (cadr form)))
+           :in-theory (disable myquotep symbol-alistp strip-cdrs myquotep-of-sublis-var-and-eval))))
 
 (defthm-flag-sublis-var-and-eval
   (defthm axe-treep-of-sublis-var-and-eval
     (implies (and ;(eq 'quote (car (sublis-var-and-eval alist form interpreted-function-alist)))
-                  (all-dargp (strip-cdrs alist))
+                  (darg-listp (strip-cdrs alist))
                   (pseudo-termp form)
                   )
              (axe-treep (sublis-var-and-eval alist form interpreted-function-alist)))
     :flag sublis-var-and-eval)
   (defthm axe-tree-listp-of-mv-nth-1-of-sublis-var-and-eval-lst
     (implies (and ;(mv-nth 0 (sublis-var-and-eval-lst alist l interpreted-function-alist))
-                  (all-dargp (strip-cdrs alist))
+                  (darg-listp (strip-cdrs alist))
                   (pseudo-term-listp l))
              (axe-tree-listp (mv-nth 1 (sublis-var-and-eval-lst alist l interpreted-function-alist))))
     :flag sublis-var-and-eval-lst)

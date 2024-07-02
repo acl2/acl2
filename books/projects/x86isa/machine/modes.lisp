@@ -145,10 +145,10 @@
   (local (in-theory (e/d () (force (force)))))
 
   (defrule 64-bit-modep-of-xw ; contributed by Eric Smith
-      (implies (and (not (equal fld :msr))
-                    (not (equal fld :seg-hidden-attr)))
-               (equal (64-bit-modep (xw fld index value x86))
-                      (64-bit-modep x86))))
+    (implies (and (not (equal fld :msr))
+                  (not (equal fld :seg-hidden-attr)))
+             (equal (64-bit-modep (xw fld index value x86))
+                    (64-bit-modep x86))))
 
   ;; (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
   ;;   (equal (64-bit-modep (!flgi flag val x86))
@@ -160,8 +160,8 @@
   ;;   :enable !flgi-undefined)
 
   (defrule 64-bit-modep-of-write-user-rflags
-      (equal (64-bit-modep (write-user-rflags vector mask x86))
-             (64-bit-modep x86))))
+    (equal (64-bit-modep (write-user-rflags vector mask x86))
+           (64-bit-modep x86))))
 
 ;; ----------------------------------------------------------------------
 
@@ -181,15 +181,15 @@
   ///
 
   (defret range-of-x86-operation-mode
-      (and (<= 0 mode)
-           (< mode #.*num-proc-modes*))
+    (and (<= 0 mode)
+         (< mode #.*num-proc-modes*))
     :rule-classes :linear)
 
   (defrule x86-operation-mode-of-xw
-      (implies (and (not (equal fld :msr))
-                    (not (equal fld :seg-hidden-attr)))
-               (equal (x86-operation-mode (xw fld index value x86))
-                      (x86-operation-mode x86))))
+    (implies (and (not (equal fld :msr))
+                  (not (equal fld :seg-hidden-attr)))
+             (equal (x86-operation-mode (xw fld index value x86))
+                    (x86-operation-mode x86))))
 
   ;; (defrule x86-operation-mode-of-!flgi
   ;;   (equal (x86-operation-mode (!flgi flag val x86))
@@ -201,7 +201,7 @@
   ;;   :enable !flgi-undefined)
 
   (defrule x86-operation-mode-of-write-user-rflags
-      (equal (x86-operation-mode (write-user-rflags vector mask x86))
-             (x86-operation-mode x86))))
+    (equal (x86-operation-mode (write-user-rflags vector mask x86))
+           (x86-operation-mode x86))))
 
 ;; ----------------------------------------------------------------------

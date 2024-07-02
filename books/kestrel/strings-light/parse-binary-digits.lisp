@@ -127,15 +127,14 @@
     (if res
         ;; At least one binary digit is present:
         (parse-binary-digits-from-chars chars res)
-      ;; No binary digts preseent:
+      ;; No binary digts present:
       (mv nil chars))))
 
 (defthm parse-binary-number-from-chars-len-bound
   (<= (len (mv-nth 1 (parse-binary-number-from-chars chars)))
       (len chars))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (parse-binary-number-from-chars)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable parse-binary-number-from-chars))))
 
 (defthm true-listp-of-mv-nth-1-of-parse-binary-number-from-chars
   (implies (true-listp chars)

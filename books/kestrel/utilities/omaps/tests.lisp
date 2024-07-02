@@ -1,10 +1,10 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,11 +51,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (omap::empty nil))
+(assert! (omap::emptyp nil))
 
-(assert! (not (omap::empty '(("key" . #\v)))))
+(assert! (not (omap::emptyp '(("key" . #\v)))))
 
-(assert! (not (omap::empty '((a . 1) (b . 2) (c . 3)))))
+(assert! (not (omap::emptyp '((a . 1) (b . 2) (c . 3)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,25 +161,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (omap::in #\a nil)
+(assert-equal (omap::assoc #\a nil)
               nil)
 
-(assert-equal (omap::in #\a '(("key" . #\v)))
+(assert-equal (omap::assoc #\a '(("key" . #\v)))
               nil)
 
-(assert-equal (omap::in "key" '(("key" . #\v)))
+(assert-equal (omap::assoc "key" '(("key" . #\v)))
               '("key" . #\v))
 
-(assert-equal (omap::in "key" '((a . 1) (b . 2) (c . 3)))
+(assert-equal (omap::assoc "key" '((a . 1) (b . 2) (c . 3)))
               nil)
 
-(assert-equal (omap::in 'a '((a . 1) (b . 2) (c . 3)))
+(assert-equal (omap::assoc 'a '((a . 1) (b . 2) (c . 3)))
               '(a . 1))
 
-(assert-equal (omap::in 'b '((a . 1) (b . 2) (c . 3)))
+(assert-equal (omap::assoc 'b '((a . 1) (b . 2) (c . 3)))
               '(b . 2))
 
-(assert-equal (omap::in 'c '((a . 1) (b . 2) (c . 3)))
+(assert-equal (omap::assoc 'c '((a . 1) (b . 2) (c . 3)))
               '(c . 3))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Contributing author: Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -351,10 +351,10 @@
 ;; ---------------------------------
 ;; hex-number
 
-(define cst2ast-hex-digit-char-list ((chars str::hex-digit-char-listp))
+(define cst2ast-hex-digit-char-list ((chars str::hex-digit-char-list*p))
   :returns (hex-digits hex-digit-listp)
   (cond (;; it would be good to get rid of this first condition
-         (not (and (str::hex-digit-char-listp chars)
+         (not (and (str::hex-digit-char-list*p chars)
                    (true-listp chars))) nil)
         ((endp chars) nil)
         (t (cons (make-hex-digit :get (car chars))
@@ -379,7 +379,7 @@
        ((unless (acl2::unsigned-byte-listp 8 hex-digit-char-codes))
         nil)
        (hex-digit-chars (acl2::nats=>chars hex-digit-char-codes))
-       ((unless (str::hex-digit-char-listp hex-digit-chars))
+       ((unless (str::hex-digit-char-list*p hex-digit-chars))
         nil)
        (hex-digits (cst2ast-hex-digit-char-list hex-digit-chars)))
     (make-literal-hex-number :get hex-digits)))
@@ -442,7 +442,7 @@
                      (equal (len fringe) 4)))
         (reserrf "unexpected input to cst2ast-uhhhh 2"))
        (hex-digit-chars (acl2::nats=>chars fringe))
-       ((unless (and (str::hex-digit-char-listp hex-digit-chars)
+       ((unless (and (str::hex-digit-char-list*p hex-digit-chars)
                      (str::hex-digit-char-p (first hex-digit-chars))
                      (str::hex-digit-char-p (second hex-digit-chars))
                      (str::hex-digit-char-p (third hex-digit-chars))
@@ -465,7 +465,7 @@
                      (acl2::unsigned-byte-listp 8 fringe)))
         (reserrf "unexpected input to cst2ast-xhh 2"))
        (hex-digit-chars (acl2::nats=>chars fringe))
-       ((unless (and (str::hex-digit-char-listp hex-digit-chars)
+       ((unless (and (str::hex-digit-char-list*p hex-digit-chars)
                      (str::hex-digit-char-p (first hex-digit-chars))
                      (str::hex-digit-char-p (second hex-digit-chars))))
         (reserrf "unexpected input to cst2ast-xhh 3")))
@@ -649,10 +649,10 @@
        (member (nth 3 fringe) (list (char-code #\") (char-code #\')))
        t)) ; just so it will return t rather than the member it found
 
-(define hex-chars-to-hex-pair-list ((chars str::hex-digit-char-listp))
+(define hex-chars-to-hex-pair-list ((chars str::hex-digit-char-list*p))
   :returns (hex-pair-list hex-pair-list-resultp)
   (cond ((null chars) nil)
-        ((not (and (str::hex-digit-char-listp chars)
+        ((not (and (str::hex-digit-char-list*p chars)
                    (consp chars)
                    (consp (cdr chars))
                    (str::hex-digit-char-p (first chars))
@@ -662,7 +662,7 @@
          (let* ((hex-digit1 (make-hex-digit :get (first chars)))
                 (hex-digit2 (make-hex-digit :get (second chars)))
                 (first-hex-pair (make-hex-pair :1st hex-digit1 :2nd hex-digit2)))
-           (if (not (str::hex-digit-char-listp (cddr chars)))
+           (if (not (str::hex-digit-char-list*p (cddr chars)))
                (reserrf "problem in hex-char-codes-to-hex-pair-list")
              (let ((rest-hex-pairs (hex-chars-to-hex-pair-list (cddr chars))))
                (if (not (hex-pair-listp rest-hex-pairs))
@@ -690,7 +690,7 @@
        ((unless (acl2::unsigned-byte-listp 8 hex-char-codes))
         nil)
        (hex-chars (acl2::nats=>chars hex-char-codes))
-       ((unless (str::hex-digit-char-listp hex-chars))
+       ((unless (str::hex-digit-char-list*p hex-chars))
         nil)
        (hex-pairs (hex-chars-to-hex-pair-list hex-chars))
        ((unless (hex-pair-listp hex-pairs))

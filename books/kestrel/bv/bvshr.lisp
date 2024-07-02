@@ -1,7 +1,7 @@
 ; Right shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "bvshr-def")
 (local (include-book "slice"))
+(local (include-book "unsigned-byte-p"))
 
 (defthm integerp-of-bvshr
   (integerp (bvshr width x shift-amount)))
@@ -38,12 +39,19 @@
                   (bvchop width x)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
-;; TODO: gen
 (defthm unsigned-byte-p-of-bvshr
-  (implies (and (natp amt)
-                (<= amt size)
-                (integerp size))
+  (implies (natp size)
            (unsigned-byte-p size (bvshr size x amt)))
+  :hints (("Goal"
+           :in-theory (enable bvshr
+                              slice-when-low-is-not-an-integer))))
+
+(defthm unsigned-byte-p-of-bvshr-gen
+  (implies (and (<= size size2)
+                (natp size2)
+                ;(integerp size)
+                )
+           (unsigned-byte-p size2 (bvshr size x amt)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
 (defthm bvchop-of-bvshr-same
@@ -53,9 +61,10 @@
                   (bvshr width x shift-amount)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
-(defthm bvchop-of-bvshr
-  (implies (and (integerp width)
-                (integerp shift-amount))
+(defthm bvchop-of-bvshr-becomes-slice
+  (implies (and (natp width)
+                (natp shift-amount)
+                )
            (equal (bvchop n (bvshr width x shift-amount))
                   (if (natp n)
                       (if (<= n (- width shift-amount))
@@ -64,12 +73,39 @@
                     0)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
+(defthm bvchop-of-bvshr-becomes-slice-safe
+  (implies (and (syntaxp (and (quotep shift-amount) ; not always true
+                              (quotep width)
+                              (quotep n)))
+                (natp width)
+                (natp shift-amount))
+           (equal (bvchop n (bvshr width x shift-amount))
+                  (if (natp n)
+                      (if (<= n (- width shift-amount))
+                          (slice (+ -1 n shift-amount) shift-amount x)
+                          (slice (+ -1 width) shift-amount x))
+                    0)))
+  :hints (("Goal" :in-theory (enable bvshr))))
+
+;yuck?
+;changes the width depending on the shift amount
+(defthmd bvchop-of-bvshr-new
+  (implies (and (< size1 size2)
+                (natp size1)
+                (natp size2)
+                (natp amt))
+           (equal (bvchop size1 (bvshr size2 x amt))
+                  (if (<= size1 (- size2 amt))
+                      (bvshr (+ size1 amt) x amt)
+                    (bvshr size2 x amt))))
+  :hints (("Goal" :in-theory (enable bvshr))))
+
 (defthmd bvshr-rewrite-for-constant-shift-amount
   (implies (syntaxp (and (quotep shift-amount)
                          (quotep width)) ; will usually be true
                     )
            (equal (bvshr width x shift-amount)
-                  (slice (+ -1 width) shift-amount x)))
+                  (slice (+ -1 (nfix width)) (nfix shift-amount) x)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
 (defthm bvshr-same

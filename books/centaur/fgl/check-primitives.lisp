@@ -59,7 +59,10 @@
    check-non-booleanp
    check-equal
    integer-length-bound
-   ifix))
+   ifix
+   symbolic-t
+   symbolic-nil
+   alist-const-pairs))
 
 ;; (local (defthm equal-of-len
 ;;          (implies (syntaxp (quotep n))
@@ -486,3 +489,129 @@
   :formula-check checks-formula-checks
   :origfn check-equal :formals (x y)
   :prepwork ((local (in-theory (enable check-equal)))))
+
+(def-fgl-primitive symbolic-t ()
+  (g-boolean t)
+  :formula-check checks-formula-checks
+  :returns ans)
+
+(def-fgl-primitive symbolic-nil ()
+  (g-boolean nil)
+  :formula-check checks-formula-checks
+  :returns ans)
+
+(fgl::disable-execution symbolic-t)
+(fgl::disable-execution symbolic-nil)
+
+
+
+(define alist-const-pairs-map ((x fgl-object-alist-p)
+                               acc
+                               nonconst-acc)
+  :measure (len x)
+  :hooks ((:fix :hints (("goal" :induct (alist-const-pairs-map x acc nonconst-acc)
+                         :expand ((fgl-object-alist-fix x))))))
+  (b* (((when (atom x)) (prog2$ (fast-alist-free nonconst-acc) acc))
+       ((unless (mbt (consp (car x))))
+        (alist-const-pairs-map (cdr x) acc nonconst-acc))
+       ((cons key val) (car x))
+       (boundp (or (hons-get key acc)
+                   (hons-get key nonconst-acc)))
+       ((when boundp) (alist-const-pairs-map (cdr x) acc nonconst-acc))
+       ((unless (fgl-object-case val :g-concrete))
+        (alist-const-pairs-map (cdr x) acc (hons-acons key t nonconst-acc))))
+    (alist-const-pairs-map (cdr x) (hons-acons key (g-concrete->val val) acc) nonconst-acc))
+  ///
+  (defthm lookup-in-alist-const-pairs-map
+    (b* ((map-pair (hons-assoc-equal k (alist-const-pairs-map x acc nonconst-acc))))
+      (and (implies (hons-assoc-equal k acc)
+                    (equal map-pair (hons-assoc-equal k acc)))
+           (implies (and (not (hons-assoc-equal k acc))
+                         (hons-assoc-equal k nonconst-acc))
+                    (equal map-pair nil))
+           (implies (and (not (hons-assoc-equal k acc))
+                         map-pair
+                         (bind-free '((env . env) (logicman . logicman)) (env logicman)))
+                    (Equal map-pair
+                           (hons-assoc-equal k (fgl-object-alist-eval x env))))))
+                    
+    :hints (("goal" :induct (alist-const-pairs-map x acc nonconst-acc)
+             :expand ((:free (x) (hide x))
+                      (fgl-object-alist-eval x env))))))
+    
+
+(define alist-const-pairs-rec ((x fgl-object-p)
+                               acc
+                               nonconst-acc)
+  :measure (fgl-object-count x)
+  (fgl-object-case x
+    :g-map (alist-const-pairs-map x.alist acc nonconst-acc)
+    :g-cons (fgl-object-case x.car
+              :g-concrete (b* (((mv acc nonconst-acc)
+                                (b* (((unless (consp x.car.val))
+                                      (mv acc nonconst-acc))
+                                     ((cons key val) x.car.val)
+                                     ((when (or (hons-get key acc)
+                                                (hons-get key nonconst-acc)))
+                                      (mv acc nonconst-acc)))
+                                  (mv (hons-acons key val acc) nonconst-acc))))
+                            (alist-const-pairs-rec x.cdr acc nonconst-acc))
+              :g-cons (b* (((unless (fgl-object-case x.car.car :g-concrete))
+                            ;; We can't determine what this key evaluates
+                            ;; to, so we can only return keys already
+                            ;; bound before it.
+                            (prog2$ (fast-alist-free nonconst-acc)
+                                    acc))
+                           ((mv acc nonconst-acc)
+                            (b* ((key (g-concrete->val x.car.car))
+                                 ((when (or (hons-get key acc)
+                                            (hons-get key nonconst-acc)))
+                                  (mv acc nonconst-acc))
+                                 ((unless (fgl-object-case x.car.cdr :g-concrete))
+                                  (mv acc (hons-acons key t nonconst-acc))))
+                              (mv (hons-acons key (g-concrete->val x.car.cdr) acc)
+                                  nonconst-acc))))
+                        (alist-const-pairs-rec x.cdr acc nonconst-acc))
+              ;; skip known atoms
+              :g-boolean (alist-const-pairs-rec x.cdr acc nonconst-acc)
+              :g-integer (alist-const-pairs-rec x.cdr acc nonconst-acc)
+              :otherwise (prog2$ (fast-alist-free nonconst-acc)
+                                 acc))
+    :otherwise (prog2$ (fast-alist-free nonconst-acc)
+                       acc))
+  ///
+  (defthm lookup-in-alist-const-pairs-rec
+    (b* ((map-pair (hons-assoc-equal k (alist-const-pairs-rec x acc nonconst-acc))))
+      (and (implies (hons-assoc-equal k acc)
+                    (equal map-pair (hons-assoc-equal k acc)))
+           (implies (and (not (hons-assoc-equal k acc))
+                         (hons-assoc-equal k nonconst-acc))
+                    (equal map-pair nil))
+           (implies (and (not (hons-assoc-equal k acc))
+                         map-pair
+                         (bind-free '((env . env) (logicman . logicman)) (env logicman)))
+                    (Equal map-pair
+                           (hons-assoc-equal k (fgl-object-eval x env))))))
+    :hints (("goal" :induct (alist-const-pairs-rec x acc nonconst-acc)
+             :expand ((alist-const-pairs-rec x acc nonconst-acc))
+             :in-theory (disable (:d alist-const-pairs-rec)))))
+
+  (defthm sub-alistp-of-alist-const-pairs-rec
+    (acl2::sub-alistp (alist-const-pairs-rec x nil nil)
+                      (fgl-object-eval x env))
+    :hints(("Goal" :in-theory (enable acl2::sub-alistp-iff-witness)))))
+
+
+
+(def-fgl-binder-meta alist-const-pairs-binder
+  (b* ((ans (alist-const-pairs-rec x nil nil)))
+    (mv t (kwote ans) nil nil interp-st state))
+  :formula-check checks-formula-checks
+  :origfn alist-const-pairs :formals (x)
+  :prepwork ((local (in-theory (enable alist-const-pairs)))
+             (local (defthm sub-alistp-of-alist-const-pairs-rec-rw
+                      (implies (equal (alist-const-pairs-rec x nil nil) alist)
+                               (acl2::sub-alistp alist (fgl-object-eval x env)))))))
+
+
+

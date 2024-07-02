@@ -13,7 +13,7 @@
 
 (include-book "bvchop")
 (include-book "unsigned-byte-p")
-(include-book "bvlt") ;hmmm
+(include-book "bvlt-def") ;hmmm
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -111,8 +111,7 @@
                               (not (QUOTEP x))))
                 (NATP SIZE))
            (EQUAL (BVMOD SIZE Y X)
-                  (BVMOD SIZE Y FREE)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE))))
+                  (BVMOD SIZE Y FREE))))
 
 (DEFTHM BVMOD-WHEN-BVCHOP-KNOWN-SUBST-alt
   (IMPLIES (AND (EQUAL (BVCHOP SIZE X) FREE)
@@ -120,9 +119,7 @@
                               (not (QUOTEP x))))
                 (NATP SIZE))
            (EQUAL (BVMOD SIZE X Y)
-                  (BVMOD SIZE FREE Y)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE))))
-
+                  (BVMOD SIZE FREE Y))))
 
 (defthm bvlt-of-bvmod-false-helper
   (implies (and (syntaxp (and (quotep j)

@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -5505,19 +5505,21 @@
         name
         (car dests)
         (set-difference-eq vars (fargs (car dests)))))
-   ((getpropc (ffn-symb (car dests)) 'eliminate-destructors-rule nil wrld)
-    (er soft ctx
-        "~x0 is an unacceptable destructor elimination rule because we ~
-         already have a destructor elimination rule for ~x1, namely ~x2, and ~
-         we do not support more than one elimination rule for the same ~
-         function symbol."
-        name
-        (ffn-symb (car dests))
-        (base-symbol (access elim-rule
-                             (getpropc (ffn-symb (car dests))
-                                       'eliminate-destructors-rule nil wrld)
-                             :rune))))
-   (t (chk-acceptable-elim-rule1 name vars (cdr dests) ctx wrld state))))
+   (t
+    (pprogn
+     (let ((rule (most-recent-enabled-elim-rule (ffn-symb (car dests)) wrld
+                                                (ens state))))
+       (cond
+        (rule (warning$ ctx "Elim-rule"
+                        "There is already an enabled destructor elimination ~
+                         rule for ~x0, namely ~x1.  Unless the new rule ~x2 ~
+                         is disabled, it will replace ~x1 as the destructor ~
+                         elimination rule to be used for ~x0."
+                        (ffn-symb (car dests))
+                        (base-symbol (access elim-rule rule :rune))
+                        name))
+        (t state)))
+     (chk-acceptable-elim-rule1 name vars (cdr dests) ctx wrld state)))))
 
 (defun chk-acceptable-elim-rule (name term ctx wrld state)
   (let ((lst (unprettyify term)))
@@ -5580,24 +5582,30 @@
 ; have not yet added a rule.  For each destructor in lst we add an elim
 ; rule to wrld.
 
-  (cond ((null lst) wrld)
-        (t (let* ((dest (car lst))
-                  (rule (make elim-rule
-                              :rune rune
-                              :nume nume
-                              :hyps hyps
-                              :equiv equiv
-                              :lhs lhs
-                              :rhs rhs
-                              :crucial-position
-                              (- (length (fargs dest))
-                                 (length (member-eq rhs (fargs dest))))
-                              :destructor-term dest
-                              :destructor-terms dests)))
-             (add-elim-rule1 rune nume hyps equiv lhs rhs (cdr lst) dests
-                             (putprop (ffn-symb dest)
-                                      'eliminate-destructors-rule
-                                      rule wrld))))))
+  (cond
+   ((null lst) wrld)
+   (t (let* ((dest (car lst))
+             (rule (make elim-rule
+                         :rune rune
+                         :nume nume
+                         :hyps hyps
+                         :equiv equiv
+                         :lhs lhs
+                         :rhs rhs
+                         :crucial-position
+                         (- (length (fargs dest))
+                            (length (member-eq rhs (fargs dest))))
+                         :destructor-term dest
+                         :destructor-terms dests)))
+        (add-elim-rule1 rune nume hyps equiv lhs rhs (cdr lst) dests
+                        (putprop (ffn-symb dest)
+                                 'eliminate-destructors-rules
+                                 (cons rule
+                                       (getpropc (ffn-symb dest)
+                                                 'eliminate-destructors-rules
+                                                 nil
+                                                 wrld))
+                                 wrld))))))
 
 (defun add-elim-rule (rune nume term wrld)
   (let* ((lst (unprettyify term))
@@ -10565,35 +10573,39 @@
                 (info-for-linear-lemmas (cdr rules) numes ens wrld))
         (info-for-linear-lemmas (cdr rules) numes ens wrld)))))
 
-(defun info-for-eliminate-destructors-rule (rule numes ens wrld)
-  (let ((rune             (access elim-rule rule :rune))
-        (nume             (access elim-rule rule :nume))
-        (hyps             (access elim-rule rule :hyps))
-        (equiv            (access elim-rule rule :equiv))
-        (lhs              (access elim-rule rule :lhs))
-        (rhs              (access elim-rule rule :rhs))
-        (destructor-term  (access elim-rule rule :destructor-term))
-        (destructor-terms (access elim-rule rule :destructor-terms))
-        (crucial-position (access elim-rule rule :crucial-position)))
-    (if (or (eq numes t)
-            (member nume numes))
-        (list (list (list :rune rune
-                          :elim nume)
-                    (list :enabled          (and (enabled-runep rune ens wrld) t))
-                    (list :hyps             (untranslate-hyps hyps wrld)
-                          hyps)
-                    (list :equiv            equiv)
-                    (list :lhs              (untranslate lhs nil wrld)
-                          lhs)
-                    (list :rhs              (untranslate rhs nil wrld)
-                          rhs)
-                    (list :destructor-term  (untranslate destructor-term nil wrld)
-                          destructor-term)
-                    (list :destructor-terms (untranslate-lst destructor-terms nil
-                                                             wrld)
-                          destructor-terms)
-                    (list :crucial-position crucial-position)))
-      nil)))
+(defun info-for-eliminate-destructors-rules (rules numes ens wrld)
+  (if (null rules)
+      nil
+    (let* ((rule             (car rules))
+           (rune             (access elim-rule rule :rune))
+           (nume             (access elim-rule rule :nume))
+           (hyps             (access elim-rule rule :hyps))
+           (equiv            (access elim-rule rule :equiv))
+           (lhs              (access elim-rule rule :lhs))
+           (rhs              (access elim-rule rule :rhs))
+           (destructor-term  (access elim-rule rule :destructor-term))
+           (destructor-terms (access elim-rule rule :destructor-terms))
+           (crucial-position (access elim-rule rule :crucial-position)))
+      (if (or (eq numes t)
+              (member nume numes))
+          (cons (list (list :rune rune
+                            :elim nume)
+                      (list :enabled          (and (enabled-runep rune ens wrld) t))
+                      (list :hyps             (untranslate-hyps hyps wrld)
+                            hyps)
+                      (list :equiv            equiv)
+                      (list :lhs              (untranslate lhs nil wrld)
+                            lhs)
+                      (list :rhs              (untranslate rhs nil wrld)
+                            rhs)
+                      (list :destructor-term  (untranslate destructor-term nil wrld)
+                            destructor-term)
+                      (list :destructor-terms (untranslate-lst destructor-terms nil
+                                                               wrld)
+                            destructor-terms)
+                      (list :crucial-position crucial-position))
+                (info-for-eliminate-destructors-rules (cdr rules) numes ens wrld))
+        (info-for-eliminate-destructors-rules (cdr rules) numes ens wrld)))))
 
 (defun info-for-congruences (val numes ens wrld)
 
@@ -10770,8 +10782,8 @@
        (info-for-lemmas val numes ens wrld))
       (linear-lemmas
        (info-for-linear-lemmas val numes ens wrld))
-      (eliminate-destructors-rule
-       (info-for-eliminate-destructors-rule val numes ens wrld))
+      (eliminate-destructors-rules
+       (info-for-eliminate-destructors-rules val numes ens wrld))
       (congruences
        (info-for-congruences val numes ens wrld))
       (pequivs
@@ -10956,7 +10968,7 @@
 (defun disabledp-fn-lst (runic-mapping-pairs ens)
   (declare (xargs :guard ; see guard on enabled-runep
                   (and (enabled-structure-p ens)
-                       (nat-alistp runic-mapping-pairs))))
+                       (fixnat-alistp runic-mapping-pairs))))
   (cond ((endp runic-mapping-pairs) nil)
         ((enabled-numep (caar runic-mapping-pairs) ens)
          (disabledp-fn-lst (cdr runic-mapping-pairs) ens))
@@ -10978,7 +10990,7 @@
                                   (cond ((and (not (eq name2 :here))
                                               name2
                                               (logical-namep name2 wrld))
-                                         (nat-alistp
+                                         (fixnat-alistp
                                           (getpropc name2 'runic-mapping-pairs
                                                     nil wrld)))
                                         (t t))))
@@ -10988,7 +11000,7 @@
                                        (let ((rune (translate-abbrev-rune
                                                      name
                                                      (macro-aliases wrld))))
-                                         (nat-alistp
+                                         (fixnat-alistp
                                           (getpropc (base-symbol rune)
                                                     'runic-mapping-pairs
                                                     nil
@@ -11258,7 +11270,7 @@
            (t
             (er-let* ((apat (if abstraction-spec
                                 (translate (cadr abstraction-spec)
-                                           '(nil) nil t ctx (w state) state)
+                                           t t t ctx (w state) state)
                                 (value nil)))
                       (condition (if condition-spec
                                      (translate-break-condition
@@ -11286,7 +11298,7 @@
                keyword-value-listp with no duplicate keys and ~x0 is not!"
               args))))))
 
-(defun monitor-fn (x args quietp state)
+(defun monitor-fn (x args ctx quietp state)
 
 ; Expects and ensures Wormhole Coherence
 
@@ -11303,7 +11315,7 @@
 ; and we return (value t).  If quietp is nil, we print the new current value of
 ; brr-monitored-runes to the comment window and return (value :invisible)
 
-  (er-let* ((new-pairs (translate-rune-and-criteria x args quietp state)))
+  (er-let* ((new-pairs (translate-rune-and-criteria x args ctx state)))
     (progn$
      (semi-initialize-brr-wormhole state)
      (progn$
@@ -11493,7 +11505,8 @@
              (monitor ,x ,expr t)))
 
 (defmacro brr@ (sym)
-  (declare (xargs :guard (member-eq sym '(:target
+  (declare (xargs :guard (member-eq sym '(:lhs :rhs :hyps
+                                          :target
                                           :unify-subst
                                           :wonp
                                           :rewritten-rhs
@@ -11507,6 +11520,12 @@
                                           :final-ttree
                                           :gstack))))
   (case sym
+        (:lhs '(get-rule-field (get-brr-local 'lemma state)
+                               :lhs))
+        (:rhs '(get-rule-field (get-brr-local 'lemma state)
+                               :rhs))
+        (:hyps '(get-rule-field (get-brr-local 'lemma state)
+                               :hyps))
         (:target '(get-brr-local 'target state))
         (:unify-subst '(get-brr-local 'unify-subst state))
         (:wonp '(get-brr-local 'wonp state))
@@ -11524,7 +11543,7 @@
                             :brr-gstack))))
 
 (defmacro monitor (x expr &optional quietp)
-  `(monitor-fn ,x ,expr ,quietp state))
+  `(monitor-fn ,x ,expr 'monitor ,quietp state))
 
 (defmacro unmonitor (rune)
   `(unmonitor-fn ,rune 'unmonitor state))

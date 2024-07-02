@@ -32,7 +32,7 @@ Added these rules as built-in clauses
  Causes rewrite loops. Seems like an ACL2 bug, or at least there is a
  potential for improvement since we should catch such rewrite
  loops. Investigate at some point. (remove similar built-in clauses to
- reproduce) 
+ reproduce)
 
 (defthm acl2s-size-cons
   (implies (consp (double-rewrite x))
@@ -124,19 +124,19 @@ Added these rules as built-in clauses
   :rule-classes :linear)
 
 (defthm tail-acl2s-size
-  (implies (not (set::empty x))
+  (implies (not (set::emptyp x))
            (< (acl2s-size (set::tail x))
               (acl2s-size x)))
-  :hints (("Goal" :in-theory (enable set::empty set::tail)))
-  :rule-classes ((:rewrite :backchain-limit-lst 0) 
+  :hints (("Goal" :in-theory (enable set::emptyp set::tail)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)
                  (:linear :backchain-limit-lst 0)))
 
 (defthm head-acl2s-size
-  (implies (not (set::empty x))
+  (implies (not (set::emptyp x))
            (< (acl2s-size (set::head x))
               (acl2s-size x)))
-  :hints (("Goal" :in-theory (enable set::empty set::head)))
-  :rule-classes ((:rewrite :backchain-limit-lst 0) 
+  :hints (("Goal" :in-theory (enable set::emptyp set::head)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)
                  (:linear :backchain-limit-lst 0)))
 
 (defthm split-list-1-acl2s-size
@@ -144,9 +144,9 @@ Added these rules as built-in clauses
            (< (acl2s-size (mv-nth 1 (str::split-list-1 x str::del)))
               (acl2s-size x)))
   :hints (("Goal" :in-theory (enable str::split-list-1)))
-  :rule-classes ((:rewrite :backchain-limit-lst 0) 
+  :rule-classes ((:rewrite :backchain-limit-lst 0)
                  (:linear :backchain-limit-lst 0)))
- 
+
 (defthm records-acl2s-size-linear-arith-<=
   (<= (acl2s-size (mget k r))
       (acl2s-size r))
@@ -528,9 +528,9 @@ Maybe be useful for replacing acl2-count with acl2s-size.
 
 (defthm acl2s-size-built-in-5
   (implies (not (atom x))
-           (and (< (acl2s-size (cdr x)) 
+           (and (< (acl2s-size (cdr x))
                    (acl2s-size x))
-                (o< (acl2s-size (cdr x)) 
+                (o< (acl2s-size (cdr x))
                     (acl2s-size x))))
   :rule-classes :built-in-clause)
 
@@ -716,7 +716,7 @@ Maybe be useful for replacing acl2-count with acl2s-size.
            (equal (acl2s-size x)
                   (integer-abs (numerator x))))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
-   
+
 (defthm acl2s-size-cons
   (implies (consp x)
            (equal (acl2s-size x)

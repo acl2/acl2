@@ -86,7 +86,7 @@
               (cond ((eq (ffn-symb x) 'cons-with-hint)
                      (max 2 (len (fargs x))))
                     ((eq (ffn-symb x) 'do$)
-                     (max 7 (len (fargs x))))
+                     (max 6 (len (fargs x)))) ;;; 6 used to be 7!
                     (t (len (fargs x))))))))
 
 (defthm nat-listp-make-list-ac
@@ -420,10 +420,13 @@
 (defun rgh-symbolp-exit (x args changedp0 changedp1)
   (cond ((and (eq (ffn-symb x) 'DO$)
               (quotep (fargn x 6))
-              (quotep (fargn x 7))
+;              (quotep (fargn x 7))
               (unquote (fargn x 6))
-              (unquote (fargn x 7)))
-         (mv t (mcons-term 'DO$ (append (take 5 args) (list *nil* *nil*)))))
+;              (unquote (fargn x 7))
+              )
+         (mv t (mcons-term 'DO$ (append (take 5 args) (list *nil*
+                                                            ; *nil*
+                                                            )))))
         ((null changedp1)
          (cond ((quote-listp args)
                 (let ((new-x (mcons-term (ffn-symb x)
@@ -455,6 +458,25 @@
         (remove-guard-holders1-flg nil nil (fargn x 2) lamp)
         (declare (ignore changedp2))
         (mv t (mcons-term* 'cons arg1 arg2)))))
+   ((eq (ffn-symb x) 'TO-DF)
+    (let ((arg (fargn x 1)))
+      (cond ((and (quotep arg)
+                  (dfp (unquote arg)))
+             (mv t arg))
+            (t (mv-let
+                 (changedp1 arg1)
+                 (remove-guard-holders1 nil arg lamp)
+                 (mv changedp1
+                     (fcons-term* 'TO-DF arg1)))))))
+   ((eq (ffn-symb x) 'FROM-DF)
+    (mv-let (changedp1 arg1)
+      (remove-guard-holders1 nil (fargn x 1) lamp)
+      (declare (ignore changedp1))
+      (mv t arg1)))
+   ((eq (ffn-symb x) 'DF0)
+    (mv t *0*))
+   ((eq (ffn-symb x) 'DF1)
+    (mv t *1*))
    ((flambdap (ffn-symb x))
     (mv-let (case val formals logic args)
       (rgh-lambda-case x)

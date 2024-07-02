@@ -87,7 +87,7 @@
 ;;         (equal 0 (slice 15 8 x)))
 ;;  :hints (("Goal"
 ;;           :cases ((equal 0 (GETBIT 15 X)))
-;;           :use (:instance SPLIT-BV (y (slice 15 8 x)) (n 16) (m 8))
+;;           :use (:instance split-bv (x (slice 15 8 x)) (n 16) (m 8))
 ;;           :in-theory (e/d (bvsx) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
 ;;                                   )))))
 
@@ -543,7 +543,7 @@
                                  ;; extra-rules, to add to default set:
                                  (append (formal-unit-tester-extra-lifting-rules)
                                          extra-rules)
-                                 ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning):
+                                 ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning -- todo, maybe it is handled now?):
                                  (append '(MYIF-BECOMES-BOOLIF-T-ARG1
                                            MYIF-BECOMES-BOOLIF-T-ARG2
                                            MYIF-BECOMES-BOOLIF-NIL-ARG1

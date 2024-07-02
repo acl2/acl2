@@ -686,7 +686,7 @@ bit of each variable."
   (defund aig-rsim60-initialize-array (len state)
     (declare (xargs :guard (posp len)))
     (b* ((len
-          (if (< len *maximum-positive-32-bit-integer*)
+          (if (< len (array-maximum-length-bound))
               len
             (prog2$
              (er hard? 'aig-rsim60-initialize-array

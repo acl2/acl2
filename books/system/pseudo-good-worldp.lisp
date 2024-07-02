@@ -550,11 +550,11 @@
 (defun pseudo-internal-signaturep (insig)
   (case-match insig
     ((fn formals stobjs-in stobjs-out)
-     (and (pseudo-function-symbolp fn nil)   ; should be a fn name
-          (pseudo-arglistp formals)          ; should be distinct vars
-          (symbol-listp stobjs-in)           ; both stobjs-in and -out should be
-          (symbol-listp stobjs-out)          ;       lists of stobj names or nil,
-          (equal (len formals) (len stobjs-in)))) ;  consistent with formals
+     (and (pseudo-function-symbolp fn nil) ; should be a fn name
+          (pseudo-arglistp formals)        ; should be distinct vars
+          (symbol-listp stobjs-in)         ; stobjs-in and -out should be lists
+          (symbol-listp stobjs-out)        ;   of stobj names, nil, or :df,
+          (equal (len formals) (len stobjs-in)))) ; consistent with formals
     (& nil)))
 
 (defun pseudo-internal-signature-listp (x)
@@ -1697,9 +1697,9 @@
   (pseudo-termp val))
 
 ;-----------------------------------------------------------------
-; ELIMINATE-DESTRUCTORS-RULE
+; ELIMINATE-DESTRUCTORS-RULES
 
-; This contains a single elim-rule:
+; This contains a list of elim-rules, each of this sort:
 ; (defrec elim-rule
 ;   (((nume . crucial-position) . (destructor-term . destructor-terms))
 ;    (hyps . equiv)
@@ -1726,9 +1726,11 @@
           (equal rhs (nth crucial-position (cdr destructor-term)))))
     (& nil)))
 
-(defun pseudo-eliminate-destructors-rulep (sym val)
-  (declare (ignore sym))
-  (pseudo-elim-rulep val))
+(defun pseudo-eliminate-destructors-rules (sym val)
+  (declare (irrelevant sym))
+  (cond ((atom val) (null val))
+        (t (and (pseudo-elim-rulep (car val))
+                (pseudo-eliminate-destructors-rules sym (cdr val))))))
 
 ;-----------------------------------------------------------------
 ; FORMALS
@@ -2893,8 +2895,8 @@
                 (pseudo-def-bodiesp sym val)))
           (DEFAXIOM-SUPPORTER (defaxiom-supporterp sym val))
           (DEFCHOOSE-AXIOM (pseudo-defchoose-axiomp sym val))
-          (ELIMINATE-DESTRUCTORS-RULE
-           (pseudo-eliminate-destructors-rulep sym val))
+          (ELIMINATE-DESTRUCTORS-RULES
+           (pseudo-eliminate-destructors-rules sym val))
           (FORMALS
            (or (eq val *acl2-property-unbound*)
                (pseudo-formalsp sym val)))
@@ -3037,11 +3039,15 @@
                                   "Violation of the command blocks invariant, ~
                                    specifically that every block contain at ~
                                    least one EVENT-LANDMARK, was detected at ~
-                                   triple ~x0."
-                                  pos))
+                                   triple ~x0.  The preceding ~
+                                   command-landmark, (with no event-landmark ~
+                                   found between that one and the one at ~
+                                   position ~x0) is:~|~x1"
+                                  pos
+                                  no-event-landmark-yetp))
                      (t (good-command-blocksp1 (+ 1 pos)
                                                t
-                                               t
+                                               (car w)
                                                (cdr w)))))
                    ((and (eq sym 'command-index)
                          (eq prop 'global-value))

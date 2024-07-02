@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1019,7 +1019,7 @@
 
 ; Consider using our-syntax-nice.
 
-  `(with-standard-io-syntax
+  `(our-with-standard-io-syntax
     (let ((*package* (find-package-fast
                       (f-get-global 'current-package *the-live-state*)))
           (*readtable* *acl2-readtable*))
@@ -3521,7 +3521,7 @@
               (and condition ; else no memo table usage, so skip flushing
                    (remove-duplicates-eq
                     (loop for st in (union stobjs-in stobjs-out)
-                          when st
+                          when (and st (not (eq st :df)))
                           collect
                           (assert$
                            (not (eq st 'state)) ; see memoize-table-chk

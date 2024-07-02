@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function unsigned-byte-p.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; For unsigned-byte-p-forward and unsigned-byte-p-from-bounds,
 ; see the copyrights on the ihs and coi libraries.
 ;
@@ -78,13 +78,11 @@
            (unsigned-byte-p n x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-;rename?
-(defthm ubp-longer-better
+(defthm unsigned-byte-p-when-unsigned-byte-p-smaller
   (implies (and (unsigned-byte-p free x)
-                (<= free n)
-                (integerp n))
+                (<= free n))
            (equal (unsigned-byte-p n x)
-                  (<= 0 n)))
+                  (natp n)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p) nil))))
 
 ;should be cheap since FREE is a free var
@@ -103,10 +101,7 @@
   (implies (and (unsigned-byte-p xsize x)
                 (unsigned-byte-p ysize y))
            (unsigned-byte-p (+ xsize ysize) (* x y)))
-  :hints (("Goal"
-
-           :in-theory (e/d (unsigned-byte-p expt-of-+)
-                           ()))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p expt-of-+))))
 
 (defthm unsigned-byte-p-of-*-gen
   (implies (and (unsigned-byte-p xsize x)
@@ -114,9 +109,9 @@
                 (<= (+ xsize ysize) size)
                 (natp size))
            (unsigned-byte-p size (* x y)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-*)
+  :hints (("Goal" :use unsigned-byte-p-of-*
            :in-theory (disable unsigned-byte-p-of-*
-                               ubp-longer-better))))
+                               unsigned-byte-p-when-unsigned-byte-p-smaller))))
 
 (defthmd unsigned-byte-p-when-n-is-not-natp
   (implies (not (natp n))
@@ -152,7 +147,7 @@
            (unsigned-byte-p size2 (+ -1 (expt 2 size))))
   :hints (("Goal" :in-theory (e/d (zip)
                                   (usb-of-mask size-non-negative-when-unsigned-byte-p-free))
-           :use (:instance usb-of-mask))))
+           :use usb-of-mask)))
 
 (defthm natp-when-unsigned-byte-p
   (implies (unsigned-byte-p free x)
@@ -177,7 +172,7 @@
                 (integerp n))
            (equal (unsigned-byte-p n (* x (expt 2 m)))
                   (unsigned-byte-p (- n m) x)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-*-of-expt)
+  :hints (("Goal" :use unsigned-byte-p-of-*-of-expt
            :in-theory (disable unsigned-byte-p-of-*-of-expt))))
 
 ;more like this?
@@ -299,7 +294,24 @@
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm unsigned-byte-p-of-+-of--1
-  (implies (unsigned-byte-p bits x)
+  (implies (and (syntaxp (not (quotep x))) ; avoid problem due to ACL2 matching (+ -1 x) with a constant
+                (unsigned-byte-p bits x))
            (equal (unsigned-byte-p bits (+ -1 x))
                   (not (equal 0 x))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;slow?
+(defthm unsigned-byte-p-of-+
+  (implies (and (unsigned-byte-p (+ -1 size) x)
+                (unsigned-byte-p (+ -1 size) y)
+                (natp size))
+           (unsigned-byte-p size (+ x y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p expt-of-+))))
+
+(defthm unsigned-byte-p-of-+-of-expt-and--
+  (implies (integerp x)
+           (equal (unsigned-byte-p size (+ (expt 2 size) (- x)))
+                  (and (< 0 x)
+                       (<= x (expt 2 size))
+                       (natp size))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))

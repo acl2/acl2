@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Supporting author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1983,6 +1983,7 @@
                                    value-struct->tag-of-value-struct
                                    value-struct-read-aux-of-value-struct-write-aux
                                    ,valuep-when-fixtype-arrayp
+                                   (:e ,fixtype-array->elements)
                                    (:e acl2::bool-fix)
                                    (:e ident)
                                    (:e ident-fix)
@@ -1990,6 +1991,7 @@
                                    (:e member-value)
                                    (:e member-value-list->name-list)
                                    (:e repeat)
+                                   (:e len)
                                    (:e type-array)
                                    (:e value-struct)
                                    (:e value-struct->tag)

@@ -16,16 +16,16 @@
 
 (local (in-theory (disable natp REFINED-ASSUMPTION-ALISTP)))
 
-(defthm all-dargp-of-dargs-when-possibly-negated-nodenump
+(defthm darg-listp-of-dargs-when-possibly-negated-nodenump
   (implies (and (possibly-negated-nodenump possibly-negated-nodenum)
                 ;;(consp possibly-negated-nodenum)
                 )
-           (all-dargp (dargs possibly-negated-nodenum)))
-  :hints (("Goal" :expand ((all-dargp (cdr possibly-negated-nodenum))
-                           (all-dargp (cddr possibly-negated-nodenum)))
+           (darg-listp (dargs possibly-negated-nodenum)))
+  :hints (("Goal" :expand ((darg-listp (cdr possibly-negated-nodenum))
+                           (darg-listp (cddr possibly-negated-nodenum)))
            :in-theory (enable possibly-negated-nodenump
                               dargs
-                              all-dargp))))
+                              darg-listp))))
 
 (defthm dag-exprp-when-possibly-negated-nodenumsp
   (implies (and (possibly-negated-nodenumsp possibly-negated-nodenums)
@@ -33,11 +33,11 @@
                 (consp (first possibly-negated-nodenums))
                 )
            (dag-exprp (first possibly-negated-nodenums)))
-  :hints (("Goal" :expand ((all-dargp (cdr possibly-negated-nodenum))
-                           (all-dargp (cddr possibly-negated-nodenum)))
+  :hints (("Goal" :expand ((darg-listp (cdr possibly-negated-nodenum))
+                           (darg-listp (cddr possibly-negated-nodenum)))
            :in-theory (enable possibly-negated-nodenump
-                              dargs
-                              all-dargp
+                              ;; dargs
+                              darg-listp
                               DAG-EXPRP))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

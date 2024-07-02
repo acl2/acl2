@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -93,7 +93,7 @@
      :parents nil
      (b* (((when (endp scopes)) nil)
           (scope (car scopes))
-          (pair (omap::in (ident-fix var) (scope-fix scope)))
+          (pair (omap::assoc (ident-fix var) (scope-fix scope)))
           ((when (not pair)) (read-auto-var-aux var (cdr scopes))))
        (cdr pair))
      :hooks (:fix))))
@@ -107,7 +107,7 @@
   (xdoc::topstring
    (xdoc::p
     "If the variable is not found, we return an error."))
-  (b* ((pair (omap::in (ident-fix var) (compustate->static compst)))
+  (b* ((pair (omap::assoc (ident-fix var) (compustate->static compst)))
        ((when (not pair))
         (error (list :static-var-not-found (ident-fix var)))))
     (cdr pair))
@@ -187,7 +187,7 @@
      :parents nil
      (b* (((when (endp scopes)) nil)
           (scope (scope-fix (car scopes)))
-          (pair (omap::in (ident-fix var) scope))
+          (pair (omap::assoc (ident-fix var) scope))
           ((when (consp pair))
            (if (equal (type-of-value (cdr pair))
                       (type-of-value val))
@@ -262,7 +262,7 @@
     "Prior to storing the value, we remove its flexible array member, if any.
      See @(tsee remove-flexible-array-member)."))
   (b* ((static (compustate->static compst))
-       (pair (omap::in (ident-fix var) static))
+       (pair (omap::assoc (ident-fix var) static))
        ((when (not pair)) (error (list :static-var-not-found (ident-fix var))))
        ((unless (equal (type-of-value (cdr pair))
                        (type-of-value val)))
@@ -381,10 +381,10 @@
      (b* ((objdes (objdesign-of-var-aux var frame scopes)))
        (implies objdes
                 (equal (read-auto-var-aux var scopes)
-                       (cdr (omap::in (ident-fix var)
-                                      (scope-fix
-                                       (nth (objdesign-auto->scope objdes)
-                                            (rev scopes))))))))
+                       (cdr (omap::assoc (ident-fix var)
+                                         (scope-fix
+                                          (nth (objdesign-auto->scope objdes)
+                                               (rev scopes))))))))
      :induct t
      :enable (read-auto-var-aux
               objdesign-of-var-aux
@@ -473,10 +473,10 @@
         (equal (write-auto-var-aux var val scopes)
                (if (equal (type-of-value val)
                           (type-of-value
-                           (cdr (omap::in (ident-fix var)
-                                          (scope-fix
-                                           (nth (objdesign-auto->scope objdes)
-                                                (rev scopes)))))))
+                           (cdr (omap::assoc (ident-fix var)
+                                             (scope-fix
+                                              (nth (objdesign-auto->scope objdes)
+                                                   (rev scopes)))))))
                    (rev
                     (update-nth
                      (objdesign-auto->scope objdes)
@@ -489,7 +489,7 @@
                  (error (list :write-auto-object-mistype (ident-fix var)
                               :old (type-of-value
                                     (cdr
-                                     (omap::in
+                                     (omap::assoc
                                       (ident-fix var)
                                       (scope-fix
                                        (nth (objdesign-auto->scope objdes)

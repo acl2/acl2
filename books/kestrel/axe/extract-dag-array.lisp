@@ -72,6 +72,7 @@
 ;returns (mv new-dag-array new-dag-len translation-array)
 ;faster way to do this?
 ;todo: compare to drop-non-supporters
+;; See also add-array-nodes-to-dag and copy-array-values.
 (defun extract-dag-array (nodenums ;must not be empty
                           dag-array-name dag-array dag-len
                           new-dag-array-name)
@@ -83,10 +84,7 @@
            (ignore dag-len))
   (let* ((max-nodenum (maxelem nodenums))
          (relevant-dag-length (+ 1 max-nodenum))
-         ;; TODO: Call tag-supporters-of-nodes here (but avoid computing the max twice):
-         (tag-array (make-empty-array 'tag-array relevant-dag-length)) ;okay to use this name?
-         (tag-array (aset1-list 'tag-array tag-array nodenums t))
-         (tag-array (tag-supporters-with-name max-nodenum dag-array-name dag-array 'tag-array tag-array))
+         (tag-array (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array 'tag-array relevant-dag-length)) ;okay to use the name 'tag-array??
          (new-dag-array (make-empty-array new-dag-array-name relevant-dag-length)) ;probably won't need all the space?
          (translation-array (make-empty-array 'translation-array relevant-dag-length)))
     (mv-let (new-dag-len new-dag-array translation-array)

@@ -64,8 +64,8 @@
 ;; (local (in-theory (disable map-subset-helper-2))) ;; speed hint
 
 ;; bzo move to sets library
-(defthm sfix-when-empty
-  (implies (empty x)
+(defthm sfix-when-emptyp
+  (implies (emptyp x)
            (equal (sfix x)
                   nil))
   :hints(("Goal" :in-theory (enable sfix))))
@@ -189,8 +189,8 @@
            (setp x))
   :hints(("Goal" :in-theory (enable listsetp))))
 
-(defthm listsetp-when-empty
-  (implies (empty x)
+(defthm listsetp-when-emptyp
+  (implies (emptyp x)
            (equal (listsetp x)
                   (setp x)))
   :hints(("Goal" :in-theory (enable listsetp))))
@@ -469,9 +469,9 @@
 ;;   :hints(("Goal" :in-theory (enable listsetfix))))
 
 ;; ;; TEMP (jcd) - added this rule
-;; (defthm empty-of-listsetfix
-;;   (equal (empty (listsetfix x))
-;;          (empty x))
+;; (defthm emptyp-of-listsetfix
+;;   (equal (emptyp (listsetfix x))
+;;          (emptyp x))
 ;;   :hints(("Goal" :in-theory (enable listsetfix))))
 
 ;; And here are the corresponding theorems using Option 3:
@@ -492,8 +492,8 @@
   :hints(("Goal" :in-theory (enable listsetfix))))
 
 ;; TEMP (jcd) - added this rule
-(defthm empty-of-listsetfix
-  (equal (empty (listsetfix x))
+(defthm emptyp-of-listsetfix
+  (equal (emptyp (listsetfix x))
          (all<not-true-listp> x))
   :hints(("Goal" :in-theory (enable listsetfix))))
 
@@ -597,7 +597,7 @@
 
 (defthmd head-of-insert
   (equal (set::head (set::insert x y))
-         (if (set::empty y) x
+         (if (set::emptyp y) x
            (if (ordered x (set::head y)) x
              (set::head y))))
   :otf-flg t
@@ -606,7 +606,7 @@
                            (acl2::a x)
                            (acl2::x y))
            :expand (set::insert x y)
-           :in-theory (e/d (set::head  SET::EMPTY set::sfix)
+           :in-theory (e/d (set::head  SET::EMPTYP set::sfix)
                            (SET::INSERT-PRODUCES-SET)))
           (and acl2::stable-under-simplificationp
                '(:expand ((SET::SETP (LIST X))
@@ -614,7 +614,7 @@
 
 (defthmd tail-of-insert
   (equal (set::tail (set::insert x y))
-         (if (set::empty y) (set::emptyset)
+         (if (set::emptyp y) (set::emptyset)
            (if (equal x (set::head y)) (set::tail y)
              (if (acl2::<< x (set::head y)) y
                (set::insert x (set::tail y))))))
@@ -624,7 +624,7 @@
                            (acl2::a x)
                            (acl2::x y))
            :expand (set::insert x y)
-           :in-theory (e/d (set::head  set::tail SET::EMPTY set::sfix)
+           :in-theory (e/d (set::head  set::tail SET::EMPTYP set::sfix)
                            (SET::INSERT-PRODUCES-SET)))
           (and acl2::stable-under-simplificationp
                '(:expand ((SET::SETP (LIST X))

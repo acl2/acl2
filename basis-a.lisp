@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -25,96 +25,6 @@
 ; books/system/toothbrush/README.
 
 (in-package "ACL2")
-
-; Here we lay down the code for partial-encapsulate.  This code could be moved
-; back to just before the first partial-encapsulate in translate.lisp; we moved
-; it to this file to support some experimenation involving fmt-ppr, but we
-; might as well leave it here.
-
-(defun non-trivial-encapsulate-ee-entries (embedded-event-lst)
-  (cond ((endp embedded-event-lst)
-         nil)
-        ((and (eq (caar embedded-event-lst) 'encapsulate)
-              (cadar embedded-event-lst))
-         (cons (car embedded-event-lst)
-               (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst))))
-        (t (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst)))))
-
-(defun all-function-symbolps (fns wrld)
-  (declare (xargs :mode :logic
-                  :guard (plist-worldp wrld)))
-  (cond ((atom fns) (equal fns nil))
-        (t (and (symbolp (car fns))
-                (function-symbolp (car fns) wrld)
-                (all-function-symbolps (cdr fns) wrld)))))
-
-(defconst *unknown-constraints*
-
-; This value must not be a function symbol, because functions may need to
-; distinguish conses whose car is this value from those consisting of function
-; symbols.
-
-  :unknown-constraints)
-
-(defun unknown-constraints-table-guard (key val wrld)
-  (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
-                 because ~@0.  See :DOC partial-encapsulate."))
-    (cond
-     ((eq key :supporters)
-      (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                         (global-val 'embedded-event-lst wrld))))
-        (cond
-         ((null ee-entries)
-          (mv nil
-              (msg er-msg
-                   "it is not being made in the scope of a non-trivial ~
-                    encapsulate")))
-         ((cdr ee-entries)
-          (mv nil
-              (msg er-msg
-                   (msg "it is being made in the scope of nested non-trivial ~
-                         encapsulates.  In particular, an enclosing ~
-                         encapsulate introduces function ~x0, while an ~
-                         encapsulate superior to that one introduces function ~
-                         ~x1"
-                        (caar (cadr (car ee-entries)))
-                        (caar (cadr (cadr ee-entries)))))))
-         ((not (all-function-symbolps val wrld))
-          (mv nil
-              (msg er-msg
-                   (msg "the value, ~x0, is not a list of known function ~
-                         symbols"
-                        val))))
-         ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
-                              val))
-          (mv nil
-              (msg er-msg
-                   (msg "the value, ~x0, does not include all of the ~
-                         signature functions of the partial-encapsulate"
-                        val))))
-         (t (mv t nil)))))
-     (t (mv nil nil)))))
-
-(table unknown-constraints-table nil nil
-       :guard
-       (unknown-constraints-table-guard key val world))
-
-(defmacro set-unknown-constraints-supporters (&rest fns)
-  `(table unknown-constraints-table
-          :supporters
-
-; Notice that by including the newly-constrained functions in the supporters,
-; we are guaranteeing that this table event is not redundant.  To see this,
-; first note that we are inside a non-trivial encapsulate (see
-; trusted-cl-proc-table-guard), and for that encapsulate to succeed, the
-; newly-constrained functions must all be new.  So trusted-cl-proc-table-guard
-; would have rejected a previous attempt to set to these supporters, since they
-; were not function symbols at that time.
-
-          (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                             (global-val 'embedded-event-lst world))))
-            (union-equal (strip-cars (cadr (car ee-entries)))
-                         ',fns))))
 
 ; Start definitions related to defun-inline.
 
@@ -176,16 +86,17 @@
            (list 'equal x guts))
           (t (list 'equal x const)))))
 
-(defun match-tests-and-bindings (x pat tests bindings)
+(defun match-tests-and-bindings (x pat tests bindings dups)
 
-; We return two results.  The first is a list of tests, in reverse
-; order, that determine whether x matches the structure pat.  We
-; describe the language of pat below.  The tests are accumulated onto
-; tests, which should be nil initially.  The second result is an alist
-; containing entries of the form (sym expr), suitable for use as the
-; bindings in the let we generate if the tests are satisfied.  The
-; bindings required by pat are accumulated onto bindings and thus are
-; reverse order, although their order is actually irrelevant.
+; We return three results.  The first is a list of tests, in reverse order,
+; that determine whether x matches the structure pat.  We describe the language
+; of pat below.  The tests are accumulated onto tests, which should be nil
+; initially.  The second result is an alist, accumulated into bindings in
+; reverse order (though the order is irrelevant), containing entries of the
+; form (sym expr), suitable for use as the bindings in the let we generate if
+; the tests are satisfied.  The third is a list of variables, accumulated into
+; dups, that are bound more than once in the constructed alist; these will be
+; used for generating ignore declarations.
 
 ; For example, the pattern
 ;   ('equal ('car ('cons u v)) u)
@@ -196,11 +107,11 @@
 ; matches only second order instances of (EQUAL (ev (simp x) a) (ev x a)),
 ; i.e., ev, simp, x, and a are all bound in the match.
 
-; In general, the match requires that the cons structure of x be isomorphic
-; to that of pat, down to the atoms in pat.  Symbols in the pat denote
-; variables that match anything and get bound to the structure matched.
-; Occurrences of a symbol after the first match only structures equal to
-; the binding.  Non-symbolp atoms match themselves.
+; In general, the match requires that the cons structure of x be isomorphic to
+; that of pat, down to the atoms in pat.  Symbols in the pat denote variables
+; that match anything and get bound to the structure matched.  Occurrences of a
+; symbol after the first match only structures equal to the binding.
+; Non-symbolp atoms match themselves.
 
 ; There are some exceptions to the general scheme described above.  A cons
 ; structure starting with QUOTE matches only itself.  A cons structure of the
@@ -210,22 +121,24 @@
 ; to their values.  (These symbols cannot be legally bound in ACL2 anyway, so
 ; this exceptional treatment does not restrict us further.)  Any symbol
 ; starting with #\! matches only the value of the symbol whose name is obtained
-; by dropping the #\!.  This is a way of referring to already bound variables
-; in the pattern. Finally, the symbol & matches anything and causes no binding.
+; by dropping the #\!.  This is a way of referring in the pattern to already
+; bound variables.  Finally, the symbol & matches anything and causes no
+; binding.
 
-  (declare (xargs :guard (symbol-doublet-listp bindings)))
+  (declare (xargs :guard (and (symbol-doublet-listp bindings)
+                              (true-listp dups))))
   (cond
    ((symbolp pat)
     (cond
      ((or (eq pat t)
           (eq pat nil)
           (keywordp pat))
-      (mv (cons (list 'eq x pat) tests) bindings))
+      (mv (cons (list 'eq x pat) tests) bindings dups))
      ((let ((len (length (symbol-name pat))))
         (and (> len 0)
              (eql #\* (char (symbol-name pat) 0))
              (eql #\* (char (symbol-name pat) (1- len)))))
-      (mv (cons (list 'equal x pat) tests) bindings))
+      (mv (cons (list 'equal x pat) tests) bindings dups))
      ((and (> (length (symbol-name pat)) 0)
            (eql #\! (char (symbol-name pat) 0)))
       (mv (cons (list 'equal x
@@ -235,41 +148,49 @@
                                (length (symbol-name pat)))
                        pat))
                 tests)
-          bindings))
-     ((eq pat '&) (mv tests bindings))
+          bindings
+          dups))
+     ((eq pat '&) (mv tests bindings dups))
      (t (let ((binding (assoc-eq pat bindings)))
           (cond ((null binding)
-                 (mv tests (cons (list pat x) bindings)))
+                 (mv tests (cons (list pat x) bindings) dups))
                 (t (mv (cons (list 'equal x (cadr binding)) tests)
-                       bindings)))))))
+                       bindings
+                       (add-to-set-eq pat dups))))))))
    ((atom pat)
     (mv (cons (equal-x-constant x (list 'quote pat)) tests)
-        bindings))
+        bindings
+        dups))
    ((and (eq (car pat) 'quote)
          (consp (cdr pat))
          (null (cddr pat)))
     (mv (cons (equal-x-constant x pat) tests)
-        bindings))
+        bindings
+        dups))
    ((and (eq (car pat) 'quote~)
          (consp (cdr pat))
          (symbolp (cadr pat))
          (null (cddr pat)))
     (mv (cons (list 'symbol-name-equal x (symbol-name (cadr pat))) tests)
-        bindings))
-   (t (mv-let (tests1 bindings1)
+        bindings
+        dups))
+   (t (mv-let (tests1 bindings1 dups1)
         (match-tests-and-bindings (list 'car x) (car pat)
                                   (cons (list 'consp x) tests)
-                                  bindings)
+                                  bindings dups)
         (match-tests-and-bindings (list 'cdr x) (cdr pat)
-                                  tests1 bindings1)))))
+                                  tests1 bindings1 dups1)))))
+
 (defun match-clause (x pat forms)
   (declare (xargs :guard t))
-  (mv-let (tests bindings)
-    (match-tests-and-bindings x pat nil nil)
+  (mv-let (tests bindings dups)
+    (match-tests-and-bindings x pat nil nil nil)
     (list (if (null tests)
               t
             (cons 'and (reverse tests)))
-          (cons 'let (cons (reverse bindings) forms)))))
+          `(let ,(reverse bindings)
+             ,@(and dups `((declare (ignorable ,@dups))))
+             ,@forms))))
 
 (defun match-clause-list (x clauses)
   (declare (xargs :guard (alistp clauses)))
@@ -1085,6 +1006,8 @@
   (cons *evisceration-mark* "<state>"))
 (defconst *evisceration-error-triple-marks*
   (list nil nil *evisceration-state-mark*))
+(defconst *evisceration-error-triple-df-marks*
+  (list nil :df *evisceration-state-mark*))
 (defconst *evisceration-hiding-mark*
   (cons *evisceration-mark* "<hidden>"))
 
@@ -1731,7 +1654,7 @@
                        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-                           *maximum-positive-32-bit-integer*))))
+                           (array-maximum-length-bound)))))
   (let* ((old-iprint-ar (f-get-global 'iprint-ar state))
          (new-dim
 
@@ -1772,13 +1695,13 @@
 
           (* 4 new-dim)))
     (cond
-     ((< *maximum-positive-32-bit-integer* new-max-len)
+     ((< (array-maximum-length-bound) new-max-len)
       (prog2$
        (er hard? 'rollover-iprint-ar
            "Attempted to expand iprint-ar to a maximum-length of ~x0, ~
-            exceeding *maximum-positive-32-bit-integer*, which is ~x1."
+            exceeding (array-maximum-length-bound), which is ~x1."
            new-max-len
-           *maximum-positive-32-bit-integer*)
+           (array-maximum-length-bound))
        state))
      (t
       (let* ((new-header
@@ -1847,7 +1770,7 @@
                        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-                           *maximum-positive-32-bit-integer*)
+                           (array-maximum-length-bound))
                        (iprint-falp iprint-fal-new))))
   (let ((last-index (caar iprint-alist)))
     (cond ((> last-index (iprint-hard-bound state))
@@ -1880,7 +1803,7 @@
 
 (defun brr-evisc-tuple-oracle-update@par ()
   #-acl2-loop-only
-  (f-put-global 'brr-evisc-tuple *wormhole-brr-evisc-tuple* *the-live-state*)
+  (brr-evisc-tuple-oracle-update *the-live-state*)
   nil)
 
 (defun iprint-oracle-updates@par ()
@@ -1920,7 +1843,7 @@
        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-           *maximum-positive-32-bit-integer*)
+           (array-maximum-length-bound))
        (< (f-get-global 'iprint-hard-bound state)
 
 ; Quoting the Essay on Iprinting:
@@ -2226,7 +2149,7 @@
 
 ; Now we lay down some macros that help with the efficiency of the FMT
 ; functions, by making it easy to declare various formals and function values
-; to be fixnums.  See the Essay on Fixnum Declarations.
+; to be nonnegative fixnums.  See the Essay on Fixnum Declarations.
 
 (defmacro mv-letc (vars form body)
   `(mv-let ,vars ,form
@@ -2252,9 +2175,6 @@
      (er-hard-val ,val ,@args)))
 
 (defmacro the-fixnum! (n ctx)
-
-; See also the-half-fixnum!.
-
   `(the-fixnum
     (let ((n ,n))
       (if (and (<= n ,(fixnum-bound))
@@ -2265,23 +2185,16 @@
                       ~x1)."
                      n *fixnum-type*)))))
 
-(defmacro the-half-fixnum! (n ctx)
-
-; Same as the-fixnum!, but leaves some room.
-
-  (let ((upper-bound (floor (fixnum-bound) 2))) ; (1- (expt 2 28))
-    (declare (type (signed-byte 29) upper-bound))
-    (let ((lower-bound (- (1+ upper-bound))))
-      (declare (type (signed-byte 29) lower-bound))
-      `(the-fixnum
-        (let ((n ,n))
-          (if (and (<= n ,upper-bound)
-                   (>= n ,lower-bound))
-              n
-            (er-hard-val 0 ,ctx
-                         "The object ~x0 is not a `half-fixnum' ~
-                          (precisely:  not a (signed-byte 29))."
-                         n)))))))
+(defmacro the-fixnat! (n ctx)
+  `(the-fixnum
+    (let ((n ,n))
+      (if (and (<= n ,(fixnum-bound))
+               (>= n 0))
+          n
+        (er-hard-val 0 ,ctx
+                     "The object ~x0 is not a nonnagative fixnum (precisely:  ~
+                      not a ~x1)."
+                     n *fixnat-type*)))))
 
 (defmacro the-unsigned-byte! (bits n ctx)
   `(the (unsigned-byte ,bits)
@@ -2474,7 +2387,7 @@
        (consp (cdr x))
        (unsigned-byte-p #.*small-nat-bits* (cadr x))
        (case (car x)
-         (FLAT 
+         (FLAT
 
 ; Note that there are no constraints on (cddr x).  It might be an atom, an
 ; eviscerated object, or a proper or improper list.
@@ -2776,7 +2689,7 @@
 ; For symbols we add together the length of the "package part" and the symbol
 ; name part.  We include the colons in the package part.
 
-          (the-fixnum
+          (the-fixnat
            (let* ((s (symbol-name x))
                   (len (min (fixnum-bound) (length s)))
                   (s-sz (cond ((needs-slashes s state)
@@ -2785,7 +2698,7 @@
                   (acc (+f! acc s-sz)))
              (declare (type string s)
                       (type #.*fixnat-type* len s-sz acc))
-             (the-fixnum
+             (the-fixnat
               (cond
                ((keywordp x) (+f! 1 acc))
                ((symbol-in-current-package-p x state)
@@ -2848,12 +2761,6 @@
    t
    (cond ((> j maximum) j)
          ((atom x)
-
-; Note the coercion below to a small nat.  We might redo the guard of flsz-atom
-; so that it returns a small nat.  This should be easy enough if we just
-; replace uses of +f! with +g!.  The hard part may be to redo the acl2-devel
-; proof in /Users/kaufmann/acl2/acl2-fmt/books/system/fmt-support.lisp.
-
           (round-to-small t (flsz-atom x print-base print-radix j state)))
          ((evisceratedp eviscp x)
           (if (stringp (cdr x))
@@ -2955,7 +2862,6 @@
   (and (state-p state)
        (small-nat-guard (f-get-global 'fmt-hard-right-margin state))
        (small-nat-guard (f-get-global 'fmt-soft-right-margin state))
-       (print-base-p (f-get-global 'print-base state))
        (alistp (table-alist 'evisc-table (w state)))
        (eviscerate-top-state-p state)
 ; Probably unnecessary, but makes some proofs easier since compress1 is the
@@ -2974,7 +2880,7 @@
            (xargs :guard ; for (print-base)
                   (fmt-state-p state)))
   (flsz1 x
-         (the-fixnum (print-base))
+         (the-fixnat (print-base))
          (print-radix)
          (round-to-small t j)
          (round-to-small t maximum)
@@ -3255,34 +3161,30 @@
        (f-get-global 'fmt-soft-right-margin state)))
 
 (defun set-fmt-hard-right-margin (n state)
-  (declare (xargs :guard (posp n) :stobjs state))
+  (declare (xargs :guard t :stobjs state))
   (cond
-   ((and (integerp n)
-         (< 0 n))
-    (f-put-global 'fmt-hard-right-margin
-                  (the-half-fixnum! n 'set-fmt-hard-right-margin)
-                  state))
-   (t (let ((err (er hard 'set-fmt-hard-right-margin
-                     "The fmt-hard-right-margin must be a positive ~
-                      integer, but ~x0 is not."
-                     n)))
-        (declare (ignore err))
-        state))))
+   ((and (small-nat-guard n)
+         (not (= n 0)))
+    (f-put-global 'fmt-hard-right-margin n state))
+   (t (prog2$ (er hard? 'set-fmt-hard-right-margin
+                  "The fmt-hard-right-margin must be a positive integer no ~
+                   greater than ~x0, but ~x1 is not."
+                  *small-hi*
+                  n)
+              state))))
 
 (defun set-fmt-soft-right-margin (n state)
-  (declare (xargs :guard (posp n) :stobjs state))
+  (declare (xargs :guard t :stobjs state))
   (cond
-   ((and (integerp n)
-         (< 0 n))
-    (f-put-global 'fmt-soft-right-margin
-                  (the-half-fixnum! n 'set-fmt-soft-right-margin)
-                  state))
-   (t (let ((err (er hard 'set-fmt-soft-right-margin
-                     "The fmt-soft-right-margin must be a positive ~
-                      integer, but ~x0 is not."
-                     n)))
-        (declare (ignore err))
-        state))))
+   ((and (small-nat-guard n)
+         (not (= n 0)))
+    (f-put-global 'fmt-soft-right-margin n state))
+   (t (prog2$ (er hard? 'set-fmt-soft-right-margin
+                  "The fmt-soft-right-margin must be a positive integer no ~
+                   greater than ~x0, but ~x1 is not."
+                  *small-hi*
+                  n)
+              state))))
 
 (defun write-for-read (state)
   (declare (xargs :guard t))
@@ -3710,7 +3612,7 @@
            (xargs :guard (<= maximum (length s))
                   :measure (nfix (- maximum i))
                   :ruler-extenders :all))
-  (the-fixnum
+  (the-fixnat
    (cond ((not (mbt (and (integerp i) (integerp maximum))))
           maximum)
          ((< i maximum)
@@ -3795,7 +3697,7 @@
                               (<= i maximum))
                   :measure (nfix (- maximum i))
                   :ruler-extenders :lambdas))
-  (the-fixnum
+  (the-fixnat
    (cond ((= x 0) i)
          ((and (mbt (and (natp x)
                          (integerp i)
@@ -3918,7 +3820,7 @@
   (declare (type #.*fixnat-type* i maximum)
            (type string s)
            (xargs :guard (<= maximum (length s))))
-  (the-fixnum
+  (the-fixnat
    (cond
     ((not (< i (-f maximum 4)))
      (er-hard?-val?
@@ -3928,7 +3830,7 @@
        tilde-arg-points-past-string
        i 4 maximum s)))
     (t
-     (let ((x (cond ((natp x) (the-fixnum! x 'find-alternative-start))
+     (let ((x (cond ((natp x) (the-fixnat! x 'find-alternative-start))
                     ((and (consp x)
                           (atom (cdr x)))
                      0)
@@ -3990,6 +3892,9 @@
              (illegal-fmt-msg find-alternative-stop s))))))
 
 (defun punctp (c)
+
+; Warning: Keep this in sync with fmt0&v.
+
   (if (member c '(#\. #\, #\: #\; #\? #\! #\) #\]))
       c
     nil))
@@ -4544,7 +4449,7 @@
                   :verify-guards nil
                   :guard (and (<= maximum (length s)) ; typically, =
                               (character-alistp alist))))
-  (the-fixnum
+  (the-fixnat
    (cond
     ((or (not (mbt (and (natp i)
                         (natp maximum)
@@ -4666,10 +4571,10 @@
   (declare (type #.*fixnat-type* col clk)
            (type string str0 str1 str2 str3)
            (type symbol channel)
-           (xargs :guard (and (fixnum-guard (length str0))
-                              (fixnum-guard (length str1))
-                              (fixnum-guard (length str2))
-                              (fixnum-guard (length str3))
+           (xargs :guard (and (fixnat-guard (length str0))
+                              (fixnat-guard (length str1))
+                              (fixnat-guard (length str2))
+                              (fixnat-guard (length str3))
                               (true-listp lst)
                               (character-alistp alist)
                               (fmt-state-p state)
@@ -4737,15 +4642,22 @@
                       state evisc-tuple (1-f clk)))
           (#\; (fmt0* "" "~x*;" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
+          (#\? (fmt0* "" "~x*?" "~x* and " "~x*, " lst nil col channel
+                      state evisc-tuple (1-f clk)))
           (#\! (fmt0* "" "~x*!" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
           (#\) (fmt0* "" "~x*)" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (#\? (fmt0* "" "~x*?" "~x* and " "~x*, " lst nil col channel
+          (#\] (fmt0* "" "~x*]" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (otherwise
+          ((nil)
            (fmt0* "" "~x*" "~x* and " "~x*, " lst nil col channel
-                  state evisc-tuple (1-f clk)))))
+                  state evisc-tuple (1-f clk)))
+          (otherwise
+           (prog2$ (er hard? 'fmt0&v
+                       "Implementation error: Missing punctp case, ~x0"
+                       punct)
+                   (mv 0 state)))))
        (otherwise
         (case
           punct
@@ -4757,15 +4669,22 @@
                       state evisc-tuple (1-f clk)))
           (#\; (fmt0* "" "~x*;" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
+          (#\? (fmt0* "" "~x*?" "~x* or " "~x*, " lst nil col channel
+                      state evisc-tuple (1-f clk)))
           (#\! (fmt0* "" "~x*!" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
           (#\) (fmt0* "" "~x*)" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (#\? (fmt0* "" "~x*?" "~x* or " "~x*, " lst nil col channel
+          (#\] (fmt0* "" "~x*]" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (otherwise
+          ((nil)
            (fmt0* "" "~x*" "~x* or " "~x*, " lst nil col channel
-                  state evisc-tuple (1-f clk))))))))))
+                  state evisc-tuple (1-f clk)))
+          (otherwise
+           (prog2$ (er hard? 'fmt0&v
+                       "Implementation error: Missing punctp case, ~x0"
+                       punct)
+                   (mv 0 state))))))))))
 
 (defun spell-number (n cap col channel state evisc-tuple clk)
 
@@ -4849,7 +4768,7 @@
                           (t (list (cons #\0 n)))))
                    (t (cond ((and (<= 0 (car n)) (<= (car n) 13)) nil)
                             (t (list (cons #\0 (car n)))))))
-             0 (the-fixnum! (length str) 'spell-number)
+             0 (the-fixnat! (length str) 'spell-number)
              col nil channel state evisc-tuple (1-f clk)))))))
 
 (defun fmt-tilde-s (s col channel state clk)
@@ -4879,7 +4798,7 @@
      (pprogn (prin1$ s channel state)
              (mv (flsz-atom s (print-base) (print-radix) col state) state)))
     ((stringp s)
-     (fmt-tilde-s1 s 0 (the-fixnum! (length s) 'fmt-tilde-s) col
+     (fmt-tilde-s1 s 0 (the-fixnat! (length s) 'fmt-tilde-s) col
                    channel state))
     (t
      (let ((str (symbol-name s)))
@@ -4895,7 +4814,7 @@
           ((needs-slashes str state)
            (splat-atom s (print-base) (print-radix) 0 col channel state))
           (t (fmt-tilde-s1 str 0
-                           (the-fixnum! (length str) 'fmt-tilde-s)
+                           (the-fixnat! (length str) 'fmt-tilde-s)
                            col channel state))))
         (t
          (let ((p (symbol-package-name s)))
@@ -4932,7 +4851,7 @@
     ((acl2-numberp s)
      (splat-atom! s (print-base) (print-radix) col channel state))
     ((stringp s)
-     (fmt-tilde-cap-s1 s 0 (the-fixnum! (length s) 'fmt-tilde-s) col
+     (fmt-tilde-cap-s1 s 0 (the-fixnat! (length s) 'fmt-tilde-s) col
                        channel state))
     (t
      (let ((str (symbol-name s)))
@@ -4948,7 +4867,7 @@
           ((needs-slashes str state)
            (splat-atom! s (print-base) (print-radix) col channel state))
           (t (fmt-tilde-cap-s1 str 0
-                               (the-fixnum! (length str) 'fmt-tilde-s)
+                               (the-fixnat! (length str) 'fmt-tilde-s)
                                col channel state))))
         (t
          (let ((p (symbol-package-name s)))
@@ -5077,7 +4996,7 @@
 
                    (let* ((fmt-hard-right-margin (fmt-hard-right-margin state))
                           (sz (flsz x col fmt-hard-right-margin state eviscp))
-                          (incr (the-fixnum (if caps 4 3)))
+                          (incr (the-fixnat (if caps 4 3)))
                           (c ; either (< (+ i incr) maximum) or error
                            (fmt-char s i incr maximum nil))
                           (punctp (punctp c))
@@ -5094,18 +5013,18 @@
                             (> (+f! p+ sz) fmt-hard-right-margin)
                             (not (> (+f! p+
                                          (flsz x
-                                               (the-fixnum
+                                               (the-fixnat
                                                 *fmt-ppr-indentation*)
                                                fmt-hard-right-margin
                                                state eviscp))
                                     fmt-hard-right-margin)))
                        (pprogn
                         (newline channel state)
-                        (spaces1 (the-fixnum *fmt-ppr-indentation*) 0
+                        (spaces1 (the-fixnat *fmt-ppr-indentation*) 0
                                  fmt-hard-right-margin
                                  channel state)
                         (fmt0 s alist i maximum
-                              (the-fixnum *fmt-ppr-indentation*)
+                              (the-fixnat *fmt-ppr-indentation*)
                               pn channel state evisc-tuple (1-f clk))))
                       ((or qy
                            (> (+f! p+ sz)
@@ -5116,9 +5035,9 @@
                               (t (newline channel state)))
                         (if qy
                             state
-                          (spaces1 (the-fixnum *fmt-ppr-indentation*)
+                          (spaces1 (the-fixnat *fmt-ppr-indentation*)
                                    0 fmt-hard-right-margin channel state))
-                        (let* ((i1 (the-fixnum
+                        (let* ((i1 (the-fixnat
                                     (if punctp
 
 ; As noted above, if we get to here then (< (+ i incr) maximum).  We are OK
@@ -5170,14 +5089,14 @@
                       (mv-letc (col state)
                                (cond ((stringp s1)
                                       (fmt0 s1 alist 0
-                                            (the-fixnum! (length s1) 'fmt0)
+                                            (the-fixnat! (length s1) 'fmt0)
                                             col pn@ channel state evisc-tuple
                                             (1-f clk)))
                                      ((msgp s1)
                                       (fmt0 (car s1)
                                             (append (cdr s1) alist)
                                             0
-                                            (the-fixnum! (length (car s1))
+                                            (the-fixnat! (length (car s1))
                                                          'fmt0)
                                             col pn@ channel state evisc-tuple
                                             (1-f clk)))
@@ -5263,7 +5182,7 @@
                                                 (char s i+3)))
                                    col channel state evisc-tuple (1-f clk))
                            (fmt0 s alist
-                                 (the-fixnum
+                                 (the-fixnat
                                   (cond
                                    ((punctp (and (< i+3 maximum)
                                                  (char s i+3)))
@@ -5324,16 +5243,16 @@
 ; So, goal-col <= fmt-hard-right-margin < (fixnum-bound).
                             (pprogn
                              (cond
-                              ((>= col (the-fixnum goal-col))
+                              ((>= col (the-fixnat goal-col))
                                (pprogn (newline channel state)
-                                       (spaces1 (the-fixnum goal-col) 0
+                                       (spaces1 (the-fixnat goal-col) 0
                                                 fmt-hard-right-margin
                                                 channel state)))
                               (t (spaces1 (-f goal-col col) col
                                           fmt-hard-right-margin
                                           channel state)))
                              (fmt0 s alist (+f! i 3) maximum
-                                   (the-fixnum goal-col)
+                                   (the-fixnat goal-col)
                                    pn channel state evisc-tuple (1-f clk))))))))
              (#\c (maybe-newline
                    (let ((pair (fmt-var s alist i maximum)))
@@ -5425,7 +5344,7 @@
                      (let* ((n0 (fmt-var s alist i maximum))
                             (n (if (and (natp n0)
                                         (<= n0 (floor (fixnum-bound) 2)))
-                                   n0 ; (the-half-fixnum! n0 'fmt0)
+                                   n0
                                  (er-hard-val
                                   0 'fmt0 "~@0"
                                   (illegal-fmt-msg
@@ -5441,7 +5360,7 @@
                             (newline channel state))
                            (t state))
                           (fmt0 s alist (+f! i 3) maximum
-                                (the-fixnum
+                                (the-fixnat
                                  (cond
                                   ((> new-col fmt-hard-right-margin)
                                    0)
@@ -5719,7 +5638,7 @@
            (i+1 (1+f i))
            (clk-1 (1-f clk)))
        (declare (type character c0)
-                (type (unsigned-byte 29) i+1 clk-1))
+                (type #.*fixnat-type* i+1 clk-1))
        (cond
         ((eql c0 #\~)
          (cond
@@ -5736,7 +5655,7 @@
                 nil)
                (otherwise
                 (let ((i+2 (+f i 2)))
-                  (declare (type (unsigned-byte 29) i+2))
+                  (declare (type #.*fixnat-type* i+2))
                   (cond
                    ((not (< i+2 maximum))
                     (illegal-fmt-msg
@@ -5748,7 +5667,7 @@
                            (val2 (cdr pair2))
                            (i+3 (+f i 3)))
                       (declare (type character c2)
-                               (type (unsigned-byte 29) i+3))
+                               (type #.*fixnat-type* i+3))
                       (cond
                        ((not pair2)
                         (illegal-fmt-msg
@@ -5814,7 +5733,7 @@
                               i 3 maximum s))
                             (t
                              (let ((i+4 (+f i 4)))
-                               (declare (type (unsigned-byte 29) i+4))
+                               (declare (type #.*fixnat-type* i+4))
                                (cond
                                 ((not (< i+4 maximum))
                                  (illegal-fmt-msg
@@ -5824,7 +5743,7 @@
                                  (let ((n (find-alternative-start
                                            c2 s i maximum t))
                                        (max+1 (1+f maximum)))
-                                   (declare (type (signed-byte 30) n max+1))
+                                   (declare (type #.*fixnum-type* n max+1))
                                    (cond
                                     ((= n max+1)
                                      (illegal-fmt-msg
@@ -5846,8 +5765,7 @@
                                     (t
                                      (let ((m (find-alternative-stop
                                                s n maximum t)))
-                                       (declare (type (unsigned-byte 29)
-                                                      m))
+                                       (declare (type #.*fixnat-type* m))
                                        (cond
                                         ((eql m max+1)
                                          (illegal-fmt-msg
@@ -5857,9 +5775,9 @@
                                          (let ((o (find-alternative-skip
                                                    s m maximum t)))
                                            (declare
-                                            (type (unsigned-byte 29) o))
+                                            (type #.*fixnat-type* o))
                                            (cond
-                                            ((eql m max+1)
+                                            ((= o 0)
                                              (illegal-fmt-msg
                                               find-alternative-skip
                                               s))
@@ -5957,7 +5875,7 @@
                           (#\_
                            (cond
                             ((and (natp c2)
-                                  (<= c2 ; for the-half-fixnum!
+                                  (<= c2
                                       (floor (fixnum-bound) 2)))
                              (fmx-cw-msg-1 s alist i+3 maximum clk-1))
                             (t
@@ -5973,7 +5891,7 @@
         (t (fmx-cw-msg-1 s alist i+1 maximum clk-1)))))))
 
 (defun fmx-cw-msg-1 (s alist i maximum clk)
-  (declare (type (unsigned-byte 29) i maximum clk)
+  (declare (type #.*fixnat-type* i maximum clk)
            (type string s)
            (xargs :guard (and (character-alistp alist)
                               (< (length s) (fixnum-bound))
@@ -6209,10 +6127,9 @@
 ; a given error should be printed.
 
   (declare (xargs :guard (and (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
+                                  (stringp summary))
                               (plist-worldp wrld)
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-er-table wrld)))))
   (and summary
        (assoc-string-equal
@@ -6222,9 +6139,8 @@
 (defun er-off-p (summary state)
   (declare (xargs :stobjs state
                   :guard (and (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
-                              (standard-string-alistp
+                                  (stringp summary))
+                              (string-alistp
                                (table-alist 'inhibit-er-table (w state))))))
   (er-off-p1 summary (w state)))
 
@@ -6250,9 +6166,8 @@
                               (standard-evisc-tuplep
                                (abbrev-evisc-tuple state))
                               (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
-                              (standard-string-alistp
+                                  (stringp summary))
+                              (string-alistp
                                (table-alist 'inhibit-er-table (w state))))))
   (cond ((er-off-p summary state)
          state)
@@ -6303,9 +6218,8 @@
                               (standard-evisc-tuplep
                                (abbrev-evisc-tuple state))
                               (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
-                              (standard-string-alistp
+                                  (stringp summary))
+                              (string-alistp
                                (table-alist 'inhibit-er-table (w state)))
                               (symbolp (standard-co state))
                               (open-output-channel-p (standard-co state)
@@ -7108,7 +7022,7 @@
 ; to supply a non-nil return value for other than state when io is suppressed.
 ; For example, fmt returns col and state, as suggested by the third (shape)
 ; argument below.  Without the :default-bindings, this form would evaluate to
-; (mv nil state) if event IO is inhibited.  But there are fixnum declarations
+; (mv nil state) if event IO is inhibited.  But there are fixnat declarations
 ; that require the first return value of fmt to be an integer, and we can
 ; specify the result in the inhibited case to be (mv 0 state) with the
 ; following :default-bindings:
@@ -7271,7 +7185,7 @@
                                         (member-string-equal
                                          summary
                                          *tracked-warning-summaries*)
-                                        (standard-string-alistp
+                                        (string-alistp
                                          (wormhole-data whs)))
                                    (let ((expln (list ctx alist str))
                                          (entry (or (assoc-string-equal
@@ -7357,7 +7271,7 @@
        (let ((e (f-get-global 'abbrev-evisc-tuple state)))
          (or (eq e :default)
              (standard-evisc-tuplep e)))
-       (standard-string-alistp
+       (string-alistp
         (table-alist 'inhibit-er-table (w state)))
        (symbolp (standard-co state))
        (open-output-channel-p (standard-co state) :character state)
@@ -7371,6 +7285,19 @@
                :all)
            (true-listp (f-get-global 'saved-output-token-lst state)))))
 
+(defun state-p+ (state)
+
+; This predicate is intended to hold of every ACL2 state and to contain all the
+; properties of the ACL2 state that might be needed.  It is not in use as of
+; its introduction in April 2024, but we include it so that the name is
+; reserved.  For now, error1-state-p suffices for purposes we can think of.
+
+; Maybe some day we will convince ourselves that this predicate always holds
+; and add an #-acl2-loop-code body of t.
+
+  (declare (xargs :stobjs state))
+  (error1-state-p state))
+
 (defun error1 (ctx summary str alist state)
 
 ; Warning: Keep this in sync with error1-safe and error1@par.
@@ -7379,8 +7306,7 @@
            (xargs :guard (and (error1-state-p state)
                               (character-alistp alist)
                               (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary))))))
+                                  (stringp summary)))))
   (pprogn
    (io? error nil state (alist str ctx summary)
         (error-fms nil ctx summary str alist state))
@@ -7450,10 +7376,9 @@
 ; computation on behalf of disabled warnings.
 
   (declare (xargs :guard (and (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
+                                  (stringp summary))
                               (plist-worldp wrld)
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-warnings-table wrld)))))
   (or (and summary
            (assoc-string-equal
@@ -7488,7 +7413,8 @@
 ; default-state-vars.  Also note that its value is either nil or a
 ; do-expressionp record.
 
-  (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
+  (((binding-count . boot-strap-flg) . ((temp-touchable-vars . safe-mode)
+                                        . guard-checking-on))
    .
    ((ld-skip-proofsp . temp-touchable-fns) .
     ((parallel-execution-enabled . in-macrolet-def)
@@ -7502,7 +7428,8 @@
 
   (make state-vars
         :guard-checking-on t
-        :inhibit-output-lst '(proof-tree)))
+        :inhibit-output-lst '(proof-tree)
+        :binding-count 0))
 
 (defmacro default-state-vars
 
@@ -7522,6 +7449,8 @@
               'nil)
              (do-expressionp ; not a state global, so avoid f-get-global below
               'nil)
+             (binding-count ; not a state global, so avoid f-get-global below
+              '0)
              (warnings-as-errors 'nil warnings-as-errors-p)
 ; Warning: If you change '(proof-tree) just below, make the corresponding
 ; change in enter-boot-strap-mode.
@@ -7568,6 +7497,8 @@
                 ,in-macrolet-def
                 :do-expressionp
                 ,do-expressionp
+                :binding-count
+                ,binding-count
                 :warnings-as-errors
                 ,(if warnings-as-errors-p
                      warnings-as-errors
@@ -7587,6 +7518,7 @@
                 :ld-skip-proofsp ,ld-skip-proofsp
                 :temp-touchable-fns ,temp-touchable-fns
                 :parallel-execution-enabled ,parallel-execution-enabled
+                :binding-count ,binding-count
                 :warnings-as-errors ,warnings-as-errors
                 :inhibit-output-lst ,inhibit-output-lst))))
 
@@ -7720,11 +7652,10 @@
 (defun warnings-as-errors-val-guard (summary warnings-as-errors)
   (declare (xargs :guard t))
   (and (or (null summary)
-           (and (stringp summary)
-                (standard-string-p summary)))
+           (stringp summary))
        (or (null warnings-as-errors)
            (and (weak-warnings-as-errors-p warnings-as-errors)
-                (standard-string-alistp
+                (string-alistp
                  (warnings-as-errors-alist warnings-as-errors))))))
 
 (defun warnings-as-errors-val (summary warnings-as-errors)
@@ -7962,8 +7893,7 @@
 (defrec defstobj-field-template
   (((fieldp-name . type) . (init . length-name))
    (accessor-name . updater-name)
-   resize-name
-   resizable
+   (resize-name resizable . element-type)
    . other ; for a hash-table field
    )
   nil)
@@ -8142,25 +8072,94 @@
 
 (defun fix-stobj-array-type (type wrld)
 
+; Keep in sync with fix-stobj-hash-table-type and fix-stobj-table-type.
+
 ; Note: Wrld may be a world or nil.  If wrld is nil and we are in raw Lisp,
 ; then this function should be called in a context where the symbol-value is
 ; available for any symbol introduced by a previous defconst event.  Our
 ; intended use case meets that criterion: evaluation of a defstobj form during
 ; loading of the compiled file for a book.
 
+; Note that the values in the #-acl2-loop-only and #+acl2-loop-only cases are
+; different, but that's OK since this function will never be converted to logic
+; mode.  See :DOC program-only.
+
   (let* ((max (car (caddr type)))
          (n (cond ((consp wrld)
                    (let ((qc (defined-constant max wrld)))
                      (and qc (unquote qc))))
-                  #-acl2-loop-only
-                  ((eq wrld nil)
-                   (and (symbolp max)
-                        (symbol-value max)))
-                  (t nil))))
+                  (t
+                   #-acl2-loop-only
+                   (assert$ (eq wrld nil)
+                            (and (symbolp max)
+                                 (symbol-value max)))
+                   #+acl2-loop-only
+                   (er hard 'fix-stobj-array-type
+                       "Implementation error: Attempted to get logical result ~
+                        for fix-stobj-array-type when the world is empty.")))))
     (cond (n (list (car type)
                    (cadr type)
                    (list n)))
           (t type))))
+
+(defun fix-stobj-hash-table-type (type wrld)
+
+; This function is analogous to fix-stobj-array-type; see comments there, and
+; keep in sync with fix-stobj-array-type and fix-stobj-table-type.
+
+  (cond
+   ((null (cddr type)) ; (HASH-TABLE test)
+    type)
+   (t ; (HASH-TABLE test size) or (HASH-TABLE test size type-indicator)
+    (let* ((size0 (caddr type))
+           (size (cond ((consp wrld)
+                        (let ((qc (defined-constant size0 wrld)))
+                          (and qc (unquote qc))))
+                       (t
+                        #-acl2-loop-only
+                        (assert$ (eq wrld nil)
+                                 (and size0
+                                      (symbolp size0)
+                                      (symbol-value size0)))
+                        #+acl2-loop-only
+                        (er hard 'fix-stobj-hash-table-type
+                            "Implementation error: Attempted to get logical ~
+                             result for fix-stobj-hash-table-type when the ~
+                             world is empty.")))))
+      (cond (size (list* (car type)
+                         (cadr type)
+                         size
+                         (cdddr type)))
+            (t type))))))
+
+(defun fix-stobj-table-type (type wrld)
+
+; This function is analogous to fix-stobj-array-type; see comments there, and
+; keep in sync with fix-stobj-array-type and fix-stobj-hash-table-type.
+
+  (cond
+   ((null (cdr type)) ; (STOBJ-TABLE)
+    type)
+   (t ; (STOBJ-TABLE size)
+    (let* ((size0 (cadr type))
+           (size (cond ((consp wrld)
+                        (let ((qc (defined-constant size0 wrld)))
+                          (and qc (unquote qc))))
+                       (t
+                        #-acl2-loop-only
+                        (assert$ (eq wrld nil)
+                                 (and size0
+                                      (symbolp size0)
+                                      (symbol-value size0)))
+                        #+acl2-loop-only
+                        (er hard 'fix-stobj-hash-table-type
+                            "Implementation error: Attempted to get logical ~
+                             result for fix-stobj-table-type when the world ~
+                             is empty.")))))
+      (cond (size (list* (car type)
+                         size
+                         (cddr type)))
+            (t type))))))
 
 (defun defstobj-field-templates (field-descriptors renaming wrld)
 
@@ -8177,6 +8176,10 @@
                      (or (cadr (assoc-keyword :type (cdr field-desc)))
                          t)
                    t))
+           (element-type (if (consp field-desc)
+                             (cadr (assoc-keyword :element-type
+                                                  (cdr field-desc)))
+                           nil))
            (init (if (consp field-desc)
                      (cadr (assoc-keyword :initially (cdr field-desc)))
                    nil))
@@ -8201,6 +8204,12 @@
                   :type (cond ((and (consp type)
                                     (eq (car type) 'array))
                                (fix-stobj-array-type type wrld))
+                              ((and (consp type)
+                                    (eq (car type) 'hash-table))
+                               (fix-stobj-hash-table-type type wrld))
+                              ((and (consp type)
+                                    (eq (car type) 'stobj-table))
+                               (fix-stobj-table-type type wrld))
                               (t type))
                   :init init
                   :accessor-name accessor-name
@@ -8208,6 +8217,7 @@
                   :length-name length-name
                   :resize-name resize-name
                   :resizable resizable
+                  :element-type element-type
                   :other
                   (list boundp-name
                         accessor?-name
@@ -8540,9 +8550,9 @@
   #+gcl
   `(make-array$ 1
                 :element-type ',elt-type
-                :initial-element ',init)
+                :initial-element ,init)
   #-gcl
-  `(the ,elt-type ',init))
+  `(the ,elt-type ,init))
 
 (mutual-recursion
 
@@ -8737,7 +8747,10 @@
 ; having a simple-vector element type declaration.
 
                                   t
-                                etype0)))
+                                (or (access defstobj-field-template
+                                            field-template
+                                            :element-type)
+                                    etype0))))
             (simple-type (and arrayp
                               (simple-array-type array-etype (caddr type))))
             (array-length (and arrayp (car (caddr type))))
@@ -8916,7 +8929,11 @@
 ; with NILs.
 
                                              :initial-element
-                                             ',init
+                                             ,(if (and (eq etype0
+                                                           'double-float)
+                                                       (dfp init))
+                                                  `(to-df ,init)
+                                                `',init)
                                              :element-type
                                              ',array-etype)))
                       (memoize-flush ,flush-var)
@@ -9051,7 +9068,10 @@
 
                                (if stobj-creator
                                    t
-                                 array-etype0)))
+                                 (or (access defstobj-field-template
+                                             field-template
+                                             :element-type)
+                                     array-etype0))))
              (init (access defstobj-field-template field-template :init)))
         (cond
          (arrayp
@@ -9076,6 +9096,12 @@
                                   do
                                   (setf (svref ar i) (,stobj-creator)))
                             ar))))
+                      ((and (eq array-etype0 'double-float)
+                            (dfp init))
+                       `(make-array$ ,array-size
+                                     :element-type ',array-etype
+                                     :initial-element
+                                     (to-df ,init)))
                       (t `(make-array$ ,array-size
                                        :element-type ',array-etype
                                        :initial-element ',init)))
@@ -9092,7 +9118,12 @@
          (stobj-creator
           (cons `(,stobj-creator)
                 (defstobj-raw-init-fields (cdr field-templates))))
-         (t (cons `(make-stobj-scalar-field ,type ,init)
+         ((and (eq type 'double-float)
+               (dfp init))
+          (cons `(make-stobj-scalar-field ,type
+                                          (to-df ,init))
+                (defstobj-raw-init-fields (cdr field-templates))))
+         (t (cons `(make-stobj-scalar-field ,type ',init)
                   (defstobj-raw-init-fields (cdr field-templates)))))))))
 
 (defun defstobj-raw-init-setf-forms (var index raw-init-fields acc)
@@ -9319,6 +9350,9 @@
               name template (cdr field-templates) wrld))))))
 
 (defun congruent-stobj-rep (name wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              wrld
+                              (plist-worldp wrld))))
   (assert$
    wrld ; use congruent-stobj-rep-raw if wrld is not available
    (or (getpropc name 'congruent-stobj-rep nil wrld)
@@ -10071,14 +10105,14 @@
 
 ; We assume that i points to the start of a line of s.
 
-  (declare (type (unsigned-byte 29) end)
+  (declare (type #.*fixnat-type* end)
            (xargs :measure (nfix (- end i))
                   :guard (and (natp i)
                               (stringp s)
                               (= end (length s))
                               (<= i end))))
   (cond
-   ((not (mbt (and (unsigned-byte-p 29 end)
+   ((not (mbt (and (unsigned-byte-p *fixnat-bits* end)
                    (natp i)
                    (stringp s)
                    (= end (length s))
@@ -10098,7 +10132,7 @@
   (declare (xargs :guard t))
   (and (stringp s)
        (let ((len (length s)))
-         (and (unsigned-byte-p 29 len)
+         (and (unsigned-byte-p *fixnat-bits* len)
               (comment-string-p1 s 0 len)))))
 
 (defrec print-control
@@ -10503,12 +10537,12 @@
 
 (defun string-prefixp-1 (str1 i str2)
   (declare (type string str1 str2)
-           (type (unsigned-byte 29) i)
+           (type #.*fixnat-type* i)
            (xargs :guard (and (<= i (length str1))
                               (<= i (length str2)))))
   (cond ((zpf i) t)
         (t (let ((i (1-f i)))
-             (declare (type (unsigned-byte 29) i))
+             (declare (type #.*fixnat-type* i))
              (cond ((eql (the character (char str1 i))
                          (the character (char str2 i)))
                     (string-prefixp-1 str1 i str2))
@@ -10708,3 +10742,48 @@
   (declare (xargs :guard (and (true-listp lst)
                               (plist-worldp wrld))))
   (get-invalid-book-name-1 lst os (project-dir-alist wrld)))
+
+(defun append-strip-cars (x y)
+
+; This is (append (strip-cars x) y).
+
+  (cond ((null x) y)
+        (t (cons (car (car x)) (append-strip-cars (cdr x) y)))))
+
+(defun append-strip-cdrs (x y)
+
+; This is (append (strip-cdrs x) y).
+
+  (cond ((null x) y)
+        (t (cons (cdr (car x)) (append-strip-cdrs (cdr x) y)))))
+
+(defun substring-p (i1 s1 len i2 s2)
+
+; This predicate recognizes when the substring of s1 (with length len) starting
+; at s1 equals the substring of s2 starting at i2.
+
+  (declare (type string s1 s2)
+           (type (integer 0 *) i1 len i2)
+           (xargs :guard (and (<= i1 len)
+                              (= len (length s1))
+; There is at least as much room to increase i2 as there is to increase i1:
+                              (>= (- (length s2) i2)
+                                  (- len i1)))
+                  :measure (nfix (- len i1))))
+  (cond ((mbe :logic (not (and (natp i1)
+                               (natp len)
+                               (< i1 len)))
+              :exec (= i1 len))
+         t)
+        ((eql (the character (char s1 i1))
+              (the character (char s2 i2)))
+         (substring-p (1+ i1) s1 len (1+ i2) s2))
+        (t nil)))
+
+(defun string-suffixp (suffix string)
+  (declare (type string suffix string))
+  (let ((len-suffix (length suffix))
+        (len-string (length string)))
+    (and (<= len-suffix len-string)
+         (substring-p 0 suffix len-suffix
+                      (- len-string len-suffix) string))))

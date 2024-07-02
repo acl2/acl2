@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,7 +123,7 @@
     "The lookup is by name.
      If a function is found, we return its type.
      Otherwise we return an error."))
-  (b* ((pair (omap::in (identifier-fix name) (funtable-fix funtab))))
+  (b* ((pair (omap::assoc (identifier-fix name) (funtable-fix funtab))))
     (if (consp pair)
         (cdr pair)
       (reserrf (list :function-not-found (identifier-fix name)))))
@@ -156,7 +156,7 @@
        ((okf funtab) (funtable-for-fundefs (cdr fundefs)))
        (fundef (car fundefs))
        (fun (fundef->name fundef))
-       ((when (consp (omap::in fun funtab)))
+       ((when (consp (omap::assoc fun funtab)))
         (reserrf (list :duplicate-function fun))))
     (omap::update fun (funtype-for-fundef fundef) funtab))
   :hooks (:fix))
@@ -176,7 +176,7 @@
        ((okf funtab1) (funtable-for-fundefs fundefs))
        (overlap (set::intersect (omap::keys funtab1)
                                 (omap::keys funtab)))
-       ((unless (set::empty overlap))
+       ((unless (set::emptyp overlap))
         (reserrf (list :duplicate-functions overlap))))
     (omap::update* funtab1 funtab))
   :hooks (:fix))

@@ -18,6 +18,7 @@
 (include-book "dagify") ;for dagify-term, brings in skip-proofs
 
 ;; Returns (mv erp term).
+;; Only used in the equivalence-checker.
 ;todo: rename?
 (defun letify-term-via-dag (term)
   (if (quotep term)

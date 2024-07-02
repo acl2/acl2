@@ -8,7 +8,10 @@ This directory contains a growing set of Axe proofs of crypto code.  In general,
 
 # Upcoming Examples
 
-We are currently (June, 2023) in the process of open sourcing many more Axe crypto examples.  If there is a crytographic algorithm of interest to you, please email Eric Smith, as we might already have specified and verified it.
+We are currently (June, 2024) in the process of open sourcing many
+more Axe crypto examples.  If there is a crytographic algorithm of
+interest to you, please email Eric Smith, as we might already have
+specified and verified it.
 
 # Setup: Obtaining Java Libraries
 
@@ -27,7 +30,7 @@ jdk-7u80-linux-x64.tar.gz
 (To do this, I had to create an Oracle account and accept a license. I did this
 on 4/20/23.)
 
-The sha1sum and md5sum of jdk-7u80-linux-x64.tar.gz are as follows:
+The sha1sum and md5sum of jdk-7u80-linux-x64.tar.gz are:
 - 21e5e18c3511def01590994e926a4350c0509f01  jdk-7u80-linux-x64.tar.gz
 - 6152f8a7561acf795ca4701daa10a965  jdk-7u80-linux-x64.tar.gz
 

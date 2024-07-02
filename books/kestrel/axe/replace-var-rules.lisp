@@ -15,7 +15,7 @@
 (include-book "bounded-darg-listp")
 
 (defthm dargp-of-maybe-replace-var
-  (implies (and (all-dargp (strip-cdrs alist))
+  (implies (and (darg-listp (strip-cdrs alist))
                 (symbolp term)
                 (not (equal term (maybe-replace-var term alist))))
            (dargp (maybe-replace-var term alist)))
@@ -29,7 +29,7 @@
   :hints (("Goal" :in-theory (enable maybe-replace-var))))
 
 (defthm myquotep-of-maybe-replace-var
-  (implies (and (all-dargp (strip-cdrs alist))
+  (implies (and (darg-listp (strip-cdrs alist))
                 (symbolp term)
                 (equal 'quote (car (maybe-replace-var term alist))))
            (myquotep (maybe-replace-var term alist)))
@@ -37,7 +37,7 @@
            :in-theory (disable dargp-of-maybe-replace-var))))
 
 (defthm axe-treep-of-maybe-replace-var
-  (implies (and (all-dargp (strip-cdrs alist))
+  (implies (and (darg-listp (strip-cdrs alist))
                 (symbolp term))
            (axe-treep (maybe-replace-var term alist)))
   :hints (("Goal" :use dargp-of-maybe-replace-var

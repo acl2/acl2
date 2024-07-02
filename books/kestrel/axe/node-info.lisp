@@ -18,7 +18,7 @@
 
 ;; ;; todo: optimize by keeping lists sorted and merging
 ;; (defund add-nodenums-to-acc (dargs acc)
-;;   (declare (xargs :guard (and (all-dargp dargs)
+;;   (declare (xargs :guard (and (darg-listp dargs)
 ;;                               (true-listp dargs)
 ;;                               (all-natp acc)
 ;;                               (true-listp acc))))
@@ -30,7 +30,7 @@
 ;;         (add-nodenums-to-acc (rest dargs) (add-to-set-eql darg acc))))))
 
 ;; (defthm all-natp-of-add-nodenums-to-acc
-;;   (implies (and (all-dargp dargs)
+;;   (implies (and (darg-listp dargs)
 ;;                 (true-listp dargs)
 ;;                 (all-natp acc)
 ;;                 (true-listp acc))
@@ -38,7 +38,7 @@
 ;;   :hints (("Goal" :in-theory (enable add-nodenums-to-acc))))
 
 ;; (defthm true-listp-of-add-nodenums-to-acc
-;;   (implies (and (all-dargp dargs)
+;;   (implies (and (darg-listp dargs)
 ;;                 (true-listp dargs)
 ;;                 (all-natp acc)
 ;;                 (true-listp acc))
@@ -122,7 +122,7 @@
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dagp dag)
                               (<= nodenum (top-nodenum dag))
-                              (< (top-nodenum dag) 2147483646)
+                              (< (top-nodenum dag) *max-1d-array-length*)
                               (posp depth))
                   :guard-hints (("Goal" :in-theory (enable CAR-OF-CAR-WHEN-PSEUDO-DAGP)))))
   (let* ((dag-array-name 'dag-array-for-node-info)
@@ -137,7 +137,7 @@
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dagp dag)
                               (<= nodenum (top-nodenum dag))
-                              (< (top-nodenum dag) 2147483646)
+                              (< (top-nodenum dag) *max-1d-array-length*)
                               (posp depth))))
   (print-node-tree-limited nodenum dag depth))
 

@@ -539,15 +539,14 @@
            (typed-io-listp (cdr (assoc-equal key readable-files)) typ))
   :hints (("Goal" :in-theory (enable readable-files-p member-equal assoc-equal))))
 
-
+;; todo: flesh out this list:
 
 ;move up?
 (defthm state-p1-of-update-open-input-channels
   (implies (state-p1 state)
            (equal (state-p1 (update-open-input-channels x state))
                   (open-channels-p x)))
-  :hints (("Goal" :in-theory (e/d (state-p1)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable state-p1))))
 
 (defthm state-p-of-update-open-input-channels
   (implies (state-p state)
@@ -559,9 +558,8 @@
   (implies (state-p1 state)
            (equal (state-p1 (update-open-output-channels x state))
                   (open-channels-p x)))
-  :hints (("Goal" :in-theory (e/d (state-p1 ;UPDATE-OPEN-OUTPUT-CHANNELS
-                                   )
-                                  ()))))
+  :hints (("Goal" :in-theory (enable state-p1 ;UPDATE-OPEN-OUTPUT-CHANNELS
+                                   ))))
 
 (defthm state-p-of-update-open-output-channels
   (implies (state-p state)
@@ -583,6 +581,12 @@
   :hints (("Goal" :in-theory (e/d (state-p1)
                                   (true-listp)))))
 
+(defthm state-p-of-update-acl2-oracle
+  (implies (and (state-p state)
+                (true-listp x))
+           (state-p (update-acl2-oracle x state)))
+  :hints (("Goal" :in-theory (enable state-p))))
+
 ;state-p could call this
 (defund global-table-p (x)
   (declare (xargs :guard t))
@@ -596,6 +600,7 @@
                                 (cdr (assoc 'current-acl2-world
                                             x))))
        (timer-alistp (cdr (assoc 'timer-alist x)))
+       (print-base-p (cdr (assoc 'print-base x)))
        (known-package-alistp
         (getpropc 'known-package-alist
                   'global-value
@@ -700,7 +705,7 @@
 (defthm state-p1-of-put-global
   (implies (and (state-p1 state)
                 (symbolp key)
-                (not (member-equal key '(current-acl2-world timer-alist))) ; todo
+                (not (member-equal key '(current-acl2-world timer-alist print-base))) ; todo
                 )
            (state-p1 (put-global key value state)))
   :hints (("Goal" :in-theory (enable put-global state-p1 global-table-p))))
@@ -708,7 +713,7 @@
 (defthm state-p-of-put-global
   (implies (and (state-p state)
                 (symbolp key)
-                (not (member-equal key '(current-acl2-world timer-alist))) ; todo
+                (not (member-equal key '(current-acl2-world timer-alist print-base))) ; todo
                 )
            (state-p (put-global key value state)))
   :hints (("Goal" :in-theory (enable state-p))))
@@ -724,6 +729,7 @@
   (implies (and (symbolp sym)
                 (not (eq sym 'current-acl2-world))
                 (not (eq sym 'timer-alist))
+                (not (eq sym 'print-base))
                 (global-table-p x))
            (global-table-p (add-pair sym val x)))
   :hints (("Goal" :in-theory (enable global-table-p add-pair))))

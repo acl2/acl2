@@ -52,7 +52,7 @@
 (local (in-theory (enable rational-listp-when-integer-listp)))
 
 (defthm dargp-of-lookup-equal
-  (implies (and (all-dargp (strip-cdrs alist))
+  (implies (and (darg-listp (strip-cdrs alist))
                 (assoc-equal key alist))
            (dargp (lookup-equal key alist))))
 
@@ -193,15 +193,15 @@
            (integerp (max-val vals current-max)))
   :hints (("Goal" :in-theory (enable integer-listp max-val))))
 
-(defthmd natp-of-lookup-equal-when-all-dargp-of-strip-cdrs-when-member-equal
-  (implies (and (all-dargp (strip-cdrs alist))
+(defthmd natp-of-lookup-equal-when-darg-listp-of-strip-cdrs-when-member-equal
+  (implies (and (darg-listp (strip-cdrs alist))
                 (member-equal key (strip-cars alist)))
            (equal (natp (lookup-equal key alist))
                   (not (myquotep (lookup-equal key alist))))))
 
 (defthmd not-<-of-largest-non-quotep-of-strip-cdrs-and-lookup-equal-when-member-equal
   (implies (and (member-equal key (strip-cars alist))
-                (all-dargp (strip-cdrs alist))
+                (darg-listp (strip-cdrs alist))
                 (natp (lookup-equal key alist)))
            (not (< (largest-non-quotep (strip-cdrs alist))
                    (lookup-equal key alist))))
@@ -226,7 +226,7 @@
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
        (local (in-theory (enable assoc-equal-iff-two
-                                 natp-of-lookup-equal-when-all-dargp-of-strip-cdrs-when-member-equal
+                                 natp-of-lookup-equal-when-darg-listp-of-strip-cdrs-when-member-equal
                                  not-<-of-largest-non-quotep-of-strip-cdrs-and-lookup-equal-when-member-equal
                                  natp-of-+-of-1)))
        (local (in-theory (disable myquotep
@@ -241,7 +241,7 @@
          (declare (xargs :guard (and (symbolp fn)
                                      (list-of-variables-and-constantsp args)
                                      (symbol-alistp alist)
-                                     (all-dargp (strip-cdrs alist))
+                                     (darg-listp (strip-cdrs alist))
                                      (subsetp-eq (free-vars-in-terms args) (strip-cars alist))
                                      ;; special treatment to optimize handling of axe-quotep:
                                      (implies (eq fn 'axe-quotep) (variablep (first args)))
@@ -252,8 +252,10 @@
                                         :expand ((free-vars-in-terms args)
                                                  (free-vars-in-term (car args))))))
                   (ignorable dag-array))
+         ;; Special cases for 0 args and 1 arg, to suport special handling of axe-quotep: todo: is that really needed?
          (if (atom args)
              ;; arity 0 case:
+             ;; TODO: Can this case be removed, for speed?  Is there a need for 0-ary axe-syntax functions?
              ,(make-axe-syntaxp-evaluator-case-for-arity 0 arity-0-fns eval-axe-syntaxp-function-application-fn wrld)
            (let ((arg0 (first args))
                  (args (rest args)))
@@ -275,7 +277,7 @@
          (declare (xargs :guard (and (pseudo-termp expr)
                                      (axe-syntaxp-exprp expr)
                                      (symbol-alistp alist)
-                                     (all-dargp (strip-cdrs alist))
+                                     (darg-listp (strip-cdrs alist))
                                      (subsetp-eq (free-vars-in-term expr) (strip-cars alist))
                                      (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep (strip-cdrs alist)))))
                          :guard-hints (("Goal" :in-theory (enable free-vars-in-term axe-syntaxp-exprp axe-syntaxp-function-applicationp)

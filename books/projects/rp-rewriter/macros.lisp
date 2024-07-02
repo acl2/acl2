@@ -491,13 +491,13 @@ preserve-current-theory) </p>
   :short "Creates a function and a macro to replace case-match, and prevent
   excessive casesplitting when proving lemmas."
   :parents (rp-utilities)
-  (define create-case-match-macro-fn (name pattern extra-cond)
+  (define create-case-match-macro-fn (name pattern extra-cond inline)
     :mode :program
     (acl2::template-subst
      `(progn
         (define <name>-p (x)
           :ignore-ok t
-          :inline t
+          :inline ,inline
           (case-match x
             (<pattern> ,extra-cond))
           ///
@@ -514,8 +514,10 @@ preserve-current-theory) </p>
      :str-alist `(("<NAME>" . ,(symbol-name name)))
      :pkg-sym name))
 
-  (defmacro create-case-match-macro (name pattern &optional (extra-cond ''t))
-    (create-case-match-macro-fn name pattern extra-cond)))
+  (defmacro create-case-match-macro (name pattern &key
+                                          (extra-cond 't)
+                                          (inline 't))
+    (create-case-match-macro-fn name pattern extra-cond inline)))
 
 
 

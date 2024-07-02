@@ -1,7 +1,7 @@
 ; General-purpose syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -34,7 +34,7 @@
 ;;TODO: Change these to never compare nodenums (can cause simplification to loop if things keep getting commuted due to different nodenums?)
 
 ; Check whether x is 'heavier' than y.  Helps us decide when to reorder terms
-; (e.g., to put 'light terms first).  x and y are either quoteps or nodenums.
+; (e.g., to put 'light' terms first).  x and y are either quoteps or nodenums.
 ;; todo: rename heavier-darg?
 (defund heavier-dag-term (x y)
   (declare (xargs :guard (and (dargp x)
@@ -47,6 +47,12 @@
         t
       ;;both are nodenums
       (< y x))))
+
+;drop?
+(defun valid-array-indexp (index array-name array)
+  (declare (xargs :guard (array1p array-name array)))
+  (and (natp index)
+       (< index (alen1 array-name array))))
 
 (defun get-expr (nodenum-or-quotep dag-array)
   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
@@ -341,10 +347,10 @@
 ;;             (dag-exprs-equal-lst (cdr expr1-lst) (cdr expr2-lst) dag-array (+ -1 count)))))))
 
 (local (in-theory (enable car-becomes-nth-of-0
-                          integerp-of-nth-when-all-dargp
-                          not-cddr-of-nth-when-all-dargp
-                          consp-of-cdr-of-nth-when-all-dargp
-                          equal-of-quote-and-nth-0-of-nth-when-all-dargp
+                          integerp-of-nth-when-darg-listp
+                          not-cddr-of-nth-when-darg-listp
+                          consp-of-cdr-of-nth-when-darg-listp
+                          equal-of-quote-and-nth-0-of-nth-when-darg-listp
                           symbolp-of-nth-0-when-dag-exprp
                           )))
 

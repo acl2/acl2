@@ -1,7 +1,7 @@
 ; Arithmetic (sign-preserving) right shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,24 +11,13 @@
 
 (in-package "ACL2")
 
-(include-book "bvsx")
-(include-book "bvshr")
+(include-book "bvashr-def")
+(local (include-book "bvsx"))
+(local (include-book "bvshr"))
 (local (include-book "bvcat"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "repeatbit2"))
-
-;; NOTE: Currently, the shift amount must be less than the width.
-;; TODO: Result may may be wrong if we shift all the way out! consider: (acl2::bvashr 32 -1 32)
-(defund bvashr (width x shift-amount)
-  (declare (type (integer 0 *) shift-amount)
-           (type integer x)
-           (type integer width)
-           (xargs :guard (< shift-amount width)) ;what happens if they're equal?
-           )
-  (bvsx width
-        (- width shift-amount)
-        (bvshr width x shift-amount)))
 
 (defthm integerp-of-bvashr
   (integerp (bvashr width x shift-amount)))
@@ -78,14 +67,32 @@
                         (bvshr width x shift-amount))))
   :hints (("Goal" :in-theory (enable bvashr))))
 
+(defthm bvashr-of-0-arg1
+  (equal (bvashr 0 x shift-amount)
+         0)
+  :hints (("Goal" :in-theory (enable bvashr))))
+
 (defthm bvashr-of-0-arg2
   (equal (bvashr width 0 shift-amount)
          0)
   :hints (("Goal" :in-theory (enable bvashr))))
 
+(defthm bvashr-of-0-arg3
+  (implies (integerp width)
+           (equal (bvashr width x 0)
+                  (bvchop width x)))
+  :hints (("Goal" :in-theory (enable bvashr))))
+
 (defthm unsigned-byte-p-of-bvashr
   (equal (unsigned-byte-p size (bvashr size x amt))
          (natp size))
+  :hints (("Goal" :in-theory (enable bvashr bvshr))))
+
+(defthm unsigned-byte-p-of-bvashr-gen
+  (implies (and (<= size size2)
+                (integerp size2)
+                (natp size))
+           (unsigned-byte-p size2 (bvashr size x amt)))
   :hints (("Goal" :in-theory (enable bvashr bvshr))))
 
 (defthm bvashr-of-bvchop

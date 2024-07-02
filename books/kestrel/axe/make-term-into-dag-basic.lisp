@@ -1,7 +1,7 @@
 ; Utilities to make terms into dags
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 ;; The functions in this book use the basic evaluator to evaluate ground terms.
+;; See also make-term-into-dag-simple.lisp.
 
 (include-book "make-term-into-dag-array-basic")
 
@@ -76,8 +77,8 @@
                 ;; no error:
                 (not (mv-nth 0 (make-term-into-dag-basic term interpreted-function-alist)))
                 (not (myquotep (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))))
-           (< (len (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))
-              2147483647))
+           (<= (len (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))
+               *max-1d-array-length*))
   :hints (("Goal" :in-theory (enable make-term-into-dag-basic))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

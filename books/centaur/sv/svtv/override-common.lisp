@@ -25,6 +25,9 @@
 
 (in-package "SV")
 
+; Matt K. mod: Avoid ACL2(p) error.
+(set-waterfall-parallelism nil)
+
 (include-book "../svex/env-ops")
 (include-book "centaur/meta/variable-free" :dir :system)
 (include-book "../svex/lattice")
@@ -292,7 +295,7 @@
     :hints (("goal" :cases
              ((4vec-<<= (4vec-bit?! a b1 c1)
                         (4vec-bit?! a b2 c1))))))
-  
+
   (defthmd 4vec-override-mux-<<=-same
     (equal (4vec-override-mux-<<= test val1 test val2 ref)
            (4vec-<<= (4vec-bit?! test val1 0)
@@ -315,7 +318,7 @@
   (if ref-p
       (and (4vec-override-mux-<<= impl-test impl-val spec-test spec-val ref-val)
            (4vec-muxtest-subsetp spec-test impl-test))
-    (and (4vec-equiv spec-test impl-test)
+    (and (4vec-1mask-equiv spec-test impl-test)
          (4vec-<<= impl-val spec-val) ))
   ///
   (defret 4vec-override-mux-<<=-when-<fn>
@@ -335,7 +338,7 @@
     :hints((and stable-under-simplificationp
                 '(:in-theory (enable 4vec-muxtest-subsetp)))))
 
-  
+
   (defret <fn>-of-greater-refval
     (implies (and ok
                   (4vec-<<= ref-val ref-val2))
@@ -346,7 +349,7 @@
            (and (4vec-override-mux-<<= impl-test impl-val spec-test spec-val ref-val)
                 (4vec-muxtest-subsetp spec-test impl-test)
                 (implies (not ref-p)
-                         (and (4vec-equiv spec-test impl-test)
+                         (and (4vec-1mask-equiv spec-test impl-test)
                               (4vec-<<= impl-val spec-val)))))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable 4vec-muxtest-subsetp)))))
@@ -379,7 +382,7 @@
                               (svex-env-lookup triple.refvar spec-run)
                             0))))
   ///
-  
+
 
   (defthm svtv-override-triple-envs-ok-when-<<=
     (implies (and (svtv-override-triple-envs-ok x pipe-env spec-env spec-run1)
@@ -392,9 +395,9 @@
   (defcong svex-envs-similar equal (svtv-override-triple-envs-ok x impl-env spec-env ref-env) 4)
 
 
-  
 
-  
+
+
   (defret 4vec-override-mux-<<=-when-<fn>
     (implies ok
              (b* (((svtv-override-triple triple)))
@@ -439,7 +442,7 @@
     (implies (and (svtv-override-triplemap-envs-ok triplemaps pipe-env spec-env spec-run1)
                   (svex-env-<<= spec-run1 spec-run2))
              (svtv-override-triplemap-envs-ok triplemaps pipe-env spec-env spec-run2)))
-  
+
   (defcong svex-envs-similar equal (svtv-override-triplemap-envs-ok x impl-env spec-env ref-env) 2)
   (defcong svex-envs-similar equal (svtv-override-triplemap-envs-ok x impl-env spec-env ref-env) 3)
   (defcong svex-envs-similar equal (svtv-override-triplemap-envs-ok x impl-env spec-env ref-env) 4)
@@ -468,7 +471,7 @@
 
 
 
-  
+
 ;; (define svtv-override-triple-mux-<<= ((triple svtv-override-triple-p)
 ;;                                       (pipe-env svex-env-p)
 ;;                                       (spec-env svex-env-p)
@@ -516,7 +519,7 @@
 ;;     (implies (and (svtv-override-triplemap-muxes-<<= triplemaps pipe-env spec-env spec-run1)
 ;;                   (svex-env-<<= spec-run1 spec-run2))
 ;;              (svtv-override-triplemap-muxes-<<= triplemaps pipe-env spec-env spec-run2)))
-  
+
 ;;   (local (in-theory (enable svtv-override-triple-mux-<<=)))
 ;;   (defcong svex-envs-similar equal (svtv-override-triplemap-muxes-<<= x impl-env spec-env ref-env) 2)
 ;;   (defcong svex-envs-similar equal (svtv-override-triplemap-muxes-<<= x impl-env spec-env ref-env) 3)
@@ -628,10 +631,10 @@
 ;; ;;     (implies (and (svtv-override-triplemap-ok triplemaps pipe-env ref-env1)
 ;; ;;                   (svex-env-<<= ref-env1 ref-env2))
 ;; ;;              (svtv-override-triplemap-ok triplemaps pipe-env ref-env2)))
-  
+
 ;; ;;   (local (in-theory (enable svtv-override-triplemap-fix))))
-                  
-                  
+
+
 
 
 
@@ -676,7 +679,7 @@ signal is the key and time is the current phase."
   ;;          (implies (equal x (svar-fix y))
   ;;                   (svar-equiv x y))
   ;;          :rule-classes :forward-chaining))
-  
+
   ;; (defret <fn>-implies
   ;;   (implies (and ok
   ;;                 (svtv-override-triple-ok (cdr (hons-assoc-equal (svar-fix key) triplemap))
@@ -695,7 +698,7 @@ signal is the key and time is the current phase."
   (local (defthm 4vec-override-mux-<<=-when-impl-val-x
            (4vec-override-mux-<<= impl-test (4vec-x) spec-test spec-val spec-ref)
            :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=)))))
-  
+
   (defret <fn>-implies-4vec-override-mux-<<=
     (implies (and ok
                   (svtv-override-triple-envs-ok (cdr (hons-assoc-equal (svar-fix key) triplemap))
@@ -743,22 +746,22 @@ signal is the key and time is the current phase."
   ;;                        (svar-p key))
   ;;                   (member-equal val
   ;;                                 (svtv-override-triplemap->tests triplemap)))))
-           
-  
+
+
   ;; (defret member-tests-when-<fn>
   ;;   (implies (and ok
   ;;                 (svex-lookup key test-alist))
   ;;            (member-equal (svex-lookup key test-alist)
   ;;                          (svtv-override-triplemap->tests triplemap))))
-  
+
   (defretd <fn>-implies-lookup-in-triplemap
     (implies (and ok
                   (case-split (svex-lookup key test-alist))
                   ;; (case-split (svex-lookup key val-alist))
                   )
              (hons-assoc-equal (svar-fix key) triplemap))))
-              
-         
+
+
 
 
 (define svtv-override-triplemap-syntax-check ((keys svarlist-p)
@@ -809,7 +812,7 @@ signal is the key and time is the current phase."
                                                  test-alist
                                                  val-alist
                                                  probes
-                                                 (car triplemaps)))
+                                                 triplemap))
          (svtv-override-triplemaplist-syntax-check-aux (1+ (lnfix phase))
                                                    (cdr test-alists)
                                                    (cdr val-alists)

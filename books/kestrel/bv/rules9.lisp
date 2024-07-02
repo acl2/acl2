@@ -1,7 +1,7 @@
 ; BV rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,11 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "single-bit") ; for ACL2::BITNOT-BECOMES-BITXOR-WITH-1 ?
+(include-book "single-bit") ; for BITNOT-BECOMES-BITXOR-WITH-1 ?
 (include-book "bvcat-rules") ; make local?
 (include-book "bitwise") ; make local?
 (include-book "bvplus")
-(include-book "rules") ; for getbit-of-plus
+(include-book "rules") ; for getbit-of-+
 ;(include-book "leftrotate")
 (include-book "rightrotate")
 (include-book "bvcat")
@@ -30,12 +30,6 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
-;mixes abstractions
-(defthm bvplus-of-expt-2
-  (equal (bvplus size x (expt 2 size))
-         (bvchop size x))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
 (defthmd getbit-of-bvplus-tighten-to-32
   (implies (and (< 32 size) ; prevent loops
                 (< n 32)
@@ -44,7 +38,7 @@
            (equal (getbit n (bvplus size x y))
                   (getbit n (bvplus 32 x y))))
   :hints (("Goal" :in-theory (e/d (bvplus)
-                                  (;ACL2::GETBIT-TRIM
+                                  (;GETBIT-TRIM
                                    )))))
 
 ;gen
@@ -58,7 +52,7 @@
            (equal (slice high low (bvplus n x y))
                   (slice high low (bvplus 32 x y))))
   :hints (("Goal" :in-theory (e/d (bvplus)
-                                  (;ACL2::GETBIT-TRIM
+                                  (;GETBIT-TRIM
                                    )))))
 
 (defthmd bvchop-of-bvplus-tighten-to-32
@@ -67,7 +61,7 @@
            (equal (bvchop 32 (bvplus n x y))
                   (bvchop 32 (bvplus 32 x y))))
   :hints (("Goal" :in-theory (e/d (bvplus)
-                                  (;ACL2::GETBIT-TRIM
+                                  (;GETBIT-TRIM
                                    )))))
 
 (defthm bvplus-of-bvplus-trim-to-32-arg1
@@ -75,14 +69,14 @@
                 (integerp n))
            (equal (bvplus 32 (bvplus n x y) z)
                   (bvplus 32 (bvplus 32 x y) z)))
-  :hints (("Goal" :in-theory (enable acl2::bvplus))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvplus-of-bvplus-trim-to-32-arg2
   (implies (and (< 32 n)
                 (integerp n))
            (equal (bvplus 32 z (bvplus n x y))
                   (bvplus 32 (bvplus 32 x y) z)))
-  :hints (("Goal" :in-theory (enable acl2::bvplus))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvcat-of-bitnot-low
   (implies (natp highsize)
@@ -106,9 +100,7 @@
                   (bvxor (+ highsize lowsize)
                                (bvchop lowsize -1) ;todo: improve?
                                (bvcat highsize highval lowsize lowbit))))
-  :hints (("Goal" :in-theory (enable
-                              ACL2::BVXOR-ALL-ONES-HELPER-ALT
-                              ))))
+  :hints (("Goal" :in-theory (enable bvxor-all-ones-helper-alt))))
 
 (defthm bvcat-of-bvxor-low-when-quotep
   (implies (and (syntaxp (quotep k))
@@ -156,7 +148,7 @@
                                (bvcat highsize (bvchop highsize -1) lowsize 0) ;todo: simplify?
                                (bvcat highsize highval lowsize lowval))))
   :hints (("Goal" :cases ((equal 0 highsize))
-           :in-theory (enable ACL2::BVXOR-ALL-ONES-HELPER-ALT))))
+           :in-theory (enable BVXOR-ALL-ONES-HELPER-ALT))))
 
 ;move
 (defthm bvcat-of-slice-same-becomes-rightrotate
@@ -169,8 +161,8 @@
                 ;(posp highsize) ;gen
                 )
            (equal (BVCAT highsize x lowsize (SLICE upper-bit highsize x))
-                  (acl2::rightrotate (+ 1 upper-bit) highsize x)))
-  :hints (("Goal" :in-theory (enable ;ACL2::RIGHTROTATE
+                  (rightrotate (+ 1 upper-bit) highsize x)))
+  :hints (("Goal" :in-theory (enable ;RIGHTROTATE
                               ))))
 
 (defthmd bvcat-of-bitxor-and-bitxor-adjacent-bits
@@ -219,7 +211,7 @@
                          n (bvxor n (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
                   (bvxor (+ 1 n)
                          (slice high1 low1 x) (slice high2 low2 y))))
-  :hints (("Goal" :in-theory (enable acl2::getbit-leibniz))))
+  :hints (("Goal" :in-theory (enable getbit-leibniz))))
 
 ;; This version commutes the args to the first bitxor
 (defthmd bvcat-of-bitxor-and-bvxor-adjacent-bits-alt
@@ -237,9 +229,9 @@
                 ;(posp high2) ;why?
                 )
            (equal (bvcat 1 (bitxor (getbit high2 y) (getbit high1 x))
-                               n (bvxor n (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
+                         n (bvxor n (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
                   (bvxor (+ 1 n)
-                               (slice high1 low1 x) (slice high2 low2 y))))
+                         (slice high1 low1 x) (slice high2 low2 y))))
   :hints (("Goal" :use (:instance bvcat-of-bitxor-and-bvxor-adjacent-bits)
            :in-theory (disable bvcat-of-bitxor-and-bvxor-adjacent-bits))))
 
@@ -265,10 +257,10 @@
                 ;(posp high2) ;why?
                 )
            (equal (bvcat n1 (bvxor n1 (slice high1 mid1 x) (slice high2 mid2 y))
-                               n2 (bvxor n2 (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
+                         n2 (bvxor n2 (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
                   (bvxor (+ n1 n2)
-                               (slice high1 low1 x) (slice high2 low2 y))))
-  :hints (("Goal" :in-theory (enable acl2::slice-leibniz))))
+                         (slice high1 low1 x) (slice high2 low2 y))))
+  :hints (("Goal" :in-theory (enable slice-leibniz))))
 
 ;; This version commutes the args to the first bvxor
 (defthmd bvcat-of-bvxor-and-bvxor-adjacent-bits-alt
@@ -293,10 +285,10 @@
                 ;(posp high2) ;why?
                 )
            (equal (bvcat n1 (bvxor n1 (slice high2 mid2 y) (slice high1 mid1 x))
-                               n2 (bvxor n2 (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
+                         n2 (bvxor n2 (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
                   (bvxor (+ n1 n2)
-                               (slice high1 low1 x) (slice high2 low2 y))))
-  :hints (("Goal" :in-theory (enable acl2::slice-leibniz))))
+                         (slice high1 low1 x) (slice high2 low2 y))))
+  :hints (("Goal" :in-theory (enable slice-leibniz))))
 
 (defthmd bvcat-of-bvxor-and-bitxor-adjacent-bits
   (implies (and (equal mid1minus1 (+ -1 mid1))
@@ -322,11 +314,10 @@
                 ;(posp high2) ;why?
                 )
            (equal (bvcat n1 (bvxor n1 (slice high1 mid1 x) (slice high2 mid2 y))
-                               1 (bitxor (getbit mid1minus1 x) (getbit mid2minus1 y)))
+                         1 (bitxor (getbit mid1minus1 x) (getbit mid2minus1 y)))
                   (bvxor (+ 1 n1)
-                               (slice high1 mid1minus1 x)
-                               (slice high2 mid2minus1 y))))
-  :hints (("Goal" :in-theory (enable))))
+                         (slice high1 mid1minus1 x)
+                         (slice high2 mid2minus1 y)))))
 
 ;;this one commutes the args of the first bvxor
 (defthmd bvcat-of-bvxor-and-bitxor-adjacent-bits-alt
@@ -353,30 +344,27 @@
                 ;(posp high2) ;why?
                 )
            (equal (bvcat n1 (bvxor n1 (slice high2 mid2 y) (slice high1 mid1 x))
-                               1 (bitxor (getbit mid1minus1 x) (getbit mid2minus1 y)))
+                         1 (bitxor (getbit mid1minus1 x) (getbit mid2minus1 y)))
                   (bvxor (+ 1 n1)
-                               (slice high1 mid1minus1 x)
-                               (slice high2 mid2minus1 y))))
-  :hints (("Goal" :in-theory (enable))))
+                         (slice high1 mid1minus1 x)
+                         (slice high2 mid2minus1 y)))))
 
 ;only needed for axe
-(defthmd acl2::bvcat-equal-rewrite-constant-alt
-  (implies (and (syntaxp (and (quotep acl2::x)
-                              (quotep acl2::highsize)
-                              (quotep acl2::lowsize)))
-                (natp acl2::lowsize)
-                (natp acl2::highsize))
-           (equal (equal (bvcat acl2::highsize acl2::highval
-                                acl2::lowsize acl2::lowval)
-                         acl2::x)
-                  (and
-                   (unsigned-byte-p (+ acl2::lowsize acl2::highsize)
-                                    acl2::x)
-                   (equal (bvchop acl2::lowsize acl2::x)
-                          (bvchop acl2::lowsize acl2::lowval))
-                   (equal (slice (+ -1 acl2::lowsize acl2::highsize)
-                                 acl2::lowsize acl2::x)
-                          (bvchop acl2::highsize acl2::highval))))))
+(defthmd bvcat-equal-rewrite-constant-alt
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep highsize)
+                              (quotep lowsize)))
+                (natp lowsize)
+                (natp highsize))
+           (equal (equal (bvcat highsize highval
+                                lowsize lowval)
+                         x)
+                  (and (unsigned-byte-p (+ lowsize highsize) x)
+                       (equal (bvchop lowsize x)
+                              (bvchop lowsize lowval))
+                       (equal (slice (+ -1 lowsize highsize)
+                                     lowsize x)
+                              (bvchop highsize highval))))))
 
 (defthmd bvcat-of-bvxor-and-bvxor-adjacent-bits-extra-left-assoc
   (implies (and (equal high1minus1 (+ -1 mid1))
@@ -399,15 +387,14 @@
                 (natp high2)
                 ;(posp high1) ;why?
                 ;(posp high2) ;why?
-                (natp zsize)
-                )
+                (natp zsize))
            (equal (bvcat n1+zsize (bvcat zsize z n1 (bvxor n1 (slice high1 mid1 x) (slice high2 mid2 y)))
                          n2 (bvxor n2 (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
                   (bvcat zsize z
                          (+ n1 n2)
                          (bvxor (+ n1 n2)
                                 (slice high1 low1 x) (slice high2 low2 y)))))
-  :hints (("Goal" :in-theory (enable ACL2::SLICE-LEIBNIZ))))
+  :hints (("Goal" :in-theory (enable SLICE-LEIBNIZ))))
 
 ;commutes the first bvxor
 (defthmd bvcat-of-bvxor-and-bvxor-adjacent-bits-extra-left-assoc-alt
@@ -431,8 +418,7 @@
                 (natp high2)
                 ;(posp high1) ;why?
                 ;(posp high2) ;why?
-                (natp zsize)
-                )
+                (natp zsize))
            (equal (bvcat n1+zsize (bvcat zsize z n1 (bvxor n1 (slice high2 mid2 y) (slice high1 mid1 x)))
                                n2 (bvxor n2 (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
                   (bvcat zsize z
@@ -489,8 +475,7 @@
                 (natp high2)
                 (posp high1) ;why?
                 (posp high2) ;why?
-                (natp zsize)
-                )
+                (natp zsize))
            (equal (bvcat zsize+1
                                (bvcat zsize z 1 (bitxor (getbit high1 x) (getbit high2 y)))
                                n
@@ -500,7 +485,7 @@
                                (+ 1 n)
                                (bvxor (+ 1 n)
                                             (slice high1 low1 x) (slice high2 low2 y)))))
-  :hints (("Goal" :in-theory (enable acl2::getbit-leibniz))))
+  :hints (("Goal" :in-theory (enable getbit-leibniz))))
 
 ;commutes the first xor
 (defthmd bvcat-of-bitxor-and-bvxor-adjacent-bits-extra-left-assoc-alt
@@ -517,8 +502,7 @@
                 (natp high2)
                 (posp high1) ;why?
                 (posp high2) ;why?
-                (natp zsize)
-                )
+                (natp zsize))
            (equal (bvcat zsize+1
                                (bvcat zsize z 1 (bitxor (getbit high2 y) (getbit high1 x)))
                                n
@@ -554,8 +538,7 @@
                 (posp mid2)  ;why?
                 (posp high1) ;why?
                 (posp high2) ;why?
-                (natp zsize)
-                )
+                (natp zsize))
            (equal (bvcat zsize+n1
                                (bvcat zsize z n1 (bvxor n1 (slice high1 mid1 x) (slice high2 mid2 y)))
                                1 (bitxor (getbit mid1minus1 x) (getbit mid2minus1 y)))
@@ -563,8 +546,7 @@
                                (+ 1 n1)
                                (bvxor (+ 1 n1)
                                             (slice high1 mid1minus1 x)
-                                            (slice high2 mid2minus1 y)))))
-  :hints (("Goal" :in-theory (enable))))
+                                            (slice high2 mid2minus1 y))))))
 
 ;has the first xor commuted
 (defthmd bvcat-of-bvxor-and-bitxor-adjacent-bits-extra-left-assoc-alt
@@ -590,8 +572,7 @@
                 (posp mid2)  ;why?
                 (posp high1) ;why?
                 (posp high2) ;why?
-                (natp zsize)
-                )
+                (natp zsize))
            (equal (bvcat zsize+n1
                                (bvcat zsize z n1 (bvxor n1 (slice high2 mid2 y) (slice high1 mid1 x)))
                                1 (bitxor (getbit mid1minus1 x) (getbit mid2minus1 y)))
@@ -599,11 +580,10 @@
                                (+ 1 n1)
                                (bvxor (+ 1 n1)
                                             (slice high1 mid1minus1 x)
-                                            (slice high2 mid2minus1 y)))))
-  :hints (("Goal" :in-theory (enable))))
+                                            (slice high2 mid2minus1 y))))))
 
 ;; this is for when we are associating to the left (unusual)
-(defthmd acl2::bvcat-of-getbit-and-getbit-adjacent-2-left-assoc
+(defthmd bvcat-of-getbit-and-getbit-adjacent-2-left-assoc
   (implies (and (equal n (+ 1 m))
                 (equal j (+ 1 size))
                 (natp size)
@@ -612,7 +592,7 @@
                          1 (getbit m x))
                   (bvcat size y 2 (slice n m x)))))
 
-(defthmd acl2::bvcat-of-getbit-and-slice-adjacent-2-left-assoc
+(defthmd bvcat-of-getbit-and-slice-adjacent-2-left-assoc
   (implies (and (equal n (+ 1 high))
                 (equal j (+ 1 size))
                 (equal k (+ 1 (- high low)))
@@ -621,13 +601,13 @@
                 (natp high)
                 (natp low))
            (equal (bvcat j (bvcat size y 1 (getbit n x))
-                               k (slice high low x))
+                         k (slice high low x))
                   (bvcat size
-                               y
-                               (+ 1 (- n low))
-                               (slice n low x)))))
+                         y
+                         (+ 1 (- n low))
+                         (slice n low x)))))
 
-(defthmd acl2::bvcat-of-slice-and-slice-adjacent-2-left-assoc
+(defthmd bvcat-of-slice-and-slice-adjacent-2-left-assoc
   (implies (and (equal low1 (+ 1 high2))
                 (equal size1 (+ size size2))
                 (equal size2 (+ 1 (- high1 low1)))
@@ -640,13 +620,13 @@
                 (natp high2)
                 (natp low2))
            (equal (bvcat size1 (bvcat size y size2 (slice high1 low1 x))
-                               size3 (slice high2 low2 x))
+                         size3 (slice high2 low2 x))
                   (bvcat size
-                               y
-                               (+ 1 (- high1 low2))
-                               (slice high1 low2 x)))))
+                         y
+                         (+ 1 (- high1 low2))
+                         (slice high1 low2 x)))))
 
-(defthmd acl2::bvcat-of-slice-and-getbit-adjacent-2-left-assoc
+(defthmd bvcat-of-slice-and-getbit-adjacent-2-left-assoc
   (implies (and (equal low1 (+ 1 n))
                 (equal size1 (+ size size2))
                 (equal size2 (+ 1 (- high1 low1)))
@@ -656,11 +636,11 @@
                 ;; (natp low1)
                 (natp n))
            (equal (bvcat size1 (bvcat size y size2 (slice high1 low1 x))
-                               1 (getbit n x))
+                         1 (getbit n x))
                   (bvcat size
-                               y
-                               (+ 2 high1 (- low1))
-                               (slice high1 n x)))))
+                         y
+                         (+ 2 high1 (- low1))
+                         (slice high1 n x)))))
 
 
 
@@ -693,11 +673,11 @@
 ;move
 (defthmd bvcat-31-of-getbit-31-becomes-rightrotate
   (equal (bvcat 31 x 1 (getbit 31 x))
-         (acl2::rightrotate 32 31 x)))
+         (rightrotate 32 31 x)))
 
 ;; (defthmd bvcat-1-of-getbit-0-becomes-rightrotate
 ;;   (equal (bvcat 1 (getbit 0 x) 31 x)
-;;          (acl2::rightrotate 32 1 x)))
+;;          (rightrotate 32 1 x)))
 
 ;; Introduce BVPLUS
 (defthmd mod-of-+-of-4294967296
@@ -705,38 +685,36 @@
                 (integerp y))
            (equal (mod (+ x y) 4294967296)
                   (bvplus 32 x y)))
-  :hints (("Goal" :in-theory (enable acl2::bvplus acl2::bvchop))))
+  :hints (("Goal" :in-theory (enable bvplus bvchop))))
 
 (defthm getbit-of-+-of-constant-irrel
   (implies (and (syntaxp (and (quotep k)
                               (quotep n)))
-                (equal 0 (acl2::bvchop (+ 1 n) k))
+                (equal 0 (bvchop (+ 1 n) k))
                 (natp n)
                 (integerp x)
                 (integerp k))
-           (equal (acl2::getbit n (+ k x))
-                  (acl2::getbit n x)))
-  :hints (("Goal" :in-theory (enable acl2::getbit-of-plus))))
+           (equal (getbit n (+ k x))
+                  (getbit n x)))
+  :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 (defthm getbit-of-+-of-expt-same-arg1
   (implies (and (natp n)
                 (integerp x))
-           (equal (acl2::getbit n (+ (expt 2 n) x))
-                  (acl2::bitnot (acl2::getbit n x))))
-  :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::bitnot)
-                                  (acl2::slice-becomes-getbit
-                                   acl2::bvchop-1-becomes-getbit
-                                   acl2::bvchop-of-logtail-becomes-slice)))))
+           (equal (getbit n (+ (expt 2 n) x))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
+                                  (bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice)))))
 
 (defthm getbit-of-+-of-expt-same-arg2
   (implies (and (natp n)
                 (integerp x))
-           (equal (acl2::getbit n (+ x (expt 2 n)))
-                  (acl2::bitnot (acl2::getbit n x))))
-  :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::bitnot)
-                                  (acl2::slice-becomes-getbit
-                                   acl2::bvchop-1-becomes-getbit
-                                   acl2::bvchop-of-logtail-becomes-slice)))))
+           (equal (getbit n (+ x (expt 2 n)))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
+                                  (bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice)))))
 
 (defthm getbit-of-+-of-expt-same-when-constant
   (implies (and (syntaxp (and (quotep k)
@@ -746,8 +724,8 @@
                 (integerp x)
                 ;(integerp k)
                 )
-           (equal (acl2::getbit n (+ k x))
-                  (acl2::bitnot (acl2::getbit n x))))
+           (equal (getbit n (+ k x))
+                  (bitnot (getbit n x))))
   :hints (("Goal" :use (getbit-of-+-of-expt-same-arg1)
            :in-theory (disable getbit-of-+-of-expt-same-arg1))))
 
@@ -756,28 +734,24 @@
                 (posp n))
            (equal (bvxor n extra (+ (expt 2 (+ -1 n)) x))
                   (bvcat 1
-                         (acl2::bitnot (acl2::bitxor (acl2::getbit (- n 1) extra)
-                                                     (acl2::getbit (- n 1) x)))
+                         (bitnot (bitxor (getbit (- n 1) extra)
+                                                     (getbit (- n 1) x)))
                          (- n 1)
                          (bvxor (- n 1) extra x))))
-  :hints (("Goal" :in-theory (disable acl2::bvcat-of-getbit-and-x-adjacent
-
-                                      bvcat-of-bitnot-high
-                                      ))))
+  :hints (("Goal" :in-theory (disable bvcat-of-getbit-and-x-adjacent
+                                      bvcat-of-bitnot-high))))
 
 (defthm bvxor-of-+-of-expt-of-one-less-arg1
   (implies (and (integerp x)
                 (posp n))
            (equal (bvxor n (+ (expt 2 (+ -1 n)) x) extra)
                   (bvcat 1
-                         (acl2::bitnot (acl2::bitxor (acl2::getbit (- n 1) extra)
-                                                     (acl2::getbit (- n 1) x)))
+                         (bitnot (bitxor (getbit (- n 1) extra)
+                                                     (getbit (- n 1) x)))
                          (- n 1)
                          (bvxor (- n 1) extra x))))
-  :hints (("Goal" :in-theory (disable acl2::bvcat-of-getbit-and-x-adjacent
-
-                                      bvcat-of-bitnot-high
-                                      ))))
+  :hints (("Goal" :in-theory (disable bvcat-of-getbit-and-x-adjacent
+                                      bvcat-of-bitnot-high))))
 
 (defthm bvxor-of-+-of-expt-of-one-less-arg2-constant-version
   (implies (and (syntaxp (quotep k))
@@ -786,14 +760,12 @@
                 (posp n))
            (equal (bvxor n extra (+ k x))
                   (bvcat 1
-                         (acl2::bitnot (acl2::bitxor (acl2::getbit (- n 1) extra)
-                                                     (acl2::getbit (- n 1) x)))
+                         (bitnot (bitxor (getbit (- n 1) extra)
+                                                     (getbit (- n 1) x)))
                          (- n 1)
                          (bvxor (- n 1) extra x))))
-  :hints (("Goal" :in-theory (disable acl2::bvcat-of-getbit-and-x-adjacent
-
-                                      bvcat-of-bitnot-high
-                                      ))))
+  :hints (("Goal" :in-theory (disable bvcat-of-getbit-and-x-adjacent
+                                      bvcat-of-bitnot-high))))
 
 (defthm bvxor-of-+-of-expt-of-one-less-arg1-constant-version
   (implies (and (syntaxp (quotep k))
@@ -802,31 +774,30 @@
                 (posp n))
            (equal (bvxor n (+ k x) extra)
                   (bvcat 1
-                         (acl2::bitnot (acl2::bitxor (acl2::getbit (- n 1) extra)
-                                                     (acl2::getbit (- n 1) x)))
+                         (bitnot (bitxor (getbit (- n 1) extra)
+                                                     (getbit (- n 1) x)))
                          (- n 1)
                          (bvxor (- n 1) extra x))))
-  :hints (("Goal" :in-theory (disable acl2::bvcat-of-getbit-and-x-adjacent
+  :hints (("Goal" :in-theory (disable bvcat-of-getbit-and-x-adjacent
                                       bvcat-of-bitnot-high))))
 
 (defthm getbit-of-+-of-*-of-expt-when-bitp-arg2-arg1
   (implies (and (bitp bit)
                 (integerp x)
                 (natp n))
-           (equal (acl2::getbit n (+ x (* (expt 2 n) bit)))
-                  (acl2::bitxor bit (acl2::getbit n x))))
+           (equal (getbit n (+ x (* (expt 2 n) bit)))
+                  (bitxor bit (getbit n x))))
   :hints (("Goal" :cases ((equal bit 0))
-           :in-theory (e/d (acl2::getbit acl2::slice acl2::bitnot ACL2::BVCHOP-OF-SUM-CASES)
-                           (acl2::slice-becomes-getbit
-                            acl2::bvchop-1-becomes-getbit
-                            acl2::bvchop-of-logtail-becomes-slice)))))
+           :in-theory (e/d (getbit slice bitnot BVCHOP-OF-SUM-CASES)
+                           (bvchop-1-becomes-getbit
+                            bvchop-of-logtail-becomes-slice)))))
 
 (defthm getbit-of-+-of-*-of-expt-when-bitp-arg2-arg2
   (implies (and (bitp bit)
                 (integerp x)
                 (natp n))
-           (equal (acl2::getbit n (+ x (* bit (expt 2 n))))
-                  (acl2::bitxor bit (acl2::getbit n x))))
+           (equal (getbit n (+ x (* bit (expt 2 n))))
+                  (bitxor bit (getbit n x))))
   :hints (("Goal" :use (getbit-of-+-of-*-of-expt-when-bitp-arg2-arg1)
            :in-theory (disable getbit-of-+-of-*-of-expt-when-bitp-arg2-arg1))))
 
@@ -836,9 +807,8 @@
                 (bitp bit)
                 (integerp x)
                 (natp n))
-           (equal (acl2::getbit n (+ x (* k bit)))
-                  (acl2::bitxor bit (acl2::getbit n x))))
-  :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::bitnot)
-                                  (acl2::slice-becomes-getbit
-                                   acl2::bvchop-1-becomes-getbit
-                                   acl2::bvchop-of-logtail-becomes-slice)))))
+           (equal (getbit n (+ x (* k bit)))
+                  (bitxor bit (getbit n x))))
+  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
+                                  (bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice)))))

@@ -490,7 +490,7 @@
                               (<= nn 32))
                   :guard-hints (("Goal" :expand ((wordp nn)
                                                  (unsigned-byte-p 64 (+ 64 ll)))
-                                 :in-theory (e/d (natp) ())))))
+                                 :in-theory (enable natp)))))
   (let* ((h (iv))
          (h (update-nth 0
                         (wordxor (nth 0 h)

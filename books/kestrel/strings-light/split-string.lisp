@@ -1,7 +1,7 @@
 ; A utility to split a string at the first occurrence of a given char
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -41,4 +41,16 @@
 
 (defthm stringp-of-mv-nth-2-of-split-string
   (stringp (mv-nth 2 (split-string str char)))
+  :hints (("Goal" :in-theory (enable split-string))))
+
+(defthm <-of-length-of-mv-nth-1-of-split-string
+  (implies (mv-nth 0 (split-string str char))
+           (< (length (mv-nth 1 (split-string str char)))
+              (length str)))
+  :hints (("Goal" :in-theory (enable split-string))))
+
+(defthm <-of-length-of-mv-nth-2-of-split-string
+  (implies (mv-nth 0 (split-string str char))
+           (< (length (mv-nth 2 (split-string str char)))
+              (length str)))
   :hints (("Goal" :in-theory (enable split-string))))

@@ -2528,9 +2528,9 @@ produced the non-nil result
 Regarding this value
 (See :DOC set-iprint to be able to see elided values in this message.):
 The :DEFINITION rules for the built-in functions DOUBLE-REWRITE, THE-CHECK,
-CONS-WITH-HINT, IFF, WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP, ZEROP,
-LISTP, SYNP, CASE-SPLIT, FORCE, /=, =, RETURN-LAST, NULL, ENDP, ATOM,
-NOT, IMPLIES and EQ are disabled by the theory expression 
+CONS-WITH-HINT, IFF, FROM-DF, WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP,
+ZEROP, LISTP, SYNP, CASE-SPLIT, FORCE, /=, =, RETURN-LAST, NULL, ENDP,
+ATOM, NOT, IMPLIES and EQ are disabled by the theory expression 
 (UNION-THEORIES NIL
                 (E/D** ((:RULESET GL::SHAPE-SPEC-OBJ-IN-RANGE-BACKCHAIN)))),
 but some expansions of their calls may still occur.  See :DOC theories-
@@ -3105,8 +3105,9 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-LEQUAL-ISORT-1)
 Warnings:  Double-rewrite
  ISORT-IDEMPOTENT-LEQUAL
 ACL2 !>>(DEFUN TERMINAL-MARKER (X)
-          (COND ((ATOM X) X)
-                (T (TERMINAL-MARKER (CDR X)))))
+          (IF (CONSP X)
+              (TERMINAL-MARKER (CDR X))
+            X))
 
 The admission of TERMINAL-MARKER is trivial, using the relation O<
 (which is known to be well-founded on the domain recognized by O-P)
@@ -3131,61 +3132,55 @@ We will induct according to a scheme suggested by (TERMINAL-MARKER X).
 This suggestion was produced using the :induction rules ISORT and 
 TERMINAL-MARKER.  If we let (:P X) denote *1 above then the induction
 scheme we'll use is
-(AND (IMPLIES (AND (NOT (ATOM X)) (:P (CDR X)))
-              (:P X))
-     (IMPLIES (ATOM X) (:P X))).
+(AND (IMPLIES (NOT (CONSP X)) (:P X))
+     (IMPLIES (AND (CONSP X) (:P (CDR X)))
+              (:P X))).
 This induction is justified by the same argument used to admit 
 TERMINAL-MARKER.  When applied to the goal at hand the above induction
 scheme produces two nontautological subgoals.
 Subgoal *1/2
-Subgoal *1/2'
-Subgoal *1/2''
-Subgoal *1/2'''
-Subgoal *1/2'4'
-Subgoal *1/2'5'
-Subgoal *1/2'6'
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+Subgoal *1/1'''
+Subgoal *1/1'4'
+Subgoal *1/1'5'
 
 ([ A key checkpoint while proving *1 (descended from Goal):
 
-Subgoal *1/2''
+Subgoal *1/1'
 (IMPLIES (AND (CONSP X)
               (EQUAL (TERMINAL-MARKER (ISORT (CDR X)))
                      (TERMINAL-MARKER (CDR X))))
          (EQUAL (TERMINAL-MARKER (INSERT (CAR X) (ISORT (CDR X))))
                 (TERMINAL-MARKER (CDR X))))
 
-*1.1 (Subgoal *1/2'6') is pushed for proof by induction.
+*1.1 (Subgoal *1/1'5') is pushed for proof by induction.
 
 ])
-Subgoal *1/1
-Subgoal *1/1'
 
 So we now return to *1.1, which is
 
 (EQUAL (TERMINAL-MARKER (INSERT X1 IT))
        (TERMINAL-MARKER IT)).
 Subgoal *1.1/2
-Subgoal *1.1/2'
+Subgoal *1.1/1
 
-Splitter note (see :DOC splitter) for Subgoal *1.1/2' (2 subgoals).
+Splitter note (see :DOC splitter) for Subgoal *1.1/1 (2 subgoals).
   if-intro: ((:DEFINITION INSERT))
 
-Subgoal *1.1/2.2
-Subgoal *1.1/2.1
-Subgoal *1.1/1
-Subgoal *1.1/1'
+Subgoal *1.1/1.2
+Subgoal *1.1/1.1
 
 *1.1 and *1 are COMPLETED!
-Thus key checkpoints Subgoal *1/2'' and Goal are COMPLETED!
+Thus key checkpoints Subgoal *1/1' and Goal are COMPLETED!
 
 Q.E.D.
 
 Summary
 Form:  ( DEFTHM TERMINAL-MARKER-ISORT ...)
-Rules: ((:DEFINITION ATOM)
-        (:DEFINITION INSERT)
+Rules: ((:DEFINITION INSERT)
         (:DEFINITION ISORT)
-        (:DEFINITION NOT)
         (:DEFINITION TERMINAL-MARKER)
         (:ELIM CAR-CDR-ELIM)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
@@ -3206,41 +3201,26 @@ ACL2 !>>(DEFTHM LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  Three induction schemes are
-suggested by this conjecture.  Subsumption reduces that number to one.
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
 
-We will induct according to a scheme suggested by (LEQUAL A B).
+We will induct according to a scheme suggested by (TERMINAL-MARKER B),
+but modified to accommodate (LEQUAL A B).
 
-This suggestion was produced using the :induction rules LEQUAL and
+These suggestions were produced using the :induction rules LEQUAL and
 TERMINAL-MARKER.  If we let (:P A B) denote *1 above then the induction
 scheme we'll use is
-(AND (IMPLIES (AND (NOT (ATOM A))
-                   (NOT (ATOM B))
-                   (NOT (EQUAL (CAR A) (CAR B))))
-              (:P A B))
-     (IMPLIES (AND (NOT (ATOM A))
-                   (NOT (ATOM B))
-                   (EQUAL (CAR A) (CAR B))
-                   (:P (CDR A) (CDR B)))
-              (:P A B))
-     (IMPLIES (AND (NOT (ATOM A)) (ATOM B))
-              (:P A B))
-     (IMPLIES (ATOM A) (:P A B))).
-This induction is justified by the same argument used to admit LEQUAL.
-Note, however, that the unmeasured variable B is being instantiated.
-When applied to the goal at hand the above induction scheme produces
-six nontautological subgoals.
-Subgoal *1/6
-Subgoal *1/6'
-Subgoal *1/5
-Subgoal *1/5'
+(AND (IMPLIES (NOT (CONSP B)) (:P A B))
+     (IMPLIES (AND (CONSP B) (:P (CDR A) (CDR B)))
+              (:P A B))).
+This induction is justified by the same argument used to admit 
+TERMINAL-MARKER.  Note, however, that the unmeasured variable A is
+being instantiated.  When applied to the goal at hand the above induction
+scheme produces four nontautological subgoals.
 Subgoal *1/4
-Subgoal *1/4'
 Subgoal *1/3
-Subgoal *1/3'
 Subgoal *1/2
-Subgoal *1/2'
 Subgoal *1/1
-Subgoal *1/1'
 
 *1 is COMPLETED!
 Thus key checkpoint Goal is COMPLETED!
@@ -3249,9 +3229,7 @@ Q.E.D.
 
 Summary
 Form:  ( DEFTHM LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL ...)
-Rules: ((:DEFINITION ATOM)
-        (:DEFINITION LEQUAL)
-        (:DEFINITION NOT)
+Rules: ((:DEFINITION LEQUAL)
         (:DEFINITION TERMINAL-MARKER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION LEQUAL)

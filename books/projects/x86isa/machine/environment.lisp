@@ -722,101 +722,101 @@
   ;; Oracle Field:
 
   (encapsulate
-    ()
+   ()
 
-    (defthm alistp-of-oracle-of-xr-env
-            (alistp (cdr (assoc-equal :oracle (xr :env i x86$a))))
-            :hints (("goal" :use ((:instance elem-p-of-xr-env))
-                     :in-theory (e/d () (elem-p-of-xr-env))))
-            :rule-classes (:rewrite :type-prescription))
+   (defthm alistp-of-oracle-of-xr-env
+     (alistp (cdr (assoc-equal :oracle (xr :env i x86$a))))
+     :hints (("goal" :use ((:instance elem-p-of-xr-env))
+              :in-theory (e/d () (elem-p-of-xr-env))))
+     :rule-classes (:rewrite :type-prescription))
 
-    (local
-      (defthm true-listp-of-cdr-cdr-assoc-rip-ret-alistp
-              (implies (rip-ret-alistp xs)
-                       (true-listp (cdr (cdr (assoc-equal rip xs)))))
-              :hints (("goal" 
-                       :in-theory (e/d (rip-ret-alistp) ())))))
+   (local
+    (defthm true-listp-of-cdr-cdr-assoc-rip-ret-alistp
+      (implies (rip-ret-alistp xs)
+               (true-listp (cdr (cdr (assoc-equal rip xs)))))
+      :hints (("goal"
+               :in-theory (e/d (rip-ret-alistp) ())))))
 
-    (local
-      (defthm rip-ret-alistp-and-put-assoc-equal
-              (implies (and
-                         (signed-byte-p 48 rip)
-                         (true-listp ret)
-                         (rip-ret-alistp xs))
-                       (rip-ret-alistp (put-assoc-equal rip ret xs)))
-              :hints (("Goal" :in-theory (e/d (rip-ret-alistp) ())))))
+   (local
+    (defthm rip-ret-alistp-and-put-assoc-equal
+      (implies (and
+                (signed-byte-p 48 rip)
+                (true-listp ret)
+                (rip-ret-alistp xs))
+               (rip-ret-alistp (put-assoc-equal rip ret xs)))
+      :hints (("Goal" :in-theory (e/d (rip-ret-alistp) ())))))
 
-    (define pop-x86-oracle-logic (x86)
-      :guard-hints
-      (("Goal" :in-theory (e/d (env-alistp) ())))
-      (b* ((rip (rip x86))
-           (env (env-read x86))
-           (oracle (cdr (assoc-equal :oracle env)))
-           (vals (assoc-equal rip oracle))
-           (lst (if (consp vals)
-                  (if (consp (cdr vals))
-                    (cdr vals)
-                    nil)
-                  nil))
-           ((mv val x86)
-            (if (atom lst)
-              (let ((x86 (!ms (list :syscall-oracle-pop-empty rip) x86)))
-                (mv -1 x86))
-              (let ((x86
-                      (env-write
-                        (acons ':file-descriptors (cdr (assoc-equal :file-descriptors env))
-                               (acons ':file-contents (cdr (assoc-equal :file-contents env))
-                                      (acons ':oracle
-                                             (put-assoc-equal rip (cdr lst)
-                                                              oracle)
-                                             nil)))
-                        x86)))
-                (mv (car lst) x86)))))
-          (mv val x86)))
+   (define pop-x86-oracle-logic (x86)
+     :guard-hints
+     (("Goal" :in-theory (e/d (env-alistp) ())))
+     (b* ((rip (rip x86))
+          (env (env-read x86))
+          (oracle (cdr (assoc-equal :oracle env)))
+          (vals (assoc-equal rip oracle))
+          (lst (if (consp vals)
+                   (if (consp (cdr vals))
+                       (cdr vals)
+                     nil)
+                 nil))
+          ((mv val x86)
+           (if (atom lst)
+               (let ((x86 (!ms (list :syscall-oracle-pop-empty rip) x86)))
+                 (mv -1 x86))
+             (let ((x86
+                    (env-write
+                     (acons ':file-descriptors (cdr (assoc-equal :file-descriptors env))
+                            (acons ':file-contents (cdr (assoc-equal :file-contents env))
+                                   (acons ':oracle
+                                          (put-assoc-equal rip (cdr lst)
+                                                           oracle)
+                                          nil)))
+                     x86)))
+               (mv (car lst) x86)))))
+         (mv val x86)))
 
-    (define pop-x86-oracle (x86)
-      :inline nil
-      :prepwork ((local (in-theory (e/d (xr) ()))))
-      (pop-x86-oracle-logic x86)
-      ///
+   (define pop-x86-oracle (x86)
+     :inline nil
+     :prepwork ((local (in-theory (e/d (xr) ()))))
+     (pop-x86-oracle-logic x86)
+     ///
 
-      (defthm x86p-mv-nth-1-pop-x86-oracle
-              (implies (x86p x86)
-                       (x86p (mv-nth 1 (pop-x86-oracle x86))))
-              :hints (("Goal" :in-theory (e/d (pop-x86-oracle-logic
-                                                env-alistp)
-                                              ())))))
+     (defthm x86p-mv-nth-1-pop-x86-oracle
+       (implies (x86p x86)
+                (x86p (mv-nth 1 (pop-x86-oracle x86))))
+       :hints (("Goal" :in-theory (e/d (pop-x86-oracle-logic
+                                        env-alistp)
+                                       ())))))
 
-    ;; Relating pop-x86-oracle and xr/xw:
+   ;; Relating pop-x86-oracle and xr/xw:
 
-    (defthm xr-pop-x86-oracle-state
-            (implies (and (not (equal fld :env))
-                          (not (equal fld :ms)))
-                     (equal (xr fld index (mv-nth 1 (pop-x86-oracle x86)))
-                            (xr fld index x86)))
-            :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
-                                               pop-x86-oracle-logic)
-                                             ()))))
+   (defthm xr-pop-x86-oracle-state
+     (implies (and (not (equal fld :env))
+                   (not (equal fld :ms)))
+              (equal (xr fld index (mv-nth 1 (pop-x86-oracle x86)))
+                     (xr fld index x86)))
+     :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
+                                       pop-x86-oracle-logic)
+                                      ()))))
 
-    (defthm pop-x86-oracle-xw
-            (implies (and (not (equal fld :env))
-                          (not (equal fld :rip)))
-                     (equal (mv-nth 0 (pop-x86-oracle (xw fld index value x86)))
-                            (mv-nth 0 (pop-x86-oracle x86))))
-            :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
-                                               pop-x86-oracle-logic)
-                                             ()))))
+   (defthm pop-x86-oracle-xw
+     (implies (and (not (equal fld :env))
+                   (not (equal fld :rip)))
+              (equal (mv-nth 0 (pop-x86-oracle (xw fld index value x86)))
+                     (mv-nth 0 (pop-x86-oracle x86))))
+     :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
+                                       pop-x86-oracle-logic)
+                                      ()))))
 
 
-    (defthm xw-pop-x86-oracle-state
-            ;; Keep pop-x86-oracle inside all other nests of writes.
-            (implies (and (not (equal fld :env))
-                          (not (equal fld :rip))
-                          (not (equal fld :ms)))
-                     (equal (mv-nth 1 (pop-x86-oracle (xw fld index value x86)))
-                            (xw fld index value (mv-nth 1 (pop-x86-oracle x86)))))
-            :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
-                                               pop-x86-oracle-logic)
-                                             ()))))))
+   (defthm xw-pop-x86-oracle-state
+     ;; Keep pop-x86-oracle inside all other nests of writes.
+     (implies (and (not (equal fld :env))
+                   (not (equal fld :rip))
+                   (not (equal fld :ms)))
+              (equal (mv-nth 1 (pop-x86-oracle (xw fld index value x86)))
+                     (xw fld index value (mv-nth 1 (pop-x86-oracle x86)))))
+     :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
+                                       pop-x86-oracle-logic)
+                                      ()))))))
 
 ;; ======================================================================

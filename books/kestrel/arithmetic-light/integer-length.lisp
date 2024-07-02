@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function integer-length
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,13 +16,13 @@
 ;; TODO: which do we prefer, lg or integer-length?  i think i like lg best,
 ;; but my current rules may target integer-length?
 
-(local (include-book "floor"))
-(local (include-book "mod"))
+(local (include-book "floor")) ; reduce?
+;(local (include-book "mod")) ; floor-mod-elim-rule was used in integer-length-of-+-of--1-when-not-power-of-2
 (local (include-book "expt"))
-(local (include-book "expt2"))
+;(local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "times"))
-(local (include-book "numerator"))
+(local (include-book "numerator")) ; since floor calls numerator
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (in-theory (disable integer-length))
@@ -56,7 +56,7 @@
   (implies (natp size)
            (equal (integer-length (+ -1 (expt 2 size)))
                   size))
-  :hints (("Goal" :in-theory (enable integer-length expt))))
+  :hints (("Goal" :in-theory (enable integer-length expt mod))))
 
 (local
  (defun double-floor-by-2-induct (i j)
@@ -118,6 +118,12 @@
              (equal i -1)))
   :hints (("Goal" :in-theory (enable integer-length))))
 
+(defthm <-of-0-and-integer-length
+  (implies (natp x)
+           (equal (< 0 (integer-length x))
+                  (< 0 x)))
+  :hints (("Goal" :in-theory (enable integer-length))))
+
 (defthm unsigned-byte-p-of-integer-length
   (implies (natp x)
            (unsigned-byte-p (integer-length x) x))
@@ -146,6 +152,14 @@
       n
     (sub1-induct (+ -1 n)))))
 
+(defthm integer-length-of-*-of-2
+  (implies (integerp n)
+           (equal (integer-length (* 2 n))
+                  (if (equal n 0)
+                      0
+                    (+ 1 (integer-length n)))))
+  :hints (("Goal" :in-theory (enable integer-length))))
+
 (defthm integer-length-of-*-of-expt2
   (implies (and (natp n)
                 (integerp x))
@@ -156,7 +170,8 @@
   :hints (("Goal" ;:expand (INTEGER-LENGTH (* X (EXPT 2 (+ -1 N))))
            :induct (sub1-induct n)
            :in-theory (e/d (integer-length expt)
-                           (expt-hack)))))
+                           (;expt-hack
+                            )))))
 
 ;; conflicts with expanding integer-length?
 (defthm integer-length-of-*-of-1/2
@@ -201,19 +216,95 @@
   :hints (("Goal" :in-theory (enable integer-length))))
 
 (defthm <-of-integer-length-arg1
-  (implies (and (syntaxp (not (and (quotep n) (< 1000 (unquote n))))) ;prevent huge calls to EXPT
+  (implies (and (syntaxp (not (and (quotep n) (< 1000 (unquote n))))) ;prevent huge calls to expt
                 (posp x)
                 (natp n))
            (equal (< (integer-length x) n)
                   (< x (expt 2 (+ -1 n)))))
-  :hints (("Goal" :in-theory (enable integer-length posp))))
+  :hints (("subgoal *1/3" :use ((:instance <-of-expt-of-integer-length-same-linear (n x))
+                                (:instance <=-of-expt-and-expt-same-base-linear (r 2) (i1 (integer-length x)) (i2 (+ -1 n))))
+           :in-theory (disable <-of-expt-of-integer-length-same
+                               <-of-expt-and-expt-same-base
+                               <-of-integer-length-arg2))
+          ("Goal" :in-theory (enable integer-length posp))))
 
 ;; or move to expt2.lisp
 (defthm <-of-expt-2-and-constant
   (implies (and (syntaxp (quotep k))
                 (integerp k) ;gen?
-                (natp i))
+                ;(integerp i)
+                )
            (equal (< (expt 2 i) k)
                   (and (< 0 k)
                        (not (equal k (expt 2 i)))
-                       (< i (integer-length k))))))
+                       (< (ifix i) (integer-length k))))))
+
+;; or move to expt2.lisp
+(defthm <-of-constant-and-expt-2
+  (implies (and (syntaxp (quotep k))
+                (integerp k) ;gen?
+                ;(integerp i)
+                )
+           (equal (< k (expt 2 i))
+                  (or (<= k 0)
+                      (<= (integer-length k) (ifix i))))))
+
+(local
+ (defthm integer-length-of-+-of--1-when-power-of-2
+   (implies (and (natp i)
+                 (equal i (expt 2 (+ -1 (integer-length i)))) ; power of 2
+                 )
+            (equal (integer-length (+ -1 i))
+                   (+ -1 (integer-length i))))
+   :hints (("Goal" :in-theory (enable integer-length)))))
+
+(local
+ (defthm integer-length-of-+-of--1-when-not-power-of-2
+   (implies (and (natp i)
+                 (not (equal i (expt 2 (+ -1 (integer-length i))))) ; power of 2
+                 )
+            (equal (integer-length (+ -1 i))
+                   (integer-length i)))
+   :hints (("Goal" :expand ((integer-length i)
+                            (integer-length (+ -1 i)))
+            :induct (integer-length i)
+            :in-theory (e/d (integer-length mod) (integer-length-of-floor-by-2))))))
+
+(defthmd integer-length-of-+-of--1
+  (implies (natp i)
+           (equal (integer-length (+ -1 i))
+                  (if (equal i (expt 2 (+ -1 (integer-length i)))) ; power of 2
+                      (+ -1 (integer-length i))
+                    (integer-length i))))
+  :hints (("Goal" :cases ((not (equal i (expt 2 (+ -1 (integer-length i)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (defthm integer-length-of-+-of-1-when-power-of-2
+   (implies (and (natp i)
+                 (equal (+ 1 i) (expt 2 (+ -1 (integer-length (+ 1 i))))) ; i+1 is a power of 2
+                 )
+            (equal (integer-length (+ 1 i))
+                   (+ 1 (integer-length i))))
+   :hints (("Goal" :use (:instance integer-length-of-+-of--1-when-power-of-2 (i (+ 1 i)))
+            :in-theory (disable integer-length-of-+-of--1-when-power-of-2)))))
+
+(local
+ (defthm integer-length-of-+-of-1-when-not-power-of-2
+   (implies (and (natp i)
+                 (not (equal (+ 1 i) (expt 2 (+ -1 (integer-length (+ 1 i)))))) ; i+1 is not a power of 2
+                 )
+            (equal (integer-length (+ 1 i))
+                   (integer-length i)))
+   :hints (("Goal" :use (:instance integer-length-of-+-of--1-when-not-power-of-2 (i (+ 1 i)))
+            :in-theory (disable integer-length-of-+-of--1-when-not-power-of-2)))))
+
+;loops if made a rewrite rule
+(defthm integer-length-of-+-of-1
+  (implies (natp i)
+           (equal (integer-length (+ 1 i))
+                  (if (equal (+ 1 i) (expt 2 (+ -1 (integer-length (+ 1 i))))) ; i+1 is a power of 2
+                      (+ 1 (integer-length i))
+                    (integer-length i))))
+  :rule-classes nil)

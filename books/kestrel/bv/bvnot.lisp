@@ -122,7 +122,7 @@
            :use (:instance BVCHOP-LOGNOT-BVCHOP (n 1) (X (LOGTAIL N X)))
            :in-theory (e/d (bvnot getbit slice)
                            (BVCHOP-LOGNOT-BVCHOP
-                            slice-becomes-getbit ;LOGTAIL-BVCHOP
+                             ;LOGTAIL-BVCHOP
                             bvchop-1-becomes-getbit BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 ;rename and gen
@@ -153,3 +153,57 @@
            (equal (bvchop n (bvnot size val))
                   (bvnot n val)))
   :hints (("Goal" :in-theory (enable bvnot))))
+
+(defthm slice-of-bvnot
+  (implies (and (< highbit size)
+                (<= lowbit highbit)
+                (natp size)
+                (natp lowbit)
+                (natp highbit))
+           (equal (slice highbit lowbit (bvnot size x))
+                  (bvnot (+ 1 highbit (- lowbit)) (slice highbit lowbit x))))
+  :hints (("Goal"
+           :use ((:instance bvchop-lognot-bvchop (n (+ 1 highbit (- lowbit))) (x (logtail lowbit x)))
+                 (:instance bvchop-of-mask-gen (size2 (+ 1 highbit (- lowbit)))
+                            (size1 (- size lowbit))))
+           :cases ((integerp x)
+                   (not (integerp x))
+                   )
+           :in-theory (e/d (bvnot slice ;logtail-bvchop
+                                  bvchop-of-logtail
+                                  lognot-of-logtail
+                                  bvchop-of-mask-gen
+                                  ) (bvchop-of-logtail-becomes-slice
+                                  bvchop-of-minus
+                                  logtail-of-lognot
+                                  ;LOGNOT-OF-LOGTAIL
+                                  bvchop-lognot-bvchop
+;bvchop-of-logtail
+                                  logtail-of-bvchop-becomes-slice)))))
+
+(defthm bvnot-of-all-ones
+  (implies (natp width)
+           (equal (bvnot width (+ -1 (expt 2 width)))
+                  0))
+  :hints (("Goal" :in-theory (enable bvnot))))
+
+;can loop
+(defthmd bvnot-of-0
+  (implies (natp width)
+           (equal (bvnot width 0)
+                  (- (expt 2 width) 1)))
+  :hints (("Goal" :in-theory (enable bvnot))))
+
+(defthm bvnot-of-+-of---of-expt-same
+  (implies (and (natp size)
+                (integerp x))
+           (equal (bvnot size (+ (- (expt 2 size)) x))
+                  (bvnot size x)))
+  :hints (("Goal" :in-theory (enable bvnot bvchop lognot))))
+
+(defthm bvnot-of-*-of-expt-same
+  (implies (and (natp size)
+                (integerp x))
+           (equal (bvnot size (* (expt 2 size) x))
+                  (+ -1 (expt 2 size))))
+  :hints (("Goal" :in-theory (enable bvnot lognot BVCHOP-OF-SUM-CASES))))

@@ -502,7 +502,7 @@
                 (natp current-try))
            (equal (new-ad-aux ads current-try)
                   (new-ad-aux ads 0)))
-  :hints (("Goal" :use (:instance advance-current-try3-special))))
+  :hints (("Goal" :use advance-current-try3-special)))
 
 
 (defthm new-ad-aux-of-insert-of-delete-irrel
@@ -566,7 +566,7 @@
            (<= (new-ad-aux ads start)
                (new-ad-aux ads2 start2)))
   :hints (("Goal"  :do-not '(generalize eliminate-destructors)
-           :use (:instance new-ad-aux-<=-new-ad-aux-when-subset)
+           :use new-ad-aux-<=-new-ad-aux-when-subset
            :in-theory (disable new-ad-aux-<=-new-ad-aux-when-subset))))
 
 (defthm new-ad-aux-of-insert
@@ -575,7 +575,7 @@
            (equal (new-ad-aux (set::insert (new-ad ads) ads) current-try)
                   (new-ad-aux ads (+ 1 (new-ad ads)))))
   :hints (("Goal" :in-theory (e/d (new-ad) ( new-ad-aux-of-insert-helper new-ad-aux-of-insert-bound NEW-AD-AUX-<=-NEW-AD-AUX-WHEN-SUBSET))
-           :use ((:instance new-ad-aux-of-insert-helper)
+           :use (new-ad-aux-of-insert-helper
                  (:instance advance-current-try3 (ads (SET::INSERT (NEW-AD ADS) ADS))  (lo current-try) (current-try (NEW-AD ADS)))
 ;                 (:instance advance-current-try (ads (SET::INSERT (NEW-AD ADS) ADS))
                  (:instance new-ad-aux-of-insert-bound (ad (NEW-AD ADS)))
@@ -587,7 +587,7 @@
                 (natp current-try))
            (equal (new-ad-aux (set::insert (new-ad-aux ads 0) ads) current-try)
                   (new-ad-aux ads (+ 1 (new-ad ads)))))
-  :hints (("Goal" :use (:instance new-ad-aux-of-insert)
+  :hints (("Goal" :use new-ad-aux-of-insert
            :in-theory (e/d (new-ad) (new-ad-aux-of-insert)))))
 
 (defthmd new-ad-of-insert-of-new-ad
@@ -758,7 +758,7 @@
   (equal (nth-new-ad m ads)
          (nth-new-ad2 m ads))
   :hints (("Goal" :cases ((posp m))
-           :use (:instance recharacterize-nth-of-n-new-ads2))))
+           :use recharacterize-nth-of-n-new-ads2)))
 
 
 ;; ;old version. nicer in some cases to reason about but less efficient.
@@ -1103,7 +1103,7 @@
 ;; ;;                 (< 0 m))
 ;; ;;            (equal (SET::INSERT (NTH-NEW-AD2 m ads) (SET::UNION (N-NEW-ADS2 n ads) ads))
 ;; ;;                   (set::union ads (N-NEW-ADS2 m ads))))
-;; ;;   :hints (("Goal" :use (:instance new-ads-recollect)
+;; ;;   :hints (("Goal" :use new-ads-recollect
 ;; ;;            :in-theory (disable new-ads-recollect))))
 
 ;; ;; (defthm not-in-n-new-ads2

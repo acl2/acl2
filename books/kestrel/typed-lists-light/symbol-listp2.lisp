@@ -16,6 +16,6 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 
 (defthm symbol-listp-of-reverse-list
-  (equal (symbol-listp (acl2::reverse-list x))
+  (equal (symbol-listp (reverse-list x))
          (symbol-listp (true-list-fix x)))
-  :hints (("Goal" :in-theory (enable acl2::reverse-list))))
+  :hints (("Goal" :in-theory (enable reverse-list))))

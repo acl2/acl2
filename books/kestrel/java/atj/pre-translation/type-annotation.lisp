@@ -75,10 +75,10 @@
      the first letter is @('A')
      and the second letter is from the class name or @('B') for @(':aboolean').
      For the @(':jprim') types,
-     the first letter is @('J') and the second letter is from [JVMS:4.3.2].
+     the first letter is @('J') and the second letter is from [JVMS14:4.3.2].
      For the @(':jprimarr') types,
      the first letter is @('Y') (which is the ending letter of `array')
-     and the second letter is from [JVMS:4.3.2]."))
+     and the second letter is from [JVMS14:4.3.2]."))
   (atj-type-case type
                  :acl2 (atj-atype-case type.get
                                        :integer "AI"

@@ -1,7 +1,7 @@
 ; A function to turn an alist into an array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,10 @@
 
 (in-package "ACL2")
 
-(include-book "make-into-array-with-len") ; todo: reduce
+(include-book "make-into-array-with-len")
+(include-book "make-empty-array")
+(local (include-book "array1p"))
+(local (include-book "acl2-arrays")) ; todo: reducen
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;Consider adding an option to reuse an existing array if large enough (well, compress1 now does that internally)?
@@ -20,8 +23,7 @@
 ; TODO: Add an option for slack space
 (defund make-into-array (array-name alist)
   (declare (xargs :guard (and (true-listp alist)
-                              (bounded-natp-alistp alist (+ -1 *maximum-positive-32-bit-integer*)) ; might be able to drop the -1 if array1p is weakened a bit
-                              )
+                              (bounded-natp-alistp alist *max-1d-array-length*))
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite))))
            (type symbol array-name))
   (let* ((len (if (consp alist)
@@ -39,7 +41,7 @@
   :hints (("Goal" :in-theory (enable make-into-array))))
 
 (defthm array1p-of-make-into-array
-  (implies (and (bounded-natp-alistp alist 2147483646)
+  (implies (and (bounded-natp-alistp alist *max-1d-array-length*)
                 (true-listp alist)
                 ;alist
                 (symbolp array-name)
@@ -49,7 +51,7 @@
   :hints (("Goal" :in-theory (e/d (array1p compress1 make-into-array) (normalize-array1p-name)))))
 
 (defthm aref1-of-make-into-array
-  (implies (and (bounded-natp-alistp alist 2147483646)
+  (implies (and (bounded-natp-alistp alist *max-1d-array-length*)
                 (true-listp alist)
                 alist
                 (symbolp array-name)

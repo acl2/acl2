@@ -13,6 +13,8 @@
 (include-book "prover-basic") ; todo: test separately?
 (include-book "prover-basic-clause-processor")
 (include-book "kestrel/utilities/deftest" :dir :system)
+(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/booleans" :dir :system) ;for boolif-when-quotep-arg3
 
 ;; TODO: Add more tests
 
@@ -37,6 +39,9 @@
   (must-fail (prove-implication-with-basic-prover '((1 natp 0) (0 . x)) '((1 natp 0) (0 . y))
                                                   :rule-lists (list '(implies)) ;todo
                                                   )))
+
+; Matt K. mod: Avoid ACL2(p) error.
+(set-waterfall-parallelism nil)
 
 (defthm-with-basic-prover-clause-processor test1
   (natp 7))

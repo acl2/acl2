@@ -20,11 +20,13 @@
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
-(include-book "kestrel/bv/rules" :dir :system)
+(include-book "kestrel/bv/repeatbit" :dir :system)
+(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/rules" :dir :system) ; why?
 ;(include-book "kestrel/bv-lists/bvnth" :dir :system) ; todo: split out
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-read-of-bvchop-list?
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system) ;todo
@@ -212,7 +214,7 @@
 ;;                            (x (bvcat highsize highval lowsize lowval))
 ;;                            (y x))
 ;;            :in-theory (e/d ( ;bvmult
-;;                             ) ( BVPLUS-RECOLLAPSE BVMULT-OF-BVCHOP-arg3)))))
+;;                             ) (  BVMULT-OF-BVCHOP-arg3)))))
 
 ;; (defthm bvmult-8-27-blast
 ;;   (equal (bvmult 8 27 (getbit n x))
@@ -241,7 +243,7 @@
 ;;                 (natp size))
 ;;            (equal (bvplus size x y)
 ;;                   (bvplus size (bvchop size x) y)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus) (anti-bvplus)))))
+;;   :hints (("Goal" :in-theory (e/d (bvplus) ()))))
 
 ;; (defthmd bvminus-solve-for-dag2
 ;;   (implies (and (syntaxp (quotep k))
@@ -365,7 +367,6 @@
 ;;    :hints
 ;;    (("Goal" :do-not '(generalize eliminate-destructors)
 ;;      :in-theory (e/d (update-nth2 logext-list) (TAKE-OF-CDR-BECOMES-SUBRANGE
-;;                                                 CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
 ;;                                                 take-of-logext-list))))))
 
 ;; (defthmd update-nth2-becomes-bv-array-write32-signed-case
@@ -602,7 +603,7 @@
                             bv-array-read ceiling-of-lg
 ;                                        car-of-both-sides-alt
 ;                                       car-of-both-sides
-                            ;bvplus-recollapse
+                            ;bvchop-of-+-becomes-bvplus
                             EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
                             subrange
                             )
@@ -646,7 +647,6 @@
                   (equal len (len array))))
   :hints (("Goal" :in-theory (e/d (subrange) (;take-of-nthcdr-becomes-subrange
                                               ;nthcdr-of-take-becomes-subrange
-                                              ;;cdr-of-take-becomes-subrange-better
                                               )))))
 
 (defthm firstn-of-bvchop-list
@@ -682,7 +682,6 @@
                            (array-reduction-when-top-bit-is-xored-in-helper ;TAKE-WHEN-<-OF-LEN
                                                                             ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                                                             ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                                                            ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                                                                             ))
            :use (:instance array-reduction-when-top-bit-is-xored-in-helper
                            (vals (bvchop-list elem-size (take len (true-list-fix array))))
@@ -770,12 +769,6 @@
 ;;   :hints (("Goal" :in-theory (enable myif))))
 
 
-(DEFTHM SIGNED-BYTE-P-OF-MYIF2
-  (IMPLIES (AND (SIGNED-BYTE-P N A)
-                (SIGNED-BYTE-P N B))
-           (SIGNED-BYTE-P N (MYIF TEST A B)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
-
 ;keep but move
 ;; (defthm all-signed-byte-p-of-logext-list
 ;;   (implies (and (integerp size)
@@ -825,8 +818,6 @@
 ;;                   t))
 ;;   :hints (("Goal" :in-theory (e/d (UPDATE-NTH2 BV-ARRAY-WRITE)
 ;;                                   (REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER)))))
-
-;(local (in-theory (disable BVPLUS-RECOLLAPSE)))
 
 (defthm all-unsigned-byte-p-of-bvchop-list-gen2
   (implies (and ;(<= element-size size)
@@ -974,7 +965,7 @@
            (equal (BV-ARRAY-READ esize '128 n (UPDATE-SUBRANGE start end vals lst))
                   (BV-ARRAY-READ esize (+ 1 end (- start)) (+ N (- START)) vals)))
   :hints (("Goal" :in-theory (e/d (bv-array-read unsigned-byte-p-of-integer-length-gen ceiling-of-lg)
-                                  (;BVPLUS-RECOLLAPSE
+                                  (;
                                    unsigned-byte-p-of-+-of-minus-alt
                                    unsigned-byte-p-of-+-of-minus)))))
 
@@ -1058,20 +1049,19 @@
 ;;          (logext-list n (myif test x y)))
 ;;   :hints (("Goal" :in-theory (enable myif))))
 
-;ffixme use a higher order function?
-(defund MAX-INTEGER-LENGTH (lst)
-  (if (endp lst)
-      0 ;hope this is okay
-    (max (integer-length (car lst))
-         (MAX-INTEGER-LENGTH (cdr lst)))))
+;; (defund MAX-INTEGER-LENGTH (lst)
+;;   (if (endp lst)
+;;       0 ;hope this is okay
+;;     (max (integer-length (car lst))
+;;          (MAX-INTEGER-LENGTH (cdr lst)))))
 
-(defthm max-integer-length-bound
-  (implies (and (< n (len lst))
-                (natp n))
-           (<= (INTEGER-LENGTH (NTH n Lst))
-               (MAX-INTEGER-LENGTH Lst)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (MAX-INTEGER-LENGTH nth) (nth-of-cdr)))))
+;; (defthm max-integer-length-bound
+;;   (implies (and (< n (len lst))
+;;                 (natp n))
+;;            (<= (INTEGER-LENGTH (NTH n Lst))
+;;                (MAX-INTEGER-LENGTH Lst)))
+;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;;            :in-theory (e/d (MAX-INTEGER-LENGTH nth) (nth-of-cdr)))))
 
 ;; ;fixme
 ;; (skip -proofs
@@ -1445,7 +1435,7 @@
                   (bv-array-read element-size (+ 1 end) (+ start index) lst)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener bvchop-when-i-is-not-an-integer subrange)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   ;;BVPLUS-RECOLLAPSE
+                                   ;;
                                    )))))
 
 ;; (defthm logext-list-of-myif-of-logext-list-arg2
@@ -1475,7 +1465,6 @@
 ;;                             NTHCDR-OF-CDR-COMBINE-STRONG
 ;;                             TAKE-OF-CDR-BECOMES-SUBRANGE
 ;;                             NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-;;                             CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
 ;;                             TAKE-OF-NTHCDR-BECOMES-SUBRANGE
 ;;                             SUBRANGE-TO-END-BECOMES-NTHCDR)))))
 
@@ -1935,7 +1924,7 @@
 ;;                                                          BVCHOP-OF-LOGTAIL-BECOMES-SLICE
 ;;                                                          SLICE-BECOMES-BVCHOP
 ;;                                                          BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-;;                                                          anti-bvplus)))))
+;;                                                          )))))
 
 (defthm bv-array-read-of-logext-arg3
   (implies (and (integerp index)
@@ -2044,7 +2033,6 @@
                             )
                            (;anti-subrange
                             ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                            ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETtER ;bozo ;also bozo on the non better
                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
 ;includes both irrel cases
@@ -2078,7 +2066,6 @@
                                    )
                                   (;anti-subrange
                                    ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                                   ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETtER ;bozo
                                    ;CDR-OF-TAKE-BECOMES-SUBRANGE ;bozo
                                    UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
@@ -2228,8 +2215,6 @@
 ;;           (error-state-no-params))))
 
 ;(in-theory (disable CDR-OF-TAKE-BECOMES-SUBRANGE)) ;drop?
-
-;(local (in-theory (disable +-becomes-bvplus-hack))) ;drop?
 
 ;gen!
 ;; (defthm nth2-of-bv-array-write
@@ -2686,7 +2671,6 @@
            :in-theory (e/d (subrange TAKE-OF-CDR CAR-BECOMES-NTH-OF-0 equal-of-append nthcdr-of-cdr-combine
                                             BV-ARRAY-CLEAR-RANGE)
                                   (cdr-of-take
-                                   ;cdr-of-take-becomes-subrange-better
                                    ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
                                    ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                    ;;TAKE-OF-CDR-BECOMES-SUBRANGE
@@ -2971,7 +2955,8 @@
                          (+ -1 element-width)
                          ;wrap a bvchop-list around the data?
                          (bv-array-read (+ -1 element-width) len index data))))
-  :hints (("Goal" :in-theory (enable GETBIT-OF-BV-ARRAY-READ-HELPER bvchop-of-bv-array-read))))
+  :hints (("Goal" :in-theory (enable GETBIT-OF-BV-ARRAY-READ-HELPER bvchop-of-bv-array-read
+                                     slice-becomes-getbit))))
 
 ;what should we do when the data is not a quotep?
 (defthmd bv-array-read-blast
@@ -3072,9 +3057,7 @@
   (("Goal"
     :IN-THEORY
     (E/D (BV-ARRAY-READ-OPENER BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-         (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-          ;;BVPLUS-RECOLLAPSE
-          )))))
+         (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
 (defthm bv-array-write-of-bv-array-write-diff-constant-indices-work-hard
   (implies (and (syntaxp (quotep index1))

@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -133,7 +133,7 @@
      (wonp
       (with-accumulated-persistence
        (access rewrite-rule lemma :rune)
-       ((the (signed-byte 30) step-limit) term ttree)
+       ((the #.*fixnum-type* step-limit) term ttree)
        t
        (expand-abbreviations
         (access rewrite-rule lemma :rhs)
@@ -395,7 +395,7 @@
 
               (with-accumulated-persistence
                (fn-rune-nume fn nil nil wrld)
-               ((the (signed-byte 30) step-limit) term ttree)
+               ((the #.*fixnum-type* step-limit) term ttree)
                t
                (expand-abbreviations (bbody fn)
                                      (pairlis$ (formals fn wrld) expanded-args)
@@ -608,7 +608,7 @@
               (term ttree)
               (with-accumulated-persistence
                (access def-body def-body :rune)
-               ((the (signed-byte 30) step-limit) term ttree)
+               ((the #.*fixnum-type* step-limit) term ttree)
                t
                (expand-abbreviations
                 (subcor-var (access def-body def-body
@@ -636,7 +636,7 @@
                    (term ttree)
                    (with-accumulated-persistence
                     (access rewrite-rule lemma :rune)
-                    ((the (signed-byte 30) step-limit) term ttree)
+                    ((the #.*fixnum-type* step-limit) term ttree)
                     t
                     (expand-abbreviations
                      (sublis-var unify-subst
@@ -4724,7 +4724,7 @@
             (controller-variables
              (car lst)
              (access def-body
-                     (def-body (ffn-symb (car lst)) wrld)
+                     (original-def-body (ffn-symb (car lst)) wrld)
                      :controller-alist))
             (induct-vars1 (cdr lst) wrld)))))
 

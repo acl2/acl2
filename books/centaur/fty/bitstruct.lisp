@@ -1150,7 +1150,7 @@
 (defxdoc defbitstruct
   :parents (fty)
   :short "Define a bitvector type with accessors for its fields."
-  :long "<p>This macto defines a bitstruct type.  A bitstruct can either be a
+  :long "<p>This macro defines a bitstruct type.  A bitstruct can either be a
 base type, which is a single fixed-width integer, or a product type containing
 fields that are bits, Booleans, or other bitstructs.  Such a product is
 represented as a single integer produced by concatenating all the fields
@@ -1195,7 +1195,7 @@ important.  This defines a rounding-control as a 2-bit unsigned value.</p>
 directly access the fields of the internal struct.  Providing the
 @(':subfields') keyword causes defbitstruct to produce direct accessors and
 updaters for the subfields of the nested struct.  The following definition of
-@('mxcsr') produces the usual accesors and updaters including @('mxcsr->flags')
+@('mxcsr') produces the usual accessors and updaters including @('mxcsr->flags')
 and @('mxcsr->masks'), but also @('mxcsr->ie') and @('mxcsr->im'), etc.</p>
 @({
  (defbitstruct fp-flags
@@ -1319,7 +1319,7 @@ accessors, in addition to the direct accessors @('toplevel->ss') and
 @({
  (toplevel->saa x)    == (innermost->aa (toplevel->ss x))
  (toplevel->sbb x)    == (innermost->bb (toplevel->ss x))
- (toplevel->tii x)    == (midlevel->ii (toplevel->ss x))
+ (toplevel->tii x)    == (midlevel->ii (toplevel->tt x))
  (toplevel->tiaa x)   == (innermost->aa (midlevel->ii (toplevel->tt x)))
  (toplevel->tibb x)   == (innermost->bb (midlevel->ii (toplevel->tt x)))
  (toplevel->tqq x)    == (midlevel->qq (toplevel->tt x))

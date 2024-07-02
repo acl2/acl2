@@ -270,7 +270,7 @@
                              use-lets-in-terms ;boolean
                              wrld)
   (declare (xargs :guard (and (or (and (pseudo-dagp dag)
-                                       (< (len dag) 2147483647))
+                                       (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))
                               (or (null max-term-size)
                                   (natp max-term-size))
@@ -577,10 +577,12 @@
                                   (union-eq (unroll-java-code2-rules)
                                             extra-rules)
                                   remove-rules)
+                                 :none ; todo: pass a rule-alist here?
                                  nil ; interpreted-fns
                                  monitor
                                  call-stp
                                  t ; check-fnsp
+                                 print
                                  state)
           (mv nil result-dag state)))
        ((when erp) (mv erp nil state))

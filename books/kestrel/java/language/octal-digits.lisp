@@ -18,14 +18,14 @@
 
 (defxdoc+ octal-digits
   :parents (syntax)
-  :short "Java octal digits [JLS:3.10.1]."
+  :short "Java octal digits [JLS14:3.10.1]."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection oct-digit
-  :short "Fixtype of Java octal digits [JLS:3.10.1]."
+  :short "Fixtype of Java octal digits [JLS14:3.10.1]."
   :long
   (xdoc::topstring
    (xdoc::p

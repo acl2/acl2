@@ -305,3 +305,11 @@ Skipping for now.
 (check= (defdata-domain-size ds5) 1)
 (check= (defdata-domain-size ds6) 1)
 (check= (defdata-domain-size ds7) 2)
+
+(defdata ds8 (record (a . int) (b . tl)))
+
+; Can prove equivalence of records
+(property (x y :ds8)
+  :h (^ (== (ds8-a x) (ds8-a y))
+	(== (ds8-b x) (ds8-b y)))
+  (== x y))

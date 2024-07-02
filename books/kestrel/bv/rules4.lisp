@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,6 +27,8 @@
 
 ; if x has a zero in it, and is negative, it can't be too big
 ;rename
+;tau knows this somehow
+;disable?
 (defthm getbit-of-0-bound-when-negative
   (implies (and (< x 0)
                 (equal 0 (getbit n x))
@@ -37,8 +39,7 @@
                  )
   :hints (("Goal" :in-theory (e/d (getbit slice logtail
                                           floor-when-negative-and-small)
-                                  (SLICE-BECOMES-GETBIT
-                                   BVCHOP-1-BECOMES-GETBIT
+                                  (BVCHOP-1-BECOMES-GETBIT
                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 (defthmd high-slice-when-negative
@@ -54,21 +55,8 @@
                   (repeatbit (+ 1 high (- low)) 1)))
   :hints (("Goal" :in-theory (e/d (getbit slice logtail
                                           floor-when-negative-and-small)
-                                  (slice-becomes-getbit
-                                   bvchop-1-becomes-getbit
+                                  (bvchop-1-becomes-getbit
                                    bvchop-of-logtail-becomes-slice)))))
-
-;enable?
-(defthmd getbit-when-negative-and-small
-  (implies (and (< x 0)
-                (<= (- (expt 2 n)) x)
-                (natp n)
-                (integerp x))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail)
-                                  (slice-becomes-getbit
-                                   bvchop-1-becomes-getbit)))))
 
 ;may need GETBIT-EQUAL-1-POLARITY -- move it!
 ;; any bit above the sign bit is the same as the sign bit
@@ -96,7 +84,7 @@
                 (natp n))
            (equal (getbit n x)
                   (getbit (+ -1 size) x)))
-  :hints (("Goal" :use (:instance getbit-when-signed-byte-p-high-helper))))
+  :hints (("Goal" :use getbit-when-signed-byte-p-high-helper)))
 
 (defthm slice-when-signed-byte-p-high
   (implies (and (signed-byte-p size x)
@@ -134,7 +122,7 @@
                 (natp size))
            (equal (< (+ y (* (EXPT 2 size) (LOGTAIL size X))) X)
                   (< y (bvchop size x))))
-  :hints (("Goal" :use (:instance bvchop-plus-times-expt-logtail)
+  :hints (("Goal" :use bvchop-plus-times-expt-logtail
            :in-theory (disable bvchop-plus-times-expt-logtail))))
 
 (defthm <-of-times-expt-logtail-cancel2
@@ -142,7 +130,7 @@
                 (natp size))
            (equal (< X (+ y (* (EXPT 2 size) (LOGTAIL size X))))
                   (< (bvchop size x) y)))
-  :hints (("Goal" :use (:instance bvchop-plus-times-expt-logtail)
+  :hints (("Goal" :use bvchop-plus-times-expt-logtail
            :in-theory (disable bvchop-plus-times-expt-logtail))))
 
 (defthm low-bits-dont-matter
@@ -158,13 +146,6 @@
                               *-preserves->=-for-nonnegatives <-*-right-cancel *-preserves->-for-nonnegatives-1)
            :use (:instance multiply-both-sides-hack (x y) (y (+ 1 x)) (z (expt 2 n))))))
 
-(defthm logtail-times-expt-bound
-  (implies (and (integerp x)
-                (Natp size))
-           (<= (* (EXPT 2 size) (LOGTAIL size X)) x))
-  :hints (("Goal" :use (:instance bvchop-plus-times-expt-logtail)
-           :in-theory (disable bvchop-plus-times-expt-logtail))))
-
 (defthm plus-of-times-expt-bound
   (implies (and (< hv (logtail lowsize x))
                 (integerp hv)
@@ -174,9 +155,11 @@
                 )
            (< (+ lv (* hv (expt 2 lowsize)))
               x))
-  :hints (("Goal" :use ((:instance logtail-times-expt-bound (size lowsize))
+  :hints (("Goal" :use (;(:instance logtail-times-expt-bound (size lowsize))
                         (:instance low-bits-dont-matter (z lv) (n lowsize) (x hv) (y (LOGTAIL LOWSIZE X))))
-           :in-theory (disable bvchop-plus-times-expt-logtail low-bits-dont-matter LOGTAIL-TIMES-EXPT-BOUND))))
+           :in-theory (disable bvchop-plus-times-expt-logtail low-bits-dont-matter
+                               ;LOGTAIL-TIMES-EXPT-BOUND
+                               ))))
 
 ;not tight?
 (defthm plus-of-times-expt-bound2
@@ -187,9 +170,10 @@
                 (natp pos)
                 )
            (not (< (+ pos (* hv (expt 2 lowsize))) x)))
-  :hints (("Goal" :use ((:instance logtail-times-expt-bound (size lowsize))
+  :hints (("Goal" :use (;(:instance logtail-times-expt-bound (size lowsize))
                         (:instance low-bits-dont-matter (z lv) (n lowsize) (x hv) (y (LOGTAIL LOWSIZE X))))
-           :in-theory (disable bvchop-plus-times-expt-logtail low-bits-dont-matter LOGTAIL-TIMES-EXPT-BOUND))))
+           :in-theory (disable bvchop-plus-times-expt-logtail low-bits-dont-matter ;LOGTAIL-TIMES-EXPT-BOUND
+                               ))))
 
 (defthm logapp-less-than
   (implies (and (natp lowsize)
@@ -245,10 +229,8 @@
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize y k)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (<-becomes-bvlt <-becomes-bvlt-alt
-;                                                  <-of-bvmult-hack ;bozo
-                                                  <-of-bvplus-becomes-bvlt-arg1
-                                                  <-of-bvplus-becomes-bvlt-arg2)))))
+                                  (<-of-bvplus-becomes-bvlt-arg1
+                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
 (defthmd logapp-less-than-alt-helper-1
   (IMPLIES (AND (NATP LOWSIZE)
@@ -278,8 +260,7 @@
                         (:instance multiply-both-sides-hack (x (LOGTAIL LOWSIZE X)) (y (+ 1 HIGHVAL)) (z (expt 2 lowsize))))
            :in-theory (disable ;LOGTAIL-LESSP
                        <-of-logtail-arg1
-                       bvchop-plus-times-expt-logtail)
-           )))
+                       bvchop-plus-times-expt-logtail))))
 
 (defthm logapp-less-than-alt
   (implies (and (natp lowsize)
@@ -342,7 +323,7 @@
                                (< (bvchop lowsize x)
                                   (bvchop lowsize lowval))))))))
   :hints (("Goal" :use ((:instance BVCAT-NUMERIC-BOUND (k (EXPT 2 (+ LOWSIZE HIGHSIZE))))
-                        (:instance <-of-bvcat-alt-helper))
+                        <-of-bvcat-alt-helper)
            :in-theory (e/d (UNSIGNED-BYTE-P)(<-OF-BVCAT <-of-bvcat-alt-helper)))))
 
 (defthm bvlt-of-bvcat-arg3
@@ -355,10 +336,8 @@
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize k y)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (<-becomes-bvlt <-becomes-bvlt-alt
-;                                                  <-of-bvmult-hack ;bozo
-                                                  <-of-bvplus-becomes-bvlt-arg1
-                                                  <-of-bvplus-becomes-bvlt-arg2)))))
+                                  (<-of-bvplus-becomes-bvlt-arg1
+                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
 ;dangerous since we have a rule to take out the bvchop
 (defthmd bvlt-of-bvcat-trim-gen
@@ -446,16 +425,6 @@
                         (BVCAT (+ -1 HIGHSIZE) HIGHVAL LOWSIZE LOWVAL)
                         X)))
   :hints (("Goal" :in-theory (enable bvlt))))
-
-;move
-(defthm not-<-of-slice-and-slice-same-low-and-val
-  (implies (and (<= high1 high2)
-                (natp high1)
-                (natp high2))
-           (not (< (slice high2 low x)
-                   (slice high1 low x))))
-  :hints (("Goal" :cases ((<= low high1))
-           :in-theory (enable slice))))
 
 (defthm not-bvlt-of-slice-and-slice-narrower
   (implies (and (<= high2 high1)

@@ -79,7 +79,7 @@
            (equal (getbit 1 (+ 2 x))
                   (bitnot (getbit 1 x))))
   :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (slice-becomes-getbit
+                                  (
                                    bvchop-1-becomes-getbit
                                    bvchop-of-logtail-becomes-slice)))))
 
@@ -103,8 +103,6 @@
                              ) (getbit-when-equal-of-constant-and-bvchop-constant-version
                                 bvchop-lognot-bvchop
                                 bvchop-1-becomes-getbit
-                                slice-becomes-getbit
-                                GETBIT-TYPE
                                 UNSIGNED-BYTE-P-OF-GETBIT)))))
 
 ;fixme redo things to go to bitnot and bitxor and redo rules to trigger on those?

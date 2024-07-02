@@ -1,7 +1,7 @@
 ; Verfication of AES-128 (the regular version from bouncycastle)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,9 @@
 
 ;; This file deals with the bouncycastle version of AES that is neither the
 ;; "Light" one nor the "Fast" one.
+
+;; This version of the proof bit-blasts the variables.
+;; See also aes-128-encrypt-regular-and-spec-alt.lisp.
 
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/axe/jvm/unroll-java-code" :dir :system :ttags :all)
@@ -54,5 +57,4 @@
 ;; Prove equivalence of unrolled code and spec:
 (prove-equivalence *aes-128-encrypt-regular-dag*
                    *aes-128-encrypt-spec-dag*
-                   :types (bit-types-for-vars (append (make-bit-var-list-for-bytes *key-byte-count* 'key)
-                                                      (make-bit-var-list-for-bytes 16 'in))))
+                   :types :bits)

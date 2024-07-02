@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -500,6 +500,10 @@
 ; See acl2-fns.lisp for a fix to user-homedir-pathname for some versions of
 ; GCL.
 
+; The following form is executed by LP, but we also need it to be evaluated
+; during the build.
+(setq *read-default-float-format* 'double-float)
+
 ; See the function print-number-base-16-upcase-digits for an explanation of the
 ; following code, which pushes a feature when that function can be needed.
 (let ((*print-base* 16) (*print-case* :downcase))
@@ -699,6 +703,104 @@
 #+ccl
 (declaim (notinline memq))
 
+; Fix CMUCL bug through April 2024.
+#+cmucl
+(unless (let ((c #.(code-char 181)))
+          (eql (char-upcase c) c))
+
+(defvar *old-char-upcase* (symbol-function 'char-upcase))
+
+(defvar *old-string-upcase* (symbol-function 'string-upcase))
+
+(defun char-upcase-cmucl (x)
+
+; CMUCL as of April 2024 (and perhaps all earlier versions) fails the check for
+; x = 181 that when ch = (code-char x) and (lower-case-p ch), then
+; (char-downcase (char-upcase ch)) = ch.  For justification of that property
+; and the axiom stating it (char-upcase/downcase-non-standard-inverses), see
+; comments in the partial encapsulate introducing char-downcase-non-standard
+; and other xxx-non-standard functions on characters.  If that failure goes
+; away in future versions of CMUCL then we should stop redefining code-char in
+; CMUCL to cause an error as below, and instead change the relevant check in
+; acl2-check.lisp (search there for "char-upcase-cmucl" to print a useful error
+; when encountering a violation for code 181 in CMUCL.
+
+  (declare (type character x)
+           (special *old-char-upcase*))
+  (if (eql x #.(code-char 181))
+      x ; (error "(char-upcase (code-char 181)) is not supported in CMUCL.")
+    (funcall *old-char-upcase* x)))
+
+(ext:without-package-locks
+(defun char-upcase (x)
+  (char-upcase-cmucl x)))
+
+(defun string-upcase-cmucl (x &key (start 0) (end nil))
+  (declare (special *old-string-upcase*))
+  (let* ((x (string x))
+         (p (position #.(code-char 181) x :start start :end end)))
+    (if p
+        (substitute #.(code-char 181)
+                    #.(char-upcase (code-char 181))
+                    x
+                    :start start :end end)
+      (funcall *old-string-upcase* x :start start :end end))))
+
+(ext:without-package-locks
+(defun string-upcase (x &key (start 0) (end nil))
+  (string-upcase-cmucl x :start start :end end)))
+
+)
+
+; Fix SBCL bug, fixed in SBCL on 6/2/2024.
+#+sbcl
+(unless (= (char-code (char (string-downcase (coerce (list #.(code-char 192))
+                                                     'string))
+                            0))
+           (char-code (char-downcase #.(code-char 192))))
+
+; See https://bugs.launchpad.net/sbcl/+bug/2067841 for explanation of an SBCL
+; bug (fixed on June 2, 2024) necessitating a fix such as this one.
+; In short, the following two should be equal, but were not.
+
+;   (let ((s (string-downcase (coerce (list (code-char 192)) 'string))))
+;     (char-code (char s 0))) ; 224
+
+;   (char-code (char-downcase (code-char 192))) ; 192
+
+; For another example: The middle character of
+; (string-downcase (string-upcase 
+;                   (coerce (list #\7 (code-char 224) #\A) 'string)))
+; should be a lower-case a with a "grave" (`) accent, but without this fix it
+; was upper-case.
+
+(defvar *old-string-downcase* (symbol-function 'string-downcase))
+
+(defun string-downcase-sbcl (x &key (start 0) (end nil))
+  (declare (special *old-string-downcase*))
+  (let* ((x (string x))
+         (p (position #.(code-char 192) x :start start :end end)))
+    (if p
+        (if end
+            (concatenate 'string
+                         (subseq x 0 p)
+                         (coerce (loop for i from p to (1- end)
+                                       collect (char-downcase (char x i)))
+                                 'string)
+                         (subseq x end (length x)))
+          (concatenate 'string
+                       (subseq x 0 p)
+                       (coerce (loop for i from p to (1- (length x))
+                                     collect (char-downcase (char x i)))
+                               'string)))
+      (funcall *old-string-downcase* x :start start :end end))))
+
+(sb-ext:without-package-locks
+(defun string-downcase (x &key (start 0) (end nil))
+  (string-downcase-sbcl x :start start :end end)))
+
+)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -859,6 +961,41 @@
                           (values t))
                 acl2::large-consp))
 
+(defun acl2::elided-defconst-index (term)
+
+; First, here is a pleasant definition, but since case-match isn't yet defined,
+; we can't use it here.
+
+; (case-match term
+;   (('cadr (acl2::*elided-defconst* n))
+;    n)
+;   (& nil))
+
+  (and (consp term)
+       (consp (cdr term))
+       (null (cddr term))
+       (eq (car term) 'cadr)
+       (let ((x (cadr term)))
+         (and (consp x)
+              (consp (cdr x))
+              (null (cddr x))
+              (eq (car x) (symbol-value 'acl2::*elided-defconst*))
+              (cadr x)))))
+
+(defvar acl2::*hcomp-elided-defconst-alist* nil)
+
+(defun acl2::elided-defconst (name index)
+  (let ((pair (pop acl2::*hcomp-elided-defconst-alist*)))
+    (if (and (consp pair)
+             (eql (car pair) index)
+             (eq (cadr pair) name))
+        (cddr pair)
+      (error "An unexpected error was encountered when trying to obtain a ~%~
+              value for the constant, ~s.  If you have not deliberately ~%~
+              messed with write-dates of files, please report this error to ~%~
+              the ACL2 implementors."
+             name))))
+
 (defmacro acl2::defconst (name term &rest rst)
   (declare (ignore rst))
   (let ((disc (gensym)))
@@ -910,14 +1047,20 @@
 ; the second check, which uses that term's value) could be intractable.  For a
 ; concrete example, see :doc note-7-2.
 
-                        (or (let ((disc ,disc)
-                                  (qterm ',term))
+; If (elided-defconst-index term) holds, then the intended term's value and its
+; quotation differ only in the QUOTE wrapper, so we avoid checking the equality
+; of quotations.
 
-; We check that acl2::large-consp to avoid a boot-strapping problem in GCL.
+                        (or ,@(and (not (acl2::elided-defconst-index term))
+                                   `((let ((disc ,disc)
+                                           (qterm ',term))
 
-                              (and (not (and (fboundp 'acl2::large-consp)
-                                             (acl2::large-consp qterm)))
-                                   (equal (car (cdr disc)) qterm)))
+; We check (fboundp 'acl2::large-consp) to avoid early failures in the
+; boot-strap, before large-consp is defined.
+
+                                       (and (fboundp 'acl2::large-consp)
+                                            (not (acl2::large-consp qterm))
+                                            (equal (car (cdr disc)) qterm)))))
                             (equal (cdr (cdr ,disc)) ,term)))
                    (symbol-value ',name))
                   (t (acl2::qfuncall acl2::defconst-redeclare-error ',name))))
@@ -936,11 +1079,22 @@
 ; but you never know!)  We may want to enforce that this code is only executed
 ; during the boot-strap; see the Essay on Guard Checking.
 
-          (t (let* ((val ,term)
-                    (d (list* 'acl2::defconst ',term val)))
-               (setf (get ',name 'acl2::redundant-raw-lisp-discriminator)
-                     d)
-               (cdr (cdr d)))))))))
+          (t
+           ,(let ((index (acl2::elided-defconst-index term)))
+              (if (null index) ; normal case
+                  `(let* ((val ,term)
+                          (d (list* 'acl2::defconst ',term val)))
+                     (setf (get ',name 'acl2::redundant-raw-lisp-discriminator)
+                           d)
+                     (cdr (cdr d)))
+                `(let* ((qval (acl2::elided-defconst ',name ,index))
+                        (val (progn (assert (and (consp qval)
+                                                 (eq (car qval) 'quote)))
+                                    (cadr qval)))
+                        (d (list* 'acl2::defconst qval val)))
+                   (setf (get ',name 'acl2::redundant-raw-lisp-discriminator)
+                         d)
+                   (cdr (cdr d)))))))))))
 
 ; We now get our imports for package ACL2, putting them into the
 ; variable acl2::*common-lisp-symbols-from-main-lisp-package*.
@@ -980,6 +1134,7 @@
     #+acl2-par "futures-raw"
     #+acl2-par "parallel-raw"
     "memoize-raw"
+    "float-a"
     "translate"
     "type-set-a"
     "linear-a"
@@ -1000,10 +1155,12 @@
     "proof-builder-a"
     "defthm"
     "other-events"
+    "float-b"
     "ld"
     "proof-builder-b"
     "apply-raw"
     "interface-raw"
+    "float-raw"
     "defpkgs"
     "boot-strap-pass-2-a"
     "apply-prim"
@@ -1380,6 +1537,46 @@ ACL2 from scratch.")
 
   (progn status-p status))
 
+#+lispworks
+(defun my-debugger-wrapper (func condition)
+  (declare (ignore func condition))
+  (exit-lisp 1))
+
+(defmacro exit-with-build-error (str &rest args)
+
+; This macro may be used when intending to cause an error that aborts an ACL2
+; build.  It needs to be defined after exit-lisp is defined.  It's not ever
+; critical to use this, but it's polite when the error message is likely to be
+; meaningful to the user; for a low-level ACL2 implementation error, the user
+; would just pass along to the ACL2 implementors whatever was printed, and that
+; would likely suffice.
+
+; Causing such an error is straightforward for Allegro CL, CCL, and GCL, but as
+; of this writing (3/2024) there are issues for the others.  For SBCL and
+; CMUCL, errors are signalled by printing the source error form to the
+; terminal, not by printing the error message.  In LispWorks, an error does
+; print as one might expect, but below that one also gets a potentially huge
+; amount of output with debugging information that is likely not relevant when
+; ACL2 deliberately causes a build-time error.
+
+  (let ((prefix "~%***** ERROR ******~%ACL2 build error: ")
+        (suffix "~%******************~%"))
+    (declare (ignorable prefix suffix))
+    #+(or sbcl cmucl)
+    `(progn (format t (concatenate 'string ,prefix ,str ,suffix) ,@args)
+            (exit-lisp 1))
+    #+lispworks
+    `(dbg:with-debugger-wrapper
+      'my-debugger-wrapper
+      (progn (format t (concatenate 'string ,prefix ,str ,suffix) ,@args)
+
+; The following error will probably not print anything, but we need the error
+; in order to get Lisp to quit.
+
+             (error "Build error encountered")))
+    #-(or sbcl cmucl lispworks)
+    `(error (concatenate 'string ,prefix ,str ,suffix) ,@args)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                CHECKS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1702,6 +1899,126 @@ ACL2 from scratch.")
        (load acl2-fns-compiled)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                          FP SUPPORT CHECKS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See the Essay on Support for Floating-point (double-float, df) Operations in
+; ACL2.
+
+(or (member :ieee-floating-point *features*)
+    (let ((x (getenv$-raw "ACL2_FP_OK")))
+      (and x
+           (not (equal x ""))))
+
+; Quoting
+; http://www.lispworks.com/documentation/lw71/CLHS/Body/v_featur.htm
+
+; :ieee-floating-point
+;    If present, indicates that the implementation purports to conform to the
+;    requirements of IEEE Standard for Binary Floating-Point Arithmetic.
+
+; Note regarding addition of :ieee-floating-point to CCL.  The page
+; https://github.com/Clozure/ccl/pull/384
+; says:  "xrme merged commit 110c230 into Clozure:master  on Sep 27, 2021".
+
+    (error "This Lisp may be unsuitable for ACL2, because it does not ~%~
+            specify support for IEEE floating point, that is, feature ~%~
+            :ieee-floating-point is missing from *features*.  This may ~%~
+            be easily fixed with an environment variable; see :DOC fp."))
+
+(or (equal (rational (float 0 0.0D0))
+           0)
+
+; See comments in constrained-to-df-idempotent and constrained-to-df-0.
+
+    (error "This Lisp is unsuitable for ACL2, because it failed~%~
+            the sanity check that ~s."
+           '(equal (rational (float 0 0.0D0))
+                   0)))
+
+(or (equal (float-radix 1.0d0) 2)
+    (error "This Lisp is unsuitable for ACL2, because it failed~%~
+            the sanity check that ~s."
+           '(equal (float-radix 1.0d0) 2)))
+
+(defun break-on-overflow-and-nan ()
+
+; In GCL at least, the effects of this function may not take effect unless this
+; form is executed at startup.  So we call it not only during the build, but
+; also in the code for lp conditioned on (not *lp-ever-entered-p*).  Thanks to
+; Camm Maguire for suggesting that we specify an effect for every legal keyword
+; in GCL, in case the defaults change.  We're applying that principle here for
+; other Lisps too.
+
+; We aren't concerned about underflow or inexact results.
+
+; It probably isn't important to set the rounding-mode to :nearest, as this is
+; probably the default anyhow.  But we do so just to tie things down a bit,
+; since that's what IEEE specifies that a language should do by default (see
+; documentation in the partial-encapsulate that introduces df-round).
+
+  #+gcl
+  (fpe:break-on-floating-point-exceptions :division-by-zero t
+                                          :floating-point-invalid-operation t
+                                          :floating-point-overflow t
+                                          :floating-point-underflow nil
+                                          :floating-point-inexact nil)
+  #+ccl
+  (ccl::set-fpu-mode :rounding-mode :nearest
+                     :overflow t
+                     :underflow nil
+                     :division-by-zero t
+                     :invalid t
+                     :inexact nil)
+
+  #+sbcl
+  (sb-int:set-floating-point-modes :traps
+                                   '(:overflow :invalid :divide-by-zero)
+                                   :rounding-mode :nearest)
+
+  #+cmucl
+  (ext:set-floating-point-modes :traps
+                                '(:overflow :invalid :divide-by-zero)
+                                :rounding-mode :nearest)
+
+; LispWorks and Allegro CL seem to have no mechanism like those above, so we
+; define a wrapper elsewhere, df-signal?, that is a no-op except in those two
+; Lisps.
+
+  nil)
+
+(break-on-overflow-and-nan)
+
+(unless
+
+; See the Essay on Support for Floating-point (double-float, df) Operations in
+; ACL2, specifically the section "On overflow and soundness".
+
+    (and
+
+; Check that floating-point overflow produces a double-float (presumably an
+; infinity) or an error, at least in one overflow case.
+
+     (let ((*my-most-positive-double-float*
+            most-positive-double-float))
+
+; The reason we let-bind a special variable here is that otherwise, SBCL
+; issues a style-warning, "Lisp error during constant folding".
+
+       (declare (special *my-most-positive-double-float*))
+       (typep (handler-case
+               (* *my-most-positive-double-float*
+                  *my-most-positive-double-float*)
+               (error () 0.0d0))
+              'double-float))
+     #+sbcl
+     (member :overflow
+             (cadr (member :traps
+                           (sb-int:get-floating-point-modes)))))
+  (error "This Lisp is unsuitable for ACL2, because it failed ~%a check that ~
+          floating-point overflow causes an error."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                           ACL2-READTABLE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1802,6 +2119,12 @@ which is saved just in case it's needed later.")
    #\f
    #'sharp-f-read))
 
+(defun define-sharp-d ()
+  (set-new-dispatch-macro-character
+   #\#
+   #\d
+   #'sharp-d-read))
+
 (defvar *old-character-reader*
   (get-dispatch-macro-character #\# #\\))
 
@@ -1857,7 +2180,8 @@ which is saved just in case it's needed later.")
 ;     (define-sharp-atsign) ; see interface-raw.lisp
       (define-sharp-bang)
       (define-sharp-u)
-      (define-sharp-f))
+      (define-sharp-f)
+      (define-sharp-d))
 
 ;  Keep control of character reader.  However, we do not need to keep such
 ;  control when reading in a .fas file for CLISP, and in fact, the set-theory
@@ -1888,6 +2212,7 @@ which is saved just in case it's needed later.")
           (define-sharp-bang)
           (define-sharp-u)
           (define-sharp-f)
+          (define-sharp-d)
           (set-dispatch-macro-character
            #\#
            #\\

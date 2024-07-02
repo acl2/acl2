@@ -39,7 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc builtin-defaxioms/defthms
-  :parents (built-ins)
+  :parents (builtins)
   :short "Built-in axioms and theorems.")
 
 (defxdoc builtin-defaxioms/defthms-by-rule-classes

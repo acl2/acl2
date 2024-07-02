@@ -127,6 +127,7 @@
    spec-override-var-bindings
    override-vars
    override-var-bindings
+   override-var-masks
    x-override-vars
    input-vars
    input-var-bindings
@@ -148,8 +149,11 @@
    lemma-nonlocal
    lemma-defthm
    lemma-args
+   lemma-no-run
+   lemma-custom-concl
    lemma-use-ideal
    lemma-use-svtv-spec
+   lemma-svtv-run-args
    integerp-separate
    integerp-defthm
    integerp-args
@@ -178,7 +182,8 @@
       (cons `(cons ',name ,name)
             (svtv-genthm-var-alist-termlist (cdr vars))))))
 
-(defun svtv-genthm-override-test-alist (override-valnames triple-val-alist triples-name)
+(defun svtv-genthm-override-test-alist (override-valnames override-var-masks
+                                                          triple-val-alist triples-name)
   (b* (((when (Atom override-valnames)) nil)
        (valvar (car override-valnames))
        (trip (cdr (hons-get valvar triple-val-alist)))
@@ -186,9 +191,13 @@
                           (list triples-name) (car override-valnames)))
        ((svtv-override-triple trip))
        ((unless (svex-case trip.test :var))
-        (svtv-genthm-override-test-alist (cdr override-valnames) triple-val-alist triples-name)))
-    (cons (cons (svex-var->name trip.test) -1)
-          (svtv-genthm-override-test-alist (cdr override-valnames) triple-val-alist triples-name))))
+        (svtv-genthm-override-test-alist (cdr override-valnames)
+                                         override-var-masks triple-val-alist triples-name)))
+    (cons (cons (svex-var->name trip.test)
+                (or (cdr (hons-assoc-equal valvar override-var-masks))
+                    -1))
+          (svtv-genthm-override-test-alist (cdr override-valnames)
+                                           override-var-masks triple-val-alist triples-name))))
 
 (defun svtv-genthm-integerp-conclusions-aux (outputs)
   (if (Atom outputs)
@@ -238,68 +247,73 @@
 (defun svtv-genthm-initial-override-lemma (x)
   (declare (Xargs :mode :program))
   (b* (((svtv-generalized-thm x))
-       (template '(progn
-                    (<defthm> <name>-override-lemma
-                              (implies <hyp>
-                                       (b* ((env (append <input-bindings>
-                                                         <input-vars>
-                                                         <override-tests>
-                                                         <override-bindings>
-                                                         <override-vals>
-                                                         <override-xes>))
-                                            (run (:@ (and (not :use-ideal)
-                                                          (not :use-svtv-spec))
-                                                  (svtv-run (<svtv>)
-                                                            env
-                                                            :include
-                                                            '<outputs-list>))
-                                                 (:@ (or :use-ideal :use-svtv-spec)
-                                                  (svex-env-reduce '<outputs-list>
-                                                                   (svtv-spec-run ((:@ :use-ideal <ideal>)
-                                                                                   (:@ :use-svtv-spec <svtv-spec>))
-                                                                                  env))))
-                                            ((svassocs <outputs>) run))
-                                         (progn$
-                                          <run-before-concl>
-                                          (and (:@ (and (not :no-integerp) (not :integerp-separate))
-                                                (or (and <integerp-concls>)
-                                                    (progn$
-                                                     (cw "*** Failed: Some output variables contained Xes/Zs:~%")
-                                                     (svtv-print-alist-readable
-                                                      (svex-env-extract-non-2vecs
-                                                       '<outputs-list> run))
-                                                     nil)))
-                                               <concl>))))
-                              <args>)
-                    (:@ :integerp-separate
-                     (<integerp-defthm> <name>-integerp-lemma
-                                        (implies <hyp>
-                                                 (b* ((env (append <input-bindings>
-                                                                   <input-vars>
-                                                                   <override-tests>
-                                                                   <override-bindings>
-                                                                   <override-vals>
-                                                                   <override-xes>))
-                                                      (run (:@ (and (not :use-ideal)
-                                                                    (not :use-svtv-spec))
-                                                            (svtv-run (<svtv>)
-                                                                      env
-                                                                      :include
-                                                                      '<outputs-list>))
-                                                           (:@ (or :use-ideal :use-svtv-spec)
-                                                            (svex-env-reduce '<outputs-list>
-                                                                             (svtv-spec-run ((:@ :use-ideal <ideal>)
-                                                                                             (:@ :use-svtv-spec <svtv-spec>))
-                                                                                            env))))
-                                                      ((svassocs <outputs>) run))
-                                                   (progn$
-                                                    <integerp-run-before-concl>
-                                                    (and <integerp-concls>))))
-                                        (:@ :default-integerp-args
-                                         :hints (("goal" :use <name>-override-lemma
-                                                  :in-theory (disable <name>-override-lemma))))
-                                        (:@ (:not :default-integerp-args)
-                                         <integerp-args>))))))
+       (template
+        '(progn
+           (<defthm>
+            <name>-override-lemma
+            (implies <hyp>
+                     (b* ((env (append <input-bindings>
+                                       <input-vars>
+                                       <override-tests>
+                                       <override-bindings>
+                                       <override-vals>
+                                       <override-xes>))
+                          (:@ (not :lemma-no-run)
+                              (run (:@ (and (not :use-ideal)
+                                            (not :use-svtv-spec))
+                                       (svtv-run (<svtv>)
+                                                 env
+                                                 :include
+                                                 '<outputs-list>
+                                                 <lemma-svtv-run-args>))
+                                   (:@ (or :use-ideal :use-svtv-spec)
+                                       (svex-env-reduce '<outputs-list>
+                                                        (svtv-spec-run ((:@ :use-ideal <ideal>)
+                                                                        (:@ :use-svtv-spec <svtv-spec>))
+                                                                       env))))
+                              ((svassocs <outputs>) run)))
+                       (progn$
+                        <run-before-concl>
+                        (and (:@ (and (not :no-integerp) (not :integerp-separate))
+                                 (or (and <integerp-concls>)
+                                     (progn$
+                                      (cw "*** Failed: Some output variables contained Xes/Zs:~%")
+                                      (svtv-print-alist-readable
+                                       (svex-env-extract-non-2vecs
+                                        '<outputs-list> run))
+                                      nil)))
+                             <concl>))))
+            <args>)
+           (:@ :integerp-separate
+               (<integerp-defthm>
+                <name>-integerp-lemma
+                (implies <hyp>
+                         (b* ((env (append <input-bindings>
+                                           <input-vars>
+                                           <override-tests>
+                                           <override-bindings>
+                                           <override-vals>
+                                           <override-xes>))
+                              (run (:@ (and (not :use-ideal)
+                                            (not :use-svtv-spec))
+                                       (svtv-run (<svtv>)
+                                                 env
+                                                 :include
+                                                 '<outputs-list>))
+                                   (:@ (or :use-ideal :use-svtv-spec)
+                                       (svex-env-reduce '<outputs-list>
+                                                        (svtv-spec-run ((:@ :use-ideal <ideal>)
+                                                                        (:@ :use-svtv-spec <svtv-spec>))
+                                                                       env))))
+                              ((svassocs <outputs>) run))
+                           (progn$
+                            <integerp-run-before-concl>
+                            (and <integerp-concls>))))
+                (:@ :default-integerp-args
+                    :hints (("goal" :use <name>-override-lemma
+                             :in-theory (disable <name>-override-lemma))))
+                (:@ (not :default-integerp-args)
+                    <integerp-args>))))))
     (acl2::template-subst
      template
      :atom-alist `((<defthm> . ,x.lemma-defthm)
@@ -308,7 +322,7 @@
                    (<svtv> . ,x.svtv)
                    (<svtv-spec> . ,x.svtv-spec)
                    (<ideal> . ,x.ideal)
-                   (<concl> . ,x.concl)
+                   (<concl> . ,(or x.lemma-custom-concl x.concl))
                    (<input-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings)))
                    (<input-vars> . (list . ,(svtv-genthm-var-alist-termlist x.input-vars)))
                    (<override-tests> . ',(svtv-genthm-override-test-alist
@@ -317,6 +331,7 @@
                                                   x.spec-override-vars
                                                   x.override-vars
                                                   x.x-override-vars)
+                                          x.override-var-masks
                                           x.triple-val-alist x.triples-name))
                    (<override-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist
                                                     (append x.spec-override-var-bindings
@@ -331,9 +346,11 @@
                      (<outputs> . ,x.output-vars)
                      (<integerp-concls> . ,(if x.no-integerp nil (svtv-genthm-integerp-conclusions x)))
                      (<args> . ,x.lemma-args)
-                     (<integerp-args> . ,x.integerp-args))
+                     (<integerp-args> . ,x.integerp-args)
+                     (<lemma-svtv-run-args> . ,x.lemma-svtv-run-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :features (append (and x.lemma-use-ideal '(:use-ideal))
+                       (and x.lemma-no-run '(:lemma-no-run))
                        (and x.lemma-use-svtv-spec '(:use-svtv-spec))
                        (and x.no-integerp '(:no-integerp))
                        (and x.integerp-separate '(:integerp-separate))
@@ -444,7 +461,7 @@
 
 ;; In the context of these svtv-genthm functions, triples is an alist mapping
 ;; value variables to reference variables, derived from the triplemaplist.
-(defun svtv-genthm-override-var-instantiation (override-vars triple-val-alist triples-name run)
+(defun svtv-genthm-override-var-instantiation (override-vars override-var-masks triple-val-alist triples-name run)
   (b* (((when (Atom override-vars)) nil)
        (valvar (car override-vars))
        (trip (cdr (hons-get valvar triple-val-alist)))
@@ -454,9 +471,13 @@
        ((unless refvar)
         (er hard? 'def-svtv-generalized-thm
             "Override variable ~x0 is not associated with an output variable --- need to either add an SVTV output for the same signal at the same time, or else put it in ~x1/~x2 instead of ~x3/~x4"
-            valvar :spec-override-vars :spec-override-var-bindings :override-vars :override-var-bindings)))
-    (cons `(,valvar (svex-env-lookup ',refvar ,run))
-          (svtv-genthm-override-var-instantiation (cdr override-vars) triple-val-alist triples-name run))))
+            valvar :spec-override-vars :spec-override-var-bindings :override-vars :override-var-bindings))
+       (valmask? (cdr (hons-assoc-equal valvar override-var-masks))))
+    (cons
+     (if valmask?
+         `(,valvar (4vec-mask-to-zero ,valmask? (svex-env-lookup ',refvar ,run)))
+       `(,valvar (svex-env-lookup ',refvar ,run)))
+     (svtv-genthm-override-var-instantiation (cdr override-vars) override-var-masks triple-val-alist triples-name run))))
 
 (defun svtv-genthm-spec-override-var-instantiation (override-vars)
   (b* (((when (Atom override-vars)) nil)
@@ -506,7 +527,9 @@
                             <spec-override-svassocs>) env)
                  (run <run>
                       )
-                 ((svassocs <override-svassocs>) run))
+                 ((svassocs <override-svassocs>) run)
+                 <override-var-mask-binds>
+                 )
               (implies (and <user-final-hyps>
                             <input-binding-hyp>
                             <override-binding-hyp>
@@ -515,7 +538,7 @@
                             (svtv-override-triplemaplist-envs-match
                              (<triplemaps>) env <const-overrides>)
                             (:@ (or :use-ideal :use-svtv-spec)
-                             (svarlist-override-p (svex-envlist-all-keys base-ins) nil)))
+                             (svarlist-nonoverride-p (svex-envlist-all-keys base-ins) :test)))
                        (b* (((svassocs <outputs>) run))
                          <concl>)))
             <args>
@@ -537,6 +560,7 @@
                                      (spec-initst initst))
                                     (pipe-env (b* ((?run <run>)
                                                    ((svassocs <override-inst-svassocs>) run)
+                                                   <override-var-mask-binds>
                                                    ((svassocs <spec-override-inst-svassocs>
                                                               <input-unbound-svassocs>) env))
                                                 (APPEND <input-bindings>
@@ -592,6 +616,7 @@
                                       (alist-keys x.spec-override-var-bindings)
                                       x.spec-override-vars
                                       x.override-vars)
+                              x.override-var-masks
                               x.triple-val-alist x.triples-name))
        (<override-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist
                                         (append x.spec-override-var-bindings x.override-var-bindings))))
@@ -605,6 +630,8 @@
        (<input-unbound-svassocs> . ,(svtv-genthm-qmark-svassocs x.input-vars))
        (<override-svassocs> . ,(svtv-genthm-override-svassocs (append x.override-vars (alist-keys x.override-var-bindings))
                                                               x.triple-val-alist x.triples-name))
+       (<override-var-mask-binds> . ,(loop$ for x in x.override-var-masks collect
+                                            `(,(car x) (4vec-mask-to-zero ,(cdr x) ,(car x)))))
        (<override-inst-svassocs> . ,(svtv-genthm-override-svassocs x.override-vars
                                                               x.triple-val-alist x.triples-name))
        (<spec-override-svassocs> . ,(svtv-genthm-qmark-svassocs (append x.spec-override-vars (alist-keys x.spec-override-var-bindings))))
@@ -615,7 +642,7 @@
        (<input-binding-hyp> .  ,(svtv-genthm-input-binding-hyp-termlist x.input-var-bindings))
        (<override-binding-hyp> .  ,(svtv-genthm-input-binding-hyp-termlist (append x.spec-override-var-bindings
                                                                                    x.override-var-bindings)))
-       (<override-var-instantiation> . ,(svtv-genthm-override-var-instantiation x.override-vars x.triple-val-alist x.triples-name run))
+       (<override-var-instantiation> . ,(svtv-genthm-override-var-instantiation x.override-vars x.override-var-masks x.triple-val-alist x.triples-name run))
        (<spec-override-var-instantiation> . ,(svtv-genthm-spec-override-var-instantiation x.spec-override-vars))
        (<input-var-instantiation> . ,(svtv-genthm-input-var-instantiation x.input-vars))
        (<outputs> . ,x.output-vars)
@@ -639,15 +666,19 @@
 
 (defun svtv-generalized-thm-events (x)
   (b* (((svtv-generalized-thm x))
+       ((acl2::with-fast x.triple-val-alist))
        (err (svtv-genthm-error x))
        ((when err) (er hard? `(def-svtv-generalized-thm ,x.name) "Error: ~@0" err)))
-    `(defsection ,x.name
-       ,@(and (not x.no-lemmas)
-              (let ((lemma (svtv-genthm-initial-override-lemma x)))
-                (if x.lemma-nonlocal
-                    `(,lemma)
-                  `((local ,lemma)))))
-       ,(svtv-genthm-final-thm x))))
+    `(with-output :off (event) :stack :push
+       (defsection ,x.name
+         (with-output :stack :pop
+           (progn ,@(and (not x.no-lemmas)
+                         (let ((lemma (svtv-genthm-initial-override-lemma x)))
+                           (if x.lemma-nonlocal
+                               `(,lemma)
+                             `((local ,lemma)))))))
+         (with-output :stack :pop ,(svtv-genthm-final-thm x))
+         (table svtv-generalized-thm-table ',x.name ',x)))))
 
 
 (defun svtv-genthm-override-svar-widths (override-input-widths triple-val-alist triples-name)
@@ -661,8 +692,63 @@
     (cons (cons (svtv-override-triple->refvar trip) width)
           (svtv-genthm-override-svar-widths (cdr override-input-widths) triple-val-alist triples-name))))
 
+(defun svtv-generalized-thm-input-vars (input-vars more-input-vars input-var-bindings exclude-input-vars
+                                                   svtv-val triplemaplist-val
+                                                   override-vars override-var-bindings)
+  (if (equal input-vars :all)
+      (b* ((all-ins (svtv->ins svtv-val))
+           (triplelist (svtv-override-triplemaplist-to-triplelist triplemaplist-val))
+           (conditional-triples (svtv-override-triplelist-keep-conditional triplelist))
+           (ovr-controls (svexlist-collect-vars (svtv-override-triplelist->tests conditional-triples)))
+           (conditional-ovr-signals (svexlist-collect-vars (svtv-override-triplelist->vals conditional-triples)))
+           ;; Conditional overrides/override tests should not be treated as input vars.
+           ;; Unconditional overrides should be treated as inputs UNLESS they're explicitly listed in the override-vars/override-var-bindings.
+           (ovr-signals (append override-vars
+                                (alist-keys override-var-bindings)
+                                conditional-ovr-signals))
+           (all-ins (acl2::hons-set-diff all-ins
+                                         (append ovr-controls ovr-signals
+                                                 (alist-keys input-var-bindings))))
+           (all-ins (remove-duplicates-equal all-ins)))
+        (set-difference-equal all-ins exclude-input-vars))
+    (set-difference-equal (append input-vars more-input-vars)
+                          exclude-input-vars)))
+                                        
 
-(defun svtv-generalized-thm-fn (name args state)
+(defun svtv-generalized-thm-auto-hyp (unsigned-byte-hyps
+                                      unsigned-byte-excludes
+                                      env-val-widths-hyp
+                                      ;; including :all and more- but not -bindings
+                                      input-vars override-vars spec-override-vars
+
+                                      triplemaplist
+                                      triple-val-alist
+                                      svtv-val)
+  (declare (xargs :mode :program))
+  (cond (unsigned-byte-hyps
+         (b* ((inmasks (svtv->inmasks svtv-val))
+              (inputs (acl2::hons-set-diff (append input-vars override-vars spec-override-vars)
+                                           unsigned-byte-excludes))
+              (masks (acl2::fal-extract inputs inmasks)))
+           `(and . ,(svtv-unsigned-byte-hyps masks))))
+        (env-val-widths-hyp
+         (b* ((inmasks (svtv->inmasks svtv-val))
+              (input-masks (acl2::fal-extract (append input-vars spec-override-vars) inmasks))
+              (override-masks (acl2::fal-extract override-vars inmasks))
+              (in-widths (svtv-svar-widths input-masks))
+              (override-widths (svtv-genthm-override-svar-widths (svtv-svar-widths override-masks) triple-val-alist triplemaplist))
+              (in-hyp (if in-widths
+                          `(svex-env-val-widths-p ',in-widths env)
+                        t))
+              (override-hyp (if override-widths
+                                `(svex-env-val-widths-p ',override-widths run)
+                              t)))
+           (svtv-genthm-conjoin-hyps in-hyp override-hyp)))
+        (t t)))
+
+
+(defun parse-svtv-generalized-thm (name args state)
+  
   (declare (xargs :stobjs state :mode :program))
   (b* ((defaults (table-alist 'svtv-generalized-thm-defaults (w state)))
        (ctx `(def-svtv-generalized-thm ,name))
@@ -682,10 +768,12 @@
          more-override-var-bindings
          override-vars
          more-override-vars
+         override-var-masks
          x-override-vars
          more-x-override-vars
          input-vars
          more-input-vars
+         exclude-input-vars ;; useful especially when :inputs :all is selected
          input-var-bindings
          more-input-var-bindings
          output-vars
@@ -693,6 +781,7 @@
          output-parts
          enable
          unsigned-byte-hyps
+         unsigned-byte-excludes
          env-val-widths-hyp
          (hyp 't)
          (more-hyp 't)
@@ -701,9 +790,12 @@
          (run-before-concl 'nil)
          (lemma-defthm 'fgl::def-fgl-thm)
          lemma-args
+         lemma-custom-concl
+         lemma-no-run
          lemma-nonlocal
          lemma-use-ideal
          lemma-use-svtv-spec
+         lemma-svtv-run-args
          no-lemmas
          no-integerp
          integerp-separate
@@ -723,9 +815,9 @@
        ((mv err svtv-val) (magic-ev-fncall svtv nil state t t))
        ((when err) (er soft ctx "Couldn't evaluate ~x0" (list svtv)))
        (triplemaplist (acl2::template-subst
-                 '<svtv>-triplemaplist
-                 :str-alist `(("<SVTV>" . ,(symbol-name svtv)))
-                 :pkg-sym pkg-sym))
+                       '<svtv>-triplemaplist
+                       :str-alist `(("<SVTV>" . ,(symbol-name svtv)))
+                       :pkg-sym pkg-sym))
        ((mv err triplemaplist-val) (magic-ev-fncall triplemaplist nil state t t))
        ((when err) (er soft ctx "Couldn't evaluate ~x0" (list triplemaplist)))
 
@@ -733,31 +825,44 @@
        (triple-val-alist (svtv-override-triplelist-val-alist triplelist))
        ((acl2::with-fast triple-val-alist))
 
+       ;; override-var-masks, checks and eval the mask value.
+       (- (and  override-var-masks
+                (or (alistp override-var-masks)
+                    (er hard? 'def-svtv-generalize-thm
+                        "override-var-masks should be an alist, but given: ~x0~%"
+                        override-var-masks))
+                (or (sv::svarlist-p (strip-cars override-var-masks))
+                    (er hard? 'def-svtv-generalize-thm
+                        "Keys in the override-var-masks should be variable names, but given ~x0~%"
+                        override-var-masks))))
+       (override-var-mask-vals (strip-cdrs override-var-masks))
+       ((mv err override-var-mask-vals state)
+        (svtv-genthm-translate-lst override-var-mask-vals ctx (w state) state))
+       ((when err) (er soft ctx "Couldn't translate override-var-mask-vals: ~@0~%" err))
+       ((mv err override-var-mask-vals) (acl2::magic-ev-lst override-var-mask-vals nil state t t))
+       ((when err) (er soft ctx "Couldn't evaluate override-var-mask-vals: ~@0~%" err))
+       (override-var-masks (pairlis$ (strip-cars override-var-masks)
+                                     override-var-mask-vals))
+       (- (and (or (integer-listp (strip-cdrs override-var-masks))
+                    (er hard? 'def-svtv-generalize-thm
+                        "Values in the override-var-masks should be integers, but given ~x0~%"
+                        override-var-masks))))
+       
+       
+       
        (spec-override-var-bindings (append spec-override-var-bindings more-spec-override-var-bindings))
        (spec-override-vars (append spec-override-vars more-spec-override-vars))
        (override-var-bindings (append override-var-bindings more-override-var-bindings))
-       (override-vars (append override-vars more-override-vars))
+       (override-vars (remove-duplicates
+                       (append override-vars more-override-vars (strip-cars override-var-masks))))
        (x-override-vars (append x-override-vars more-x-override-vars))
-       (output-vars (append output-vars more-output-vars))
+       (output-vars (append output-vars more-output-vars))   
 
        (input-var-bindings (append input-var-bindings more-input-var-bindings))
-       (input-vars (if (equal input-vars :all)
-                       (b* ((all-ins (svtv->ins svtv-val))
-                            (triplelist (svtv-override-triplemaplist-to-triplelist triplemaplist-val))
-                            (conditional-triples (svtv-override-triplelist-keep-conditional triplelist))
-                            (ovr-controls (svexlist-collect-vars (svtv-override-triplelist->tests conditional-triples)))
-                            (conditional-ovr-signals (svexlist-collect-vars (svtv-override-triplelist->vals conditional-triples)))
-                            ;; Conditional overrides/override tests should not be treated as input vars.
-                            ;; Unconditional overrides should be treated as inputs UNLESS they're explicitly listed in the override-vars/override-var-bindings.
-                            (ovr-signals (append override-vars
-                                                 (alist-keys override-var-bindings)
-                                                 conditional-ovr-signals))
-                            (all-ins (acl2::hons-set-diff all-ins
-                                                          (append ovr-controls ovr-signals
-                                                                  (alist-keys input-var-bindings))))
-                            (all-ins (remove-duplicates-equal all-ins)))
-                         all-ins)
-                     (append input-vars more-input-vars)))
+       (input-vars (svtv-generalized-thm-input-vars
+                    input-vars more-input-vars input-var-bindings exclude-input-vars
+                    svtv-val triplemaplist-val
+                    override-vars override-var-bindings))
        (dupes (acl2::hons-duplicates (append input-vars (alist-keys input-var-bindings)
                                              override-vars (alist-keys override-var-bindings)
                                              spec-override-vars (alist-keys spec-override-var-bindings))))
@@ -768,73 +873,73 @@
        (lemma-hyp (if (or env-val-widths-hyp
                           unsigned-byte-hyps)
                       (b* ((inmasks (svtv->inmasks svtv-val))
-                           (inputs (append input-vars override-vars spec-override-vars))
+                           (inputs (acl2::hons-set-diff (append input-vars override-vars spec-override-vars)
+                                                        unsigned-byte-excludes))
                            (masks (acl2::fal-extract inputs inmasks)))
                         `(and . ,(svtv-unsigned-byte-hyps masks)))
                     t))
-       (auto-final-hyp
-        (cond (unsigned-byte-hyps
-               (b* ((inmasks (svtv->inmasks svtv-val))
-                    (inputs (append input-vars override-vars spec-override-vars))
-                    (masks (acl2::fal-extract inputs inmasks)))
-                 `(and . ,(svtv-unsigned-byte-hyps masks))))
-              (env-val-widths-hyp
-               (b* ((inmasks (svtv->inmasks svtv-val))
-                    (input-masks (acl2::fal-extract (append input-vars spec-override-vars) inmasks))
-                    (override-masks (acl2::fal-extract override-vars inmasks))
-                    (in-widths (svtv-svar-widths input-masks))
-                    (override-widths (svtv-genthm-override-svar-widths (svtv-svar-widths override-masks) triple-val-alist triplemaplist))
-                    (in-hyp (if in-widths
-                                `(svex-env-val-widths-p ',in-widths env)
-                              t))
-                    (override-hyp (if override-widths
-                                      `(svex-env-val-widths-p ',override-widths run)
-                                    t)))
-                 (svtv-genthm-conjoin-hyps in-hyp override-hyp)))
-              (t t))))
+       (auto-final-hyp (svtv-generalized-thm-auto-hyp
+                        unsigned-byte-hyps
+                        unsigned-byte-excludes
+                        env-val-widths-hyp
+                        ;; including :all and more- but not -bindings
+                        input-vars override-vars spec-override-vars
+                        
+                        triplemaplist
+                        triple-val-alist
+                        svtv-val)))
 
     (value
-     (svtv-generalized-thm-events
-      (make-svtv-generalized-thm
-       :name name
-       :override-vars override-vars
-       :override-var-bindings override-var-bindings
-       :x-override-vars x-override-vars
-       :spec-override-vars spec-override-vars
-       :spec-override-var-bindings spec-override-var-bindings
-       :input-vars input-vars
-       :output-vars output-vars
-       :output-parts output-parts
-       :output-part-vars output-part-vars
-       :input-var-bindings input-var-bindings
-       :enable enable
-       :hyp (svtv-genthm-conjoin-hyps hyp more-hyp)
-       :lemma-hyp lemma-hyp
-       :final-hyp auto-final-hyp
-       :user-final-hyp final-hyp
-       :concl concl
-       :run-before-concl run-before-concl
-       :svtv svtv
-       :svtv-spec svtv-spec
-       :ideal ideal
-       :lemma-nonlocal lemma-nonlocal
-       :lemma-defthm lemma-defthm
-       :lemma-args lemma-args
-       :lemma-use-ideal lemma-use-ideal
-       :lemma-use-svtv-spec lemma-use-svtv-spec
-       :hints hints
-       :triples-name triplemaplist
-       :triple-val-alist triple-val-alist
-       :no-lemmas no-lemmas
-       :no-integerp no-integerp
-       :integerp-separate integerp-separate
-       :integerp-defthm integerp-defthm
-       :integerp-args integerp-args
-       :integerp-run-before-concl integerp-run-before-concl
-       :final-defthm final-defthm
-       :final-args final-args
-       :rule-classes rule-classes
-       :pkg-sym pkg-sym)))))
+     (make-svtv-generalized-thm
+      :name name
+      :override-vars override-vars
+      :override-var-masks override-var-masks
+      :override-var-bindings override-var-bindings
+      :x-override-vars x-override-vars
+      :spec-override-vars spec-override-vars
+      :spec-override-var-bindings spec-override-var-bindings
+      :input-vars input-vars
+      :output-vars output-vars
+      :output-parts output-parts
+      :output-part-vars output-part-vars
+      :input-var-bindings input-var-bindings
+      :enable enable
+      :hyp (svtv-genthm-conjoin-hyps hyp more-hyp)
+      :lemma-hyp lemma-hyp
+      :final-hyp auto-final-hyp
+      :user-final-hyp final-hyp
+      :concl concl
+      :run-before-concl run-before-concl
+      :svtv svtv
+      :svtv-spec svtv-spec
+      :ideal ideal
+      :lemma-nonlocal lemma-nonlocal
+      :lemma-defthm lemma-defthm
+      :lemma-args lemma-args
+      :lemma-custom-concl lemma-custom-concl
+      :lemma-no-run lemma-no-run
+      :lemma-use-ideal lemma-use-ideal
+      :lemma-use-svtv-spec lemma-use-svtv-spec
+      :lemma-svtv-run-args lemma-svtv-run-args
+      :hints hints
+      :triples-name triplemaplist
+      :triple-val-alist triple-val-alist
+      :no-lemmas no-lemmas
+      :no-integerp no-integerp
+      :integerp-separate integerp-separate
+      :integerp-defthm integerp-defthm
+      :integerp-args integerp-args
+      :integerp-run-before-concl integerp-run-before-concl
+      :final-defthm final-defthm
+      :final-args final-args
+      :rule-classes rule-classes
+      :pkg-sym pkg-sym))))
+
+(defun svtv-generalized-thm-fn (name args state)
+  (declare (xargs :stobjs state :mode :program))
+  (b* (((er parse) (parse-svtv-generalized-thm name args state)))
+    (value
+     (svtv-generalized-thm-events parse))))
 
 (defmacro def-svtv-generalized-thm (name &rest args)
   `(make-event (svtv-generalized-thm-fn ',name ',args state)))

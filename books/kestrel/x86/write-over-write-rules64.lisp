@@ -13,6 +13,7 @@
 (include-book "register-readers-and-writers64")
 (include-book "flags")
 (include-book "read-and-write")
+(include-book "readers-and-writers")
 
 ;; These push write-byte inward:
 (defthm write-byte-of-set-rip (equal (write-byte base-addr byte (set-rip rip x86)) (set-rip rip (write-byte base-addr byte x86))) :hints (("Goal" :in-theory (enable write-byte))))
@@ -116,14 +117,34 @@
 (defthm set-undef-of-set-rsp (equal (set-undef undef (set-rsp rsp x86)) (set-rsp rsp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-rsp))))
 (defthm set-undef-of-set-rbp (equal (set-undef undef (set-rbp rbp x86)) (set-rbp rbp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-rbp))))
 
-
-(defthm set-undef-of-set-flag (equal (set-undef undef (set-flag flag fval x86)) (set-flag flag fval (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-flag set-undef))))
-
 (defthm set-undef-of-write-byte (equal (set-undef undef (write-byte base-addr byte x86)) (write-byte base-addr byte (set-undef undef x86))) :hints (("Goal" :in-theory (enable write-byte set-undef))))
 
 (defthm set-undef-of-write (equal (set-undef undef (write n base-addr val x86)) (write n base-addr val (set-undef undef x86))) :hints (("Goal" :in-theory (enable write set-undef))))
 
-(defthm set-undef-of-!rflags (equal (set-undef undef (!rflags flags x86)) (!rflags flags (set-undef undef x86))) :hints (("Goal" :in-theory (enable write set-undef))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These push set-mxcsr inward:
+(defthm set-mxcsr-of-set-rip (equal (set-mxcsr mxcsr (set-rip rip x86)) (set-rip rip (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm set-mxcsr-of-set-rax (equal (set-mxcsr mxcsr (set-rax rax x86)) (set-rax rax (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-rax))))
+(defthm set-mxcsr-of-set-rbx (equal (set-mxcsr mxcsr (set-rbx rbx x86)) (set-rbx rbx (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-rbx))))
+(defthm set-mxcsr-of-set-rcx (equal (set-mxcsr mxcsr (set-rcx rcx x86)) (set-rcx rcx (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-rcx))))
+(defthm set-mxcsr-of-set-rdx (equal (set-mxcsr mxcsr (set-rdx rdx x86)) (set-rdx rdx (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-rdx))))
+(defthm set-mxcsr-of-set-rsi (equal (set-mxcsr mxcsr (set-rsi rsi x86)) (set-rsi rsi (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-rsi))))
+(defthm set-mxcsr-of-set-rdi (equal (set-mxcsr mxcsr (set-rdi rdi x86)) (set-rdi rdi (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-rdi))))
+(defthm set-mxcsr-of-set-r8 (equal (set-mxcsr mxcsr (set-r8 r8 x86)) (set-r8 r8 (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-r8))))
+(defthm set-mxcsr-of-set-r9 (equal (set-mxcsr mxcsr (set-r9 r9 x86)) (set-r9 r9 (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-r9))))
+(defthm set-mxcsr-of-set-r10 (equal (set-mxcsr mxcsr (set-r10 r10 x86)) (set-r10 r10 (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-r10))))
+(defthm set-mxcsr-of-set-r11 (equal (set-mxcsr mxcsr (set-r11 r11 x86)) (set-r11 r11 (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-r11))))
+(defthm set-mxcsr-of-set-r12 (equal (set-mxcsr mxcsr (set-r12 r12 x86)) (set-r12 r12 (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-r12))))
+(defthm set-mxcsr-of-set-r13 (equal (set-mxcsr mxcsr (set-r13 r13 x86)) (set-r13 r13 (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-r13))))
+(defthm set-mxcsr-of-set-r14 (equal (set-mxcsr mxcsr (set-r14 r14 x86)) (set-r14 r14 (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-r14))))
+(defthm set-mxcsr-of-set-r15 (equal (set-mxcsr mxcsr (set-r15 r15 x86)) (set-r15 r15 (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-r15))))
+(defthm set-mxcsr-of-set-rsp (equal (set-mxcsr mxcsr (set-rsp rsp x86)) (set-rsp rsp (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-rsp))))
+(defthm set-mxcsr-of-set-rbp (equal (set-mxcsr mxcsr (set-rbp rbp x86)) (set-rbp rbp (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-rbp))))
+
+(defthm set-mxcsr-of-write-byte (equal (set-mxcsr mxcsr (write-byte base-addr byte x86)) (write-byte base-addr byte (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable write-byte set-mxcsr))))
+
+(defthm set-mxcsr-of-write (equal (set-mxcsr mxcsr (write n base-addr val x86)) (write n base-addr val (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable write set-mxcsr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

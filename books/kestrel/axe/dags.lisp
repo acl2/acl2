@@ -1,7 +1,7 @@
 ; DAGs, represented as lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -23,14 +23,15 @@
 ;(include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/utilities/printing" :dir :system) ;for print-list
 (include-book "kestrel/utilities/mv-nth" :dir :system) ; could make local, but many other books may need this
-(include-book "kestrel/acl2-arrays/bounded-nat-alists" :dir :system)
+(include-book "kestrel/acl2-arrays/bounded-nat-alists" :dir :system) ; for bounded-natp-alistp
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system) ; drop?
 ;(include-book "numeric-lists")
 (include-book "bounded-dag-exprs")
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
-(include-book "keep-atoms")
-(include-book "tools/flag" :dir :system)
+(include-book "keep-nodenum-dargs")
+;(include-book "darg-listp")
+;(include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/utilities/lists/add-to-set-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -67,18 +68,19 @@
                                        bound))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
-;make local?
-(defthm acl2-numberp-of-lookup-equal
-  (implies (and (nat-listp (strip-cdrs alist))
-                (lookup-equal key alist))
-           (acl2-numberp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable strip-cdrs))))
+;rename
+(local
+  (defthm acl2-numberp-of-lookup-equal
+    (implies (and (nat-listp (strip-cdrs alist))
+                  (lookup-equal key alist))
+             (acl2-numberp (lookup-equal key alist)))
+    :hints (("Goal" :in-theory (enable strip-cdrs)))))
 
 ;make local?
-(defthm natp-of-lookup-equal
-  (implies (and (nat-listp (strip-cdrs alist))
-                (lookup-equal key alist))
-           (natp (lookup-equal key alist)))
+(defthm natp-of-lookup-equal-when-nat-listp-of-strip-cdrs
+  (implies (nat-listp (strip-cdrs alist))
+           (iff (natp (lookup-equal key alist))
+                (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -103,6 +105,7 @@
 ;;
 
 ;; Checks that DAG is a true-list of pairs of the form (<nodenum> . <bounded-dag-expr>).
+;; TODO: Disable?
 (defun weak-dagp-aux (dag)
   (declare (xargs :guard t))
   (if (atom dag)
@@ -136,10 +139,22 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :hints (("Goal" :in-theory (enable weak-dagp-aux bounded-dag-exprp))))
 
-(defthm rational-listp-of-strip-cars-when-weak-dagp-aux
+(defthm weak-dagp-aux-of-acons
+  (equal (weak-dagp-aux (acons nodenum expr dag))
+         (and (natp nodenum)
+              (bounded-dag-exprp nodenum expr)
+              (weak-dagp-aux dag)))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+(defthm rational-listp-of-strip-cars-when-weak-dagp-aux-cheap
   (implies (weak-dagp-aux dag)
            (rational-listp (strip-cars dag)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthmd integer-listp-of-strip-cars-when-weak-dagp-aux
+  (implies (weak-dagp-aux dag)
+           (integer-listp (strip-cars dag)))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 (defthm weak-dagp-aux-of-cdr
   (implies (weak-dagp-aux dag)
@@ -149,6 +164,11 @@
 (defthm weak-dagp-aux-forward-to-alistp
   (implies (weak-dagp-aux dag)
            (alistp dag))
+  :rule-classes :forward-chaining)
+
+(defthm weak-dagp-aux-forward-to-true-alistp
+  (implies (weak-dagp-aux dag)
+           (true-listp dag))
   :rule-classes :forward-chaining)
 
 (defthm integerp-of-car-of-car-when-weak-dagp-aux-cheap
@@ -442,6 +462,12 @@
   :hints (("Goal" :in-theory (enable pseudo-dagp pseudo-dagp-aux))))
 
 ;keeping this disabled for now, since it could be expensive.
+(defthmd consp-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (consp dag))
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
+;keeping this disabled for now, since it could be expensive.
 (defthmd true-listp-when-pseudo-dagp
   (implies (pseudo-dagp dag)
            (true-listp dag)))
@@ -456,6 +482,10 @@
            (natp (car (car dag))))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
+(defthmd natp-of-car-of-car-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (natp (car (car dag)))))
 
 (defthm pseudo-dagp-forward-to-posp-of-len
   (implies (pseudo-dagp dag)
@@ -681,7 +711,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund dag-fns-include-any-aux (dag fns)
+;; Checks whether the functions that appear in DAG include any of the
+;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
+;; of all fns found.
+(defund dag-fns-include-any (dag fns)
   (declare (xargs :guard (and (weak-dagp-aux dag)
                               (symbol-listp fns)
                               (not (member-eq 'quote fns)))
@@ -695,19 +728,19 @@
                ;; implies that (ffn-symb expr) can't be 'quote, since FNS should not include 'quote:
                (member-eq (ffn-symb expr) fns))
           t
-        (dag-fns-include-any-aux (rest dag) fns)))))
+        (dag-fns-include-any (rest dag) fns)))))
 
-;; Checks whether the functions that appear in DAG-OR-QUOTEP include any of the
-;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
-;; of all fns found.
-(defund dag-fns-include-any (dag-or-quotep fns)
-  (declare (xargs :guard (and (or (quotep dag-or-quotep)
-                                  (weak-dagp dag-or-quotep))
-                              (symbol-listp fns)
-                              (not (member-eq 'quote fns)))))
-  (if (quotep dag-or-quotep)
-      nil
-    (dag-fns-include-any-aux dag-or-quotep fns)))
+;; ;; Checks whether the functions that appear in DAG-OR-QUOTEP include any of the
+;; ;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
+;; ;; of all fns found.
+;; (defund dag-or-quotep-fns-include-any (dag-or-quotep fns)
+;;   (declare (xargs :guard (and (or (quotep dag-or-quotep)
+;;                                   (weak-dagp dag-or-quotep))
+;;                               (symbol-listp fns)
+;;                               (not (member-eq 'quote fns)))))
+;;   (if (quotep dag-or-quotep)
+;;       nil
+;;     (dag-fns-include-any dag-or-quotep fns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -777,7 +810,7 @@
 ;; ;               (not (consp (nth n (aref1 dag-array-name dag-array nodenum)))) ;rules out a quotep
 ;;                 )
 ;;            (< (len (nth n (dargs expr))) 3))
-;;   :hints (("Goal" :in-theory (enable <-of-len-of-nth-and-3-when-all-dargp))))
+;;   :hints (("Goal" :in-theory (enable <-of-len-of-nth-and-3-when-darg-listp))))
 
 ;kill
 ;; (defthm not-<-of-len-of-nth-of-dargs-and-2
@@ -801,9 +834,7 @@
 ;;                 )
 ;;            (equal (< 1 (len (nth n (dargs expr))))
 ;;                   (consp (nth n (dargs expr)))))
-;;   :hints (("Goal" :in-theory (enable <-of-1-and-len-of-nth-when-all-dargp))))
-
-
+;;   :hints (("Goal" :in-theory (enable <-of-1-and-len-of-nth-when-darg-listp))))
 
 (defthmd len-when-pseudo-dagp
   (implies (and (pseudo-dagp dag)
@@ -1020,19 +1051,59 @@
            (not (< (nth n vals) k)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than nth))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; move these?
 
+;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is an integerp.
+(defund darg-quoted-integerp (darg)
+  (declare (xargs :guard (dargp darg)))
+  (and (consp darg)
+       (integerp (unquote darg))))
+
+(defthm darg-quoted-integerp-forward
+  (implies (darg-quoted-integerp darg)
+           (and (consp darg)
+                (integerp (cadr darg))
+                (integerp (nth 1 darg))))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable darg-quoted-integerp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is a natp.
-(defun darg-quoted-natp (darg)
+(defund darg-quoted-natp (darg)
   (declare (xargs :guard (dargp darg)))
   (and (consp darg)
        (natp (unquote darg))))
 
+(defthm darg-quoted-natp-forward
+  (implies (darg-quoted-natp darg)
+           (and (consp darg)
+                (natp (cadr darg))
+                (natp (nth 1 darg))
+                (darg-quoted-integerp darg)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable darg-quoted-natp
+                                     darg-quoted-integerp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is a posp.
-(defun darg-quoted-posp (darg)
+(defund darg-quoted-posp (darg)
   (declare (xargs :guard (dargp darg)))
   (and (consp darg)
        (posp (unquote darg))))
+
+(defthm darg-quoted-posp-forward
+  (implies (darg-quoted-posp darg)
+           (and (consp darg)
+                (posp (cadr darg))
+                (posp (nth 1 darg))
+                (darg-quoted-natp darg)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable darg-quoted-posp
+                                     darg-quoted-natp))))
 
 (defthm not-<-of-+-1-of-nth-when-bounded-darg-listp
   (implies (and (bounded-darg-listp items dag-len)
@@ -1078,14 +1149,14 @@
                     0)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp nth))))
 
-(defthm len-of-nth-when-all-dargp
-  (implies (and (all-dargp items)
+(defthm len-of-nth-when-darg-listp
+  (implies (and (darg-listp items)
                 (< (nfix n) (len items)))
            (equal (len (nth n items))
                   (if (consp (nth n items))
                       2
                     0)))
-  :hints (("Goal" :in-theory (enable all-dargp nth))))
+  :hints (("Goal" :in-theory (enable darg-listp nth))))
 
 ;; (defthm <-of-car-when-bounded-darg-listp
 ;;   (implies (and (bounded-darg-listp items bound)
@@ -1117,6 +1188,9 @@
                   (+ -1 (len dag))))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
+(theory-invariant (incompatible (:rewrite car-of-car-when-pseudo-dagp)
+                                (:rewrite len-when-pseudo-dagp)))
+
 (defthmd car-of-car-when-pseudo-dagp-cheap
   (implies (pseudo-dagp dag)
            (equal (car (car dag))
@@ -1125,19 +1199,20 @@
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defthm acl2-numberp-of-largest-non-quotep
-  (implies (all-dargp items)
+  (implies (darg-listp items)
            (acl2-numberp (largest-non-quotep items)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable ALL-DARGP LARGEST-NON-QUOTEP))))
+  :hints (("Goal" :in-theory (enable DARG-LISTP LARGEST-NON-QUOTEP))))
 
 (defthm myquotep-of-cdr-of-assoc-equal
   (implies (and (assoc-equal form alist)
                 (equal 'quote (cadr (assoc-equal form alist)))
-                (all-dargp (strip-cdrs alist)))
+                (darg-listp (strip-cdrs alist)))
            (myquotep (cdr (assoc-equal form alist))))
-  :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
-           :in-theory (disable dargp-of-cdr-of-assoc-equal
-                               dargp-when-equal-of-quote-and-car-cheap))))
+  :hints (("Goal" :use (:instance DARGP-OF-CDR-OF-ASSOC-EQUAL-WHEN-DARG-LISTP-OF-STRIP-CDRS (var form))
+           :in-theory (e/d (dargp) ( ;dargp-of-cdr-of-assoc-equal
+                                    DARGP-OF-CDR-OF-ASSOC-EQUAL-WHEN-DARG-LISTP-OF-STRIP-CDRS
+                                    dargp-when-equal-of-quote-and-car-cheap)))))
 
 (defthm <=-of-largest-non-quotep-when-bounded-darg-listp
   (implies (and (bounded-darg-listp items (+ 1 bound))
@@ -1147,10 +1222,9 @@
                                      largest-non-quotep))))
 
 (defthm bounded-darg-listp-of-+-of-1-and-largest-non-quotep
-  (implies (and (all-dargp dargs)
-                (true-listp dargs))
+  (implies (darg-listp dargs)
            (bounded-darg-listp dargs (+ 1 (largest-non-quotep dargs))))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp largest-non-quotep))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp largest-non-quotep darg-listp))))
 
 (defthm <-of-largest-non-quotep-of-dargs-when-dag-exprp
   (implies (and (bounded-dag-exprp (+ 1 n) expr)
@@ -1204,6 +1278,13 @@
 (defthm consp-of-car-when-pseudo-dagp
   (implies (pseudo-dagp dag)
            (consp (car dag)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
+(defthm true-listp-of-dargs-of-cdr-of-car-when-pseudo-dagp-type
+  (implies (and (pseudo-dagp dag)
+                (consp dag))
+           (true-listp (dargs (cdr (car dag)))))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defthm dag-exprp-of-cdr-of-car-when-weak-dagp
@@ -1404,9 +1485,7 @@
 
 ;may subsume stuff above
 (defthmd car-of-nth-when-pseudo-dagp
-  (implies (and (pseudo-dagp dag)
-;                (natp n)
-                (natp curr))
+  (implies (pseudo-dagp dag)
            (equal (car (nth n dag))
                   (if (< (nfix n) (+ 1 (car (car dag))))
                       (+ -1 (len dag) (- (nfix n)))
@@ -1439,31 +1518,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; similar to (append (keep-atoms items) acc).
+;; similar to (append (keep-nodenum-dargs items) acc).
 ;move?
-(defund append-atoms (items acc)
-  (declare (xargs :guard (true-listp items)))
+;; Extends ACC with the members of ITEMS that are nodenums (also reverses their
+;; order).  Each member of ITEMS must be a nodenum or a quoted constant.
+(defund append-nodenum-dargs (items acc)
+  (declare (xargs :guard (and (darg-listp items)
+                              (true-listp acc))))
   (if (endp items)
       acc
     (let ((item (first items)))
-      (append-atoms (rest items)
+      (append-nodenum-dargs (rest items)
                     (if (atom item)
                         (cons item acc)
                       acc)))))
 
-(defthm all-<-of-append-atoms
-  (equal (all-< (append-atoms args acc) bound)
-         (and (all-< (keep-atoms args) bound)
+(defthm all-<-of-append-nodenum-dargs
+  (equal (all-< (append-nodenum-dargs args acc) bound)
+         (and (all-< (keep-nodenum-dargs args) bound)
               (all-< acc bound)))
-  :hints (("Goal" :in-theory (enable keep-atoms append-atoms all-<))))
+  :hints (("Goal" :in-theory (enable keep-nodenum-dargs append-nodenum-dargs all-<))))
 
-(defthm true-listp-of-append-atoms
+(defthm true-listp-of-append-nodenum-dargs
   (implies (true-listp acc)
-           (true-listp (append-atoms args acc)))
-  :hints (("Goal" :in-theory (enable append-atoms))))
+           (true-listp (append-nodenum-dargs args acc)))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs))))
 
-(defthm nat-listp-of-append-atoms
-  (implies (and (all-dargp args)
-                (nat-listp acc))
-           (nat-listp (append-atoms args acc)))
-  :hints (("Goal" :in-theory (enable append-atoms nat-listp))))
+(defthm true-listp-of-append-nodenum-dargs-type
+  (implies (true-listp acc)
+           (true-listp (append-nodenum-dargs args acc)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs))))
+
+(defthm nat-listp-of-append-nodenum-dargs
+  (implies (darg-listp dargs)
+           (equal (nat-listp (append-nodenum-dargs dargs acc))
+                  (nat-listp acc)))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs nat-listp))))
+
+(defthmd append-nodenum-dargs-becomes-append-of-keep-nodenum-dargs
+  (equal (append-nodenum-dargs items acc)
+         (append (reverse-list (keep-nodenum-dargs items))
+                 acc))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs keep-nodenum-dargs))))

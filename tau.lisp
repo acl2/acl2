@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -2232,10 +2232,25 @@
 ; user is clever enough to realize that slowdowns are due to repeated
 ; evaluations of such functions.
 
+; Note: We handle INTEGERP, RATIONALP, and ACL2-NUMBERP specially, ignoring
+; their enabled/disabled status, because they are the possible :domain
+; predicates for tau intervals.  (Actually, NIL is possible :domain too --
+; meaning the interval includes all ACL2 objects -- but we never treat NIL as a
+; predicate.)  We want ev-fncall-w-tau-recog never to treat these three domains
+; as :unevalable (which it would if we're operating in a crippled theory where
+; their executable-counterparts are disabled).  There is precedent for ignoring
+; the disabled status of these functions: see use of
+; executable-counterpart-minimal-theory in translate-in-theory-hint@par and the
+; error message warning that certain functions, including these, can't be
+; totally disabled.
+
 ; Warning: If this function is changed to call itself recursively, reconsider
 ; the setf expression in the comment after this defun.
 
   (cond
+   ((eq fn 'integerp) (integerp (car evg-lst)))
+   ((eq fn 'rationalp) (rationalp (car evg-lst)))
+   ((eq fn 'acl2-numberp) (acl2-numberp (car evg-lst)))
    ((enabled-xfnp fn ens wrld)
     (let* ((ubk (getpropc fn 'unevalable-but-known nil wrld))
            (temp (if ubk
@@ -4927,16 +4942,19 @@
          nil)
         (t (all-integers-in-range-excludedp1 lo hi (cdr neg-evgs)))))
 
-
 (defun all-integers-in-range-excludedp (lo-rel lo hi-rel hi neg-evgs)
 
 ; Lo and hi are rationals that bound an interval.  Neg-evgs is the :neg-evgs of
 ; a tau.  We check that every integer between lo and hi is excluded -- which
 ; means for each i from lo to hi inclusive, (list i) is a member of neg-evgs.
 ; We can delete the NIL that might be at the front of neg-evgs.  Furthermore,
-; if the number of integers between lo and hi inclusive is greater than the
-; length of the exclusions, we know some integer is not excluded.  Otherwise,
-; we check each one.
+; we sometimes take a short-cut: if the number of integers between lo and hi
+; inclusive is greater than the length of the exclusions, we know some integer
+; is not excluded.  Otherwise, we check each one.  (Note that the inclusion of
+; some non-integers among the exclusions is not a problem, it just prevents us
+; from taking the short-cut: e.g., if the interval has k integers in it and all
+; k are in neg-evgs along with a few non-integers, the short-cut fails and we
+; ask explicitly about all k integers.)
 
 ; We were once afraid that this deduction will be expensive.  For example, what
 ; if lo is 0 and hi is (expt 2 32)?  However, we'll only check as many elements

@@ -550,7 +550,7 @@
        (cmd (string-append "sh "
              (string-append zip.sh
               (string-append " " dir-fix))))
-       ((mv exit-status lines)
+       ((mv exit-status lines state)
         (time$ (acl2::tshell-call cmd :print t)
                :msg "; XDOC zip.sh: ~st sec, ~sa bytes.~%"))
        ((unless (equal exit-status 0))
@@ -606,8 +606,8 @@
   (cond
    ((endp topics)
     (cond
-     (msg-list (er hard 'check-xdoc-topics
-                   "~|~%~*0"
+     (msg-list (xdoc-error "~*1"
+                   'check-xdoc-topics
                    `("impossible"             ; when nothing to print
                      "~@*."                   ; the last element
                      "~@*; and~|~%"           ; the 2nd to last element

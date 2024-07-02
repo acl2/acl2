@@ -47,7 +47,7 @@
 
 (defun double-delete-induction (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
-  (if (or (empty X) (empty Y))
+  (if (or (emptyp X) (emptyp Y))
       (list X Y)
     (double-delete-induction (delete (head X) X)
                              (delete (head X) Y))))

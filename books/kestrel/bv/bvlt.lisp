@@ -1,7 +1,7 @@
-; Unsigned bit-vector "less than" comparison
+; Rules about BVLT
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,38 +11,14 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop")
+(include-book "bvlt-def")
 (include-book "unsigned-byte-p")
 (include-book "bvplus") ;drop!
 (include-book "bvminus") ;drop! but is used below
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-;fixme some of these could be macros...
-;unsigned less-than
-(defund bvlt (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (< (bvchop size x)
-     (bvchop size y)))
 
-;unsigned less-than-or-equal
-(defun bvle (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (not (bvlt size y x)))
-
-;unsigned greater-than
-(defun bvgt (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (bvlt size y x))
-
-;unsigned greater-than-or-equal
-(defun bvge (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (not (bvlt size x y)))
 
 ;rename
 (defthm bvlt-of-0-arg3
@@ -56,8 +32,7 @@
   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm booleanp-of-bvlt
-  (equal (booleanp (bvlt size x y))
-         t))
+  (booleanp (bvlt size x y)))
 
 ;rename
 (defthm bvlt-self
@@ -97,26 +72,25 @@
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;rename
-(defthm bvlt-of-max
+(defthm not-bvlt-of-max-arg2
   (not (bvlt size (+ -1 (expt 2 size)) x))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-;rename
-(defthm bvlt-of-max-constant-version
+(defthm not-bvlt-of-max-arg2-constant-version
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (equal k (+ -1 (expt 2 size)))) ;gets computed
            (not (bvlt size k x))))
 
 ;todo: use polarities?
-(defthm bvlt-max-arg3
+(defthm bvlt-of-max-arg3
   (implies (natp size)
            (equal (bvlt size x (+ -1 (expt 2 size)))
                   (not (equal (+ -1 (expt 2 size)) (bvchop size x)))))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;todo: use polarities?
-(defthm bvlt-max-arg3-constant-version
+(defthm bvlt-of-max-arg3-constant-version
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (equal k (+ -1 (expt 2 size))) ;gets computed
@@ -125,148 +99,136 @@
                   (not (equal k (bvchop size x)))))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-;delete
-;; (defthm bvlt-max-val
-;;   (equal (bvlt 31 x 2147483647)
-;;          (not (equal 2147483647 (bvchop 31 x))))
-;;   :hints (("Goal" :in-theory (enable bvlt))))
-
-;delete
-;gen!
-;use polarities!
-;; (defthm bvlt-of-511
-;;   (equal (bvlt 9 x 511)
-;;          (not (equal 511 (bvchop 9 x))))
-;;   :hints (("Goal"
-;;            :cases ((natp size))
-;;            :in-theory (e/d (bvlt)
-;;                            ()))))
-
-;delete
-;; ;use polarity?
-;; ;gen!
-;; (defthm bvlt-32-max
-;;   (implies (equal k (+ -1 (expt 2 32)))
-;;            (equal (bvlt 32 x k)
-;;                   (not (equal (bvchop 32 x) k))))
-;;   :hints (("Goal" :in-theory (enable bvlt))))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; x<free and free<=y imply x<y
 (defthmd bvlt-transitive-core-1
   (implies (and (bvlt size x free)
                 (not (bvlt size y free)))
-           (equal (bvlt size x y)
-                  t))
+           (bvlt size x y))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-;; x<=free and free<y imply x<y
-(defthmd bvlt-transitive-core-2
-  (implies (and (not (bvlt size free x))
-                (bvlt size free y))
-           (equal (bvlt size x y)
-                  t))
-  :hints (("Goal" :in-theory (enable bvlt))))
-
-;fixme what about rules to turn a bvlt into nil?
+;; Special case where x is a constant.
 (defthm bvlt-transitive-1-a
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (bvlt size y free))
                 (syntaxp (quotep free))
-                (bvlt size k free))
-           (equal (bvlt size k y)
-                  t))
+                (bvlt size k free) ; gets computed
+                )
+           (bvlt size k y))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-1))))
 
-(defthm bvlt-transitive-2-a
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (bvlt size free y)
-                (syntaxp (quotep free))
-                (not (bvlt size free k)))
-           (equal (bvlt size k y)
-                  t))
-  :hints (("Goal" :in-theory (enable bvlt-transitive-core-2))))
-
+;; Special case where y is a constant.
 (defthm bvlt-transitive-1-b
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (bvlt size x free)
                 (syntaxp (quotep free))
-                (not (bvlt size k free)))
-           (equal (bvlt size x k)
-                  t))
+                (not (bvlt size k free)) ; gets computed
+                )
+           (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-1))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; x<=free and free<y imply x<y
+(defthmd bvlt-transitive-core-2
+  (implies (and (not (bvlt size free x))
+                (bvlt size free y))
+           (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+;; Special case where x is a constant.
+(defthm bvlt-transitive-2-a
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (bvlt size free y)
+                (syntaxp (quotep free))
+                (not (bvlt size free k)) ; gets computed
+                )
+           (bvlt size k y))
+  :hints (("Goal" :in-theory (enable bvlt-transitive-core-2))))
+
+;; Special case where y is a constant.
 (defthm bvlt-transitive-2-b
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (bvlt size free x))
                 (syntaxp (quotep free))
-                (bvlt size free k))
-           (equal (bvlt size x k)
-                  t))
+                (bvlt size free k) ; gets computed
+                )
+           (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-2))))
 
-;fixme make a version with a strict < as a hyp (can then weaken the other hyp by 1? what about overflow?)
-;;y<=free and free<=x imply y<=x
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;todo: make a version with a strict < as a hyp (can then weaken the other hyp by 1? what about overflow?)
+;; y<=free and free<=x imply y<=x
 (defthmd bvlt-transitive-core-3
   (implies (and (not (bvlt size free y))
                 (not (bvlt size x free)))
            (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+;; Special case where x is a constant.
 (defthm bvlt-transitive-3-a
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (bvlt size free y))
                 (syntaxp (quotep free))
-                (not (bvlt size k free)))
+                (not (bvlt size k free)) ; gets computed
+                )
            (not (bvlt size k y)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+;; Special case where y is a constant.
 (defthm bvlt-transitive-3-b
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (bvlt size x free))
                 (syntaxp (quotep free))
-                (not (bvlt size free k)))
+                (not (bvlt size free k)) ; gets computed
+                )
            (not (bvlt size x k)))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;y<free and free-1<=x imply y<=x
 (defthmd bvlt-transitive-core-4
   (implies (and (bvlt size y free)
-                (not (bvlt size x (+ -1 free)))
+                (not (bvlt size x (+ -1 free))) ; if free=0, then (bvlt size y free) above will be false
                 (integerp free)
-                (natp size)
-                )
+                (natp size))
            (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
 
+;; Special case where x is a constant.
 (defthm bvlt-transitive-4-a
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (bvlt size y free)
+                (bvlt size y free) ; y<free
                 (syntaxp (quotep free))
-                (not (bvlt size k (+ -1 free))) ;gets computed (what if free=0?  well, (bvlt size y free) above should not hold)
-                (integerp free)
+                (not (bvlt size k (+ -1 free))) ;gets computed ; free-1<=k
+                (integerp free) ; gets computed
                 (natp size))
            (not (bvlt size k y)))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-4))))
 
+;; Special case where y is a constant and we rephrase to match the free var better.
 (defthm bvlt-transitive-4-b
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (not (bvlt size x free))
+                (not (bvlt size x free)) ; free<=x
                 (syntaxp (quotep free))
-                (bvle size k free) ;gets computed
-                (integerp free)
-                (natp size)
-                )
+                (bvle size k free) ;gets computed, k<=free
+                (integerp free) ; gets computed
+                (natp size))
            (not (bvlt size x k)))
-  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases)  :use (:instance bvlt-transitive-core-4 (free (+ 1 free)) (y k)))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases) :use (:instance bvlt-transitive-core-4 (free (+ 1 free)) (y k)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;y<=free+1 and free<x imply y<=x
 (defthmd bvlt-transitive-core-5
@@ -277,10 +239,11 @@
            (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
 
+;; Special case where x is a constant and we rephrase to match the free var better.
 (defthm bvlt-transitive-5-a
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (not (bvlt size free y))
+                (not (bvlt size free y)) ; y<=free
                 (syntaxp (quotep free))
                 ;(bvlt size (+ -1 free) k) ;gets computed
                 (bvle size free k) ;gets computed
@@ -290,6 +253,7 @@
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases)
            :use (:instance bvlt-transitive-core-5 (x k) (free (+ -1 free))))))
 
+;; Special case where y is a constant
 (defthm bvlt-transitive-5-b
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
@@ -316,8 +280,8 @@
 ;; (defthm bvlt-transitive-free2
 ;;   (implies (and (bvlt size free x)
 ;;                 (bvle size y free))
-;;            (equal (bvlt size y x)
-;;                   t))
+;;            (bvlt size y x)
+;;                   )
 ;;   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-of-1
@@ -387,17 +351,10 @@
 (defthm bvlt-of-max-minus-1-arg2-constant-version
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (equal k (+ -2 (expt 2 size)))
-                (posp size)) ;gets computed
+                (equal k (+ -2 (expt 2 size))) ;gets computed
+                (posp size))
            (equal (bvlt size k x)
-                  (equal (+ -1 (expt 2 size)) (bvchop size x)))))
-
-;delete
-;; ;todo: gen!
-;; (defthm bvlt-2-max
-;;   (equal (bvlt 2 2 x)
-;;          (equal 3 (bvchop 2 x)))
-;;   :hints (("Goal" :in-theory (enable bvlt))))
+                  (equal (+ 1 k) (bvchop size x)))))
 
 ;can be expensive.  needs polarities
 (defthmd bvlt-when-bvlt-must-be
@@ -408,29 +365,31 @@
   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-when-bvlt-must-be-fake-free
-  (implies (and (not (bvlt free y x)) ;this free var is because the dag rewriter and dag prover dont support backchain limits
+  (implies (and (not (bvlt free y x)) ;this free var is because the axe rewriter and axe prover dont support backchain limits
                 (equal free size))
            (equal (bvlt size x y)
                   (not (equal (bvchop size y)
                               (bvchop size x)))))
-  :hints (("Goal" :use (:instance bvlt-when-bvlt-must-be))))
+  :hints (("Goal" :use bvlt-when-bvlt-must-be)))
 
-;induction proof?
-;wont match?
 (defthm bvlt-of-max-when-bvlt
   (implies (bvlt size x free)
-           (equal (bvlt size x (+ -1 (expt 2 size)))
-                  t))
+           (bvlt size x (+ -1 (expt 2 size))))
   :hints (("Goal" :use (:instance bvlt-transitive-core-1 (free free) (y (+ -1 (expt 2 size))))
            :in-theory (e/d (zp)
-                           (;BVLT-OF-PLUS-ARG2
-                            bvlt-transitive-1-a
+                           (bvlt-transitive-1-a
                             bvlt-transitive-2-a
                             bvlt-transitive-1-b
                             bvlt-transitive-2-b
                             ;;BVLT-TRANSITIVE-FREE-BACK
                             ;;BVLT-TRANSITIVE-FREE2-BACK
                             )))))
+
+(defthmd bvlt-of-max-when-bvlt-constant-version
+  (implies (and (syntaxp (quotep k))
+                (equal k (+ -1 (expt 2 size)))
+                (bvlt size x free))
+           (bvlt size x k)))
 
 ;rename
 (defthm bvlt-when-not-posp-arg1
@@ -496,7 +455,7 @@
                 (unsigned-byte-p free k))
            (equal (< x k)
                   (bvlt free x k)))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
+  :hints (("Goal" :use <-becomes-bvlt-alt
            :in-theory (disable <-becomes-bvlt-alt))))
 
 ;could this be expensive?
@@ -506,7 +465,7 @@
                 (unsigned-byte-p free x))
            (equal (< x k)
                   (bvlt free x k)))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
+  :hints (("Goal" :use <-becomes-bvlt-alt
            :in-theory (disable <-becomes-bvlt-alt))))
 
 (theory-invariant (incompatible (:definition bvlt) (:rewrite <-becomes-bvlt)))
@@ -514,14 +473,15 @@
 (theory-invariant (incompatible (:definition bvlt) (:rewrite <-becomes-bvlt-free)))
 (theory-invariant (incompatible (:definition bvlt) (:rewrite <-becomes-bvlt-free-alt)))
 
-;fixme
+; y<=free and free2<=x and free = free2 imply y<=x
+;todo: do we need this?
 (defthm bvlt-transitive-free2-back
   (implies (and (not (bvlt size free y))
                 (bvle size free2 x)
                 (equal free free2) ;hack?
                 )
            (not (bvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvlt) (<-BECOMES-BVLT-FREE <-BECOMES-BVLT <-BECOMES-BVLT-alt)))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;fixme think this through
 ;drop?
@@ -691,12 +651,15 @@
 ;;                 (bvlt size k free)
 ;;                 (natp bigsize)
 ;;                 (natp size))
-;;            (equal (bvlt size x k)
-;;                   nil))
+;;            (not (bvlt size x k)
+;;                   ))
 ;;   :hints (("Goal"
 ;;            :use (:instance <-of-bvchop-and-bvchop-same (s2 bigsize) (s1 size))
 ;;            :in-theory (e/d (bvlt) (<-of-bvchop-and-bvchop-same)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;the bvplus is arg2
 ;this generalizes some other stuff?
 (defthm bvlt-of-bvplus-constant-and-constant
   (implies (and (syntaxp (and (quotep k)
@@ -724,6 +687,42 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvlt bvchop-of-sum-cases bvminus)
                                   (expt)))))
 
+(defthm bvlt-of-bvplus-constant-and-constant-other
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep k2)
+                              (quotep size)))
+                (bvle size k2 k) ;this case
+                (natp size)
+                (natp k))
+           (equal (bvlt size (bvplus size k2 x) k)
+                  (if (bvlt size (bvminus size (+ -1) k2) x)
+                      t
+                    (bvlt size x (bvminus size k k2)))))
+  :hints (("Goal" :in-theory (enable bvplus bvlt bvchop-of-sum-cases bvminus))))
+
+(defthm bvlt-of-bvplus-constant-and-constant-gen
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep k2)
+                              (quotep size)))
+                (natp size)
+                (natp k))
+           (equal (bvlt size (bvplus size k2 x) k)
+                  (if (bvlt size k k2)
+                      (and (bvle size (- k2) x)
+                           (bvlt size x (- k k2)))
+                    (if (bvlt size (bvminus size (+ -1) k2) x)
+                        t
+                      (bvlt size x (bvminus size k k2))))))
+  :hints (("Goal" :use (bvlt-of-bvplus-constant-and-constant-other
+                         bvlt-of-bvplus-constant-and-constant)
+           :in-theory (disable bvlt-of-bvplus-constant-and-constant-other
+                               bvlt-of-bvplus-constant-and-constant))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;the bvplus is arg3
 (defthm bvlt-of-bvplus-constant-and-constant-safe2
   (implies (and (syntaxp (and (quotep k)
                               (quotep k2)
@@ -737,17 +736,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvlt bvchop-of-sum-cases bvminus)
                                   (expt)))))
 
-(defthm bvlt-of-bvplus-constant-and-constant-other
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep k2)
-                              (quotep size)))
-                (bvle size k2 k) ;this case
-                (natp size)
-                (natp k))
-           (equal (bvlt size (bvplus size k2 x) k)
-                  (or (bvlt size (bvminus size (+ -1) k2) x)
-                      (bvlt size x (bvminus size k k2)))))
-  :hints (("Goal" :in-theory (enable bvplus bvlt bvchop-of-sum-cases bvminus))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;use polarities
 (defthmd bvlt-when-bvlt-must-be-gen
@@ -818,9 +807,50 @@
    :hints
    (("Goal"
      :cases ((integerp k))
-     :in-theory
-     (e/d (bvlt bvchop-of-sum-cases)
-          (<-becomes-bvlt <-becomes-bvlt-alt)))))
+     :in-theory (enable bvlt bvchop-of-sum-cases))))
+
+(defthm bvlt-when-bvlt-false2
+  (implies (and (syntaxp (quotep k))
+                (BVLT size free x)
+                (syntaxp (quotep free))
+                (syntaxp (quotep size))
+                (bvle size (+ -1 k) free) ;gets evaluated
+                (integerp k)
+                (natp size)
+                )
+           (not (BVLT size x k)))
+  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
+                                   bvchop-of-sum-cases
+                                   bvplus
+                                   )
+                                  (;<-of-bvplus-becomes-bvlt-arg1
+                                   ;<-of-bvplus-becomes-bvlt-arg2
+                                   )))))
+
+(defthm bvlt-when-not-bvlt-one-more
+  (implies (and (syntaxp (quotep const)) ;new
+                (not (bvlt size free x))
+                (syntaxp (quotep free)) ;new
+                (equal free (+ 1 const))
+                (unsigned-byte-p size free)
+                (unsigned-byte-p size const)
+                (integerp size))
+           (equal (bvlt size const x)
+                  (equal free (bvchop size x))))
+  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+
+(defthm bvlt-when-not-bvlt-one-less
+  (implies (and (syntaxp (quotep const))
+                (not (bvlt size x free))
+                (syntaxp (quotep free))
+                (equal free (+ -1 const))
+                (unsigned-byte-p size free)
+                (unsigned-byte-p size const)
+;                (posp const) ; ?
+                (integerp size))
+           (equal (bvlt size x const)
+                  (equal free (bvchop size x))))
+  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
 
 ;rename
 (defthm bvlt-false-when-bvlt-better
@@ -833,6 +863,18 @@
            (not (bvlt size x k))) ; not(x < k), i.e., x>=k
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))
+
+;use polarities?
+(defthm bvlt-unique
+  (implies (and (bvlt size x free)
+                (syntaxp (quotep free))
+                (equal free (+ 2 k))
+                (unsigned-byte-p size k)
+                (natp size)
+                )
+           (equal (bvlt size k x)
+                  (equal (+ 1 k) (bvchop size x))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 (defthm not-bvlt-of--1-arg1
   (not (bvlt size -1 x))
@@ -859,4 +901,63 @@
 (defthm not-bvlt-of-expt-same-arg3
   (implies (natp size)
            (not (bvlt size x (expt 2 size))))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthm bvlt-1
+  (equal (bvlt 1 x y)
+         (and (equal 0 (getbit 0 x))
+              (equal 1 (getbit 0 y))))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;gen the 1
+(defthm bvlt-of-bvplus-1-cancel
+  (implies (posp size)
+           (equal (bvlt size (bvplus size 1 x) x)
+                  (equal (bvchop size x) (+ -1 (expt 2 size)))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))
+
+(defthm bvlt-of-bvplus-1-cancel-alt
+  (implies (posp size)
+           (equal (bvlt size x (bvplus size 1 x))
+                  (not (equal (bvchop size x) (+ -1 (expt 2 size))))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;figure out how to restrict this case right
+(defthm bvlt-when-bvlt-reverse
+  (implies (and (bvlt size free x) ;free var helps restrict this rule to the case we care about?
+                (equal free y))
+           (not (bvlt size x y)))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+;add a bvlt and bvlt imply bvlt rule?
+
+;this looped before i put in the fakefree stuff (which is because the axe prover doesn have backchain limits)
+(defthm bvlt-when-not-bvlt
+  (implies (and (NOT (BVLT fakefreesize free x))
+                (equal fakefreesize size) ;gross?
+                (bvlt fakefreesize2 free k)
+                (equal fakefreesize2 size) ;gross?
+                )
+           (bvlt size x k))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     ))))
+
+;what other rules are missing?
+(defthm bvlt-false-when-bvlt
+  (implies (and (bvlt size free x)
+                (bvle size k free))
+           (not (bvlt size x k)))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
+
+(defthm bvlt-when-bvlt-smaller
+  (implies (and (bvlt freesize x y)
+                (<= freesize size)
+                (unsigned-byte-p freesize x)
+                ;; (unsigned-byte-p freesize y)
+                (integerp size))
+           (bvlt size x y))
   :hints (("Goal" :in-theory (enable bvlt))))

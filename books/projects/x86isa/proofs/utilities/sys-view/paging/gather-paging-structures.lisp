@@ -424,7 +424,7 @@
 
 
   ///
-  
+
   (defequiv xlate-equiv-entries)
 
   (def-ruleset xlate-equiv-entries-enables

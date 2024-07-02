@@ -145,24 +145,39 @@
                   nil)
                  (t (< y x))))))
 
+(local
+ (defthm equal-of-*-and-0
+   (equal (equal (* x y) 0)
+          (or (equal (fix x) 0)
+              (equal (fix y) 0)))))
+
+(local
+ (defthm /-cancellation-alt
+   (equal (* x (/ x))
+          (if (equal 0 (fix x))
+              0
+            1))))
+
+(local
+ (defthmd cancellation-helper
+   (implies (and (not (equal 0 (fix z)))
+                 (acl2-numberp x)
+                 (acl2-numberp y))
+            (equal (equal (* z x) (* z y))
+                   (equal x y)))
+   :hints (("Goal" :use (:instance (:theorem (implies (equal x y)
+                                                      (equal (* z x) (* z y))))
+                                   (z (/ z))
+                                   (x (* x z))
+                                   (y (* y z)))))))
+
 (defthm distrib-/-over-*
   (equal (/ (* x y)) (* (/ x) (/ y)))
-  :hints (("Goal" :use ((:instance (:theorem
-                                    (implies
-                                     (and
-                                      (acl2-numberp y)
-                                      (acl2-numberp z)
-                                      (not (equal y 0))
-                                      (not (equal z 0)))
-                                     (equal (fix x) (* (/ y) (/ z) y z x))))
-                                   (x (/ (* x y))) (y x) (z y))
-                        (:instance inverse-of-* (x (* x y)))))
-          ("Subgoal 2"
-           :use (:instance (:theorem
-                            (implies
-                             (equal (* x y) 0)
-                             (or (equal (fix x) 0)
-                                 (equal (fix y) 0))))))))
+  :hints (("Goal" :use (:instance cancellation-helper
+                                  (z (* x y))
+                                  (x (/ (* x y)))
+                                  (y (* (/ x) (/ y))))
+           :in-theory (disable associativity-of-*))))
 
 ;; Generate a list of terms each of which appears as the divisor in
 ;; a unary-/ term in the given TERM which is assumed to be a product

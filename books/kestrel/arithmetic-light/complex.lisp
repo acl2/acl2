@@ -16,7 +16,7 @@
 
 (defthm complex-opener
   (equal (complex x y)
-         (+ (rfix x) (* #C(0 1) (rfix y))))
+         (+ (realfix x) (* #C(0 1) (realfix y))))
   :hints (("Goal" :use (:instance complex-definition
-                                  (x (rfix x))
-                                  (y (rfix y))))))
+                                  (x (realfix x))
+                                  (y (realfix y))))))

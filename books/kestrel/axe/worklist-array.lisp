@@ -21,7 +21,16 @@
 ;; See size-array-for-nodes-aux in dag-size-sparse.lisp for an example of how to use the worklist-array.
 
 (include-book "merge-sort-less-than")
-(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
+(include-book "kestrel/acl2-arrays/alen1" :dir :system)
+;; (local (include-book "kestrel/acl2-arrays/array1p" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/header" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/default" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/dimensions" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/maximum-length" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/aref1" :dir :system))
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
+;(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
 (include-book "dags") ;for bounded-darg-listp
 (include-book "kestrel/typed-lists-light/all-rationalp" :dir :system)
 
@@ -94,19 +103,19 @@
   :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args))))
 
 (defthm all-natp-of-get-unexamined-nodenum-args
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (all-natp acc))
            (all-natp (get-unexamined-nodenum-args args worklist-array acc)))
   :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args))))
 
 (defthm natp-listp-of-get-unexamined-nodenum-args
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (nat-listp acc))
            (nat-listp (get-unexamined-nodenum-args args worklist-array acc)))
   :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args))))
 
 (defthm all-rationalp-of-get-unexamined-nodenum-args
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (all-rationalp acc))
            (all-rationalp (get-unexamined-nodenum-args args worklist-array acc)))
   :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args))))

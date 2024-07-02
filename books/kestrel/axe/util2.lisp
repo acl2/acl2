@@ -1,7 +1,7 @@
 ; Utilities for stating claims to be proved by Axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/make-var-names" :dir :system)
-(include-book "kestrel/lists-light/repeat" :dir :system) ;(local (include-book "kestrel/lists-light/repeat" :dir :system))
+(include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
@@ -25,13 +25,15 @@
 
 ;; Make a symbolic list term (a cons nest) containing the variables <base-name>0
 ;; through <base-name>(len-1).  Can be useful when unrolling specs.
-(defun symbolic-list (base-name len)
+;; rename symbolic-var-list?
+(defund symbolic-list (base-name len)
   (declare (xargs :guard (and (symbolp base-name)
                               (natp len))))
-  (make-cons-nest (make-var-names-aux base-name 0 (+ -1 len))))
+  (make-cons-nest (make-var-names base-name len)))
 
 (defthmd pseudo-termp-of-symbolic-list
-  (pseudo-termp (symbolic-list base-name len)))
+  (pseudo-termp (symbolic-list base-name len))
+  :hints (("Goal" :in-theory (enable symbolic-list))))
 
 ;; A version of symbolic-list that makes clear by its name that the vars are
 ;; intended to be bytes (that fact should actually get enforced by additional
@@ -150,20 +152,19 @@
   :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars-aux
                                      pseudo-term-listp-when-symbol-listp))))
 
-;is var-count really element-count?
-(defund bit-blasted-bv-array-write-nest-for-vars (var-name var-count element-size)
+(defund bit-blasted-bv-array-write-nest-for-vars (var-name len element-size)
   (declare (xargs :guard (and (symbolp var-name)
-                              (natp var-count)
+                              (natp len)
                               (integerp element-size)
                               (<= 2 element-size) ; or else we don't need a bvcat for each element
                               )))
-  (bit-blasted-bv-array-write-nest-for-vars-aux 0 var-count element-size var-name))
+  (bit-blasted-bv-array-write-nest-for-vars-aux 0 len element-size var-name))
 
 (defthm pseudo-termp-of-bit-blasted-bv-array-write-nest-for-vars
   (implies (and (symbolp var-name)
-                (natp var-count)
+                (natp len)
                 (posp element-size))
-           (pseudo-termp (bit-blasted-bv-array-write-nest-for-vars var-name var-count element-size)))
+           (pseudo-termp (bit-blasted-bv-array-write-nest-for-vars var-name len element-size)))
   :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -187,41 +188,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun unsigned-byte-p-hyps (var-size-alist)
-  (declare (xargs :guard (and (symbol-alistp var-size-alist)
-                              (nat-listp (strip-cdrs var-size-alist)))))
-  (if (endp var-size-alist)
-      nil
-    (let* ((entry (car var-size-alist))
-           (var-name (car entry))
-           (size (cdr entry)))
-      (cons `(unsigned-byte-p ',size ,var-name)
-            (unsigned-byte-p-hyps (cdr var-size-alist))))))
-
-(defmacro bit-hyps (names)
-  `(unsigned-byte-p-hyps (pairlis$ ,names
-                                   (repeat (len ,names) 1))))
-
-(defmacro byte-hyps (names)
-  `(unsigned-byte-p-hyps (pairlis$ ,names
-                                   (repeat (len ,names) 8))))
-
-(defmacro int-hyps (names)
-  `(unsigned-byte-p-hyps (pairlis$ ,names
-                                   (repeat (len ,names) 32))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund symbolic-byte-assumptions (base-name count)
-  (declare (xargs :guard (and (symbolp base-name)
-                              (natp count))))
-  (byte-hyps (make-var-names base-name count)))
-
-(defund symbolic-int-assumptions (base-name count)
-  (declare (xargs :guard (and (symbolp base-name)
-                              (natp count))))
-  (int-hyps (make-var-names base-name count)))
-
 ;dups?
 (defun make-bit-blasted-expression (bit-index name)
   (if (zp bit-index)
@@ -237,7 +203,7 @@
 
 (defun bit-blasted-symbolic-byte-list (base-name num-vars)
   ;; todo: omit the _, making names like in0_0 ?
-  (let* ((byte-var-names (make-var-names-aux (pack$ base-name '_) 0 (+ -1 num-vars)))
+  (let* ((byte-var-names (make-var-names (pack$ base-name '_) num-vars))
          ;; this is a list of bvcat terms:
          (bit-blasted-byte-var-names (bit-blast-byte-names byte-var-names)))
     (make-cons-nest bit-blasted-byte-var-names)))
@@ -258,7 +224,7 @@
                                      (+ -1 byte-num)
                                      (append (append-numbers 7 (pack$ base-name "_" byte-num)) acc))))
 
-
+;assumes the array elements are bytes
 (defun make-bit-variable-list-for-array (array-name length)
   (make-cons-nest (make-list-of-bit-variable-names array-name (+ -1 length) nil)))
 
@@ -277,8 +243,6 @@
 ;; ;;   (declare (xargs :guard (and (symbolp name)
 ;; ;;                               (natp length))))
 ;;   (make-bit-blasted-array-expression-aux 0 length name))b
-
-
 
 ;BBOZO this largely duplicates the above?
 (defun make-bit-var-list-for-byte (bit-index name)
@@ -301,7 +265,6 @@
 ;;                               (natp length))))
   (make-bit-var-list-for-bytes-aux 0 length name))
 
-;move
 ;; Make a term representing a symbolic array of bit vectors variables NAME0,
 ;; ...,  NAME(length-1), each of ELEMENT-WIDTH bits.
 (defun symbolic-array (name length element-width)
@@ -333,3 +296,50 @@
   (if (equal (len x) (len y))
       (pairlis$ x y)
     (hard-error 'pairlis$-safe "Lists lengths unequal" nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Making hyps that assert that lists of vars are bvs/bits.
+
+(defun unsigned-byte-p-hyp (size-term item)
+  (declare (xargs :guard t)) ; args may be untranslated terms
+  `(unsigned-byte-p ,size-term ,item))
+
+(defun unsigned-byte-p-hyps (size-term ; often a quoted constant
+                             items ; may be untranslated terms
+                             )
+  (declare (xargs :guard (true-listp items)))
+  (if (endp items)
+      nil
+    (cons (unsigned-byte-p-hyp size-term (first items))
+          (unsigned-byte-p-hyps size-term (rest items)))))
+
+;; This makes calls of unsigned-byte-p.  Instead, it could make calls of bitp.
+(defun bit-hyps (items)
+  (declare (xargs :guard (true-listp items)))
+  (unsigned-byte-p-hyps ''1 items))
+
+(defun byte-hyps (items)
+  (declare (xargs :guard (true-listp items)))
+  (unsigned-byte-p-hyps ''8 items))
+
+;; ;; todo: improve name
+;; (defun int-hyps (items)
+;;   (declare (xargs :guard (true-listp items)))
+;;   (unsigned-byte-p-hyps ''32 items))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Makes a list of assumptions that together assert that the variables
+;; base-name0 through base-name(count-1) are bytes.
+(defund symbolic-byte-assumptions (base-name count)
+  (declare (xargs :guard (and (symbolp base-name)
+                              (natp count))))
+  (byte-hyps (make-var-names base-name count)))
+
+;; ;; Makes a list of assumptions that together assert that the variables
+;; ;; base-name0 through base-name(count-1) are unsigned-byte 32s.
+;; (defund symbolic-int-assumptions (base-name count)
+;;   (declare (xargs :guard (and (symbolp base-name)
+;;                               (natp count))))
+;;   (int-hyps (make-var-names base-name count)))

@@ -1,7 +1,7 @@
 ; BV Library: logior
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,10 +38,15 @@
          -1)
   :hints (("Goal" :in-theory (enable logior))))
 
-(defthm logior-of-0
+(defthm logior-of-0-arg1
   (equal (logior 0 j)
          (ifix j))
   :hints (("Goal" :in-theory (enable logior))))
+
+;; Disabled since we should commute the 0 forward
+(defthmd logior-of-0-arg2
+  (equal (logior i 0)
+         (ifix i)))
 
 (defthm logior-when-not-integerp-arg1
   (implies (not (integerp i))
@@ -118,7 +123,7 @@
 (defthm logior-commutative-2
   (equal (logior j i k)
          (logior i j k))
-  :hints (("Goal" :use ((:instance logior-associative)
+  :hints (("Goal" :use (logior-associative
                         (:instance logior-associative (i j) (j i)))
            :in-theory (disable logior-associative))))
 
@@ -296,7 +301,7 @@
                 (integerp j))
            (equal (logior i (logand i j) k)
                   (logior i k)))
-  :hints (("Goal" :use (:instance logior-of-logand-same-arg-1)
+  :hints (("Goal" :use logior-of-logand-same-arg-1
            :in-theory (disable logior-of-logand-same-arg-1))))
 
 (defthm logand-of-logior
@@ -369,3 +374,29 @@
   :hints (("Goal" :use (:instance <-of-logior-and-expt-of-2
                                   (n (+ -1 (integer-length k))))
            :in-theory (disable <-of-logior-and-expt-of-2))))
+
+(defthm logior-of-all-ones
+  (implies (and (natp n)
+                (unsigned-byte-p n x))
+           (equal (logior (+ -1 (expt 2 n)) x)
+                  (+ -1 (expt 2 n))))
+  :hints (("Goal" :in-theory (e/d (logior) (lognot-of-logand)))))
+
+(defthm logior-of-1-arg1-when-bitp
+  (implies (bitp j)
+           (equal (logior 1 j)
+                  1))
+  :hints (("Goal" :in-theory (enable bitp))))
+
+;; Disabled since we expect to commute
+(defthmd logior-of-1-arg2-when-bitp
+  (implies (bitp i)
+           (equal (logior i 1)
+                  1))
+  :hints (("Goal" :in-theory (enable bitp))))
+
+(defthm logior-combine-constants
+  (implies (syntaxp (and (quotep i)
+                         (quotep j)))
+           (equal (logior i (logior j k))
+                  (logior (logior i j) k))))

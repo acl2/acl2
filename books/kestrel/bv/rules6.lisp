@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,6 +27,44 @@
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop, for sub1-logcdr-induction-1
+
+;move
+;use polarities?
+(defthmd my-non-integerp-<-integerp
+  (implies (and (syntaxp (quotep k))
+                (not (integerp k))
+                (integerp n)
+                (rationalp k))
+           (equal (< k n)
+                  (< (floor k 1) n))))
+;fixme drop?
+;use polarities?
+(defthmd <-of-non-integerp-and-integerp
+  (implies (and (syntaxp (quotep k))
+                (not (integerp k))
+                (integerp n)
+                (rationalp k))
+           (equal (< k n)
+                  (< (floor k 1) n)))
+  :hints (("Goal" :in-theory (disable my-non-integerp-<-integerp)
+           :use (:instance my-non-integerp-<-integerp (k k)))))
+
+;move
+;use polarities?
+(defthmd my-integerp-<-non-integerp
+  (implies (and (syntaxp (quotep k))
+                (not (integerp k))
+                (rationalp k)
+                (integerp n))
+           (equal (< n k)
+                  ;phrase this as a < ?
+                  (<= n (floor k 1)))))
+
+;move?
+(in-theory (enable bvchop-identity
+                   ;;bvxor-of-bvchop-1
+                   ;;bvxor-of-bvchop-2
+                   ))
 
 (defthm bvmult-tighten
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
@@ -136,31 +174,6 @@
 
 ;(in-theory (disable bvxor-trim-arg2 bvxor-trim-arg1)) ;bozo
 
-;do we trim logexts?
-(defthm bvxor-of-logext
-  (implies (and (<= size1 size2)
-                (< 0 size2)
-                (natp size1)
-                (natp size2)
-                ;(integerp x)
-                ;(integerp y)
-                )
-           (equal (bvxor size1 (logext size2 x) y)
-                  (bvxor size1 x y)))
-  :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
-
-(defthm bvxor-of-logext-alt
-  (implies (and (<= size1 size2)
-                (< 0 size2)
-                (natp size1)
-                (natp size2)
-;                (integerp x)
-;                (integerp y)
-                )
-           (equal (bvxor size1 y (logext size2 x))
-                  (bvxor size1 x y)))
-  :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
-
 (in-theory (disable integer-length)) ; todo
 
 ;todo: just use a trim rule?
@@ -174,7 +187,7 @@
                 )
            (equal (GETBIT size1 (BVMULT size2 x y))
                   (GETBIT size1 (BVMULT (+ 1 size1) x y))))
-  :hints (("Goal" :in-theory (e/d (getbit) (SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (getbit) ( BVCHOP-1-BECOMES-GETBIT)))))
 
 ;; (defthm mod-by-1
 ;;  (implies (integerp x)
@@ -216,8 +229,7 @@
 (defthmd bvchop-of-logxor-back
   (implies (and (natp n) (natp a) (natp b)) ;used to have integerp hyps
            (equal (logxor (bvchop n a) (bvchop n b))
-                  (bvchop n (logxor a b))))
-  :hints (("Goal" :in-theory (enable))))
+                  (bvchop n (logxor a b)))))
 
 (theory-invariant (incompatible (:rewrite bvchop-of-logxor) (:rewrite bvchop-of-logxor-back)))
 
@@ -251,7 +263,7 @@
   :hints (("Goal"
            :use (:instance LOGTAIL-BECOMES-SLICE-BIND-FREE (x (bvxor size x y))
                            (newsize size))
-           :in-theory (e/d () (LOGTAIL-BECOMES-SLICE-BIND-FREE)))))
+           :in-theory (disable LOGTAIL-BECOMES-SLICE-BIND-FREE))))
 
 ;(bvmult 4 (bvxor 4 12 10) 6)
 ;(bvxor 4 (bvmult 4 12 6) (bvmult 4 10 6))
@@ -309,7 +321,7 @@
            (equal (bvmult size k x)
                   (bvand size k (repeatbit size x))))
   :hints (("Goal" :in-theory (enable repeatbit)
-           :use ((:instance usb1-cases)))))
+           :use (usb1-cases))))
 
 ;; ;bozo why did this arise?
 ;; (IMPLIES (SIGNED-BYTE-P 32 X)
@@ -347,7 +359,8 @@
                 (integerp x)
                 (integerp y))
            (equal (bvand size x y)
-                  (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y)) (+ -1 size) (bvand (+ -1 size) x y)))))
+                  (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y)) (+ -1 size) (bvand (+ -1 size) x y))))
+  :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
 
 ;; (thm
 ;;  (implies (and (< high n)
@@ -365,9 +378,9 @@
 ;(bvxor x (foo x) (slice 7 0 y))
 ;even though the bvchop can be dropped, because foo might be big (say, of size 32) and the latter would give a length mismatch in stp
 ;trying this - more like this?
-(in-theory (disable bvxor-of-bvchop-1 bvxor-of-bvchop-2))
+;(in-theory (disable bvxor-of-bvchop-1 bvxor-of-bvchop-2))
 ;(in-theory (enable add-bvchop-to-bvxor-1 add-bvchop-to-bvxor-2)) ;BOZO what about trimming constants?
-(in-theory (disable bvchop-identity))
+;(in-theory (disable bvchop-identity))
 ;bozo this is too bad
 ;(theory-invariant (incompatible (:rewrite add-bvchop-to-bvxor-1) (:rewrite bvchop-identity)))
 ;(theory-invariant (incompatible (:rewrite add-bvchop-to-bvxor-2) (:rewrite bvchop-identity)))
@@ -417,9 +430,8 @@
                 (integerp newsize))
            (equal (bvmult size x y)
                   (bvmult size (bvchop size x) y)))
-  :hints (("Goal" :in-theory (e/d ()
-                                  (bvmult-pad-arg1
-                                   bvmult-pad-arg2)))))
+  :hints (("Goal" :in-theory (enable bvmult-pad-arg1
+                                     bvmult-pad-arg2))))
 
 ;todo: use trim, not bvchop
 (defthm bvmult-trim-arg2
@@ -429,18 +441,21 @@
                 (integerp newsize))
            (equal (BVMULT size x y)
                   (bvmult size x (bvchop size y))))
-  :hints (("Goal" :in-theory (e/d () (bvmult-pad-arg1
-                                                bvmult-pad-arg2)))))
-
-
+  :hints (("Goal" :in-theory (disable bvmult-pad-arg1 bvmult-pad-arg2))))
 
 ;add theory invars?
-(in-theory (disable BVCAT-OF-BVCHOP-HIGH BVCAT-OF-BVCHOP-low))
+;(in-theory (disable BVCAT-OF-BVCHOP-HIGH BVCAT-OF-BVCHOP-low))
 
+;these shouldn't be needed for "user" proofs outside the BV library:
 (in-theory (disable slice-too-high-is-0
                     bvcat-when-highval-is-not-an-integer
                     bvcat-when-lowval-is-not-an-integer
-                    bvchop-when-i-is-not-an-integer))
+                    bvchop-when-i-is-not-an-integer
+                    getbit-when-val-is-not-an-integer
+                    slice-when-val-is-not-an-integer
+                    ;;bvxor-when-x-is-not-an-integer
+                    ;;bvxor-when-y-is-not-an-integer
+                    ))
 
 ;after this fires, the associativity rule should fire too
 ;bozo make a high version
@@ -503,73 +518,6 @@
                                   (BVMULT-PAD-ARG1
                                    BVMULT-PAD-ARG2)))))
 
-;move
-(defthm collect-constants-<-/
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< a (* b x))
-                  (< (/ a b) x))))
-
-;move
-(defthm collect-constants-<-/-two
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< (* b x) a)
-                  (< x (/ a b)))))
-
-;move
-(defthm my-non-integerp-<-integerp
-  (implies (and (syntaxp (quotep k))
-                (not (integerp k))
-                (rationalp k)
-                (integerp n)
-;                (case-split (rationalp k))
-                )
-           (equal (< k n)
-                  (< (floor k 1) n))))
-;fixme drop?
-(defthm <-of-non-integerp-and-integerp
-  (implies (and (syntaxp (quotep k))
-                (not (integerp k))
-                (integerp n)
-                (rationalp k))
-           (equal (< k n)
-                  (< (floor k 1) n)))
-  :hints (("Goal" :in-theory (disable my-non-integerp-<-integerp)
-           :use (:instance my-non-integerp-<-integerp (k k)))))
-
-;move
-(defthm my-integerp-<-non-integerp
-  (implies (and (syntaxp (quotep k))
-                (not (integerp k))
-                (rationalp k)
-                (integerp n)
-                ;(case-split (rationalp k))
-                )
-           (equal (< n k)
-                  ;phrase this as a < ?
-                  (<= n (floor k 1)))))
-
-(in-theory (enable bvchop-identity))
-(in-theory (enable bvxor-of-bvchop-1
-                             bvxor-of-bvchop-2
-                             bvcat-of-bvchop-low
-                             bvcat-of-bvchop-high
-                             bvxor-1-of-getbit-arg1
-                             bvxor-1-of-getbit-arg2
-                             bvand-1-of-getbit-arg1
-                             bvand-1-of-getbit-arg2))
-
 (defthm logext-trim-arg
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< size newsize)
@@ -618,12 +566,6 @@
                                    bvmult-pad-arg2
                                    )))))
 
-;these shouldn't be needed for "user" proofs:
-(in-theory (disable getbit-when-val-is-not-an-integer
-                    slice-when-val-is-not-an-integer
-                    ;;bvxor-when-x-is-not-an-integer
-                    ;;bvxor-when-y-is-not-an-integer
-                    ))
 
 (defthmd bvcat-blast-high
   (implies (and (syntaxp (not (quotep highval))) ;Fri Mar  4 20:24:01 2011
@@ -653,7 +595,7 @@
                            (j (max xsize ysize)))
            :in-theory (e/d ( bvplus unsigned-byte-p unsigned-byte-p-forced) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                                                       <-of-expt-and-expt-same-base
-                                                      ;;anti-bvplus
+                                                      ;;
                                                       )))))
 
 (defthmd plus-becomes-bvplus-arg1-free
@@ -663,7 +605,7 @@
                 (posp xsize))
            (equal (+ x y)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
-  :hints (("Goal" :use (:instance plus-becomes-bvplus)
+  :hints (("Goal" :use plus-becomes-bvplus
            :in-theory (e/d (unsigned-byte-p-forced) (plus-becomes-bvplus)))))
 
 (defthmd plus-becomes-bvplus-arg2-free
@@ -673,6 +615,6 @@
                 (posp xsize))
            (equal (+ y x)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
-  :hints (("Goal" :use (:instance plus-becomes-bvplus-arg1-free)
+  :hints (("Goal" :use plus-becomes-bvplus-arg1-free
            :in-theory (e/d (<-of-constant-when-unsigned-byte-p-size-param)
                            ( plus-becomes-bvplus-arg1-free)))))

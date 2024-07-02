@@ -1,7 +1,7 @@
 ; Another book about the built-in function mod.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,6 @@
 (local (include-book "divide"))
 (local (include-book "times"))
 (local (include-book "floor"))
-(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;to prove mod-expt-mod, mod-bound, etc.
 (local (include-book "expt"))
 (local (include-book "expt2"))
 (local (include-book "times-and-divide"))
@@ -42,9 +41,13 @@
   (implies (posp n)
            (equal (mod (mod a (expt 2 n)) 2)
                   (mod a 2)))
-  :hints (("Goal" :cases ((not (acl2-numberp a))
-                          (rationalp a))
-           :in-theory (disable mod-cancel))))
+  :hints (("Goal" :use (:instance mod-of-mod-when-mult
+                                  (x a)
+                                  (y1 (expt 2 n))
+                                  (y2 2))
+           :in-theory (disable mod-of-mod-when-mult))))
+
+(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;todo; to prove mod-expt-mod, mod-bound, etc.
 
 ;gross proof? use a bound lemma?
 (defthm integerp-of-*-of-/-and-mod
@@ -52,7 +55,9 @@
                 (rationalp y)
                 (not (equal 0 y)))
            (equal (integerp (* (/ y) (mod x y)))
-                  (equal 0 (mod x y)))))
+                  (equal 0 (mod x y))))
+  ;:hints (("Goal" :in-theory (enable mod)))
+  )
 
 (defthm mod-non-negative-constant
   (implies (and (syntaxp (quotep y))
@@ -80,10 +85,6 @@
                 (rationalp x))
            (equal (< 0 (mod x y))
                   (not (equal 0 (mod x y))))))
-
-(local (include-book "floor")) ;move?!
-
-
 
 (local (in-theory (disable mod-minus)))
 

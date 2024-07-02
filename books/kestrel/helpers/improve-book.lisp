@@ -1,6 +1,6 @@
 ; Replaying the events in a book (perhaps with changes).
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,6 +28,8 @@
 ;; TOOD: Handle defsection
 ;; TODO: Handle define (prepwork, ///, etc.)
 ;; TODO: Handle defrule
+;; TODO: Handle with-output
+;; TODO: Perhaps try turning off tau, to see if that saves a lot of time.
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
@@ -37,6 +39,7 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/all-included-books" :dir :system)
 (include-book "kestrel/utilities/extend-pathname-dollar" :dir :system)
+(include-book "kestrel/utilities/maybe-add-dot-lisp-extension" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
@@ -177,7 +180,7 @@
       (if skipp
           (submit-and-check-events (rest events) skip-proofsp skip-localsp print state)
         (mv-let (erp state)
-          (submit-event (if skip-proofsp event `(skip-proofs ,event))
+          (submit-event (if skip-proofsp `(skip-proofs ,event) event)
                         nil ;print
                         nil state)
           (if erp
@@ -601,7 +604,7 @@
     ((defun defund) (improve-defun-event event rest-events print state))
     ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
      )
-    ((encapsulate) (submit-event event nil nil state) ; todo: handle!
+    ((encapsulate) (submit-event event nil nil state) ; todo: handle! may be easy if no constrained functions and no local events
      )
     (include-book (improve-include-book-event event rest-events initial-included-books print state) )
     ((in-package) (improve-in-package-event event rest-events print state))
@@ -643,12 +646,7 @@
           ;; todo: do local incompat checking without include-books (or making them local) here?
           (improve-events-aux events initial-included-books print state)))
 
-;move
-(defund maybe-add-book-extension (book)
-  (declare (xargs :guard (stringp book)))
-  (if (string-ends-withp book ".lisp") ; tolerate existing .lisp extension
-      book
-    (concatenate 'string book ".lisp")))
+
 
 ;; Returns (mv erp forms full-book-path state).
 ;move
@@ -660,7 +658,7 @@
                                   (stringp dir)))
                   :mode :program ; todo
                   :stobjs state))
-  (let* ((file-name (maybe-add-book-extension bookname))
+  (let* ((file-name (maybe-add-dot-lisp-extension bookname))
          (full-book-path (extend-pathname$ (if (eq dir :cbd) "." dir) file-name state)))
     (mv-let (existsp state)
       (file-write-date$ full-book-path state)
@@ -687,7 +685,10 @@
     (read-book-contents bookname dir state)
     (if erp
         (mv erp state)
-      (let ((state (widen-margins state)))
+      (let* ((state (widen-margins state))
+             (fake (TIME-TRACKER-FN 'NIL 'NIL 'NIL 'NIL 'NIL 'NIL 'NIL)) ; from :trans (time-tracker nil)
+             )
+        (declare (ignore fake))
         (prog2$
          (and print (cw "~%~%(IMPROVING ~x0.~%" full-book-path)) ; matches the close paren below
          (let* ((old-cbd (cbd-fn state))

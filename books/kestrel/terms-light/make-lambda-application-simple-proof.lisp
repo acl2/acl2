@@ -37,21 +37,21 @@
 (local (in-theory (disable alistp no-duplicatesp-equal)))
 
 (defthm empty-eval-of-append-of-pairlis$-of-EMPTY-EVAL-LIST-when-relevant-actuals-are-formals
-  (IMPLIES  (and (pseudo-termp body)
-                 (no-nils-in-termp body)
-                 (symbol-listp formals)
-                 (no-duplicatesp-equal formals)
-                 (pseudo-term-listp actuals)
-                 (equal (len formals)
-                        (len actuals))
+  (implies (and (pseudo-termp body)
+                (no-nils-in-termp body)
+                (symbol-listp formals)
+                (no-duplicatesp-equal formals)
+                (pseudo-term-listp actuals)
+                (equal (len formals)
+                       (len actuals))
                  ;; the relevant actuals are all vars (unusual!):
-                 (EQUAL
-                  (MV-NTH 0
-                          (FILTER-FORMALS-AND-ACTUALS FORMALS
-                                                      ACTUALS (FREE-VARS-IN-TERM BODY)))
-                  (MV-NTH 1
-                          (FILTER-FORMALS-AND-ACTUALS FORMALS
-                                                      ACTUALS (FREE-VARS-IN-TERM BODY)))))
+                (EQUAL
+                 (MV-NTH 0
+                         (FILTER-FORMALS-AND-ACTUALS FORMALS
+                                                     ACTUALS (FREE-VARS-IN-TERM BODY)))
+                 (MV-NTH 1
+                         (FILTER-FORMALS-AND-ACTUALS FORMALS
+                                                     ACTUALS (FREE-VARS-IN-TERM BODY)))))
 
             (EQUAL (EMPTY-EVAL BODY
                                (APPEND (PAIRLIS$ FORMALS (EMPTY-EVAL-LIST ACTUALS A))
@@ -252,9 +252,8 @@
                   (empty-eval body (append (pairlis$ formals (empty-eval-list actuals a))
                                            a))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (make-lambda-application-simple
-                            intersection-equal-of-set-difference-equal-when-subsetp-equal)
-                           ()))))
+           :in-theory (enable make-lambda-application-simple
+                              intersection-equal-of-set-difference-equal-when-subsetp-equal))))
 
 ;true of any evaluator
 ;move or drop?
@@ -277,7 +276,8 @@
 ;; ; :hints (("Goal" :in-theory (enable strip-cars SUBSETP-EQUAL append)))
 ;;  )
 
-;; Special case for when the formals include all the free vars in the body
+;; Special case for when the formals include all the free vars in the body,
+;; as often will be the case (e.g., when processing an existing [closed] lambda).
 (defthm empty-eval-of-make-lambda-application-simple-correct-2
   (implies (and (subsetp-equal (free-vars-in-term body) formals) ; this case
                 (pseudo-termp body)

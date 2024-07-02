@@ -85,8 +85,8 @@
 
 ;do not remove (helps justify the translation to STP)
 (defthm bvdiv-of-bvchop-arg3-same
-  (equal (bvdiv size y (bvchop size x))
-         (bvdiv size y x))
+  (equal (bvdiv size x (bvchop size y))
+         (bvdiv size x y))
   :hints (("Goal" :in-theory (enable bvdiv))))
 
 (defthm unsigned-byte-p-of-bvdiv

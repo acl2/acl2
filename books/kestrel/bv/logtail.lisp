@@ -66,7 +66,7 @@
                 (natp n))
            (equal (logtail n (* (expt 2 n) x))
                   (ifix x)))
-  :hints (("Goal" :use (:instance logtail-shift)
+  :hints (("Goal" :use logtail-shift
            :in-theory (disable logtail-shift))))
 
 (defthm logtail-of-sum
@@ -108,7 +108,8 @@
   :hints (("Goal" :in-theory (enable logtail))))
 
 (defthm logtail-of-times-2
-  (implies (and (natp n)
+  (implies (and (syntaxp (not (quotep x))) ; prevent ACL2 from unifying (* 2 x) with a constant
+                (natp n)
                 (integerp x))
            (equal (logtail n (* 2 x))
                   (if (equal 0 n)
@@ -121,11 +122,9 @@
 ;;            (NATP (LOGTAIL HIGH X))))
 
 (defthm logtail-of-logtail
-  (implies (and (natp pos1)
-                (natp pos))
-           (equal (logtail pos1 (logtail pos i))
-                  (logtail (+ pos pos1) i)))
-  :hints (("Goal" :use (:instance logtail-logtail)
+  (equal (logtail pos1 (logtail pos i))
+         (logtail (+ (nfix pos) (nfix pos1)) i))
+  :hints (("Goal" :use logtail-logtail
            :in-theory (disable logtail-logtail))))
 
 (defthm logtail-of-minus-expt
@@ -160,7 +159,7 @@
                 (integerp x))
            (equal (logtail size (* (expt 2 n) x))
                   (logtail (- size n) x)))
-  :hints (("Goal" :use (:instance logtail-shift-gen)
+  :hints (("Goal" :use logtail-shift-gen
            :in-theory (disable logtail-shift-gen))))
 
 (defthm logtail-of-expt
@@ -324,8 +323,7 @@
   (implies (integerp x)
            (equal (logtail 1 (+ 1 (* 2 x)))
                   x))
-  :hints (("Goal" :in-theory (e/d (logtail)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable logtail))))
 
 (defthm <-of-logtail-arg1
   (implies (and (integerp i)
@@ -345,9 +343,39 @@
                   (<= (* (+ 1 j) (expt 2 pos)) i)))
   :hints (("Goal" :in-theory (enable logtail))))
 
+(defthm <=-of-*-of-expt-and-logtail
+  (implies (and (integerp i)
+                (natp pos))
+           (<= (* (expt 2 pos) (logtail pos i)) i))
+  :hints (("Goal" :in-theory (enable logtail))))
+
 (defthm <=-of-*-of-expt-and-logtail-linear
   (implies (and (integerp i)
                 (natp pos))
            (<= (* (expt 2 pos) (logtail pos i)) i))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable logtail))))
+
+;Disabled since logtail is more complex than floor
+(defthmd floor-of-2-becomes-logtail-of-1
+  (implies (integerp x)
+           (equal (floor x 2)
+                  (logtail 1 x)))
+  :hints (("Goal" :in-theory (enable logtail ifix))))
+
+(theory-invariant (incompatible (:rewrite floor-of-2) (:definition logtail)))
+
+(defthmd ash-of-negative-becomes-logtail
+  (implies (and (<= amt 0)
+                (integerp amt))
+           (equal (ash x amt)
+                  (logtail (- amt) x)))
+  :hints (("Goal" :in-theory (enable logtail ash))))
+
+(defthm logtail-of-floor-of-expt
+  (implies (and (integerp x)
+                (natp pos)
+                (natp n))
+           (equal (logtail pos (floor x (expt 2 n)))
+                  (logtail (+ pos n) x)))
+  :hints (("Goal" :in-theory (enable logtail expt-of-+))))

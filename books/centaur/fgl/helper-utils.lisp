@@ -238,7 +238,15 @@
                           above.~%" ans))
                 (t   (cw "Counterexample verified!~%"))))
        (interp-st (interp-st-check-bvar-db-ctrex-consistency interp-st state))
-       (interp-st (update-interp-st->debug-info ctrex-bindings interp-st)))
+       (scratch (interp-st->user-scratch interp-st))
+       ;; Collect counterexamples in the user scratch for later extraction
+       (interp-st (update-interp-st->user-scratch
+                   (hons-acons ':counterexamples
+                               (cons ctrex-bindings
+                                     (cdr (hons-get ':counterexamples scratch)))
+                               scratch)
+                   interp-st))
+       (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
     (mv nil interp-st))
   ///
   (make-event
@@ -289,10 +297,11 @@
 (def-fgl-rewrite run-counterexample-rw
   (equal (run-counterexample params msg)
          (fgl-prog2 (syntax-interp
-                     (prog2$ (interp-st-run-ctrex (g-concrete->val params) 'interp-st 'state)
-                             (fgl-interp-store-debug-info (msg "~@0: Counterexample -- stopping!"
-                                                               (g-concrete->val msg))
-                                                           nil 'interp-st)))
+                     (interp-st-run-ctrex (g-concrete->val params) 'interp-st 'state)
+                             ;; (fgl-interp-store-debug-info (msg "~@0: Counterexample -- stopping!"
+                             ;;                                   (g-concrete->val msg))
+                             ;;                              nil 'interp-st)
+                             )
                     nil)))
 
 (disable-execution run-counterexample)

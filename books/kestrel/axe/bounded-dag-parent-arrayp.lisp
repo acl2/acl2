@@ -1,7 +1,7 @@
 ; Bounded variant of dag-parent-arrayp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,10 +13,10 @@
 (in-package "ACL2")
 
 (include-book "dag-parent-arrayp")
-
-;;;
-;;; bounded-dag-parent-entriesp
-;;;
+(local (include-book "kestrel/acl2-arrays/array1p" :dir :system))
+(local (include-book "kestrel/acl2-arrays/default" :dir :system))
+(local (include-book "kestrel/acl2-arrays/aref1" :dir :system))
+(local (include-book "kestrel/acl2-arrays/dimensions" :dir :system))
 
 ;; Check that all entries from n down to 0 are lists (of numbers) less than limit.
 (defund bounded-dag-parent-entriesp (n dag-parent-array-name dag-parent-array limit)
@@ -60,12 +60,10 @@
 (defthm bounded-dag-parent-entriesp-of-maybe-expand-array
   (implies (and (array1p dag-parent-array-name dag-parent-array)
                 (natp index)
-                (<= index 2147483645))
+                (<= index *max-1d-array-index*))
            (equal (bounded-dag-parent-entriesp n dag-parent-array-name (maybe-expand-array dag-parent-array-name dag-parent-array index) limit)
                   (bounded-dag-parent-entriesp n dag-parent-array-name dag-parent-array limit)))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-entriesp))))
-
-
 
 ;; it's sufficient for all legal entries to be okay, since aref1 returns the default if the index is too large
 (defthmd bounded-dag-parent-entriesp-suff
@@ -82,7 +80,7 @@
                 (integerp n)
                 (<= n parent-array-len)
                 (posp parent-array-len)
-                (< parent-array-len 2147483647))
+                (<= parent-array-len *max-1d-array-length*))
            (bounded-dag-parent-entriesp n dag-parent-array-name (make-empty-array dag-parent-array-name parent-array-len) limit))
   :hints (("Goal" :expand ((bounded-dag-parent-entriesp
                             0 dag-parent-array-name
@@ -90,9 +88,7 @@
                             limit))
            :in-theory (enable bounded-dag-parent-entriesp))))
 
-;;;
-;;; bounded-dag-parent-arrayp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize a dag-parent-array such that the entries in the dag-parent-array only contain nodenums less than the dag-len
 (defund bounded-dag-parent-arrayp (dag-parent-array-name dag-parent-array dag-len)
@@ -112,14 +108,14 @@
 
 (defthm bounded-dag-parent-arrayp-of-make-empty-array
   (implies (and (posp dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (symbolp dag-parent-array-name))
            (bounded-dag-parent-arrayp dag-parent-array-name (make-empty-array dag-parent-array-name dag-len) dag-len))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))
 
 (defthm bounded-dag-parent-arrayp-of-make-empty-array-gen
   (implies (and (posp dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (symbolp dag-parent-array-name)
                 (<= lim dag-len))
            (bounded-dag-parent-arrayp dag-parent-array-name (make-empty-array dag-parent-array-name dag-len) lim))

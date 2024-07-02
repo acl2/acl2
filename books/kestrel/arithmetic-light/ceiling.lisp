@@ -159,7 +159,7 @@
                 (< 0 j))
            (equal (< k (ceiling i j))
                   (< (* j k) i)))
-  :hints (("Goal" :use ((:instance my-floor-lower-bound)
+  :hints (("Goal" :use (my-floor-lower-bound
                         (:instance <-of-*-of-/-arg2-arg1
                                    (z k)
                                    (y i)
@@ -170,7 +170,7 @@
                            (my-floor-lower-bound-alt
                             <-of-*-of-/-arg2-arg1
                             <-of-*-of-/-arg2-arg2
-                            <-*-/-left-with-addend)))))
+                            )))))
 
 ;; k is bigger than the ceiling if it at least the quotient plus 1
 (defthm <-of-ceiling-arg2
@@ -180,9 +180,8 @@
                 (rationalp j)
                 (< 0 j))
            (< (ceiling i j) k))
-  :hints (("Goal" :use (:instance ceiling-upper-bound)
-           :in-theory (disable ceiling-upper-bound
-                               <-*-/-left-with-addend-alt))))
+  :hints (("Goal" :use ceiling-upper-bound
+           :in-theory (disable ceiling-upper-bound))))
 
 (defthm ceiling-of-*-same
   (implies (and (posp x)

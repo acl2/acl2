@@ -25,9 +25,9 @@
              )
  })
 
- <p>where the keyword arguments are evaluated.
- For information on the keyword arguments, see @(tsee set-inhibited-summary-types),
- @(tsee set-inhibit-output-lst), and @(tsee ld-error-action).</p>
+ <p>where the keyword arguments are evaluated.  For information on the keyword
+ arguments, see @(tsee set-inhibited-summary-types), @(tsee
+ set-inhibit-output-lst), and @(tsee ld-error-action).</p>
 
  <p>Example form:</p>
 
@@ -113,8 +113,19 @@
  touch NAME-log.txt
  })
 
- <p>NOTE for ACL2(r) users: The prompt is set by @('run-script') so that the
- usual \"(r)\" is not printed.</p>")
+ <p><b>Remarks.</b></p>
+
+ <ul>
+
+ <li>Note for ACL2(r) users: The prompt is set by @('run-script') so that the
+ usual \"(r)\" is not printed.</li>
+
+ <li>If you want commands like @(':')@(tsee pe) to avoid printing event
+ numbers, put the form @('(assign script-mode 'skip-ldd-n)') into your
+ @('*-input.lsp') file.  See @(see community-book) file
+ @('demos/floating-point-input.lsp') for an example.</li>
+
+ </ul>")
 
 (include-book "xdoc/top" :dir :system)
 

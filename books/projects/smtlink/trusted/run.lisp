@@ -23,9 +23,10 @@
   :parents (trusted)
   :short "SMT-run runs the configured SMT solver then interprets the result and feed it back to ACL2."
 
-  (define SMT-run ((fname stringp) (smt-conf smtlink-config-p))
+  (define SMT-run ((fname stringp) (smt-conf smtlink-config-p) state)
     :returns (mv (exit-status natp)
-                 (lines string-listp))
+                 (lines string-listp)
+                 (state state-p1 :hyp (state-p1 state)))
     (let ((cmd (concatenate 'string (smtlink-config->smt-cmd smt-conf) " " fname)))
       (time$ (tshell-call cmd
                           :print nil
@@ -39,7 +40,7 @@
     :returns (mv (proved? booleanp)
                  (state))
     :verify-guards nil
-    (b* (((mv exit-status lines) (SMT-run fname smt-conf))
+    (b* (((mv exit-status lines state) (SMT-run fname smt-conf state))
          ((unless (equal exit-status 0))
           (mv (er hard? 'SMT-run=>SMT-interpret "Z3 failure: ~q0" lines) state))
          ((if (equal lines nil))
@@ -47,12 +48,12 @@
          ((if (equal (car lines) "proved"))
           (b* (((unless (equal rm-file nil)) (mv t state))
                (cmd (concatenate 'string "rm -f " fname))
-               ((mv exit-status-rm lines-rm) (time$ (tshell-call cmd
-                                                                 :print nil
-                                                                 :save t)
-                                                    ;; :msg "; rm -f: `~s0`: ~st sec, ~sa bytes~%"
-                                                    :msg ""
-                                                    :args (list cmd))))
+               ((mv exit-status-rm lines-rm state) (time$ (tshell-call cmd
+                                                                       :print nil
+                                                                       :save t)
+                                                          ;; :msg "; rm -f: `~s0`: ~st sec, ~sa bytes~%"
+                                                          :msg ""
+                                                          :args (list cmd))))
             (if (equal exit-status-rm 0)
                 (mv t state)
               (mv (er hard? 'SMT-run=>SMT-interpret "Remove file error.~% ~p0~%" lines-rm)
@@ -95,8 +96,8 @@ the check for (true-listp str) and (consp (car str)) failed: ~q0" str)
     (verify-guards SMT-interpret :guard-debug t
       :hints (("goal"
                :in-theory (disable f-put-global)
-               :use ((:instance endp-of-not-consp-of-string-listp (x (mv-nth 1 (smt-run fname smt-conf))))
-                     (:instance stringp-of-consp-of-string-listp (x (mv-nth 1 (smt-run fname smt-conf))))))))
+               :use ((:instance endp-of-not-consp-of-string-listp (x (mv-nth 1 (smt-run fname smt-conf state))))
+                     (:instance stringp-of-consp-of-string-listp (x (mv-nth 1 (smt-run fname smt-conf state))))))))
     )
 )
 

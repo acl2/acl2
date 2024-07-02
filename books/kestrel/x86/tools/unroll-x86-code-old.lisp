@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (not based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,6 +34,7 @@
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/runes" :dir :system)
 (include-book "kestrel/x86/parsers/parsed-executable-tools" :dir :system)
+(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 
 ;todo: factor some of this stuff out into a lifter-common file
 
@@ -46,7 +47,7 @@
 ;; Returns (mv erp nil state)
 (defun def-lifted-x86-fn (lifted-name
                           subroutine-name
-                          parsed-executable
+                          executable
                           stack-slots-needed
                           enables
                           whole-form
@@ -67,6 +68,16 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
+       ;; Parse the executable, if needed:
+       ((mv erp parsed-executable state)
+        (if (stringp executable)
+            ;; it's a filename, so parse the file:
+            (acl2::parse-executable executable state)
+          ;; it's already a parsed-executable:
+          (mv nil executable state)))
+       ((when erp)
+        (er hard? 'def-lifted-x86-fn "Error parsing executable: ~s0." executable)
+        (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; assumptions (these get simplified and so don't have to be in normal form):
        (assumptions (if (eq :mach-o-64 executable-type)
@@ -119,7 +130,7 @@
        (- (cw "Result: ~x0" result))
        (- (cw "Runes used: ~x0" runes))
        (runes (acl2::drop-fake-runes runes))
-       ((when (member-eq 'run-until-rsp-greater-than (acl2::all-ffn-symbs result nil)))
+       ((when (member-eq 'run-until-stack-shorter-than (acl2::all-ffn-symbs result nil)))
         (mv t (er hard 'lifter "Lifter error: The run did not finish.") state))
        (vars (acl2::all-vars result))
        ;;use defun-nx by default because stobj updates are not all let-bound to x86
@@ -147,7 +158,7 @@
 (defmacro def-lifted-x86 (&whole whole-form
                                  lifted-name ;name to use for the generated function
                                  subroutine-name ;this assumes there is a symbol table!
-                                 parsed-executable
+                                 executable
                                  stack-slots-needed
                                  &key
                                  (enable 'nil)
@@ -160,7 +171,7 @@
   `(make-event (def-lifted-x86-fn
                  ',lifted-name
                  ,subroutine-name
-                 ,parsed-executable
+                 ,executable
                  ',stack-slots-needed
                  ',enable
                  ',whole-form
@@ -172,7 +183,7 @@
                  state)))
 
 ;needed after some x86 model changes:
-(in-theory (enable acl2::bvplus-recollapse))
+(in-theory (enable acl2::bvchop-of-+-becomes-bvplus))
 
 (defthm bvchop-of-if
   (equal (bvchop n (if test tp ep))
@@ -180,13 +191,13 @@
              (bvchop n tp)
            (bvchop n ep))))
 
-(in-theory (enable x86isa::rflagsbits->ac$inline-constant-opener
-                   x86isa::rflagsbits->af$inline-constant-opener
-                   x86isa::rflagsbits->cf$inline-constant-opener
-                   x86isa::rflagsbits->of$inline-constant-opener
-                   x86isa::rflagsbits->pf$inline-constant-opener
-                   x86isa::rflagsbits->sf$inline-constant-opener
-                   x86isa::rflagsbits->zf$inline-constant-opener
+(in-theory (enable ;; x86isa::rflagsbits->ac$inline-constant-opener
+                   ;; x86isa::rflagsbits->af$inline-constant-opener
+                   ;; x86isa::rflagsbits->cf$inline-constant-opener
+                   ;; x86isa::rflagsbits->of$inline-constant-opener
+                   ;; x86isa::rflagsbits->pf$inline-constant-opener
+                   ;; x86isa::rflagsbits->sf$inline-constant-opener
+                   ;; x86isa::rflagsbits->zf$inline-constant-opener
 
                    !rflags-of-!rflagsbits->af
                    !rflags-of-!rflagsbits->cf

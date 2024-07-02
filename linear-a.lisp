@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1473,8 +1473,7 @@
 
 (defmacro fn-count-evg-max-calls ()
 
-; Warning: The following plus 2 must be a (signed-byte 30); see
-; fn-count-evg-rec.
+; Warning: The following plus 2 must be a fixnat; see fn-count-evg-rec.
 
 ; Modulo that requirement, the choice of 1000 below is rather arbitrary.  We
 ; chose 1000 for *default-rewrite-stack-limit*, so for no great reason we
@@ -1482,13 +1481,13 @@
 
   1000)
 
-(defun-inline min-fixnum (x y)
+(defun-inline min-fixnat (x y)
 
-; This is a fast version of min, for fixnums.  We avoid the name minf because
+; This is a fast version of min, for fixnats.  We avoid the name minf because
 ; it's already used in the regression suite.
 
-  (declare (type (signed-byte 30) x y))
-  (the (signed-byte 30) (if (< x y) x y)))
+  (declare (type #.*fixnat-type* x y))
+  (the #.*fixnat-type* (if (< x y) x y)))
 
 (defun fn-count-evg-rec (evg acc calls)
 
@@ -1497,9 +1496,9 @@
 
   (declare (xargs :measure (acl2-count evg)
                   :ruler-extenders :all)
-           (type (unsigned-byte 29) acc calls))
+           (type #.*fixnat-type* acc calls))
   (the
-   (unsigned-byte 29)
+   #.*fixnat-type*
    (cond
     ((or (>= calls (fn-count-evg-max-calls))
          (>= acc (fn-count-evg-max-val)))
@@ -1510,12 +1509,12 @@
                    (cond ((< evg 0)
                           (cond ((<= evg (fn-count-evg-max-val-neg))
                                  (fn-count-evg-max-val))
-                                (t (min-fixnum (fn-count-evg-max-val)
+                                (t (min-fixnat (fn-count-evg-max-val)
                                                (+f 2 acc (-f evg))))))
                          (t
                           (cond ((<= (fn-count-evg-max-val) evg)
                                  (fn-count-evg-max-val))
-                                (t (min-fixnum (fn-count-evg-max-val)
+                                (t (min-fixnat (fn-count-evg-max-val)
                                                (+f 1 acc evg)))))))
                   (t
                    (fn-count-evg-rec (numerator evg)
@@ -1541,19 +1540,19 @@
                     0))
            ((symbolp evg)
             (cond ((null evg) ; optimization: len below is 3
-                   (min-fixnum (fn-count-evg-max-val)
+                   (min-fixnat (fn-count-evg-max-val)
                                (+f 8 acc)))
                   (t
                    (let ((len (length (symbol-name evg))))
                      (cond ((<= (fn-count-evg-max-val) len)
                             (fn-count-evg-max-val))
-                           (t (min-fixnum (fn-count-evg-max-val)
+                           (t (min-fixnat (fn-count-evg-max-val)
                                           (+f 2 acc (*f 2 len)))))))))
            ((stringp evg)
             (let ((len (length evg)))
               (cond ((<= (fn-count-evg-max-val) len)
                      (fn-count-evg-max-val))
-                    (t (min-fixnum (fn-count-evg-max-val)
+                    (t (min-fixnat (fn-count-evg-max-val)
                                    (+f 1 acc (*f 2 len)))))))
            (t ; (characterp evg)
             (1+f acc))))

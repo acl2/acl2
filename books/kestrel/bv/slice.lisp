@@ -1,7 +1,7 @@
 ; BV Library: slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -60,8 +60,14 @@
            (equal (slice high low val)
                   0))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :use (:instance slice-when-val-is-not-an-integer)
+  :hints (("Goal" :use slice-when-val-is-not-an-integer
            :in-theory (disable slice-when-val-is-not-an-integer))))
+
+(defthmd slice-when-low-is-not-an-integer
+  (implies (not (integerp low))
+           (equal (slice high low val)
+                  (slice high 0 val)))
+  :hints (("Goal" :in-theory (enable slice))))
 
 (defthm slice-too-high-is-0
   (implies (unsigned-byte-p low x)
@@ -170,14 +176,15 @@
                   (bvchop (+ 1 high (- low)) x)))
   :hints (("Goal" :in-theory (enable slice bvchop))))
 
-(defthmd unsigned-byte-p-of-slice-helper
-  (implies (and (equal n (+ 1 high (- low)))
-                (<= low high) ;todo
-                (integerp high)
-                (integerp low))
-           (UNSIGNED-BYTE-P n (SLICE high low x)))
-  :hints (("Goal" ;:cases ( (< high low))
-           :in-theory (e/d (SLICE) (SLICE-BECOMES-BVCHOP)))))
+(local
+ (defthmd unsigned-byte-p-of-slice-helper
+   (implies (and (equal n (+ 1 high (- low)))
+                 (<= low high) ;todo
+                 (integerp high)
+                 (integerp low))
+            (unsigned-byte-p n (slice high low x)))
+   :hints (("Goal" ;:cases ( (< high low))
+            :in-theory (e/d (slice) (slice-becomes-bvchop))))))
 
 (defthmd unsigned-byte-p-of-slice
   (implies (and (equal n (+ 1 high (- low)))
@@ -185,9 +192,9 @@
                 (integerp low))
            (equal (unsigned-byte-p n (slice high low x))
                   (natp n)))
-  :hints (("Goal" :use (SLICE-OUT-OF-ORDER
-                        (:instance unsigned-byte-p-of-slice-helper))
-           :in-theory (e/d (natp) (unsigned-byte-p-of-slice-helper SLICE-OUT-OF-ORDER)))))
+  :hints (("Goal" :use (slice-out-of-order
+                        unsigned-byte-p-of-slice-helper)
+           :in-theory (e/d (natp) (unsigned-byte-p-of-slice-helper slice-out-of-order)))))
 
 (defthm bvchop-of-slice-both
   (implies (and (integerp high)
@@ -198,7 +205,7 @@
                           (slice (+ -1 n low) low x)
                         (slice high low x))
                     0)))
-  :hints (("Goal" :use (:instance bvchop-of-slice)
+  :hints (("Goal" :use bvchop-of-slice
            :in-theory (disable bvchop-of-slice))))
 
 (in-theory (disable logtail-of-bvchop))
@@ -240,8 +247,7 @@
            (equal (slice high low (logtail n x))
                   (slice (+ high n) (+ low n) x)))
   :hints (("Goal" ; :expand (slice highbit lowbit x)
-           :in-theory (e/d (slice) (slice-becomes-bvchop
-                                    )))))
+           :in-theory (e/d (slice) (slice-becomes-bvchop)))))
 
 (defthmd bvchop-of-logtail
   (equal (bvchop n (logtail m x))
@@ -257,22 +263,20 @@
 (theory-invariant (incompatible (:rewrite logtail-of-bvchop) (:rewrite bvchop-of-logtail)))
 
 (defthmd bvchop-of-logtail-becomes-slice
-  (implies (and (natp size1)
-                (natp size2))
+  (implies (natp size1)
            (equal (bvchop size1 (logtail size2 x))
-                  (slice (+ -1 size1 size2) size2 x)))
+                  (slice (+ -1 size1 (nfix size2)) (nfix size2) x)))
   :hints(("Goal" :in-theory (e/d (slice) (slice-becomes-bvchop)))))
 
 (theory-invariant (incompatible (:definition slice) (:rewrite bvchop-of-logtail-becomes-slice)))
 
 (defthm slice-of-slice
-  (implies (and (natp n)
-                (natp m)
-                (natp low)
-                (<= low2 n)
-                (natp low2))
-           (equal (slice n low2 (slice m low x))
-                  (slice (min (+ low n) m) (+ low2 low) x)))
+  (implies (and (integerp high1)
+                (natp high2)
+                (natp low2)
+                (natp low1))
+           (equal (slice high1 low1 (slice high2 low2 x))
+                  (slice (min (+ low2 high1) high2) (+ low1 low2) x)))
   :hints (("Goal" :cases ((integerp x))
            :in-theory (e/d (slice bvchop-of-logtail)
                            (logtail-of-bvchop-becomes-slice
@@ -285,7 +289,7 @@
            (equal (slice high low x)
                   0))
   :hints (("Goal"
-           :use (:instance slice-too-high-is-0)
+           :use slice-too-high-is-0
            :in-theory (e/d (unsigned-byte-p slice-too-high-is-0) (slice-too-high-is-0)))))
 
 ;also a version for <= ?
@@ -297,13 +301,13 @@
                 (natp x))
            (equal (slice high low x)
                   0))
-  :hints (("Goal" :use (:instance slice-too-high-helper)
+  :hints (("Goal" :use slice-too-high-helper
            :in-theory (disable slice-too-high-helper))))
 
 (defthm slice-upper-bound-linear
-  (implies (and (integerp high)
-                (integerp low)
-                (<= low high))
+  (implies (and (<= low high)
+                (integerp high)
+                (integerp low))
            (<= (slice high low x) (+ -1 (expt 2 (+ 1 high (- low))))))
   :rule-classes (:linear)
   :hints (("Goal" :use (:instance unsigned-byte-p-of-slice-gen (n (+ 1 high (- low))))
@@ -311,16 +315,15 @@
            :in-theory (e/d (unsigned-byte-p)
                            (unsigned-byte-p-of-slice-gen)))))
 
-(defthm slice-upper-bound-linear-constant-version
+;; Disabled since we have the other
+(defthmd slice-upper-bound-linear-constant-version
   (implies (and (syntaxp (and (quotep high)
                               (quotep low)))
+                (<= low high)
                 (integerp high)
-                (integerp low)
-                (<= low high))
+                (integerp low))
            (<= (slice high low x) (+ -1 (expt 2 (+ 1 high (- low))))))
   :rule-classes (:linear))
-
-
 
 (defthm <-of-slice-and-constant
   (implies (and (syntaxp (and (quotep k)
@@ -331,7 +334,7 @@
                 (integerp low)
                 (<= low high))
            (< (slice high low x) k))
-  :hints (("Goal" :use (:instance slice-upper-bound-linear)
+  :hints (("Goal" :use slice-upper-bound-linear
            :in-theory (disable slice-upper-bound-linear))))
 
 (defthmd logtail-becomes-slice
@@ -367,37 +370,6 @@
                   0))
   :hints (("Goal" :in-theory (e/d (slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
-;; (DEFTHM SLICE-OF-SLICE-gen
-;;   (IMPLIES (AND (NATP N)
-;;                 (NATP M)
-;;                 (NATP LOW)
-;;                 (<= (+ LOW2 -1 LOW) M)
-;; ;                (<= LOW2 N)
-;;                 (NATP LOW2))
-;;            (EQUAL (SLICE N LOW2 (SLICE M LOW X))
-;;                   (if (<= LOW2 N)
-;;                       (SLICE (MIN (+ LOW N) M)
-;;                              (+ LOW2 LOW)
-;;                              X)
-;;                     0)))
-;;   :hints (("Goal" :cases ((and (equal 0 m) (< 0 low2))
-;;                           (and (equal 0 m) (<= low2 0))
-;;                           ))))
-
-;fixme get rid of slice-of-slice?
-(defthm slice-of-slice-gen-better
-  (implies (and (integerp n)
-                (natp m)
-                (natp low)
-                (natp low2))
-           (equal (slice n low2 (slice m low x))
-                  (if (or (< m (+ low2 -1 low))
-                          (< n low2))
-                      0
-                    (slice (min (+ low n) m) (+ low2 low) x))))
-  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
-
-(in-theory (disable slice-of-slice))
 
 (defthm slice-when-bvchop-known
   (implies (and (syntaxp (not (quotep x)))
@@ -440,7 +412,7 @@
                 (natp high2))
            (equal (slice high low x)
                   (slice (- high low2) (- low low2) k)))
-  :hints (("Goal" :use (:instance slice-subst-in-constant)
+  :hints (("Goal" :use slice-subst-in-constant
            :in-theory (disable slice-subst-in-constant))))
 
 (defthm <-of-slice-same
@@ -462,9 +434,8 @@
                                   (bvchop-of-logtail-becomes-slice)))))
 
 ;; In case we don't turn slice into getbit
-(defthm slice-same-type
-  (or (equal 0 (slice n n val))
-      (equal 1 (slice n n val)))
+(defthm bitp-of-slice-same-type
+  (bitp (slice n n x))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (e/d (slice)
                                   (bvchop-of-logtail-becomes-slice)))))
@@ -529,10 +500,6 @@
 
 (theory-invariant (incompatible (:rewrite bvchop-of-floor-of-expt-of-2-constant-version) (:definition slice)))
 
-(defthm bitp-of-slice-same-type
-  (bitp (slice n n x))
-  :rule-classes :type-prescription)
-
 (defthmd slice-same-when-not-0
   (implies (not (equal 0 (slice n n x)))
            (equal (slice n n x) 1))
@@ -580,7 +547,7 @@
                 (natp m))
            (equal (slice m n (* x (expt 2 j)))
                   (slice (- m j) (- n j) x)))
-  :hints (("Goal" :use (:instance slice-of-times-of-expt)
+  :hints (("Goal" :use slice-of-times-of-expt
            :in-theory (disable slice-of-times-of-expt))))
 
 (defthm slice-of-ash
@@ -624,8 +591,7 @@
            (equal (equal (slice high low x) (slice high low y))
                   t))
   :hints (("Goal" :use ((:instance slice-of-bvchop-low (n free) (x x))
-                        (:instance slice-of-bvchop-low (n free) (x y)))
-           :in-theory (disable slice-of-slice))))
+                        (:instance slice-of-bvchop-low (n free) (x y))))))
 
 ;move
 (defthm slice-of-+-of--1-and-expt
@@ -673,7 +639,7 @@
            (<= (* (expt 2 low) (slice high low x))
                (+ (expt 2 (+ 1 high)) (- (expt 2 low)))))
   :rule-classes ((:linear :trigger-terms ((* (expt 2 low) (slice high low x)))))
-  :hints (("Goal" :use (:instance slice-upper-bound-linear)
+  :hints (("Goal" :use slice-upper-bound-linear
            :in-theory (enable expt-of-+))))
 
 ;move or make local
@@ -683,7 +649,7 @@
            (not (equal (* j (floor i j))
                        (+ i (- j)))))
   :hints (("Goal"
-           :use (:instance my-floor-lower-bound)
+           :use my-floor-lower-bound
            :in-theory (e/d (posp) ( ;FLOOR-BOUNDED-BY-/
                                    )))))
 
@@ -724,7 +690,7 @@
                 (natp low)
                 (natp high))
            (unsigned-byte-p n (slice high low x)))
-  :hints (("Goal" :in-theory (e/d (slice) ()))))
+  :hints (("Goal" :in-theory (enable slice))))
 
 ; todo: replace the other?
 (defthm slice-of-logtail-gen
@@ -746,4 +712,56 @@
                       1
                     0)))
   :hints (("Goal" :in-theory (e/d (slice)
-                                  (acl2::bvchop-of-logtail-becomes-slice)))))
+                                  (bvchop-of-logtail-becomes-slice)))))
+
+;similar to UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2?
+(defthmd slice-too-high-is-0-new
+  (implies (and (unsigned-byte-p low (bvchop (+ 1 high) x))
+                (integerp high))
+           (equal (slice high low x) 0))
+  :hints (("Goal" :in-theory (enable slice bvchop-of-logtail))))
+
+(defthm slice-of-ifix
+  (equal (slice high low (ifix x))
+         (slice high low x))
+  :hints (("Goal" :in-theory (enable ifix))))
+
+(defthm not-<-of-slice-and-slice-same-low-and-val
+  (implies (and (<= high1 high2)
+                (natp high1)
+                (natp high2))
+           (not (< (slice high2 low x)
+                   (slice high1 low x))))
+  :hints (("Goal" :cases ((<= low high1))
+           :in-theory (enable slice))))
+
+(defthm slice-of-expt-high
+  (implies (and (< size low)
+                (integerp high)
+                (natp low)
+                (integerp size))
+           (equal (slice high low (expt 2 size))
+                  0))
+  :hints (("Goal" :in-theory (e/d (slice)
+                                  (bvchop-of-logtail-becomes-slice)))))
+
+(defthm slice-of-floor-of-expt
+  (implies (and (integerp x)
+                (natp low)
+                (natp high)
+                (natp n))
+           (equal (slice high low (floor x (expt 2 n)))
+                  (slice (+ high n) (+ low n) x)))
+  :hints (("Goal" :in-theory (e/d (slice) (bvchop-of-logtail-becomes-slice)))))
+
+(defthm slice-of-floor-of-expt-constant-version
+  (implies (and (syntaxp (quotep k))
+                (power-of-2p k)
+                (integerp x)
+                (natp low)
+                (natp high)
+                (natp (lg k)))
+           (equal (slice high low (floor x k))
+                  (slice (+ high (lg k)) (+ low (lg k)) x)))
+  :hints (("Goal" :use (:instance slice-of-floor-of-expt (n (lg k)))
+           :in-theory (disable slice-of-floor-of-expt))))

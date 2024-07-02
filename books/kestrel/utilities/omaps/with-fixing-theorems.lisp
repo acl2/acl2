@@ -1,10 +1,10 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -16,9 +16,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection empty-fix
-  :extension empty
-  (fty::deffixequiv empty))
+(defsection emptyp-fix
+  :extension emptyp
+  (fty::deffixequiv emptyp))
 
 (defsection head-fix
   :extension head
@@ -48,10 +48,10 @@
   (fty::deffixequiv delete*
     :hints (("Goal" :in-theory (enable delete*)))))
 
-(defsection in-fix
-  :extension in
-  (fty::deffixequiv in
-    :hints (("Goal" :in-theory (enable in)))))
+(defsection assoc-fix
+  :extension assoc
+  (fty::deffixequiv assoc
+    :hints (("Goal" :in-theory (enable assoc)))))
 
 (defsection in*-fix
   :extension in*

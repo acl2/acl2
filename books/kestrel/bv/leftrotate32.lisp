@@ -116,7 +116,7 @@
                 (natp amt))
            (equal (slice high low (leftrotate32 amt x))
                   (slice (- high amt) (- low amt) x)))
-  :hints (("Goal" :in-theory (e/d (leftrotate leftrotate32) ()))))
+  :hints (("Goal" :in-theory (enable leftrotate leftrotate32))))
 
 (defthmd bvchop-of-leftrotate32-both
   (implies (and (<= size 32)
@@ -174,8 +174,7 @@
                   (getbit (+ 32 (- amt) n) x)))
   :hints (("Goal" :in-theory (e/d (getbit unsigned-byte-p)
                                   (bvchop-1-becomes-getbit
-                                   leftrotate32
-                                   slice-becomes-getbit)))))
+                                   leftrotate32)))))
 
 (defthm getbit-of-leftrotate32-high
   (implies (and (<= amt n) ;todo: other case! see rules for leftrotate
@@ -186,8 +185,7 @@
            (equal (getbit n (leftrotate32 amt x))
                   (getbit (- n amt) x)))
   :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit
-                                            leftrotate32
-                                            slice-becomes-getbit)))))
+                                            leftrotate32)))))
 
 ;drop the syntap hyp?
 (defthmd getbit-of-leftrotate32

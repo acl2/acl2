@@ -1,16 +1,22 @@
 ; Standard Strings Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "STR")
 
+(include-book "bin-digit-char-listp")
 (include-book "char-kinds")
+(include-book "dec-digit-char-listp")
+(include-book "decimal-fty")
+(include-book "explode-implode-equalities")
+(include-book "hex-digit-char-listp")
+(include-book "oct-digit-char-listp")
 (include-book "strtok-bang")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

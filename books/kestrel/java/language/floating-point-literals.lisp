@@ -18,7 +18,7 @@
 
 (defxdoc+ floating-point-literals
   :parents (syntax)
-  :short "Java floating-point literals [JLS:3.10.2]."
+  :short "Java floating-point literals [JLS14:3.10.2]."
   :long
   (xdoc::topstring
    (xdoc::p

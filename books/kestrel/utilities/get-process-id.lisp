@@ -30,21 +30,21 @@
 (defthm state-p1-of-update-nth-2-of-add-pair-of-nth-2
   (implies (and (state-p1 state)
                 (symbolp key)
-                (not (member-equal key '(current-acl2-world timer-alist))))
+                (not (member-equal key '(current-acl2-world timer-alist print-base))))
            (state-p1 (update-nth 2 (add-pair key value (nth 2 state)) state)))
   :hints (("Goal" :in-theory (e/d (state-p1) (all-boundp assoc-equal)))))
 
 (defthm state-p1-of-update-global-table-of-add-pair-of-global-table
   (implies (and (state-p1 state)
                 (symbolp key)
-                (not (member-equal key '(current-acl2-world timer-alist))))
+                (not (member-equal key '(current-acl2-world timer-alist print-base))))
            (state-p1 (update-global-table (add-pair key value (global-table state)) state)))
-  :hints (("Goal" :in-theory (e/d (update-global-table global-table) ()))))
+  :hints (("Goal" :in-theory (enable update-global-table global-table))))
 
 (defthm state-p1-of-put-global
   (implies (and (state-p1 state)
                 (symbolp key)
-                (not (member-equal key '(current-acl2-world timer-alist))))
+                (not (member-equal key '(current-acl2-world timer-alist print-base))))
            (state-p1 (put-global key value state)))
   :hints (("Goal" :in-theory (enable put-global))))
 

@@ -46,6 +46,8 @@
 (include-Book "proofs/guards")
 (include-book "centaur/meta/let-abs" :dir :system)
 (include-book "std/strings/substrp" :dir :system)
+(include-book "centaur/fgl/portcullis" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (local
  (include-Book "proofs/extract-formula-lemmas"))
@@ -1218,6 +1220,14 @@ RP-Rewriter will throw an eligible error.</p>"
                          acl2::known-stobjs ctx w state)))
       (value (cons term rest)))))
 
+(define collect-hyps-from-implies (term)
+  (case-match term
+    (('implies p q)
+     `(and ,p ,(collect-hyps-from-implies q)))
+    (& 't)))
+
+
+
 (define defthmrp-fn (name term args state)
   (declare (xargs :stobjs state
                   :mode :program))
@@ -1239,7 +1249,8 @@ RP-Rewriter will throw an eligible error.</p>"
                                    (supress-warnings 'nil)
                                    (add-rp-rule 't)
                                    (ruleset 'rp-rules)
-                                   (override-cl-hints 'nil))
+                                   (override-cl-hints 'nil)
+                                   (vacuity-check ':auto))
         args)
        (world (w state))
        ((acl2::er translated-term)
@@ -1308,18 +1319,47 @@ RP-Rewriter will throw an eligible error.</p>"
                       ,term
                       :rule-classes ,rule-classes
                       ,@hints)))))
-       (body `(with-output :off :all :on (error) :gag-mode nil ,@body)))
+       
+
+       (body `(with-output :off :all :on (error) :gag-mode nil ,@body))
+
+
+       (vacuity-check-body
+        (and
+         (or (equal vacuity-check t)
+             (and (equal vacuity-check :auto)
+                  ;; when :auto, only perform vacuity check when fgl::fgl-thm
+                  ;; is defined.
+                  (or (not (equal (meta-extract-formula 'fgl::fgl-thm state) ''t))
+                      (acl2::getpropc 'fgl::fgl-thm 'acl2::macro-body))
+                  ;; also tshell should be defined too.
+                  (or (not (equal (meta-extract-formula 'acl2::tshell-ensure state) ''t))
+                      (acl2::getpropc 'acl2::tshell-ensure 'acl2::macro-body))))
+         `((value-triple (acl2::tshell-ensure))
+           (make-event
+            '(:or (acl2::must-fail
+                   (fgl::fgl-thm (implies
+                                  ,(collect-hyps-from-implies term)
+                                  nil)
+                                 :skip-vacuity-check t))
+                  (value-triple (hard-error 'Rp-Rewriter "~%------------------------------------------------------------
+!!! VACUITY CHECK FAILED !!!~%Some hypotheses / assumptions are possibly contradictory.
+------------------------------------------------------------" nil)))))))
+       )
     (value
      `(with-output
         :off :all :on (error 
                        ,@(and (not supress-warnings) '(comment)))
         :stack :push
-        ,(if (or disable-meta-rules
-                 enable-meta-rules
-                 enable-rules
-                 disable-rules
-                 add-rp-rule)
+        ,(if  (or disable-meta-rules
+                  enable-meta-rules
+                  enable-rules
+                  disable-rules
+                  add-rp-rule
+                  vacuity-check-body)
              `(defsection ,name
+
+                ,@vacuity-check-body
                 
                 ,@(and enable-meta-rules `((local
                                             (enable-meta-rules ,@enable-meta-rules))))

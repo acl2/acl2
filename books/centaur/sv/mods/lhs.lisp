@@ -353,25 +353,25 @@ the order given (LSBs-first).</p>")
     :z 0
     :var (4vec-rsh (2vec x.rsh) (svex-env-fastlookup x.name env))))
 
-(define lhs-eval-zero ((x lhs-p) (env svex-env-p))
+(define lhs-eval-zx ((x lhs-p) (env svex-env-p))
   :parents (lhs)
   :returns (val 4vec-p)
   (if (atom x)
       0
     (4vec-concat (2vec (lhrange->w (car x)))
                  (lhatom-eval-zero(lhrange->atom (car x)) env)
-                 (lhs-eval-zero (cdr x) env)))
+                 (lhs-eval-zx (cdr x) env)))
   ///
-  (deffixequiv lhs-eval-zero)
+  (deffixequiv lhs-eval-zx)
 
-  (defthm lhs-eval-zero-of-cons
-    (equal (lhs-eval-zero (cons a x) env)
+  (defthm lhs-eval-zx-of-cons
+    (equal (lhs-eval-zx (cons a x) env)
            (4vec-concat (2vec (lhrange->w a))
                         (lhatom-eval-zero (lhrange->atom a) env)
-                        (lhs-eval-zero x env))))
+                        (lhs-eval-zx x env))))
 
-  (defthm lhs-eval-zero-of-nil
-    (equal (lhs-eval-zero nil env) 0)))
+  (defthm lhs-eval-zx-of-nil
+    (equal (lhs-eval-zx nil env) 0)))
 
 
 
@@ -675,9 +675,9 @@ the order given (LSBs-first).</p>")
     :otf-flg t)
 
   (defthm lhs-cons-correct-zero
-    (equal (lhs-eval-zero (lhs-cons x y) env)
-           (lhs-eval-zero (cons x y) env))
-    :hints(("Goal" :in-theory (e/d (lhs-eval-zero) (lhrange-combine-correct))
+    (equal (lhs-eval-zx (lhs-cons x y) env)
+           (lhs-eval-zx (cons x y) env))
+    :hints(("Goal" :in-theory (e/d (lhs-eval-zx) (lhrange-combine-correct))
             :use ((:instance lhrange-combine-correct-zero
                    (x x) (y (car y))))
             :do-not-induct t))
@@ -776,10 +776,10 @@ the order given (LSBs-first).</p>")
                                (:free (x y) (lhs-eval (cons x y) env)))
                :induct (lhs-norm x))))
 
-    (fty::deffixcong lhs-norm-equiv equal (lhs-eval-zero x env) x
-      :hints (("goal" :expand ((lhs-eval-zero x env)
-                               (lhs-eval-zero nil env)
-                               (:free (x y) (lhs-eval-zero (cons x y) env)))
+    (fty::deffixcong lhs-norm-equiv equal (lhs-eval-zx x env) x
+      :hints (("goal" :expand ((lhs-eval-zx x env)
+                               (lhs-eval-zx nil env)
+                               (:free (x y) (lhs-eval-zx (cons x y) env)))
                :induct (lhs-norm x))))
 
     (defthm lhs-norm-cdr-lhs-norm
@@ -857,14 +857,14 @@ the order given (LSBs-first).</p>")
                              ((:d lhs-concat))))))
 
   (defthm lhs-concat-correct-zero
-    (equal (lhs-eval-zero (lhs-concat w x y) env)
+    (equal (lhs-eval-zx (lhs-concat w x y) env)
            (4vec-concat (2vec (nfix w))
-                        (lhs-eval-zero x env)
-                        (lhs-eval-zero y env)))
+                        (lhs-eval-zx x env)
+                        (lhs-eval-zx y env)))
     :hints (("Goal" :induct (lhs-concat w x y)
              :expand ((lhs-concat w x y)
                       (lhs-concat 0 x y))
-             :in-theory (e/d (lhs-eval-zero lhs-eval lhatom-eval-zero)
+             :in-theory (e/d (lhs-eval-zx lhs-eval lhatom-eval-zero)
                              ((:d lhs-concat))))))
 
   (defthm lhs-width-of-lhs-concat
@@ -900,12 +900,12 @@ the order given (LSBs-first).</p>")
                                   (lhs-rsh))))))
 
   (defthm lhs-rsh-correct-zero
-    (equal (lhs-eval-zero (lhs-rsh sh x) env)
-           (4vec-rsh (2vec (nfix sh)) (lhs-eval-zero x env)))
+    (equal (lhs-eval-zx (lhs-rsh sh x) env)
+           (4vec-rsh (2vec (nfix sh)) (lhs-eval-zx x env)))
     :hints(("Goal" :induct (lhs-rsh sh x)
             :expand ((lhs-rsh sh x)
                      (lhs-rsh 0 x))
-            :in-theory (e/d (lhs-eval-zero lhatom-eval-zero)
+            :in-theory (e/d (lhs-eval-zx lhatom-eval-zero)
                             ((:d lhs-rsh))))
            (and stable-under-simplificationp
                 '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core)
@@ -1118,7 +1118,7 @@ the order given (LSBs-first).</p>")
                                  (4vec-z))))
     :hints (("goal" :in-theory (enable lhssvex-bounded-p)))))
 
-;; ;; Problematic wrt lhs-eval-zero.  We have changed everything to use  svex->lhs-bound.
+;; ;; Problematic wrt lhs-eval-zx.  We have changed everything to use  svex->lhs-bound.
 ;; (define svex->lhs ((x svex-p))
 ;;   :guard (lhssvex-p x)
 ;;   :verify-guards nil
@@ -1948,196 +1948,28 @@ the order given (LSBs-first).</p>")
            (append (svex-vars (driver->value x))
                    (driverlist-vars y)))))
 
-(defalist netassigns :key-type svar :val-type driverlist
-  ///
-  (defthm netassigns-p-of-hons-remove-assoc
-    (implies (netassigns-p x)
-             (netassigns-p (acl2::hons-remove-assoc k x)))
-    :hints(("Goal" :in-theory (enable netassigns-p acl2::hons-remove-assoc))))
-  (defthm netassigns-p-of-fast-alist-clean
-    (implies (netassigns-p x)
-             (netassigns-p (fast-alist-clean x)))
-    :hints(("Goal" :in-theory (e/d (acl2::fast-alist-clean-by-remove-assoc)
-                                   (acl2::fast-alist-clean))))))
 
-(define netassigns-vars ((x netassigns-p))
-  :measure (len (netassigns-fix x))
-  :returns (vars svarlist-p)
-  (b* ((x (netassigns-fix x))
-       ((when (atom x)) nil))
-    (cons (caar x)
-          (append (driverlist-vars (cdar x))
-                  (netassigns-vars (cdr x)))))
-  ///
-  (defthm netassigns-vars-of-acons
-    (equal (netassigns-vars (cons (cons a b) c))
-           (cons (svar-fix a)
-                 (append (driverlist-vars b)
-                         (netassigns-vars c)))))
+(defsection drivestrength-sort
+  (acl2::defsort drivestrength-sort
+    :prefix drivestrength
+    :comparablep driver-p
+    :comparable-listp driverlist-p
+    :compare< (lambda (x y) (< (driver->strength y) (driver->strength x))))
 
-  (defthm netassigns-vars-of-append
-    (equal (netassigns-vars (append a b))
-           (append (netassigns-vars a)
-                   (netassigns-vars b)))
-  :hints(("Goal" :in-theory (enable netassigns-vars netassigns-fix append)
-          :induct (netassigns-vars a)
-          :expand ((:free (a b) (netassigns-vars (cons a b)))
-                   (append a b)))))
+  (deffixequiv drivestrength-ordered-p
+    :hints(("Goal" :in-theory (enable drivestrength-ordered-p)))
+    :args ((x driverlist)))
 
-  (defthm member-lookup-in-netassigns
-    (implies (and (not (member v (netassigns-vars x)))
-                  (netassigns-p x))
-             (not (member v (driverlist-vars (cdr (hons-assoc-equal name x))))))
-    :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+  (defthm vars-of-drivestrength-insert
+    (implies (and (not (member v (driverlist-vars x)))
+                  (not (member v (svex-vars (driver->value elt)))))
+             (not (member v (driverlist-vars (drivestrength-insert elt x)))))
+    :hints(("Goal" :in-theory (enable drivestrength-insert))))
 
-  (defthm netassign-vars-of-remove-assoc
-    (implies (and (not (member v (netassigns-vars x)))
-                  (netassigns-p x))
-             (not (member v (netassigns-vars (acl2::hons-remove-assoc k x)))))
-    :hints(("Goal" :in-theory (enable acl2::hons-remove-assoc))))
-
-  (defthm netassign-vars-of-fast-alist-clean
-    (implies (and (not (member v (netassigns-vars x)))
-                  (netassigns-p x))
-             (not (member v (netassigns-vars (fast-alist-clean x)))))
-    :hints(("Goal" :in-theory (e/d (acl2::fast-alist-clean-by-remove-assoc)
-                                   (acl2::fast-alist-clean))))))
-
-
-(define assign->netassigns ((lhs lhs-p) (offset natp) (dr driver-p)
-                            (acc netassigns-p "accumulator"))
-  :parents (svex-compilation)
-  :short "Turns an assignment (possibly to parts of wires) into several assignments
-          to whole wires."
-  :long "
-
-<p>For example, suppose we have the following Verilog code:</p>
-
-@({
- wire [10:0] a;
- wire [8:1] b;
- wire [3:2] c;
- wire [12:0] foo;
- assign { a[8:3], b[5:1] c } = foo;
- })
-
-<p>We would turn this assignment into three separate assignments, essentially
-like this:</p>
-
-@({
- assign a = { 2'bz, foo[12:7], 3'bz };
- assign b = { 3'bz, foo[6:2] };
- assign c = foo[1:0];
- })
-
-<p>The representation in SVEX is a bit different than the Verilog notation
-suggests: we don't know each variable's width and we don't have a part-select
-operator -- instead, on the left-hand side, we have an @(see lhs) structure
-forming the concatenation, and on the right-hand side use shifts concatenations
-to emulate part-selecting from the RHS expression.  So a more accurate view
-would be as follows, where @('a[3+:6]') is meant to represent an @(see lhatom)
-of width 6 and right-shift 3; @('inf') is used to signify an infinite-width
-constant; and @('{ ... , 2'foo }') signifies concatenating the @('...') with 2
-bits of @('foo'):</p>
-
-@({
- assign { a[3+:6], b[1+:5], c[2+:2] } = foo;
- })
-<p>becomes</p>
-@({
- assign c = { 'z, 2'foo };
- assign b = { 'z, 5'(foo >> 2) };
- assign a = { 'z, 6'(foo >> 7), 3'bz };
- })"
-  :returns (assigns netassigns-p)
-  :measure (len lhs)
-  (b* (((mv first rest) (lhs-decomp lhs))
-       (acc (netassigns-fix acc))
-       ((unless first) acc)
-       ((lhrange first) first)
-       (offset (lnfix offset))
-       ((driver dr))
-       ((when (eq (lhatom-kind first.atom) :z))
-        (assign->netassigns rest (+ offset first.w) dr acc))
-       ((lhatom-var first.atom))
-       (new-driver (change-driver
-                    dr :value (svex-concat first.atom.rsh
-                                           (svex-z)
-                                           (svex-concat first.w
-                                                        (svex-rsh offset dr.value)
-                                                        (svex-z)))))
-       (rest-drivers (cdr (hons-get first.atom.name acc)))
-       (acc (hons-acons first.atom.name (cons new-driver rest-drivers) acc)))
-    (assign->netassigns rest (+ offset first.w) dr acc))
-  ///
-  (deffixequiv assign->netassigns)
-
-  (defthm vars-of-assign->netassigns
-    (implies (and (not (member v (lhs-vars lhs)))
-                  (not (member v (svex-vars (driver->value dr))))
-                  (not (member v (netassigns-vars acc))))
-             (not (member v (netassigns-vars (assign->netassigns lhs offset dr acc)))))
-    :hints (("goal" :induct (assign->netassigns lhs offset dr acc)
-             :expand ((lhs-vars lhs))
-             :in-theory (enable svex-alist-vars lhatom-vars))))
-  
-  
-  (defthm hons-assoc-equal-of-assign->netassigns
-    (implies (and (not (member v (lhs-vars lhs)))
-                  (not (hons-assoc-equal v (netassigns-fix acc))))
-             (not (hons-assoc-equal v (assign->netassigns lhs offset dr acc))))
-    :hints (("goal" :induct (assign->netassigns lhs offset dr acc)
-             :expand ((lhs-vars lhs))
-             :in-theory (enable svex-alist-vars lhatom-vars)))))
-
-(define assigns->netassigns-aux ((x assigns-p) (acc netassigns-p))
-  :measure (len (assigns-fix x))
-  :returns (netassigns netassigns-p)
-  (b* ((x (assigns-fix x))
-       (acc (netassigns-fix acc))
-       ((when (atom x)) acc))
-    (assigns->netassigns-aux (cdr x)
-                             (assign->netassigns (caar x) 0 (cdar x) acc)))
-  ///
-  (defthm vars-of-assigns->netassigns-aux
-    (implies (and (not (member v (assigns-vars x)))
-                  (not (member v (netassigns-vars acc))))
-             (not (member v (netassigns-vars (assigns->netassigns-aux x acc)))))
-    :hints (("goal" :induct (assigns->netassigns-aux x acc)
-             :expand ((assigns-vars x)))))
-  
-
-  (defthm hons-assoc-equal-of-assigns->netassigns-aux
-    (implies (and (not (member v (assigns-vars x)))
-                  (not (hons-assoc-equal v (netassigns-fix acc))))
-             (not (hons-assoc-equal v (assigns->netassigns-aux x acc))))
-    :hints (("goal" :induct (assigns->netassigns-aux x acc)
-             :expand ((assigns-vars x))))))
-
-(define assigns->netassigns ((x assigns-p))
-  :returns (netassigns netassigns-p)
-  (fast-alist-free (fast-alist-clean (assigns->netassigns-aux x nil)))
-  ///
-  (defthm vars-of-assigns->netassigns
-    (implies (not (member v (assigns-vars x)))
-             (not (member v (netassigns-vars (assigns->netassigns x)))))
-    :hints(("Goal" :in-theory (disable fast-alist-clean))))
-
-  (defthm hons-assoc-equal-of-assigns->netassigns
-    (implies (not (member v (assigns-vars x)))
-             (not (hons-assoc-equal v (assigns->netassigns x))))))
-
-
-
-(acl2::defsort drivestrength-sort
-  :prefix drivestrength
-  :comparablep driver-p
-  :comparable-listp driverlist-p
-  :compare< (lambda (x y) (< (driver->strength y) (driver->strength x))))
-
-(deffixequiv drivestrength-ordered-p
-  :hints(("Goal" :in-theory (enable drivestrength-ordered-p)))
-  :args ((x driverlist)))
+  (defthm vars-of-drivestrength-insertsort
+    (implies (not (member v (driverlist-vars x)))
+             (not (member v (driverlist-vars (drivestrength-insertsort x)))))
+    :hints(("Goal" :in-theory (enable drivestrength-insertsort)))))
 
 (define svexlist-resolve ((x svexlist-p))
   :returns (res svex-p)
@@ -2219,65 +2051,6 @@ bits of @('foo'):</p>
   (defthm vars-of-driverlist->svex
     (implies (not (member v (driverlist-vars x)))
              (not (member v (svex-vars (driverlist->svex x)))))))
-
-
-
-
-(define netassigns->resolves-nrev ((x netassigns-p) (nrev))
-  :measure (len (netassigns-fix x))
-  (b* ((x (netassigns-fix x))
-       ((when (atom x)) (acl2::nrev-fix nrev))
-       ((cons name drivers) (car x))
-       (value (driverlist->svex (drivestrength-sort (driverlist-fix drivers))))
-       (nrev (acl2::nrev-push (cons name value) nrev)))
-    (netassigns->resolves-nrev (cdr x) nrev)))
-
-
-(define netassigns->resolves ((x netassigns-p))
-  :measure (len (netassigns-fix x))
-  :returns (assigns svex-alist-p)
-  :verify-guards nil
-  (mbe :logic
-       (b* ((x (netassigns-fix x))
-            ((when (atom x)) nil)
-            ((cons name drivers) (car x))
-            (value (driverlist->svex (drivestrength-sort (driverlist-fix drivers)))))
-         (cons (cons name value)
-               (netassigns->resolves (cdr x))))
-       :exec
-       (if (atom x)
-           nil
-         (acl2::with-local-nrev
-           (netassigns->resolves-nrev x acl2::nrev))))
-  ///
-  (local (defthm netassigns->resolves-nrev-elim
-           (equal (netassigns->resolves-nrev x nrev)
-                  (append nrev (netassigns->resolves x)))
-           :hints(("Goal" :in-theory (enable netassigns->resolves-nrev)))))
-
-  (verify-guards netassigns->resolves)
-
-  (defthm vars-of-drivestrength-insert
-    (implies (and (not (member v (driverlist-vars x)))
-                  (not (member v (svex-vars (driver->value elt)))))
-             (not (member v (driverlist-vars (drivestrength-insert elt x)))))
-    :hints(("Goal" :in-theory (enable drivestrength-insert))))
-
-  (defthm vars-of-drivestrength-insertsort
-    (implies (not (member v (driverlist-vars x)))
-             (not (member v (driverlist-vars (drivestrength-insertsort x)))))
-    :hints(("Goal" :in-theory (enable drivestrength-insertsort))))
-
-  (defthm vars-of-netassigns->resolves
-    (implies (not (member v (netassigns-vars x)))
-             (and (not (member v (svex-alist-keys (netassigns->resolves x))))
-                  (not (member v (svex-alist-vars (netassigns->resolves x))))))
-    :hints(("Goal" :in-theory (enable netassigns-vars svex-alist-vars svex-alist-keys))))
-
-  (defret svex-lookup-under-iff-of-<fn>
-    (iff (svex-lookup v assigns)
-         (hons-assoc-equal (svar-fix v) (netassigns-fix x)))
-    :hints(("Goal" :in-theory (enable netassigns-fix svex-lookup)))))
 
 
 ;; (define svar-indexedp ((x svar-p))
@@ -2617,9 +2390,9 @@ bits of @('foo'):</p>
 
   (defthm lhs->svex-zero-correct
     (equal (svex-eval (lhs->svex-zero x) env)
-           (lhs-eval-zero x env))
+           (lhs-eval-zx x env))
     :hints(("Goal" :in-theory (enable svex-eval svex-apply svexlist-eval 4veclist-nth-safe
-                                      lhs-eval-zero lhrange-eval))))
+                                      lhs-eval-zx lhrange-eval))))
 
   (defthm vars-of-lhs->svex-zero
     (implies (not (member v (lhs-vars x)))

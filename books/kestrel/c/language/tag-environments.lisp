@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,7 +128,7 @@
   :returns (info tag-info-optionp
                  :hints (("Goal" :in-theory (enable tag-info-optionp))))
   :short "Look up a tag in a tag environment."
-  (cdr (omap::in (ident-fix tag) (tag-env-fix env)))
+  (cdr (omap::assoc (ident-fix tag) (tag-env-fix env)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -155,7 +155,7 @@
   (b* ((tag (ident-fix tag))
        (info (tag-info-fix info))
        (env (tag-env-fix env)))
-    (if (omap::in tag env)
+    (if (omap::assoc tag env)
         (tag-env-option-none)
       (tag-env-option-some (omap::update tag info env))))
   :hooks (:fix))

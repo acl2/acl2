@@ -1,10 +1,10 @@
 ; Bitcoin Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -596,7 +596,7 @@
 
   (defrule empty-path-in-closed-nonempty-bip32-path-set
     (implies (and (bip32-path-setp paths)
-                  (not (empty paths))
+                  (not (emptyp paths))
                   (bip32-path-set-closedp paths))
              (in nil paths))
     :use (:instance bip32-path-set-closedp-necc
@@ -646,7 +646,7 @@
     :parents (bip32-index-tree)
     :short "Recognizer for @(tsee bip32-index-tree)."
     (and (bip32-path-setp x)
-         (not (empty x))
+         (not (emptyp x))
          (bip32-path-set-closedp x))
     :no-function t
     ///

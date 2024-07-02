@@ -291,6 +291,11 @@
            (subsetp-equal (nthcdr n x) y))
   :hints (("Goal" :in-theory (enable nthcdr))))
 
+(defthm subsetp-equal-of-cdr-same
+  (subsetp-equal (cdr x) x)
+  :hints (("Goal" :use (:instance subsetp-equal-of-nthcdr-same (n 1))
+           :in-theory (disable subsetp-equal-of-nthcdr-same))))
+
 (defthm subsetp-equal-of-set-difference-equal-arg1-same
   (subsetp-equal (set-difference-equal x y) x))
 

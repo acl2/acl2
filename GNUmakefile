@@ -1,5 +1,5 @@
 # ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-# Copyright (C) 2022, Regents of the University of Texas
+# Copyright (C) 2024, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 # (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -235,7 +235,8 @@ sources := axioms.lisp memoize.lisp hons.lisp\
            other-processes.lisp induct.lisp prove.lisp\
            proof-builder-a.lisp history-management.lisp defuns.lisp\
            defthm.lisp other-events.lisp ld.lisp proof-builder-b.lisp\
-           proof-builder-pkg.lisp apply-raw.lisp interface-raw.lisp\
+           proof-builder-pkg.lisp float-a.lisp float-b.lisp float-raw.lisp\
+           apply-raw.lisp interface-raw.lisp\
            serialize.lisp serialize-raw.lisp\
            defpkgs.lisp\
            apply-prim.lisp apply-constraints.lisp apply.lisp
@@ -318,8 +319,8 @@ set-up-log:
 # Build tags table for acl2-doc, with ACL2 topics first.
 TAGS-acl2-doc: $(ACL2_DEPS)
 	rm -f TAGS-acl2-doc
-	etags *.lisp -o TAGS-acl2-doc
-	find books -name '*.lisp' -print | (time xargs etags -o TAGS-acl2-doc --append)
+	etags -o TAGS-acl2-doc -- *.lisp
+	find books -name '*.lisp' -print | (time xargs etags -o TAGS-acl2-doc --append --)
 
 # The targets acl2r and acl2r.lisp were originally created to support
 # ACL2(r) builds.  It has more uses that that now.

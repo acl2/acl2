@@ -44,7 +44,7 @@
 ; of reasoning about it directly, we will split it up into the following,
 ; simpler definition.
 
-(local (in-theory (disable floor mod)))
+(local (in-theory (e/d (print-base-p) (floor mod))))
 
 (local (defun simpler-explode-nonnegative-integer (n base ans)
          (declare (xargs :guard (and (integerp n)
@@ -199,16 +199,16 @@
   (equal (character-listp (explode-nonnegative-integer n base acc))
          (character-listp acc)))
 
-(local (defthm dec-digit-char-listp-of-basic-eni-core
-         (str::dec-digit-char-listp (basic-eni-core n 10))))
+(local (defthm dec-digit-char-list*p-of-basic-eni-core
+         (str::dec-digit-char-list*p (basic-eni-core n 10))))
 
-(local (defthm dec-digit-char-listp-of-simpler-eni
-         (implies (str::dec-digit-char-listp acc)
-                  (str::dec-digit-char-listp (simpler-explode-nonnegative-integer n 10 acc)))))
+(local (defthm dec-digit-char-list*p-of-simpler-eni
+         (implies (str::dec-digit-char-list*p acc)
+                  (str::dec-digit-char-list*p (simpler-explode-nonnegative-integer n 10 acc)))))
 
-(defthm dec-digit-char-listp-of-explode-nonnegative-integer
-  (implies (str::dec-digit-char-listp acc)
-           (str::dec-digit-char-listp (explode-nonnegative-integer n 10 acc))))
+(defthm dec-digit-char-list*p-of-explode-nonnegative-integer
+  (implies (str::dec-digit-char-list*p acc)
+           (str::dec-digit-char-list*p (explode-nonnegative-integer n 10 acc))))
 
 
 (encapsulate
@@ -291,7 +291,7 @@
 
 (defund basic-unexplode-core (x)
   (declare (xargs :guard (and (character-listp x)
-                              (str::dec-digit-char-listp x))))
+                              (str::dec-digit-char-list*p x))))
   (if (consp x)
       (+ (str::dec-digit-char-value (car x))
          (* 10 (basic-unexplode-core (cdr x))))
@@ -306,7 +306,7 @@
 
 (defund unexplode-nonnegative-integer (x)
   (declare (xargs :guard (and (character-listp x)
-                              (str::dec-digit-char-listp x))))
+                              (str::dec-digit-char-list*p x))))
   (basic-unexplode-core (revappend x nil)))
 
 (encapsulate
