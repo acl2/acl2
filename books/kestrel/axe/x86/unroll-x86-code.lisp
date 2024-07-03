@@ -89,6 +89,7 @@
 (acl2::ensure-rules-known (lifter-rules32-all))
 (acl2::ensure-rules-known (lifter-rules64-all))
 (acl2::ensure-rules-known (assumption-simplification-rules))
+(acl2::ensure-rules-known (step-opener-rules))
 
 ;move
 ;; We often want these for ACL2 proofs, but not for 64-bit examples
@@ -684,7 +685,7 @@
                                  (reader-and-writer-intro-rules)
                                  (assumption-simplification-rules)
                                  (if 32-bitp
-                                     nil
+                                     nil ; todo: why not use (lifter-rules32-new)?
                                    ;; needed to match the normal forms used during lifting:
                                    (lifter-rules64-new))))
        ((mv erp assumption-rule-alist)
@@ -722,9 +723,11 @@
        ;; TODO: Just call simplify-term here?
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil nil state))
-       ;; Do the symbolic execution:
+       ;; Choose the lifter rules to use:
        (lifter-rules (if 32-bitp (lifter-rules32-all) (lifter-rules64-all)))
+       ;; Add any extra-rules:
        (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?
+       ;; Remove any remove-rules:
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules lifter-rules)))
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
@@ -732,6 +735,7 @@
        ((mv erp lifter-rule-alist)
         (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil nil state))
+       ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter 0 state))
        ((when erp) (mv erp nil nil nil nil state))
@@ -1043,7 +1047,7 @@
          ;; todo: better name?  only for precise pruning:
          (prune "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing an (exclusive) limit on the maximum size of the DAG if represented as a term.  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
          ;; todo: how do these affect assumption simp:
-         (extra-rules "Rules to use in addition to (lifter-rules32) or (lifter-rules64).")
+         (extra-rules "Rules to use in addition to (lifter-rules32-all) or (lifter-rules64-all).")
          (remove-rules "Rules to turn off.")
          (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
          (step-limit "Limit on the total number of model steps (instruction executions) to allow.")
