@@ -177,7 +177,7 @@
                                                         #b00111111)
                                                 #b10000000)))
                   ((< char #x10000) (list (logior (ash char -12)
-                                                  #b1110000)
+                                                  #b11100000)
                                           (logior (logand (ash char -6)
                                                           #b00111111)
                                                   #b10000000)
