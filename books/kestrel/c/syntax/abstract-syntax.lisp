@@ -269,7 +269,7 @@
      its positive integer values.
      Note that @('0') is an octal constant (not a decimal one).
      Decimal constants cannot have leading zeros,
-     and thus there is a unique sequence of digits
+     and thus there is a unique list of digits
      that corresponds to a positive integer.")
    (xdoc::p
     "An octal constant is completely characterized by
