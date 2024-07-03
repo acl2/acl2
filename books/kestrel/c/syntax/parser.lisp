@@ -12618,13 +12618,7 @@
      since those are present both in declarations and in function definitions.
      Then we must have a declarator in either case,
      but based on what follows it,
-     we can decide whether we have a declarator or a function definition")
-   (xdoc::p
-    "This may need a more refined treatment,
-     given that there are certain syntactic ambiguities
-     related to declaration specifiers and declarators.
-     We will do that soon,
-     in the broader context of other parts of the parser."))
+     we can decide whether we have a declarator or a function definition."))
   (b* (((reterr) (irr-extdecl) (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate)))
     (cond
