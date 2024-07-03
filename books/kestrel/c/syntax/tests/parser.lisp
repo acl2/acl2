@@ -1171,3 +1171,7 @@ struct bar
  "long long foo () {
   return 1LL;
 }")
+
+(test-parse
+ parse-external-declaration-list
+ "extern int sscanf (const char *__s, const char *__format, ...);")
