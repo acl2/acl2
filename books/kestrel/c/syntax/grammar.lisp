@@ -13,6 +13,7 @@
 (include-book "kestrel/abnf/grammar-definer/defgrammar" :dir :system)
 (include-book "kestrel/abnf/grammar-definer/deftreeops" :dir :system)
 (include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
+(include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -47,16 +48,24 @@
     "We use @(tsee acl2::add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output.")
    (xdoc::p
-    "We show that the grammar is well-formed, closed, and ASCII.
-     The latter property may be extended to (subsets of) Unicode."))
+    "We show that the grammar is well-formed, closed, and Unicode."))
   :file "grammar.abnf"
   :untranslate t
   :well-formed t
   :closed t
   ///
 
-  (defruled ascii-only-*grammar*
-    (abnf::rulelist-in-termset-p *grammar* (acl2::integers-from-to 0 127))))
+  (defruled unicode-only-*grammar*
+    (abnf::rulelist-in-termset-p *grammar*
+                                 (acl2::integers-from-to 0 #x10ffff))
+    :enable (abnf::rule-in-termset-p
+             abnf::repetition-in-termset-p
+             abnf::element-in-termset-p
+             abnf::num-val-in-termset-p
+             abnf::char-val-in-termset-p
+             abnf::char-insensitive-in-termset-p
+             abnf::char-sensitive-in-termset-p)
+    :disable ((:e acl2::integers-from-to))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
