@@ -55,7 +55,19 @@
      by further appending their numbers separated by slash,
      e.g. `[C:6.2.5/2]' references Paragraph 2 of Section 6.2.5.
      These square-bracketed references may be used
-     as nouns or parenthetically."))
+     as nouns or parenthetically.")
+   (xdoc::p
+    "This library is also based on the documentation of "
+    (xdoc::ahref "https://gcc.gnu.org" "GCC")
+    ", particularly the "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html"
+                 "extensions to the C language family")
+    ". Although these are extensions to the standard,
+     they are sufficiently prevalent and import that
+     we need to take them into account when developing practical tools for C.
+     But in the documentation of this ACL2 library,
+     we are always careful to distinguish
+     the C standard from the GCC extensions."))
   :order-subtopics (language
                     representation
                     atc
