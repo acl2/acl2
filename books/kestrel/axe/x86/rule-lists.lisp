@@ -3085,7 +3085,7 @@
             ;; x86isa::program-at-of-set-undef ; do we not need something like this?
             )))
 
-(defun lifter-rules64-new ()
+(defund lifter-rules64-new ()
   (declare (xargs :guard t))
   '(signed-byte-p-64-of-rax
     signed-byte-p-64-of-rbx
@@ -4496,7 +4496,7 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (lifter-rules64-new) ; todo: drop?
+  (append (lifter-rules64-new) ; todo: drop?  but that caused failures! why?
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 
@@ -4805,7 +4805,6 @@
   (set-difference-eq
    (append (lifter-rules64)
            (append '(x86isa::rip x86isa::rip$a ; todo?
-
                      )
                    (reader-and-writer-opener-rules))
            ;;(lifter-rules64-new); todo
