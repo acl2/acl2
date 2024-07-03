@@ -20,7 +20,12 @@
                                                (unsigned-byte-p '8 x))
                                              'n08p
                                              x))
-              '(unsigned-byte-p '8 x))
+              ;;'(unsigned-byte-p '8 x)
+              ;; can be further simplified by drop-trivial-lambdas:
+              '((lambda (x)
+                 (unsigned-byte-p '8 x))
+               x)
+              )
 
 ;; In this test, we can drop the binding of __function__ but not the entire
 ;; lambda:
