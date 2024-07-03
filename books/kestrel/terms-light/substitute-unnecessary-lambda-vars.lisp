@@ -1,6 +1,6 @@
 ; A tool to substitute away vars that are needlessly lambda-bound
 ;
-; Copyright (C) 2014-2022 Kestrel Institute
+; Copyright (C) 2014-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 (include-book "free-vars-in-term")
 (include-book "sublis-var-simple")
 (include-book "non-trivial-formals")
+(include-book "trivial-formals")
 (local (include-book "kestrel/utilities/terms" :dir :system))
 (local (include-book "kestrel/utilities/symbol-term-alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -155,21 +156,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun vars-bound-to-themselves (formals actuals)
-  (declare (xargs :guard (and (symbol-listp formals)
-                              (true-listp actuals))))
-  (if (endp formals)
-      nil
-    (let ((formal (first formals))
-          (actual (first actuals)))
-      (if (eq formal actual)
-          (cons formal (vars-bound-to-themselves (rest formals)
-                                                 (rest actuals)))
-        (vars-bound-to-themselves (rest formals)
-                                  (rest actuals))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defun vars-bound-to-mv-nths (formals actuals)
   (declare (xargs :guard (and (symbol-listp formals)
                               (true-listp actuals))))
@@ -223,9 +209,9 @@
                   ;;apply recursively to the lambda body:
                   (lambda-body (substitute-unnecessary-lambda-vars-in-term lambda-body print))
                   (var-term-alist (pairlis$ vars args))
-                  (vars-bound-to-themselves (vars-bound-to-themselves vars args))
+                  (trivial-formals (trivial-formals vars args))
                   (vars-bound-to-mv-nths (vars-bound-to-mv-nths vars args))
-                  (vars-not-bound-to-themselves (set-difference-eq vars vars-bound-to-themselves))
+                  (vars-not-bound-to-themselves (set-difference-eq vars trivial-formals))
                   ;; We substitute for a lambda var if:
                   ;; 1) It appears only once in the lambda-body
                   ;; and
@@ -237,7 +223,7 @@
                   ;; 4) It is bound to a term that does not mention any variables that are bound by
                   ;; the lambda, except variables that are bound to themselves.  This prevents clashes.
                   (vars-to-maybe-drop (vars-that-appear-only-once vars lambda-body))
-                  (vars-to-maybe-drop (set-difference-eq vars-to-maybe-drop vars-bound-to-themselves))
+                  (vars-to-maybe-drop (set-difference-eq vars-to-maybe-drop trivial-formals))
                   (vars-to-maybe-drop (set-difference-eq vars-to-maybe-drop vars-bound-to-mv-nths))
                   (vars-to-drop (vars-expressible-without-clashes vars-to-maybe-drop var-term-alist vars-not-bound-to-themselves))
 
