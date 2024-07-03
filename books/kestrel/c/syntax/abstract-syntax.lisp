@@ -32,6 +32,9 @@
      For now we cover all the constructs after preprocessing,
      but we plan to add some preprocessing constructs.")
    (xdoc::p
+    "We also plan to add fixtypes for GCC extensions,
+     as mentioned in @(see syntax-for-tools).")
+   (xdoc::p
     "According to the rationale explained in @(see syntax-for-tools),
      here we capture much of the information from the concrete syntax,
      e.g. the distinction between
