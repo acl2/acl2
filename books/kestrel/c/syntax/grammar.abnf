@@ -110,8 +110,6 @@
 ; for a formalization of the requirements in [C:5.2.1].
 ; In particular, [C:5.2.1] does not prescribe ASCII or Unicode.
 ; Our grammar assumes Unicode, which is a very general assumption these days.
-; In fact, initially we assume ASCII (which is a subset of Unicode),
-; which is a reasonable assumption, at least for an initial version.
 
 ; We define the source character set as the union of
 ; the basic character set (which has an obvious ASCII interpretation)
@@ -158,10 +156,29 @@ basic-character = letter
                 / space
                 / control-character
 
-; Initially, we include just the following extended characters:
+; We support almost all non-ASCII Unicode characters,
+; except for the bidirectional formatting characters,
+; which may lead to the Trojan Source vulnerability.
+; These are the format characters in the ranges %x202A-202E and %x2066-2069.
+; We also exclude high and low surrogates, which are in the range %xD800-DFFF:
+; these never result from UTF-8 decoding,
+; but are only used in UFT-16 encoding;
+; they are Unicode code points, but not Unicode scalar values.
+; So the following are the "safe" non-ASCII characters that we support.
+
+safe-nonascii = %x80-2029
+              ; omit format characters %x202A-202E
+              / %x202F-2065
+              ; omit format characters %x2066-2069
+              / %x206A-D7FF
+              ; omit high and low surrogates
+              / %xE000-10FFFF
+
+; We support the following extended characters:
 ; the printable ASCII characters that are not basic characters ($ @ `),
-; line feed, and carriage return.
-; The latter are needed to express what [C] regards as new-line characters,
+; line feed, carriage return, and the safe non-ASCII characters defined above.
+; Line feed and carriage return are needed
+; to express what [C] regards as new-line characters,
 ; which are, in general, new-line indications that could potentially be
 ; different actual characters, or not even characters.
 ; The following rule names do not directly correspond to nonterminals in [C].
@@ -175,7 +192,7 @@ extended-character = %x24 ; $
                    / %x60 ; `
                    / line-feed
                    / carriage-return
-                   ; add more as needed
+                   / safe-nonascii
 
 ; This is our initial (source) character set.
 ; This rule name has no direct corresponding nonterminal in [C],
@@ -189,7 +206,8 @@ character = basic-character
 ; because they may make code appear different from what it is,
 ; depending on where it is displayed (editor, shell, etc.).
 ; These dangers are similar to Trojan Source,
-; which is based on bidirectional Unicode characters.
+; which is based on Unicode bidirectional format characters,
+; described above.
 ; [C] is silent on the matter; it does not even prescribe ASCII or Unicode.
 ; For now we exclude all those characters, in the definition above;
 ; note that none of the characters defined above exhibits these dangers.
@@ -217,12 +235,13 @@ new-line = line-feed
 extended-character-not-new-line = %x24 ; $
                                 / %x40 ; @
                                 / %x60 ; `
-                                ; omits line-feed and carriage-return
+                                ; omit line-feed and carriage-return
+                                / safe-nonascii
                                 ; cf. extended-character
 
 graphic-character-not-star = %x21-23 ; ! " #
                            / %x25-29 ; % & ' ( )
-                           ; omits *
+                           ; omit *
                            / %x2b-2f ; + , - . /
                            / %x3a-3f ; : ; < = > ?
                            / %x5b-5f ; [ \ ] ^ _
@@ -231,9 +250,9 @@ graphic-character-not-star = %x21-23 ; ! " #
 
 graphic-character-not-star-or-slash = %x21-23 ; ! " #
                                     / %x25-29 ; % & ' ( )
-                                    ; omits *
+                                    ; omit *
                                     / %x2b-2e ; + , - .
-                                    ; omits /
+                                    ; omit /
                                     / %x3a-3f ; : ; < = > ?
                                     / %x5b-5f ; [ \ ] ^ _
                                     / %x7b-7e ; { | } ~
@@ -241,22 +260,22 @@ graphic-character-not-star-or-slash = %x21-23 ; ! " #
 
 graphic-character-not-single-quote-or-backslash = %x21-23 ; ! " #
                                                 / %x25-26 ; % &
-                                                ; omits '
+                                                ; omit '
                                                 / %x28-2f ; ( ) * + , - . /
                                                 / %x3a-3f ; : ; < = > ?
                                                 / %x5b    ; [
-                                                ; omits \
+                                                ; omit \
                                                 / %x5d-5f ; ] ^ _
                                                 / %x7b-7e ; { | } ~
 
 graphic-character-not-double-quote-or-backslash =
       %x21    ; !
-    ; omits "
+    ; omit "
     / %x23    ; #
     / %x25-2f ; % & ' ( ) * + , - . /
     / %x3a-3f ; : ; < = > ?
     / %x5b    ; [
-    ; omits \
+    ; omit \
     / %x5d-5f ; ] ^ _
     / %x7b-7e ; { | } ~
 
@@ -677,7 +696,7 @@ lexeme = token
        / white-space
 
 ; The intent of the lexical part of our ABNF grammar is that
-; a finite sequence of ASCII characters
+; a finite sequence of Unicode characters
 ; is organized into a sequence of lexemes.
 ; The ABNF grammar rules express most of the requirements for this,
 ; but not all, such as the fact that an identifier cannot be a keyword.

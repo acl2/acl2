@@ -13,6 +13,9 @@
 (include-book "abstract-syntax-operations")
 (include-book "concrete-syntax")
 
+(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
+(local (include-book "kestrel/bv/logand" :dir :system))
+(local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
@@ -20,37 +23,6 @@
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-amb-expr/tyname-ident ((amb amb-expr/tyname-p))
-  :returns (ident? ident-optionp)
-  :short "Check if an ambiguous expression of type name is just an identifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The expression must be an identifier,
-     and the type name must have no declarator
-     and have a singleton specifier and qualifier list
-     consisting of the same identifier as a type specifier.
-     If the check is successful, we return the identifier;
-     otherwise, we return @('nil')."))
-  (b* (((amb-expr/tyname amb) amb)
-       ((unless (expr-case amb.expr :ident)) nil)
-       (ident (expr-ident->unwrap amb.expr))
-       ((when (tyname->decl? amb.tyname)) nil)
-       (specquals (tyname->specqual amb.tyname))
-       ((unless (and (consp specquals)
-                     (endp (cdr specquals))))
-        nil)
-       (specqual (car specquals))
-       ((unless (specqual-case specqual :tyspec)) nil)
-       (tyspec (specqual-tyspec->unwrap specqual))
-       ((unless (tyspec-case tyspec :tydef)) nil)
-       (ident1 (tyspec-tydef->name tyspec))
-       ((unless (equal ident1 ident)) nil))
-    ident)
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -192,21 +164,43 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently all the characters allowed by our grammar are ASCII,
-     so they fit into a byte, which we add to the printer state.
-     That is, no UTF-8 encoding is needed for now.")
-   (xdoc::p
-    "Recall that we represent characters as codes, i.e. natural numbers,
-     not as ACL2 characters.
-     This is so that we can easily generalize from ASCII to Unicode.")
+    "We UTF-8-encode the character code into one, two, three, or four bytes.")
    (xdoc::p
     "This is the most basic printing function in our printer.
      All other printing functions call this one, directly or indirectly."))
   (b* ((bytes-rev (pristate->bytes-rev pstate))
-       (new-bytes-rev (cons char bytes-rev))
+       (encoding (cond
+                  ((< char #x80) (list char))
+                  ((< char #x800) (list (logior (ash char -6)
+                                                #b11000000)
+                                        (logior (logand char
+                                                        #b00111111)
+                                                #b10000000)))
+                  ((< char #x10000) (list (logior (ash char -12)
+                                                  #b1110000)
+                                          (logior (logand (ash char -6)
+                                                          #b00111111)
+                                                  #b10000000)
+                                          (logior (logand char
+                                                          #b00111111)
+                                                  #b10000000)))
+                  (t (list (logior (ash char -18)
+                                   #b11110000)
+                           (logior (logand (ash char -12)
+                                           #b00111111)
+                                   #b10000000)
+                           (logior (logand (ash char -6)
+                                           #b00111111)
+                                   #b10000000)
+                           (logior (logand char
+                                           #b00111111)
+                                   #b10000000)))))
+       (new-bytes-rev (append (rev encoding) bytes-rev))
        (new-pstate (change-pristate pstate :bytes-rev new-bytes-rev)))
     new-pstate)
-  :guard-hints (("Goal" :in-theory (enable bytep grammar-character-p)))
+  :guard-hints (("Goal" :in-theory (enable bytep grammar-character-p
+                                           unsigned-byte-p
+                                           integer-range-p)))
   ///
   (fty::deffixequiv print-char
     :args ((pstate pristatep))))
@@ -281,12 +275,8 @@
     "This provides the convenience to use use ACL2 strings,
      instead of using character codes.")
    (xdoc::p
-    "Since for now our concrete syntax only supports ASCII,
-     this suffices to print anything.
-     Even if we extend our concrete syntax to support (some) Unicode,
-     most of the ACL2 syntax is still ASCII,
-     and therefore this printing function is, and will always be,
-     to print a lot of the code.")
+    "Since most of the C syntax is ASCII,
+     this printing function is used to print most of the code.")
    (xdoc::p
     "Note that an ACL2 string can contain characters that,
      when converted to natural numbers, are larger than 127,
@@ -819,11 +809,11 @@
   (fconst-case
    fconst
    :dec (b* ((pstate (print-dec-core-fconst fconst.core pstate))
-             (pstate (print-fsuffix-option fconst.suffix pstate)))
+             (pstate (print-fsuffix-option fconst.suffix? pstate)))
           pstate)
    :hex (b* ((pstate (print-hprefix fconst.prefix pstate))
              (pstate (print-hex-core-fconst fconst.core pstate))
-             (pstate (print-fsuffix-option fconst.suffix pstate)))
+             (pstate (print-fsuffix-option fconst.suffix? pstate)))
           pstate))
   :hooks (:fix))
 
@@ -1279,6 +1269,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-inc/dec-op ((op inc/dec-opp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an increment or decrement operator."
+  (inc/dec-op-case
+   op
+   :inc (print-astring "++" pstate)
+   :dec (print-astring "--" pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-inc/dec-op-list ((ops inc/dec-op-listp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print a list of zero or more increment or decrement operators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We separate any two consecutive ones with a space."))
+  (b* (((when (endp ops)) (pristate-fix pstate))
+       (pstate (print-inc/dec-op (car ops) pstate))
+       ((when (endp (cdr ops))) pstate)
+       (pstate (print-astring " " pstate)))
+    (print-inc/dec-op-list (cdr ops) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines print-exprs/decls
   :short "Print expressions, declarations, and related entities."
   :long
@@ -1613,45 +1630,55 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-expr expr.next (expr-priority-asg) pstate)))
              pstate)
-           :cast/call-ambig
-           (prog2$ (raise "Misusage error: ~
-                           ambiguous cast or call ~x0."
-                          (expr-fix expr))
-                   (pristate-fix pstate))
            ;; We temporarily allow an ambiguous cast/mul expression
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases), which is common.
+           ;; as if it were a cast expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
+           :cast/call-ambig
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/fun)
+                                      pstate))
+                (pstate (print-astring ") " pstate))
+                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
+                (pstate (if expr.inc/dec
+                            (print-astring " " pstate)
+                          pstate))
+                (pstate (print-astring "(" pstate))
+                (pstate (print-expr expr.arg/rest (expr-priority-expr) pstate))
+                (pstate (print-astring ")" pstate)))
+             pstate)
+           ;; We temporarily allow an ambiguous cast/mul expression
+           ;; as if it were a cast expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/mul-ambig
-           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        expr.type/arg1)
-                 (pristate-fix pstate))
-                (pstate (print-astring "(" pstate))
-                (pstate (print-ident ident pstate))
-                (pstate (print-astring ") * " pstate))
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
+                                      pstate))
+                (pstate (print-astring ") " pstate))
+                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
+                (pstate (if expr.inc/dec
+                            (print-astring " " pstate)
+                          pstate))
+                (pstate (print-astring "* " pstate))
                 (pstate (print-expr expr.arg/arg2
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
            ;; We temporarily allow an ambiguous cast/add expression
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases), which is common.
+           ;; as if it were a cast expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/add-ambig
-           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        expr.type/arg1)
-                 (pristate-fix pstate))
-                (pstate (print-astring "(" pstate))
-                (pstate (print-ident ident pstate))
-                (pstate (print-astring ") + " pstate))
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
+                                      pstate))
+                (pstate (print-astring ") " pstate))
+                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
+                (pstate (if expr.inc/dec
+                            (print-astring " " pstate)
+                          pstate))
+                (pstate (print-astring "+ " pstate))
                 ;; We keep the expected priority to cast
                 ;; so that it is valid if it is a cast;
                 ;; if it is an addition,
@@ -1661,20 +1688,19 @@
                                     pstate)))
              pstate)
            ;; We temporarily allow an ambiguous cast/sub expression
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases), which is common.
+           ;; as if it were a cast expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/sub-ambig
-           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        expr.type/arg1)
-                 (pristate-fix pstate))
-                (pstate (print-astring "(" pstate))
-                (pstate (print-ident ident pstate))
-                (pstate (print-astring ") - " pstate))
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
+                                      pstate))
+                (pstate (print-astring ") " pstate))
+                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
+                (pstate (if expr.inc/dec
+                            (print-astring " " pstate)
+                          pstate))
+                (pstate (print-astring "- " pstate))
                 ;; We keep the expected priority to cast
                 ;; so that it is valid if it is a cast;
                 ;; if it is a subtraction,
@@ -1684,20 +1710,19 @@
                                     pstate)))
              pstate)
            ;; We temporarily allow an ambiguous cast/and expression
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases), which is common.
+           ;; as if it were a cast expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/and-ambig
-           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        expr.type/arg1)
-                 (pristate-fix pstate))
-                (pstate (print-astring "(" pstate))
-                (pstate (print-ident ident pstate))
-                (pstate (print-astring ") & " pstate))
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
+                                      pstate))
+                (pstate (print-astring ") " pstate))
+                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
+                (pstate (if expr.inc/dec
+                            (print-astring " " pstate)
+                          pstate))
+                (pstate (print-astring "& " pstate))
                 ;; We keep the expected priority to cast
                 ;; so that it is valid if it is a cast;
                 ;; if it is a conjunction,
@@ -1871,19 +1896,13 @@
            :alignas-type (print-tyname alignspec.type pstate)
            :alignas-expr (print-const-expr alignspec.arg pstate)
            ;; We temporarily allow an ambiguous alignment specifier
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases),
-           ;; which is common.
+           ;; as if its argument is an expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :alignas-ambig
-           (b* ((ident (check-amb-expr/tyname-ident alignspec.type/arg))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        alignspec.type/arg)
-                 pstate))
-             (print-ident ident pstate))))
+           (print-expr (amb-expr/tyname->expr alignspec.type/arg)
+                       (expr-priority-expr)
+                       pstate)))
          (pstate (print-astring ")" pstate)))
       pstate)
     :measure (alignspec-count alignspec))

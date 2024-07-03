@@ -548,10 +548,10 @@
      we factor things a bit differently in our fixtypes,
      so here we add the prefixes and suffixes as appropriate."))
   (:dec ((core dec-core-fconst)
-         (suffix fsuffix-option)))
+         (suffix? fsuffix-option)))
   (:hex ((prefix hprefix)
          (core hex-core-fconst)
-         (suffix fsuffix-option)))
+         (suffix? fsuffix-option)))
   :pred fconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
