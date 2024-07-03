@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function remove-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -82,3 +82,15 @@
   (implies (nat-listp x)
            (nat-listp (remove-equal a x)))
   :hints (("Goal" :in-theory (enable remove-equal nat-listp))))
+
+;; Disabled since this may be slow
+(defthmd remove-equal-when-not-member-equal
+  (implies (not (member-equal a x))
+           (equal (remove-equal a x)
+                  (true-list-fix x))))
+
+(defthm remove-equal-when-not-member-equal-cheap
+  (implies (not (member-equal a x))
+           (equal (remove-equal a x)
+                  (true-list-fix x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))

@@ -1,7 +1,7 @@
 ; Utilities dealing with quoted objects
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,6 +37,7 @@
 ;;            (equal (nth 0 item) 'quote))
 ;;   :rule-classes :forward-chaining)
 
+;fix name
 (defthm myquotep-forward-to-consp
   (implies (myquotep item)
            (and (consp item)
@@ -54,6 +55,10 @@
 ;;            (not (cdr (cdr x))))
 ;;   :rule-classes :forward-chaining
 ;;   :hints (("Goal" :in-theory (enable myquotep))))
+
+(defthm myquotep-of-list-of-quote
+  (myquotep (list 'quote x))
+  :hints (("Goal" :in-theory (enable myquotep))))
 
 ;;;
 ;;; all-myquotep
@@ -95,6 +100,18 @@
            (equal (consp (nth n args))
                   (< n (len args)))))
 
+;; (defthmd not-cddr-when-all-myquotep
+;;   (implies (and (all-myquotep items)
+;;                 (member-equal item items))
+;;            (not (cddr item)))
+;;   :hints (("Goal" :in-theory (enable all-myquotep))))
+
+(defthmd myquotep-when-all-myquotep-and-member-equal
+  (implies (and (all-myquotep items)
+                (member-equal item items))
+           (myquotep item))
+  :hints (("Goal" :in-theory (enable all-myquotep))))
+
 ;;;
 ;;; unquote-list
 ;;;
@@ -105,13 +122,3 @@
   (cond ((not (consp lst)) nil)
         (t (cons (unquote (car lst))
                  (unquote-list (cdr lst))))))
-
-(defthm myquotep-of-list-of-quote
-  (myquotep (list 'quote x))
-  :hints (("Goal" :in-theory (enable myquotep))))
-
-(defthmd not-cddr-when-all-myquotep
-  (implies (and (all-myquotep items)
-                (member-equal item items))
-           (not (cddr item)))
-  :hints (("Goal" :in-theory (enable all-myquotep))))

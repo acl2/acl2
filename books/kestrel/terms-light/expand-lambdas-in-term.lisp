@@ -18,7 +18,6 @@
 (include-book "lambdas-closed-in-termp")
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "../alists-light/pairlis-dollar"))
-(local (include-book "../alists-light/strip-cars"))
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "../typed-lists-light/symbol-listp"))
 

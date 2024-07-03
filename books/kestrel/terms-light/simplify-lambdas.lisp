@@ -13,9 +13,10 @@
 ;; STATUS: IN-PROGRESS
 
 ;; TODO: Add more kinds of simplifications
+;; TODO: Add proofs book
 
 (include-book "substitute-constants-in-lambdas")
-(include-book "clean-up-lambdas")
+(include-book "drop-unused-lambda-bindings")
 ;; (include-book "substitute-unnecessary-lambda-vars")
 
 (defund simplify-lambdas-one-step (term)

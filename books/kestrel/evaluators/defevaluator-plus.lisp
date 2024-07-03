@@ -52,12 +52,17 @@
          (equal (,eval-list-name (append terms1 terms2) a)
                 (append (,eval-list-name terms1 a)
                         (,eval-list-name terms2 a)))
-         :hints (("Goal" :in-theory (enable append))))
+         :hints (("Goal" :induct (append terms1 terms2) :in-theory (enable append))))
 
        (defthm ,(add-prefix "LEN-OF-" eval-list-name)
          (equal (len (,eval-list-name terms a))
                 (len terms))
-         :hints (("Goal" :in-theory (enable append (:I len)))))
+         :hints (("Goal" :induct (len terms) :in-theory (enable append (:i len)))))
+
+       (defthm ,(add-suffix (add-prefix "TRUE-LISTP-OF-" eval-list-name) "-TYPE")
+         (true-listp (,eval-list-name terms a))
+         :rule-classes :type-prescription
+         :hints (("Goal" :induct (len terms) :in-theory (enable true-listp (:i len)))))
 
        (defthm ,(add-suffix eval-list-name "-OF-TRUE-LIST_FIX")
          (equal (,eval-list-name (true-list-fix terms) a)
