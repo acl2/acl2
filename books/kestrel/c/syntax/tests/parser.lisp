@@ -567,6 +567,32 @@
  lex-hexadecimal-digit
  "@")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-lex
+ lex-hex-quad
+ "0000"
+ :cond (equal ast (hex-quad #\0 #\0 #\0 #\0)))
+
+(test-lex
+ lex-hex-quad
+ "b8F0"
+ :cond (equal ast (hex-quad #\b #\8 #\F #\0)))
+
+(test-lex
+ lex-hex-quad
+ "DeadBeef"
+ :cond (and (equal ast (hex-quad #\D #\e #\a #\d))
+            (equal (parstate->bytes pstate) (acl2::string=>nats "Beef"))))
+
+(test-lex-fail
+ lex-hex-quad
+ "")
+
+(test-lex-fail
+ lex-hex-quad
+ "7aa")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test parsing functions.
