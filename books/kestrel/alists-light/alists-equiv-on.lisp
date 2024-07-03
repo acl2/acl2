@@ -90,7 +90,7 @@
 
 (defthm alists-equiv-on-of-append-arg1
   (implies (alistp x)
-           (equal (alists-equiv-on keys (binary-append x y) z)
+           (equal (alists-equiv-on keys (append x y) z)
                   (and (alists-equiv-on (intersection-equal keys (strip-cars x))
                                         x
                                         z)
@@ -105,7 +105,7 @@
 
 (defthm alists-equiv-on-of-append-arg2
   (implies (alistp x)
-           (equal (alists-equiv-on keys z (binary-append x y))
+           (equal (alists-equiv-on keys z (append x y))
                   (and (alists-equiv-on (intersection-equal keys (strip-cars x))
                                         z
                                         x)
