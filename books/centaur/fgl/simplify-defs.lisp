@@ -35,10 +35,6 @@
                                 are tracked through possibly non-preserving transforms,
                                 for heuristic use by the transforms")
                               'nil)
-                             ((tracked-bits
-                               "Object providing an ordered list of Boolean conditions
-                                that are passed to the transforms for heuristic use")
-                              'nil)
                              ((use-pathcond
                                "Assume the path condition true when simplifying the formulas")
                               't)

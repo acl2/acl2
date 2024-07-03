@@ -83,7 +83,7 @@ for @('0 <= j < i').  This is useful in cases where we know what nodes are likel
   (:initial-equiv-classes ;; ((count natp :rule-classes :type-prescription))
    nil))
 
-(fty::deflist fraig-output-types :elt-type fraig-output-type :true-listp t)
+(fty::defalist fraig-output-type-map :key-type symbolp :val-type fraig-output-type :true-listp t)
 
 
 (fty::defprod fraig-config
@@ -131,14 +131,14 @@ more than once.  Combinational equivalence is preserved for all outputs.  Not
 compatible with @(':miters-only') or @('output-map').")
    (initial-equiv-classes-last booleanp :default nil
                                "See the n-outputs-are-initial-equiv-classes option.")
-   (output-types fraig-output-types-p :default nil
+   (output-types fraig-output-type-map :default nil
                "If this is empty, then all outputs are treated as nodes to
-simplify.  Otherwise, it gives an ordered list of @(see fraig-output-type)
-objects determining how to treat the various ranges of objects. The counts of
-outputs in each range need to be given by the @('output-range') argument to the
-transforms.  The output-types and output-ranges should have the same
-length. They are applied in order to the last outputs; any before the total
-count of output-ranges will have simplify type."))
+simplify.  Otherwise, it gives a mapping from output range names (see @(see
+aignet-output-ranges)) to @(see fraig-output-type) objects, determining how to
+treat the named ranges of objects. (This depends on the output-types argument
+to the transform, which determines which range of outputs corresponds to each
+output range name.) The default output type is
+@('(fraig-output-type-simplify)')."))
 
   :parents (fraig comb-transform)
   :short "Configuration object for the @(see fraig) aignet transform."

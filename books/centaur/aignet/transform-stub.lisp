@@ -126,6 +126,23 @@ of outputs should be used for which purposes, according to the transform and
 its configuration. See @(see aignet-output-ranges) for a more comprehensive
 description.</p>")
 
+(define aignet-output-range-map-length ((x aignet-output-range-map-p))
+  :hooks (:fix)
+  :returns (len natp :rule-classes :type-prescription)
+  (if (atom x)
+      0
+    (+ (if (mbt (consp (car x)))
+           (lnfix (cdar x))
+         0)
+       (aignet-output-range-map-length (cdr x))))
+  ///
+  (defthm aignet-output-range-map-length-of-append
+    (equal (aignet-output-range-map-length (append a b))
+           (+ (aignet-output-range-map-length a) (aignet-output-range-map-length b)))
+    :hints(("Goal" :in-theory (enable aignet-output-range-map-length))))
+  
+  (local (in-theory (enable aignet-output-range-map-fix))))
+
 (defconst *apply-transform-template*
   '(progn
      (defxdoc apply-<name>-transform
@@ -166,12 +183,17 @@ description.</p>")
        ;;   (equal (stype-count :reg new-aignet2)
        ;;          (stype-count :reg aignet)))
 
-       ;; (defret num-outs-of-<fn>
-       ;;   (equal (stype-count :po new-aignet2)
-       ;;          (stype-count :po aignet)))
+       (defret num-outs-lower-bound-of-<fn>
+         (implies (<= (aignet-output-range-map-length output-ranges)
+                      (stype-count :po aignet))
+                  (<= (aignet-output-range-map-length new-output-ranges)
+                      (stype-count :po new-aignet2)))
+         :rule-classes
+         ((:linear :trigger-terms
+           ((aignet-output-range-map-length new-output-ranges)
+            (stype-count :po new-aignet2)))))
 
-       (defret <fn>-correct
-         <correctness-claim-aignet2>)
+       <correctness-thms-aignet2>
 
        (defret w-state-of-<fn>
          (equal (w new-state)
@@ -233,8 +255,17 @@ description.</p>")
        ;;   (equal (stype-count :po new-aignet)
        ;;          (stype-count :po aignet)))
 
-       (defret <fn>-correct
-         <correctness-claim-aignet>)
+       (defret num-outs-lower-bound-of-<fn>
+         (implies (<= (aignet-output-range-map-length output-ranges)
+                      (stype-count :po aignet))
+                  (<= (aignet-output-range-map-length new-output-ranges)
+                      (stype-count :po new-aignet)))
+         :rule-classes
+         ((:linear :trigger-terms
+           ((aignet-output-range-map-length new-output-ranges)
+            (stype-count :po new-aignet)))))
+
+       <correctness-thms-aignet>
 
        (defret w-state-of-<fn>
          (equal (w new-state)
@@ -331,8 +362,17 @@ description.</p>")
        ;;   (equal (stype-count :po new-aignet2)
        ;;          (stype-count :po aignet)))
 
-       (defret <fn>-correct
-         <correctness-claim-aignet2>)
+       (defret num-outs-lower-bound-of-<fn>
+         (implies (<= (aignet-output-range-map-length output-ranges)
+                      (stype-count :po aignet))
+                  (<= (aignet-output-range-map-length new-output-ranges)
+                      (stype-count :po new-aignet2)))
+         :rule-classes
+         ((:linear :trigger-terms
+           ((stype-count :po new-aignet2)
+            (aignet-output-range-map-length new-output-ranges)))))
+
+       <correctness-thms-aignet2>
 
        (defret w-state-of-<fn>
          (equal (w new-state)
@@ -345,7 +385,7 @@ description.</p>")
 (defun def-apply-transform-fn (name
                                extra-define-formals
                                guard
-                               correctness-claim
+                               correctness-thms
                                parents short long)
   (declare (xargs :mode :program))
   (b* ((formals (std::parse-formals `(def-apply-transform ,name)
@@ -354,16 +394,16 @@ description.</p>")
        (formal-names (std::formallist->names formals))
        (full-guard `(and (aignet-output-range-map-p output-ranges)
                          ,guard . ,formal-guards))
-       (correctness-claim-aignet2 (subst 'new-aignet2 'new-aignet correctness-claim))
+       (correctness-thms-aignet2 (subst 'new-aignet2 'new-aignet correctness-thms))
        (subst
         (acl2::make-tmplsubst
          :splices `((<extra-define-formals> . ,extra-define-formals)
                     (<extra-args> . ,formal-names)
-                    (<extra-formals-*> . ,(make-list (len formal-names) :initial-element '*)))
+                    (<extra-formals-*> . ,(make-list (len formal-names) :initial-element '*))
+                    (<correctness-thms-aignet> . ,correctness-thms)
+                    (<correctness-thms-aignet2> . ,correctness-thms-aignet2))
          :atoms `((<encap-guard> . ,full-guard)
                   (<guard> . ,guard)
-                  (<correctness-claim-aignet> . ,correctness-claim)
-                  (<correctness-claim-aignet2> . ,correctness-claim-aignet2)
                   (<parents> . ,parents)
                   (<short> . ,short)
                   (<long> . ,long))
@@ -374,25 +414,37 @@ description.</p>")
 (defmacro def-apply-transform (name extra-define-formals
                                &key
                                (guard 't)
-                               (correctness-claim)
+                               (correctness-thms)
                                parents short long)
-  (def-apply-transform-fn name extra-define-formals guard correctness-claim parents short long))
+  (def-apply-transform-fn name extra-define-formals guard correctness-thms parents short long))
 
 (def-apply-transform comb ()
-  :correctness-claim (comb-equiv new-aignet aignet)
+  :correctness-thms
+  ((defret <fn>-comb-equiv
+     (comb-equiv new-aignet aignet))
+   (defret num-regs-of-<fn>
+     (equal (stype-count :reg new-aignet)
+            (stype-count :reg aignet)))
+   (defret num-outs-of-<fn>
+     (equal (stype-count :po new-aignet)
+            (stype-count :po aignet))))
   :parents (aignet-comb-transforms)
   :short "Stub for an AIG transform that preserves combinational equivalence")
 
 (def-apply-transform n-output-comb ((n natp))
   :guard (<= n (num-outs aignet))
-  :correctness-claim
-  (and (implies (< (nfix i) (nfix n))
-                (equal (output-eval i invals regvals new-aignet)
-                       (output-eval i invals regvals aignet)))
-       (equal (stype-count :reg new-aignet)
-              (stype-count :reg aignet))
-       (implies (<= n (stype-count :po aignet))
-                (<= n (stype-count :po new-aignet))))
+  :correctness-thms
+  ((defret output-eval-of-<fn>
+     (implies (< (nfix i) (nfix n))
+              (equal (output-eval i invals regvals new-aignet)
+                     (output-eval i invals regvals aignet))))
+   (defret num-regs-of-<fn>
+     (equal (stype-count :reg new-aignet)
+            (stype-count :reg aignet)))
+   (defret num-outs-of-<fn>
+     (implies (<= (nfix n) (stype-count :po aignet))
+              (<= (nfix n) (stype-count :po new-aignet)))
+     :rule-classes :linear))
   :parents (aignet-n-output-comb-transforms)
   :short "Stub for an AIG transform that preserves combinational equivalence of
           the first N primary outputs")
@@ -613,20 +665,24 @@ description.</p>")
 
 (def-apply-transform m-assumption-n-output ((m natp) (n natp))
   :guard (<= (+ m n) (num-outs aignet))
-  :correctness-claim
-  (and ;; (output-range-equiv m invals regvals new-aignet aignet)
-       (implies (< (nfix i) (nfix m))
-                (equal (output-eval i invals regvals new-aignet)
-                       (output-eval i invals regvals aignet)))
-       (implies (and (< (nfix i) (+ (nfix m) (nfix n)))
-                     (equal (conjoin-output-range 0 m invals regvals aignet)
-                            1))
-                (equal (output-eval i invals regvals new-aignet)
-                       (output-eval i invals regvals aignet)))
-       (implies (<= (+ m n) (stype-count :po aignet))
-                (<= (+ m n) (stype-count :po new-aignet)))
-       (equal (stype-count :reg new-aignet)
-              (stype-count :reg aignet)))
+  :correctness-thms
+  ((defret output-eval-of-<fn>-assum
+     (implies (< (nfix i) (nfix m))
+              (equal (output-eval i invals regvals new-aignet)
+                     (output-eval i invals regvals aignet))))
+   (defret output-eval-of-<fn>-under-assum
+     (implies (and (< (nfix i) (+ (nfix m) (nfix n)))
+                   (equal (conjoin-output-range 0 m invals regvals aignet)
+                          1))
+              (equal (output-eval i invals regvals new-aignet)
+                     (output-eval i invals regvals aignet))))
+   (defret num-outs-of-<fn>
+     (implies (<= (+ (nfix m) (nfix n)) (stype-count :po aignet))
+              (<= (+ (nfix m) (nfix n)) (stype-count :po new-aignet)))
+     :rule-classes :linear)
+   (defret num-regs-of-<fn>
+     (equal (stype-count :reg new-aignet)
+            (stype-count :reg aignet))))
   :parents (aignet-m-assumption-n-output-transforms)
   :short "Stub for an AIG transform that preserves combinational equivalence of
           the first M primary outputs, then preserves combinational equivalence
