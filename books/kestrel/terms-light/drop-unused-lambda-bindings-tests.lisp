@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "clean-up-lambdas")
+(include-book "drop-unused-lambda-bindings")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 ;; Drop the binding of __function__(not used in the body), and then drop the

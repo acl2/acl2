@@ -1,4 +1,4 @@
-; Proof of correctness clean-up-lambdas
+; Proof of correctness of drop-unused-lambda-bindings
 ;
 ; Copyright (C) 2021-2024 Kestrel Institute
 ;
@@ -15,7 +15,7 @@
 
 ;; TODO: Prove that the result is lambda-free.
 
-(include-book "clean-up-lambdas")
+(include-book "drop-unused-lambda-bindings")
 ;(include-book "make-lambda-term-simple")
 ;(include-book "no-nils-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)

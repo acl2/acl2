@@ -332,7 +332,7 @@
       (remove-from-hint-keyword-value-list-in-nth-way n keyword-value-list)
       (acons new-keyword-value-list
              ;; the removal-type currently include the "remove":
-             (concatenate 'string (newline-string) "  For \"" goal-name "\": " (decode-removal-type removal-type))
+             (concatenate 'string (newline-string) "   For \"" goal-name "\": " (decode-removal-type removal-type))
              (remove-hint-parts-and-label-aux (+ 1 n) ways keyword-value-list goal-name)))))
 
 ;; Returns an alist from new keyword-value-lists to decsriptions

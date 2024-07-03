@@ -95,17 +95,6 @@
            (not (member-equal formal (mv-nth 0 (formals-and-constant-args formals args)))))
   :hints (("Goal" :in-theory (enable formals-and-constant-args))))
 
-(defthm remove-equal-when-not-member-equal-cheap
-  (implies (not (member-equal a x))
-           (equal (remove-equal a x)
-                  (true-list-fix x)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
-(defthm remove-equal-when-not-member-equal
-  (implies (not (member-equal a x))
-           (equal (remove-equal a x)
-                  (true-list-fix x))))
-
 (defthm free-vars-in-term-when-quotep
   (implies (quotep term)
            (equal (free-vars-in-term term)
@@ -128,7 +117,8 @@
                             free-vars-in-terms
                             subsetp-equal-of-cons-arg2-irrel
                             subsetp-equal-of-remove-equal-arg1-irrel
-                            set-difference-equal)
+                            set-difference-equal
+                            remove-equal-when-not-member-equal)
                            (quotep
                             formals-and-constant-args)))))
 
@@ -267,8 +257,7 @@
                                       substitute-constants-in-lambdas-induct-lst)))))
 
 ;todo: reduce
-(local (include-book "make-lambda-application-simple-proof"))
-
+(local (include-book "make-lambda-application-simple-proof")) ; for map-empty-eval-of-map-lookup-equal-of-pairlis$
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 
@@ -282,14 +271,10 @@
   :hints (("Goal" :in-theory (enable pairlis$ lookup-equal map-lookup-equal))))
 
 ;;ttodo
-(defthm true-listp-of-empty-eval-list
-  (true-listp (empty-eval-list x1 x2))
-  :hints (("Goal" :induct (len x1) :in-theory (enable (:i len)))))
-
-;;ttodo
 (defthm empty-eval-list-when-symbol-listp
   (implies (and (symbol-listp vars)
-                (not (member-equal nil vars)))
+                (not (member-equal nil vars)) ; an evaluator returns nil for nil
+                )
            (equal (empty-eval-list vars a)
                   (map-lookup-equal vars a)))
   :hints (("Goal" :in-theory (enable map-lookup-equal lookup-equal))))
@@ -333,15 +318,19 @@
            (subsetp-equal (set-difference-equal x z) (set-difference-equal y z)))
   :hints (("Goal" :in-theory (enable set-difference-equal subsetp-equal))))
 
-;; an opener rule, since empty-eval-list doesn' have a definition
+;; an opener rule, since empty-eval-list doesn't have a definition
 (defthmd empty-eval-list-when-consp
   (implies (consp l)
            (equal (empty-eval-list l alist)
                   (cons (empty-eval (car l) alist)
                         (empty-eval-list (cdr l) alist)))))
 
-
-(include-book "kestrel/utilities/quote" :dir :system)
+(include-book "kestrel/utilities/quote" :dir :system) ; separate out unquote-list
+;move
+(defthm len-of-unquote-list
+  (equal (len (unquote-list lst))
+         (len lst))
+  :hints (("Goal" :in-theory (enable unquote-list))))
 
 (defthm empty-eval-list-when-quote-listp
   (implies (quote-listp l)
@@ -353,12 +342,6 @@
   (implies (pseudo-term-listp args)
            (quote-listp (mv-nth 1 (formals-and-constant-args formals args))))
   :hints (("Goal" :in-theory (enable formals-and-constant-args))))
-
-;move
-(defthm len-of-unquote-list
-  (equal (len (unquote-list lst))
-         (len lst))
-  :hints (("Goal" :in-theory (enable unquote-list))))
 
 (defthm alists-equiv-on-of-alists-equiv-on-when-alists-equiv-on-arg1
   (implies (alists-equiv-on keys1 alist1 alist2)
