@@ -12658,7 +12658,7 @@
             (cond
              ;; If token3 is an equal sign,
              ;; we must be parsing an intialization declarator,
-             ;; and therefore the external declaration must be a declarator.
+             ;; and therefore the external declaration must be a declaration.
              ;; We parse the rest of the initialization declarator,
              ;; then possibly more initialization declarators.
              ((equal token3 (token-punctuator "=")) ; declspecs declor =
