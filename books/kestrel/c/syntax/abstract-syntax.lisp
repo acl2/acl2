@@ -722,7 +722,7 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>character-constant</i> in the grammar in [C]."))
-  ((prefix cprefix-option)
+  ((prefix? cprefix-option)
    (cchars c-char-list))
   :pred cconstp)
 
