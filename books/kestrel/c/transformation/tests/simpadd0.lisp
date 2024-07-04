@@ -36,7 +36,7 @@
                  nil)))
 
 (defconst *old-transunits*
-  (b* (((mv erp transunits) (c$::parse-fileset *old-fileset*)))
+  (b* (((mv erp transunits) (c$::parse-fileset *old-fileset* nil)))
     (if erp
         (cw "~@0" erp)
       transunits)))
