@@ -51,14 +51,14 @@
      We may even add some information about file layout,
      if that turns out to be useful.")
    (xdoc::p
-    "We also plan to add constructs for GCC extensions,
+    "We include some constructs for GCC extensions,
      which, as mentioned in "
     (xdoc::seetopic "c::c" "the top-level topic of our library for C")
     ", are prevalent and important extensions
      needed for a practical tool.
      Ideally, eventually we should support all the GCC extensions,
-     but we plan to add them piece-wise, as needed.
-     Our documentation will always be clear about distinguishing
+     but we are adding them piece-wise, as needed.
+     Our documentation will always clearly distinguish
      between the C standard and the GCC extensions.")
    (xdoc::p
     "The idea of this tool-oriented abstract syntax is also discussed in
