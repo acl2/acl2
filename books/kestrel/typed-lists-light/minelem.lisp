@@ -11,11 +11,11 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/take" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
-(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
+;(local (include-book "kestrel/lists-light/take" :dir :system))
+;(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+;(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+;(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
 (defthm member-equal-when-equal-of-len-and-1-cheap
   (implies (equal (len lst) 1)
