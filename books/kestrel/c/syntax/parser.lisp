@@ -599,6 +599,16 @@
      is that we may need to support ``nested'' backtracking
      while parsing something that may also backtrack.")
    (xdoc::p
+    "We include a boolean flag saying whether
+     certain GCC extensions should be accepted or not.
+     These GCC extensions are limited to the ones
+     currently captured in our abstract syntax.
+     This parser state component is set at the beginning and never changes,
+     but it is useful to have it as part of the parser state
+     to avoid passing an additional parameter.
+     This parser state component could potentially evolve into
+     a richer set of options for different versions and dialects of C.")
+   (xdoc::p
     "We could look into turning the parser state into a stobj in the future,
      if efficiency is an issue.
      The code of the parser already treats the parser state
@@ -609,7 +619,8 @@
    (chars-unread char+position-list)
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
-   (checkpoints nat-list))
+   (checkpoints nat-list)
+   (gcc bool))
   :pred parstatep
   :prepwork ((local (in-theory (enable nfix)))))
 
@@ -631,13 +642,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp))
+(define init-parstate ((data byte-listp) (gcc booleanp))
   :returns (pstate parstatep)
   :short "Initial parser state."
   :long
   (xdoc::topstring
    (xdoc::p
     "Given (the data of) a file to parse,
+     and a flag saying whether GCC extensions should be accepted or not,
      the initial parsing state consists of
      the data to parse,
      no unread characters or tokens,
@@ -650,7 +662,8 @@
                  :chars-unread nil
                  :tokens-read nil
                  :tokens-unread nil
-                 :checkpoints nil))
+                 :checkpoints nil
+                 :gcc gcc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6916,7 +6929,7 @@
                  ;; no larger than the initial one,
                  ;; so we just return the empty parser state.
                  ;; This is just logical: execution stops at the RAISE above.
-                 (b* ((pstate (init-parstate nil)))
+                 (b* ((pstate (init-parstate nil nil)))
                    (reterr t)))
                 (pstate (unread-token pstate))) ;
              (parse-postfix-expression pstate))
@@ -7071,7 +7084,7 @@
                      ;; no larger than the initial one,
                      ;; so we just return the empty parser state.
                      ;; This is just logical: execution stops at the RAISE above.
-                     (b* ((pstate (init-parstate nil)))
+                     (b* ((pstate (init-parstate nil nil)))
                        (reterr t)))
                     (pstate (unread-token pstate))) ;
                  (parse-postfix-expression pstate))))))))
@@ -10239,7 +10252,7 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((pstate (init-parstate nil)))
+                (b* ((pstate (init-parstate nil nil)))
                   (reterr t)))
                ((erp tyname span pstate) (parse-type-name pstate))
                ;; Ensure there is a closed parenthesis,
@@ -10270,7 +10283,7 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
-                    (b* ((pstate (init-parstate nil)))
+                    (b* ((pstate (init-parstate nil nil)))
                       (reterr t)))
                    (pstate (record-checkpoint pstate)) ; we may backtrack again
                    ((mv erp tyname span-tyname pstate)
@@ -10297,7 +10310,7 @@
                           ;; so we just return the empty parser state.
                           ;; This is just logical:
                           ;; execution stops at the RAISE above.
-                          (b* ((pstate (init-parstate nil)))
+                          (b* ((pstate (init-parstate nil nil)))
                             (reterr t)))
                          ((mv erp expr1 span-expr1 pstate)
                           (parse-expression pstate))
@@ -10366,7 +10379,7 @@
                             ;; so we just return the empty parser state.
                             ;; This is just logical:
                             ;; execution stops at the RAISE above.
-                            (b* ((pstate (init-parstate nil)))
+                            (b* ((pstate (init-parstate nil nil)))
                               (reterr t)))
                            ((mv erp expr1 span-expr1 pstate)
                             (parse-expression pstate))
@@ -10408,7 +10421,7 @@
                   ;; no larger than the initial one,
                   ;; so we just return the empty parser state.
                   ;; This is just logical: execution stops at the RAISE above.
-                  (b* ((pstate (init-parstate nil)))
+                  (b* ((pstate (init-parstate nil nil)))
                     (reterr t)))
                  ((erp tyname span pstate) (parse-type-name pstate))
                  ;; Ensure there is a closed parenthesis,
@@ -10475,7 +10488,7 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((pstate (init-parstate nil)))
+                (b* ((pstate (init-parstate nil nil)))
                   (reterr t)))
                ((erp absdeclor span pstate) (parse-abstract-declarator pstate)))
             (retok (amb?-declor/absdeclor-absdeclor absdeclor) span pstate))
@@ -10494,7 +10507,7 @@
               ;; so we just return the empty parser state.
               ;; This is just logical:
               ;; execution stops at the RAISE above.
-              (b* ((pstate (init-parstate nil)))
+              (b* ((pstate (init-parstate nil nil)))
                 (reterr t)))
              (pstate (record-checkpoint pstate)) ; we may backtrack again
              ((mv erp absdeclor span-absdeclor pstate)
@@ -10521,7 +10534,7 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
-                    (b* ((pstate (init-parstate nil)))
+                    (b* ((pstate (init-parstate nil nil)))
                       (reterr t)))
                    ((mv erp declor1 span-declor1 pstate)
                     (parse-declarator pstate))
@@ -10594,7 +10607,7 @@
                       ;; so we just return the empty parser state.
                       ;; This is just logical:
                       ;; execution stops at the RAISE above.
-                      (b* ((pstate (init-parstate nil)))
+                      (b* ((pstate (init-parstate nil nil)))
                         (reterr t)))
                      ((mv erp declor1 span-declor1 pstate)
                       (parse-declarator pstate))
@@ -11713,7 +11726,7 @@
               ;; no larger than the initial one,
               ;; so we just return the empty parser state.
               ;; This is just logical: execution stops at the RAISE above.
-              (b* ((pstate (init-parstate nil)))
+              (b* ((pstate (init-parstate nil nil)))
                 (reterr t)))
              ((erp decl span pstate) (parse-declaration pstate)))
           (retok (amb?-decl/stmt-decl decl) span pstate))
@@ -11741,7 +11754,7 @@
                   ;; so we just return the empty parser state.
                   ;; This is just logical:
                   ;; execution stops at the RAISE above.
-                  (b* ((pstate (init-parstate nil)))
+                  (b* ((pstate (init-parstate nil nil)))
                     (reterr t)))
                  (pstate (record-checkpoint pstate)) ; we may backtrack again
                  ((mv erp decl span-decl pstate) (parse-declaration pstate)))
@@ -11762,7 +11775,7 @@
                         ;; so we just return the empty parser state.
                         ;; This is just logical:
                         ;; execution stops at the RAISE above.
-                        (b* ((pstate (init-parstate nil)))
+                        (b* ((pstate (init-parstate nil nil)))
                           (reterr t)))
                        ((mv erp expr1 span-expr1 pstate)
                         (parse-expression pstate))
@@ -11836,7 +11849,7 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((pstate (init-parstate nil)))
+                (b* ((pstate (init-parstate nil nil)))
                   (reterr t)))
                ((erp decl span pstate) (parse-declaration pstate)))
             (retok (amb?-decl/stmt-decl decl) span pstate))))))
@@ -12888,11 +12901,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-file ((path filepathp) (data byte-listp))
+(define parse-file ((path filepathp) (data byte-listp) (gcc booleanp))
   :returns (mv erp (tunit transunitp))
   :short "Parse (the data bytes of) a file."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "We also pass a flag saying whether GCC extensions should be accepted.")
    (xdoc::p
     "If successful, the result is a translation unit.
      We initialize the parser state with the data bytes,
@@ -12905,7 +12920,7 @@
      but currently we do not have that information statically available,
      so we add a run-time check that should always succeed."))
   (b* (((reterr) (irr-transunit))
-       (parstate (init-parstate data))
+       (parstate (init-parstate data gcc))
        ((mv erp tunit &) (parse-translation-unit parstate))
        ((when erp)
         (b* (((unless (msgp erp))
@@ -12916,11 +12931,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-fileset ((fileset filesetp))
+(define parse-fileset ((fileset filesetp) (gcc booleanp))
   :returns (mv erp (tunits transunit-ensemblep))
   :short "Parse a file set."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "We also pass a flag saying whether GCC extensions should be accepted.")
    (xdoc::p
     "We go through each file of the file set and parse it,
      obtaining a translation unit for each,
@@ -12931,17 +12948,18 @@
      (they are the keys of the maps)."))
   (b* (((reterr) (irr-transunit-ensemble))
        (filemap (fileset->unwrap fileset))
-       ((erp tunitmap) (parse-fileset-loop filemap)))
+       ((erp tunitmap) (parse-fileset-loop filemap gcc)))
     (retok (transunit-ensemble tunitmap)))
 
   :prepwork
-  ((define parse-fileset-loop ((filemap filepath-filedata-mapp))
+  ((define parse-fileset-loop ((filemap filepath-filedata-mapp)
+                               (gcc booleanp))
      :returns (mv erp (tunitmap filepath-transunit-mapp))
      (b* (((reterr) nil)
           ((when (omap::emptyp filemap)) (retok nil))
           ((mv filepath filedata) (omap::head filemap))
-          ((erp tunit) (parse-file filepath (filedata->unwrap filedata)))
-          ((erp tunitmap) (parse-fileset-loop (omap::tail filemap))))
+          ((erp tunit) (parse-file filepath (filedata->unwrap filedata) gcc))
+          ((erp tunitmap) (parse-fileset-loop (omap::tail filemap) gcc)))
        (retok (omap::update (filepath-fix filepath) tunit tunitmap)))
      :verify-guards :after-returns
 
