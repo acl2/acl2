@@ -1272,8 +1272,8 @@
     x86isa::get-prefixes-base-4
     ;; x86isa::get-prefixes-base-5 ; error case
     x86isa::get-prefixes-base-6
-    x86isa::get-prefixes-base-7
-    x86isa::get-prefixes-base-8
+    ;; x86isa::get-prefixes-base-7 ; error case
+    ;; x86isa::get-prefixes-base-8 ; error case
     x86isa::get-prefixes-unroll-1
     x86isa::get-prefixes-unroll-2
     x86isa::get-prefixes-unroll-3
