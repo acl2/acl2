@@ -19,3 +19,8 @@
   (cond ((not (consp lst)) nil)
         (t (cons (unquote (car lst))
                  (unquote-list (cdr lst))))))
+
+(defthm len-of-unquote-list
+  (equal (len (unquote-list lst))
+         (len lst))
+  :hints (("Goal" :in-theory (enable unquote-list))))
