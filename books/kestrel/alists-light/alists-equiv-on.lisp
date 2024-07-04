@@ -19,7 +19,7 @@
 
 ;; Checks whether ALIST1 and ALIST2 are equivalent wrt the KEYS.  For these
 ;; purposes, not having a binding for a key is equivalent to binding it to nil.
-(defun alists-equiv-on (keys alist1 alist2)
+(defund alists-equiv-on (keys alist1 alist2)
   (if (endp keys)
       t
     (let ((key (first keys)))
@@ -27,32 +27,42 @@
                   (cdr (assoc-equal key alist2)))
            (alists-equiv-on (rest keys) alist1 alist2)))))
 
+(defthm alists-equiv-on-when-not-consp
+  (implies (not (consp keys))
+           (alists-equiv-on keys alist1 alist2))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
+
 (defthm alists-equiv-on-same
-  (alists-equiv-on keys alist1 alist1))
+  (alists-equiv-on keys alist1 alist1)
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
 
 (defthm alists-equiv-on-of-union-equal
   (equal (alists-equiv-on (union-equal keys1 keys2) alist1 alist2)
          (and (alists-equiv-on keys1 alist1 alist2)
-              (alists-equiv-on keys2 alist1 alist2))))
+              (alists-equiv-on keys2 alist1 alist2)))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
 
 (defthm alists-equiv-on-of-cons-and-cons-same
   (implies (alists-equiv-on keys alist1 alist2)
            (alists-equiv-on keys
                             (cons pair alist1)
-                            (cons pair alist2))))
+                            (cons pair alist2)))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
 
 (defthm alists-equiv-on-of-cons-and-cons-same-2
   (implies (alists-equiv-on (remove-equal (car pair) keys) alist1 alist2)
            (alists-equiv-on keys
                             (cons pair alist1)
-                            (cons pair alist2))))
+                            (cons pair alist2)))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
 
 (defthm equal-of-cdr-of-assoc-equal-and-cdr-of-assoc-equal-when-alists-equiv-on
   (implies (and (alists-equiv-on keys alist1 alist2)
                 (member-equal key keys))
            (equal (equal (cdr (assoc-equal key alist1))
                          (cdr (assoc-equal key alist2)))
-                  t)))
+                  t))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
 
 (local
  (defun cdr-remove-caar-induct (x y)
@@ -76,8 +86,8 @@
                                             (APPEND ALIST1 ALIST3)))
            :induct (cdr-remove-caar-induct ALIST1 keys)
            :do-not '(generalize eliminate-destructors)
-           :in-theory (enable append
-                              ))))
+           :in-theory (enable append alists-equiv-on))))
+
 ;;rename
 (defthm alists-equiv-on-of-cons-same
   (implies (alists-equiv-on keys
@@ -97,11 +107,11 @@
                        (alists-equiv-on (set-difference-equal keys (strip-cars x))
                                         y
                                         z))))
-  :hints (("Goal" :in-theory (enable (:d set-difference-equal)
+  :hints (("Goal" :in-theory (enable alists-equiv-on
+                                     (:d set-difference-equal)
                                      (:i intersection-equal)
                                      intersection-equal
-                                     member-equal-of-strip-cars-iff
-                                     ))))
+                                     member-equal-of-strip-cars-iff))))
 
 (defthm alists-equiv-on-of-append-arg2
   (implies (alistp x)
@@ -112,6 +122,17 @@
                        (alists-equiv-on (set-difference-equal keys (strip-cars x))
                                         z
                                         y))))
-  :hints (("Goal" :in-theory (enable (:d set-difference-equal)
+  :hints (("Goal" :in-theory (enable alists-equiv-on
+                                     (:d set-difference-equal)
                                      intersection-equal
                                      member-equal-of-strip-cars-iff))))
+
+(defthm alists-equiv-on-of-alists-equiv-on-when-alists-equiv-on-arg1
+  (implies (alists-equiv-on keys1 alist1 alist2)
+           (alists-equiv-on (intersection-equal keys1 keys2) alist1 alist2))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
+
+(defthm alists-equiv-on-of-alists-equiv-on-when-alists-equiv-on-arg2
+  (implies (alists-equiv-on keys2 alist1 alist2)
+           (alists-equiv-on (intersection-equal keys1 keys2) alist1 alist2))
+  :hints (("Goal" :in-theory (enable alists-equiv-on intersection-equal))))
