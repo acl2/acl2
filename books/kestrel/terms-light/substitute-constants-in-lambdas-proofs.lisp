@@ -95,7 +95,7 @@
                   (cons (empty-eval (car l) alist)
                         (empty-eval-list (cdr l) alist)))))
 
-(include-book "kestrel/utilities/quote" :dir :system) ; separate out unquote-list
+(include-book "kestrel/utilities/unquote-list" :dir :system)
 ;move
 (defthm len-of-unquote-list
   (equal (len (unquote-list lst))
