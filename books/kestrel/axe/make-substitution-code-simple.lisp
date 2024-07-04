@@ -1,7 +1,7 @@
 ; A tool to generate substution code that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -32,7 +32,8 @@
 
        ;; This handles lambda applications correctly (by handling their args) but does not beta reduce.
        (mutual-recursion
-        ;; Returns a new term.
+         ;; Applies the substitution represented by ALIST to TERM.
+         ;; Returns an axe-tree.
         (defund ,sublis-var-and-eval-name (alist ;maps vars to nodenums/quoteps
                                               term interpreted-function-alist)
           (declare (xargs :guard (and (symbol-alistp alist)
@@ -47,10 +48,12 @@
                 ((fquotep term) term)
                 (t (let ((fn (ffn-symb term)))
                      (if (and (eq fn 'if) ;; TODO: consider also handling bvif, boolif, myif, bv-array-if, maybe boolor and booland...
-                              (= 3 (len (fargs term))))
+                              (consp (cddr (fargs term))) ;; for guards
+                              )
                          (let* ((test (first (fargs term)))
                                 (test-result (,sublis-var-and-eval-name alist test interpreted-function-alist)))
                            (if (quotep test-result)
+                               ;; Resolved the test, so continue with just the relevant branch:
                                (,sublis-var-and-eval-name alist (if (unquote test-result) ;if the test is not nil
                                                                     (second (fargs term)) ;then part
                                                                   (third (fargs term)) ;else part
@@ -78,7 +81,7 @@
                            ;; No special treatment for lambda (does not touch the lambda body):
                            (cons fn args))))))))
 
-        ;; Returns (mv ground-termp args).
+        ;; Returns (mv ground-termsp args).
         (defund ,sublis-var-and-eval-lst-name (alist terms interpreted-function-alist)
           (declare (xargs :guard (and (symbol-alistp alist)
                                       (darg-listp (strip-cdrs alist)) ;gen?  really just need that things whose cars are 'quote are myquoteps
@@ -87,9 +90,9 @@
           (if (atom terms)
               (mv t nil)
             (let ((new-car (,sublis-var-and-eval-name alist (first terms) interpreted-function-alist)))
-              (mv-let (cdr-ground-termp new-cdr)
+              (mv-let (cdr-ground-termsp new-cdr)
                 (,sublis-var-and-eval-lst-name alist (rest terms) interpreted-function-alist)
-                (mv (and cdr-ground-termp (quotep new-car))
+                (mv (and cdr-ground-termsp (quotep new-car))
                     (cons new-car new-cdr)))))))
 
        (make-flag ,sublis-var-and-eval-name)

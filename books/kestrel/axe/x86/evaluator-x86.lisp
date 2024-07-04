@@ -17,7 +17,7 @@
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, etc.
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline
-(include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system)
+(include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::get-one-byte-prefix-array-code-unguarded
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
@@ -1051,6 +1051,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund x86isa::get-one-byte-prefix-array-code-unguarded (byte)
+  (declare (xargs :guard t))
+  (aref1-unguarded 'x86isa::one-byte-prefixes-group-code-info
+                   x86isa::*one-byte-prefixes-group-code-info-ar*
+                   (bvchop-unguarded 8 byte) ; how fast is stuff like this?  make a separate version that is usually applied to something that needs no chopping?
+                   ))
+
+(defthm x86isa::get-one-byte-prefix-array-code-unguarded-correct
+  (equal (x86isa::get-one-byte-prefix-array-code-unguarded byte)
+         (x86isa::get-one-byte-prefix-array-code byte))
+  :hints (("Goal" :in-theory (enable x86isa::get-one-byte-prefix-array-code-unguarded
+                                     x86isa::get-one-byte-prefix-array-code))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *axe-evaluator-x86-fns-and-aliases*
   (append '(implies ; push back to basic evaluator?
             (integer-range-p integer-range-p-unguarded)
@@ -1083,6 +1098,7 @@
             (x86isa::reg-index$inline x86isa::reg-index$inline-unguarded)
             (x86isa::!prefixes->num$inline x86isa::!prefixes->num-unguarded)
             (x86isa::!prefixes->nxt$inline x86isa::!prefixes->nxt-unguarded)
+            (x86isa::get-one-byte-prefix-array-code x86isa::get-one-byte-prefix-array-code-unguarded)
             power-of-2p
             logmaskp
             bfix$inline
