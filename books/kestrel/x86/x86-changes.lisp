@@ -2914,7 +2914,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This avoids a case split when dping the sign extension.
+;; This avoids a case split when doing the sign extension.
 (defthm x86isa::x86-cbw/cwd/cdqe-redef
   (equal (x86isa::x86-cbw/cwd/cdqe
            proc-mode start-rip x86isa::temp-rip prefixes rex-byte x86isa::opcode x86isa::modr/m x86isa::sib x86)
