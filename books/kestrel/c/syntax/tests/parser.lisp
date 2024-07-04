@@ -153,26 +153,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-init-parstate (list)
+(defmacro test-init-parstate (list gcc)
   `(assert-event
-    (equal (init-parstate ,list)
-           (parstate ,list (position-init) nil nil nil nil nil))))
+    (equal (init-parstate ,list ,gcc)
+           (parstate ,list (position-init) nil nil nil nil nil ,gcc))))
 
-(test-init-parstate nil)
+(test-init-parstate nil nil)
 
-(test-init-parstate (list 1))
+(test-init-parstate nil t)
 
-(test-init-parstate (list 1 2 3))
+(test-init-parstate (list 1) nil)
 
-(test-init-parstate (acl2::string=>nats "abc"))
+(test-init-parstate (list 1) t)
+
+(test-init-parstate (list 1 2 3) nil)
+
+(test-init-parstate (list 1 2 3) t)
+
+(test-init-parstate (acl2::string=>nats "abc") nil)
+
+(test-init-parstate (acl2::string=>nats "abc") t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event
- (equal (parsize (init-parstate nil)) 0))
+ (equal (parsize (init-parstate nil nil)) 0))
 
 (assert-event
- (equal (parsize (init-parstate (list 72 99 21))) 3))
+ (equal (parsize (init-parstate nil t)) 0))
+
+(assert-event
+ (equal (parsize (init-parstate (list 72 99 21) nil)) 3))
+
+(assert-event
+ (equal (parsize (init-parstate (list 72 99 21) t)) 3))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,7 +195,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event ; empty file
- (b* ((pstate0 (init-parstate nil))
+ (b* ((pstate0 (init-parstate nil nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (not char?)
@@ -189,12 +203,12 @@
         (equal pstate pstate0))))
 
 (assert-event ; disallowed character 0
- (b* (((mv erp & & &) (read-char (init-parstate (list 0))))
+ (b* (((mv erp & & &) (read-char (init-parstate (list 0) nil)))
       (- (cw "~@0" erp)))
    erp))
 
 (assert-event ; character 32
- (b* ((pstate0 (init-parstate (list 32 1 2 3)))
+ (b* ((pstate0 (init-parstate (list 32 1 2 3) nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? 32)
@@ -207,7 +221,7 @@
                 :chars-read (list (char+position 32 (position 1 0))))))))
 
 (assert-event ; line feed
- (b* ((pstate0 (init-parstate (list 10 1 2 3)))
+ (b* ((pstate0 (init-parstate (list 10 1 2 3) nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? 10)
@@ -220,7 +234,7 @@
                 :chars-read (list (char+position 10 (position 1 0))))))))
 
 (assert-event ; carriage return
- (b* ((pstate0 (init-parstate (list 13 1 2 3)))
+ (b* ((pstate0 (init-parstate (list 13 1 2 3) nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? 10)
@@ -233,7 +247,7 @@
                 :chars-read (list (char+position 10 (position 1 0))))))))
 
 (assert-event ; carriage return + line feed
- (b* ((pstate0 (init-parstate (list 13 10 1 2 3)))
+ (b* ((pstate0 (init-parstate (list 13 10 1 2 3) nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? 10)
@@ -246,13 +260,13 @@
                 :chars-read (list (char+position 10 (position 1 0))))))))
 
 (assert-event ; disallowed byte 255
- (b* ((pstate0 (init-parstate (list 255)))
+ (b* ((pstate0 (init-parstate (list 255) nil))
       ((mv erp & & &) (read-char pstate0))
       (- (cw "~@0" erp)))
    erp))
 
 (assert-event ; 2-byte UTF-8 encoding of Greek capital letter sigma
- (b* ((pstate0 (init-parstate (acl2::string=>nats "Σ")))
+ (b* ((pstate0 (init-parstate (acl2::string=>nats "Σ") nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? #x03a3)
@@ -265,13 +279,13 @@
                 :chars-read (list (char+position #x03a3 (position 1 0))))))))
 
 (assert-event ; invalid 2-byte UTF-8 encoding of 0
- (b* ((pstate0 (init-parstate (list #b11000000 #b10000000)))
+ (b* ((pstate0 (init-parstate (list #b11000000 #b10000000) nil))
       ((mv erp & & &) (read-char pstate0))
       (- (cw "~@0" erp)))
    erp))
 
 (assert-event ; 3-byte UTF-8 encoding of anticlockwise top semicircle arrow
- (b* ((pstate0 (init-parstate (acl2::string=>nats "↺")))
+ (b* ((pstate0 (init-parstate (acl2::string=>nats "↺") nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? #x21ba)
@@ -284,19 +298,20 @@
                 :chars-read (list (char+position #x21ba (position 1 0))))))))
 
 (assert-event ; disallowed 3-byte UTF-8 encoding
- (b* ((pstate0 (init-parstate (list #b11100010 #b10000000 #b10101010))) ; 202Ah
+ (b* ((pstate0
+       (init-parstate (list #b11100010 #b10000000 #b10101010) nil)) ; 202Ah
       ((mv erp & & &) (read-char pstate0))
       (- (cw "~@0" erp)))
    erp))
 
 (assert-event ; invalid 3-byte UTF-8 encoding of 0
- (b* ((pstate0 (init-parstate (list #b11100000 #b10000000 #b10000000)))
+ (b* ((pstate0 (init-parstate (list #b11100000 #b10000000 #b10000000) nil))
       ((mv erp & & &) (read-char pstate0))
       (- (cw "~@0" erp)))
    erp))
 
 (assert-event ; 4-byte UTF-8 encoding of musical symbol eighth note
- (b* ((pstate0 (init-parstate (acl2::string=>nats "𝅘𝅥𝅮")))
+ (b* ((pstate0 (init-parstate (acl2::string=>nats "𝅘𝅥𝅮") nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? #x1d160)
@@ -309,15 +324,15 @@
                 :chars-read (list (char+position #x1d160 (position 1 0))))))))
 
 (assert-event ; invalid 4-byte UTF-8 encoding of 0
- (b* ((pstate0 (init-parstate
-                (list #b11110000 #b10000000 #b10000000 #b10000000)))
+ (b* ((pstate0
+       (init-parstate (list #b11110000 #b10000000 #b10000000 #b10000000) nil))
       ((mv erp & & &) (read-char pstate0))
       (- (cw "~@0" erp)))
    erp))
 
 (assert-event ; invalid 4-byte UTF-8 encoding of 1FFFFFh
- (b* ((pstate0 (init-parstate
-                (list #b11110111 #b10111111 #b10111111 #b10111111)))
+ (b* ((pstate0
+       (init-parstate (list #b11110111 #b10111111 #b10111111 #b10111111) nil))
       ((mv erp & & &) (read-char pstate0))
       (- (cw "~@0" erp)))
    erp))
@@ -325,7 +340,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event
- (b* ((pstate0 (init-parstate (list 65 66 67))) ; A B C
+ (b* ((pstate0 (init-parstate (list 65 66 67) nil)) ; A B C
       ((mv erp1 char-a pos-a pstate1) (read-char pstate0))
       ((mv erp2 char-b pos-b pstate2) (read-char pstate1))
       (pstate3 (unread-char pstate2))
@@ -383,7 +398,7 @@
                pstate5))))
 
 (assert-event
- (b* ((pstate0 (init-parstate (list 65 10 66))) ; A LF B
+ (b* ((pstate0 (init-parstate (list 65 10 66) nil)) ; A LF B
       ((mv erp1 char-a pos-a pstate1) (read-char pstate0))
       ((mv erp2 char-nl pos-nl pstate2) (read-char pstate1))
       (pstate3 (unread-chars 2 pstate2))
@@ -476,14 +491,14 @@
   ;; optional COND may be over variables AST, POS/SPAN, PSTATE
   `(assert-event
     (b* (((mv erp ?ast ?pos/span ?pstate)
-          (,fn (init-parstate (acl2::string=>nats ,input)))))
+          (,fn (init-parstate (acl2::string=>nats ,input) nil))))
       (if erp
           (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
         ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
 
 (defmacro test-lex-fail (fn input)
   `(assert-event
-    (b* (((mv erp & & &) (,fn (init-parstate (acl2::string=>nats ,input)))))
+    (b* (((mv erp & & &) (,fn (init-parstate (acl2::string=>nats ,input) nil))))
       erp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -493,7 +508,7 @@
 (assert-event
  (b* ((first-char (char-code #\w))
       (first-pos (position 8 3))
-      (pstate (init-parstate (acl2::string=>nats " abc")))
+      (pstate (init-parstate (acl2::string=>nats " abc") nil))
       (pstate (change-parstate pstate :position (position 8 4)))
       ((mv erp lexeme span &)
        (lex-identifier/keyword first-char first-pos pstate)))
@@ -504,7 +519,7 @@
 (assert-event
  (b* ((first-char (char-code #\u))
       (first-pos (position 8 3))
-      (pstate (init-parstate (acl2::string=>nats "abc456")))
+      (pstate (init-parstate (acl2::string=>nats "abc456") nil))
       (pstate (change-parstate pstate :position (position 8 4)))
       ((mv erp lexeme span &)
        (lex-identifier/keyword first-char first-pos pstate)))
@@ -606,7 +621,7 @@
     (b* ((,(if (eq fn 'parse-external-declaration-list)
                '(mv erp ?ast ?span ?eofpos ?pstate)
              '(mv erp ?ast ?span ?pstate))
-          (,fn (init-parstate (acl2::string=>nats ,input)))))
+          (,fn (init-parstate (acl2::string=>nats ,input) nil))))
       (if erp
           (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
         ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
