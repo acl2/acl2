@@ -1333,7 +1333,11 @@
     "Since grammatically keywords are identifiers,
      we just lex grammatical identifiers,
      but return a keyword lexeme if the grammatical identifier
-     matches a keyword.")
+     matches a keyword.
+     If GCC extensions are supported,
+     we check the grammatical identifier
+     against some additional keywords;
+     see the ABNF grammar rule for @('gcc-keyword').")
    (xdoc::p
     "Given that the first character (a letter or underscore)
      has already been read,
@@ -1361,50 +1365,53 @@
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
-    (if (member-equal string '("auto"
-                               "break"
-                               "case"
-                               "char"
-                               "const"
-                               "continue"
-                               "default"
-                               "do"
-                               "double"
-                               "else"
-                               "enum"
-                               "extern"
-                               "float"
-                               "for"
-                               "goto"
-                               "if"
-                               "inline"
-                               "int"
-                               "long"
-                               "register"
-                               "restrict"
-                               "return"
-                               "short"
-                               "signed"
-                               "sizeof"
-                               "static"
-                               "struct"
-                               "switch"
-                               "typedef"
-                               "union"
-                               "unsigned"
-                               "void"
-                               "volatile"
-                               "while"
-                               "_Alignas"
-                               "_Alignof"
-                               "_Atomic"
-                               "_Bool"
-                               "_Complex"
-                               "_Generic"
-                               "_Imaginary"
-                               "_Noreturn"
-                               "_Static_assert"
-                               "_Thread_local"))
+    (if (or (member-equal string '("auto"
+                                   "break"
+                                   "case"
+                                   "char"
+                                   "const"
+                                   "continue"
+                                   "default"
+                                   "do"
+                                   "double"
+                                   "else"
+                                   "enum"
+                                   "extern"
+                                   "float"
+                                   "for"
+                                   "goto"
+                                   "if"
+                                   "inline"
+                                   "int"
+                                   "long"
+                                   "register"
+                                   "restrict"
+                                   "return"
+                                   "short"
+                                   "signed"
+                                   "sizeof"
+                                   "static"
+                                   "struct"
+                                   "switch"
+                                   "typedef"
+                                   "union"
+                                   "unsigned"
+                                   "void"
+                                   "volatile"
+                                   "while"
+                                   "_Alignas"
+                                   "_Alignof"
+                                   "_Atomic"
+                                   "_Bool"
+                                   "_Complex"
+                                   "_Generic"
+                                   "_Imaginary"
+                                   "_Noreturn"
+                                   "_Static_assert"
+                                   "_Thread_local"))
+            (and (parstate->gcc pstate)
+                 (member-equal string '("__restrict"
+                                        "__restrict__"))))
         (retok (lexeme-token (token-keyword string)) span pstate)
       (retok (lexeme-token (token-ident (ident string))) span pstate)))
 
@@ -5241,9 +5248,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "All type qualifiers consist of single keywords."))
+    "All type qualifiers consist of single keywords.")
+   (xdoc::p
+    "We also compare the token against the GCC variants
+     @('__restrict') and @('__restrict__') of @('restrict').
+     Note that these variants are keywords only if GCC extensions are supported:
+     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     So the comparison here with those variant keywords
+     will always fail if GCC extensions are not supported,
+     because in that case both @('__restrict') and @('__restrict__')
+     would be identifier tokens, not keyword tokens."))
   (or (equal token? (token-keyword "const"))
       (equal token? (token-keyword "restrict"))
+      (equal token? (token-keyword "__restrict"))
+      (equal token? (token-keyword "__restrict__"))
       (equal token? (token-keyword "volatile"))
       (equal token? (token-keyword "_Atomic")))
   ///
@@ -5260,8 +5278,18 @@
   :returns (tyqual tyqualp)
   :short "Map a token that is a type qualifier
           to the correspoding type qualifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Both variants @('__restrict') and @('__restrict__') of @('restrict')
+     are mapped to the same type qualifier in abstract syntax,
+     because they represent the same type qualifier.
+     As explained in @(tsee token-type-qualifier-p),
+     these keyword tokens exist only if GCC extensions are supported."))
   (cond ((equal token (token-keyword "const")) (tyqual-const))
         ((equal token (token-keyword "restrict")) (tyqual-restrict))
+        ((equal token (token-keyword "__restrict")) (tyqual-restrict))
+        ((equal token (token-keyword "__restrict__")) (tyqual-restrict))
         ((equal token (token-keyword "volatile")) (tyqual-volatile))
         ((equal token (token-keyword "_Atomic")) (tyqual-atomic))
         (t (prog2$ (impossible) (irr-tyqual))))
