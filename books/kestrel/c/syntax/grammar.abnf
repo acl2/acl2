@@ -428,6 +428,30 @@ keyword = %s"auto"
         / %s"_Static_assert"
         / %s"_Thread_local"
 
+; Alternate keywords for GCC extensions
+; (https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html)
+
+; The following are valid identifiers in standard C,
+; but they are recognized as keywords as part of GCC extensions.
+; This is not an exhaustive list:
+; we only include some that we have encountered in actual code;
+; we may extend the list as needed.
+; Our goal here is not to thoroughly cover all the GCC extensions,
+; but only to cover practical C code that uses certain GCC extensions.
+
+; We include variants of the 'restrict' keyword
+; with double underscores at the beginning or both beginning and end.
+; While https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html says that
+; the alternate 'restrict' keyword is only '__restrict__',
+; https://gcc.gnu.org/onlinedocs/gcc/Restricted-Pointers.html
+; also mentions '__restrict'.
+; This latter page of the GCC documentation actually pertains to C++,
+; but it begins with "As with the C front end, ...".
+; Furthermore, we have seen '__restrict' in actual C code.
+
+gcc-keyword = %s"__restrict"
+            / %s"__restrict__"
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Identifiers [C:A.1.3] [C:6.4.2.1]
