@@ -1,0 +1,1553 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(DEFTTAG :REFINEMENT-FAILURE)
+ :REFINEMENT-FAILURE
+ACL2 !>>(SET-RAW-MODE T)
+ACL2 P>>(DEFVAR *SAVED-STANDARD-CO* *STANDARD-CO*)
+*SAVED-STANDARD-CO*
+ACL2 P>>(PROGN (SETQ *STANDARD-CO* (STANDARD-CO STATE))
+               T)
+T
+ACL2 P>>(SET-RAW-MODE NIL)
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE (((P *) => *)
+                      ((F *) => *)
+                      ((G * *) => *)
+                      ((PEQ * *) => *)
+                      ((FEQ * *) => *)
+                      ((G2EQ1 * *) => *)
+                      ((G2EQ1! * *) => *)
+                      ((G2EQ2 * *) => *)
+                      ((BETA *) => *)
+                      ((GAMMA *) => *))
+          (LOCAL (DEFUN P (X)
+                   (EQUAL X (CAR (CONS X X)))))
+          (LOCAL (DEFUN F (X) X))
+          (LOCAL (DEFUN G (X Y) (DECLARE (IGNORE X)) Y))
+          (LOCAL (DEFUN PEQ (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN FEQ (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN G2EQ1 (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN G2EQ1! (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN G2EQ2 (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN BETA (X) X))
+          (LOCAL (DEFUN GAMMA (X) X))
+          (DEFEQUIV PEQ)
+          (DEFEQUIV FEQ)
+          (DEFEQUIV G2EQ1)
+          (DEFEQUIV G2EQ1!)
+          (DEFEQUIV G2EQ2)
+          (DEFREFINEMENT G2EQ1! G2EQ1)
+          (DEFCONG PEQ IFF (P X) 1)
+          (DEFCONG FEQ PEQ (F X) 1)
+          (DEFCONG G2EQ1 FEQ (G X Y) 2)
+          (DEFCONG G2EQ2 FEQ (G X Y) 2)
+          (DEFTHM RULE
+            (G2EQ1! (BETA X) (GAMMA X)))
+          (DEFTHM DONE (P (F (G X (GAMMA Y))))))
+
+To verify that the 22 encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN P (X)
+                  (EQUAL X (CAR (CONS X X)))))
+
+Since P is non-recursive, its admission is trivial.  We observe that
+the type of P is described by the theorem 
+(OR (EQUAL (P X) T) (EQUAL (P X) NIL)).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN P ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+P
+
+
+ACL2 !>>>(LOCAL (DEFUN F (X) X))
+
+Since F is non-recursive, its admission is trivial.  We observe that
+the type of F is described by the theorem (EQUAL (F X) X).  
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+F
+
+
+ACL2 !>>>(LOCAL (DEFUN G (X Y) (DECLARE (IGNORE X)) Y))
+
+Since G is non-recursive, its admission is trivial.  We observe that
+the type of G is described by the theorem (EQUAL (G X Y) Y).  
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+G
+
+
+ACL2 !>>>(LOCAL (DEFUN PEQ (X Y) (EQUAL X Y)))
+
+Since PEQ is non-recursive, its admission is trivial.  We observe that
+the type of PEQ is described by the theorem 
+(OR (EQUAL (PEQ X Y) T) (EQUAL (PEQ X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN PEQ ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+PEQ
+
+
+ACL2 !>>>(LOCAL (DEFUN FEQ (X Y) (EQUAL X Y)))
+
+Since FEQ is non-recursive, its admission is trivial.  We observe that
+the type of FEQ is described by the theorem 
+(OR (EQUAL (FEQ X Y) T) (EQUAL (FEQ X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN FEQ ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+FEQ
+
+
+ACL2 !>>>(LOCAL (DEFUN G2EQ1 (X Y) (EQUAL X Y)))
+
+Since G2EQ1 is non-recursive, its admission is trivial.  We observe
+that the type of G2EQ1 is described by the theorem 
+(OR (EQUAL (G2EQ1 X Y) T) (EQUAL (G2EQ1 X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN G2EQ1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+G2EQ1
+
+
+ACL2 !>>>(LOCAL (DEFUN G2EQ1! (X Y) (EQUAL X Y)))
+
+Since G2EQ1! is non-recursive, its admission is trivial.  We observe
+that the type of G2EQ1! is described by the theorem 
+(OR (EQUAL (G2EQ1! X Y) T) (EQUAL (G2EQ1! X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN G2EQ1! ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+G2EQ1!
+
+
+ACL2 !>>>(LOCAL (DEFUN G2EQ2 (X Y) (EQUAL X Y)))
+
+Since G2EQ2 is non-recursive, its admission is trivial.  We observe
+that the type of G2EQ2 is described by the theorem 
+(OR (EQUAL (G2EQ2 X Y) T) (EQUAL (G2EQ2 X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN G2EQ2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+G2EQ2
+
+
+ACL2 !>>>(LOCAL (DEFUN BETA (X) X))
+
+Since BETA is non-recursive, its admission is trivial.  We observe
+that the type of BETA is described by the theorem (EQUAL (BETA X) X).
+
+Summary
+Form:  ( DEFUN BETA ...)
+Rules: NIL
+BETA
+
+
+ACL2 !>>>(LOCAL (DEFUN GAMMA (X) X))
+
+Since GAMMA is non-recursive, its admission is trivial.  We observe
+that the type of GAMMA is described by the theorem (EQUAL (GAMMA X) X).
+
+Summary
+Form:  ( DEFUN GAMMA ...)
+Rules: NIL
+GAMMA
+
+
+ACL2 !>>>(DEFEQUIV PEQ)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PEQ-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION PEQ)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+PEQ-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV FEQ)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FEQ-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION FEQ)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+FEQ-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV G2EQ1)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ1-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION G2EQ1)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+G2EQ1-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV G2EQ1!)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ1!-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION G2EQ1!)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+G2EQ1!-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV G2EQ2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ2-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION G2EQ2)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+G2EQ2-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFREFINEMENT G2EQ1! G2EQ1)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ1!-REFINES-G2EQ1 ...)
+Rules: ((:DEFINITION G2EQ1)
+        (:DEFINITION G2EQ1!))
+
+Summary
+Form:  ( MAKE-EVENT (DEFREFINEMENT-FORM ...))
+Rules: NIL
+G2EQ1!-REFINES-G2EQ1
+
+
+ACL2 !>>>(DEFCONG PEQ IFF (P X) 1)
+
+ACL2 Warning [Equiv] in ( DEFTHM PEQ-IMPLIES-IFF-P-1 ...):  The :CONGRUENCE
+rule PEQ-IMPLIES-IFF-P-1 can be strengthened by replacing the outer
+equivalence relation, IFF, by EQUAL.  See :DOC congruence, in particular
+(near the end) the Remark on Replacing IFF by EQUAL.
+
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PEQ-IMPLIES-IFF-P-1 ...)
+Rules: ((:DEFINITION IFF)
+        (:DEFINITION PEQ)
+        (:TYPE-PRESCRIPTION P))
+Warnings:  Equiv
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+Warnings:  Equiv
+PEQ-IMPLIES-IFF-P-1
+
+
+ACL2 !>>>(DEFCONG FEQ PEQ (F X) 1)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FEQ-IMPLIES-PEQ-F-1 ...)
+Rules: ((:DEFINITION F)
+        (:DEFINITION FEQ)
+        (:DEFINITION PEQ))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+FEQ-IMPLIES-PEQ-F-1
+
+
+ACL2 !>>>(DEFCONG G2EQ1 FEQ (G X Y) 2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ1-IMPLIES-FEQ-G-2 ...)
+Rules: ((:DEFINITION FEQ)
+        (:DEFINITION G)
+        (:DEFINITION G2EQ1))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+G2EQ1-IMPLIES-FEQ-G-2
+
+
+ACL2 !>>>(DEFCONG G2EQ2 FEQ (G X Y) 2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ2-IMPLIES-FEQ-G-2 ...)
+Rules: ((:DEFINITION FEQ)
+        (:DEFINITION G)
+        (:DEFINITION G2EQ2))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+G2EQ2-IMPLIES-FEQ-G-2
+
+
+ACL2 !>>>(DEFTHM RULE
+           (G2EQ1! (BETA X) (GAMMA X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM RULE ...):  A :REWRITE rule generated
+from RULE will be triggered only by terms containing the function symbol
+BETA, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM RULE ...):  The previously added
+rule BETA subsumes a newly proposed :REWRITE rule generated from RULE,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM RULE ...)
+Rules: ((:DEFINITION BETA)
+        (:DEFINITION G2EQ1!)
+        (:DEFINITION GAMMA))
+Warnings:  Subsume and Non-rec
+RULE
+
+
+ACL2 !>>>(DEFTHM DONE (P (F (G X (GAMMA Y)))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM DONE ...):  A :REWRITE rule generated
+from DONE will be triggered only by terms containing the function symbols
+P, F, G and GAMMA, which have non-recursive definitions.  Unless these
+definitions are disabled, this rule is unlikely ever to be used.
+
+Goal'
+
+Q.E.D.
+
+The storage of DONE depends upon the :type-prescription rule P.
+
+Summary
+Form:  ( DEFTHM DONE ...)
+Rules: ((:DEFINITION F)
+        (:DEFINITION G)
+        (:DEFINITION GAMMA)
+        (:DEFINITION P)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:TYPE-PRESCRIPTION P))
+Warnings:  Non-rec
+DONE
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with every one of the functions
+P, F, G, PEQ, FEQ, G2EQ1, G2EQ1!, G2EQ2, BETA and GAMMA:
+
+(AND (BOOLEANP (PEQ X Y))
+     (PEQ X X)
+     (IMPLIES (PEQ X Y) (PEQ Y X))
+     (IMPLIES (AND (PEQ X Y) (PEQ Y Z))
+              (PEQ X Z))
+     (BOOLEANP (FEQ X Y))
+     (FEQ X X)
+     (IMPLIES (FEQ X Y) (FEQ Y X))
+     (IMPLIES (AND (FEQ X Y) (FEQ Y Z))
+              (FEQ X Z))
+     (BOOLEANP (G2EQ1 X Y))
+     (G2EQ1 X X)
+     (IMPLIES (G2EQ1 X Y) (G2EQ1 Y X))
+     (IMPLIES (AND (G2EQ1 X Y) (G2EQ1 Y Z))
+              (G2EQ1 X Z))
+     (BOOLEANP (G2EQ1! X Y))
+     (G2EQ1! X X)
+     (IMPLIES (G2EQ1! X Y) (G2EQ1! Y X))
+     (IMPLIES (AND (G2EQ1! X Y) (G2EQ1! Y Z))
+              (G2EQ1! X Z))
+     (BOOLEANP (G2EQ2 X Y))
+     (G2EQ2 X X)
+     (IMPLIES (G2EQ2 X Y) (G2EQ2 Y X))
+     (IMPLIES (AND (G2EQ2 X Y) (G2EQ2 Y Z))
+              (G2EQ2 X Z))
+     (IMPLIES (G2EQ1! X Y) (G2EQ1 X Y))
+     (IMPLIES (PEQ X X-EQUIV)
+              (IFF (P X) (P X-EQUIV)))
+     (IMPLIES (FEQ X X-EQUIV)
+              (PEQ (F X) (F X-EQUIV)))
+     (IMPLIES (G2EQ1 Y Y-EQUIV)
+              (FEQ (G X Y) (G X Y-EQUIV)))
+     (IMPLIES (G2EQ2 Y Y-EQUIV)
+              (FEQ (G X Y) (G X Y-EQUIV)))
+     (G2EQ1! (BETA X) (GAMMA X))
+     (P (F (G X (GAMMA Y)))))
+
+Summary
+Form:  ( ENCAPSULATE (((P * ...) ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume, Non-rec and Equiv
+ (P F
+    G PEQ FEQ G2EQ1 G2EQ1! G2EQ2 BETA GAMMA)
+ACL2 !>>(BRR T)
+Use :a! to exit break-rewrite.
+See :DOC set-brr-evisc-tuple and :DOC iprint to control suppression
+of details when printing.
+
+The monitored runes are:
+NIL
+ T
+ACL2 !>>(MONITOR 'RULE
+                 '(:CONDITION (AND (EQUAL (BRR@ :TARGET) '(BETA B))
+                                   '(:PATH+ :GO))
+                              :RF T))
+
+ACL2 Warning [Monitor] in MONITOR:  The rune (:REWRITE RULE) names
+only a simple abbreviation rule.  Monitors can be installed on abbreviation
+rules, but will not fire during preprocessing, so you may want to supply
+the hint :DO-NOT '(PREPROCESS); see :DOC hints.  For an explanation
+of what a simple abbreviation rule is, see :DOC simple.  Also, see
+:DOC monitor.
+
+(((:REWRITE RULE)
+  (:CONDITION IF
+              (EQUAL (GET-BRR-LOCAL 'TARGET STATE)
+                     '(BETA B))
+              '(:PATH+ :GO)
+              'NIL)
+  (:RF . T)))
+ACL2 !>>(THM (P (F (G A (BETA B))))
+             :HINTS (("Goal" :DO-NOT '(PREPROCESS))))
+
+(1 Breaking (:REWRITE RULE) on (BETA B):
+1 ACL2 >:PATH+
+1. Simplifying the clause
+     ((P (F (G A (BETA B)))))
+2. Rewriting (to simplify) the atom of the first literal,
+     (P (F (G A (BETA B)))),
+   Geneqv: (IFF)
+3. Rewriting (to simplify) the first argument,
+     (F (G A (BETA B))),
+   Geneqv: ((PEQ PEQ-IMPLIES-IFF-P-1))
+4. Rewriting (to simplify) the first argument,
+     (G A (BETA B)),
+   Geneqv: ((FEQ FEQ-IMPLIES-PEQ-F-1))
+5. Rewriting (to simplify) the second argument,
+     (BETA B),
+   Geneqv: ((G2EQ2 G2EQ2-IMPLIES-FEQ-G-2)
+            (G2EQ1 G2EQ1-IMPLIES-FEQ-G-2))
+6. Attempting to apply (:REWRITE RULE) to
+     (BETA B)
+   Preserving: G2EQ1!
+   Geneqv: ((G2EQ2 G2EQ2-IMPLIES-FEQ-G-2)
+            (G2EQ1 G2EQ1-IMPLIES-FEQ-G-2))
+1 ACL2 >:GO
+
+1 (:REWRITE RULE) produced (GAMMA B).
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:CONGRUENCE G2EQ1-IMPLIES-FEQ-G-2)
+        (:REWRITE DONE)
+        (:REWRITE RULE))
+
+Proof succeeded.
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE (((P *) => *)
+                      ((F *) => *)
+                      ((G * *) => *)
+                      ((PEQ * *) => *)
+                      ((FEQ * *) => *)
+                      ((G2EQ1 * *) => *)
+                      ((G2EQ1! * *) => *)
+                      ((G2EQ2 * *) => *)
+                      ((BETA *) => *)
+                      ((GAMMA *) => *))
+          (LOCAL (DEFUN P (X)
+                   (EQUAL X (CAR (CONS X X)))))
+          (LOCAL (DEFUN F (X) X))
+          (LOCAL (DEFUN G (X Y) (DECLARE (IGNORE X)) Y))
+          (LOCAL (DEFUN PEQ (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN FEQ (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN G2EQ1 (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN G2EQ1! (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN G2EQ2 (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN BETA (X) X))
+          (LOCAL (DEFUN GAMMA (X) X))
+          (DEFEQUIV PEQ)
+          (DEFEQUIV FEQ)
+          (DEFEQUIV G2EQ1)
+          (DEFEQUIV G2EQ1!)
+          (DEFEQUIV G2EQ2)
+          (DEFCONG PEQ IFF (P X) 1)
+          (DEFCONG FEQ PEQ (F X) 1)
+          (DEFCONG G2EQ1 FEQ (G X Y) 2)
+          (DEFCONG G2EQ2 FEQ (G X Y) 2)
+          (DEFTHM RULE
+            (G2EQ1! (BETA X) (GAMMA X)))
+          (DEFTHM DONE (P (F (G X (GAMMA Y))))))
+
+To verify that the 21 encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN P (X)
+                  (EQUAL X (CAR (CONS X X)))))
+
+Since P is non-recursive, its admission is trivial.  We observe that
+the type of P is described by the theorem 
+(OR (EQUAL (P X) T) (EQUAL (P X) NIL)).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN P ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+P
+
+
+ACL2 !>>>(LOCAL (DEFUN F (X) X))
+
+Since F is non-recursive, its admission is trivial.  We observe that
+the type of F is described by the theorem (EQUAL (F X) X).  
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+F
+
+
+ACL2 !>>>(LOCAL (DEFUN G (X Y) (DECLARE (IGNORE X)) Y))
+
+Since G is non-recursive, its admission is trivial.  We observe that
+the type of G is described by the theorem (EQUAL (G X Y) Y).  
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+G
+
+
+ACL2 !>>>(LOCAL (DEFUN PEQ (X Y) (EQUAL X Y)))
+
+Since PEQ is non-recursive, its admission is trivial.  We observe that
+the type of PEQ is described by the theorem 
+(OR (EQUAL (PEQ X Y) T) (EQUAL (PEQ X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN PEQ ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+PEQ
+
+
+ACL2 !>>>(LOCAL (DEFUN FEQ (X Y) (EQUAL X Y)))
+
+Since FEQ is non-recursive, its admission is trivial.  We observe that
+the type of FEQ is described by the theorem 
+(OR (EQUAL (FEQ X Y) T) (EQUAL (FEQ X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN FEQ ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+FEQ
+
+
+ACL2 !>>>(LOCAL (DEFUN G2EQ1 (X Y) (EQUAL X Y)))
+
+Since G2EQ1 is non-recursive, its admission is trivial.  We observe
+that the type of G2EQ1 is described by the theorem 
+(OR (EQUAL (G2EQ1 X Y) T) (EQUAL (G2EQ1 X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN G2EQ1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+G2EQ1
+
+
+ACL2 !>>>(LOCAL (DEFUN G2EQ1! (X Y) (EQUAL X Y)))
+
+Since G2EQ1! is non-recursive, its admission is trivial.  We observe
+that the type of G2EQ1! is described by the theorem 
+(OR (EQUAL (G2EQ1! X Y) T) (EQUAL (G2EQ1! X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN G2EQ1! ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+G2EQ1!
+
+
+ACL2 !>>>(LOCAL (DEFUN G2EQ2 (X Y) (EQUAL X Y)))
+
+Since G2EQ2 is non-recursive, its admission is trivial.  We observe
+that the type of G2EQ2 is described by the theorem 
+(OR (EQUAL (G2EQ2 X Y) T) (EQUAL (G2EQ2 X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN G2EQ2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+G2EQ2
+
+
+ACL2 !>>>(LOCAL (DEFUN BETA (X) X))
+
+Since BETA is non-recursive, its admission is trivial.  We observe
+that the type of BETA is described by the theorem (EQUAL (BETA X) X).
+
+Summary
+Form:  ( DEFUN BETA ...)
+Rules: NIL
+BETA
+
+
+ACL2 !>>>(LOCAL (DEFUN GAMMA (X) X))
+
+Since GAMMA is non-recursive, its admission is trivial.  We observe
+that the type of GAMMA is described by the theorem (EQUAL (GAMMA X) X).
+
+Summary
+Form:  ( DEFUN GAMMA ...)
+Rules: NIL
+GAMMA
+
+
+ACL2 !>>>(DEFEQUIV PEQ)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PEQ-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION PEQ)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+PEQ-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV FEQ)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FEQ-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION FEQ)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+FEQ-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV G2EQ1)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ1-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION G2EQ1)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+G2EQ1-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV G2EQ1!)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ1!-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION G2EQ1!)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+G2EQ1!-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV G2EQ2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ2-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION G2EQ2)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+G2EQ2-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFCONG PEQ IFF (P X) 1)
+
+ACL2 Warning [Equiv] in ( DEFTHM PEQ-IMPLIES-IFF-P-1 ...):  The :CONGRUENCE
+rule PEQ-IMPLIES-IFF-P-1 can be strengthened by replacing the outer
+equivalence relation, IFF, by EQUAL.  See :DOC congruence, in particular
+(near the end) the Remark on Replacing IFF by EQUAL.
+
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PEQ-IMPLIES-IFF-P-1 ...)
+Rules: ((:DEFINITION IFF)
+        (:DEFINITION PEQ)
+        (:TYPE-PRESCRIPTION P))
+Warnings:  Equiv
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+Warnings:  Equiv
+PEQ-IMPLIES-IFF-P-1
+
+
+ACL2 !>>>(DEFCONG FEQ PEQ (F X) 1)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FEQ-IMPLIES-PEQ-F-1 ...)
+Rules: ((:DEFINITION F)
+        (:DEFINITION FEQ)
+        (:DEFINITION PEQ))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+FEQ-IMPLIES-PEQ-F-1
+
+
+ACL2 !>>>(DEFCONG G2EQ1 FEQ (G X Y) 2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ1-IMPLIES-FEQ-G-2 ...)
+Rules: ((:DEFINITION FEQ)
+        (:DEFINITION G)
+        (:DEFINITION G2EQ1))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+G2EQ1-IMPLIES-FEQ-G-2
+
+
+ACL2 !>>>(DEFCONG G2EQ2 FEQ (G X Y) 2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ2-IMPLIES-FEQ-G-2 ...)
+Rules: ((:DEFINITION FEQ)
+        (:DEFINITION G)
+        (:DEFINITION G2EQ2))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+G2EQ2-IMPLIES-FEQ-G-2
+
+
+ACL2 !>>>(DEFTHM RULE
+           (G2EQ1! (BETA X) (GAMMA X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM RULE ...):  A :REWRITE rule generated
+from RULE will be triggered only by terms containing the function symbol
+BETA, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM RULE ...):  The previously added
+rule BETA subsumes a newly proposed :REWRITE rule generated from RULE,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM RULE ...)
+Rules: ((:DEFINITION BETA)
+        (:DEFINITION G2EQ1!)
+        (:DEFINITION GAMMA))
+Warnings:  Subsume and Non-rec
+RULE
+
+
+ACL2 !>>>(DEFTHM DONE (P (F (G X (GAMMA Y)))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM DONE ...):  A :REWRITE rule generated
+from DONE will be triggered only by terms containing the function symbols
+P, F, G and GAMMA, which have non-recursive definitions.  Unless these
+definitions are disabled, this rule is unlikely ever to be used.
+
+Goal'
+
+Q.E.D.
+
+The storage of DONE depends upon the :type-prescription rule P.
+
+Summary
+Form:  ( DEFTHM DONE ...)
+Rules: ((:DEFINITION F)
+        (:DEFINITION G)
+        (:DEFINITION GAMMA)
+        (:DEFINITION P)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:TYPE-PRESCRIPTION P))
+Warnings:  Non-rec
+DONE
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with every one of the functions
+P, F, G, PEQ, FEQ, G2EQ1, G2EQ1!, G2EQ2, BETA and GAMMA:
+
+(AND (BOOLEANP (PEQ X Y))
+     (PEQ X X)
+     (IMPLIES (PEQ X Y) (PEQ Y X))
+     (IMPLIES (AND (PEQ X Y) (PEQ Y Z))
+              (PEQ X Z))
+     (BOOLEANP (FEQ X Y))
+     (FEQ X X)
+     (IMPLIES (FEQ X Y) (FEQ Y X))
+     (IMPLIES (AND (FEQ X Y) (FEQ Y Z))
+              (FEQ X Z))
+     (BOOLEANP (G2EQ1 X Y))
+     (G2EQ1 X X)
+     (IMPLIES (G2EQ1 X Y) (G2EQ1 Y X))
+     (IMPLIES (AND (G2EQ1 X Y) (G2EQ1 Y Z))
+              (G2EQ1 X Z))
+     (BOOLEANP (G2EQ1! X Y))
+     (G2EQ1! X X)
+     (IMPLIES (G2EQ1! X Y) (G2EQ1! Y X))
+     (IMPLIES (AND (G2EQ1! X Y) (G2EQ1! Y Z))
+              (G2EQ1! X Z))
+     (BOOLEANP (G2EQ2 X Y))
+     (G2EQ2 X X)
+     (IMPLIES (G2EQ2 X Y) (G2EQ2 Y X))
+     (IMPLIES (AND (G2EQ2 X Y) (G2EQ2 Y Z))
+              (G2EQ2 X Z))
+     (IMPLIES (PEQ X X-EQUIV)
+              (IFF (P X) (P X-EQUIV)))
+     (IMPLIES (FEQ X X-EQUIV)
+              (PEQ (F X) (F X-EQUIV)))
+     (IMPLIES (G2EQ1 Y Y-EQUIV)
+              (FEQ (G X Y) (G X Y-EQUIV)))
+     (IMPLIES (G2EQ2 Y Y-EQUIV)
+              (FEQ (G X Y) (G X Y-EQUIV)))
+     (G2EQ1! (BETA X) (GAMMA X))
+     (P (F (G X (GAMMA Y)))))
+
+Summary
+Form:  ( ENCAPSULATE (((P * ...) ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume, Non-rec and Equiv
+ (P F
+    G PEQ FEQ G2EQ1 G2EQ1! G2EQ2 BETA GAMMA)
+ACL2 !>>(THM (P (F (G A (BETA B))))
+             :HINTS (("Goal" :DO-NOT '(PREPROCESS))))
+
+(1 Breaking (:REWRITE RULE) on (BETA B):
+
+The equivalence relation, G2EQ1!, of this rule is not a refinement
+of the current geneqv, (G2EQ2 G2EQ1).  Use :path or :path+ to see how
+the geneqv evolved.  See :DOC refinement-failure for advice about how
+to deal with this kind of problem.
+
+1 ACL2 >:PATH+
+1. Simplifying the clause
+     ((P (F (G A (BETA B)))))
+2. Rewriting (to simplify) the atom of the first literal,
+     (P (F (G A (BETA B)))),
+   Geneqv: (IFF)
+3. Rewriting (to simplify) the first argument,
+     (F (G A (BETA B))),
+   Geneqv: ((PEQ PEQ-IMPLIES-IFF-P-1))
+4. Rewriting (to simplify) the first argument,
+     (G A (BETA B)),
+   Geneqv: ((FEQ FEQ-IMPLIES-PEQ-F-1))
+5. Rewriting (to simplify) the second argument,
+     (BETA B),
+   Geneqv: ((G2EQ2 G2EQ2-IMPLIES-FEQ-G-2)
+            (G2EQ1 G2EQ1-IMPLIES-FEQ-G-2))
+6. Attempting to apply (:REWRITE RULE) to
+     (BETA B)
+   Preserving: G2EQ1!
+   Geneqv: ((G2EQ2 G2EQ2-IMPLIES-FEQ-G-2)
+            (G2EQ1 G2EQ1-IMPLIES-FEQ-G-2))
+1 ACL2 >:GO
+
+1x (:REWRITE RULE) failed because the rule's equivalence relation is
+not a refinement of the geneqv.
+1)
+
+(1 Breaking (:REWRITE RULE) on (BETA B):
+
+The equivalence relation, G2EQ1!, of this rule is not a refinement
+of the current geneqv, (G2EQ2 G2EQ1).  Use :path or :path+ to see how
+the geneqv evolved.  See :DOC refinement-failure for advice about how
+to deal with this kind of problem.
+
+1 ACL2 >:PATH+
+1. Simplifying the clause
+     ((P (F (G A (BETA B)))))
+2. Rewriting (to simplify) the atom of the first literal,
+     (P (F (G A (BETA B)))),
+   Geneqv: (IFF)
+3. Rewriting (to simplify) the first argument,
+     (F (G A (BETA B))),
+   Geneqv: ((PEQ PEQ-IMPLIES-IFF-P-1))
+4. Rewriting (to simplify) the first argument,
+     (G A (BETA B)),
+   Geneqv: ((FEQ FEQ-IMPLIES-PEQ-F-1))
+5. Rewriting (to simplify) the second argument,
+     (BETA B),
+   Geneqv: ((G2EQ2 G2EQ2-IMPLIES-FEQ-G-2)
+            (G2EQ1 G2EQ1-IMPLIES-FEQ-G-2))
+6. Attempting to apply (:REWRITE RULE) to
+     (BETA B)
+   Preserving: G2EQ1!
+   Geneqv: ((G2EQ2 G2EQ2-IMPLIES-FEQ-G-2)
+            (G2EQ1 G2EQ1-IMPLIES-FEQ-G-2))
+1 ACL2 >:GO
+
+1x (:REWRITE RULE) failed because the rule's equivalence relation is
+not a refinement of the geneqv.
+1)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(P (F (G A (BETA B))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE (((P *) => *)
+                      ((F *) => *)
+                      ((G * *) => *)
+                      ((PEQ * *) => *)
+                      ((FEQ * *) => *)
+                      ((G2EQ1 * *) => *)
+                      ((G2EQ1! * *) => *)
+                      ((G2EQ2 * *) => *)
+                      ((BETA *) => *)
+                      ((GAMMA *) => *))
+          (LOCAL (DEFUN P (X)
+                   (EQUAL X (CAR (CONS X X)))))
+          (LOCAL (DEFUN F (X) X))
+          (LOCAL (DEFUN G (X Y) (DECLARE (IGNORE X)) Y))
+          (LOCAL (DEFUN PEQ (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN FEQ (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN G2EQ1 (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN G2EQ1! (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN G2EQ2 (X Y) (EQUAL X Y)))
+          (LOCAL (DEFUN BETA (X) X))
+          (LOCAL (DEFUN GAMMA (X) X))
+          (DEFEQUIV PEQ)
+          (DEFEQUIV FEQ)
+          (DEFEQUIV G2EQ1)
+          (DEFEQUIV G2EQ1!)
+          (DEFEQUIV G2EQ2)
+          (DEFREFINEMENT G2EQ1! G2EQ1)
+          (DEFCONG PEQ IFF (P X) 1)
+          (DEFCONG FEQ PEQ (F X) 1)
+          (DEFCONG G2EQ2 FEQ (G X Y) 2)
+          (DEFTHM RULE
+            (G2EQ1! (BETA X) (GAMMA X)))
+          (DEFTHM DONE (P (F (G X (GAMMA Y))))))
+
+To verify that the 21 encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN P (X)
+                  (EQUAL X (CAR (CONS X X)))))
+
+Since P is non-recursive, its admission is trivial.  We observe that
+the type of P is described by the theorem 
+(OR (EQUAL (P X) T) (EQUAL (P X) NIL)).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN P ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+P
+
+
+ACL2 !>>>(LOCAL (DEFUN F (X) X))
+
+Since F is non-recursive, its admission is trivial.  We observe that
+the type of F is described by the theorem (EQUAL (F X) X).  
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+F
+
+
+ACL2 !>>>(LOCAL (DEFUN G (X Y) (DECLARE (IGNORE X)) Y))
+
+Since G is non-recursive, its admission is trivial.  We observe that
+the type of G is described by the theorem (EQUAL (G X Y) Y).  
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+G
+
+
+ACL2 !>>>(LOCAL (DEFUN PEQ (X Y) (EQUAL X Y)))
+
+Since PEQ is non-recursive, its admission is trivial.  We observe that
+the type of PEQ is described by the theorem 
+(OR (EQUAL (PEQ X Y) T) (EQUAL (PEQ X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN PEQ ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+PEQ
+
+
+ACL2 !>>>(LOCAL (DEFUN FEQ (X Y) (EQUAL X Y)))
+
+Since FEQ is non-recursive, its admission is trivial.  We observe that
+the type of FEQ is described by the theorem 
+(OR (EQUAL (FEQ X Y) T) (EQUAL (FEQ X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN FEQ ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+FEQ
+
+
+ACL2 !>>>(LOCAL (DEFUN G2EQ1 (X Y) (EQUAL X Y)))
+
+Since G2EQ1 is non-recursive, its admission is trivial.  We observe
+that the type of G2EQ1 is described by the theorem 
+(OR (EQUAL (G2EQ1 X Y) T) (EQUAL (G2EQ1 X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN G2EQ1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+G2EQ1
+
+
+ACL2 !>>>(LOCAL (DEFUN G2EQ1! (X Y) (EQUAL X Y)))
+
+Since G2EQ1! is non-recursive, its admission is trivial.  We observe
+that the type of G2EQ1! is described by the theorem 
+(OR (EQUAL (G2EQ1! X Y) T) (EQUAL (G2EQ1! X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN G2EQ1! ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+G2EQ1!
+
+
+ACL2 !>>>(LOCAL (DEFUN G2EQ2 (X Y) (EQUAL X Y)))
+
+Since G2EQ2 is non-recursive, its admission is trivial.  We observe
+that the type of G2EQ2 is described by the theorem 
+(OR (EQUAL (G2EQ2 X Y) T) (EQUAL (G2EQ2 X Y) NIL)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN G2EQ2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+G2EQ2
+
+
+ACL2 !>>>(LOCAL (DEFUN BETA (X) X))
+
+Since BETA is non-recursive, its admission is trivial.  We observe
+that the type of BETA is described by the theorem (EQUAL (BETA X) X).
+
+Summary
+Form:  ( DEFUN BETA ...)
+Rules: NIL
+BETA
+
+
+ACL2 !>>>(LOCAL (DEFUN GAMMA (X) X))
+
+Since GAMMA is non-recursive, its admission is trivial.  We observe
+that the type of GAMMA is described by the theorem (EQUAL (GAMMA X) X).
+
+Summary
+Form:  ( DEFUN GAMMA ...)
+Rules: NIL
+GAMMA
+
+
+ACL2 !>>>(DEFEQUIV PEQ)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PEQ-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION PEQ)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+PEQ-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV FEQ)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FEQ-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION FEQ)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+FEQ-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV G2EQ1)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ1-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION G2EQ1)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+G2EQ1-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV G2EQ1!)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ1!-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION G2EQ1!)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+G2EQ1!-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFEQUIV G2EQ2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ2-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION G2EQ2)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+G2EQ2-IS-AN-EQUIVALENCE
+
+
+ACL2 !>>>(DEFREFINEMENT G2EQ1! G2EQ1)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ1!-REFINES-G2EQ1 ...)
+Rules: ((:DEFINITION G2EQ1)
+        (:DEFINITION G2EQ1!))
+
+Summary
+Form:  ( MAKE-EVENT (DEFREFINEMENT-FORM ...))
+Rules: NIL
+G2EQ1!-REFINES-G2EQ1
+
+
+ACL2 !>>>(DEFCONG PEQ IFF (P X) 1)
+
+ACL2 Warning [Equiv] in ( DEFTHM PEQ-IMPLIES-IFF-P-1 ...):  The :CONGRUENCE
+rule PEQ-IMPLIES-IFF-P-1 can be strengthened by replacing the outer
+equivalence relation, IFF, by EQUAL.  See :DOC congruence, in particular
+(near the end) the Remark on Replacing IFF by EQUAL.
+
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM PEQ-IMPLIES-IFF-P-1 ...)
+Rules: ((:DEFINITION IFF)
+        (:DEFINITION PEQ)
+        (:TYPE-PRESCRIPTION P))
+Warnings:  Equiv
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+Warnings:  Equiv
+PEQ-IMPLIES-IFF-P-1
+
+
+ACL2 !>>>(DEFCONG FEQ PEQ (F X) 1)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FEQ-IMPLIES-PEQ-F-1 ...)
+Rules: ((:DEFINITION F)
+        (:DEFINITION FEQ)
+        (:DEFINITION PEQ))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+FEQ-IMPLIES-PEQ-F-1
+
+
+ACL2 !>>>(DEFCONG G2EQ2 FEQ (G X Y) 2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2EQ2-IMPLIES-FEQ-G-2 ...)
+Rules: ((:DEFINITION FEQ)
+        (:DEFINITION G)
+        (:DEFINITION G2EQ2))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
+G2EQ2-IMPLIES-FEQ-G-2
+
+
+ACL2 !>>>(DEFTHM RULE
+           (G2EQ1! (BETA X) (GAMMA X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM RULE ...):  A :REWRITE rule generated
+from RULE will be triggered only by terms containing the function symbol
+BETA, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM RULE ...):  The previously added
+rule BETA subsumes a newly proposed :REWRITE rule generated from RULE,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM RULE ...)
+Rules: ((:DEFINITION BETA)
+        (:DEFINITION G2EQ1!)
+        (:DEFINITION GAMMA))
+Warnings:  Subsume and Non-rec
+RULE
+
+
+ACL2 !>>>(DEFTHM DONE (P (F (G X (GAMMA Y)))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM DONE ...):  A :REWRITE rule generated
+from DONE will be triggered only by terms containing the function symbols
+P, F, G and GAMMA, which have non-recursive definitions.  Unless these
+definitions are disabled, this rule is unlikely ever to be used.
+
+Goal'
+
+Q.E.D.
+
+The storage of DONE depends upon the :type-prescription rule P.
+
+Summary
+Form:  ( DEFTHM DONE ...)
+Rules: ((:DEFINITION F)
+        (:DEFINITION G)
+        (:DEFINITION GAMMA)
+        (:DEFINITION P)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:TYPE-PRESCRIPTION P))
+Warnings:  Non-rec
+DONE
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with every one of the functions
+P, F, G, PEQ, FEQ, G2EQ1, G2EQ1!, G2EQ2, BETA and GAMMA:
+
+(AND (BOOLEANP (PEQ X Y))
+     (PEQ X X)
+     (IMPLIES (PEQ X Y) (PEQ Y X))
+     (IMPLIES (AND (PEQ X Y) (PEQ Y Z))
+              (PEQ X Z))
+     (BOOLEANP (FEQ X Y))
+     (FEQ X X)
+     (IMPLIES (FEQ X Y) (FEQ Y X))
+     (IMPLIES (AND (FEQ X Y) (FEQ Y Z))
+              (FEQ X Z))
+     (BOOLEANP (G2EQ1 X Y))
+     (G2EQ1 X X)
+     (IMPLIES (G2EQ1 X Y) (G2EQ1 Y X))
+     (IMPLIES (AND (G2EQ1 X Y) (G2EQ1 Y Z))
+              (G2EQ1 X Z))
+     (BOOLEANP (G2EQ1! X Y))
+     (G2EQ1! X X)
+     (IMPLIES (G2EQ1! X Y) (G2EQ1! Y X))
+     (IMPLIES (AND (G2EQ1! X Y) (G2EQ1! Y Z))
+              (G2EQ1! X Z))
+     (BOOLEANP (G2EQ2 X Y))
+     (G2EQ2 X X)
+     (IMPLIES (G2EQ2 X Y) (G2EQ2 Y X))
+     (IMPLIES (AND (G2EQ2 X Y) (G2EQ2 Y Z))
+              (G2EQ2 X Z))
+     (IMPLIES (G2EQ1! X Y) (G2EQ1 X Y))
+     (IMPLIES (PEQ X X-EQUIV)
+              (IFF (P X) (P X-EQUIV)))
+     (IMPLIES (FEQ X X-EQUIV)
+              (PEQ (F X) (F X-EQUIV)))
+     (IMPLIES (G2EQ2 Y Y-EQUIV)
+              (FEQ (G X Y) (G X Y-EQUIV)))
+     (G2EQ1! (BETA X) (GAMMA X))
+     (P (F (G X (GAMMA Y)))))
+
+Summary
+Form:  ( ENCAPSULATE (((P * ...) ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume, Non-rec and Equiv
+ (P F
+    G PEQ FEQ G2EQ1 G2EQ1! G2EQ2 BETA GAMMA)
+ACL2 !>>(THM (P (F (G A (BETA B))))
+             :HINTS (("Goal" :DO-NOT '(PREPROCESS))))
+
+(1 Breaking (:REWRITE RULE) on (BETA B):
+
+The equivalence relation, G2EQ1!, of this rule is not a refinement
+of the current geneqv, (G2EQ2).  Use :path or :path+ to see how the
+geneqv evolved.  See :DOC refinement-failure for advice about how to
+deal with this kind of problem.
+
+1 ACL2 >:PATH+
+1. Simplifying the clause
+     ((P (F (G A (BETA B)))))
+2. Rewriting (to simplify) the atom of the first literal,
+     (P (F (G A (BETA B)))),
+   Geneqv: (IFF)
+3. Rewriting (to simplify) the first argument,
+     (F (G A (BETA B))),
+   Geneqv: ((PEQ PEQ-IMPLIES-IFF-P-1))
+4. Rewriting (to simplify) the first argument,
+     (G A (BETA B)),
+   Geneqv: ((FEQ FEQ-IMPLIES-PEQ-F-1))
+5. Rewriting (to simplify) the second argument,
+     (BETA B),
+   Geneqv: ((G2EQ2 G2EQ2-IMPLIES-FEQ-G-2))
+6. Attempting to apply (:REWRITE RULE) to
+     (BETA B)
+   Preserving: G2EQ1!
+   Geneqv: ((G2EQ2 G2EQ2-IMPLIES-FEQ-G-2))
+1 ACL2 >:GO
+
+1x (:REWRITE RULE) failed because the rule's equivalence relation is
+not a refinement of the geneqv.
+1)
+
+(1 Breaking (:REWRITE RULE) on (BETA B):
+
+The equivalence relation, G2EQ1!, of this rule is not a refinement
+of the current geneqv, (G2EQ2).  Use :path or :path+ to see how the
+geneqv evolved.  See :DOC refinement-failure for advice about how to
+deal with this kind of problem.
+
+1 ACL2 >:PATH+
+1. Simplifying the clause
+     ((P (F (G A (BETA B)))))
+2. Rewriting (to simplify) the atom of the first literal,
+     (P (F (G A (BETA B)))),
+   Geneqv: (IFF)
+3. Rewriting (to simplify) the first argument,
+     (F (G A (BETA B))),
+   Geneqv: ((PEQ PEQ-IMPLIES-IFF-P-1))
+4. Rewriting (to simplify) the first argument,
+     (G A (BETA B)),
+   Geneqv: ((FEQ FEQ-IMPLIES-PEQ-F-1))
+5. Rewriting (to simplify) the second argument,
+     (BETA B),
+   Geneqv: ((G2EQ2 G2EQ2-IMPLIES-FEQ-G-2))
+6. Attempting to apply (:REWRITE RULE) to
+     (BETA B)
+   Preserving: G2EQ1!
+   Geneqv: ((G2EQ2 G2EQ2-IMPLIES-FEQ-G-2))
+1 ACL2 >:GO
+
+1x (:REWRITE RULE) failed because the rule's equivalence relation is
+not a refinement of the geneqv.
+1)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(P (F (G A (BETA B))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFTTAG :REFINEMENT-FAILURE)
+
+TTAG NOTE: Adding ttag :REFINEMENT-FAILURE from the top level loop.
+ :REFINEMENT-FAILURE
+ACL2 !>>(SET-RAW-MODE T)
+ACL2 P>>(SETQ *STANDARD-CO* *SAVED-STANDARD-CO*)
+ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0
+ACL2 P>>(SET-RAW-MODE NIL)
+ACL2 !>>(U)
+           2:x(ENCAPSULATE (((P *) ...)
+                            ((F *) ...)
+                            ((G * *) ...)
+                            ((PEQ * *) ...)
+                            ((FEQ * *) ...)
+                            ((G2EQ1 * *) ...)
+                            ((G2EQ1! * *) ...)
+                            ((G2EQ2 * *) ...)
+                            ((BETA *) ...)
+                            ((GAMMA *) ...))
+                ...)
+ACL2 !>>Bye.

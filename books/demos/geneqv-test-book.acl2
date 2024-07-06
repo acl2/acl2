@@ -1,0 +1,10 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "geneqv-test")
+
+; Help dependency scanner.
+#||
+(depends-on "geneqv-test-input.lsp")
+(depends-on "geneqv-test-log.txt")
+||#
+
+; cert-flags: ? t :ttags :all
