@@ -827,10 +827,85 @@ constant-expression = conditional-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Attributes (https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html)
+
+; These are a GCC extension (see motivation in :doc syntax-for-tools).
+; The GCC documentation does not provide an explicit grammar,
+; so our ABNF grammar rules are based on the informal description there.
+
+; The GCC documentation mentions three kinds of attributes:
+; empty, names, and names with parameters.
+; For now we do not model empty ones.
+; We model the other two as consistsing of an identifier
+; optionally followed by a parenthesized list of one or more parameters.
+
+; The GCC documentation allows identifiers or reserved words as attribute names,
+; where 'reserved word' is presumably a synonym of 'keyword',
+; according to the official nomenclature in [C].
+; However, grammatically keywords are identifiers,
+; and thus we just use identifiers for simplicity in our grammar rules;
+; it is easy to recognize grammatical identifiers that are in fact keywords,
+; or any other reserved word in case they are not quite the same as keywords.
+
+; The GCC documentation mentions three kinds of parameters,
+; where each kind seems to refer to the whole list of parameters
+; (not to individual parameters),
+; because otherwise the grouping would be ambiguous.
+; The three kinds are
+; (i) a single identifier,
+; (ii) an identifier followed by a comma
+; and by a non-empty comma-separated sequence of expressions,
+; and (iii) a possibly empty comma-separated sequence of expressions.
+; These three alternatives overlap syntactically,
+; because identifiers are expressions.
+; Thus, in our grammar rules, we just say that
+; attribute parameters are a parenthesized sequence of
+; zero or more comma-separated assignment expressions.
+; Note that we use assignment expressions, and not more general expressions,
+; because otherwise the grouping would be ambiguous,
+; if an expression included the comma operator.
+
+attribute-parameters =
+    "(" [ assignment-expression *( "," assignment-expression ) ] ")"
+
+attribute = identifier [ attribute-parameters ]
+
+; An attribute specifiers consists of the identifier __attribute__
+; followed by zero or more comma-separated attributes
+; enclosed in double parentheses.
+; We regard each double (open or closed) parenthesis
+; as consisting of two separate tokens,
+; so that we do not have to define a new kind of token.
+; This means that our grammar allows white space and comments
+; between the two open or closed parenthesis.
+; It is not clear from the GCC documentation if this is allowed;
+; perhaps we should run an experiment with GCC to see whether that is allowed.
+
+attribute-list = attribute *( "," attribute )
+
+attribute-specifier =
+    %s"__attribute__" "(" "(" [ attribute-list ] ")" ")"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Declarations [C:A.2.2]
 
-declaration = declaration-specifiers [ init-declarator-list ] ";"
-            / static-assert-declaration
+; As a GCC extension, we allow one or more attribute specifiers
+; to occur just before the ending semicolon of a declaration.
+; The grammar rule allows no such attribute specifiers,
+; for the case in which there are none,
+; and also for the standard language without GCC extensions.
+; This is not the only place where attribute specifiers may occur,
+; but it is one of the places that have been observed;
+; it is also possible that not all kinds of declarations actually allow that.
+; However, our purpose in supporting the GCC extensions, for now,
+; is not to completely characterize the legal ones,
+; but rather to be able to handle practical C code that
+; does not quite comply with the standard due to the presence of GCC extensions.
+
+declaration =
+      declaration-specifiers [ init-declarator-list ] *attribute-specifier ";"
+    / static-assert-declaration
 
 declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
                        / type-specifier [ declaration-specifiers ]
