@@ -614,14 +614,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key cond)
+(defmacro test-parse (fn input &key cond gcc)
   ;; optional COND may be over variables AST, SPAN, PSTATE
   ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST
   `(assert-event
     (b* ((,(if (eq fn 'parse-external-declaration-list)
                '(mv erp ?ast ?span ?eofpos ?pstate)
              '(mv erp ?ast ?span ?pstate))
-          (,fn (init-parstate (acl2::string=>nats ,input) nil))))
+          (,fn (init-parstate (acl2::string=>nats ,input) ,gcc))))
       (if erp
           (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
         ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
@@ -1037,6 +1037,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-declaration
+
+(test-parse
+ parse-declaration
+ "extern int remove (const char *__filename)
+    __attribute__ ((__nothrow__ , __leaf__));"
+ :gcc t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-block-item
 
 (test-parse
@@ -1216,3 +1226,9 @@ struct bar
 (test-parse
  parse-external-declaration-list
  "extern int sscanf (const char *__s, const char *__format, ...);")
+
+(test-parse
+ parse-declaration
+; parse-external-declaration-list
+ "extern int remove (const char *__filename) __attribute__ ((__nothrow__ , __leaf__));"
+ :gcc t)
