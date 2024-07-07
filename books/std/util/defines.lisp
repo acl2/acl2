@@ -28,6 +28,7 @@
 ;
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
+; Modified by Grant Jurgensen <grant@kestrel.edu> to add :after-returns support
 
 (in-package "STD")
 (include-book "define")
@@ -163,7 +164,15 @@ failures.  You can enable @(':verbosep t') for better debugging.</dd>
 
 
 <dt>:mode</dt>
-<dt>:guard-hints, :guard-debug, :verify-guards</dt>
+<dt>:guard-hints, :guard-debug</dt>
+
+<dt>:verify-guards val</dt>
+
+<dd>The value @('val') may be one of the following: @('t'), @('nil'), or
+@(':after-returns'). The first two correspond to what is described in @(see
+xargs). The keyword @(':after-returns') indicates that the guards of the
+functions are to be verified after the @(see returns-specifiers).</dd>
+
 <dt>:well-founded-relation, :measure-debug, :hints, :otf-flg</dt>
 <dt>:ruler-extenders</dt>
 
@@ -431,7 +440,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
 ;;     (append (defguts->rest-events (car gutslist))
 ;;             (collect-rest-events-from-guts (cdr gutslist)))))
 
-(defun make-fn-defsection (guts cliquename process-returns)
+(defun make-fn-defsections (guts cliquename process-returns divide-defsections)
   (b* (((defguts guts) guts)
        (short      (getarg :short          nil guts.kwd-alist))
        (long       (getarg :long           nil guts.kwd-alist))
@@ -440,34 +449,59 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                        parents
                      (and cliquename
                           (not (eq cliquename guts.name))
-                          (list cliquename)))))
+                          (list cliquename))))
+       (divide-defsections (and process-returns divide-defsections))
+       (rest-events
+        `(
+; Matt K. mod, 8/27/2021, for GitHub Issue #1302: allow current-function to be
+; seen even when including an uncertified book, by making the following
+; non-local.
+          (set-define-current-function ,guts.name)
+          (with-output :stack :pop (progn . ,guts.rest-events)))))
 
-    `((defsection ,guts.name
+    (mv
+     `(defsection ,guts.name
         ,@(and parents `(:parents ,parents))
         ,@(and short   `(:short ,short))
         ,@(and long    `(:long ,long))
         ,@(and process-returns
                `((make-event
-                  (let* ((world (w state))
-                         (events (returnspec-thms ',guts.name
-                                                  ',guts.name-fn
-                                                  ',guts.returnspecs
-                                                  world)))
-                    `(with-output :stack :pop (progn . ,events))))))
-; Matt K. mod, 8/27/2021, for GitHub Issue #1302: allow current-function to be
-; seen even when including an uncertified book, by making the following
-; non-local.
-        (set-define-current-function ,guts.name)
-        (with-output :stack :pop (progn . ,guts.rest-events)))
-      ;; Make sure the section gets processed first.  Once it's done,
-      ;; we can add the signature block.
-      (with-output :on (error) ,(add-signature-from-guts guts)))))
+                   (let* ((world (w state))
+                          (events (returnspec-thms ',guts.name
+                                                   ',guts.name-fn
+                                                   ',guts.returnspecs
+                                                   world)))
+                     `(with-output :stack :pop (progn . ,events))))))
+        ,@(and (not divide-defsections)
+               rest-events))
+     `(,@(and divide-defsections
+              `((make-event
+                  (let ((old-topic (xdoc::find-topic ',guts.name (xdoc::get-xdoc-table (w state))))
+                        (defsection-name ',(acl2::packn-pos (list guts.name '-rest-events) guts.name))
+                        (extension ',guts.name)
+                        (rest-events ',rest-events))
+                    `(defsection ,defsection-name
+                       ,@(and old-topic `(:extension ,extension))
+                       ,@rest-events)))))
+       ;; Make sure the section gets processed first.  Once it's done,
+       ;; we can add the signature block.
+       (with-output :on (error) ,(add-signature-from-guts guts))))))
 
-(defun collect-fn-defsections (gutslist cliquename process-returns)
+(defun collect-fn-defsections (gutslist cliquename process-returns divide-defsections)
   (if (atom gutslist)
-      nil
-    (append (make-fn-defsection (car gutslist) cliquename process-returns)
-            (collect-fn-defsections (cdr gutslist) cliquename process-returns))))
+      (mv nil nil)
+    (b* (((mv section1 rest1)
+          (make-fn-defsections (car gutslist)
+                               cliquename
+                               process-returns
+                               divide-defsections))
+         ((mv sections rest2)
+          (collect-fn-defsections (cdr gutslist)
+                                  cliquename
+                                  process-returns
+                                  divide-defsections)))
+      (mv (cons section1 sections)
+          (append rest1 rest2)))))
 
 (defun guts->flag (guts)
   (or (cdr (assoc :flag (defguts->kwd-alist guts)))
@@ -621,6 +655,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
    kwd-alist        ;; arguments to defines
    flag-mapping     ;; function names->flag names
    flag-defthm-macro
+   guards-after-returns
    ;; other stuff?
    ))
 
@@ -733,6 +768,12 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
        ((unless (consp (cdr gutslist)))
         (raise "Error in ~x0: expected more than one function." name))
 
+       (verify-guards-after-returns
+         (eq (cdr (assoc :verify-guards kwd-alist)) :after-returns))
+       (kwd-alist (if verify-guards-after-returns
+                      (put-assoc :verify-guards 'nil kwd-alist)
+                    kwd-alist))
+
        (short      (getarg :short   nil kwd-alist))
        (long       (getarg :long    nil kwd-alist))
        (parents    (getarg :parents nil kwd-alist))
@@ -811,9 +852,12 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
        (thm-macro      (and flag-name
                             (or flag-defthm-macro (flag::thm-macro-name flag-name))))
 
-       (fn-sections (collect-fn-defsections gutslist
-                                            (and want-xdoc-p name)
-                                            (not returns-induct)))
+       ((mv fn-sections sections-rest)
+        (collect-fn-defsections gutslist
+                                (and want-xdoc-p name)
+                                (not returns-induct)
+                                (and verify-guards-after-returns
+                                     (not returns-induct))))
 
        (fns-to-disable (collect-defines-to-disable gutslist))
 
@@ -823,7 +867,8 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
           :gutslist gutslist
           :kwd-alist kwd-alist
           :flag-mapping flag-mapping
-          :flag-defthm-macro thm-macro))
+          :flag-defthm-macro thm-macro
+          :guards-after-returns verify-guards-after-returns))
 
        (prognp (getarg :progn nil kwd-alist)))
 
@@ -871,6 +916,9 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                      (value '(value-triple :invisible))))))
          (with-output :stack :pop (progn . ,rest-events1))
          ,@fn-sections
+         ,@(and verify-guards-after-returns
+                `((with-output :stack :pop (verify-guards ,name))))
+         ,@sections-rest
          (with-output :stack :pop (progn . ,rest-events2)))
 
        ;; Disable any functions that aren't marked as :enable
