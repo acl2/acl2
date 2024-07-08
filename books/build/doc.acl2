@@ -1,0 +1,5 @@
+(include-book "portcullis")
+;; for use of C$ package
+(include-book "kestrel/c/syntax/portcullis" :dir :system)
+;; for use of SMT package
+(include-book "projects/smtlink/portcullis" :dir :system)
