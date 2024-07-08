@@ -1231,3 +1231,8 @@ struct bar
  parse-external-declaration-list
  "extern int remove (const char *__filename) __attribute__ ((__nothrow__ , __leaf__));"
  :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "typedef int register_t __attribute__ ((__mode__ (__word__)));"
+ :gcc t)
