@@ -15,6 +15,9 @@
 (include-book "projects/x86isa/machine/cpuid" :dir :system) ; for feature-flag
 (include-book "projects/x86isa/utils/fp-structures" :dir :system) ; for mxcsrbits
 
+;; Not sure where this should go:
+(in-theory (disable bitops::signed-byte-p-induct))
+
 ;; Assumptions that are common to 32-bit and 64-bit mode.
 (defun standard-state-assumption (x86)
   (declare (xargs :stobjs x86))

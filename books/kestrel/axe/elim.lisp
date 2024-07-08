@@ -1,7 +1,7 @@
 ; Support for the Axe Prover tuple elimination
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -32,7 +32,7 @@
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
-(local (in-theory (disable strip-cars)))
+(local (in-theory (disable strip-cars alistp)))
 
 ;dup in prove-with-stp
 (defthm assoc-equal-when-member-equal-of-strip-cars
@@ -217,7 +217,7 @@
                      (not (member-eq (ffn-symb expr) fns)))
                 nil
 ;check the children:
-              (nodenum-only-appears-in (append-atoms (dargs expr) (rest worklist))
+              (nodenum-only-appears-in (append-nodenum-dargs (dargs expr) (rest worklist))
                                        dag-array dag-len nodenum fns
                                        (aset1 'done-array done-array possible-parent-nodenum t)))))))))
 

@@ -44,7 +44,7 @@
 ; of reasoning about it directly, we will split it up into the following,
 ; simpler definition.
 
-(local (in-theory (disable floor mod)))
+(local (in-theory (e/d (print-base-p) (floor mod))))
 
 (local (defun simpler-explode-nonnegative-integer (n base ans)
          (declare (xargs :guard (and (integerp n)

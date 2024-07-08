@@ -102,8 +102,7 @@
                                           TRUNCATE-BECOMES-FLOOR-GEN
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   SBVLT-REWRITE
-                                   ;anti-bvplus
+                                   ;
                                    )))))
 
 (defthmd bvchop-of-minus-rule
@@ -149,7 +148,7 @@
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;;mod-sum-cases
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;;anti-bvplus
+                                   ;;
                                    ;;SBVDIV-rewrite
                                    )))))
 
@@ -203,7 +202,7 @@
                                    FLOOR-OF-1-ARG1 ;why?
                                    mod-sum-cases
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;anti-bvplus
+                                   ;
                                    ;SBVDIV-rewrite
                                    EXPT-HALF-LINEAR
                                    )))))
@@ -281,7 +280,7 @@
                                    sbvlt-rewrite
                                    ;SBVDIVDOWN-REWRITE-CASE-2
                                    bvchop-of-sum-cases
-                                   getbit-of-plus
+                                   getbit-of-+
                                    truncate-becomes-floor-gen
                                    )
                                   (BVLT-OF-BVCHOP-ARG2

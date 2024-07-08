@@ -47,6 +47,7 @@
 (include-book "kestrel/x86/support" :dir :system)
 (include-book "support-axe")
 (include-book "../bitops-rules")
+(include-book "../logops-rules-axe")
 ;(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
@@ -346,7 +347,7 @@
      x86isa::equal-of-if-constants
      x86isa::equal-of-if-constants-alt
      acl2::bool-fix-when-booleanp
-     acl2::if-t-nil
+     acl2::if-of-t-and-nil-becomes-bool-fix
      acl2::mv-nth-of-if
      x86isa::canonical-address-p-of-if
      x86isa::+-of-if-arg1

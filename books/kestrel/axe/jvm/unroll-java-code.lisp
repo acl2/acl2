@@ -1,7 +1,7 @@
 ; A tool to unroll Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -217,8 +217,8 @@
           (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
-         ((mv erp dag-or-quotep state) (maybe-prune-dag-approximately prune-branches-approximately dag print state)
-          )
+         ((mv erp dag-or-quotep state)
+          (maybe-prune-dag-approximately prune-branches-approximately dag assumptions print state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)

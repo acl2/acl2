@@ -28,6 +28,7 @@
 (include-book "kestrel/typed-lists-light/all-alistp" :dir :system)
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 
 ;; TODO: Consider adding special handling for BOOLIF and BVIF.
 
@@ -150,7 +151,7 @@
             (nat-listp (strip-cars (make-arity-fn-call-alist-alist-aux fns-and-aliases wrld acc))))))
 
 (local
- (defthm alist-of-strip-cdrs-of-make-arity-fn-call-alist-alist-aux
+ (defthm alistp-of-strip-cdrs-of-make-arity-fn-call-alist-alist-aux
    (implies (and (fns-and-aliasesp fns-and-aliases)
                  (plist-worldp wrld)
                  (alistp acc)
@@ -159,10 +160,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun make-arity-fn-call-alist-alist (fns-and-aliases wrld)
+(defund make-arity-fn-call-alist-alist (fns-and-aliases wrld)
   (declare (xargs :guard (and (fns-and-aliasesp fns-and-aliases)
                               (plist-worldp wrld))))
   (make-arity-fn-call-alist-alist-aux (reverse-list fns-and-aliases) wrld nil))
+
+(local
+  (defthm nat-listp-of-strip-cars-of-make-arity-fn-call-alist-alist
+    (implies (and (fns-and-aliasesp fns-and-aliases)
+                  (plist-worldp wrld))
+             (nat-listp (strip-cars (make-arity-fn-call-alist-alist fns-and-aliases wrld))))
+    :hints (("Goal" :in-theory (enable make-arity-fn-call-alist-alist)))))
+
+(local
+  (defthm alistp-of-make-arity-fn-call-alist-alist
+    (implies (and (fns-and-aliasesp fns-and-aliases)
+                  (plist-worldp wrld))
+             (alistp (make-arity-fn-call-alist-alist fns-and-aliases wrld)))
+    :hints (("Goal" :in-theory (enable make-arity-fn-call-alist-alist)))))
+
+(local
+  (defthm consp-of-make-arity-fn-call-alist-alist
+    (implies (and (fns-and-aliasesp fns-and-aliases)
+                  (plist-worldp wrld))
+             (equal (consp (make-arity-fn-call-alist-alist fns-and-aliases wrld))
+                    (consp fns-and-aliases)))
+    :hints (("Goal" :in-theory (enable make-arity-fn-call-alist-alist)))))
+
+(local
+ (defthm symbol-alist-listp-of-strip-cdrs-of-make-arity-fn-call-alist-alist
+   (implies (and (fns-and-aliasesp fns-and-aliases)
+                 (plist-worldp wrld))
+            (symbol-alist-listp (strip-cdrs (make-arity-fn-call-alist-alist fns-and-aliases wrld))))
+   :hints (("Goal" :in-theory (enable make-arity-fn-call-alist-alist)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,6 +214,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;dup
+(local
+  (defthm not-<-of-maxelem-and--1-when-nat-listp
+    (implies (and (nat-listp vals)
+                  (consp vals))
+             (not (< (maxelem vals) -1)))
+    :hints (("Goal" :in-theory (enable nat-listp)))))
+
+;dup
+(local
+  (defthm integerp-of-maxelem-and--1-when-nat-listp
+    (implies (and (nat-listp vals)
+                  (consp vals))
+             (integerp (maxelem vals)))
+    :hints (("Goal" :in-theory (enable nat-listp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns an encapsulate event.
 ;; TODO: Add a function to eval a dag.  See evaluate-test-case-aux.
 ;; TODO: Strengthen guards to require the interpreted-function-alist to always be complete wrt the built-in functions of the evaluator.
@@ -197,6 +245,7 @@
                                  wrld)
   (declare (xargs :guard (and (symbolp suffix)
                               (fns-and-aliasesp fns-and-aliases)
+                              (consp fns-and-aliases)
                               (plist-worldp wrld))
                   :guard-hints (("Goal" :in-theory (enable rational-listp-when-nat-listp)))))
   (let* ((base-name (pack$ 'axe-evaluator- suffix))

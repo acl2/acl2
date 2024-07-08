@@ -20,6 +20,7 @@
 
 (include-book "support-axe")
 (include-book "../bitops-rules")
+(include-book "../logops-rules-axe")
 (include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules32" :dir :system)
@@ -42,7 +43,7 @@
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
-(include-book "../rewriter") ;brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-repeatedly)
+(include-book "../rewriter") ; for the :legacy rewriter option ; todo: brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-repeatedly)
 ;(include-book "../basic-rules")
 (include-book "../step-increments")
 (include-book "../dag-size")
@@ -57,6 +58,7 @@
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 (include-book "kestrel/utilities/map-symbol-name" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
@@ -118,7 +120,7 @@
 
 ;move this util
 
-(defun print-list-item-elided (item firstp fns-to-elide)
+(defun print-term-elided (item firstp fns-to-elide)
   (declare (xargs :guard (symbol-listp fns-to-elide)))
   (if (and (consp item)
            (member-eq (ffn-symb item) fns-to-elide))
@@ -133,27 +135,27 @@
       (cw " ~y0" item))))
 
 ;doesn't stack overflow when printing a large list
-(defun print-list-elided-aux (lst fns-to-elide)
+(defun print-terms-elided-aux (lst fns-to-elide)
   (declare (xargs :guard (and (true-listp lst)
                               (symbol-listp fns-to-elide))))
   (if (atom lst)
       nil
-    (prog2$ (print-list-item-elided (first lst) nil fns-to-elide)
-            (print-list-elided-aux (rest lst) fns-to-elide))))
+    (prog2$ (print-term-elided (first lst) nil fns-to-elide)
+            (print-terms-elided-aux (rest lst) fns-to-elide))))
 
-(defun print-list-elided (lst fns-to-elide)
+(defun print-terms-elided (lst fns-to-elide)
   (declare (xargs :guard (and (true-listp lst)
                               (symbol-listp fns-to-elide))))
   (if (consp lst)
-      (prog2$ (print-list-item-elided (first lst) t fns-to-elide) ;print the first element separately to put in an open paren
-              (prog2$ (print-list-elided-aux (rest lst) fns-to-elide)
+      (prog2$ (print-term-elided (first lst) t fns-to-elide) ;print the first element separately to put in an open paren
+              (prog2$ (print-terms-elided-aux (rest lst) fns-to-elide)
                       (cw ")")))
     (cw "nil") ; or could do ()
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: strengthen:
+;; todo: strengthen:   what are the allowed types?  todo: Allow float types?
 (defun names-and-typesp (names-and-types)
   (declare (xargs :guard t))
   (and (doublet-listp names-and-types)
@@ -253,6 +255,7 @@
         (er hard? 'assumptions-for-input "Bad type: ~x0." type)
       (if (atom type) ; scalar
           ;; just put in the var name for the state component:
+          ;; todo: what about signed/unsigned?
           `((equal ,state-component ,var-name))
         (let ((stack-byte-count (* 8 stack-slots))) ; each stack element is 64-bits
           (if (and (call-of :pointer type)
@@ -282,8 +285,7 @@
                      (stringp (farg1 type)) ; for guards
                      (natp (farg2 type)) ; for guards
                      )
-
-                ;; must be an :array type:
+                ;; must be an :array type:  ; TODO: What if the whole array fits in a register?
                 (b* ((base-type (farg1 type))
                      (element-count (farg2 type))
                      (element-size (bytes-in-scalar-type base-type))
@@ -332,7 +334,7 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
-(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter total-steps state)
+(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
@@ -345,6 +347,7 @@
                                   (natp prune))
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
+                              (booleanp untranslatep)
                               (booleanp memoizep)
                               (natp total-steps)
                               (member-eq rewriter '(:x86 :legacy)))
@@ -371,6 +374,7 @@
                               :rule-alist rule-alist
                               :assumptions assumptions
                               :monitor rules-to-monitor
+                              ;; :fns-to-elide '(program-at) ; not supported
                               :use-internal-contextsp use-internal-contextsp
                               ;; pass print, so we can cause rule hits to be printed:
                               :print print ; :brief ;nil
@@ -388,6 +392,7 @@
                                         print
                                         (acl2::known-booleans (w state))
                                         rules-to-monitor
+                                        '(program-at) ; fns-to-elide
                                         t ; normalize-xors
                                         memoizep)
               (mv erp result state))))
@@ -397,13 +402,16 @@
             (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
             (cw "s.)~%")) ; matches "(Running"
          ((when (quotep dag-or-quote)) (mv (erp-nil) dag-or-quote state))
-         (- (and ;print ;(acl2::print-level-at-least-tp print)
+         (- (and print ;(acl2::print-level-at-least-tp print)
                  (progn$ (cw "(DAG after this limited run:~%")
                          (cw "~X01" dag-or-quote nil)
                          (cw ")~%"))))
          (dag dag-or-quote) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely:
-         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag t print state))
+         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag
+                                                                      assumptions
+                                                                      t ; check-fnsp
+                                                                      print state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep
@@ -472,6 +480,7 @@
                                             print
                                             (acl2::known-booleans (w state))
                                             rules-to-monitor
+                                            '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                             t ; normalize-xors
                                             memoizep)
                     (mv erp result state))))
@@ -487,7 +496,11 @@
                               (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
                                          (set-print-base-radix print-base state)
                                        state))
-                              (- (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil))
+                              (- (cw "~X01" (let ((term (dag-to-term dag)))
+                                              (if untranslatep
+                                                  (untranslate term nil (w state))
+                                                term))
+                                     nil))
                               (state (set-print-base-radix 10 state)) ;make event sets it to 10
                               (- (cw ")~%")))
                            state)
@@ -503,7 +516,7 @@
                    state)))
           (repeatedly-run (- steps-left steps-for-this-iteration)
                           step-increment
-                          dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter
+                          dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter
                           total-steps
                           state))))))
 
@@ -528,6 +541,7 @@
                              monitor
                              print
                              print-base
+                             untranslatep
                              rewriter
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
@@ -552,6 +566,7 @@
                                   (eq :debug monitor))
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
+                              (booleanp untranslatep)
                               (member-eq rewriter '(:x86 :legacy)))
                   :stobjs (state)
                   :mode :program))
@@ -644,6 +659,8 @@
                                    )
                               (assumptions-for-inputs inputs
                                                       ;; todo: handle zmm regs and values passed on the stack?!:
+                                                      ;; handle structs that fit in 2 registers?
+                                                      ;; See the System V AMD64 ABI
                                                       '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                                       stack-slots
                                                       text-offset
@@ -653,7 +670,7 @@
        (assumptions-to-return assumptions)
        (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
        (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
-                                                             (print-list-elided assumptions '(standard-assumptions-elf-64
+                                                             (print-terms-elided assumptions '(standard-assumptions-elf-64
                                                                                               standard-assumptions-mach-o-64
                                                                                               standard-assumptions-pe-64)) ; todo: more?
                                                              (cw ")~%"))))
@@ -699,7 +716,7 @@
        (- (and print (progn$ (cw "(Simplified assumptions:~%")
                              (if (acl2::print-level-at-least-tp print)
                                  (acl2::print-list assumptions)
-                               (print-list-elided assumptions '(program-at ; the program can be huge
+                               (print-terms-elided assumptions '(program-at ; the program can be huge
                                                                 )))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
@@ -721,7 +738,7 @@
         (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil nil state))
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter 0 state))
        ((when erp) (mv erp nil nil nil nil state))
        (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
@@ -757,6 +774,8 @@
                         monitor
                         print
                         print-base
+                        untranslatep
+                        rewriter
                         produce-function
                         non-executable
                         produce-theorem
@@ -787,6 +806,8 @@
                                   (eq :debug monitor))
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
+                              (booleanp untranslatep)
+                              (member-eq rewriter '(:x86 :legacy))
                               (booleanp produce-function)
                               (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
@@ -822,7 +843,7 @@
         (unroll-x86-code-core target parsed-executable
           assumptions suppress-assumptions stack-slots position-independentp
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
-          step-limit step-increment memoizep monitor print print-base :legacy state))
+          step-limit step-increment memoizep monitor print print-base untranslatep rewriter state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -854,7 +875,11 @@
        ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return)))
         (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
-                    (cw "~X01" (untranslate (dag-to-term result-dag) nil (w state)) nil)
+                    (cw "~X01" (let ((term (dag-to-term result-dag)))
+                                 (if untranslatep
+                                     (untranslate term nil (w state))
+                                   term))
+                        nil)
                     (cw ")~%"))
           (progn$ (cw "(DAG:~%")
                   (cw "~X01" result-dag nil)
@@ -882,7 +907,7 @@
                                                                    ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns (w state)) (w state))
                                                                    '0 ;array depth (not very important)
                                                                    )))
-               (function-body-untranslated (untranslate function-body nil (w state))) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
+               (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
                (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn (w state)))
                ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
                ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
@@ -939,37 +964,38 @@
 
 ;TODO: Add show- variant
 ;bad name?
-;try defmacroq?
 ;; TODO: :print nil is not fully respected
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
-(defmacro def-unrolled (&whole whole-form
-                               lifted-name ;name to use for the generated function and constant (the latter surrounded by stars)
-                               executable ; a string (filename), or (for example) a defconst created by defconst-x86
-                               &key
-                               (target ':entry-point) ;; where to start lifting (see lifter-targetp)
-                               (assumptions 'nil) ;extra assumptions in addition to the standard-assumptions (todo: rename to :extra-assumptions)
-                               (suppress-assumptions 'nil) ;suppress the standard assumptions
-                               (stack-slots '100) ;; tells us what to assume about available stack space
-                               (position-independent ':auto)
-                               (inputs ':skip) ; :skip means no input-assumptions
-                               (output ':all)
-                               (use-internal-contextsp 't)
-                               (prune '1000)
-                               (extra-rules 'nil) ;Rules to use in addition to (lifter-rules32) or (lifter-rules64).
-                               (remove-rules 'nil) ;Rules to turn off
-                               (extra-assumption-rules 'nil) ; Extra rules to use when simplifying assumptions
-                               (step-limit '1000000)
-                               (step-increment '100)
-                               (memoizep 't)
-                               (monitor 'nil)
-                               (print ':brief)             ;how much to print
-                               (print-base '10)       ; 10 or 16
-                               (produce-function 't) ;whether to produce a function, not just a constant dag, representing the result of the lifting
-                               (non-executable ':auto)  ;since stobj updates will not be let-bound
-                               (produce-theorem 'nil) ;whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting
-                               (prove-theorem 'nil) ;whether to try to prove the theorem with ACL2 (rarely works)
-                               (restrict-theory 't)       ;todo: deprecate
-                               )
+(acl2::defmacrodoc def-unrolled (&whole whole-form
+                                  lifted-name
+                                  executable
+                                  &key
+                                  (target ':entry-point)
+                                  (assumptions 'nil) ; (todo: rename to :extra-assumptions)
+                                  (suppress-assumptions 'nil)
+                                  (stack-slots '100)
+                                  (position-independent ':auto)
+                                  (inputs ':skip)
+                                  (output ':all)
+                                  (use-internal-contextsp 't)
+                                  (prune '1000)
+                                  (extra-rules 'nil)
+                                  (remove-rules 'nil)
+                                  (extra-assumption-rules 'nil)
+                                  (step-limit '1000000)
+                                  (step-increment '100)
+                                  (memoizep 't)
+                                  (monitor 'nil)
+                                  (print ':brief)             ;how much to print
+                                  (print-base '10)
+                                  (untranslatep 't)
+                                  (rewriter ':x86)
+                                  (produce-function 't)
+                                  (non-executable ':auto)
+                                  (produce-theorem 'nil)
+                                  (prove-theorem 'nil)
+                                  (restrict-theory 't)       ;todo: deprecate
+                                  )
   `(,(if print 'make-event 'acl2::make-event-quiet)
     (def-unrolled-fn
       ',lifted-name
@@ -992,10 +1018,46 @@
       ,monitor ; gets evaluated since not quoted
       ',print
       ',print-base
+      ',untranslatep
+      ',rewriter
       ',produce-function
       ',non-executable
       ',produce-theorem
       ',prove-theorem
       ',restrict-theory
       ',whole-form
-      state)))
+      state))
+  :parents (lifters)
+  :short "Lift an x86 binary function to create a DAG, unrolling loops as needed."
+  :args ((lifted-name "The name to use for the generated function and constant (the latter surrounded by stars).")
+         (executable "The x86 binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.")
+         (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
+         (assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
+         (suppress-assumptions "Whether to suppress the standard assumptions.")
+         (stack-slots "How much available stack space to assume exists.") ; 4 or 8 bytes each?
+         (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
+         (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
+         (output "An indication of which state component(s) will hold the result of the computation being lifted.  See output-indicatorp.")
+         (use-internal-contextsp "Whether to use contextual information from ovararching conditionals when simplifying DAG nodes.")
+         ;; todo: better name?  only for precise pruning:
+         (prune "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing an (exclusive) limit on the maximum size of the DAG if represented as a term.  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
+         ;; todo: how do these affect assumption simp:
+         (extra-rules "Rules to use in addition to (lifter-rules32) or (lifter-rules64).")
+         (remove-rules "Rules to turn off.")
+         (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
+         (step-limit "Limit on the total number of model steps (instruction executions) to allow.")
+         (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
+         (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
+         (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
+         (print "Verbosity level.") ; todo: values
+         (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
+         (untranslatep "Whether to untranslate term when printing.")
+         (rewriter "Which rewriter to use, either :x86 (preferred) or :legacy.")
+         (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
+         (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
+         (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
+         (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
+         (restrict-theory "To be deprecated..."))
+  :description ("Given an ax86 binary function, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
+                "This event creates a @(see defconst) whose name is derived from the @('lifted-name') argument."
+                "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))

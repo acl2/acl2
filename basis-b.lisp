@@ -872,10 +872,7 @@
 
 (defun stobj-print-name (name)
   (declare (xargs :guard (symbolp name)))
-  (let* ((s (symbol-name name))
-         (s (if (standard-string-p s)
-                s
-              "some_stobj")))
+  (let* ((s (symbol-name name)))
     (coerce
      (cons #\<
            (append (string-downcase1 (coerce s 'list))
@@ -2972,8 +2969,10 @@
 
 (defun term-stobjs-out (term alist wrld)
 
-; Warning: This function currently has heuristic application only.  We need to
-; think harder about it if we are to rely on it for soundness.
+; Warning: This function currently has heuristic application only: it may
+; return nil, and we do not count on its correctness even when returning a
+; non-nil value.  We need to think harder about it if we are to rely on it for
+; soundness.
 
 ; This function is applied a translated term.  See stobjs-out-for-form for an
 ; analogous function that is applied to untranslated terms.
@@ -2985,10 +2984,19 @@
              term)))
    ((fquotep term)
     nil)
-   ((eq (ffn-symb term) 'return-last)
-    (term-stobjs-out (car (last (fargs term))) alist wrld))
    (t (let ((fn (ffn-symb term)))
         (cond
+         ((eq fn 'do$)
+; There is no guarantee that the values argument of this do$ call is
+; reasonable, but as noted above, we are content with a heuristic result.
+          (and (quotep (fargn term 5))
+               (let ((lst (unquote (fargn term 5))))
+                 (and (true-listp lst)
+                      (if (null (cdr lst))
+                          (car lst) ; = nil if lst = nil
+                        lst)))))
+         ((eq fn 'return-last)
+          (term-stobjs-out (car (last (fargs term))) alist wrld))
          ((member-eq fn '(nth mv-nth))
           (let* ((arg1 (fargn term 1))
                  (n (and (quotep arg1) (cadr arg1))))
@@ -3009,6 +3017,8 @@
          ((eq fn 'if)
           (or (term-stobjs-out (fargn term 2) alist wrld)
               (term-stobjs-out (fargn term 3) alist wrld)))
+         ((eq fn 'read-user-stobj-alist)
+          nil)
          (t
           (let ((lst (stobjs-out fn wrld)))
             (cond ((and (consp lst) (null (cdr lst)))
@@ -3018,24 +3028,27 @@
 
 (defun accessor-root (n term wrld)
 
-; When term is a stobj name, say st, ac is the accessor function for st defined
-; to return (nth n st), then untranslate maps (nth n st) to (nth *ac* st).
-; The truth is that the 'accessor-names property of st is used to carry this
-; out.  Update-nth gets similar consideration.
+; When term is a stobj name, say st, and ac is the accessor function for st
+; defined to return (nth n st), then untranslate maps (nth n st) to (nth *ac*
+; st).  The 'accessor-names property of st is actually used to carry this out.
+; Update-nth and update-nth-array get similar such consideration to nth; see
+; untranslate1.
 
-; But what about (nth 0 (run st n)), where run returns a stobj st?  Presumably
-; we would like to print that as (nth *b* (run st n)) where b is the 0th field
-; accessor function for st.  We would also like to handle terms such as (nth 1
-; (mv-nth 3 (run st n))).  These more general cases are likely to be important
-; to making stobj proofs palatable.  There is yet another consideration, which
+; But how about, for example, (nth 0 (run st n)), where run returns a stobj st?
+; Presumably we would like to print that as (nth *b* (run st n)) where b is the
+; 0th field accessor function for st.  We would also like to handle terms such
+; as (nth 1 (mv-nth 3 (run st n))).  These more general cases may be important
+; for making stobj proofs palatable.  There is yet another consideration, which
 ; is that during proofs, the user may use variable names other than stobj names
-; to refer to stobjs.  For example, there may be a theorem of the form
-; (... st st0 ...), which could generate a term (nth n st0) during a proof that
-; the user would prefer to see printed as (nth *b* st0).
+; to refer to stobjs.  For example, there may be a theorem of the form (... st
+; st0 ...), which could generate a term (nth n st0) during a proof that the
+; user would prefer to see printed as (nth *b* st0).
 
-; The present function returns the field name to be returned in place of n when
-; untranslating (nth n term) or (update-nth n val term).  Wrld is, of course,
-; an ACL2 world.
+; The present function attempts to return the accessor name to be used in place
+; of n when untranslating (nth n term), (update-nth n val term), or
+; (update-nth-array n key val term), with respect to the given world, wrld.
+; The return value may however be nil.  If the return value is not nil, then it
+; is definitely a constant whose value is n.
 
   (let ((st (term-stobjs-out term
                              (table-alist 'nth-aliases-table wrld)

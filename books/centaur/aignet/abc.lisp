@@ -471,9 +471,9 @@ hides the usage of state.</p>"
         (mv "Aignet-run-abc: Failed to write the ABC script." output-aignet frames state))
        (state (princ$ script channel state))
        (state (close-output-channel channel state))
-       ((mv exit-status lines) (acl2::tshell-call
-                                (str::cat (if quiet "abc -f " "abc -F ") script-filename)
-                                :print (not quiet) :save t))
+       ((mv exit-status lines state) (acl2::tshell-call
+                                       (str::cat (if quiet "abc -f " "abc -F ") script-filename)
+                                       :print (not quiet) :save t))
        ((unless (equal exit-status 0))
         (mv (msg "Aignet-run-abc: abc failed with exit status ~x0" exit-status)
             output-aignet frames state))

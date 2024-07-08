@@ -1,7 +1,7 @@
 ; Rules about the built-in function pseudo-termp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,14 +17,13 @@
 
 (defthm pseudo-termp-of-nth-alt
   (implies (and (pseudo-termp term)
-                (consp term)
+                ;; (consp term)
                 (posp n)
                 (not (equal (car term) 'quote)))
            (pseudo-termp (nth n term)))
   :hints (("Goal" :expand (pseudo-termp term)
            :cases ((< n (len term)))
-           :in-theory (e/d (pseudo-termp nth) (;nth-of-cdr
-                                               )))))
+           :in-theory (enable pseudo-termp nth))))
 
 (defthm pseudo-term-listp-of-cdr-when-pseudo-termp
   (implies (and (pseudo-termp term)

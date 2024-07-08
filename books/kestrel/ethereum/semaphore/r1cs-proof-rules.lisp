@@ -1,6 +1,6 @@
 ; Rules to support R1CS proofs
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,15 +22,20 @@
 ;(include-book "kestrel/crypto/r1cs/tools/axe-rules-r1cs" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system) ; for ACL2::BVXOR-WITH-SMALLER-ARG-1, drop
 ;(include-book "kestrel/axe/rules3" :dir :system) ;for ACL2::PLUS-OF-BVCAT-FITS-IN-LOW-BITS-CORE-NEGATIVE-K1
-(include-book "kestrel/utilities/fix" :dir :system)
+(local (include-book "kestrel/utilities/fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system)) ;for ACL2::COMMUTATIVITY-2-OF-+-WHEN-CONSTANT??
 (local (include-book "kestrel/bv/logtail" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system)
+
+;(local (in-theory (enable acl2::*-of---arg1-gen)))
 
 ;todo: file these:
 
@@ -470,6 +475,12 @@
                   (slice 32 0 x)))
   :hints (("Goal" :in-theory (enable slice))))
 
+(local
+  (defthm *-of-2-and-slice-bound
+    (implies (natp x)
+             (not (< x (* 2 (slice 33 1 x)))))
+    :hints (("Goal" :in-theory (enable slice acl2::logtail)))))
+
 (defthmd bitp-of-add-of-mul-of--2-becomes-equal-of-slice
   (implies (and (syntaxp (quotep k))
                 (equal k (- p 2)) ;to make this rule not prime-specific
@@ -479,7 +490,7 @@
                 (posp p))
            (equal (bitp (add bv34 (mul k bv33 p) p))
                   (equal bv33 (slice 33 1 bv34))))
-  :hints (("Goal" :in-theory (e/d (bitp add mul acl2::mod-sum-cases)
+  :hints (("Goal" :in-theory (e/d (bitp add mul acl2::mod-sum-cases acl2::*-of---arg1-gen)
                                   (ACL2::BITP-BECOMES-UNSIGNED-BYTE-P)))))
 
 (defthm bitp-of-add-of-mul-of--2-becomes-equal-of-slice-extra
@@ -1218,7 +1229,7 @@
 (defthmd mul-of--2-becomes-neg-of-mul-of-2
   (equal (mul -2 x p)
          (neg (mul 2 x p) p))
-  :hints (("Goal" :in-theory (enable neg mul))))
+  :hints (("Goal" :in-theory (enable neg mul acl2::*-of---arg1-gen))))
 
 (defthm mul-of--2-and-slice-of-1
   (implies (and (< (expt 2 34) p)

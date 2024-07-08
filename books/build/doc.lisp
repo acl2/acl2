@@ -1433,6 +1433,9 @@ certification using @('make')."
 
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
+ <li>@('uses-cpp'): only certify when cpp is available. See @(see
+ c$::preprocessing).</li>
+
  </ul>
 
  <p>There is currently no @('cert_param') related to ACL2(p) (see @(see
@@ -1459,6 +1462,8 @@ certification using @('make')."
 (acl2::defpointer uses-smtlink cert_param)
 (acl2::defpointer uses-stp cert_param)
 (acl2::defpointer uses-quicklisp cert_param)
+
+(acl2::defpointer uses-cpp cert_param)
 
 ;; Added by Eric Smith
 (acl2::defpointer cert-flags custom-certify-book-commands)

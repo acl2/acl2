@@ -82,9 +82,9 @@ no constraints on the type of F.
 Computing the guard conjecture for F....
 
 The non-trivial part of the guard conjecture for F, given the :executable-
-counterparts of APPLY$-GUARD and CONS, primitive type reasoning and
-the :type-prescription rules ASSOC-EQ-SAFE and DO-BODY-GUARD-WRAPPER,
-is
+counterparts of APPLY$-GUARD, CONS and WEAK-DOLIA-P, primitive type
+reasoning and the :type-prescription rules ASSOC-EQ-SAFE and 
+DO-BODY-GUARD-WRAPPER, is
 
 Goal
 (AND
@@ -97,7 +97,8 @@ Goal
           (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
                              (AND (ALISTP ALIST)
                                   (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                             'NIL)))
        (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
              (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
          (DECLARE (IGNORABLE SUM I))
@@ -132,14 +133,16 @@ Goal
    (IMPLIES
     (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
                                 (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                                (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))))
+                                (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                           NIL)
     (CASE EXIT-FLG
      ((NIL)
       (AND
        (DO-BODY-GUARD-WRAPPER
             (AND (ALISTP NEW-ALIST)
                  (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM NEW-ALIST)))
-                 (NATP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))))
+                 (NATP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST))))
+            NIL)
        (L<
         (LEX-FIX
          (APPLY$
@@ -149,7 +152,8 @@ Goal
                  :GUARD (DO-BODY-GUARD-WRAPPER
                              (AND (ALISTP ALIST)
                                   (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                             'NIL)))
            (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
                  (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
              (DECLARE (IGNORABLE SUM I))
@@ -163,16 +167,17 @@ Goal
                  :GUARD (DO-BODY-GUARD-WRAPPER
                              (AND (ALISTP ALIST)
                                   (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                             'NIL)))
            (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
                  (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
              (DECLARE (IGNORABLE SUM I))
              (ACL2-COUNT I)))
           (LIST ALIST))))))
-     (:LOOP-FINISH
-          (DO-BODY-GUARD-WRAPPER
-               (AND (ALISTP NEW-ALIST)
-                    (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM NEW-ALIST))))))
+     (:LOOP-FINISH (DO-BODY-GUARD-WRAPPER
+                        (AND (ALISTP NEW-ALIST)
+                             (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM NEW-ALIST))))
+                        NIL))
      (OTHERWISE T)))))
  (IMPLIES
      (NATP N)
@@ -181,8 +186,10 @@ Goal
                (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM
                                              (LIST '(SUM . 0) (CONS 'I N)))))
                (NATP (CDR (ASSOC-EQ-SAFE 'I
-                                         (LIST '(SUM . 0) (CONS 'I N))))))))
- (IMPLIES (AND (DO-BODY-GUARD-WRAPPER (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                                         (LIST '(SUM . 0) (CONS 'I N))))))
+          NIL))
+ (IMPLIES (AND (DO-BODY-GUARD-WRAPPER (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                      NIL)
                (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
                (ALISTP ALIST))
           (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
@@ -241,6 +248,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART INTEGERP)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART WEAK-DOLIA-P)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)

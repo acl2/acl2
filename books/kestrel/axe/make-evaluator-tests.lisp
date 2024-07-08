@@ -1,7 +1,7 @@
 ; Tests of make-evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -56,22 +56,20 @@
              (IF
               (ENDP ARGS-TO-WALK-DOWN)
               (LET ((ARG1 (NTH 0 ARGS)))
-                   (IF (EQ 'CDR FN)
-                       (MV T (CDR ARG1))
-                       (IF (EQ 'CONSP FN)
-                           (MV T (CONSP ARG1))
-                           (IF (EQ 'LEN FN)
-                               (MV T (LEN ARG1))
-                               (MV NIL NIL)))))
+                   (case fn
+                     (len (mv t (len arg1)))
+                     (consp (mv t (consp arg1)))
+                     (cdr (mv t (cdr arg1)))
+                     (t (mv nil nil))))
               (LET
                ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
                (IF
                 (ENDP ARGS-TO-WALK-DOWN)
                 (LET ((ARG2 (NTH 1 ARGS))
                       (ARG1 (NTH 0 ARGS)))
-                     (IF (EQ 'BINARY-+ FN)
-                         (MV T (BINARY-+ ARG1 ARG2))
-                         (MV NIL NIL)))
+                     (case fn
+                       (binary-+ (mv t (binary-+ arg1 arg2)))
+                       (t (mv nil nil))))
                 (LET
                  ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
                  (IF
@@ -87,17 +85,16 @@
                       (ARG2 (NTH 1 ARGS))
                       (ARG1 (NTH 0 ARGS)))
                      (DECLARE (IGNORE ARG4)) ;todo: why?  don't compute
-                     (IF
-                      (EQ 'APPLY-LEN-EVALUATOR FN)
-                      (MV T
-                          (APPLY-LEN-EVALUATOR
-                           ARG1 ARG2 ARG3 ARRAY-DEPTH))
-                      (IF
-                       (EQ 'DAG-VAL-WITH-LEN-EVALUATOR FN)
-                       (MV T
-                           (DAG-VAL-WITH-LEN-EVALUATOR
-                            ARG1 ARG2 ARG3 (+ 1 ARRAY-DEPTH)))
-                       (MV NIL NIL))))
+                     (case fn
+                       (dag-val-with-len-evaluator
+                         (mv t
+                             (dag-val-with-len-evaluator
+                               arg1 arg2 arg3 (+ 1 array-depth))))
+                       (apply-len-evaluator
+                         (mv t
+                             (apply-len-evaluator
+                               arg1 arg2 arg3 array-depth)))
+                       (t (mv nil nil))))
                     (LET
                      ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
                      (IF
@@ -129,14 +126,14 @@
                               (ARG2 (NTH 1 ARGS))
                               (ARG1 (NTH 0 ARGS)))
                              (DECLARE (IGNORE ARG8))
-                             (IF
-                              (EQ 'EVAL-DAG-WITH-LEN-EVALUATOR FN)
-                              (MV
-                               T
-                               (EVAL-DAG-WITH-LEN-EVALUATOR
-                                ARG1 ARG2 ARG3
-                                ARG4 ARG5 ARG6 ARG7 ARRAY-DEPTH))
-                              (MV NIL NIL)))
+                             (case fn
+                               (eval-dag-with-len-evaluator
+                                 (mv
+                                   t
+                                   (eval-dag-with-len-evaluator
+                                     arg1 arg2 arg3
+                                     arg4 arg5 arg6 arg7 array-depth)))
+                               (t (mv nil nil))))
                             (MV NIL NIL))))))))))))))))))
            (IF
             HIT VAL
@@ -406,133 +403,131 @@
                 ARRAY-DEPTH))))))))))))) ;end of mut-rec
 
 
- (DEFUN APPLY-LEN-EVALUATOR-TO-QUOTED-ARGS (FN ARGS
-                                               INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH)
-   (DECLARE (XARGS :GUARD (AND (OR (SYMBOLP FN) (PSEUDO-LAMBDAP FN))
-                               (TRUE-LISTP ARGS)
-                               (ALL-MYQUOTEP ARGS)
-                               (INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
-                               (NATP ARRAY-DEPTH))
-                   :VERIFY-GUARDS NIL))
-   (IF
-    (CONSP FN)
-    (LET*
-     ((FORMALS (SECOND FN))
-      (BODY (THIRD FN))
-      (ALIST (PAIRLIS$-FAST FORMALS (UNQUOTE-LIST ARGS))))
-     (EVAL-LEN-EVALUATOR
-      ALIST BODY
-      INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH))
-    (LET
-     ((ARGS-TO-WALK-DOWN ARGS))
-     (MV-LET
-       (HIT VAL)
-       (IF
-        (ENDP ARGS-TO-WALK-DOWN)
-        (MV NIL NIL)
-        (LET
-         ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-         (IF
-          (ENDP ARGS-TO-WALK-DOWN)
-          (LET ((ARG1 (UNQUOTE (NTH 0 ARGS))))
-               (IF (EQ 'CDR FN)
-                   (MV T (CDR ARG1))
-                   (IF (EQ 'CONSP FN)
-                       (MV T (CONSP ARG1))
-                       (IF (EQ 'LEN FN)
-                           (MV T (LEN ARG1))
-                           (MV NIL NIL)))))
-          (LET
-           ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-           (IF
-            (ENDP ARGS-TO-WALK-DOWN)
-            (LET ((ARG2 (UNQUOTE (NTH 1 ARGS)))
-                  (ARG1 (UNQUOTE (NTH 0 ARGS))))
-                 (IF (EQ 'BINARY-+ FN)
-                     (MV T (BINARY-+ ARG1 ARG2))
-                     (MV NIL NIL)))
-            (LET
-             ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-             (IF
-              (ENDP ARGS-TO-WALK-DOWN)
-              (MV NIL NIL)
-              (LET
-               ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-               (IF
-                (ENDP ARGS-TO-WALK-DOWN)
-                (LET
-                 ((ARG4 (UNQUOTE (NTH 3 ARGS)))
-                  (ARG3 (UNQUOTE (NTH 2 ARGS)))
-                  (ARG2 (UNQUOTE (NTH 1 ARGS)))
-                  (ARG1 (UNQUOTE (NTH 0 ARGS))))
-                 (DECLARE (IGNORE ARG4))
-                 (IF
-                  (EQ 'APPLY-LEN-EVALUATOR FN)
-                  (MV T
-                      (APPLY-LEN-EVALUATOR
-                       ARG1 ARG2 ARG3 ARRAY-DEPTH))
-                  (IF (EQ 'DAG-VAL-WITH-LEN-EVALUATOR FN)
-                      (MV T
-                          (DAG-VAL-WITH-LEN-EVALUATOR
-                           ARG1 ARG2 ARG3 (+ 1 ARRAY-DEPTH)))
-                      (MV NIL NIL))))
-                (LET
-                 ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                 (IF
-                  (ENDP ARGS-TO-WALK-DOWN)
-                  (MV NIL NIL)
-                  (LET
-                   ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                   (IF
-                    (ENDP ARGS-TO-WALK-DOWN)
-                    (MV NIL NIL)
-                    (LET
-                     ((ARGS-TO-WALK-DOWN
-                       (CDR ARGS-TO-WALK-DOWN)))
-                     (IF
-                      (ENDP ARGS-TO-WALK-DOWN)
-                      (MV NIL NIL)
-                      (LET
-                       ((ARGS-TO-WALK-DOWN
-                         (CDR ARGS-TO-WALK-DOWN)))
-                       (IF
-                        (ENDP ARGS-TO-WALK-DOWN)
-                        (LET
-                         ((ARG8 (UNQUOTE (NTH 7 ARGS)))
-                          (ARG7 (UNQUOTE (NTH 6 ARGS)))
-                          (ARG6 (UNQUOTE (NTH 5 ARGS)))
-                          (ARG5 (UNQUOTE (NTH 4 ARGS)))
-                          (ARG4 (UNQUOTE (NTH 3 ARGS)))
-                          (ARG3 (UNQUOTE (NTH 2 ARGS)))
-                          (ARG2 (UNQUOTE (NTH 1 ARGS)))
-                          (ARG1 (UNQUOTE (NTH 0 ARGS))))
-                         (DECLARE (IGNORE ARG8))
-                         (IF
-                          (EQ 'EVAL-DAG-WITH-LEN-EVALUATOR FN)
-                          (MV
-                           T
-                           (EVAL-DAG-WITH-LEN-EVALUATOR
-                            ARG1 ARG2 ARG3
-                            ARG4 ARG5 ARG6 ARG7 ARRAY-DEPTH))
-                          (MV NIL NIL)))
-                        (MV NIL NIL))))))))))))))))))
-       (IF
-        HIT VAL
-        (LET
-         ((MATCH (ASSOC-EQ FN INTERPRETED-FUNCTION-ALIST)))
-         (IF
-          (NOT MATCH)
-          (ER
-           HARD?
-           'APPLY-LEN-EVALUATOR-TO-QUOTED-ARGS
+ (defun apply-len-evaluator-to-quoted-args (fn args
+                                               interpreted-function-alist array-depth)
+   (declare (xargs :guard (and (or (symbolp fn) (pseudo-lambdap fn))
+                               (true-listp args)
+                               (all-myquotep args)
+                               (interpreted-function-alistp interpreted-function-alist)
+                               (natp array-depth))
+                   :verify-guards nil))
+   (if
+    (consp fn)
+    (let*
+     ((formals (second fn))
+      (body (third fn))
+      (alist (pairlis$-fast formals (unquote-list args))))
+     (eval-len-evaluator
+      alist body
+      interpreted-function-alist array-depth))
+    (let
+     ((args-to-walk-down args))
+     (mv-let
+       (hit val)
+       (if
+        (endp args-to-walk-down)
+        (mv nil nil)
+        (let
+         ((args-to-walk-down (cdr args-to-walk-down)))
+         (if
+          (endp args-to-walk-down)
+          (let ((arg1 (unquote (nth 0 args))))
+               (case fn
+                 (len (mv t (len arg1)))
+                 (consp (mv t (consp arg1)))
+                 (cdr (mv t (cdr arg1)))
+                 (t (mv nil nil))))
+          (let
+           ((args-to-walk-down (cdr args-to-walk-down)))
+           (if
+            (endp args-to-walk-down)
+            (let ((arg2 (unquote (nth 1 args)))
+                  (arg1 (unquote (nth 0 args))))
+                 (case fn
+                   (binary-+ (mv t (binary-+ arg1 arg2)))
+                   (t (mv nil nil))))
+            (let
+             ((args-to-walk-down (cdr args-to-walk-down)))
+             (if
+              (endp args-to-walk-down)
+              (mv nil nil)
+              (let
+               ((args-to-walk-down (cdr args-to-walk-down)))
+               (if
+                (endp args-to-walk-down)
+                (let
+                 ((arg4 (unquote (nth 3 args)))
+                  (arg3 (unquote (nth 2 args)))
+                  (arg2 (unquote (nth 1 args)))
+                  (arg1 (unquote (nth 0 args))))
+                 (declare (ignore arg4))
+                 (case fn
+                    (dag-val-with-len-evaluator
+                      (mv t
+                          (dag-val-with-len-evaluator
+                            arg1 arg2 arg3 (+ 1 array-depth))))
+                    (apply-len-evaluator
+                      (mv t
+                          (apply-len-evaluator
+                            arg1 arg2 arg3 array-depth)))
+                    (t (mv nil nil))))
+                (let
+                 ((args-to-walk-down (cdr args-to-walk-down)))
+                 (if
+                  (endp args-to-walk-down)
+                  (mv nil nil)
+                  (let
+                   ((args-to-walk-down (cdr args-to-walk-down)))
+                   (if
+                    (endp args-to-walk-down)
+                    (mv nil nil)
+                    (let
+                     ((args-to-walk-down
+                       (cdr args-to-walk-down)))
+                     (if
+                      (endp args-to-walk-down)
+                      (mv nil nil)
+                      (let
+                       ((args-to-walk-down
+                         (cdr args-to-walk-down)))
+                       (if
+                        (endp args-to-walk-down)
+                        (let
+                         ((arg8 (unquote (nth 7 args)))
+                          (arg7 (unquote (nth 6 args)))
+                          (arg6 (unquote (nth 5 args)))
+                          (arg5 (unquote (nth 4 args)))
+                          (arg4 (unquote (nth 3 args)))
+                          (arg3 (unquote (nth 2 args)))
+                          (arg2 (unquote (nth 1 args)))
+                          (arg1 (unquote (nth 0 args))))
+                         (declare (ignore arg8))
+                         (case fn
+                           (eval-dag-with-len-evaluator
+                             (mv
+                               t
+                               (eval-dag-with-len-evaluator
+                                 arg1 arg2 arg3
+                                 arg4 arg5 arg6 arg7 array-depth)))
+                           (t (mv nil nil))))
+                        (mv nil nil))))))))))))))))))
+       (if
+        hit val
+        (let
+         ((match (assoc-eq fn interpreted-function-alist)))
+         (if
+          (not match)
+          (er
+           hard?
+           'apply-len-evaluator-to-quoted-args
            "Unknown function: ~x0 applied to args ~x1 (pass it as an interpreted function, or add to the list of built-ins, or check the arity of the call)."
-           FN ARGS)
-          (LET*
-           ((FN-INFO (CDR MATCH))
-            (FORMALS (FIRST FN-INFO))
-            (BODY (SECOND FN-INFO))
-            (ALIST
-             (PAIRLIS$-FAST FORMALS (UNQUOTE-LIST ARGS))))
-           (EVAL-LEN-EVALUATOR
-            ALIST BODY INTERPRETED-FUNCTION-ALIST
-            ARRAY-DEPTH))))))))))
+           fn args)
+          (let*
+           ((fn-info (cdr match))
+            (formals (first fn-info))
+            (body (second fn-info))
+            (alist
+             (pairlis$-fast formals (unquote-list args))))
+           (eval-len-evaluator
+            alist body interpreted-function-alist
+            array-depth))))))))))

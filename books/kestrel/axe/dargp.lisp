@@ -138,3 +138,8 @@
                   (if (consp darg) 2 0)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable dargp))))
+
+(defthmd not-equal-of-len-and-1-when-dargp
+  (implies (dargp x)
+           (not (equal (len x) 1)))
+  :hints (("Goal" :in-theory (enable dargp myquotep))))

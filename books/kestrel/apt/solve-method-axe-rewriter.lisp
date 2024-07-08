@@ -74,6 +74,7 @@
                                              rule-alist
                                              nil ; interpreted-function-alist
                                              nil ; monitored-symbols
+                                             nil ; fns-to-elide
                                              nil ; memoizep
                                              nil ; count-hits
                                              nil ; print

@@ -1019,7 +1019,7 @@
 
 ; Consider using our-syntax-nice.
 
-  `(with-standard-io-syntax
+  `(our-with-standard-io-syntax
     (let ((*package* (find-package-fast
                       (f-get-global 'current-package *the-live-state*)))
           (*readtable* *acl2-readtable*))

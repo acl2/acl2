@@ -1,7 +1,7 @@
 ; Converting a boolean to a bit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,13 +11,9 @@
 
 (in-package "ACL2")
 
+(include-book "bool-to-bit-def")
 (include-book "kestrel/booleans/bool-fix" :dir :system)
 (include-book "bitnot")
-
-;; Convert a boolean (t or nil) to a bit (1 or 0).
-(defund bool-to-bit (test)
-  (declare (xargs :guard (booleanp test))) ;trying this
-  (if test 1 0))
 
 (defthm equal-of-bool-to-bit-and-0
   (equal (equal 0 (bool-to-bit x))

@@ -1,6 +1,6 @@
 ; Top file for terms-light library
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -65,3 +65,5 @@
 (include-book "get-conjuncts")
 (include-book "get-hyps-and-conc")
 (include-book "replace-corresponding-arg")
+(include-book "clean-up-lambdas")
+(include-book "clean-up-lambdas-proofs")
