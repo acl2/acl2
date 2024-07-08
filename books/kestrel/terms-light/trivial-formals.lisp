@@ -19,9 +19,9 @@
                               (pseudo-term-listp args))))
   (if (endp formals)
       nil
-    (let* ((formal (first formals))
-           (arg (first args)))
-      (if (equal formal arg)
+    (let ((formal (first formals))
+          (arg (first args)))
+      (if (eq formal arg)
           ;; keep since trivial:
           (cons formal (trivial-formals (rest formals) (rest args)))
         (trivial-formals (rest formals) (rest args))))))

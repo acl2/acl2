@@ -111,7 +111,8 @@
                                            A)
            :induct t
            ;;:induct (ALISTS-EQUIV-ON KEYS a a)
-           :in-theory (enable pairlis$ lookup-equal
+           :in-theory (enable alists-equiv-on
+                              pairlis$ lookup-equal
                               map-lookup-equal
                               assoc-equal-iff-member-equal-of-strip-cars
                               (:I len))))))

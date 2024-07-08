@@ -215,7 +215,8 @@
                   (empty-eval body (append (pairlis$ formals (empty-eval-list actuals a))
                                            a))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable make-lambda-application-simple
+           :in-theory (enable alists-equiv-on
+                              make-lambda-application-simple
                               intersection-equal-of-set-difference-equal-when-subsetp-equal))))
 
 ;true of any evaluator
@@ -225,7 +226,8 @@
                 (pseudo-termp body))
            (equal (equal (empty-eval body a2)
                          (empty-eval body a1))
-                  t)))
+                  t))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
 
 ;; (thm
 ;;  (IMPLIES (and (SUBSETP-EQUAL (FREE-VARS-IN-TERM BODY)
@@ -252,7 +254,9 @@
                        (len actuals))
                 (alistp a))
            (equal (empty-eval (make-lambda-application-simple formals actuals body) a)
-                  (empty-eval body (pairlis$ formals (empty-eval-list actuals a))))))
+                  (empty-eval body (pairlis$ formals (empty-eval-list actuals a)))))
+  :hints (("Goal" :in-theory (enable ;alists-equiv-on ;why?
+                                     ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

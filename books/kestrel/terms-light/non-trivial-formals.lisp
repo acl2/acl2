@@ -1,7 +1,7 @@
 ; A utility to filter lambda formals that are not bound to themselves.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+;(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;; Returns the members of FORMALS that don't correspond to themselves in the ARGS.
 (defund non-trivial-formals (formals args)

@@ -303,6 +303,11 @@
   (implies (subsetp-equal x z)
            (subsetp-equal (set-difference-equal x y) z)))
 
+(defthm subsetp-equal-of-set-difference-equal-and-set-difference-equal-same-arg2-arg2
+  (implies (subsetp-equal x y)
+           (subsetp-equal (set-difference-equal x z) (set-difference-equal y z)))
+  :hints (("Goal" :in-theory (enable set-difference-equal subsetp-equal))))
+
 (defthm subsetp-equal-of-intersection-equal-arg1
   (implies (or (subsetp-equal x z)
                (subsetp-equal y z))
