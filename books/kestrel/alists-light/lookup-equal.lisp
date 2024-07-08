@@ -1,4 +1,4 @@
-; Lookup a key in an alist using EQUAL
+; Rules about lookup-equal
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2024 Kestrel Institute
@@ -11,10 +11,6 @@
 
 (in-package "ACL2")
 
-;; STATUS: In-progress
-
-;; TODO: Standardize variable names in theorems.
-
 (include-book "lookup-equal-def")
 
 (defthm lookup-equal-of-nil
@@ -24,52 +20,50 @@
 
 ;disabled in favor of lookup-equal-of-cons-safe
 (defthmd lookup-equal-of-cons
-  (equal (lookup-equal key (cons a rst))
-         (if (equal key (car a))
-             (cdr a)
-           (lookup-equal key rst)))
+  (equal (lookup-equal key (cons pair alist))
+         (if (equal key (car pair))
+             (cdr pair)
+           (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
 ;prevents splitting into many cases when lookup-equal's second argument is a big constant alist
 (defthm lookup-equal-of-cons-safe
-  (implies (syntaxp (not (and (quotep a)
-                              (quotep rst))))
-           (equal (lookup-equal key (cons a rst))
-                  (if (equal key (car a))
-                      (cdr a)
-                    (lookup-equal key rst))))
+  (implies (syntaxp (not (and (quotep pair)
+                              (quotep alist))))
+           (equal (lookup-equal key (cons pair alist))
+                  (if (equal key (car pair))
+                      (cdr pair)
+                    (lookup-equal key alist))))
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
 (defthm lookup-equal-of-acons
-  (equal (lookup-equal key (acons a val rst))
-         (if (equal key a)
+  (equal (lookup-equal key (acons key2 val alist))
+         (if (equal key key2)
              val
-           (lookup-equal key rst)))
+           (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable))))
 
 (defthm lookup-equal-of-acons-same
-  (equal (lookup-equal key (acons key x y))
-         x))
+  (equal (lookup-equal key (acons key val alist))
+         val))
 
 (defthm lookup-equal-of-acons-diff
   (implies (not (equal key key2))
-           (equal (lookup-equal key (acons key2 x y))
-                  (lookup-equal key y))))
+           (equal (lookup-equal key (acons key2 val alist))
+                  (lookup-equal key alist))))
 
 (defthmd lookup-equal-of-append
-  (implies (or (alistp x)
+  (implies (or (alistp alist1)
                key)
-           (equal (lookup-equal key (append x y))
-                  (if (assoc-equal key x)
-                      (lookup-equal key x)
-                    (lookup-equal key y))))
+           (equal (lookup-equal key (append alist1 alist2))
+                  (if (assoc-equal key alist1)
+                      (lookup-equal key alist1)
+                    (lookup-equal key alist2))))
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
 (defthm lookup-equal-of-caar
-  ;;(implies t (consp pairs)
-  (equal (lookup-equal (caar pairs) pairs)
-         (cdar pairs))
-  ;;)
+  (equal (lookup-equal (caar alist) alist)
+         (cdar alist))
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
 (defthm lookup-equal-when-not-consp-cheap
@@ -93,7 +87,7 @@
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
 (defthm assoc-equal-when-lookup-equal-cheap
-  (implies (lookup-equal term alist)
-           (assoc-equal term alist))
+  (implies (lookup-equal key alist)
+           (assoc-equal key alist))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable lookup-equal))))

@@ -19,7 +19,7 @@
 (include-book "kestrel/utilities/fixnums" :dir :system)
 (include-book "make-evaluator-common")
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
-(include-book "kestrel/utilities/quote" :dir :system) ;for unquote-list
+(include-book "kestrel/utilities/unquote-list" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system) ;for erp-nil
 (include-book "kestrel/utilities/myif" :dir :system) ;since we give it special treatment below
 (include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
