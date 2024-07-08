@@ -1,6 +1,6 @@
 ; Top file for strings-light library
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,3 +33,4 @@
 (include-book "strnthcdr")
 (include-book "subseq")
 (include-book "strings-starting-with")
+(include-book "collapse-whitespace")
