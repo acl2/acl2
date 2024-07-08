@@ -473,7 +473,7 @@
            (alists-equiv-on vars
                             (append (pairlis$ formals (empty-eval-list args a)) a)
                             a))
-  :hints (("Goal" :in-theory (enable symbol-listp intersection-equal))))
+  :hints (("Goal" :in-theory (enable alists-equiv-on symbol-listp intersection-equal))))
 
 (local (in-theory (disable symbol-listp no-duplicatesp-equal)))
 
@@ -568,7 +568,7 @@
   (iff (alists-equiv-on keys a1 a2)
        (not (mv-nth 0 (bad-guy-for-alists-equiv-on-aux keys a1 a2)))
        )
-  :hints (("Goal" :in-theory (enable lookup-equal))))
+  :hints (("Goal" :in-theory (enable alists-equiv-on lookup-equal))))
 
 (defthmd alists-equiv-on-when-agree-on-bad-guy
   (iff (alists-equiv-on keys a1 a2)

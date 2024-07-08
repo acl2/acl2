@@ -1,6 +1,6 @@
 ; A nicer interface to defevaluator
 ;
-; Copyright (C) 2014-2022 Kestrel Institute
+; Copyright (C) 2014-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,8 @@
 (include-book "kestrel/utilities/pack" :dir :system) ; reduce?
 (include-book "kestrel/utilities/add-prefix" :dir :system)
 (include-book "kestrel/utilities/make-function-calls-on-formals" :dir :system)
+(include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
+(include-book "kestrel/utilities/unquote-list" :dir :system)
 
 ;; A nicer interface to defevaluator.  Improvements include:
 ;; 1. looks up the arities of the functions in the world.
@@ -68,6 +70,21 @@
          (equal (,eval-list-name (true-list-fix terms) a)
                 (,eval-list-name terms a))
          :hints (("Goal" :in-theory (enable append (:I len)))))
+
+       (defthm ,(add-suffix eval-list-name "-WHEN-QUOTE-LISTP")
+         (implies (quote-listp l)
+                  (equal (,eval-list-name l alist)
+                         (unquote-list l)))
+         :hints (("Goal" :in-theory (enable quote-listp unquote-list))))
+
+       ;; map-lookup-equal seems simpler than ,eval-list-name
+       (defthm ,(add-suffix eval-list-name "-WHEN-SYMBOL-LISTP")
+         (implies (and (symbol-listp vars)
+                       (not (member-equal nil vars)) ; an evaluator returns nil for nil
+                       )
+                  (equal (,eval-list-name vars a)
+                         (map-lookup-equal vars a)))
+         :hints (("Goal" :in-theory (enable map-lookup-equal lookup-equal))))
 
        ;; Helps prove the :functional-instance used to switch a theorem to a richer evaluator.
        ;; TODO: Consider disabling by default and instead providing a tool to lift a rule to a richer evaluator.
