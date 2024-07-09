@@ -5260,10 +5260,10 @@
      would be identifier tokens, not keyword tokens."))
   (or (equal token? (token-keyword "const"))
       (equal token? (token-keyword "restrict"))
-      (equal token? (token-keyword "__restrict"))
-      (equal token? (token-keyword "__restrict__"))
       (equal token? (token-keyword "volatile"))
-      (equal token? (token-keyword "_Atomic")))
+      (equal token? (token-keyword "_Atomic"))
+      (equal token? (token-keyword "__restrict"))
+      (equal token? (token-keyword "__restrict__")))
   ///
 
   (defrule non-nil-when-token-type-qualifier-p
@@ -5278,20 +5278,12 @@
   :returns (tyqual tyqualp)
   :short "Map a token that is a type qualifier
           to the correspoding type qualifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Both variants @('__restrict') and @('__restrict__') of @('restrict')
-     are mapped to the same type qualifier in abstract syntax,
-     because they represent the same type qualifier.
-     As explained in @(tsee token-type-qualifier-p),
-     these keyword tokens exist only if GCC extensions are supported."))
   (cond ((equal token (token-keyword "const")) (tyqual-const))
         ((equal token (token-keyword "restrict")) (tyqual-restrict))
-        ((equal token (token-keyword "__restrict")) (tyqual-restrict))
-        ((equal token (token-keyword "__restrict__")) (tyqual-restrict))
         ((equal token (token-keyword "volatile")) (tyqual-volatile))
         ((equal token (token-keyword "_Atomic")) (tyqual-atomic))
+        ((equal token (token-keyword "__restrict")) (tyqual-__restrict))
+        ((equal token (token-keyword "__restrict__")) (tyqual-__restrict__))
         (t (prog2$ (impossible) (irr-tyqual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 
