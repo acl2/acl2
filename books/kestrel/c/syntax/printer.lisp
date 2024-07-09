@@ -1103,7 +1103,7 @@
    (xdoc::p
     "We ensure that there is at least one character or escape sequence."))
   (b* (((stringlit stringlit) stringlit)
-       (pstate (print-eprefix-option stringlit.prefix pstate))
+       (pstate (print-eprefix-option stringlit.prefix? pstate))
        (pstate (print-astring "\"" pstate))
        ((unless stringlit.schars)
         (raise "Misusage error: ~

@@ -92,7 +92,7 @@
 (defirrelevant irr-stringlit
   :short "An irrelevant string literal."
   :type stringlitp
-  :body (make-stringlit :prefix nil :schars nil))
+  :body (make-stringlit :prefix? nil :schars nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

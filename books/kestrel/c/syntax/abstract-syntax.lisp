@@ -826,7 +826,7 @@
      these natural numbers represent Unicode code points.
      We do not capture here the requirement that these characters
      are not new-line, backslash, and double quote."))
-  ((prefix eprefix-option)
+  ((prefix? eprefix-option)
    (schars s-char-list))
   :pred stringlitp)
 
