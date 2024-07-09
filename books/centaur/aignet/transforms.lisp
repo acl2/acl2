@@ -40,6 +40,7 @@
 (include-book "transform-stub")
 (include-book "unreachability")
 (include-book "dom-supergate-sweep")
+(include-book "parametrize")
 
 (defxdoc aignet-comb-transforms
   :parents (aignet-transforms)
@@ -357,8 +358,7 @@ for translating between ABC and aignet does not support xors.</p>"
     (implies (<= (nfix n) (stype-count :po aignet))
              (<= (nfix n) (stype-count :po new-aignet2)))
     :rule-classes ((:linear :trigger-terms
-                    ((aignet-output-range-map-length new-output-ranges)
-                     (stype-count :po new-aignet2)))))
+                    ((stype-count :po new-aignet2)))))
 
   (defret num-outs-of-<fn>-relative-to-output-map-length
     (implies (<= (aignet-output-range-map-length output-ranges)
@@ -402,7 +402,8 @@ for translating between ABC and aignet does not support xors.</p>"
   (comb-transform
    n-outputs-unreachability-config
    n-outputs-dom-supergates-sweep-config
-   m-assum-n-output-observability-config))
+   m-assum-n-output-observability-config
+   parametrize-config))
 
 (fty::deflist m-assumption-n-output-comb-transformlist
   :elt-type m-assumption-n-output-comb-transform :true-listp t)
@@ -414,6 +415,7 @@ for translating between ABC and aignet does not support xors.</p>"
     (:n-outputs-unreachability-config "N-output Unreachability")
     (:n-outputs-dom-supergates-sweep-config "N-output observability supergate sweep")
     (:m-assum-n-output-observability-config "M-assumption N-output observability")
+    (:parametrize-config "Parametrization")
     (otherwise (comb-transform->name x))))
 
 (define apply-m-assumption-n-output-output-transform-default ((m natp)
@@ -462,6 +464,9 @@ for translating between ABC and aignet does not support xors.</p>"
              (:m-assum-n-output-observability-config
               (aignet2-return (mv aignet2 state)
                               (m-assum-n-output-observability m n aignet aignet2 transform state)))
+             (:parametrize-config
+              (aignet2-return aignet2
+                              (aignet-parametrize-m-n m n aignet aignet2 transform output-ranges)))
              (otherwise
               (aignet2-return (mv aignet2 state) (abc-comb-simplify aignet aignet2 transform state)))))
           (- (print-aignet-stats name aignet2)))

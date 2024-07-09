@@ -114,6 +114,19 @@ expressions back to AIG formulas.</p>
    (fty::deffixequiv acl2::count-branches-to :args ((acl2::n natp))
      :hints(("Goal" :in-theory (enable acl2::count-branches-to))))))
 
+
+#!acl2
+(local
+ (defsection ubdd-facts
+
+   (defthm max-depth-of-to-param-space2-bound-by-x
+     (<= (max-depth (to-param-space2 p x)) (max-depth x))
+     :hints(("Goal" :in-theory (enable max-depth to-param-space2)))
+     :rule-classes :linear)
+
+   
+  ))
+
 (define lubdd-fix ((x acl2::ubddp))
   :enabled t
   (mbe :logic (acl2::ubdd-fix x)
@@ -836,6 +849,24 @@ expressions back to AIG formulas.</p>
     :hints (("Goal" :induct <call>
              :expand (<call>))))
 
+  (defret num-ins-of-<fn>
+    (equal (stype-count :pi new-aignet)
+           (stype-count :pi aignet))
+    :hints (("Goal" :induct <call>
+             :expand (<call>))))
+
+  (defret num-regs-of-<fn>
+    (equal (stype-count :reg new-aignet)
+           (stype-count :reg aignet))
+    :hints (("Goal" :induct <call>
+             :expand (<call>))))
+
+  (defret num-outs-of-<fn>
+    (equal (stype-count :po new-aignet)
+           (stype-count :po aignet))
+    :hints (("Goal" :induct <call>
+             :expand (<call>))))
+
   (local (defthm lit->var-of-bool->bit
            (equal (lit->var (bool->bit x)) 0)
            :hints(("Goal" :in-theory (enable bool->bit)))))
@@ -934,12 +965,12 @@ expressions back to AIG formulas.</p>
     :hints (("goal" :expand ((acl2::max-depth x))))))
 
 
-(std::defenum parametrize-output-type-p
-  (:param ;; default
-   :ignore
-   :bdd-order))
+(fty::deftagsum parametrize-output-type
+  (:param nil) ;; default
+  (:ignore nil)
+  (:bdd-order nil))
 
-(fty::deflist parametrize-output-types :elt-type parametrize-output-type-p
+(fty::defalist parametrize-output-type-map :key-type symbolp :val-type parametrize-output-type-p
   :true-listp t)
 
 (fty::defprod parametrize-config
@@ -948,7 +979,7 @@ expressions back to AIG formulas.</p>
    (conjoin-limit natp :rule-classes :type-prescription
                   "Bdd size limit when conjoining hypotheses together. Should
                    be at least as big as build-limit.")
-   (output-types parametrize-output-types-p))
+   (output-types parametrize-output-type-map-p))
   :tag :parametrize-config)
 
 
@@ -980,6 +1011,14 @@ expressions back to AIG formulas.</p>
                   (< (nfix n) (+ (nfix start) (nfix count))))
              (not (equal count (bitarr-range-count start count mark))))
     :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding))))
+
+  (defret bitarr-range-count-less-when-nonzer
+    (implies (and (not (equal 1 (nth n mark)))
+                  (<= (nfix start) (nfix n))
+                  (< (nfix n) (+ (nfix start) (nfix count))))
+             (< (bitarr-range-count start count mark) (nfix count)))
+    :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding)))
+    :rule-classes :linear)
 
   (defret bitarr-range-count-of-resize-nil
     (equal (bitarr-range-count start count (resize-list nil k 0)) 0)))
@@ -1025,6 +1064,48 @@ expressions back to AIG formulas.</p>
     :hints (("goal" :in-theory (e/d (acl2::set-unequal-witness-rw)
                                     (<fn>))))))
 
+
+
+(define ubdd-arr-max-depth (ubdd-arr)
+  :verify-guards nil
+  (non-exec
+   (if (atom ubdd-arr)
+       0
+     (max (acl2::max-depth (acl2::ubdd-fix (car ubdd-arr)))
+          (ubdd-arr-max-depth (cdr ubdd-arr)))))
+  ///
+  (defthm max-depth-nth-when-ubdd-arr-max-depth
+    (<= (acl2::max-depth (acl2::ubdd-fix (nth n ubdd-arr))) (ubdd-arr-max-depth ubdd-arr))
+    :hints(("Goal" :in-theory (enable nth)))
+    :rule-classes :linear)
+
+  (defthm ubdd-arr-max-depth-of-update-nth
+    (<= (ubdd-arr-max-depth (update-nth n x arr))
+        (max (acl2::max-depth (acl2::ubdd-fix x))
+             (ubdd-arr-max-depth arr)))
+    :hints(("Goal" :in-theory (enable update-nth)))
+    :rule-classes
+    ((:linear :trigger-terms ((ubdd-arr-max-depth (update-nth n x arr))))))
+
+  (defthm ubdd-arr-max-depth-of-nil
+    (equal (ubdd-arr-max-depth nil) 0))
+  
+  (defthm ubdd-arr-max-depth-of-update-nth-rw
+    (implies (and (< (acl2::max-depth (acl2::ubdd-fix x)) d)
+                  (< (ubdd-arr-max-depth arr) d))
+             (< (ubdd-arr-max-depth (update-nth n x arr)) d))
+    :hints(("Goal" :in-theory (enable update-nth))))
+
+  (defthm ubdd-arr-max-depth-of-update-nth-rw2
+    (implies (and (<= (acl2::max-depth (acl2::ubdd-fix x)) d)
+                  (<= (ubdd-arr-max-depth arr) d))
+             (<= (ubdd-arr-max-depth (update-nth n x arr)) d))
+    :hints(("Goal" :in-theory (enable update-nth))))
+
+  (defthm ubdd-arr-max-depth-of-resize
+    (equal (ubdd-arr-max-depth (resize-list nil n nil))
+           0)
+    :hints(("Goal" :in-theory (enable resize-list)))))
 
 
 (define aignet-output-range-collect-in/reg-ubdd-order ((start natp)
@@ -1320,7 +1401,48 @@ expressions back to AIG formulas.</p>
                                  (bitarr-range-count 0 (num-regs aignet) new-regvals))))
      :hints(("Goal" 
              :induct <call>
-             :expand ((:free (count) <call>))))))
+             :expand ((:free (count) <call>)))))
+
+  (defret aignet-copies-in-bounds-of-<fn>
+    (implies (aignet-copies-in-bounds litarr aignet)
+             (aignet-copies-in-bounds new-litarr aignet))
+    :hints(("Goal"
+            :induct <call>
+            :expand ((:free (count) <call>)))))
+
+  
+
+  (defret in-ubdds-max-depth-of-<fn>
+    (implies (and (<= (ubdd-arr-max-depth in-ubdds)
+                      (nfix index))
+                  (equal (nfix index)
+                         (+ (bitarr-range-count 0 (num-ins aignet) invals)
+                            (bitarr-range-count 0 (num-regs aignet) regvals))))
+             (<= (ubdd-arr-max-depth new-in-ubdds)
+                 new-index))
+    :hints(("Goal"
+            :induct <call>
+            :expand ((:free (count) <call>))))
+    :rule-classes
+    ((:linear :trigger-terms
+      ((ubdd-arr-max-depth new-in-ubdds)
+       new-index))))
+
+  (defret reg-ubdds-max-depth-of-<fn>
+    (implies (and (<= (ubdd-arr-max-depth reg-ubdds)
+                      (nfix index))
+                  (equal (nfix index)
+                         (+ (bitarr-range-count 0 (num-ins aignet) invals)
+                            (bitarr-range-count 0 (num-regs aignet) regvals))))
+             (<= (ubdd-arr-max-depth new-reg-ubdds)
+                 new-index))
+    :hints(("Goal"
+            :induct <call>
+            :expand ((:free (count) <call>))))
+    :rule-classes
+    ((:linear :trigger-terms
+      ((ubdd-arr-max-depth new-reg-ubdds)
+       new-index)))))
 
 (define bitarr-range-set ((start natp)
                           (count natp)
@@ -1592,7 +1714,30 @@ expressions back to AIG formulas.</p>
     :hints(("Goal"
             :in-theory (enable* acl2::arith-equiv-forwarding)
             :induct <call>
-            :expand ((:free (count) <call>))))))
+            :expand ((:free (count) <call>)))))
+
+  (defret aignet-copies-in-bounds-of-<fn>
+    (implies (aignet-copies-in-bounds litarr aignet)
+             (aignet-copies-in-bounds new-litarr aignet)))
+
+  (defret in-ubdds-max-depth-of-<fn>
+    (implies (and (<= (ubdd-arr-max-depth in-ubdds)
+                      (nfix index))
+                  (<= (nfix index)
+                      (+ (bitarr-range-count 0 (num-ins aignet) invals)
+                         (num-regs aignet))))
+             (<= (ubdd-arr-max-depth new-in-ubdds)
+                 new-index))
+    :hints (("Goal"
+             :in-theory (enable* acl2::arith-equiv-forwarding)
+             :induct <call>
+             :expand ((:free (count) <call>)))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (count) (bitarr-range-count start count invals))))))
+    :rule-classes
+    ((:linear :trigger-terms
+      ((ubdd-arr-max-depth new-in-ubdds)
+       new-index)))))
 
 
 (define aignet-finish-reg-ubdd-order ((start natp) ;; begin at 0
@@ -1826,17 +1971,40 @@ expressions back to AIG formulas.</p>
     :hints(("Goal"
             :in-theory (enable* acl2::arith-equiv-forwarding)
             :induct <call>
-            :expand ((:free (count) <call>))))))
+            :expand ((:free (count) <call>)))))
+
+  (defret aignet-copies-in-bounds-of-<fn>
+    (implies (aignet-copies-in-bounds litarr aignet)
+             (aignet-copies-in-bounds new-litarr aignet)))
+
+  (defret reg-ubdds-max-depth-of-<fn>
+    (implies (and (<= (ubdd-arr-max-depth reg-ubdds)
+                      (nfix index))
+                  (<= (nfix index)
+                      (+ (bitarr-range-count 0 (num-regs aignet) regvals)
+                         (num-ins aignet))))
+             (<= (ubdd-arr-max-depth new-reg-ubdds)
+                 new-index))
+    :hints (("Goal"
+             :in-theory (enable* acl2::arith-equiv-forwarding)
+             :induct <call>
+             :expand ((:free (count) <call>)))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (count) (bitarr-range-count start count invals))))))
+    :rule-classes
+    ((:linear :trigger-terms
+      ((ubdd-arr-max-depth new-reg-ubdds)
+       new-index)))))
 
 
 
 
 (define aignet-parametrize-collect-bdd-order-aux ((start natp)
-                                                  (outtypes parametrize-output-types-p)
-                                                  (outcounts nat-listp)
+                                                  (output-ranges aignet-output-range-map-p)
+                                                  (outtypes parametrize-output-type-map-p)
                                                   (index natp)
-                                                  invals
-                                                  regvals
+                                                  invals ;; mark inputs already in the BDD order
+                                                  regvals ;; mark regs already in the BDD order
                                                   litarr
                                                   in-ubdds
                                                   reg-ubdds
@@ -1856,19 +2024,26 @@ expressions back to AIG formulas.</p>
               (eql index
                    (+ (bitarr-range-count 0 (num-ins aignet) invals)
                       (bitarr-range-count 0 (num-regs aignet) regvals))))
-  :measure (len outtypes)
+  :measure (len output-ranges)
   :verify-guards nil
-  (b* (((when (or (atom outtypes) (atom outcounts)
+  (b* (((when (or (atom output-ranges)
                   (<= (num-outs aignet) (lnfix start))))
         (mv (lnfix index) invals regvals litarr in-ubdds reg-ubdds))
+       ((unless (mbt (consp (car output-ranges))))
+        (aignet-parametrize-collect-bdd-order-aux
+         start (cdr output-ranges) outtypes index invals regvals litarr in-ubdds reg-ubdds aignet))
+       (name (mbe :logic (acl2::symbol-fix (caar output-ranges))
+                  :exec (caar output-ranges)))
        (count 
-         (min (lnfix (car outcounts))
+         (min (lnfix (cdar output-ranges))
               (- (num-outs aignet) (lnfix start))))
-       ((unless (eq (parametrize-output-type-fix (car outtypes)) :bdd-order))
+       (type (or (cdr (hons-assoc-equal name (parametrize-output-type-map-fix outtypes)))
+                 (parametrize-output-type-param)))
+       ((unless (parametrize-output-type-case type :bdd-order))
         (aignet-parametrize-collect-bdd-order-aux
          (+ (lnfix start) count)
-         (cdr outtypes)
-         (cdr outcounts)
+         (cdr output-ranges)
+         outtypes
          index invals regvals litarr in-ubdds reg-ubdds aignet))
        ((mv index invals regvals litarr in-ubdds reg-ubdds)
         (aignet-output-range-collect-in/reg-ubdd-order
@@ -1876,9 +2051,8 @@ expressions back to AIG formulas.</p>
          index aignet invals regvals litarr in-ubdds reg-ubdds)))
     (aignet-parametrize-collect-bdd-order-aux
      (+ (lnfix start) count)
-     (cdr outtypes)
-     (cdr outcounts)
-     index invals regvals litarr in-ubdds reg-ubdds aignet))
+     (cdr output-ranges)
+     outtypes index invals regvals litarr in-ubdds reg-ubdds aignet))
   ///
   (local (in-theory (disable (:d aignet-parametrize-collect-bdd-order-aux))))
 
@@ -2002,23 +2176,167 @@ expressions back to AIG formulas.</p>
     :hints(("Goal"
             :in-theory (enable bitarr-range-count-of-aignet-output-range-collect-in/reg-ubdd-order)
             :induct <call>
-            :expand ((:free (count) <call>))))))
+            :expand ((:free (count) <call>)))))
+
+  
+  (defret aignet-copies-in-bounds-of-<fn>
+    (implies (aignet-copies-in-bounds litarr aignet)
+             (aignet-copies-in-bounds new-litarr aignet))
+    :hints(("Goal"
+            :induct <call>
+            :expand ((:free (count) <call>)))))
+
+  (defret in-ubdds-max-depth-of-<fn>
+    (implies (and (<= (ubdd-arr-max-depth in-ubdds)
+                      (nfix index))
+                  (equal (nfix index)
+                       (+ (bitarr-range-count 0 (num-ins aignet) invals)
+                          (bitarr-range-count 0 (num-regs aignet) regvals))))
+             (<= (ubdd-arr-max-depth new-in-ubdds)
+                 new-index))
+    :hints(("Goal"
+            :induct <call>
+            :in-theory (enable bitarr-range-count-of-aignet-output-range-collect-in/reg-ubdd-order)
+            :expand ((:free (count) <call>))))
+    :rule-classes
+    ((:linear :trigger-terms
+      ((ubdd-arr-max-depth new-in-ubdds)
+       new-index))))
+
+  (defret reg-ubdds-max-depth-of-<fn>
+    (implies (and (<= (ubdd-arr-max-depth reg-ubdds)
+                      (nfix index))
+                  (equal (nfix index)
+                       (+ (bitarr-range-count 0 (num-ins aignet) invals)
+                          (bitarr-range-count 0 (num-regs aignet) regvals))))
+             (<= (ubdd-arr-max-depth new-reg-ubdds)
+                 new-index))
+    :hints(("Goal"
+            :induct <call>
+            :in-theory (enable bitarr-range-count-of-aignet-output-range-collect-in/reg-ubdd-order)
+            :expand ((:free (count) <call>))))
+    :rule-classes
+    ((:linear :trigger-terms
+      ((ubdd-arr-max-depth new-reg-ubdds)
+       new-index))))
+  
+  (local (in-theory (enable aignet-output-range-map-fix))))
 
 
 
+(define copy-lits-compose ((start natp)
+                           (count natp)
+                           aignet
+                           litarr
+                           copy
+                           copy2)
+  ;; Litarr contains aignet literals.
+  ;; Copy maps those literals to aignet2 literals (for some aignet2).
+  ;; We create copy2 which maps the indices of litarr to the aignet2 literals, composing
+  ;; (copy) o (litarr).
+  ;; Note aignet is only used for guard :(
+  :guard (and (<= (+ start count) (lits-length litarr))
+              (<= (num-fanins aignet) (lits-length copy))
+              (<= (+ start count) (lits-length copy2))
+              (aignet-copies-in-bounds litarr aignet))
+  :prepwork ((local (defthm <=-fanin-count-when-aignet-idp
+                      (implies (and (aignet-idp id aignet)
+                                    (natp id))
+                               (< id (+ 1 (fanin-count aignet))))
+                      :hints(("Goal" :in-theory (enable aignet-idp))))))
+  :returns (new-copy2)
+  :measure (nfix count)
+  (b* (((when (zp count)) copy2)
+       (lit (get-lit start litarr))
+       (copy2 (set-lit start (lit-copy lit copy) copy2)))
+    (copy-lits-compose (1+ (lnfix start)) (1- count)
+                       aignet litarr copy copy2))
+  ///
+  (defret len-of-<fn>
+    (implies (<= (+ (nfix start) (nfix count)) (len copy2))
+             (equal (len new-copy2) (len copy2))))
 
-(define sum-outcounts ((outcounts nat-listp))
-  :returns (sum natp :rule-classes :type-prescription)
-  (if (atom outcounts)
-      0
-    (+ (lnfix (car outcounts))
-       (sum-outcounts (cdr outcounts)))))
+  (defret nth-of-<fn>
+    (equal (nth-lit n new-copy2)
+           (if (and (<= (nfix start) (nfix n))
+                    (< (nfix n) (+ (nfix start) (nfix count))))
+               (lit-copy (nth-lit n litarr) copy)
+             (nth-lit n copy2)))
+    :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding))))
+
+  (defret aignet-elim-<fn>
+    (implies (syntaxp (not (equal aignet ''nil)))
+             (equal new-copy2
+                    (let ((aignet nil)) <call>))))
+
+
+  (local (defthm aignet-lit-listp-of-update-nth-lit
+           (implies (and (aignet-lit-listp x aignet)
+                         (aignet-litp y aignet))
+                    (aignet-lit-listp (update-nth-lit n y x) aignet))
+           :hints(("Goal" :in-theory (enable aignet-lit-listp update-nth-lit
+                                             update-nth)))))
+  
+  (defret aignet-lit-listp-of-<fn>
+    (implies (and (aignet-copies-in-bounds copy aignet2)
+                  (aignet-lit-listp copy2 aignet2))
+             (aignet-lit-listp new-copy2 aignet2))))
+
+(define copy-lits-compose-in-place (aignet
+                                    litarr
+                                    copy)
+  ;; same as copy-lits-compose but copies over the given range in litarr
+  :guard (and (<= (num-fanins aignet) (lits-length copy))
+              (aignet-copies-in-bounds litarr aignet))
+  :returns (new-litarr)
+  (b* (((acl2::local-stobjs copy2)
+        (mv litarr copy2))
+       (len  (lits-length litarr))
+       (copy2 (resize-lits len copy2))
+       (copy2 (copy-lits-compose 0 len aignet litarr copy copy2))
+       ((mv litarr copy2) (swap-stobjs litarr copy2)))
+    (mv litarr copy2))
+  ///
+  (defret len-of-<fn>
+    (equal (len new-litarr) (len litarr)))
+
+  (local (defthm nth-lit-of-nil
+           (equal (nth-lit n nil) 0)
+           :hints(("Goal" :in-theory (enable nth-lit nth)))))
+  
+  (defret nth-of-<fn>
+    (equal (nth-lit n new-litarr)
+           (if (< (nfix n) (len litarr))
+               (lit-copy (nth-lit n litarr) copy)
+             0)))
+
+  (defret aignet-copies-in-bounds-of-<fn>
+    (implies (aignet-copies-in-bounds copy aignet2)
+             (aignet-copies-in-bounds new-litarr aignet2))
+    :hints((and stable-under-simplificationp
+                `(:expand (,(car (last clause)))))))
+
+  (defret aignet-elim-<fn>
+    (implies (syntaxp (not (equal aignet ''nil)))
+             (equal new-litarr
+                    (let ((aignet nil)) <call>))))
+
+  (defthm aignet-lit-listp-of-resize
+    (aignet-lit-listp (resize-list nil n 0) aignet)
+    :hints(("Goal" :in-theory (enable aignet-lit-listp
+                                      resize-list))))
+  
+  (defret aignet-lit-listp-of-<fn>
+    (implies (aignet-copies-in-bounds copy aignet2)
+             (aignet-lit-listp new-litarr aignet2))))
+              
+              
 
 (include-book "std/util/termhints" :dir :System)
 
 
-(define aignet-parametrize-collect-bdd-order ((outtypes parametrize-output-types-p)
-                                              (outcounts nat-listp)
+(define aignet-parametrize-collect-bdd-order ((output-ranges aignet-output-range-map-p)
+                                              (outtypes parametrize-output-type-map-p)
                                               litarr
                                               in-ubdds
                                               reg-ubdds
@@ -2047,8 +2365,8 @@ expressions back to AIG formulas.</p>
 
        ((mv index invals regvals litarr in-ubdds reg-ubdds)
         (aignet-parametrize-collect-bdd-order-aux
-         (nfix (- (num-outs aignet) (sum-outcounts outcounts)))
-         outtypes outcounts 0 invals regvals litarr in-ubdds reg-ubdds aignet))
+         0 output-ranges
+         outtypes 0 invals regvals litarr in-ubdds reg-ubdds aignet))
 
        ((mv index invals litarr in-ubdds)
         (aignet-finish-in-ubdd-order 0 index invals litarr in-ubdds aignet))
@@ -2093,12 +2411,12 @@ expressions back to AIG formulas.</p>
   (defret in-ubdds-lookup-of-<fn>
     (implies (< (nfix n) (num-ins aignet))
              (let ((var-num (qv-inverse (nth n new-in-ubdds))))
-                       (and (equal (acl2::qv var-num)
-                                   (nth n new-in-ubdds))
-                            (< var-num (+ (num-ins aignet)
-                                          (num-regs aignet)))
-                            (equal (nth-lit var-num new-litarr)
-                                   (make-lit (innum->id n aignet) 0)))))
+               (and (equal (acl2::qv var-num)
+                           (nth n new-in-ubdds))
+                    (< var-num (+ (num-ins aignet)
+                                  (num-regs aignet)))
+                    (equal (nth-lit var-num new-litarr)
+                           (make-lit (innum->id n aignet) 0)))))
     :hints (("goal" :in-theory (disable aignet-finish-reg-ubdd-order-order-in-marked-invar-preserved
                                         aignet-finish-reg-ubdd-order-order-in-marked-invar-preserved-rw))
             (acl2::function-termhint
@@ -2109,6 +2427,28 @@ expressions back to AIG formulas.</p>
                   `(:use ((:instance acl2::mark-clause-is-true (x :invar-holds))))
                 '(:use ((:instance acl2::mark-clause-is-true (x :invar-does-not-hold)))
                   :in-theory (enable aignet-finish-reg-ubdd-order-order-in-marked-invar-preserved-rw)))))))
+
+  (defret in-ubdds-lookup-of-<fn>-linear
+    (implies (< (nfix n) (num-ins aignet))
+             (let ((var-num (qv-inverse (nth n new-in-ubdds))))
+               (< var-num (+ (stype-count :pi aignet)
+                             (stype-count :reg aignet)))))
+    :hints (("goal" :use in-ubdds-lookup-of-<fn>
+             :in-theory (disable <fn> in-ubdds-lookup-of-<fn>)))
+    :rule-classes :linear)
+
+  (local (defthmd eval-bdd-of-equal-qv
+           (implies (equal x (acl2::qv n))
+                    (iff (acl2::eval-bdd x env)
+                         (nth n env)))))
+  
+  (defret in-ubdds-eval-of-<fn>
+    (implies (< (nfix n) (num-ins aignet))
+             (iff (acl2::eval-bdd (nth n new-in-ubdds) env)
+                  (nth (qv-inverse (nth n new-in-ubdds)) env)))
+    :hints (("goal" :use in-ubdds-lookup-of-<fn>
+             :in-theory (e/d (eval-bdd-of-equal-qv)
+                             (<fn> in-ubdds-lookup-of-<fn>)))))
 
   (defret reg-ubdds-lookup-of-<fn>
     (implies (< (nfix n) (num-regs aignet))
@@ -2130,6 +2470,25 @@ expressions back to AIG formulas.</p>
                 '(:use ((:instance acl2::mark-clause-is-true (x :invar-does-not-hold)))
                   :in-theory (enable aignet-finish-reg-ubdd-order-order-reg-marked-invar-preserved-rw)))))))
 
+  (defret reg-ubdds-lookup-of-<fn>-linear
+    (implies (< (nfix n) (num-regs aignet))
+             (let ((var-num (qv-inverse (nth n new-reg-ubdds))))
+               (< var-num (+ (stype-count :pi aignet)
+                             (stype-count :reg aignet)))))
+    :hints (("goal" :use reg-ubdds-lookup-of-<fn>
+             :in-theory (disable <fn> reg-ubdds-lookup-of-<fn>)))
+    :rule-classes :linear)
+    
+
+
+  (defret reg-ubdds-eval-of-<fn>
+    (implies (< (nfix n) (num-regs aignet))
+             (iff (acl2::eval-bdd (nth n new-reg-ubdds) env)
+                  (nth (qv-inverse (nth n new-reg-ubdds)) env)))
+    :hints (("goal" :use reg-ubdds-lookup-of-<fn>
+             :in-theory (e/d (eval-bdd-of-equal-qv)
+                             (<fn> reg-ubdds-lookup-of-<fn>)))))
+
   (defret in-ubdds-length-of-<fn>
     (equal (len new-in-ubdds) (num-ins aignet)))
 
@@ -2137,7 +2496,79 @@ expressions back to AIG formulas.</p>
     (equal (len new-reg-ubdds) (num-regs aignet)))
 
   (defret litarr-length-of-<fn>
-    (equal (len new-litarr) (+ (num-ins aignet) (num-regs aignet)))))
+    (equal (len new-litarr) (+ (num-ins aignet) (num-regs aignet))))
+
+
+  (defret in-ubdds-max-depth-of-<fn>
+    (<= (ubdd-arr-max-depth new-in-ubdds)
+        (+ (stype-count :pi aignet)
+           (stype-count :reg aignet)))
+    :rule-classes :linear)
+
+  (defret reg-ubdds-max-depth-of-<fn>
+    (<= (ubdd-arr-max-depth new-reg-ubdds)
+        (+ (stype-count :pi aignet)
+           (stype-count :reg aignet)))
+    :rule-classes :linear)
+  
+  (defret aignet-copies-in-bounds-of-<fn>
+    (aignet-copies-in-bounds new-litarr aignet))
+
+  
+
+  (local (defthm nth-of-take-split
+           (equal (nth n (take m x))
+                  (and (< (nfix n) (nfix m))
+                       (nth n x)))
+           :hints(("Goal" :in-theory (enable nth take)))))
+
+  (local (defthm nth-of-bits->bools
+           (equal (nth n (bits->bools x))
+                  (bit->bool (nth n x)))
+           :hints(("Goal" :in-theory (enable bits->bools nth)))))
+
+
+  (local (defthm lit-eval-of-nil
+           (equal (lit-eval nil invals regvals aignet)
+                  0)
+           :hints(("Goal" :in-theory (enable lit-eval id-eval)))))
+  
+  (local (defthm nth-of-lit-eval-list
+           (bit-equiv (nth n (lit-eval-list x invals regvals aignet))
+                      (lit-eval (nth-lit n x) invals regvals aignet))
+           :hints(("Goal" :in-theory (enable nth nth-lit lit-eval-list)))))
+  
+  (defret eval-ubddarr-of-<fn>-in-ubddar-compose
+    (bits-equiv (take (stype-count :pi aignet)
+                      (eval-ubddarr new-in-ubdds
+                                    (bits->bools
+                                     (lit-eval-list
+                                      (copy-lits-compose-in-place
+                                       aignet0
+                                       new-litarr
+                                       copy)
+                                      invals regvals aignet2))))
+                (input-copy-values 0 invals regvals aignet copy aignet2))
+    :hints(("Goal" :in-theory (e/d (bits-equiv
+                                    lit-copy)
+                                   (<fn>)))))
+
+  (defret eval-ubddarr-of-<fn>-reg-ubddar-compose
+    (bits-equiv (take (stype-count :reg aignet)
+                      (eval-ubddarr new-reg-ubdds
+                                    (bits->bools
+                                     (lit-eval-list
+                                      (copy-lits-compose-in-place
+                                       aignet0
+                                       new-litarr
+                                       copy)
+                                      invals regvals aignet2))))
+                (reg-copy-values 0 invals regvals aignet copy aignet2))
+    :hints(("Goal" :in-theory (e/d (bits-equiv
+                                    lit-copy)
+                                   (<fn>)))))
+)
+
 
 
 (define ubdd-arr-to-param-space ((start natp)
@@ -2155,6 +2586,8 @@ expressions back to AIG formulas.</p>
     (implies (<= (+ (nfix start) (nfix count)) (len ubdd-arr))
              (equal (len new-ubdd-arr) (len ubdd-arr))))
 
+
+  
   (defret nth-of-<fn>
     (equal (nth n new-ubdd-arr)
            (cond ((and (<= (nfix start) (nfix n))
@@ -2165,9 +2598,21 @@ expressions back to AIG formulas.</p>
                  (t (nth n ubdd-arr))))
     :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding))))
 
+  (defret max-depth-of-<fn>
+    (<= (ubdd-arr-max-depth new-ubdd-arr)
+        (ubdd-arr-max-depth ubdd-arr))
+    :hints(("Goal" :in-theory (enable ubdd-arr-max-depth)))
+    :rule-classes :linear)
+  
   (local (defthm x-equal-nfix-plus-1
            (not (equal x (+ 1 (nfix x))))
-           :hints(("Goal" :in-theory (enable nfix))))))
+           :hints(("Goal" :in-theory (enable nfix)))))
+
+  (defret eval-ubddarr-of-<fn>
+    (implies (acl2::eval-bdd hyp env)
+             (bits-equiv (eval-ubddarr new-ubdd-arr env)
+                         (eval-ubddarr ubdd-arr env)))
+    :hints(("Goal" :in-theory (enable bits-equiv)))))
                                  
 
 
@@ -2295,6 +2740,7 @@ expressions back to AIG formulas.</p>
            :hints(("Goal" :in-theory (enable output-eval)
                    :expand ((lookup-stype n :po (cons (po-node fanin) aignet)))))))
 
+
   (defret output-eval-of-<fn>
     (implies (and (dfs-copy-onto-invar aignet mark copy aignet2)
                   (aignet-input-copies-in-bounds copy aignet aignet2)
@@ -2316,161 +2762,60 @@ expressions back to AIG formulas.</p>
     :otf-flg t)
 
   (defret input-copy-values-of-<fn>
-    (equal (input-copy-values n invals regvals aignet new-copy new-aignet2)
-           (input-copy-values n invals regvals aignet copy aignet2))
+    (implies (aignet-input-copies-in-bounds copy aignet aignet2)
+             (equal (input-copy-values n invals regvals aignet new-copy new-aignet2)
+                    (input-copy-values n invals regvals aignet copy aignet2)))
+    :hints(("Goal" :induct <call>
+            :expand ((:free (count) <call>)))))
+
+  (defret reg-copy-values-of-<fn>
+    (implies (aignet-input-copies-in-bounds copy aignet aignet2)
+             (equal (reg-copy-values n invals regvals aignet new-copy new-aignet2)
+                    (reg-copy-values n invals regvals aignet copy aignet2)))
     :hints(("Goal" :induct <call>
             :expand ((:free (count) <call>))))))
 
 
 
-(define outcounts-trim ((diff natp)
-                        (outcounts nat-listp))
-  :guard (<= diff (sum-outcounts outcounts))
-  :returns (new-outcounts nat-listp :hyp (nat-listp outcounts))
-  :measure (len outcounts)
-  :guard-hints (("goal" :expand ((sum-outcounts outcounts))))
-  (if (or (zp diff)
-          (not (mbt (consp outcounts))))
-      outcounts
-    (if (< (lnfix diff) (lnfix (car outcounts)))
-        (cons (- (lnfix (car outcounts)) (lnfix diff))
-              (cdr outcounts))
-      (outcounts-trim (- (lnfix diff) (lnfix (car outcounts)))
-                      (cdr outcounts))))
-  ///
-  (local (defthm minus-minus
-           (equal (- (- x)) (fix x))))
-  (defret sum-outcounts-of-<fn>
-    (equal (sum-outcounts new-outcounts)
-           (nfix (- (sum-outcounts outcounts) (nfix diff))))
-    :hints(("Goal" :in-theory (enable sum-outcounts)
-            :induct <call>))))
+;; (define aignet-parametrize-m-n-output-types/ranges ((m natp)
+;;                                                     (num-outs natp)
+;;                                                     (output-ranges aignet-output-range-map-p)
+;;                                                     (outtypes parametrize-output-type-map-p))
+;;   :guard (<= m num-outs)
+;;   :returns (mv (new-outtypes parametrize-output-types-p)
+;;                (new-outcounts nat-listp :hyp (nat-listp outcounts)))
+;;   :prepwork ((local (defthm minus-minus
+;;                       (equal (- (- x)) (fix x)))))
+;;   ;; Normalize outtypes/outcounts so that there are (- num-outs n) total
+;;   ;; outputs accounted for.
+;;   (b* ((sum (aignet-output-range-map-length outcounts))
+;;        (target-num-outs (lnfix (- (lnfix num-outs) (lnfix m))))
+;;        (outcounts
+;;         (if (<= target-num-outs sum)
+;;             (outcounts-trim (- sum target-num-outs) outcounts)
+;;           (cons (- target-num-outs sum) outcounts)))
+;;        (outtypes (parametrize-output-types-fix outtypes))
+;;        (outtypes (if (<= (len outcounts) (len outtypes))
+;;                      (nthcdr (- (len outtypes) (len outcounts)) outtypes)
+;;                    (append (acl2::repeat (- (len outcounts) (len outtypes)) :param)
+;;                            outtypes))))
+;;     (mv outtypes outcounts))
+;;   ///
+;;   (defret len-outtypes-of-<fn>
+;;     (equal (len new-outtypes) (len new-outcounts)))
 
-(define aignet-parametrize-m-n-output-types/ranges ((m natp)
-                                                    (num-outs natp)
-                                                    (outtypes parametrize-output-types-p)
-                                                    (outcounts nat-listp))
-  :guard (<= m num-outs)
-  :returns (mv (new-outtypes parametrize-output-types-p)
-               (new-outcounts nat-listp :hyp (nat-listp outcounts)))
-  :prepwork ((local (defthm minus-minus
-                      (equal (- (- x)) (fix x)))))
-  ;; Normalize outtypes/outcounts so that there are (- num-outs n) total
-  ;; outputs accounted for.
-  (b* ((sum (sum-outcounts outcounts))
-       (target-num-outs (lnfix (- (lnfix num-outs) (lnfix m))))
-       (outcounts
-        (if (<= target-num-outs sum)
-            (outcounts-trim (- sum target-num-outs) outcounts)
-          (cons (- target-num-outs sum) outcounts)))
-       (outtypes (parametrize-output-types-fix outtypes))
-       (outtypes (if (<= (len outcounts) (len outtypes))
-                     (nthcdr (- (len outtypes) (len outcounts)) outtypes)
-                   (append (acl2::repeat (- (len outcounts) (len outtypes)) :param)
-                           outtypes))))
-    (mv outtypes outcounts))
-  ///
-  (defret len-outtypes-of-<fn>
-    (equal (len new-outtypes) (len new-outcounts)))
-
-  (local (defthm plus-minus-cancel
-             (equal (+ x (- x) y)
-                    (fix y))))
+;;   (local (defthm plus-minus-cancel
+;;              (equal (+ x (- x) y)
+;;                     (fix y))))
   
-  (defret sum-outcounts-of-<fn>
-    (equal (sum-outcounts new-outcounts)
-           (nfix (- (nfix num-outs) (nfix m))))
-    :hints (("goal" :expand ((:free (a b) (sum-outcounts (cons a b))))))))
+;;   (defret sum-outcounts-of-<fn>
+;;     (equal (sum-outcounts new-outcounts)
+;;            (nfix (- (nfix num-outs) (nfix m))))
+;;     :hints (("goal" :expand ((:free (a b) (sum-outcounts (cons a b))))))))
 
 
-(define copy-lits-compose ((start natp)
-                           (count natp)
-                           aignet
-                           litarr
-                           copy
-                           copy2)
-  ;; Litarr contains aignet literals.
-  ;; Copy maps those literals to aignet2 literals (for some aignet2).
-  ;; We create copy2 which maps the indices of litarr to the aignet2 literals, composing
-  ;; (copy) o (litarr).
-  ;; Note aignet is only used for guard :(
-  :guard (and (<= (+ start count) (lits-length litarr))
-              (<= (num-fanins aignet) (lits-length copy))
-              (<= (+ start count) (lits-length copy2))
-              (aignet-copies-in-bounds litarr aignet))
-  :prepwork ((local (defthm <=-fanin-count-when-aignet-idp
-                      (implies (and (aignet-idp id aignet)
-                                    (natp id))
-                               (< id (+ 1 (fanin-count aignet))))
-                      :hints(("Goal" :in-theory (enable aignet-idp))))))
-  :returns (new-copy2)
-  :measure (nfix count)
-  (b* (((when (zp count)) copy2)
-       (lit (get-lit start litarr))
-       (copy2 (set-lit start (lit-copy lit copy) copy2)))
-    (copy-lits-compose (1+ (lnfix start)) (1- count)
-                       aignet litarr copy copy2))
-  ///
-  (defret len-of-<fn>
-    (implies (<= (+ (nfix start) (nfix count)) (len copy2))
-             (equal (len new-copy2) (len copy2))))
 
-  (defret nth-of-<fn>
-    (equal (nth-lit n new-copy2)
-           (if (and (<= (nfix start) (nfix n))
-                    (< (nfix n) (+ (nfix start) (nfix count))))
-               (lit-copy (nth-lit n litarr) copy)
-             (nth-lit n copy2)))
-    :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding)))))
 
-(define copy-lits-compose-in-place (aignet
-                                    litarr
-                                    copy)
-  ;; same as copy-lits-compose but copies over the given range in litarr
-  :guard (and (<= (num-fanins aignet) (lits-length copy))
-              (aignet-copies-in-bounds litarr aignet))
-  :returns (new-litarr)
-  (b* (((acl2::local-stobjs copy2)
-        (mv litarr copy2))
-       (len  (lits-length litarr))
-       (copy2 (resize-lits len copy2))
-       (copy2 (copy-lits-compose 0 len aignet litarr copy copy2))
-       ((mv litarr copy2) (swap-stobjs litarr copy2)))
-    (mv litarr copy2))
-  ///
-  (defret len-of-<fn>
-    (equal (len new-litarr) (len litarr)))
-
-  (local (defthm nth-lit-of-nil
-           (equal (nth-lit n nil) 0)
-           :hints(("Goal" :in-theory (enable nth-lit nth)))))
-  
-  (defret nth-of-<fn>
-    (equal (nth-lit n new-litarr)
-           (if (< (nfix n) (len litarr))
-               (lit-copy (nth-lit n litarr) copy)
-             0)))
-
-  (defret aignet-copies-in-bounds-of-<fn>
-    (implies (aignet-copies-in-bounds copy aignet2)
-             (aignet-copies-in-bounds new-litarr aignet2))
-    :hints((and stable-under-simplificationp
-                `(:expand (,(car (last clause))))))))
-              
-              
-
-(define ubdd-arr-max-depth (ubdd-arr)
-  :verify-guards nil
-  (non-exec
-   (if (atom ubdd-arr)
-       0
-     (max (acl2::max-depth (acl2::ubdd-fix (car ubdd-arr)))
-          (ubdd-arr-max-depth (cdr ubdd-arr)))))
-  ///
-  (defthm max-depth-nth-when-ubdd-arr-max-depth
-    (<= (acl2::max-depth (acl2::ubdd-fix (nth n ubdd-arr))) (ubdd-arr-max-depth ubdd-arr))
-    :hints(("Goal" :in-theory (enable nth)))
-    :rule-classes :linear))
 
 
 (define aignet-parametrize-copy-set-ins ((n natp)
@@ -2509,6 +2854,22 @@ expressions back to AIG formulas.</p>
     (aignet-extension-p new-aignet2 aignet2)
     :hints (("goal" :induct <call> :expand (<call>))))
 
+  (defret num-ins-of-<fn>
+    (equal (stype-count :pi new-aignet2)
+           (stype-count :pi aignet2))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret num-regs-of-<fn>
+    (equal (stype-count :reg new-aignet2)
+           (stype-count :reg aignet2))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret num-outs-of-<fn>
+    (equal (stype-count :po new-aignet2)
+           (stype-count :po aignet2))
+    :hints (("Goal" :induct <call>
+             :expand (<call>))))
+  
   (defret copy-len-of-<fn>
     (implies (<= (num-fanins aignet) (len copy))
              (equal (len new-copy) (len copy)))
@@ -2605,6 +2966,22 @@ expressions back to AIG formulas.</p>
     (aignet-extension-p new-aignet2 aignet2)
     :hints (("goal" :induct <call> :expand (<call>))))
 
+  (defret num-ins-of-<fn>
+    (equal (stype-count :pi new-aignet2)
+           (stype-count :pi aignet2))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret num-regs-of-<fn>
+    (equal (stype-count :reg new-aignet2)
+           (stype-count :reg aignet2))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret num-outs-of-<fn>
+    (equal (stype-count :po new-aignet2)
+           (stype-count :po aignet2))
+    :hints (("Goal" :induct <call>
+             :expand (<call>))))
+
   (defret copy-len-of-<fn>
     (implies (<= (num-fanins aignet) (len copy))
              (equal (len new-copy) (len copy)))
@@ -2693,6 +3070,19 @@ expressions back to AIG formulas.</p>
   (defret aignet-extension-p-of-<fn>
     (aignet-extension-p new-aignet2 aignet2))
 
+  (defret num-ins-of-<fn>
+    (equal (stype-count :pi new-aignet2)
+           (stype-count :pi aignet2)))
+
+  (defret num-regs-of-<fn>
+    (equal (stype-count :reg new-aignet2)
+           (stype-count :reg aignet2)))
+
+  (defret num-outs-of-<fn>
+    (equal (stype-count :po new-aignet2)
+           (stype-count :po aignet2)))
+
+  
 
   (defret copy-len-of-<fn>
     (equal (len new-copy) (num-fanins aignet)))
@@ -2725,23 +3115,56 @@ expressions back to AIG formulas.</p>
                             (bool->bit (acl2::eval-bdd (nth innum in-ubdds)
                                                        (bits->bools
                                                         (lit-eval-list litarr invals regvals aignet2)))))))))
-    :hints (("goal" :do-not-induct t))))
-                 
+    :hints (("goal" :do-not-induct t)))
+
+  (local (defthm nth-of-take-split
+           (equal (nth n (take m x))
+                  (and (< (nfix n) (nfix m))
+                       (nth n x)))
+           :hints(("Goal" :in-theory (enable nth take)))))
+                    
+  
+  (defret input-copy-values-of-<fn>
+    (implies (aignet-copies-in-bounds litarr aignet2)
+             (bits-equiv (input-copy-values 0 invals regvals aignet new-copy new-aignet2)
+                         (take (stype-count :pi aignet)
+                               (eval-ubddarr in-ubdds (bits->bools (lit-eval-list litarr invals regvals aignet2))))))
+    :hints(("Goal" :in-theory (e/d (bits-equiv
+                                    nth-of-input-copy-values-split)
+                                   (<fn>))
+            :do-not-induct t)))
+
+  (defret reg-copy-values-of-<fn>
+    (implies (aignet-copies-in-bounds litarr aignet2)
+             (bits-equiv (reg-copy-values 0 invals regvals aignet new-copy new-aignet2)
+                         (take (stype-count :reg aignet)
+                               (eval-ubddarr reg-ubdds (bits->bools (lit-eval-list litarr invals regvals aignet2))))))
+    :hints(("Goal" :in-theory (e/d (bits-equiv
+                                    nth-of-reg-copy-values-split)
+                                   (<fn>))
+            :do-not-induct t))))
 
 (local (defthm len-equal-0
          (equal (equal (len x) 0) (atom x))))
 
+
+
+
+(local (defcong bits-equiv equal (output-eval n invals regvals aignet) 2
+         :hints(("Goal" :in-theory (enable output-eval)))))
+(local (defcong bits-equiv equal (output-eval n invals regvals aignet) 3
+         :hints(("Goal" :in-theory (enable output-eval)))))
+
 (define aignet-parametrize-output-ranges ((start natp)
-                                          (output-types parametrize-output-types-p)
-                                          (output-ranges nat-listp)
+                                          (output-ranges aignet-output-range-map-p)
+                                          (outtypes parametrize-output-type-map-p)
                                           aignet
                                           mark copy ;; unparametrized copying
                                           mark2 copy2 ;; parametrized copying
                                           strash (gatesimp gatesimp-p) aignet2)
   :measure (len output-ranges)
-  :guard (and (equal (len output-types) (len output-ranges))
-              (<= (+ (nfix start) (sum-outcounts output-ranges))
-                  (num-outs aignet))
+  :guard (and ;; (<= (+ (nfix start) (aignet-output-range-map-length output-ranges))
+              ;;     (num-outs aignet))
               (<= (num-fanins aignet) (bits-length mark))
               (<= (num-fanins aignet) (bits-length mark2))
               (<= (num-fanins aignet) (lits-length copy))
@@ -2749,17 +3172,32 @@ expressions back to AIG formulas.</p>
               (aignet-copies-in-bounds copy aignet2)
               (aignet-copies-in-bounds copy2 aignet2))
   :returns (mv new-mark new-copy new-mark2 new-copy2 new-strash new-aignet2)
-  :guard-hints (("goal" :expand ((sum-outcounts output-ranges))
+  :guard-hints (("goal" :expand ((aignet-output-range-map-length output-ranges))
                  :do-not-induct t))
   :guard-debug t
-  (b* (((when (atom output-ranges))
+  (b* (((when (<= (num-outs aignet) (lnfix start)))
         (b* ((aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
                            :exec aignet2)))
           (mv mark copy mark2 copy2 strash aignet2)))
-       (type (parametrize-output-type-fix (car output-types)))
-       (count (lnfix (car output-ranges)))
+       ((when (atom output-ranges))
+        ;; default to param type
+        (b* (((mv mark2 copy2 strash aignet2)
+              (aignet-copy-dfs-output-range
+               start (- (num-outs aignet) (lnfix start))
+               aignet mark2 copy2 strash gatesimp aignet2)))
+          (mv mark copy mark2 copy2 strash aignet2)))
+
+       ((unless (mbt (consp (car output-ranges))))
+        (aignet-parametrize-output-ranges
+         start (cdr output-ranges) outtypes aignet mark copy mark2 copy2 strash gatesimp aignet2))
+       (name (mbe :logic (acl2::symbol-fix (caar output-ranges))
+                  :exec (caar output-ranges)))
+       (count (min (lnfix (cdar output-ranges))
+                   (- (num-outs aignet) (lnfix start))))
+       (type (or (cdr (hons-assoc-equal name (parametrize-output-type-map-fix outtypes)))
+                 (parametrize-output-type-param)))
        ((mv mark copy mark2 copy2 strash aignet2)
-        (if (eq type :param)
+        (if (parametrize-output-type-case type :param)
             (b* (((mv mark2 copy2 strash aignet2)
                   (aignet-copy-dfs-output-range
                    start count aignet mark2 copy2 strash gatesimp aignet2)))
@@ -2769,7 +3207,7 @@ expressions back to AIG formulas.</p>
                  start count aignet mark copy strash gatesimp aignet2)))
             (mv mark copy mark2 copy2 strash aignet2)))))
     (aignet-parametrize-output-ranges
-     (+ (lnfix start) count) (cdr output-types) (cdr output-ranges)
+     (+ (lnfix start) count) (cdr output-ranges) outtypes
      aignet mark copy mark2 copy2 strash gatesimp aignet2))
   ///
   (defret aignet-extension-p-of-<fn>
@@ -2782,59 +3220,227 @@ expressions back to AIG formulas.</p>
                   (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2)
                     (case (stype-fix stype)
-                      (:po (+ (sum-outcounts output-ranges)
+                      (:po (+ (nfix (- (stype-count :po aignet) (nfix start)))
                               (stype-count stype aignet2)))
                       (t (stype-count stype aignet2)))))
     :hints(("Goal" :induct <call>
             :expand (<call>
-                     (sum-outcounts output-ranges)))))
+                     (aignet-output-range-map-length output-ranges)))
+           (and stable-under-simplificationp
+                '(:in-theory (enable nfix)))))
 
+  (local
+   (defthm dfs-copy-onto-invar-of-aignet-extension
+     (implies (and (aignet-extension-binding)
+                   (dfs-copy-onto-invar aignet mark copy orig)
+                   (aignet-copies-in-bounds copy orig))
+              (dfs-copy-onto-invar aignet mark copy new))
+     :hints ((and stable-under-simplificationp
+                  `(:expand (,(car (last clause))))))))
+  
   (defret output-eval-of-<fn>
     (implies (and (dfs-copy-onto-invar aignet mark copy aignet2)
+                  (dfs-copy-onto-invar aignet mark2 copy2 aignet2)
                   (aignet-copies-in-bounds copy aignet2)
                   (aignet-copies-in-bounds copy2 aignet2)
-                  (equal (input-copy-values 0 invals regvals aignet copy aignet2)
-                         (input-copy-values 0 invals regvals aignet copy2 aignet2))
-                  (equal (reg-copy-values 0 invals regvals aignet copy aignet2)
-                         (reg-copy-values 0 invals regvals aignet copy2 aignet2)))
+                  (bits-equiv (input-copy-values 0 invals regvals aignet copy aignet2)
+                              (input-copy-values 0 invals regvals aignet copy2 aignet2))
+                  (bits-equiv (reg-copy-values 0 invals regvals aignet copy aignet2)
+                              (reg-copy-values 0 invals regvals aignet copy2 aignet2)))
              (equal (output-eval n invals regvals new-aignet2)
                     (if (and (<= (num-outs aignet2) (nfix n))
-                             (< (nfix n) (+ (num-outs aignet2) (sum-outcounts output-ranges))))
+                             (< (nfix n) (+ (num-outs aignet2)
+                                            (nfix (- (stype-count :po aignet) (nfix start))))))
                         (output-eval (+ (nfix start)
                                         (- (nfix n) (num-outs aignet2)))
                                      (input-copy-values 0 invals regvals aignet copy aignet2)
                                      (reg-copy-values 0 invals regvals aignet copy aignet2)
                                      aignet)
-                      (output-eval n invals regvals aignet2))))))
+                      (output-eval n invals regvals aignet2)))))
+
+  (local (in-theory (enable aignet-output-range-map-fix))))
               
 
+(define split-output-ranges ((count natp)
+                             (output-ranges aignet-output-range-map-p))
+  :returns (mv (first-ranges aignet-output-range-map-p)
+               (rest-ranges aignet-output-range-map-p))
+  ;; :guard (<= count (aignet-output-range-map-length output-ranges))
+  :guard-hints (("goal" :in-theory (enable aignet-output-range-map-length)))
+  :measure (len output-ranges)
+  (b* (((when (zp count))
+        (mv nil (aignet-output-range-map-fix output-ranges)))
+       ((unless (consp output-ranges))
+        ;; Pad out the first ranges to count
+        (mv (list (cons nil count)) nil))
+       ;; ((unless (mbt (consp output-ranges)))
+       ;;  (mv nil nil))
+       ((unless (mbt (consp (car output-ranges))))
+        (split-output-ranges count (cdr output-ranges)))
+       (first (mbe :logic (cons (acl2::symbol-fix (caar output-ranges))
+                                (nfix (cdar output-ranges)))
+                   :exec (car output-ranges)))
+       ((mv first2 rest) (split-output-ranges (max 0 (- (lnfix count) (lnfix (cdar output-ranges))))
+                                              (cdr output-ranges))))
+    (mv (cons first first2) rest))
+  ///
+  (defret append-of-<fn>
+    (implies (<= (nfix count) (aignet-output-range-map-length output-ranges))
+             (equal (append first-ranges rest-ranges)
+                    (aignet-output-range-map-fix output-ranges)))
+    :hints(("Goal" :in-theory (enable aignet-output-range-map-fix
+                                      aignet-output-range-map-length))))
+
+  (defret length-of-<fn>
+    (<= (nfix count) (aignet-output-range-map-length first-ranges))
+    :hints(("Goal" :in-theory (enable aignet-output-range-map-length)))
+    :rule-classes :linear)
+
+  (defret length-of-<fn>-first-upper-bound
+    (implies (<= (nfix count) (aignet-output-range-map-length output-ranges))
+             (<= (aignet-output-range-map-length first-ranges)
+                 (aignet-output-range-map-length output-ranges)))
+    :hints(("Goal" :in-theory (enable aignet-output-range-map-length)))
+    :rule-classes :linear)
+
+  (local (defthm plus-minus
+           (equal (+ x (- x) y)
+                  (fix y))))
+  
+  (defret length-of-<fn>-adds-up
+    (implies (<= (nfix count) (aignet-output-range-map-length output-ranges))
+             (equal (aignet-output-range-map-length rest-ranges)
+                    (- (aignet-output-range-map-length output-ranges)
+                       (aignet-output-range-map-length first-ranges))))
+    :hints(("Goal" :in-theory (enable aignet-output-range-map-length))))
+
+  (defret true-listp-of-<fn>
+    (true-listp first-ranges)
+    :rule-classes :type-prescription)
+
+  ;; (defret <fn>-when-split-count-greater
+  ;;   (implies (< (aignet-output-range-map-length output-ranges)
+  ;;               (nfix count))
+  ;;            (and (equal first-ranges
+  ;;                        (aignet-output-range-map-fix output-ranges))
+  ;;                 (equal rest-ranges nil)))
+  ;;   :hints(("Goal" :in-theory (enable aignet-output-range-map-length
+  ;;                                     aignet-output-range-map-fix))))
+  
                   
+
+  (local (in-theory (enable aignet-output-range-map-fix))))
+
+
+
+(local
+ (defthm dfs-copy-onto-invar-of-init-copy-comb
+   (b* (((mv new-copy new-aignet2)
+         (init-copy-comb aignet copy aignet2)))
+     (dfs-copy-onto-invar aignet (resize-list nil n 0) new-copy new-aignet2))
+   :hints(("Goal" :in-theory (enable dfs-copy-onto-invar)))))
+
+(local (defthm output-eval-of-take-ins
+         (equal (output-eval n (take (stype-count :pi aignet) invals) regvals aignet)
+                (output-eval n invals regvals aignet))
+         :hints(("Goal" :in-theory (enable output-eval)))))
+
+(local (defthm output-eval-of-take-regs
+         (equal (output-eval n invals (take (stype-count :reg aignet) regvals) aignet)
+                (output-eval n invals regvals aignet))
+         :hints(("Goal" :in-theory (enable output-eval)))))
+
+(local (defthm dfs-copy-onto-invar-of-aignet-extension
+         (implies (and (aignet-extension-binding)
+                       (dfs-copy-onto-invar aignet mark copy orig)
+                       (aignet-copies-in-bounds copy orig))
+                  (dfs-copy-onto-invar aignet mark copy new))
+         :hints ((and stable-under-simplificationp
+                      `(:expand (,(car (last clause))))))))
+
+(local (defthm dfs-copy-onto-invar-of-resize
+         (dfs-copy-onto-invar aignet (resize-list nil n 0) copy aignet2)
+         :hints(("Goal" :in-theory (enable dfs-copy-onto-invar)))))
+
+
+(defcong bits-equiv bits-equiv (take n x) 2
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+
+(defcong bits-equiv equal (conjoin-output-range start count invals regvals aignet) 3
+  :hints(("Goal" :in-theory (enable conjoin-output-range))))
+
+(defcong bits-equiv equal (conjoin-output-range start count invals regvals aignet) 4
+  :hints(("Goal" :in-theory (enable conjoin-output-range))))
+
+
+
+(local
+ (defthm conjoin-output-range-rewrite-invals-with-take
+   (implies (and (bits-equiv new-invals (double-rewrite (take (stype-count :pi aignet) invals)))
+                 (bind-free
+                  (case-match new-invals
+                    (('take & new-invals1) `((new-invals1 . ,new-invals1)))
+                    (& `((new-invals1 . ,new-invals))))
+                  (new-invals1))
+                 (bits-equiv (take (stype-count :pi aignet) new-invals1) new-invals)
+                 (syntaxp (not (equal new-invals1 invals))))
+            (equal (conjoin-output-range start count invals regvals aignet)
+                   (conjoin-output-range start count new-invals1 regvals aignet)))
+   :hints (("goal" :use ((:instance conjoin-output-range-of-take-ins
+                          (n count))
+                         (:instance conjoin-output-range-of-take-ins
+                          (n count) (invals new-invals1)))
+            :in-theory (disable conjoin-output-range-of-take-ins)))))
+
+(local
+ (defthm conjoin-output-range-rewrite-regvals-with-take
+   (implies (and (bits-equiv new-regvals (double-rewrite (take (stype-count :reg aignet) regvals)))
+                 (bind-free
+                  (case-match new-regvals
+                    (('take & new-regvals1) `((new-regvals1 . ,new-regvals1)))
+                    (& `((new-regvals1 . ,new-regvals))))
+                  (new-regvals1))
+                 (bits-equiv (take (stype-count :reg aignet) new-regvals1) new-regvals)
+                 (syntaxp (not (equal new-regvals1 regvals))))
+            (equal (conjoin-output-range start count invals regvals aignet)
+                   (conjoin-output-range start count invals new-regvals1 aignet)))
+   :hints (("goal" :use ((:instance conjoin-output-range-of-take-regs
+                          (n count))
+                         (:instance conjoin-output-range-of-take-regs
+                          (n count) (regvals new-regvals1)))
+            :in-theory (disable conjoin-output-range-of-take-regs)))))
+
 (define aignet-parametrize-m-n ((m natp)
                                 (n natp)
                                 (aignet  "Input aignet")
                                 (aignet2 "New aignet -- will be emptied")
                                 (config parametrize-config-p
                                         "Settings for the transform")
-                                (output-ranges nat-listp))
+                                (output-ranges aignet-output-range-map-p))
   :guard (<= (+ m n) (num-outs aignet))
   :returns new-aignet2
   (declare (ignorable n))
+  :guard-debug t
+  :guard-hints ((and stable-under-simplificationp
+                     '(:cases ((<= m (aignet-output-range-map-length output-ranges))))))
   (b* (((acl2::local-stobjs litarr in-ubdds reg-ubdds mark mark2 ubdd-arr u32arr copy copy2 strash)
-        (mv litarr in-ubdds reg-ubdds mark mark2 ubdd-arr u32arr copy aignet2))
+        (mv litarr in-ubdds reg-ubdds mark mark2 ubdd-arr u32arr copy copy2 strash aignet2))
        ((parametrize-config config))
-       ((mv output-types output-ranges)
-        (aignet-parametrize-m-n-output-types/ranges
-         m (num-outs aignet) config.output-types output-ranges))
+       ;; ((mv output-types output-ranges)
+       ;;  (aignet-parametrize-m-n-output-types/ranges
+       ;;   m (num-outs aignet) config.output-types output-ranges))
        ((mv litarr in-ubdds reg-ubdds)
         ;; litarr: map from BDD variable nums to aignet pi/reg lits
         ;; in-ubdds: map from aignet pi numbers to UBDD variables
         ;; reg-ubdds: map from aignet reg numbers to UBDD variables
         (aignet-parametrize-collect-bdd-order
-         output-types output-ranges litarr in-ubdds reg-ubdds aignet))
+         output-ranges config.output-types litarr in-ubdds reg-ubdds aignet))
        (mark (resize-bits (num-fanins aignet) mark))
        (mark2 (resize-bits (num-fanins aignet) mark2))
        (ubdd-arr (resize-ubdds (num-fanins aignet) ubdd-arr))
-       (u32arr (resize-u32s (num-fanins aignet) u32arr))
+       (u32arr (resize-u32 (num-fanins aignet) u32arr))
        ((mv hyp-ubdd ?hyp-count mark mark2 ubdd-arr u32arr)
         ;; ubdd-arr: map from aignet nodes to UBDDs
         (aignet-output-range-conjoin-ubdds
@@ -2849,6 +3455,10 @@ expressions back to AIG formulas.</p>
        ((mv copy aignet2) (init-copy-comb aignet copy aignet2))
        ;; copy -- now maps aignet pi/reg nodes to aignet2 literals
 
+       ;; We don't really need the old litarr (I think) so we'll just convert
+       ;; it in place.
+       (litarr (copy-lits-compose-in-place aignet litarr copy))
+       
        (gatesimp (default-gatesimp))
        (mark (resize-bits 0 mark))
        (mark (resize-bits (num-fanins aignet) mark))
@@ -2863,10 +3473,6 @@ expressions back to AIG formulas.</p>
        ;; in aignet2.  to do this we need to encode the parametrized ubdds into
        ;; aignet2, and to do this (using ubdd-to-aignet) we need a litarr which
        ;; maps ubdd variable numbers to aignet2 input/reg literals.
-
-       ;; We don't really need the old litarr (I think) so we'll just convert
-       ;; it in place.
-       (litarr (copy-lits-compose-in-place litarr copy))
        ((mv copy2 strash aignet2)
         (aignet-parametrize-copy-init litarr ;; UBDD variable nums to aignet2 literals
                                       in-ubdds ;; pi nums to parametrized ubdds
@@ -2877,11 +3483,49 @@ expressions back to AIG formulas.</p>
                                       gatesimp
                                       aignet2))
 
+       ((mv & output-ranges) (split-output-ranges m output-ranges))
        ((mv mark copy mark2 copy2 strash aignet2)
-        (aignet-parametrize-copy-output-ranges
-         m output-types output-ranges aignet mark copy mark2 copy2 strash gatesimp aignet2)))
-    (mv litarr in-ubdds reg-ubdds mark mark2 ubdd-arr u32arr copy aignet2)))
-       
-       
-       
-        
+        (aignet-parametrize-output-ranges
+         m output-ranges config.output-types aignet mark copy mark2 copy2 strash gatesimp aignet2)))
+    (mv litarr in-ubdds reg-ubdds mark mark2 ubdd-arr u32arr copy copy2 strash aignet2))
+  ///
+
+  (defret num-ins-of-<fn>
+    (equal (stype-count :pi new-aignet2)
+           (stype-count :pi aignet)))
+
+  (defret num-regs-of-<fn>
+    (equal (stype-count :reg new-aignet2)
+           (stype-count :reg aignet)))
+
+  (defret num-outs-of-<fn>
+    (implies (<= (+ (nfix m) (nfix n)) (stype-count :po aignet))
+             (<= (+ (nfix m) (nfix n)) (stype-count :po new-aignet2)))
+    :rule-classes :linear)
+
+  (defret num-outs-of-<fn>-relative-to-output-map-length
+    (implies (<= (aignet-output-range-map-length output-ranges)
+                 (stype-count :po aignet))
+             (<= (aignet-output-range-map-length output-ranges)
+                 (stype-count :po new-aignet2)))
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((:free (a b) (nfix (+ a b)))))))
+    :rule-classes :linear)
+
+  (defret <fn>-eval-assumptions
+    (implies (< (nfix i) (nfix m))
+             (equal (output-eval i invals regvals new-aignet2)
+                    (output-eval i invals regvals aignet))))
+
+  (defret <fn>-eval-conclusion
+    (implies (And (< (nfix i) (+ (nfix m) (nfix n)))
+                  (equal (conjoin-output-range 0 m invals regvals aignet) 1))
+             (equal (output-eval i invals regvals new-aignet2)
+                    (output-eval i invals regvals aignet)))
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((:free (a b) (nfix (+ a b))))))))
+
+  (defret normalize-aignet2-of-<fn>
+    (implies (syntaxp (not (equal aignet2 ''nil)))
+             (equal new-aignet2
+                    (let ((aignet2 nil)) <call>)))))

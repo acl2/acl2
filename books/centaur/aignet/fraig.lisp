@@ -2728,7 +2728,7 @@
         ;; If the output map doesn't cover the whole range of outputs, the rest are considered :simplify type.
         (aignet-mark-dfs-outs-range prev-count (num-outs aignet) mark aignet))
        ((fraig-output-map-entry ent) (car output-map))
-       (mark (if (eq ent.type :simplify)
+       (mark (if (fraig-output-type-case ent.type :simplify)
                  (aignet-mark-dfs-outs-range prev-count
                                              (min (+ (lnfix prev-count)
                                                      ent.count)
@@ -2774,8 +2774,10 @@
         ;; If the output map doesn't cover the whole range of outputs, the rest are considered :simplify type.
         mark)
        ((fraig-output-map-entry ent) (car output-map))
-       (mark (if (eq ent.type :do-not-simplify-fanouts)
-                 (aignet-mark-output-node-range prev-count ent.count aignet mark)
+       (mark (if (fraig-output-type-case ent.type :do-not-simplify-fanouts)
+                 (aignet-mark-output-node-range prev-count
+                                                (min ent.count (- (num-outs aignet) (lnfix prev-count)))
+                                                aignet mark)
                mark)))
     (fraig-output-map-mark-non-simplified (cdr output-map)
                                           (+ (lnfix prev-count) ent.count)
