@@ -880,7 +880,7 @@
      used to capture certain precedence rules in the grammar itself.
      In our abstract syntax, for better factoring and orthogonality,
      it makes sense to introduce a fixtype for binary operators,
-     and use it to define binary expressions as in @(tsee expr).
+     and use it to define binary expressions as we do in @(tsee expr).
      The binary operators are
      @('*') (binary),
      @('/'),
@@ -896,8 +896,8 @@
      @('=='),
      @('!='),
      @('&') (binary),
-     @('|'),
      @('^'),
+     @('|'),
      @('&&'),
      @('||'),
      @('='),
@@ -909,9 +909,8 @@
      @('<<='),
      @('>>='),
      @('&='),
-     @('^='),
-     @('|='), and
-     @('*=')."))
+     @('^='), and
+     @('|=')."))
   (:mul ())
   (:div ())
   (:rem ())
@@ -955,7 +954,9 @@
      for pre- and post- increment and decrement.
      They are already part of @(tsee unop),
      but we also need a fixtype for just the two of them,
-     so we can form lists in @(tsee inc/dec-op-list)."))
+     so we can form lists in @(tsee inc/dec-op-list),
+     which are used to capture parts of certain ambiguous constructs
+     (see @(tsee expr))."))
   (:inc ())
   (:dec ())
   :pred inc/dec-opp)
@@ -1023,7 +1024,7 @@
      @('volatile'), and
      @('_Atomic').")
    (xdoc::p
-    "We also capture the GCC extension variants
+    "We also include the GCC extension variants
      @('__restrict') and @('__restrict__') of @('restrict'),
      only used if GCC extensions are supported.
      In particular, the parser generates these GCC type qualifiers
