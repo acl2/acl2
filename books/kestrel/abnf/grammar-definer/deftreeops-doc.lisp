@@ -35,18 +35,17 @@
       Given a grammar,
       one can define tree matching predicates
       that are specialized to the grammar,
-      i.e. that implicitly depend on the grammar.
-      This @('deftreeops') macro automates the generation
-      of these specialized tree matching predicates.")
+      i.e. that implicitly depend on the grammar;
+      one can also define operations on trees
+      that are specialized to certain constructs of the grammar.")
 
     (xdoc::p
-     "In addition, this @('deftreeops') macro also generates
-      theorems about trees that satisfy
-      the generated grammar-specific matching predicates.")
-
-    (xdoc::p
-     "We plan to extend this @('deftreeops') macro
-      to generate additional grammar-specific operations on trees."))
+     "This @('deftreeops') macro automates the generation
+      of these specialized tree matching predicates and operations,
+      along with theorems about them.
+      We plan to extend this @('deftreeops') macro
+      to generate additional grammar-specific operations on trees,
+      and theorems accompanying them."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,7 +64,7 @@
      "@('*grammar*')"
      (xdoc::p
       "Name of the constant that contains the grammar
-       that the tree operations are specialized to.")
+       that the generated functions and theorems are specialized to.")
      (xdoc::p
       "This must be a symbol that is a named constant
        whose value is a grammar, i.e. a value of type @(tsee rulelist).
