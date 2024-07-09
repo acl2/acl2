@@ -1027,11 +1027,20 @@
      @('const'),
      @('restrict'),
      @('volatile'), and
-     @('_Atomic')."))
+     @('_Atomic').")
+   (xdoc::p
+    "We also capture the GCC extension variants
+     @('__restrict') and @('__restrict__') of @('restrict'),
+     only used if GCC extensions are supported.
+     In particular, the parser generates these GCC type qualifiers
+     only if instructed to allow GCC extensions."))
   (:const ())
   (:restrict ())
   (:volatile ())
   (:atomic ())
+  ;; GCC extensions:
+  (:__restrict ())
+  (:__restrict__ ())
   :pred tyqualp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
