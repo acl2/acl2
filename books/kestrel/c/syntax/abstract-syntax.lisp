@@ -819,13 +819,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>string-literal</i> in the grammar in [C].")
-   (xdoc::p
-    "The list of natural numbers corresponds to <i>s-char-sequence</i>.
-     As explained in @(see abstract-syntax),
-     these natural numbers represent Unicode code points.
-     We do not capture here the requirement that these characters
-     are not new-line, backslash, and double quote."))
+    "This corresponds to <i>string-literal</i> in the grammar in [C]."))
   ((prefix? eprefix-option)
    (schars s-char-list))
   :pred stringlitp)
