@@ -1030,3 +1030,143 @@
     x86))
 
 ;; ======================================================================
+;; INSTRUCTION: MOVDQA to/from XMM Registers
+;; ======================================================================
+
+(def-inst x86-movdqa-to-xmm
+
+  :parents (two-byte-opcodes)
+
+  :short "Move aligned packed integer values."
+
+  :long
+  "<code>
+   66 0F 6F /r   MOVDQA xmm1, xmm2/m128
+   </code>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
+        (reg-index reg rex-byte #.*r*))
+
+       (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (operand-size 16)
+
+       (inst-ac? t)
+       ((mv flg0
+            (the (unsigned-byte 128) xmm/mem)
+            (the (unsigned-byte 3) increment-rip-by)
+            ?addr
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*xmm-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg0) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Update the x86 state:
+       (x86 (!xmmi-size operand-size xmm-index xmm/mem x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+(def-inst x86-movdqa-from-xmm
+
+  :parents (two-byte-opcodes)
+
+  :short "Move aligned packed integer values."
+
+  :long
+  "<code>
+   66 0F 7F /r   MOVDQA xmm2/m128, xmm1
+   </code>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
+        (reg-index reg rex-byte #.*r*))
+
+       ((the (unsigned-byte 128) xmm)
+        (xmmi-size 16 xmm-index x86))
+
+       (p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (operand-size 16)
+
+       ((mv flg0
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-rip-by)
+            x86)
+        (if (int= mod #b11)
+            (mv nil 0 0 x86)
+          (x86-effective-addr proc-mode
+                              p4?
+                              temp-rip
+                              rex-byte
+                              r/m
+                              mod
+                              sib
+                              0 ; no immediate operand
+                              x86)))
+       ((when flg0) (!!ms-fresh :x86-effective-addr-error flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Update the x86 state:
+       (inst-ac? ;; Exceptions Type 1
+        t)
+       ((mv flg1 x86)
+        (x86-operand-to-xmm/mem proc-mode
+                                operand-size
+                                inst-ac?
+                                xmm
+                                seg-reg
+                                addr
+                                rex-byte
+                                r/m
+                                mod
+                                x86))
+       ((when flg1)
+        (!!ms-fresh :x86-operand-to-xmm/mem flg1))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;; ======================================================================

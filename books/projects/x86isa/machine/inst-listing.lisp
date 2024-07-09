@@ -6889,7 +6889,7 @@
     (INST "MOVDQA"
           (OP :OP #xF6F :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          'NIL
+          '(X86-MOVDQA-TO-XMM)
           '((:EX (CHK-EXC :TYPE-1 (:SSE2)))))
     (INST "MOVDQU"
           (OP :OP #xF6F :PFX :F3 :FEAT '(:SSE2))
@@ -8538,7 +8538,7 @@
     (INST "MOVDQA"
           (OP :OP #xF7F :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(W X) :OP2 '(V X))
-          'NIL
+          '(X86-MOVDQA-FROM-XMM)
           '((:EX (CHK-EXC :TYPE-1 (:SSE2)))))
     (INST "MOVDQU"
           (OP :OP #xF7F :PFX :F3 :FEAT '(:SSE2))

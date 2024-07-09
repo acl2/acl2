@@ -590,6 +590,11 @@
      "VPSUBB, VPSUBW, VPSUBD, VPSUBQ (VEX versions)"))
 
    (xdoc::p
+    "Support has been added for the following instructions:"
+    (xdoc::li
+     "MOVDQA"))
+
+   (xdoc::p
     "Some memory accessing functions for larger sizes have been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
