@@ -428,8 +428,8 @@ keyword = %s"auto"
         / %s"_Static_assert"
         / %s"_Thread_local"
 
-; Alternate keywords for GCC extensions
-; (https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html)
+; Keywords for GCC extensions
+; (https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html)
 
 ; The following are valid identifiers in standard C,
 ; but they are recognized as keywords as part of GCC extensions.
@@ -438,6 +438,9 @@ keyword = %s"auto"
 ; we may extend the list as needed.
 ; Our goal here is not to thoroughly cover all the GCC extensions,
 ; but only to cover practical C code that uses certain GCC extensions.
+
+; We include '__attribute__', which is indicated to be a keyword in
+; https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html (first paragraph).
 
 ; We include variants of the 'restrict' keyword
 ; with double underscores at the beginning or both beginning and end.
@@ -449,7 +452,8 @@ keyword = %s"auto"
 ; but it begins with "As with the C front end, ...".
 ; Furthermore, we have seen '__restrict' in actual C code.
 
-gcc-keyword = %s"__restrict"
+gcc-keyword = %s"__attribute__"
+            / %s"__restrict"
             / %s"__restrict__"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -894,7 +898,7 @@ attribute-parameters =
 
 attribute = identifier [ attribute-parameters ]
 
-; An attribute specifiers consists of the identifier __attribute__
+; An attribute specifiers consists of the keyword '__attribute__'
 ; followed by zero or more comma-separated attributes
 ; enclosed in double parentheses.
 ; We regard each double (open or closed) parenthesis
@@ -916,10 +920,11 @@ attribute-specifier =
 
 ; As a GCC extension, we allow one or more attribute specifiers
 ; to occur just before the ending semicolon of a declaration.
-; The grammar rule allows no such attribute specifiers,
-; for the case in which there are none,
+; The grammar rule allows the absence of such attribute specifiers,
+; for the case in which there happen to be none,
 ; and also for the standard language without GCC extensions.
 ; This is not the only place where attribute specifiers may occur,
+; in the full GCC extensions,
 ; but it is one of the places that have been observed;
 ; it is also possible that not all kinds of declarations actually allow that.
 ; However, our purpose in supporting the GCC extensions, for now,
