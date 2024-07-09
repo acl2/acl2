@@ -19833,13 +19833,6 @@
                congruent-to
                (if non-memoizable name congruent-to)
                (if non-memoizable congruent-to name)))
-          ((and congruent-to non-executable)
-           (er soft ctx
-               "It is illegal both to specify keyword argument ~
-                :NON-EXECUTABLE T and to use the :CONGRUENT-TO keyword ~
-                argument.  The proposed introduction of stobj ~x0 is thus ~
-                illegal.  See :DOC defstobj."
-               name))
           (t
            (er-progn
 
@@ -21669,6 +21662,7 @@
                               recognizer creator exports
                               protect-default
                               congruent-to
+                              non-executable
                               &allow-other-keys)
 
 ; Warning: If you change this definition, consider the possibility of making
@@ -21746,7 +21740,8 @@
                                        defstobj-redundant-raw-lisp-discriminator-value
                                        (cdr d)
                                        :event)
-                                      ',event-form))))
+                                      ',event-form)))
+                    (non-executable ',non-executable))
                (cond
                 (ok-p ',name)
                 ((and old-pair (not (raw-mode-p *the-live-state*)))
@@ -21763,7 +21758,7 @@
                                    :congruent-stobj-rep ',congruent-stobj-rep
                                    :non-memoizable
                                    ',(non-memoizable-stobj-raw st$c)
-                                   :non-executable nil)))
+                                   :non-executable non-executable)))
                  (cond (old-pair ; hence raw-mode
                         (fms "Note:  Redefining and reinitializing (abstract) ~
                               stobj ~x0 in raw mode.~%"
@@ -21771,7 +21766,15 @@
                              (standard-co *the-live-state*)
                              *the-live-state*
                              nil)
-                        (setf (cdr old-pair) ,init-form))
+                        (if non-executable
+                            (assert$
+                             (not (member-eq ',name
+                                             *non-executable-user-stobj-lst*))
+                             (setq *user-stobj-alist*
+                                   (remove1-assoc-eq ',name *user-stobj-alist*)))
+                          (setf (cdr old-pair) ,init-form)))
+                       (non-executable
+                        (pushnew ',name *non-executable-user-stobj-lst*))
                        (t
                         (setq *user-stobj-alist*
                               (cons (cons ',name ,init-form)
@@ -21785,7 +21788,7 @@
                               foundation
                               recognizer creator corr-fn exports
                               protect-default
-                              congruent-to missing-only)
+                              congruent-to non-executable missing-only)
   (declare (xargs :guard (and (symbolp name)
                               (booleanp protect-default))))
   (list 'defabsstobj-fn
@@ -21797,6 +21800,7 @@
         (list 'quote exports)
         (list 'quote protect-default)
         (list 'quote congruent-to)
+        (list 'quote non-executable)
         (list 'quote missing-only)
         'state
         (list 'quote event-form)))
@@ -21817,7 +21821,7 @@
                                              foundation
                                              recognizer creator
                                              corr-fn exports protect-default
-                                             congruent-to)
+                                             congruent-to non-executable)
   (declare (xargs :guard (symbolp name)))
   (let ((ctx (list 'quote (msg "( DEFABSSTOBJ-MISSING-EVENTS ~x0 ...)" name))))
     (list 'defabsstobj-fn1
@@ -21829,6 +21833,7 @@
           (list 'quote exports)
           (list 'quote protect-default)
           (list 'quote congruent-to)
+          (list 'quote non-executable)
           (list 'quote t) ; missing-only
           ctx
           'state
@@ -23029,8 +23034,8 @@
 
 (defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator
                                         corr-fn exports protect-default
-                                        congruent-to see-doc ctx wrld state
-                                        event-form)
+                                        congruent-to non-executable
+                                        see-doc ctx wrld state event-form)
 
 ; We return an error triple such that when there is no error, the value
 ; component is either 'redundant or is a tuple of the form (missing methods
@@ -23080,6 +23085,10 @@
          the name of an existing abstract stobj, but the value ~x0 is ~
          neither.  ~@1."
         congruent-to see-doc))
+   ((not (booleanp non-executable))
+    (er soft ctx
+        "DEFABSSTOBJ requires the :NON-EXECUTABLE keyword argument to have a ~
+         Boolean value.  See :DOC defabsstobj."))
    (t
     (er-progn
      (chk-all-but-new-name name ctx 'stobj wrld state)
@@ -23494,8 +23503,8 @@
   (congruent-absstobj-tuples-rec tuples1 tuples2 tuples1 tuples2))
 
 (defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
-                                protect-default congruent-to missing-only
-                                ctx state event-form)
+                                protect-default congruent-to non-executable
+                                missing-only ctx state event-form)
   (let* ((wrld0 (w state))
          (see-doc "See :DOC defabsstobj.")
          (st$c (or st$c
@@ -23513,8 +23522,8 @@
               (missing/methods/wrld1
                (chk-acceptable-defabsstobj
                 st-name st$c recognizer st$ap creator corr-fn exports
-                protect-default congruent-to see-doc ctx wrld0 state
-                event-form)))
+                protect-default congruent-to non-executable see-doc ctx wrld0
+                state event-form)))
       (cond
        ((eq missing/methods/wrld1 'redundant)
         (stop-redundant-event ctx state
@@ -23673,21 +23682,23 @@
                                   (putprop-unless
                                    st-name 'non-memoizable
                                    non-memoizable nil
-                                   (putprop
-                                    st-name 'absstobj-info
-                                    (make absstobj-info
-                                          :st$c st$c
-                                          :absstobj-tuples
-                                          absstobj-tuples)
+                                   (putprop-unless
+                                    st-name 'non-executablep non-executable nil
                                     (putprop
-                                     st-name 'symbol-class
-                                     :common-lisp-compliant
-                                     (put-absstobjs-in-and-outs
-                                      st-name methods
-                                      (putprop
-                                       st-name 'stobj
-                                       (make stobj-property
-                                             :live-var the-live-var
+                                     st-name 'absstobj-info
+                                     (make absstobj-info
+                                           :st$c st$c
+                                           :absstobj-tuples
+                                           absstobj-tuples)
+                                     (putprop
+                                      st-name 'symbol-class
+                                      :common-lisp-compliant
+                                      (put-absstobjs-in-and-outs
+                                       st-name methods
+                                       (putprop
+                                        st-name 'stobj
+                                        (make stobj-property
+                                              :live-var the-live-var
 
 ; We know that the first two members of names are the recognizer and creator,
 ; respectively.  The remaining names need to be put into proper order for the
@@ -23696,21 +23707,21 @@
 ; absstobj-field-fn-of-stobj-type-p): each updater must immediately follow the
 ; corresponding accessor in the :names field.
 
-                                             :recognizer (car names)
-                                             :creator (cadr names)
-                                             :names
-                                             (sort-absstobj-names
-                                              (butlast (cddr names) 1)
-                                              accessors
-                                              updaters))
-                                       (putprop-x-lst1
-                                        names 'stobj-function st-name
-                                        (putprop
-                                         the-live-var 'stobj-live-var st-name
+                                              :recognizer (car names)
+                                              :creator (cadr names)
+                                              :names
+                                              (sort-absstobj-names
+                                               (butlast (cddr names) 1)
+                                               accessors
+                                               updaters))
+                                        (putprop-x-lst1
+                                         names 'stobj-function st-name
+                                         (putprop
+                                          the-live-var 'stobj-live-var st-name
                                           (putprop
                                            the-live-var 'symbol-class
                                            :common-lisp-compliant
-                                           wrld2)))))))))))
+                                           wrld2))))))))))))
                                (discriminator
                                 (cons 'defabsstobj
                                       (make
@@ -23720,7 +23731,7 @@
                                        :congruent-stobj-rep
                                        (or congruent-stobj-rep st-name)
                                        :non-memoizable non-memoizable
-                                       :non-executable nil))))
+                                       :non-executable non-executable))))
                           (pprogn
                            (set-w 'extension wrld3 state)
                            (er-progn
@@ -23750,8 +23761,8 @@
                                            state))))))))))))))))))))))
 
 (defun defabsstobj-fn (st-name st$c recognizer creator corr-fn exports
-                               protect-default congruent-to missing-only
-                               state event-form)
+                               protect-default congruent-to non-executable
+                               missing-only state event-form)
 
 ; This definition shares a lot of code and ideas with the definition of
 ; defstobj-fn.  See the comments there for further explanation.  Note that we
@@ -23765,7 +23776,8 @@
   (with-ctx-summarized
    (msg "( DEFABSSTOBJ ~x0 ...)" st-name)
    (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
-     protect-default congruent-to missing-only ctx state event-form)))
+     protect-default congruent-to non-executable missing-only ctx state
+     event-form)))
 
 (defun create-state ()
   (declare (xargs :guard t))

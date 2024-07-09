@@ -8456,7 +8456,7 @@
    creator             ; helpful for get-stobj-creator
    congruent-stobj-rep ; helpful for congruent-stobj-rep-raw
    non-memoizable      ; helpful for non-memoizable-stobj-raw
-   non-executable)     ; helpful for add-trip; nil in defabsstobj case
+   non-executable)     ; helpful for add-trip
   nil)
 
 (defrec stobj-property
