@@ -10,6 +10,7 @@
 
 (in-package "C2C")
 
+(include-book "deftrans")
 (include-book "simpadd0-proofs")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
