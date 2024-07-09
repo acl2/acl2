@@ -1750,9 +1750,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is used to print argument expressions of function calls.
-       That is, in fact, the only place of our abstract syntax
-       that uses @(tsee expr-list).")
+      "This is used to print argument expressions of function calls,
+       as well as paramaters of GCC attributes
+       if GCC extensions are supported.")
      (xdoc::p
       "The case of an empty expression list
        is handled in @(tsee print-expr).
@@ -2621,6 +2621,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-attrib ((attr attribp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print a GCC attribute."
+  (attrib-case
+   attr
+   :name (print-ident attr.name pstate)
+   :name-param (b* ((pstate (print-ident attr.name pstate))
+                    (pstate (if attr.param
+                                (print-expr-list attr.param pstate)
+                              pstate)))
+                 pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-attrib-list ((attrs attrib-listp) (pstate pristatep))
+  :guard (consp attrs)
+  :returns (new-pstate pristatep)
+  :short "Print a list of one or more GCC attributes, comma-separated."
+  (b* (((unless (mbt (consp attrs))) (pristate-fix pstate))
+       (pstate (print-attrib (car attrs) pstate))
+       ((when (endp (cdr attrs))) pstate)
+       (pstate (print-astring ", " pstate)))
+    (print-attrib-list (cdr attrs) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-attrib-spec ((attrspec attrib-specp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an attribute specifier."
+  (b* ((pstate (print-astring "__attribute__ ((" pstate))
+       (attrs (attrib-spec->attribs attrspec))
+       (pstate (if (consp attrs)
+                   (print-attrib-list attrs pstate)
+                 pstate))
+       (pstate (print-astring "))" pstate)))
+    pstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-attrib-spec-list ((attrspecs attrib-spec-listp)
+                                (pstate pristatep))
+  :guard (consp attrspecs)
+  :returns (new-pstate pristatep)
+  :short "Print a list of one or more attribute specifiers,
+          separated by single spaces."
+  (b* (((unless (mbt (consp attrspecs))) (pristate-fix pstate))
+       (pstate (print-attrib-spec (car attrspecs) pstate))
+       ((when (endp (cdr attrspecs))) pstate))
+    (print-attrib-spec-list (cdr attrspecs) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-initdeclor ((initdeclor initdeclorp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an initializer declarator."
@@ -2676,6 +2732,11 @@
                   (pstate (print-initdeclor-list decl.init pstate)))
                pstate)
            pstate))
+        (pstate (if decl.attrib
+                    (b* ((pstate (print-astring " " pstate))
+                         (pstate (print-attrib-spec-list decl.attrib pstate)))
+                      pstate)
+                  pstate))
         (pstate (print-astring ";" pstate)))
      pstate)
    :statassert
