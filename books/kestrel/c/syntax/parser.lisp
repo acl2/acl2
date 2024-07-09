@@ -1562,13 +1562,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-dec-digits ((pos-so-far positionp) (pstate parstatep))
+(define lex-*-digit ((pos-so-far positionp) (pstate parstatep))
   :returns (mv erp
                (decdigs dec-digit-char-listp
                         :hints
                         (("Goal"
                           :induct t
-                          :in-theory (enable lex-dec-digits
+                          :in-theory (enable lex-*-digit
                                              dec-digit-char-p
                                              unsigned-byte-p
                                              integer-range-p
@@ -1576,9 +1576,12 @@
                (last-pos positionp)
                (next-pos positionp)
                (new-pstate parstatep))
-  :short "Lex zero or more decimal digits, as many as available."
+  :short "Lex zero or more (decimal) digits, as many as available."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "That is, we read @('*digit'), in ABNF notation,
+     i.e. a repetition of zero of more instances of @('digit').")
    (xdoc::p
     "The @('pos-so-far') input is the position that has been read so far,
      just before attempting to read the digits.
@@ -1589,14 +1592,14 @@
    (xdoc::p
     "We read the next character.
      If it does not exist, we return.
-     If it exists but is not a decimal digit,
+     If it exists but is not a digit,
      we put the character back and return.
      Otherwise, we recursively read zero or more,
      and we put the one just read in front.
-     We always return the position of the last decimal character,
-     or the input @('pos-so-far') if there is no decimal character:
+     We always return the position of the last digit,
+     or the input @('pos-so-far') if there is no digit:
      this input is the position read so far,
-     just before the zero or more decimal digits to be read."))
+     just before the zero or more digits to be read."))
   (b* (((reterr) nil (irr-position) (irr-position) (irr-parstate))
        ((erp char pos pstate) (read-char pstate))
        ((when (not char))
@@ -1606,7 +1609,7 @@
         (b* ((pstate (unread-char pstate)))
           (retok nil (position-fix pos-so-far) pos pstate)))
        (decdig (code-char char))
-       ((erp decdigs last-pos next-pos pstate) (lex-dec-digits pos pstate)))
+       ((erp decdigs last-pos next-pos pstate) (lex-*-digit pos pstate)))
     (retok (cons decdig decdigs) last-pos next-pos pstate))
   :measure (parsize pstate)
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -1620,7 +1623,7 @@
    (decdigs true-listp
             :rule-classes :type-prescription))
 
-  (defret parsize-of-lex-dec-digits-uncond
+  (defret parsize-of-lex-*-digit-uncond
     (<= (parsize new-pstate)
         (- (parsize pstate)
            (len decdigs)))
@@ -2447,7 +2450,7 @@
            ((erp sign? sign-pos pstate) (lex-sign-if-present pstate))
            (pos-so-far (if sign? sign-pos pos))
            ((erp digits last-pos & pstate)
-            (lex-dec-digits pos-so-far pstate))
+            (lex-*-digit pos-so-far pstate))
            ((unless digits)
             (b* ((pstate (if sign? (unread-char pstate) pstate)) ; put back sign
                  (pstate (unread-char pstate))) ; put back e/E
@@ -2507,7 +2510,7 @@
            ((erp sign? sign-last-pos pstate)
             (lex-sign-if-present pstate))
            ((erp digits digits-last-pos digits-next-pos pstate)
-            (lex-dec-digits sign-last-pos pstate))
+            (lex-*-digit sign-last-pos pstate))
            ((unless digits)
             (reterr-msg :where (position-to-msg digits-next-pos)
                         :expected "one or more digits"
@@ -2568,7 +2571,7 @@
            ((erp sign? sign-last-pos pstate)
             (lex-sign-if-present pstate))
            ((erp digits digits-last-pos digits-next-pos pstate)
-            (lex-dec-digits sign-last-pos pstate))
+            (lex-*-digit sign-last-pos pstate))
            ((unless digits)
             (reterr-msg :where (position-to-msg digits-next-pos)
                         :expected "one or more digits"
@@ -2980,7 +2983,7 @@
   (b* (((reterr) (irr-const) (irr-position) (irr-parstate))
        ;; 1-9
        ((erp decdigs decdigs-last-pos & pstate)
-        (lex-dec-digits first-pos pstate))
+        (lex-*-digit first-pos pstate))
        ;; 1-9 [decdigs]
        ((erp char pos pstate) (read-char pstate)))
     (cond
@@ -2996,7 +2999,7 @@
              pstate))
      ((= char (char-code #\.)) ; 1-9 [decdigs] .
       (b* (((erp decdigs2 decdigs2-last-pos & pstate)
-            (lex-dec-digits pos pstate))
+            (lex-*-digit pos pstate))
            ;; 1-9 [decdigs] . [decdigs2]
            ((erp expo? expo-last/next-pos pstate)
             (lex-dec-expo-if-present pstate))
@@ -3113,7 +3116,7 @@
   (b* (((reterr) (irr-const) (irr-position) (irr-parstate))
        ;; . decdig
        ((erp decdigs decdigs-last-pos & pstate)
-        (lex-dec-digits first-pos-after-dot pstate))
+        (lex-*-digit first-pos-after-dot pstate))
        ;; . decdig [decdigs]
        ((erp expo? expo-last/next-pos pstate)
         (lex-dec-expo-if-present pstate))
@@ -3262,7 +3265,7 @@
   (b* (((reterr) (irr-const) (irr-position) (irr-parstate))
        ;; 0
        ((erp digits digits-last-pos & pstate)
-        (lex-dec-digits zero-pos pstate))
+        (lex-*-digit zero-pos pstate))
        ;; 0 [digits]
        ((erp char pos pstate) (read-char pstate)))
     (cond
@@ -3287,7 +3290,7 @@
                       :found (char-to-msg nonoctdig))))))
      ((= char (char-code #\.)) ; 0 [digits] .
       (b* (((erp digits2 digits2-last-pos & pstate)
-            (lex-dec-digits pos pstate))
+            (lex-*-digit pos pstate))
            ;; 0 [digits] . [digits2]
            ((erp expo? expo-last/next-pos pstate)
             (lex-dec-expo-if-present pstate))

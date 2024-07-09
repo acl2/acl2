@@ -487,45 +487,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-lex (fn input &key cond)
-  ;; optional COND may be over variables AST, POS/SPAN, PSTATE
+(defmacro test-lex (fn input &key pos more-inputs cond)
+  ;; INPUT is an ACL2 string with the text to parse.
+  ;; Optional POS is the initial position for the parser state.
+  ;; Optional MORE-INPUTS go just before parser state input.
+  ;; Optional COND may be over variables AST, POS/SPAN, PSTATE,
+  ;; and also POS/SPAN2 for LEX-*-DIGIT.
   `(assert-event
-    (b* (((mv erp ?ast ?pos/span ?pstate)
-          (,fn (init-parstate (acl2::string=>nats ,input) nil))))
+    (b* ((pstate (init-parstate (acl2::string=>nats ,input) nil))
+         ,@(and pos
+                `((pstate (change-parstate pstate :position ,pos))))
+         (,(if (eq fn 'lex-*-digit)
+               '(mv erp ?ast ?pos/span ?pos/span2 ?pstate)
+             '(mv erp ?ast ?pos/span ?pstate))
+          (,fn ,@more-inputs pstate)))
       (if erp
           (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
         ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
 
-(defmacro test-lex-fail (fn input)
+(defmacro test-lex-fail (fn input &key more-inputs)
+  ;; INPUT is an ACL2 string with the text to parse.
+  ;; Optional MORE-INPUTS go just before parser state input.
   `(assert-event
-    (b* (((mv erp & & &) (,fn (init-parstate (acl2::string=>nats ,input) nil))))
+    (b* ((,(if (eq fn 'lex-*-digit)
+               '(mv erp & & & &)
+             '(mv erp & & &))
+          (,fn ,@more-inputs (init-parstate (acl2::string=>nats ,input) nil))))
       erp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; lex-identifier/keyword
 
-(assert-event
- (b* ((first-char (char-code #\w))
-      (first-pos (position 8 3))
-      (pstate (init-parstate (acl2::string=>nats " abc") nil))
-      (pstate (change-parstate pstate :position (position 8 4)))
-      ((mv erp lexeme span &)
-       (lex-identifier/keyword first-char first-pos pstate)))
-   (and (not erp)
-        (equal lexeme (lexeme-token (token-ident (ident "w"))))
-        (equal span (span (position 8 3) (position 8 3))))))
+(test-lex
+ lex-identifier/keyword
+ " abc"
+ :pos (position 8 4)
+ :more-inputs ((char-code #\w) (position 8 3))
+ :cond (and (equal ast (lexeme-token (token-ident (ident "w"))))
+            (equal pos/span (span (position 8 3) (position 8 3)))))
 
-(assert-event
- (b* ((first-char (char-code #\u))
-      (first-pos (position 8 3))
-      (pstate (init-parstate (acl2::string=>nats "abc456") nil))
-      (pstate (change-parstate pstate :position (position 8 4)))
-      ((mv erp lexeme span &)
-       (lex-identifier/keyword first-char first-pos pstate)))
-   (and (not erp)
-        (equal lexeme (lexeme-token (token-ident (ident "uabc456"))))
-        (equal span (span (position 8 3) (position 8 9))))))
+(test-lex
+ lex-identifier/keyword
+ "abc456"
+ :pos (position 8 4)
+ :more-inputs ((char-code #\u) (position 8 3))
+ :cond (and (equal ast (lexeme-token (token-ident (ident "uabc456"))))
+            (equal pos/span (span (position 8 3) (position 8 9)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -584,6 +592,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; lex-hex-quad
+
 (test-lex
  lex-hex-quad
  "0000"
@@ -607,6 +617,46 @@
 (test-lex-fail
  lex-hex-quad
  "7aa")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-digit
+
+(test-lex
+ lex-*-digit
+ ""
+ :pos (position 1 1)
+ :more-inputs ((position 1 0))
+ :cond (and (equal ast nil)
+            (equal pos/span (position 1 0))
+            (equal pos/span2 (position 1 1))))
+
+(test-lex
+ lex-*-digit
+ "+"
+ :pos (position 1 1)
+ :more-inputs ((position 1 0))
+ :cond (and (equal ast nil)
+            (equal pos/span (position 1 0))
+            (equal pos/span2 (position 1 1))))
+
+(test-lex
+ lex-*-digit
+ "6"
+ :pos (position 10 10)
+ :more-inputs ((position 10 9))
+ :cond (and (equal ast '(#\6))
+            (equal pos/span (position 10 10))
+            (equal pos/span2 (position 10 11))))
+
+(test-lex
+ lex-*-digit
+ "183a"
+ :pos (position 10 10)
+ :more-inputs ((position 10 9))
+ :cond (and (equal ast '(#\1 #\8 #\3))
+            (equal pos/span (position 10 12))
+            (equal pos/span2 (position 10 13))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

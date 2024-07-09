@@ -760,9 +760,10 @@
            (char-code (char-downcase #.(code-char 192))))
 
 ; See https://bugs.launchpad.net/sbcl/+bug/2067841 for explanation of an SBCL
-; bug (fixed on June 2, 2024) necessitating a fix such as this one.
-; In short, the following two should be equal
-; the first was formerly 192.
+; bug, fixed on June 2, 2024 and then released with SBCL 2.4.6 late that month.
+; The bug necessitated a fix such as the one below.  In short, the following
+; two should be equal, but were not: the first evaluated to 192 while the
+; second evaluated to 224.  After the fix, both evaluate to 224.
 
 ;   (let ((s (string-downcase (coerce (list (code-char 192)) 'string))))
 ;     (char-code (char s 0))) ; was 192; now, 224
