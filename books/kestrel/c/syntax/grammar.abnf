@@ -442,17 +442,20 @@ keyword = %s"auto"
 ; We include '__attribute__', which is indicated to be a keyword in
 ; https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html (first paragraph).
 
-; We include variants of the 'restrict' keyword
+; We include variants of the 'inline' and 'restrict' keywords
 ; with double underscores at the beginning or both beginning and end.
 ; While https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html says that
-; the alternate 'restrict' keyword is only '__restrict__',
+; the alternate 'inline' and 'restrict' keywords
+; are only '__inline__' and '__restrict__',
 ; https://gcc.gnu.org/onlinedocs/gcc/Restricted-Pointers.html
 ; also mentions '__restrict'.
 ; This latter page of the GCC documentation actually pertains to C++,
 ; but it begins with "As with the C front end, ...".
-; Furthermore, we have seen '__restrict' in actual C code.
+; Furthermore, we have seen '__inline' and '__restrict' in actual C code.
 
 gcc-keyword = %s"__attribute__"
+            / %s"__inline"
+            / %s"__inline__"
             / %s"__restrict"
             / %s"__restrict__"
 

@@ -1411,6 +1411,8 @@
                                    "_Thread_local"))
             (and (parstate->gcc pstate)
                  (member-equal string '("__attribute__"
+                                        "__inline"
+                                        "__inline__"
                                         "__restrict"
                                         "__restrict__"))))
         (retok (lexeme-token (token-keyword string)) span pstate)
@@ -5322,9 +5324,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "All function specifiers consist of single keywords."))
+    "All function specifiers consist of single keywords.")
+   (xdoc::p
+    "We also compare the token against the GCC variants
+     @('__inline') and @('__inline__') of @('inline').
+     Note that these variants are keywords only if GCC extensions are supported:
+     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     So the comparison here with those variant keywords
+     will always fail if GCC extensions are not supported,
+     because in that case both @('__inline') and @('__inline__')
+     would be identifier tokens, not keyword tokens."))
   (or (equal token? (token-keyword "inline"))
-      (equal token? (token-keyword "_Noreturn")))
+      (equal token? (token-keyword "_Noreturn"))
+      (equal token? (token-keyword "__inline"))
+      (equal token? (token-keyword "__inline__")))
   ///
 
   (defrule non-nil-when-token-function-specifier-p
@@ -5341,6 +5354,8 @@
           to the corresponding function specifier."
   (cond ((equal token (token-keyword "inline")) (funspec-inline))
         ((equal token (token-keyword "_Noreturn")) (funspec-noreturn))
+        ((equal token (token-keyword "__inline")) (funspec-__inline))
+        ((equal token (token-keyword "__inline__")) (funspec-__inline__))
         (t (prog2$ (impossible) (irr-funspec))))
   :prepwork ((local (in-theory (enable token-function-specifier-p)))))
 

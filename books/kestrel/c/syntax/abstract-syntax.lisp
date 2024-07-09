@@ -1072,9 +1072,18 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>function-specifier</i> in the grammar in [C].
-     The function specifiers are @('inline') and @('_Noreturn')."))
+     The function specifiers are @('inline') and @('_Noreturn').")
+   (xdoc::p
+    "We also include the GCC extension variants
+     @('__inline') and @('__inline__') of @('inline'),
+     only used if GCC extensions are supported.
+     In particular, the parser generates these GCC function specifiers
+     only if instructed to allow GCC extensions."))
   (:inline ())
   (:noreturn ())
+  ;; GCC extensions:
+  (:__inline ())
+  (:__inline__ ())
   :pred funspecp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
