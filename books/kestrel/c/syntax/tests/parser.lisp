@@ -1286,3 +1286,8 @@ struct bar
  parse-external-declaration-list
  "typedef int register_t __attribute__ ((__mode__ (__word__)));"
  :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "extern int fscanf (FILE *__restrict __stream, const char *__restrict __format, ...) __asm__ (\"\" \"__isoc99_fscanf\") ;"
+ :gcc t)

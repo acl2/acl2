@@ -2380,6 +2380,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod asm-name-spec
+  :short "Fixtype of GCC assembler name specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This captures the "
+    (xdoc::seetopic "https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html"
+                    "construct to specify assembler names")
+    ". It consists of the keyword @('asm') or @('__asm__')
+     and a parenthesized string literal.
+     Since adjacent string literals may be concatenated [C:5.1.1.2/6],
+     we allow a list of string literals here;
+     this way, we preserve the fact that there were adjacent string literals.
+     Indeed, we have observed multiple (two, to be precise)
+     string literals in this construct in practical code.
+     We also capture whether the plain @('asm') keyword was used
+     or whether the one with underscores, @('__asm__') was used instead.")
+   (xdoc::p
+    "The GCC documentation does not provide a clear term
+     to denote this construct,
+     although the URL suggests that it is an `assembler label';
+     but the text does not mention that term.
+     Note that this is not the only kind of assembler construct
+     in GCC extensions; there are others.
+     So we use the term `assembler name specifier' for this construct,
+     since it specifies the assembler name (of an identifier)."))
+  ((strings stringlit-list)
+   (uscores bool))
+  :pred asm-name-specp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption asm-name-spec-option
+  asm-name-spec
+  :short "Fixtype of optional assembler name specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Assembler name specifiers are defined in @(tsee asm-name-spec)."))
+  :pred asm-name-spec-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod initdeclor
   :short "Fixtype of initializer declarators [C:6.7] [C:A.2.2]."
   :long
@@ -2419,6 +2462,18 @@
      and it is outside the mutual recursion @(see exprs/decls).")
    (xdoc::p
     "As a GCC extension,
+     we include an optional assembler name specifier.
+     According to the GCC documentation,
+     this should normally follow a declarator,
+     so our placement here is more liberal.
+     However, our current goal with GCC extensions
+     is just to handle code that includes them,
+     not to provide a comprehensive formalization of GCC extensions.
+     The optional assembler name specifier is always absent
+     if GCC extensions are not supported;
+     it may be present or absent otherwise.")
+   (xdoc::p
+    "As a GCC extension,
      we also include a list of zero or more attribute specifiers
      as part of a declaration, meant to come after all the declarators.
      This is not fully general, but it covers a set of cases of interest.
@@ -2426,6 +2481,7 @@
      e.g. when sticking to standard C without GCC extensions."))
   (:decl ((specs declspec-list)
           (init initdeclor-list)
+          (asm? asm-name-spec-option)
           (attrib attrib-spec-list)))
   (:statassert ((unwrap statassert)))
   :pred declp)

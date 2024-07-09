@@ -313,6 +313,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-asm-name-spec
+  :short "An irrelevant assembler name specifier."
+  :type asm-name-specp
+  :body (asm-name-spec nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-initdeclor
   :short "An irrelevant initializer declarator."
   :type initdeclorp
@@ -323,7 +330,7 @@
 (defirrelevant irr-decl
   :short "An irrelevant declaration."
   :type declp
-  :body (make-decl-decl :specs nil :init nil))
+  :body (make-decl-decl :specs nil :init nil :asm? nil :attrib nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
