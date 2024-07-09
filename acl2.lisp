@@ -761,12 +761,13 @@
 
 ; See https://bugs.launchpad.net/sbcl/+bug/2067841 for explanation of an SBCL
 ; bug (fixed on June 2, 2024) necessitating a fix such as this one.
-; In short, the following two should be equal, but were not.
+; In short, the following two should be equal
+; the first was formerly 192.
 
 ;   (let ((s (string-downcase (coerce (list (code-char 192)) 'string))))
-;     (char-code (char s 0))) ; 224
+;     (char-code (char s 0))) ; was 192; now, 224
 
-;   (char-code (char-downcase (code-char 192))) ; 192
+;   (char-code (char-downcase (code-char 192))) ; was and is 224
 
 ; For another example: The middle character of
 ; (string-downcase (string-upcase 

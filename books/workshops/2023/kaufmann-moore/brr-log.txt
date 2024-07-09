@@ -351,15 +351,19 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM (REV X))
      (IMPLIES (IF (NATP N) (< N (LEN X)) 'NIL)
               (EQUAL (NTH N (REVAPPEND X Y))
                      (NTH N (REVERSE X)))),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the second argument,
      (EQUAL (NTH N (REVAPPEND X Y))
             (NTH N (REVERSE X))),
+   Geneqv: (IFF)
 4. Rewriting (to simplify) the first argument,
      (NTH N (REVAPPEND X Y)),
 5. Rewriting (to simplify) the second argument,
      (REVAPPEND X Y),
+   Geneqv: ((LIST-EQUIV LIST-EQUIV-IMPLIES-EQUAL-NTH-2))
 6. Attempting to apply (:REWRITE REVAPPEND-REMOVAL) to
      (REVAPPEND X Y)
+   Geneqv: ((LIST-EQUIV LIST-EQUIV-IMPLIES-EQUAL-NTH-2))
 The resulting (translated) term is
   (BINARY-APPEND (REV X) Y).
 ACL2 !>>(WITH-BRR-DATA (THM (IMPLIES (AND (NATP N) (< N (LEN X)))
@@ -606,12 +610,15 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM (REV X))
 2. Rewriting (to simplify) the atom of the fourth literal,
      (EQUAL (NTH N (BINARY-APPEND (REV X) Y))
             (NTH N (REVERSE X))),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the second argument,
      (NTH N (REVERSE X)),
 4. Rewriting (to simplify) the second argument,
      (REVERSE X),
+   Geneqv: ((LIST-EQUIV LIST-EQUIV-IMPLIES-EQUAL-NTH-2))
 5. Attempting to apply (:DEFINITION REVERSE) to
      (REVERSE X)
+   Geneqv: ((LIST-EQUIV LIST-EQUIV-IMPLIES-EQUAL-NTH-2))
 6. Rewriting (to simplify) the body,
      (IF (STRINGP X)
          (COERCE (REVAPPEND (COERCE X 'LIST) 'NIL)
@@ -619,19 +626,25 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM (REV X))
        (REVAPPEND X 'NIL)),
    under the substitution
      X : X
+   Geneqv: ((LIST-EQUIV LIST-EQUIV-IMPLIES-EQUAL-NTH-2))
 7. Rewriting (to simplify) the third argument,
      (REVAPPEND X 'NIL),
    under the substitution
      X : X
+   Geneqv: ((LIST-EQUIV LIST-EQUIV-IMPLIES-EQUAL-NTH-2))
 8. Attempting to apply (:REWRITE REVAPPEND-REMOVAL) to
      (REVAPPEND X 'NIL)
+   Geneqv: ((LIST-EQUIV LIST-EQUIV-IMPLIES-EQUAL-NTH-2))
 9. Rewriting (to simplify) the rhs of the conclusion,
      (BINARY-APPEND (REV X) Y),
    under the substitution
      Y : 'NIL
      X : X
+   Geneqv: ((LIST-EQUIV LIST-EQUIV-IMPLIES-EQUAL-NTH-2))
 10. Attempting to apply (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV) to
      (BINARY-APPEND (REV X) 'NIL)
+   Preserving: LIST-EQUIV
+   Geneqv: ((LIST-EQUIV LIST-EQUIV-IMPLIES-EQUAL-NTH-2))
 The resulting (translated) term is
   (REV X).
 Note: The first lemma application above that provides a suitable result

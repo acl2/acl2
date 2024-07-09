@@ -4594,7 +4594,8 @@ Goal''
  (EQUAL
   (HIDE
    (COMMENT
-    "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
+    "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true;
+see :DOC comment"
     (EV$ '(RETURN-LAST 'PROGN
                        '(LAMBDA$ NIL
                           (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
@@ -4630,7 +4631,8 @@ Goal''
  (EQUAL
   (HIDE
    (COMMENT
-    "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
+    "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true;
+see :DOC comment"
     (EV$ '(RETURN-LAST 'PROGN
                        '(LAMBDA$ NIL
                           (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
@@ -5008,7 +5010,8 @@ Goal'
 (EQUAL
  (HIDE
   (COMMENT
-   "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
+   "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true;
+see :DOC comment"
    (RUN-THIS-VERSION-3 'JOHN)))
  '((HI JOHN)))
 
@@ -5035,7 +5038,8 @@ Goal'
 (EQUAL
  (HIDE
   (COMMENT
-   "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
+   "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true;
+see :DOC comment"
    (RUN-THIS-VERSION-3 'JOHN)))
  '((HI JOHN)))
 

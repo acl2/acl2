@@ -24467,19 +24467,29 @@
 (defun prettyify-brr-gstack-frame (frame)
 
 ; Keep this in sync with the cw-gframe vis-a-vis the shapes of each possible
-; frame.
+; frame.  Observe that push-gframe actually uses :args `(list* ,@args) to save
+; a cons at the end, i.e., args may be (a b c) but in the frame they're (a b
+; . c).
 
   (case (access gframe frame :sys-fn)
-        ((rewrite-with-lemma
-          rewrite-quoted-constant-with-lemma
-          add-linear-lemma)
-         (let* ((args (access gframe frame :args))
-                (lemma (cdr args)))
-           (change gframe frame
-                   :args
-                   (cons (car args)
-                         (hide-nume-in-rewrite-or-linear-rule lemma)))))
-        (otherwise frame)))
+    ((rewrite-with-lemma
+      rewrite-quoted-constant-with-lemma)
+     (let* ((args (access gframe frame :args))
+            (lemma (cadr args))
+            (geneqv (cddr args)))
+       (change gframe frame
+               :args
+               (list* (car args)
+                      (hide-nume-in-rewrite-or-linear-rule lemma)
+                      geneqv))))
+    (add-linear-lemma
+     (let* ((args (access gframe frame :args))
+            (lemma (cdr args)))
+       (change gframe frame
+               :args
+               (cons (car args)
+                     (hide-nume-in-rewrite-or-linear-rule lemma)))))
+    (otherwise frame)))
 
 (defun prettyify-brr-gstack (gstack)
   (cond

@@ -819,14 +819,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>string-literal</i> in the grammar in [C].")
-   (xdoc::p
-    "The list of natural numbers corresponds to <i>s-char-sequence</i>.
-     As explained in @(see abstract-syntax),
-     these natural numbers represent Unicode code points.
-     We do not capture here the requirement that these characters
-     are not new-line, backslash, and double quote."))
-  ((prefix eprefix-option)
+    "This corresponds to <i>string-literal</i> in the grammar in [C]."))
+  ((prefix? eprefix-option)
    (schars s-char-list))
   :pred stringlitp)
 
@@ -886,7 +880,7 @@
      used to capture certain precedence rules in the grammar itself.
      In our abstract syntax, for better factoring and orthogonality,
      it makes sense to introduce a fixtype for binary operators,
-     and use it to define binary expressions as in @(tsee expr).
+     and use it to define binary expressions as we do in @(tsee expr).
      The binary operators are
      @('*') (binary),
      @('/'),
@@ -902,8 +896,8 @@
      @('=='),
      @('!='),
      @('&') (binary),
-     @('|'),
      @('^'),
+     @('|'),
      @('&&'),
      @('||'),
      @('='),
@@ -915,9 +909,8 @@
      @('<<='),
      @('>>='),
      @('&='),
-     @('^='),
-     @('|='), and
-     @('*=')."))
+     @('^='), and
+     @('|=')."))
   (:mul ())
   (:div ())
   (:rem ())
@@ -961,7 +954,9 @@
      for pre- and post- increment and decrement.
      They are already part of @(tsee unop),
      but we also need a fixtype for just the two of them,
-     so we can form lists in @(tsee inc/dec-op-list)."))
+     so we can form lists in @(tsee inc/dec-op-list),
+     which are used to capture parts of certain ambiguous constructs
+     (see @(tsee expr))."))
   (:inc ())
   (:dec ())
   :pred inc/dec-opp)
@@ -1027,11 +1022,20 @@
      @('const'),
      @('restrict'),
      @('volatile'), and
-     @('_Atomic')."))
+     @('_Atomic').")
+   (xdoc::p
+    "We also include the GCC extension variants
+     @('__restrict') and @('__restrict__') of @('restrict'),
+     only used if GCC extensions are supported.
+     In particular, the parser generates these GCC type qualifiers
+     only if instructed to allow GCC extensions."))
   (:const ())
   (:restrict ())
   (:volatile ())
   (:atomic ())
+  ;; GCC extensions:
+  (:__restrict ())
+  (:__restrict__ ())
   :pred tyqualp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1068,9 +1072,18 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>function-specifier</i> in the grammar in [C].
-     The function specifiers are @('inline') and @('_Noreturn')."))
+     The function specifiers are @('inline') and @('_Noreturn').")
+   (xdoc::p
+    "We also include the GCC extension variants
+     @('__inline') and @('__inline__') of @('inline'),
+     only used if GCC extensions are supported.
+     In particular, the parser generates these GCC function specifiers
+     only if instructed to allow GCC extensions."))
   (:inline ())
   (:noreturn ())
+  ;; GCC extensions:
+  (:__inline ())
+  (:__inline__ ())
   :pred funspecp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

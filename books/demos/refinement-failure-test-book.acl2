@@ -1,0 +1,10 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "refinement-failure-test")
+
+; Help dependency scanner.
+#||
+(depends-on "refinement-failure-test-input.lsp")
+(depends-on "refinement-failure-test-log.txt")
+||#
+
+; cert-flags: ? t :ttags :all
