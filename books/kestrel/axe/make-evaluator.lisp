@@ -35,6 +35,7 @@
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
+(include-book "kestrel/utilities/unquote-list" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system) ;built in to the evaluator
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "make-evaluator-common")

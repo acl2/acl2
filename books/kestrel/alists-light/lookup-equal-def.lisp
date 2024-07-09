@@ -1,7 +1,7 @@
-; The definition of lookup-equal
+; The definition of lookup-equal (lookup a key in an alist using EQUAL as the test)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;

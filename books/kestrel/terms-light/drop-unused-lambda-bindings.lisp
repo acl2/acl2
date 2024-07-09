@@ -11,8 +11,6 @@
 
 (in-package "ACL2")
 
-;; TODO: rename this book
-
 ;; See also remove-guard-holders-and-clean-up-lambdas and remove-guard-holders-weak.
 
 ;; TODO: Also handle the case where the lambda body is just a var (one of the
@@ -25,7 +23,8 @@
 
 (include-book "tools/flag" :dir :system)
 (include-book "filter-formals-and-actuals")
-(local (include-book "kestrel/std/system/all-vars" :dir :system))
+(include-book "free-vars-in-term")
+;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -33,7 +32,8 @@
 
 (in-theory (disable mv-nth))
 
-(local (in-theory (disable reverse all-vars)))
+(local (in-theory (disable reverse ;all-vars
+                           )))
 
 ;; also in books/std/typed-lists/pseudo-term-listp
 (local
@@ -61,14 +61,18 @@
                (let* ((body (lambda-body fn))
                       (body (drop-unused-lambda-bindings body))
                       (formals (lambda-formals fn))
-                      (body-vars (all-vars body)))
+                      (body-vars (free-vars-in-term body)))
                  (mv-let (formals args)
                    (filter-formals-and-actuals formals args body-vars)
-                   (if (equal formals args)
+                   ;; could put this back, or call make-lambdas-application-simple:
+                   ;;(if (equal formals args)
                        ;; If the remaining formals are the same as the args, we
                        ;; don't need a lambda at all:
-                       body
-                     `((lambda ,formals ,body) ,@args))))
+                       ;; TODO: Or rely on drop-trivial-lambdas for that?
+                   ;;    body
+                   `((lambda ,formals ,body) ,@args)
+                   ;)
+                   ))
              ;; not a lambda:
              (cons-with-hint fn args term)))))))
  (defun drop-unused-lambda-bindings-lst (terms)

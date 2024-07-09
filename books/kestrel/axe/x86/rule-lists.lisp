@@ -1272,8 +1272,8 @@
     x86isa::get-prefixes-base-4
     ;; x86isa::get-prefixes-base-5 ; error case
     x86isa::get-prefixes-base-6
-    x86isa::get-prefixes-base-7
-    x86isa::get-prefixes-base-8
+    ;; x86isa::get-prefixes-base-7 ; error case
+    ;; x86isa::get-prefixes-base-8 ; error case
     x86isa::get-prefixes-unroll-1
     x86isa::get-prefixes-unroll-2
     x86isa::get-prefixes-unroll-3
@@ -3085,7 +3085,7 @@
             ;; x86isa::program-at-of-set-undef ; do we not need something like this?
             )))
 
-(defun lifter-rules64-new ()
+(defund lifter-rules64-new ()
   (declare (xargs :guard t))
   '(signed-byte-p-64-of-rax
     signed-byte-p-64-of-rbx
@@ -4496,7 +4496,7 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (lifter-rules64-new) ; todo: drop?
+  (append (lifter-rules64-new) ; todo: drop?  but that caused failures! why?
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 
@@ -4714,6 +4714,105 @@
     x86isa::x86-fetch-decode-execute-base-new
     ;; x86-fetch-decode-execute-opener-safe-64
     ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: move this?
+(defun extra-loop-lifter-rules ()
+  (append ;or put these in symbolic-execution-rules-loop ?:
+   '(stack-height-increased-wrt
+     stack-height-decreased-wrt
+     get-pc
+     acl2::memberp-of-cons-irrel-strong
+     acl2::memberp-of-cons-same
+     acl2::memberp-of-nil
+;     acl2::member-equal-of-cons
+     acl2::equal-of-same-cancel-4
+     acl2::right-cancellation-for-+
+     x86isa::logext-64-does-nothing-when-canonical-address-p
+     x86isa::equal-of-if-constants
+     x86isa::equal-of-if-constants-alt
+     acl2::bool-fix-when-booleanp
+     acl2::if-of-t-and-nil-becomes-bool-fix
+     acl2::mv-nth-of-if
+     x86isa::canonical-address-p-of-if
+     x86isa::+-of-if-arg1
+     x86isa::+-of-if-arg2
+     acl2::bvchop-numeric-bound
+     x86isa::xw-of-rip-and-if
+     acl2::if-x-x-y-when-booleanp
+     read-of-xw-irrel
+     mod-of-plus-reduce-constants
+     mv-nth-1-of-rb-becomes-read
+     mv-nth-1-of-wb-becomes-write
+     read-of-xw-irrel
+     read-of-set-flag
+     read-of-write-disjoint2
+     write-of-write-same
+     read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
+     read-in-terms-of-nth-and-pos-eric-4-bytes ; this is for resolving reads of the program.
+     read-in-terms-of-nth-and-pos-eric-2-bytes ; this is for resolving reads of the program.
+     read-in-terms-of-nth-and-pos-eric-8-bytes ; this is for resolving reads of the program.
+     acl2::equal-of-same-cancel-4
+     acl2::equal-of-same-cancel-3
+     acl2::equal-of-bvplus-constant-and-constant
+     acl2::equal-of-bvplus-constant-and-constant-alt
+     acl2::mod-of-+-of-constant
+     xr-of-if
+     )
+   (write-rules)
+;(x86isa::lifter-rules)
+   ))
+
+;; For the loop lifter
+(defun symbolic-execution-rules-loop-lifter ()
+  (declare (xargs :guard t))
+  '(;;run-until-exit-segment-or-hit-loop-header-opener-1
+    run-until-exit-segment-or-hit-loop-header-opener-2
+    run-until-exit-segment-or-hit-loop-header-base-case-1
+    run-until-exit-segment-or-hit-loop-header-base-case-2
+    run-until-exit-segment-or-hit-loop-header-base-case-3
+    ;; run-until-exit-segment-or-hit-loop-header-of-myif-split
+    run-until-exit-segment-or-hit-loop-header-of-if-split
+    run-until-exit-segment-or-hit-loop-header-of-if))
+
+;; Eventually we may add these rules about read to extra-loop-lifter-rules.
+(defun loop-lifter-invariant-preservation-rules ()
+  (append (extra-loop-lifter-rules)
+          '(mv-nth-1-of-rb-becomes-read
+            read-of-write-disjoint
+            read-of-write-same
+            )))
+
+(defun loop-lifter-rules32 ()
+  (declare (xargs :guard t))
+  (set-difference-eq
+   (lifter-rules32)
+   ;; todo: move these rule-lists:
+   '(xr-becomes-undef
+     x86isa::!undef-becomes-set-undef
+     xw-becomes-set-undef
+     xr-becomes-ms
+     xw-becomes-set-ms
+     !ms-becomes-set-ms
+     xr-becomes-fault
+     xw-becomes-set-fault
+     !fault-becomes-set-fault)))
+
+;; Can't really use the new, nicer normal forms for readers and writers:
+(defun loop-lifter-rules64 ()
+  (declare (xargs :guard t))
+  (set-difference-eq
+   (append (lifter-rules64)
+           (append '(x86isa::rip x86isa::rip$a ; todo?
+                     )
+                   (reader-and-writer-opener-rules))
+           ;;(lifter-rules64-new); todo
+           )
+   ;; we don't use these usual normal forms:
+   (reader-and-writer-intro-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority set-flag-of-write -3)

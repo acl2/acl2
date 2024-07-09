@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "clean-up-lambdas")
+(include-book "drop-unused-lambda-bindings")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 ;; Drop the binding of __function__(not used in the body), and then drop the
@@ -20,7 +20,12 @@
                                                (unsigned-byte-p '8 x))
                                              'n08p
                                              x))
-              '(unsigned-byte-p '8 x))
+              ;;'(unsigned-byte-p '8 x)
+              ;; can be further simplified by drop-trivial-lambdas:
+              '((lambda (x)
+                 (unsigned-byte-p '8 x))
+               x)
+              )
 
 ;; In this test, we can drop the binding of __function__ but not the entire
 ;; lambda:

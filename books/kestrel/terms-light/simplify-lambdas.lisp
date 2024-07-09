@@ -13,16 +13,19 @@
 ;; STATUS: IN-PROGRESS
 
 ;; TODO: Add more kinds of simplifications
+;; TODO: Add proofs book
 
 (include-book "substitute-constants-in-lambdas")
-(include-book "clean-up-lambdas")
+(include-book "drop-unused-lambda-bindings")
 ;; (include-book "substitute-unnecessary-lambda-vars")
+(include-book "simplify-ors")
 
 (defund simplify-lambdas-one-step (term)
   (declare (xargs :guard (pseudo-termp term)))
   (let* ((term (substitute-constants-in-lambdas term))
          (term (drop-unused-lambda-bindings term))
          ;; (term (substitute-unnecessary-lambda-vars-in-term term nil)) ; todo: put back
+         (term (simplify-ors term nil)) ; could pass in bool-fix, as for a hyp
          )
     term))
 

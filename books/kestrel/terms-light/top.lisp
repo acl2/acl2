@@ -20,12 +20,6 @@
 ;; Utilities:
 (include-book "filter-formals-and-actuals")
 (include-book "termp-simple")
-
-;; Template transformation:
-(include-book "copy-term")
-(include-book "copy-term-proofs")
-
-;; TODO: Organize these:
 (include-book "all-quotep")
 (include-book "trivial-formals")
 (include-book "non-trivial-formals")
@@ -33,11 +27,6 @@
 (include-book "bound-vars-in-term")
 (include-book "let-vars-in-term")
 (include-book "free-vars-in-term")
-(include-book "sublis-var-simple")
-(include-book "sublis-var-simple-proofs")
-(include-book "subst-var-alt")
-(include-book "subst-var-alt-proofs")
-(include-book "sublis-var-and-magic-eval")
 (include-book "expr-calls-fn")
 (include-book "unary-lambdap")
 (include-book "wrap-pattern-around-term")
@@ -45,14 +34,8 @@
 (include-book "lambdas-closed-in-termp")
 (include-book "all-lambdas-serialized-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
-(include-book "expand-lambdas-in-term")
-(include-book "expand-lambdas-in-term-proof")
-(include-book "add-param-to-calls-in-term")
-(include-book "rename-vars-in-term")
 (include-book "count-ifs-in-term")
 (include-book "count-ifs-in-then-and-else-branches")
-(include-book "combine-ifs-in-then-and-else-branches")
-(include-book "restore-mv-in-branches")
 (include-book "negate-term")
 (include-book "negate-term-proof")
 (include-book "negate-terms")
@@ -62,30 +45,53 @@
 (include-book "make-if-term")
 (include-book "make-if-term-proof")
 (include-book "strengthen-conjuncts")
-(include-book "reconstruct-lets-in-term")
-(include-book "serialize-lambdas-in-term")
-(include-book "serialize-lambdas-in-term-proofs")
-(include-book "let-bind-formals-in-calls")
-(include-book "restore-mv-lets-in-term")
-(include-book "substitute-unnecessary-lambda-vars")
 (include-book "make-lambda-term-simple")
 (include-book "make-lambda-terms-simple")
 (include-book "make-lambda-application-simple")
 (include-book "make-lambda-application-simple-proof")
 (include-book "function-call-subterms")
-(include-book "replace-term-with-term")
 (include-book "count-occurrences-in-term")
 (include-book "no-nils-in-termp")
 (include-book "get-conjuncts")
 (include-book "get-hyps-and-conc")
 (include-book "replace-corresponding-arg")
-(include-book "clean-up-lambdas")
-(include-book "clean-up-lambdas-proofs")
-(include-book "substitute-constants-in-lambdas")
-(include-book "substitute-constants-in-lambdas-proofs")
-(include-book "simplify-lambdas")
-(include-book "drop-trivial-lambdas")
+
+(include-book "sublis-var-simple")
+(include-book "sublis-var-simple-proofs")
+(include-book "subst-var-alt")
+(include-book "subst-var-alt-proofs")
+(include-book "sublis-var-and-magic-eval")
+
+;; Template transformation:
+(include-book "copy-term")
+(include-book "copy-term-proofs")
 
 ;; Transformations (and their proofs):
+(include-book "combine-ifs-in-then-and-else-branches")
+(include-book "add-param-to-calls-in-term")
+(include-book "let-bind-formals-in-calls")
+(include-book "rename-vars-in-term")
+(include-book "restore-mv-in-branches")
+(include-book "restore-mv-lets-in-term")
+(include-book "reconstruct-lets-in-term")
 (include-book "simplify-ors")
 (include-book "simplify-ors-proofs")
+(include-book "substitute-unnecessary-lambda-vars")
+(include-book "replace-term-with-term")
+
+;; Transformations about lambdas (and their proofs):
+(include-book "serialize-lambdas-in-term")
+(include-book "serialize-lambdas-in-term-proofs") ; incomplete
+(include-book "expand-lambdas-in-term")
+(include-book "expand-lambdas-in-term-proofs")
+;; Drop unused lambda bindings:
+(include-book "drop-unused-lambda-bindings") ; todo rename file
+(include-book "drop-unused-lambda-bindings-proofs") ; todo rename file
+;; Handle lambda vars bound to constants:
+(include-book "substitute-constants-in-lambdas")
+(include-book "substitute-constants-in-lambdas-proofs")
+;; For lambda whose formals are the same as its args:
+(include-book "drop-trivial-lambdas")
+(include-book "drop-trivial-lambdas-proofs")
+;; Combines several transformations on lambdas:
+(include-book "simplify-lambdas")

@@ -98,6 +98,9 @@
 
 (local (in-theory (enable acl2::member-equal-becomes-memberp))) ;todo
 
+(acl2::ensure-rules-known (loop-lifter-rules32))
+(acl2::ensure-rules-known (loop-lifter-rules64))
+
 ;(in-theory (disable acl2::bvplus-of-minus1-tighten-32)) ;caused problems in proofs about examples
 
 ;dup
@@ -284,19 +287,10 @@
              (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
            (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2))))
 
-;; For the loop lifter
-(defun symbolic-execution-rules-loop ()
-  (declare (xargs :guard t))
-  '(;;run-until-exit-segment-or-hit-loop-header-opener-1
-    run-until-exit-segment-or-hit-loop-header-opener-2
-    run-until-exit-segment-or-hit-loop-header-base-case-1
-    run-until-exit-segment-or-hit-loop-header-base-case-2
-    run-until-exit-segment-or-hit-loop-header-base-case-3
-    ;; run-until-exit-segment-or-hit-loop-header-of-myif-split
-    run-until-exit-segment-or-hit-loop-header-of-if-split
-    run-until-exit-segment-or-hit-loop-header-of-if))
-
-(acl2::ensure-rules-known (symbolic-execution-rules-loop))
+;; Can't move this above the rules (just above)
+(acl2::ensure-rules-known (symbolic-execution-rules-loop-lifter))
+(acl2::ensure-rules-known (extra-loop-lifter-rules))
+(acl2::ensure-rules-known (loop-lifter-invariant-preservation-rules))
 
 ;; Essay on Variables: The main variable used to represent the state is x86
 ;; (once we support nested loops, I guess we'll use x86_0, x86_1, etc.).  Other
@@ -331,70 +325,7 @@
 ;;              (cons b x)
 ;;              (member-equal a x))))
 
-;; todo: move this?
-(defun lifter-rules2 ()
-  (append ;or put these in symbolic-execution-rules-loop ?:
-   '(stack-height-increased-wrt
-     stack-height-decreased-wrt
-     get-pc
-     acl2::memberp-of-cons-irrel-strong
-     acl2::memberp-of-cons-same
-     acl2::memberp-of-nil
-;     acl2::member-equal-of-cons
-     acl2::equal-of-same-cancel-4
-     acl2::right-cancellation-for-+
-     x86isa::logext-64-does-nothing-when-canonical-address-p
-     x86isa::equal-of-if-constants
-     x86isa::equal-of-if-constants-alt
-     acl2::bool-fix-when-booleanp
-     acl2::if-of-t-and-nil-becomes-bool-fix
-     acl2::mv-nth-of-if
-     x86isa::canonical-address-p-of-if
-     x86isa::+-of-if-arg1
-     x86isa::+-of-if-arg2
-     acl2::bvchop-numeric-bound
-     x86isa::xw-of-rip-and-if
-     acl2::if-x-x-y-when-booleanp
-     read-of-xw-irrel
-     mod-of-plus-reduce-constants
-     mv-nth-1-of-rb-becomes-read
-     mv-nth-1-of-wb-becomes-write
-     read-of-xw-irrel
-     read-of-set-flag
-     read-of-write-disjoint2
-     write-of-write-same
-     read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
-     read-in-terms-of-nth-and-pos-eric-4-bytes ; this is for resolving reads of the program.
-     read-in-terms-of-nth-and-pos-eric-2-bytes ; this is for resolving reads of the program.
-     read-in-terms-of-nth-and-pos-eric-8-bytes ; this is for resolving reads of the program.
-     acl2::equal-of-same-cancel-4
-     acl2::equal-of-same-cancel-3
-     acl2::equal-of-bvplus-constant-and-constant
-     acl2::equal-of-bvplus-constant-and-constant-alt
-     acl2::mod-of-+-of-constant
-     xr-of-if
-     )
-   (write-rules)
-;(x86isa::lifter-rules)
-   ))
-
 ;; some of these (e.g., about non-loop symbolic execution functions) may not be needed:
-
-(acl2::ensure-rules-known (lifter-rules2))
-
-(acl2::ensure-rules-known (lifter-rules32))
-(acl2::ensure-rules-known (lifter-rules64))
-(acl2::ensure-rules-known (lifter-rules64-new))
-
-;; Eventually we may add these rules about read to lifter-rules2.
-(defun invariant-preservation-rules ()
-  (append (lifter-rules2)
-          '(mv-nth-1-of-rb-becomes-read
-            read-of-write-disjoint
-            read-of-write-same
-            )))
-
-(acl2::ensure-rules-known (invariant-preservation-rules))
 
 ;; Returns (mv erp rsp-dag state).
 (defun extract-rsp-dag (;;assumptions
@@ -528,7 +459,7 @@
          ((mv erp res state)
           (simp-dag dag-to-prove
                     :rules (set-difference-eq
-                            (append (invariant-preservation-rules)
+                            (append (loop-lifter-invariant-preservation-rules)
                                     lifter-rules
                                     extra-rules)
                             remove-rules)
@@ -617,7 +548,7 @@
            ;; assuming no recursion, we don't need to check the stack height:
            `(not (equal (get-pc ,loop-body-term) ,loop-top-pc-term))
            (set-difference-eq
-            (append (lifter-rules2)
+            (append (extra-loop-lifter-rules)
                     lifter-rules
                     extra-rules
                     (myif-rules) ; todo: these hardly mention myif
@@ -1106,7 +1037,7 @@
          ((mv erp simplified-invariant state)
           (acl2::simp-term-to-term term-to-prove
                                  (set-difference-eq
-                                  (append (invariant-preservation-rules)
+                                  (append (loop-lifter-invariant-preservation-rules)
                                           lifter-rules
                                          extra-rules)
                                   remove-rules)
@@ -1532,7 +1463,7 @@
                                              state-var
                                              ;; assumptions
                                              (set-difference-eq
-                                              (append extra-rules (lifter-rules2) lifter-rules)
+                                              (append extra-rules (extra-loop-lifter-rules) lifter-rules)
                                               remove-rules)
                                              state))
         ((when erp) (mv erp nil nil nil state))
@@ -1622,7 +1553,7 @@
         ((mv erp res state)
          (no-overlap-in-write-pairs param-mem-pairs
                                     loop-invariants
-                                    (append (lifter-rules2)
+                                    (append (extra-loop-lifter-rules)
                                             lifter-rules)
                                     state))
         ((when erp) (mv erp nil nil nil state))
@@ -1690,7 +1621,7 @@
         (loop-function-call-term `(,loop-fn ,@initial-params-terms))
         ;; Simplify it (applies read over write rules):
         ((mv erp loop-function-call-dag state)
-         (acl2::simp-term loop-function-call-term :rules (append (lifter-rules2) lifter-rules)))
+         (acl2::simp-term loop-function-call-term :rules (append (extra-loop-lifter-rules) lifter-rules)))
         ((when erp) (mv erp nil nil nil state))
         ;; Write the values computed by the loop back into the state:
         ((mv erp new-state-dag) (compose-term-and-dag updated-state-term :loop-function-result loop-function-call-dag))
@@ -1704,8 +1635,9 @@
         ;; Simplify again:
         ((mv erp new-state-dag state)
          (acl2::simp-dag new-state-dag
-                         :rules (append (lifter-rules2) lifter-rules)
+                         :rules (append (extra-loop-lifter-rules) lifter-rules)
                          :print nil
+                         ;; todo: respect the monitor arg?
                          :monitor '(;;x86isa::set-flag-set-flag-same
                                     ;;x86isa::x86p-set-flag
                                     ;;x86p-of-write
@@ -1925,14 +1857,14 @@
         ((mv erp state-dag state)
          (simp-dag dag-to-run
                    :rules (set-difference-eq
-                           (append (lifter-rules2)
+                           (append (extra-loop-lifter-rules)
                                    lifter-rules
-                                   (symbolic-execution-rules-loop)
+                                   (symbolic-execution-rules-loop-lifter)
                                    extra-rules)
                            remove-rules)
                    :assumptions assumptions
                    :monitor (append '( ;read-in-terms-of-nth-and-pos-eric
-                                      get-flag-of-set-flag
+                                      ;get-flag-of-set-flag
                                       )
                                     rules-to-monitor)
                    :print print
@@ -2178,30 +2110,10 @@
        (measure-alist (if (eq :skip measures)
                           :skip
                         (doublets-to-alist measures)))
-       ;; Can't really use the new, nicer normal forms for readers and writers:
+       ;; these should ensure the normal forms are compatible with all the analysis done by this tool:
        (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32))
-                         (set-difference-eq
-                          (lifter-rules32)
-                          ;; todo: move these rule-lists:
-                          '(xr-becomes-undef
-                            x86isa::!undef-becomes-set-undef
-                            xw-becomes-set-undef
-                            xr-becomes-ms
-                            xw-becomes-set-ms
-                            !ms-becomes-set-ms
-                            xr-becomes-fault
-                            xw-becomes-set-fault
-                            !fault-becomes-set-fault))
-                       (set-difference-eq
-                        (append (lifter-rules64)
-                                (append '(x86isa::rip x86isa::rip$a ; todo?
-
-                                          )
-                                        (reader-and-writer-opener-rules))
-                                ;;(lifter-rules64-new); todo
-                                )
-                        ;; we don't use these usual normal forms:
-                        (reader-and-writer-intro-rules))))
+                         (loop-lifter-rules32)
+                       (loop-lifter-rules64)))
        (32-bitp (member-eq executable-type *executable-types32*))
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
@@ -2234,9 +2146,9 @@
        ((mv erp output-dag state)
         (simp-dag output-dag
                   :rules (set-difference-eq
-                          (append (lifter-rules2)
+                          (append (extra-loop-lifter-rules)
                                   lifter-rules
-                                  (symbolic-execution-rules-loop)
+                                  (symbolic-execution-rules-loop-lifter)
                                   extra-rules)
                           remove-rules)
                   :assumptions assumptions

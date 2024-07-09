@@ -87,11 +87,18 @@
            (subsetp-equal (free-vars-in-terms (cdr terms)) vars))
   :hints (("Goal" :in-theory (enable free-vars-in-terms))))
 
+;; must be a var
 (defthm free-vars-in-term-when-not-consp-cheap
   (implies (not (consp term))
            (equal (free-vars-in-term term)
                   (list term)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable free-vars-in-term))))
+
+(defthm free-vars-in-term-when-quotep
+  (implies (quotep term)
+           (equal (free-vars-in-term term)
+                  nil))
   :hints (("Goal" :in-theory (enable free-vars-in-term))))
 
 (defthm free-vars-in-term-of-cons

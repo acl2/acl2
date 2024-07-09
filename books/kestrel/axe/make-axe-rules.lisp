@@ -1,7 +1,7 @@
 ; Making Axe rules and rule-alists from formulas
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,7 +16,7 @@
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
 ;(include-book "../utilities/basic")
-;(include-book "kestrel/terms-light/clean-up-lambdas" :dir :system) ; for drop-unused-lambda-bindings
+;(include-book "kestrel/terms-light/drop-unused-lambda-bindings" :dir :system)
 (include-book "kestrel/terms-light/simplify-lambdas" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)

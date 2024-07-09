@@ -166,6 +166,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM (CONS (F0 (CAR X)) (F0 (CAR X))))
      ((EQUAL (F3 X) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (F3 X),
 4. Attempting to apply (:DEFINITION F3) to
@@ -195,6 +196,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (F0 (CAR X)))
      ((EQUAL (F3 X) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (F3 X),
 4. Attempting to apply (:DEFINITION F3) to
@@ -230,6 +232,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (F0 (CAR X)))
      ((EQUAL (F3 X) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (F3 X),
 4. Attempting to apply (:DEFINITION F3) to
@@ -270,6 +273,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM* (:FREE (X) (CONS X X)))
      ((EQUAL (F3 X) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (F3 X),
 4. Attempting to apply (:DEFINITION F3) to
@@ -300,6 +304,7 @@ ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
      ((EQUAL (F3 X) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (F3 X),
 4. Attempting to apply (:DEFINITION F3) to
@@ -438,6 +443,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM (:FREE (X) (CONS X X)))
      ((EQUAL (F3 (F0 '3)) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 (F0 '3)) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (F3 (F0 '3)),
 4. Attempting to apply (:DEFINITION F3) to
@@ -468,6 +474,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM (F0 (CAR (F0 3))))
      ((EQUAL (F3 (F0 '3)) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 (F0 '3)) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (F3 (F0 '3)),
 4. Attempting to apply (:DEFINITION F3) to
@@ -594,6 +601,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM (CONS (G0 (CAR X)) (G0 (CAR X))))
      ((EQUAL (G2 X) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (G2 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (G2 X),
 4. Attempting to apply (:DEFINITION G2) to
@@ -619,6 +627,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (G0 (CAR X)))
      ((EQUAL (G2 X) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (G2 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (G2 X),
 4. Attempting to apply (:DEFINITION G2) to
@@ -650,6 +659,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (G0 (CAR X)))
      ((EQUAL (G2 X) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (G2 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (G2 X),
 4. Attempting to apply (:DEFINITION G2) to
@@ -680,6 +690,7 @@ ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
      ((EQUAL (G2 X) YYY))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (G2 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (G2 X),
 4. Attempting to apply (:DEFINITION G2) to
@@ -776,6 +787,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM* (CONS (G0 X) (G0 X))
       (EQUAL (G2 X) YYY))
 2. Rewriting (to simplify) the atom of the second literal,
      (EQUAL (G2 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (G2 X),
 4. Attempting to apply (:DEFINITION G2) to
@@ -807,6 +819,7 @@ ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
       (EQUAL (G2 X) YYY))
 2. Rewriting (to simplify) the atom of the second literal,
      (EQUAL (G2 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (G2 X),
 4. Attempting to apply (:DEFINITION G2) to
@@ -841,6 +854,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM* (CONS (G0 X) (G0 X))
       (EQUAL (G2 X) YYY))
 2. Rewriting (to simplify) the atom of the second literal,
      (EQUAL (G2 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (G2 X),
 4. Attempting to apply (:DEFINITION G2) to
@@ -872,6 +886,7 @@ ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
       (EQUAL (G2 X) YYY))
 2. Rewriting (to simplify) the atom of the second literal,
      (EQUAL (G2 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (G2 X),
 4. Attempting to apply (:DEFINITION G2) to
@@ -964,6 +979,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM* (CONS (G0 X) (G0 X)))
      ((NOT (SYMBOLP X)) (EQUAL (G3 X) YYY))
 2. Rewriting (to simplify) the atom of the second literal,
      (EQUAL (G3 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (G3 X),
 4. Attempting to apply (:DEFINITION G3) to
@@ -997,6 +1013,7 @@ ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
       (EQUAL (G3 X) YYY))
 2. Rewriting (to simplify) the atom of the second literal,
      (EQUAL (G3 X) YYY),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (G3 X),
 4. Attempting to apply (:DEFINITION G3) to
@@ -1091,6 +1108,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM (CONS (F0 (CAR X)) (F0 (CAR X))))
      ((EQUAL (BINARY-APPEND (F3 X) Y) Z))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (BINARY-APPEND (F3 X) Y) Z),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (BINARY-APPEND (F3 X) Y),
 4. Rewriting (to simplify) the first argument,
@@ -1125,6 +1143,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (CONS (F0 X) (F0 X)))
      ((EQUAL (BINARY-APPEND (F3 X) Y) Z))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (BINARY-APPEND (F3 X) Y) Z),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (BINARY-APPEND (F3 X) Y),
 4. Rewriting (to simplify) the first argument,
@@ -1232,6 +1251,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (:FREE (V) (CONS V V)))
      ((EQUAL (F3 X) (F3 Y)))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 X) (F3 Y)),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (F3 X),
 4. Attempting to apply (:DEFINITION F3) to
@@ -1265,6 +1285,7 @@ ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
      ((EQUAL (F3 X) (F3 Y)))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 X) (F3 Y)),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the second argument,
      (F3 Y),
 4. Attempting to apply (:DEFINITION F3) to
@@ -1366,6 +1387,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (:FREE (V) (CONS V V)))
      ((EQUAL (F3 X) (F3 Y)))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 X) (F3 Y)),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the first argument,
      (F3 X),
 4. Attempting to apply (:DEFINITION F3) to
@@ -1399,6 +1421,7 @@ ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
      ((EQUAL (F3 X) (F3 Y)))
 2. Rewriting (to simplify) the atom of the first literal,
      (EQUAL (F3 X) (F3 Y)),
+   Geneqv: (IFF)
 3. Rewriting (to simplify) the second argument,
      (F3 Y),
 4. Attempting to apply (:DEFINITION F3) to

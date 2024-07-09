@@ -33,7 +33,8 @@
 (defthmd split-chars-aux-correct-1
   (implies (and (member char chars) ;this case
                 (character-listp chars)
-                (character-listp acc))
+                ;; (character-listp acc)
+                )
            (and (mv-nth 0 (split-chars-aux chars char acc)) ; foundp
                 (equal (append (mv-nth 1 (split-chars-aux chars char acc))
                                (list char)
@@ -45,7 +46,7 @@
 (defthmd split-chars-aux-correct-2
   (implies (and (not (member char chars)) ;this case
                 (character-listp chars)
-                (characterp char)
+                ;; (characterp char)
                 (character-listp acc))
            (and (not (mv-nth 0 (split-chars-aux chars char acc))) ; not found
                 (equal (mv-nth 1 (split-chars-aux chars char acc))
@@ -77,8 +78,7 @@
   :hints (("Goal" :in-theory (enable split-chars-aux))))
 
 (defthm character-listp-of-mv-nth-2-of-split-chars-aux
-  (implies (and (character-listp chars)
-                (character-listp acc))
+  (implies (character-listp chars)
            (character-listp (mv-nth 2 (split-chars-aux chars char acc))))
   :hints (("Goal" :in-theory (enable split-chars-aux))))
 

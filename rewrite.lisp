@@ -1377,7 +1377,12 @@
         (null (hide-with-comment-p)))
     (fcons-term* 'hide term))
    (t
-    (flet ((reason-string
+    (flet ((comment-fn+
+            (x y) ; X must be a string.
+            (comment-fn (concatenate 'string x ";
+see :DOC comment")
+                        y))
+           (reason-string
             (erp scons-term-p wrld state)
             (let* ((fn (and (consp erp)
                             (eq (car erp)
@@ -1390,10 +1395,10 @@
                            (getpropc fn 'non-executablep nil wrld))
                           (skip-pkg-prefix
                            (symbol-in-current-package-p fn state))
-                          (str0 (if scons-term-p
-                                    "Failed attempt (when building a term) to ~
-                                     call "
-                                  "Failed attempt to call "))
+                          (str0
+                           (if scons-term-p
+                               "Failed attempt (during substitution) to call "
+                             "Failed attempt to call "))
                           (str1 (cond
                                  ((eq fn 'non-exec) "")
                                  (non-executablep "non-executable function ")
@@ -1422,17 +1427,17 @@ its attachment is ignored during proofs"))))
          (let ((reason-string (reason-string erp nil wrld state)))
            (fcons-term* 'hide
                         (if reason-string
-                            (comment-fn reason-string term)
+                            (comment-fn+ reason-string term)
                           term))))
         ((:scons-term . erp)
          (let ((reason-string (reason-string erp t wrld state)))
            (fcons-term* 'hide
                         (if reason-string
-                            (comment-fn reason-string term)
+                            (comment-fn+ reason-string term)
                           term))))
         ((:expand rune . skip-pkg-prefix)
          (fcons-term* 'hide
-                      (comment-fn
+                      (comment-fn+
                        (let ((name
                               (if skip-pkg-prefix
                                   (symbol-name (base-symbol rune))
@@ -1449,7 +1454,7 @@ its attachment is ignored during proofs"))))
         ((:missing-warrant . fn?)
          (fcons-term*
           'hide
-          (comment-fn
+          (comment-fn+
            (let* ((disabledp (consp fn?))
                   (fn (if disabledp
                           (car fn?) ; apply$-fn
@@ -1490,6 +1495,14 @@ its attachment is ignored during proofs"))))
 ; is t iff term is something different than (cons-term fn args); term is
 ; provably equal to (cons-term fn args); and ttree' is an extension of ttree
 ; this equality.
+
+; Warning: If scons-term is used for other than substitution, consider changing
+; hide-with-comment and its call below.  Explanation:
+
+; The leading "s" in scons-term may have originally denoted "smart", but it
+; more precisely denotes "substitution".  The call of hide-with-comment is made
+; below on (cons :scons-term erp) so that hide-with-comment can report that
+; evaluation was attempted on behalf of substitution; see :DOC comment.
 
   (cond
    ((and (all-quoteps args)
@@ -7051,7 +7064,7 @@ its attachment is ignored during proofs"))))
 (defmacro push-gframe (sys-fn bkptr &rest args)
 
 ; This macro allows us to write
-; (let ((gstack (push-gframe 'rewrite bkptr term alist obj)))
+; (let ((gstack (push-gframe 'rewrite bkptr term alist obj ...)))
 ;   ...)
 ; without actually doing any conses if we are not maintaining the goal stack.
 ; Notice that it conses the new frame onto the value of the variable gstack, so
@@ -7059,8 +7072,8 @@ its attachment is ignored during proofs"))))
 
 ; Observe the use of list* below.  Thus, the :args component of the frame built
 ; is a DOTTED list of the args provided, i.e., the last arg is in the final
-; cdr, not the final cadr.  Thus, (push-gframe 'rewrite 3 'a 'b 'c 'd) builds a
-; frame with :args '(a b c . d).  Note in particular the effect when only one
+; cdr, not the final cadr.  Thus, (push-gframe 'rewrite 3 'a ... 'z) builds a
+; frame with :args '(a ... . z).  Note in particular the effect when only one
 ; arg is provided: (push-gframe 'rewrite 3 'a) builds a frame with :args 'a.
 ; One might wish in this case that the field name were :arg.
 
@@ -7186,6 +7199,29 @@ its attachment is ignored during proofs"))))
                  linear-lemma record."
                 x)))))
 
+(defun show-geneqv (x with-runes-p)
+  (cond ((endp x) nil)
+        (t (cons (cond
+                  ((eq with-runes-p t)
+                   (list (access congruence-rule (car x) :equiv)
+                         (access congruence-rule (car x) :rune)))
+                  ((eq with-runes-p 'non-prims)
+                   (cond
+                    ((or (eq (car (access congruence-rule (car x) :rune))
+                             :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE)
+                         (equal (access congruence-rule (car x) :rune)
+                                '(:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)))
+                     (access congruence-rule (car x) :equiv))
+                    ((eq (car (access congruence-rule (car x) :rune))
+                         :congruence)
+                     (list (access congruence-rule (car x) :equiv)
+                           (cadr (access congruence-rule (car x) :rune))))
+                    (t
+                     (list (access congruence-rule (car x) :equiv)
+                           (access congruence-rule (car x) :rune)))))
+                  (t (access congruence-rule (car x) :equiv)))
+                 (show-geneqv (cdr x) with-runes-p)))))
+
 (defun cw-gframe (i calling-sys-fn frame evisc-tuple)
 
 ; Warning: Keep this in sync with dmr-interp.
@@ -7214,9 +7250,10 @@ its attachment is ignored during proofs"))))
         (rewrite
          (let ((term (car (access gframe frame :args)))
                (alist (cadr (access gframe frame :args)))
-               (obj (cddr (access gframe frame :args))))
+               (obj (caddr (access gframe frame :args)))
+               (geneqv (cdddr (access gframe frame :args))))
            (cw "~x0. Rewriting (to ~@6)~@1,~%     ~Y23,~#4~[~/   under the ~
-                substitution~%~*5~]"
+                substitution~%~*5~]~#7~[~/~|   Geneqv: ~y8~]"
                i
                (tilde-@-bkptr-phrase calling-sys-fn
                                      'rewrite
@@ -7227,15 +7264,35 @@ its attachment is ignored during proofs"))))
                (tilde-*-alist-phrase alist evisc-tuple 5)
                (cond ((eq obj nil) "falsify")
                      ((eq obj t) "establish")
-                     (t "simplify")))))
+                     (t "simplify"))
+               (if geneqv 1 0)
+               (show-geneqv geneqv 'non-prims))))
         ((rewrite-with-lemma
-          rewrite-quoted-constant-with-lemma
-          add-linear-lemma)
-         (cw "~x0. Attempting to apply ~F1 to~%     ~Y23"
-             i
-             (get-rule-field (cdr (access gframe frame :args)) :rune)
-             (car (access gframe frame :args))
-             evisc-tuple))
+          rewrite-quoted-constant-with-lemma)
+         (let ((term (car (access gframe frame :args)))
+               (lemma (cadr (access gframe frame :args)))
+               (geneqv (cddr (access gframe frame :args))))
+           (cw "~x0. Attempting to apply ~F1 to~%     ~Y23~|~#4~[~/   Preserving: ~x5~]~|~#6~[~/   Geneqv: ~y7~]"
+               i
+               (get-rule-field lemma :rune)
+               term
+               evisc-tuple
+               (if (eq (access rewrite-rule lemma :equiv) 'equal)
+                   0
+                   1)
+               (access rewrite-rule lemma :equiv)
+               (if geneqv
+                   1
+                   0)
+               (show-geneqv geneqv 'non-prims))))
+        (add-linear-lemma
+         (let ((term (car (access gframe frame :args)))
+               (lemma (cdr (access gframe frame :args))))
+           (cw "~x0. Attempting to apply ~F1 to~%     ~Y23"
+               i
+               (get-rule-field lemma :rune)
+               term
+               evisc-tuple)))
         (add-terms-and-lemmas
          (cw "~x0. Attempting to apply linear arithmetic to ~@1~%     ~Y23"
              i
@@ -9319,6 +9376,8 @@ its attachment is ignored during proofs"))))
                                                       state)
   (cond ((eq failure-reason 'time-out)
          "we ran out of time.")
+        ((eq failure-reason 'refinement-failure)
+         "the rule's equivalence relation is not a refinement of the geneqv.")
         ((eq failure-reason 'near-miss)
          "the pattern (:LHS or :MAX-TERM) did not match the :TARGET.")
         ((eq failure-reason 'loop-stopper)
@@ -9658,6 +9717,20 @@ its attachment is ignored during proofs"))))
                                    type-alist.~%"
                                   '(get-brr-local 'type-alist state))
                               (value :invisible))))))
+         (geneqv-fn (plusp)
+                    `(lambda nil
+                       (prog2$
+                        (cw "~%Geneqv:~%~Y01"
+                            (show-geneqv (get-brr-local 'geneqv state)
+                                         'non-prims)
+                            ,(if plusp
+                                 nil
+                                 '(brr-evisc-tuple state)))
+                        (prog2$
+                         (cw "~%==========~%Use ~x0 to see actual geneqv ~
+                               data structure.~%"
+                             '(get-brr-local 'geneqv state))
+                         (value :invisible)))))
          (unify-subst-fn (plusp)
                          `(lambda nil
                             (prog2$
@@ -9817,6 +9890,10 @@ its attachment is ignored during proofs"))))
        0 ,(type-alist-fn nil))
       (:type-alist+
        0 ,(type-alist-fn t))
+      (:geneqv
+       0 ,(geneqv-fn nil))
+      (:geneqv+
+       0 ,(geneqv-fn t))
       (:unify-subst
        0 ,(unify-subst-fn nil))
       (:unify-subst+
@@ -10060,6 +10137,20 @@ its attachment is ignored during proofs"))))
                                    type-alist.~%"
                                   '(get-brr-local 'type-alist state))
                               (value :invisible))))))
+         (geneqv-fn (plusp)
+                    `(lambda nil
+                       (prog2$
+                        (cw "~%Geneqv:~%~Y01"
+                            (show-geneqv (get-brr-local 'geneqv state)
+                                         'non-prims)
+                            ,(if plusp
+                                 nil
+                                 '(brr-evisc-tuple state)))
+                        (prog2$
+                         (cw "~%==========~%Use ~x0 to see actual geneqv ~
+                               data structure.~%"
+                             '(get-brr-local 'geneqv state))
+                         (value :invisible)))))
          (unify-subst-fn (plusp)
                          `(lambda nil
                             (prog2$
@@ -10223,6 +10314,10 @@ its attachment is ignored during proofs"))))
        0 ,(type-alist-fn nil))
       (:type-alist+
        0 ,(type-alist-fn t))
+      (:geneqv
+       0 ,(geneqv-fn nil))
+      (:geneqv+
+       0 ,(geneqv-fn t))
       (:unify-subst
        0 ,(unify-subst-fn nil))
       (:unify-subst+
@@ -10239,18 +10334,20 @@ its attachment is ignored during proofs"))))
 
 (defrec brr-data-1
 
-; Warning: Keep this in sync with the definition in :DOC brr-data.
+; Warning: Keep this in sync with the discussion in the ``Low-level details
+; (optional)'' section of :DOC with-brr-data.
 
 ; This record stores information at calls of brkpt1.
 
-  (((lemma . target) . (unify-subst . type-alist))
+  (((lemma . target) . (unify-subst type-alist . geneqv))
    .
    ((pot-list . ancestors) . (rcnst initial-ttree . gstack)))
   nil)
 
 (defrec brr-data-2
 
-; Warning: Keep this in sync with the definition in :DOC brr-data.
+; Warning: Keep this in sync with the discussion in the ``Low-level details
+; (optional)'' section of :DOC with-brr-data.
 
 ; This record stores information at calls of brkpt2.
 
@@ -10261,7 +10358,8 @@ its attachment is ignored during proofs"))))
 
 (defrec brr-data
 
-; Warning: Keep this in sync with the definition in :DOC brr-data.
+; Warning: Keep this in sync with the discussion in the ``Low-level details
+; (optional)'' section of :DOC with-brr-data.
 
 ; This is a recursive record: pre and post are brr-data-1 and brr-data-2
 ; records, respectively, and completed is a list of brr-data records, all as
@@ -10316,8 +10414,9 @@ its attachment is ignored during proofs"))))
 
   => *)
 
-(defstub update-brr-data-1 (lemma target unify-subst type-alist ancestors
-                                  initial-ttree gstack rcnst pot-lst whs-data)
+(defstub update-brr-data-1 (lemma target unify-subst type-alist geneqv
+                                  ancestors initial-ttree gstack rcnst pot-lst
+                                  whs-data)
 
 ; This is called in brkpt1 to update the wormhole-data for the brr-data
 ; wormhole.
@@ -10350,7 +10449,7 @@ its attachment is ignored during proofs"))))
            (ignore gstack rcnst state))
   (null ancestors))
 
-(defun update-brr-data-1-builtin (lemma target unify-subst type-alist
+(defun update-brr-data-1-builtin (lemma target unify-subst type-alist geneqv
                                         ancestors initial-ttree gstack rcnst
                                         pot-lst whs-data)
 
@@ -10383,6 +10482,7 @@ its attachment is ignored during proofs"))))
                                      :target target
                                      :unify-subst unify-subst
                                      :type-alist type-alist
+                                     :geneqv geneqv
                                      :ancestors ancestors
                                      :initial-ttree initial-ttree
                                      :gstack gstack
@@ -11309,7 +11409,105 @@ its attachment is ignored during proofs"))))
     (explain-near-miss2 pat-cmd pat-term target-term large-cons-count
                         evisc-tuple state)))
 
-(defun near-miss-brkpt1 (lemma target type-alist ancestors initial-ttree
+(defun refinement-failure-brkpt1 (lemma target type-alist geneqv ancestors
+                                        initial-ttree gstack rcnst
+                                        simplify-clause-pot-lst state)
+
+; This function is called when lemma failed the refinement test.  That can only
+; happen if lemma is a rewrite-rule! Here we cause a break similar to the one
+; caused by brkpt1 IF the lemma is monitored.  See brkpt1.
+
+; #+ACL2-PAR note: see brkpt1.
+
+  (cond
+   #+acl2-par ; test is always false anyhow when #-acl2-par
+   ((f-get-global 'waterfall-parallelism state)
+    nil)
+   ((not (f-get-global 'gstackp state))
+    nil)
+   (t
+    (mv-let (rune brr-cmd-name pattern restrictions)
+      (get-brr-one-way-unify-info lemma rcnst)
+      (brr-wormhole
+; We enter the wormhole if the rule is monitored and the :RF keyword in the
+; break criteria is bound to non-nil. But the :condition (yet to be checked)
+; may make us exit silently.
+       '(lambda (whs)
+          (set-wormhole-entry-code
+           whs
+           (let ((temp (assoc-equal (get-rule-field lemma :rune)
+                                    (access brr-status whs :brr-monitored-runes))))
+             (if (and temp (cdr (assoc-eq :RF (cdr temp))))
+                 :ENTER
+                 :SKIP))))
+       `((brr-gstack . ,gstack)
+         (brr-local-alist . ((rune . ,rune)
+                             (brr-cmd-name-for-pattern . ,brr-cmd-name)
+                             (pattern . ,pattern)
+                             (restrictions . ,restrictions)
+                             (lemma . ,lemma)
+                             (target . ,target)
+                             (type-alist . ,type-alist)
+                             (geneqv . ,geneqv)
+                             (pot-list . ,simplify-clause-pot-lst)
+                             (ancestors . ,ancestors)
+                             (rcnst . ,rcnst)
+                             (initial-ttree . ,initial-ttree))))
+       '(pprogn
+         (push-brr-status state)
+         (let ((pair (assoc-equal (get-rule-field
+                                   (get-brr-local 'lemma state)
+                                   :rune)
+                                  (access brr-status
+                                          (f-get-global 'wormhole-status
+                                                        state)
+                                          :brr-monitored-runes))))
+; We know pair is non-nil because of the entrance test on wormhole above
+           (mv-let (erp okp state)
+             (eval-break-condition (car pair)
+                                   (cdr (assoc-eq :condition (cdr pair)))
+                                   'wormhole state)
+             (cond
+              (erp
+
+; If evaling the break condition caused an error, we abort.  The error message
+; has already been printed by eval-break-condition.  To continue silently will
+; most likely just cause the error to be printed repeatedly as the lemma is
+; tried repeatedly.  To enter the interactive loop might leave an offline proof
+; just hanging.
+
+               (pprogn
+                (stuff-standard-oi '(:a!) state)
+                (value t)))
+              (okp
+               (pprogn
+                (cond ((true-listp okp)
+                       (stuff-standard-oi okp state))
+                      (t state))
+                (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|~%The ~
+                                equivalence relation, ~x4, of this rule is ~
+                                not a refinement of the current geneqv, ~x5.  ~
+                                Use :path or :path+ to see how the geneqv ~
+                                evolved.  See :DOC refinement-failure for ~
+                                advice about how to deal with this kind of ~
+                                problem.~%~%"
+                            (brr-depth state)
+                            (get-rule-field (get-brr-local 'lemma state)
+                                            :rune)
+                            (get-brr-local 'target state)
+                            (brr-evisc-tuple state)
+                            (access rewrite-rule
+                                    (get-brr-local 'lemma state)
+                                    :equiv)
+                            (show-geneqv (get-brr-local 'geneqv state)
+                                         'non-prim))
+                        (value t))))
+              (t (pprogn
+                  (pop-brr-status state)
+                  (value nil)))))))
+       *brkpt1-aliases*)))))
+
+(defun near-miss-brkpt1 (lemma target type-alist geneqv ancestors initial-ttree
                                gstack rcnst simplify-clause-pot-lst state)
 
 ; This function is called when lemma failed to match target!  It causes a break
@@ -11360,37 +11558,70 @@ its attachment is ignored during proofs"))))
                              (lemma . ,lemma)
                              (target . ,target)
                              (type-alist . ,type-alist)
+                             (geneqv . ,geneqv)
                              (pot-list . ,simplify-clause-pot-lst)
                              (ancestors . ,ancestors)
                              (rcnst . ,rcnst)
                              (initial-ttree . ,initial-ttree))))
        '(pprogn
          (push-brr-status state)
-         (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|~%The pattern in this ~
-                      rule failed to match the target~#4~[~/ under the ~
-                      restrictions ~x5~].  ~@6"
-                     (brr-depth state)
-                     (get-rule-field (get-brr-local 'lemma state)
-                                     :rune)
-                     (get-brr-local 'target state)
-                     (brr-evisc-tuple state)
-                     (if (get-brr-local 'restrictions state) 1 0)
-                     (get-brr-local 'restrictions state)
-                     (brr-near-missp
-                      t ; msg required
-                      (get-brr-local 'lemma state)
-                      (get-brr-local 'target state)
-                      (get-brr-local 'restrictions state)
-                      (cdr (assoc-equal (get-brr-local 'rune state)
-                                        (access brr-status
-                                                (f-get-global 'wormhole-status
-                                                              state)
-                                                :brr-monitored-runes)))))
-                 (value t)))
+         (let ((pair (assoc-equal (get-rule-field (get-brr-local 'lemma
+                                                                 state)
+                                                  :rune)
+                                  (access brr-status
+                                          (f-get-global 'wormhole-status
+                                                        state)
+                                          :brr-monitored-runes))))
+; We know pair is non-nil because of the entrance test on wormhole above
+           (mv-let (erp okp state)
+             (eval-break-condition (car pair)
+                                   (cdr (assoc-eq :condition (cdr pair)))
+                                   'wormhole state)
+             (cond
+              (erp
+
+; If evaling the break condition caused an error, we abort.  The error message
+; has already been printed by eval-break-condition.  To continue silently will
+; most likely just cause the error to be printed repeatedly as the lemma is
+; tried repeatedly.  To enter the interactive loop might leave an offline proof
+; just hanging.
+
+               (pprogn
+                (stuff-standard-oi '(:a!) state)
+                (value t)))
+              (okp
+               (pprogn
+                (cond ((true-listp okp)
+                       (stuff-standard-oi okp state))
+                      (t state))
+                (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|~%The pattern in ~
+                             this rule failed to match the target~#4~[~/ ~
+                             under the restrictions ~x5~].  ~@6"
+                            (brr-depth state)
+                            (get-rule-field (get-brr-local 'lemma state)
+                                            :rune)
+                            (get-brr-local 'target state)
+                            (brr-evisc-tuple state)
+                            (if (get-brr-local 'restrictions state) 1 0)
+                            (get-brr-local 'restrictions state)
+                            (brr-near-missp
+                             t ; msg required
+                             (get-brr-local 'lemma state)
+                             (get-brr-local 'target state)
+                             (get-brr-local 'restrictions state)
+                             (cdr (assoc-equal (get-brr-local 'rune state)
+                                               (access brr-status
+                                                       (f-get-global 'wormhole-status
+                                                                     state)
+                                                       :brr-monitored-runes)))))
+                        (value t))))
+              (t (pprogn
+                  (pop-brr-status state)
+                  (value nil)))))))
        *brkpt1-aliases*)))))
 
-(defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
-                     gstack rcnst simplify-clause-pot-lst state)
+(defun brkpt1 (lemma target unify-subst type-alist geneqv ancestors
+                     initial-ttree gstack rcnst simplify-clause-pot-lst state)
 
 ; #+ACL2-PAR note: since we lock the use of wormholes, brr might be usable
 ; within the parallelized waterfall.  However, since locks can serialize
@@ -11425,12 +11656,12 @@ its attachment is ignored during proofs"))))
                                 (set-wormhole-data-fast
                                  whs
                                  (update-brr-data-1
-                                  lemma target unify-subst type-alist ancestors
-                                  initial-ttree gstack rcnst
+                                  lemma target unify-subst type-alist geneqv
+                                  ancestors initial-ttree gstack rcnst
                                   simplify-clause-pot-lst
                                   (wormhole-data whs))))
                              (list :no-wormhole-lock
-                                   lemma target unify-subst type-alist
+                                   lemma target unify-subst type-alist geneqv
                                    simplify-clause-pot-lst ancestors rcnst
                                    initial-ttree gstack)))
          (brr-wormhole
@@ -11446,6 +11677,7 @@ its attachment is ignored during proofs"))))
                                 (target . ,target)
                                 (unify-subst . ,unify-subst)
                                 (type-alist . ,type-alist)
+                                (geneqv . ,geneqv)
                                 (pot-list . ,simplify-clause-pot-lst)
                                 (ancestors . ,ancestors)
                                 (rcnst . ,rcnst)
@@ -11605,6 +11837,7 @@ its attachment is ignored during proofs"))))
                   (value t))))))
           *brkpt2-aliases*)
          (and (not (eq failure-reason 'near-miss))
+              (not (eq failure-reason 'refinement-failure))
               (eq gstackp :brr-data)
               (brkpt2-brr-data-entry ancestors gstack rcnst state)
               (wormhole-eval 'brr-data
@@ -16138,7 +16371,7 @@ its attachment is ignored during proofs"))))
   (the-mv
    3
    #.*fixnum-type*
-   (let ((gstack (push-gframe 'rewrite bkptr term alist obj))
+   (let ((gstack (push-gframe 'rewrite bkptr term alist obj geneqv))
          (rdepth (adjust-rdepth rdepth)))
      (declare (type #.*fixnat-type* rdepth))
      (cond
@@ -18560,7 +18793,7 @@ its attachment is ignored during proofs"))))
   (the-mv
    4
    #.*fixnum-type*
-   (let ((gstack (push-gframe 'rewrite-with-lemma nil term lemma))
+   (let ((gstack (push-gframe 'rewrite-with-lemma nil term lemma geneqv))
          (rdepth (adjust-rdepth rdepth)))
      (declare (type #.*fixnat-type* rdepth))
      (cond ((zero-depthp rdepth)
@@ -19024,7 +19257,17 @@ its attachment is ignored during proofs"))))
            ((not (geneqv-refinementp (access rewrite-rule lemma :equiv)
                                      geneqv
                                      wrld))
-            (mv step-limit nil term ttree))
+            (progn$
+             (refinement-failure-brkpt1 lemma term type-alist geneqv
+                                        ancestors ttree
+                                        gstack rcnst
+                                        simplify-clause-pot-lst
+                                        state)
+             (brkpt2 nil 'refinement-failure
+                     nil ; unify-subst
+                     gstack nil nil
+                     rcnst ancestors state)
+             (mv step-limit nil term ttree)))
            ((eq (access rewrite-rule lemma :subclass) 'definition)
             (sl-let (rewritten-term ttree)
                     (rewrite-entry (rewrite-fncall lemma term))
@@ -19057,7 +19300,7 @@ its attachment is ignored during proofs"))))
                       (cond
                        ((and unify-ans
                              (null (brkpt1 lemma term unify-subst
-                                           type-alist ancestors
+                                           type-alist geneqv ancestors
                                            ttree
                                            gstack rcnst simplify-clause-pot-lst
                                            state)))
@@ -19140,7 +19383,7 @@ its attachment is ignored during proofs"))))
                                          rcnst ancestors state)
                                  (mv step-limit nil term ttree)))))))))
                        (t (progn$
-                           (near-miss-brkpt1 lemma term type-alist
+                           (near-miss-brkpt1 lemma term type-alist geneqv
                                              ancestors ttree
                                              gstack rcnst
                                              simplify-clause-pot-lst
@@ -19318,9 +19561,9 @@ its attachment is ignored during proofs"))))
                               :restrictions-alist))))
                (cond
                 ((and unify-ans
-                      (null (brkpt1 rule term unify-subst type-alist ancestors
-                                    ttree gstack rcnst simplify-clause-pot-lst
-                                    state)))
+                      (null (brkpt1 rule term unify-subst type-alist geneqv
+                                    ancestors ttree gstack rcnst
+                                    simplify-clause-pot-lst state)))
                  (with-accumulated-persistence
                   (access rewrite-rule rule :rune)
                   ((the #.*fixnum-type* step-limit) term-out ttree)
@@ -19581,7 +19824,7 @@ its attachment is ignored during proofs"))))
                                                      :pt)))))))))))
                 (t
                  (progn$
-                  (near-miss-brkpt1 rule term type-alist
+                  (near-miss-brkpt1 rule term type-alist geneqv
                                     ancestors ttree
                                     gstack rcnst
                                     simplify-clause-pot-lst
@@ -19961,8 +20204,8 @@ its attachment is ignored during proofs"))))
       (cond
        ((and unify-ans
              (null (brkpt1 lemma term unify-subst
-                           type-alist ancestors
-                           nil ; ttree
+                           type-alist nil ; geneqv ignored
+                           ancestors nil ; ttree
                            gstack rcnst simplify-clause-pot-lst state)))
         (let ((rune (access linear-lemma lemma :rune)))
           (with-accumulated-persistence
@@ -20233,7 +20476,7 @@ its attachment is ignored during proofs"))))
                          rcnst ancestors state)
                  (mv step-limit nil simplify-clause-pot-lst))))))))
        (t (progn$
-           (near-miss-brkpt1 lemma term type-alist
+           (near-miss-brkpt1 lemma term type-alist nil ; geneqv ignored!
                              ancestors nil ; ttree
                              gstack rcnst
                              simplify-clause-pot-lst
@@ -22622,7 +22865,8 @@ its attachment is ignored during proofs"))))
   (the-mv
    4
    #.*fixnum-type*
-   (let* ((gstack (push-gframe 'rewrite-quoted-constant-with-lemma nil term lemma))
+   (let* ((gstack (push-gframe 'rewrite-quoted-constant-with-lemma nil term lemma
+                               geneqv))
           (rdepth (adjust-rdepth rdepth))
           (temp (access rewrite-rule lemma :heuristic-info))
           (n (car temp))
@@ -22673,7 +22917,7 @@ its attachment is ignored during proofs"))))
                 (cond
                  ((and unify-ans
                        (null (brkpt1 lemma term unify-subst
-                                     type-alist ancestors
+                                     type-alist geneqv ancestors
                                      ttree
                                      gstack rcnst simplify-clause-pot-lst
                                      state)))

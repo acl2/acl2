@@ -1,6 +1,6 @@
 ; Proofs about serialize-lambdas-in-term
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,7 +27,7 @@
 
 (local (in-theory (disable mv-nth)))
 
-;; TODO: Prove that serialize-lambdas-in-term preserves the meaning of terms.
+;; TODO: Prove that serialize-lambdas-in-term preserves the meaning of terms, using an evaluator!
 
 ;move?
 (local

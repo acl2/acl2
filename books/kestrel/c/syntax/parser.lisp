@@ -53,6 +53,23 @@
   (implies (natp x)
            (acl2-numberp x)))
 
+(defruledl natp-of-plus
+  (implies (and (natp x)
+                (natp y))
+           (natp (+ x y))))
+
+(defruledl natp-of-logand
+  (implies (and (natp x)
+                (natp y))
+           (natp (logand x y)))
+  :enable natp
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+(defruledl natp-of-ash
+  (implies (natp x)
+           (natp (ash x y)))
+  :prep-books ((include-book "kestrel/arithmetic-light/ash" :dir :system)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parser
@@ -484,9 +501,7 @@
      from the @('chars-unread') list to the reversed @('chars-read') list
      if @('chars-unread') is not empty,
      or from the @('bytes') list to the reversed @('chars-read') list
-     where one or more bytes are decoded into the character
-     (currently just one byte,
-     but that may change if we add support for non-ASCII UTF-8 Unicode).")
+     where one or more bytes are UTF-8-decoded into the character.")
    (xdoc::p
     "When a character is unread, it is moved from left to right,
      i.e. from the reversed @('chars-read') list to the @('chars-unread') list.
@@ -584,6 +599,16 @@
      is that we may need to support ``nested'' backtracking
      while parsing something that may also backtrack.")
    (xdoc::p
+    "We include a boolean flag saying whether
+     certain GCC extensions should be accepted or not.
+     These GCC extensions are limited to the ones
+     currently captured in our abstract syntax.
+     This parser state component is set at the beginning and never changes,
+     but it is useful to have it as part of the parser state
+     to avoid passing an additional parameter.
+     This parser state component could potentially evolve into
+     a richer set of options for different versions and dialects of C.")
+   (xdoc::p
     "We could look into turning the parser state into a stobj in the future,
      if efficiency is an issue.
      The code of the parser already treats the parser state
@@ -594,7 +619,8 @@
    (chars-unread char+position-list)
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
-   (checkpoints nat-list))
+   (checkpoints nat-list)
+   (gcc bool))
   :pred parstatep
   :prepwork ((local (in-theory (enable nfix)))))
 
@@ -616,13 +642,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp))
+(define init-parstate ((data byte-listp) (gcc booleanp))
   :returns (pstate parstatep)
   :short "Initial parser state."
   :long
   (xdoc::topstring
    (xdoc::p
     "Given (the data of) a file to parse,
+     and a flag saying whether GCC extensions should be accepted or not,
      the initial parsing state consists of
      the data to parse,
      no unread characters or tokens,
@@ -635,7 +662,8 @@
                  :chars-unread nil
                  :tokens-read nil
                  :tokens-unread nil
-                 :checkpoints nil))
+                 :checkpoints nil
+                 :gcc gcc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -670,7 +698,7 @@
    (xdoc::p
     "As mentioned in @(tsee parstate),
      we represent characters as natural numbers,
-     meant to be Unicode code points,
+     meant to be Unicode code points (more precisely, Unicode scalar values),
      including ASCII codes as a subset.
      When an unexpected character is encountered during lexing,
      we return user-oriented error messages
@@ -708,7 +736,7 @@
          (msg "the ~s0 character (ASCII code ~x1)"
               (str::implode (list (code-char char))) char))
         ((= char 127) "the DEL (delete) character (ASCII code 127)")
-        (t (msg "the non-ASCII character starting with byte ~x0" char)))
+        (t (msg "the non-ASCII Unicode character with code ~x0" char)))
   :guard-hints (("Goal" :in-theory (enable character-listp
                                            nat-optionp)))
 
@@ -813,15 +841,14 @@
      and we leave the parser state unchanged.")
    (xdoc::p
     "Otherwise, we read the first byte, which is removed from the parser state.
-     Since currently we only support ASCII,
-     one byte is always enough for a character;
-     in the future, we may generalize this to perform UTF-8 decoding.")
+     Since we support Unicode, we perform UTF-8 decoding,
+     which may involve reading additional bytes.")
    (xdoc::p
     "Looking at the rules in the ABNF grammar for basic and extended characters,
-     we see that the ASCII codes of the three non-new-line extended characters
+     we see that the codes of the three ASCII non-new-line extended characters
      (namely dollar, at sign, and backquote)
      fill gaps in the ASCII codes of the basic characters,
-     so that the codes 9, 11, 12, and 32-126 are all valid characters,
+     so that the codes 9, 11, 12, and 32-126 are all valid ASCII characters,
      which are thus returned, incrementing the position by one column.
      If instead the byte is the ASCII code 10 for line feed,
      we increment the position by one line.
@@ -847,20 +874,68 @@
      or how many lines a vertical tab or form feed takes.
      So, at least for now, we just treat these as most other characters.")
    (xdoc::p
-    "If the next byte read has any other value, we deem it illegal,
-     and return an error message with the current file position.
-     We intentionally exclude most ASCII control characters,
+    "We exclude most ASCII control characters,
      except for the basic ones and for the new-line ones,
      since there should be little need to use those in C code.
      Furthermore, some are dangerous, particularly backspace,
      since it may make the code look different from what it is,
      similarly to "
     (xdoc::ahref "https://en.wikipedia.org/wiki/Trojan_Source" "Trojan Source")
-    " in Unicode.
-     However, if we encounter practical code
-     that uses some of these ASCII control characters,
-     we can easily add support for them,
-     in the ABNF grammar and in the parser."))
+    " in Unicode.")
+   (xdoc::p
+    "If the first byte is 128 or more,
+     it must start a non-ASCII Unicode character.
+     There are three cases to consider.
+     It is easy to find references to UTF-8 encoding/decoding, for instance "
+    (xdoc::ahref "https://en.wikipedia.org/wiki/UTF-8" "this Wikipedia page")
+    ".")
+   (xdoc::p
+    "<b>First case</b>:
+     If the first byte has the form @('110xxxyy'),
+     it must be followed by a second byte of the form @('10yyzzzz'),
+     which together encode @('xxxyyyyzzzz'),
+     which covers the range from 0 to 7FFh.
+     We return an error if there is no second byte.
+     We return an error if the encoded value is below 80h.
+     If all these checks pass,
+     the code covers the character range from @('U+80') to @('U+7FF').")
+   (xdoc::p
+    "<b>Second case</b>:
+     If the first byte has the form @('1110xxxx'),
+     it must be followed by a second byte of the form @('10yyyyzz')
+     and by a third byte of the form @('10zzwwww'),
+     which together encode @('xxxxyyyyzzzzwwww'),
+     which covers the range from 0 to FFFFh.
+     We return an error if there is no second or third byte.
+     We return an error if the encoded value is below 800h.
+     If all these checks pass,
+     the code covers the character range from @('U+800') to @('U+FFFF'),
+     but we return an error if the character
+     is between @('U+202A') and @('U+202E')
+     or between @('U+2066') and @('U+2069');
+     see the @('safe-nonascii') rule in our ABNF grammar.")
+   (xdoc::p
+    "<b>Third case</b>:
+     If the first byte has the form @('11110xyy'),
+     it must be followed by a second byte of the form @('10yyzzzz')
+     and by a third byte of the form @('10wwwwuu')
+     and by a fourth byte of the form @('10uuvvvv'),
+     which together encode @('xyyyyzzzzwwwwuuuuvvvv'),
+     which covers the range from 0 to 1FFFFFh.
+     We return an error if there is no second or third or fourth byte.
+     We return an error if the encoded value is below 10000h or above 10FFFFh.
+     If all these checks pass,
+     the code covers the character range from @('U+10000') to @('U+1FFFFF').")
+   (xdoc::p
+    "If the first byte read has any other value,
+     either it is an invalid UTF-8 encoding (e.g. @('111...'))
+     or it is an ASCII character that we do not accept (e.g. @('00000000')).
+     We return an error in this case.")
+   (xdoc::p
+    "Note that all the non-ASCII characters that we accept
+     just increment the column number by 1 and leave the line number unchanged.
+     This may not be appropriate for certain Unicode characters,
+     but for now we treat them in this simplified way."))
   (b* (((reterr) nil (irr-position) (irr-parstate))
        ((parstate pstate) pstate)
        ((when (consp pstate.chars-unread))
@@ -872,63 +947,290 @@
                   :chars-unread (cdr pstate.chars-unread)
                   :chars-read (cons char+pos pstate.chars-read)))))
        ((unless (consp pstate.bytes))
-        (retok nil pstate.position (irr-parstate)))
-       (byte (car pstate.bytes)))
-    (cond ((or (= byte 9)
-               (= byte 11)
-               (= byte 12)
-               (and (<= 32 byte) (<= byte 126)))
-           (retok byte
-                  pstate.position
-                  (change-parstate
-                   pstate
-                   :bytes (cdr pstate.bytes)
-                   :position (position-inc-column 1 pstate.position)
-                   :chars-read (cons (make-char+position
-                                      :char byte
-                                      :position pstate.position)
-                                     pstate.chars-read))))
-          ((= byte 10)
-           (retok 10
-                  pstate.position
-                  (change-parstate
-                   pstate
-                   :bytes (cdr pstate.bytes)
-                   :position (position-inc-line 1 pstate.position)
-                   :chars-read (cons (make-char+position
-                                      :char 10
-                                      :position pstate.position)
-                                     pstate.chars-read))))
-          ((= byte 13)
-           (if (and (consp (cdr pstate.bytes))
-                    (= (cadr pstate.bytes) 10))
-               (retok 10
-                      pstate.position
-                      (change-parstate
-                       pstate
-                       :bytes (cddr pstate.bytes)
-                       :position (position-inc-line 1 pstate.position)
-                       :chars-read (cons (make-char+position
-                                          :char 10
-                                          :position pstate.position)
-                                         pstate.chars-read)))
-             (retok 10
-                    pstate.position
-                    (change-parstate
-                     pstate
-                     :bytes (cdr pstate.bytes)
-                     :position (position-inc-line 1 pstate.position)
-                     :chars-read (cons (make-char+position
-                                        :char 10
-                                        :position pstate.position)
-                                       pstate.chars-read)))))
-          (t (reterr-msg :where (position-to-msg pstate.position)
-                         :expected "an ASCII character with code ~
-                                    in the range 9-13 or in the range 32-126"
-                         :found (char-to-msg byte)))))
+        (retok nil pstate.position (parstate-fix pstate)))
+       (byte (car pstate.bytes))
+       (bytes (cdr pstate.bytes))
+       ;; ASCII except line feed and carriage return:
+       ((when (or (= byte 9)
+                  (= byte 11)
+                  (= byte 12)
+                  (and (<= 32 byte) (<= byte 126))))
+        (retok byte
+               pstate.position
+               (change-parstate
+                pstate
+                :bytes bytes
+                :position (position-inc-column 1 pstate.position)
+                :chars-read (cons (make-char+position
+                                   :char byte
+                                   :position pstate.position)
+                                  pstate.chars-read))))
+       ;; line feed:
+       ((when (= byte 10))
+        (retok 10
+               pstate.position
+               (change-parstate
+                pstate
+                :bytes bytes
+                :position (position-inc-line 1 pstate.position)
+                :chars-read (cons (make-char+position
+                                   :char 10
+                                   :position pstate.position)
+                                  pstate.chars-read))))
+       ;; carriage return:
+       ((when (= byte 13))
+        (b* ((bytes (if (and (consp bytes)
+                             (= (car bytes) 10))
+                        (cdr bytes)
+                      bytes)))
+          (retok 10
+                 pstate.position
+                 (change-parstate
+                  pstate
+                  :bytes bytes
+                  :position (position-inc-line 1 pstate.position)
+                  :chars-read (cons (make-char+position
+                                     :char 10
+                                     :position pstate.position)
+                                    pstate.chars-read)))))
+       ;; 2-byte UTF-8:
+       ((when (= (logand byte #b11100000) #b11000000)) ; 110xxxyy
+        (b* (((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 110... ~
+                                          (i.e. between 192 and 223) ~
+                                          of a two-byte UTF-8 encoding"
+                                         byte)
+                          :found "end of file"))
+             (byte2 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 110... ~
+                                          (i.e. between 192 and 223) ~
+                                          of a two-byte UTF-8 encoding"
+                                         byte)
+                          :found (msg "the byte ~x0" byte2)))
+             (code (+ (ash (logand byte #b00011111) 6)
+                      (logand byte2 #b00111111)))
+             ((when (< code #x80))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a value between 80h and 7FFh ~
+                                          UTF-8-encoded in the two bytes ~
+                                          (~x0 ~x1)"
+                                         byte byte2)
+                          :found (msg "the value ~x0" code))))
+          (retok code
+                 pstate.position
+                 (change-parstate
+                  pstate
+                  :bytes bytes
+                  :position (position-inc-column 1 pstate.position)
+                  :chars-read (cons (make-char+position
+                                     :char code
+                                     :position pstate.position)
+                                    pstate.chars-read)))))
+       ;; 3-byte UTF-8:
+       ((when (= (logand byte #b11110000) #b11100000)) ; 1110xxxx
+        (b* (((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 1110... ~
+                                          (i.e. between 224 to 239) ~
+                                          of a three-byte UTF-8 encoding"
+                                         byte)
+                          :found "end of file"))
+             (byte2 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyyyzz
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 1110... ~
+                                          (i.e. between 224 and 239) ~
+                                          of a three-byte UTF-8 encoding"
+                                         byte)
+                          :found (msg "the byte ~x0" byte2)))
+             ((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 1110... ~
+                                          (i.e. between 224 to 239) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a three-byte UTF-8 encoding"
+                                         byte byte2)
+                          :found "end of file"))
+             (byte3 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte3 #b11000000) #b10000000)) ; 10zzwwww
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 1110... ~
+                                          (i.e. between 224 and 239) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a three-byte UTF-8 encoding"
+                                         byte byte2)
+                          :found (msg "the byte ~x0" byte3)))
+             (code (+ (ash (logand byte #b00001111) 12)
+                      (ash (logand byte2 #b00111111) 6)
+                      (logand byte3 #b00111111)))
+             ((when (< code #x800))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a value between 800h and FFFFh ~
+                                          UTF-8-encoded in the three bytes ~
+                                          (~x0 ~x1 ~x2)"
+                                         byte byte2 byte3)
+                          :found (msg "the value ~x0" code)))
+             ((when (or (and (<= #x202a code)
+                             (<= code #x202e))
+                        (and (<= #x2066 code)
+                             (<= code #x2069))))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected "a Unicode character with code ~
+                                     in the range 9-13 or 32-126 ~
+                                     or 128-8233 or 8239-8293 or ~
+                                     or 8298-55295 or 57344-1114111"
+                          :found (char-to-msg code))))
+          (retok code
+                 pstate.position
+                 (change-parstate
+                  pstate
+                  :bytes bytes
+                  :position (position-inc-column 1 pstate.position)
+                  :chars-read (cons (make-char+position
+                                     :char code
+                                     :position pstate.position)
+                                    pstate.chars-read)))))
+       ;; 4-byte UTF-8:
+       ((when (= (logand #b11111000 byte) #b11110000)) ; 11110xyy
+        (b* (((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 to 247) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte)
+                          :found "end of file"))
+             (byte2 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 and 247) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte)
+                          :found (msg "the byte ~x0" byte2)))
+             ((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 to 247) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte byte2)
+                          :found "end of file"))
+             (byte3 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte3 #b11000000) #b10000000)) ; 10wwwwuu
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 and 247) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte byte2)
+                          :found (msg "the byte ~x0" byte3)))
+             ((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 to 247) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          and the third byte ~x2 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte byte2 byte3)
+                          :found "end of file"))
+             (byte4 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte4 #b11000000) #b10000000)) ; 10uuvvvv
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 and 247) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          and the third byte ~x2 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte byte2 byte3)
+                          :found (msg "the byte ~x0" byte4)))
+             (code (+ (ash (logand byte #b00000111) 18)
+                      (ash (logand byte2 #b00111111) 12)
+                      (ash (logand byte3 #b00111111) 6)
+                      (logand byte4 #b00111111)))
+             ((when (or (< code #x10000)
+                        (> code #x10ffff)))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a value between 10000h and 10FFFFh ~
+                                          UTF-8-encoded in the four bytes ~
+                                          (~x0 ~x1 ~x2 ~x3)"
+                                         byte byte2 byte3 byte4)
+                          :found (msg "the value ~x0" code))))
+          (retok code
+                 pstate.position
+                 (change-parstate
+                  pstate
+                  :bytes bytes
+                  :position (position-inc-column 1 pstate.position)
+                  :chars-read (cons (make-char+position
+                                     :char code
+                                     :position pstate.position)
+                                    pstate.chars-read))))))
+    (reterr-msg :where (position-to-msg pstate.position)
+                :expected "a byte in the range 9-13 or 32-126 or 192-223"
+                :found (msg "the byte ~x0" byte)))
+  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
   :prepwork ((local (in-theory (enable acl2-numberp-when-bytep
                                        rationalp-when-bytep
-                                       natp-when-bytep))))
+                                       integerp-when-natp
+                                       natp-when-bytep
+                                       natp-of-plus
+                                       natp-of-logand
+                                       natp-of-ash))))
 
   ///
 
@@ -1031,7 +1333,11 @@
     "Since grammatically keywords are identifiers,
      we just lex grammatical identifiers,
      but return a keyword lexeme if the grammatical identifier
-     matches a keyword.")
+     matches a keyword.
+     If GCC extensions are supported,
+     we check the grammatical identifier
+     against some additional keywords;
+     see the ABNF grammar rule for @('gcc-keyword').")
    (xdoc::p
     "Given that the first character (a letter or underscore)
      has already been read,
@@ -1059,50 +1365,53 @@
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
-    (if (member-equal string '("auto"
-                               "break"
-                               "case"
-                               "char"
-                               "const"
-                               "continue"
-                               "default"
-                               "do"
-                               "double"
-                               "else"
-                               "enum"
-                               "extern"
-                               "float"
-                               "for"
-                               "goto"
-                               "if"
-                               "inline"
-                               "int"
-                               "long"
-                               "register"
-                               "restrict"
-                               "return"
-                               "short"
-                               "signed"
-                               "sizeof"
-                               "static"
-                               "struct"
-                               "switch"
-                               "typedef"
-                               "union"
-                               "unsigned"
-                               "void"
-                               "volatile"
-                               "while"
-                               "_Alignas"
-                               "_Alignof"
-                               "_Atomic"
-                               "_Bool"
-                               "_Complex"
-                               "_Generic"
-                               "_Imaginary"
-                               "_Noreturn"
-                               "_Static_assert"
-                               "_Thread_local"))
+    (if (or (member-equal string '("auto"
+                                   "break"
+                                   "case"
+                                   "char"
+                                   "const"
+                                   "continue"
+                                   "default"
+                                   "do"
+                                   "double"
+                                   "else"
+                                   "enum"
+                                   "extern"
+                                   "float"
+                                   "for"
+                                   "goto"
+                                   "if"
+                                   "inline"
+                                   "int"
+                                   "long"
+                                   "register"
+                                   "restrict"
+                                   "return"
+                                   "short"
+                                   "signed"
+                                   "sizeof"
+                                   "static"
+                                   "struct"
+                                   "switch"
+                                   "typedef"
+                                   "union"
+                                   "unsigned"
+                                   "void"
+                                   "volatile"
+                                   "while"
+                                   "_Alignas"
+                                   "_Alignof"
+                                   "_Atomic"
+                                   "_Bool"
+                                   "_Complex"
+                                   "_Generic"
+                                   "_Imaginary"
+                                   "_Noreturn"
+                                   "_Static_assert"
+                                   "_Thread_local"))
+            (and (parstate->gcc pstate)
+                 (member-equal string '("__restrict"
+                                        "__restrict__"))))
         (retok (lexeme-token (token-keyword string)) span pstate)
       (retok (lexeme-token (token-ident (ident string))) span pstate)))
 
@@ -2495,7 +2804,7 @@
                                                 :before nil
                                                 :after hexdigs2)
                                   :expo expo)
-                           :suffix fsuffix?))
+                           :suffix? fsuffix?))
                          (cond (fsuffix? suffix-last/next-pos)
                                (t expo-last-pos))
                          pstate)))))))
@@ -2536,7 +2845,7 @@
                                               :before hexdigs
                                               :after nil)
                                 :expo expo)
-                         :suffix fsuffix?))
+                         :suffix? fsuffix?))
                        (cond (fsuffix? suffix-last/next-pos)
                              (t expo-last-pos))
                        pstate)))
@@ -2556,7 +2865,7 @@
                                               :before hexdigs
                                               :after hexdigs2)
                                 :expo expo)
-                         :suffix fsuffix?))
+                         :suffix? fsuffix?))
                        (cond (fsuffix? suffix-last/next-pos)
                              (t expo-last-pos))
                        pstate))))))
@@ -2575,7 +2884,7 @@
                      :core (make-hex-core-fconst-int
                             :significand hexdigs
                             :expo expo)
-                     :suffix fsuffix?))
+                     :suffix? fsuffix?))
                    (cond (fsuffix? suffix-last/next-pos)
                          (t expo-last-pos))
                    pstate)))
@@ -2722,7 +3031,7 @@
                       :expo? nil)))))
         (retok (const-float
                 (make-fconst-dec :core core
-                                 :suffix fsuffix?))
+                                 :suffix? fsuffix?))
                (cond (fsuffix? suffix-last/next-pos)
                      (expo? expo-last/next-pos)
                      (decdigs2 decdigs2-last-pos)
@@ -2743,7 +3052,7 @@
                         :significand (cons first-digit
                                            decdigs)
                         :expo expo)
-                 :suffix fsuffix?))
+                 :suffix? fsuffix?))
                (cond (fsuffix? suffix-last/next-pos)
                      (t expo-last-pos))
                pstate)))
@@ -2825,7 +3134,7 @@
                 :expo? nil))))
     (retok (const-float
             (make-fconst-dec :core core
-                             :suffix fsuffix?))
+                             :suffix? fsuffix?))
            (cond (fsuffix? suffix-last/next-pos)
                  (expo? expo-last/next-pos)
                  (decdigs decdigs-last-pos)
@@ -3015,7 +3324,7 @@
                       :expo? nil)))))))
         (retok (const-float
                 (make-fconst-dec :core core
-                                 :suffix fsuffix?))
+                                 :suffix? fsuffix?))
                (cond (fsuffix? suffix-last/next-pos)
                      (expo? expo-last/next-pos)
                      (digits2 digits2-last-pos)
@@ -3035,7 +3344,7 @@
                  :core (make-dec-core-fconst-int
                         :significand (cons #\0 digits)
                         :expo expo)
-                 :suffix fsuffix?))
+                 :suffix? fsuffix?))
                (cond (fsuffix? suffix-last/next-pos)
                      (t expo-last-pos))
                pstate)))
@@ -4939,9 +5248,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "All type qualifiers consist of single keywords."))
+    "All type qualifiers consist of single keywords.")
+   (xdoc::p
+    "We also compare the token against the GCC variants
+     @('__restrict') and @('__restrict__') of @('restrict').
+     Note that these variants are keywords only if GCC extensions are supported:
+     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     So the comparison here with those variant keywords
+     will always fail if GCC extensions are not supported,
+     because in that case both @('__restrict') and @('__restrict__')
+     would be identifier tokens, not keyword tokens."))
   (or (equal token? (token-keyword "const"))
       (equal token? (token-keyword "restrict"))
+      (equal token? (token-keyword "__restrict"))
+      (equal token? (token-keyword "__restrict__"))
       (equal token? (token-keyword "volatile"))
       (equal token? (token-keyword "_Atomic")))
   ///
@@ -4958,8 +5278,18 @@
   :returns (tyqual tyqualp)
   :short "Map a token that is a type qualifier
           to the correspoding type qualifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Both variants @('__restrict') and @('__restrict__') of @('restrict')
+     are mapped to the same type qualifier in abstract syntax,
+     because they represent the same type qualifier.
+     As explained in @(tsee token-type-qualifier-p),
+     these keyword tokens exist only if GCC extensions are supported."))
   (cond ((equal token (token-keyword "const")) (tyqual-const))
         ((equal token (token-keyword "restrict")) (tyqual-restrict))
+        ((equal token (token-keyword "__restrict")) (tyqual-restrict))
+        ((equal token (token-keyword "__restrict__")) (tyqual-restrict))
         ((equal token (token-keyword "volatile")) (tyqual-volatile))
         ((equal token (token-keyword "_Atomic")) (tyqual-atomic))
         (t (prog2$ (impossible) (irr-tyqual))))
@@ -6627,7 +6957,7 @@
                  ;; no larger than the initial one,
                  ;; so we just return the empty parser state.
                  ;; This is just logical: execution stops at the RAISE above.
-                 (b* ((pstate (init-parstate nil)))
+                 (b* ((pstate (init-parstate nil nil)))
                    (reterr t)))
                 (pstate (unread-token pstate))) ;
              (parse-postfix-expression pstate))
@@ -6782,7 +7112,7 @@
                      ;; no larger than the initial one,
                      ;; so we just return the empty parser state.
                      ;; This is just logical: execution stops at the RAISE above.
-                     (b* ((pstate (init-parstate nil)))
+                     (b* ((pstate (init-parstate nil nil)))
                        (reterr t)))
                     (pstate (unread-token pstate))) ;
                  (parse-postfix-expression pstate))))))))
@@ -7197,7 +7527,12 @@
        as an optional non-empty sequence of assignment expressions
        in the grammar.
        That part of the grammar is left-recursive,
-       which we handles as in other left-recursive parts of the grammar.")
+       which we handle as in other left-recursive parts of the grammar.")
+     (xdoc::p
+      "If GCC extensions are supported,
+       this parsing function is also called
+       to parse attribute parameters:
+       see @(tsee parse-attribute-parameters).")
      (xdoc::p
       "If the next token may start an expression,
        we parse an assignment expression,
@@ -9950,7 +10285,7 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((pstate (init-parstate nil)))
+                (b* ((pstate (init-parstate nil nil)))
                   (reterr t)))
                ((erp tyname span pstate) (parse-type-name pstate))
                ;; Ensure there is a closed parenthesis,
@@ -9981,7 +10316,7 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
-                    (b* ((pstate (init-parstate nil)))
+                    (b* ((pstate (init-parstate nil nil)))
                       (reterr t)))
                    (pstate (record-checkpoint pstate)) ; we may backtrack again
                    ((mv erp tyname span-tyname pstate)
@@ -10008,7 +10343,7 @@
                           ;; so we just return the empty parser state.
                           ;; This is just logical:
                           ;; execution stops at the RAISE above.
-                          (b* ((pstate (init-parstate nil)))
+                          (b* ((pstate (init-parstate nil nil)))
                             (reterr t)))
                          ((mv erp expr1 span-expr1 pstate)
                           (parse-expression pstate))
@@ -10077,7 +10412,7 @@
                             ;; so we just return the empty parser state.
                             ;; This is just logical:
                             ;; execution stops at the RAISE above.
-                            (b* ((pstate (init-parstate nil)))
+                            (b* ((pstate (init-parstate nil nil)))
                               (reterr t)))
                            ((mv erp expr1 span-expr1 pstate)
                             (parse-expression pstate))
@@ -10119,7 +10454,7 @@
                   ;; no larger than the initial one,
                   ;; so we just return the empty parser state.
                   ;; This is just logical: execution stops at the RAISE above.
-                  (b* ((pstate (init-parstate nil)))
+                  (b* ((pstate (init-parstate nil nil)))
                     (reterr t)))
                  ((erp tyname span pstate) (parse-type-name pstate))
                  ;; Ensure there is a closed parenthesis,
@@ -10186,7 +10521,7 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((pstate (init-parstate nil)))
+                (b* ((pstate (init-parstate nil nil)))
                   (reterr t)))
                ((erp absdeclor span pstate) (parse-abstract-declarator pstate)))
             (retok (amb?-declor/absdeclor-absdeclor absdeclor) span pstate))
@@ -10205,7 +10540,7 @@
               ;; so we just return the empty parser state.
               ;; This is just logical:
               ;; execution stops at the RAISE above.
-              (b* ((pstate (init-parstate nil)))
+              (b* ((pstate (init-parstate nil nil)))
                 (reterr t)))
              (pstate (record-checkpoint pstate)) ; we may backtrack again
              ((mv erp absdeclor span-absdeclor pstate)
@@ -10232,7 +10567,7 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
-                    (b* ((pstate (init-parstate nil)))
+                    (b* ((pstate (init-parstate nil nil)))
                       (reterr t)))
                    ((mv erp declor1 span-declor1 pstate)
                     (parse-declarator pstate))
@@ -10305,7 +10640,7 @@
                       ;; so we just return the empty parser state.
                       ;; This is just logical:
                       ;; execution stops at the RAISE above.
-                      (b* ((pstate (init-parstate nil)))
+                      (b* ((pstate (init-parstate nil nil)))
                         (reterr t)))
                      ((mv erp declor1 span-declor1 pstate)
                       (parse-declarator pstate))
@@ -11161,6 +11496,220 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-attribute-parameters ((pstate parstatep))
+  :returns (mv erp
+               (attrparams expr-listp)
+               (span spanp)
+               (new-pstate parstatep))
+  :short "Parse attribute parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is only used if GCC extensions are supported.
+     See the ABNF grammar rule for @('attribute-parameters').")
+   (xdoc::p
+    "If parsing is successful, we return a list of zero or more expressions,
+     which are the parameters.
+     We re-use @(tsee parse-argument-expressions)
+     to parse the zero or more comma-separated expressions.
+     This parsing function does exactly what is needed here."))
+  (b* (((reterr) nil (irr-span) (irr-parstate))
+       ((erp open-span pstate) (read-punctuator "(" pstate))
+       ((erp exprs & pstate) (parse-argument-expressions pstate))
+       ((erp close-span pstate) (read-punctuator ")" pstate)))
+    (retok exprs (span-join open-span close-span) pstate))
+
+  ///
+
+  (defret parsize-of-parse-attribute-parameters-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-attribute-parameters-cond
+    (implies (not erp)
+             (<= (parsize new-pstate)
+                 (1- (parsize pstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-attribute ((pstate parstatep))
+  :returns (mv erp (attr attribp) (span spanp) (new-pstate parstatep))
+  :short "Parse an attribute."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is only used if GCC extensions are supported.
+     See the ABNF grammar rule for @('attribute')."))
+  (b* (((reterr) (irr-attrib) (irr-span) (irr-parstate))
+       ((erp ident ident-span pstate) (read-identifier pstate)) ; ident
+       ((erp token & pstate) (read-token pstate)))
+    (cond
+     ;; If token is an open parenthesis, the attribute has parameters.
+     ((equal token (token-punctuator "(")) ; ident (
+      (b* ((pstate (unread-token pstate)) ; ident
+           ((erp exprs span pstate) ; ident ( exprs )
+            (parse-attribute-parameters pstate)))
+        (retok (make-attrib-name-param :name ident :param exprs)
+               (span-join ident-span span)
+               pstate)))
+     ;; If token is anything else, the attribute is just a name.
+     (t ; ident other
+      (b* ((pstate (if token (unread-token pstate) pstate))) ; ident
+        (retok (attrib-name ident) ident-span pstate)))))
+
+  ///
+
+  (defret parsize-of-parse-attribute-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-attribute-cond
+    (implies (not erp)
+             (<= (parsize new-pstate)
+                 (1- (parsize pstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-attribute-list ((pstate parstatep))
+  :returns (mv erp (attrs attrib-listp) (span spanp) (new-pstate parstatep))
+  :short "Parse a list of one or more attributes, separated by commas."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is only used if GCC extensions are supported.
+     See the ABNF grammar rule for @('attribute-list')."))
+  (b* (((reterr) nil (irr-span) (irr-parstate))
+       ((erp attr span pstate) (parse-attribute pstate)) ; attr
+       ((erp token & pstate) (read-token pstate)))
+    (cond
+     ;; If token is a comma,
+     ;; we recursively parse one or more additional attributes,
+     ;; and we combine them with the one parsed just above.
+     ((equal token (token-punctuator ",")) ; attr ,
+      (b* (((erp attrs last-span pstate) ; attr , attrs
+            (parse-attribute-list pstate)))
+        (retok (cons attr attrs) (span-join span last-span) pstate)))
+     ;; If token is not a comma,
+     ;; we have just the one attribute we parsed above.
+     (t ; attr other
+      (b* ((pstate (if token (unread-token pstate) pstate))) ; attr
+        (retok (list attr) span pstate)))))
+  :measure (parsize pstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret parsize-of-parse-attribute-list-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret parsize-of-parse-attribute-list-cond
+    (implies (not erp)
+             (<= (parsize new-pstate)
+                 (1- (parsize pstate))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-attribute-specifier ((first-span spanp) (pstate parstatep))
+  :returns (mv erp (attrspec attrib-specp) (span spanp) (new-pstate parstatep))
+  :short "Parse an attribute specifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is only used if GCC extensions are supported.
+     See the ABNF grammar rule for @('attribute-specifier').")
+   (xdoc::p
+    "This is called after parsing the initial @('__attribute__'),
+     whose span we pass to this parsing function as input."))
+  (b* (((reterr) (irr-attrib-spec) (irr-span) (irr-parstate))
+       ;; __attribute__
+       ((erp & pstate) (read-punctuator "(" pstate)) ; __attribute__ (
+       ((erp & pstate) (read-punctuator "(" pstate)) ; __attribute__ ( (
+       ((erp attrs & pstate) ; __attribute__ ( ( attrs
+        (parse-attribute-list pstate))
+       ((erp & pstate) ; __attribute__ ( ( attrs )
+        (read-punctuator ")" pstate))
+       ((erp last-span pstate) ; __attribute__ ( ( attrs ) )
+        (read-punctuator ")" pstate)))
+    (retok (attrib-spec attrs) (span-join first-span last-span) pstate))
+
+  ///
+
+  (defret parsize-of-parse-attribute-specifier-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-attribute-specifier-cond
+    (implies (not erp)
+             (<= (parsize new-pstate)
+                 (1- (parsize pstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-*-attribute-specifier ((pstate parstatep))
+  :returns (mv erp
+               (attrspecs attrib-spec-listp)
+               (span spanp)
+               (new-pstate parstatep))
+  :short "Parse zero or more attribute specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is only used if GCC extensions are supported.
+     We parse a @('*attribute-specifier') in ABNF notation;
+     see ABNF grammar rule for @('attribute-specifier').")
+   (xdoc::p
+    "As mentioned in the documentation of the ABNF grammar,
+     we regard @('__attribute__') as an identifier.
+     If the next token is that, we finish parsing the attribute specifier,
+     and we recursively call this function
+     to parse zero or more additional attribute specifiers,
+     which we combine with the one just parsed.")
+   (xdoc::p
+    "If there are no attribute specifiers, we return an irrelevant span.
+     When combining the span of the first attribute specifier (if present)
+     with the span of the remaining zero or more attribute specifiers,
+     we join spans only if the remaining ones are one or more;
+     if there are zero, the span of the first attribute specifier
+     is also the span of the whole sequence."))
+  (b* (((reterr) nil (irr-span) (irr-parstate))
+       ((erp token first-span pstate) (read-token pstate))
+       ((unless (equal token (token-ident (ident "__attribute__"))))
+        (b* ((pstate (if token (unread-token pstate) pstate)))
+          (retok nil (irr-span) pstate)))
+       ;; __attribute__
+       ((erp attrspec span pstate)
+        (parse-attribute-specifier first-span pstate))
+       ;; __attribute__ ( ( ... ) )
+       ((erp attrspecs last-span pstate) (parse-*-attribute-specifier pstate)))
+    (retok (cons attrspec attrspecs)
+           (if attrspecs (span-join span last-span) span)
+           pstate))
+  :measure (parsize pstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret parsize-of-parse-*-attribute-specifier-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parse-init-declarator ((pstate parstatep))
   :returns (mv erp (initdeclor initdeclorp) (span spanp) (new-pstate parstatep))
   :short "Parse an initializer declarator."
@@ -11263,7 +11812,21 @@
      recognized by the starting @('_Static_assert') keyword,
      or a list of one or more declaration specifiers
      optionally followed by a list of one or more initializer declarators
-     and mandatorily followed by a semicolon."))
+     and mandatorily followed by a semicolon.")
+   (xdoc::p
+    "If GCC extensions are supported,
+     we must also allow for zero or more attribute specifiers
+     ending a declaration, just before the semicolon:
+     see the ABNF grammar rule for @('declaration').
+     Since @('__attribute__') is regarded as an identifier
+     (see documentation of the ABNF grammar),
+     there is a potential ambiguity in the case that
+     there are no initializer declarators in the list:
+     a @('__attribute__((x))') could be equally well
+     an attribute specifier or a declarator.
+     We make the approximate but reasonable decision that
+     an @('__attribute__') identifier always starts an attribute specifier,
+     effectively prohibiting its use as a regular identifier."))
   (b* (((reterr) (irr-decl) (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate)))
     (cond
@@ -11276,26 +11839,65 @@
             (parse-declaration-specifiers nil pstate))
            ((erp token2 span2 pstate) (read-token pstate)))
         (cond
+         ;; If token2 is the identifier __attribute__,
+         ;; and if GCC extensions are supported,
+         ;; as explained in the documentation of this function,
+         ;; we regard it as starting an attribute specifier.
+         ;; So we have no initializer declarators,
+         ;; and we parse the attribute specifiers,
+         ;; and the ending semicolon.
+         ((and (equal token2 (token-ident (ident "__attribute__")))
+               (parstate->gcc pstate))
+          ;; declspecs __attribute__
+          (b* ((pstate (unread-token pstate))
+               ((erp attrspecs & pstate) ; declspecs attrspecs
+                (parse-*-attribute-specifier pstate))
+               ((erp last-span pstate) ; declspecs attrspecs ;
+                (read-punctuator ";" pstate)))
+            (retok (make-decl-decl :specs declspecs
+                                   :init nil
+                                   :attrib attrspecs)
+                   (span-join span last-span)
+                   pstate)))
          ;; If token2 may start a declarator,
          ;; which is equivalent to saying that
          ;; it may start an initializer declarator,
          ;; we parse the list of one or more initializer declarators,
          ;; and then the final semicolon.
+         ;; Note that, if GCC extensions are supported,
+         ;; we have already covered above the case of
+         ;; token2 being the identifier __attribute__,
+         ;; so now we know that, if GCC extensions are supported,
+         ;; token2 is not the identifier __attribute__.
+         ;; If GCC extensions are not supported,
+         ;; token2 could well be __attribute__,
+         ;; which is a valid identifier in standard C.
+         ;; Regardless, if GCC extensions are supported,
+         ;; after the initializer declarators, and before the semicolon,
+         ;; we need to parse zero or more attribute specifiers.
          ((token-declarator-start-p token2) ; declspecs declor...
           (b* ((pstate (unread-token pstate)) ; declspecs
                ((erp initdeclors & pstate) ; declspecs initdeclors
                 (parse-init-declarator-list pstate))
-               ((erp last-span pstate) ; declspecs initdeclors ;
+               ((erp attrspecs & pstate) ; declspecs initdeclors [attrspecs]
+                (if (parstate->gcc pstate)
+                    (parse-*-attribute-specifier pstate)
+                  (retok nil (irr-span) pstate)))
+               ((erp last-span pstate) ; declspecs initdeclors [attrspecs] ;
                 (read-punctuator ";" pstate)))
             (retok (make-decl-decl :specs declspecs
-                                   :init initdeclors)
+                                   :init initdeclors
+                                   :attrib attrspecs)
                    (span-join span last-span)
                    pstate)))
          ;; If token2 is a semicolon,
          ;; we have no initializer declarators.
+         ;; If GCC extensions are supported,
+         ;; this also means that we have no attribute specifiers.
          ((equal token2 (token-punctuator ";")) ; declspecs ;
           (retok (make-decl-decl :specs declspecs
-                                 :init nil)
+                                 :init nil
+                                 :attrib nil)
                  (span-join span span2)
                  pstate))
          ;; If token2 is anything else, it is an error.
@@ -11424,7 +12026,7 @@
               ;; no larger than the initial one,
               ;; so we just return the empty parser state.
               ;; This is just logical: execution stops at the RAISE above.
-              (b* ((pstate (init-parstate nil)))
+              (b* ((pstate (init-parstate nil nil)))
                 (reterr t)))
              ((erp decl span pstate) (parse-declaration pstate)))
           (retok (amb?-decl/stmt-decl decl) span pstate))
@@ -11452,7 +12054,7 @@
                   ;; so we just return the empty parser state.
                   ;; This is just logical:
                   ;; execution stops at the RAISE above.
-                  (b* ((pstate (init-parstate nil)))
+                  (b* ((pstate (init-parstate nil nil)))
                     (reterr t)))
                  (pstate (record-checkpoint pstate)) ; we may backtrack again
                  ((mv erp decl span-decl pstate) (parse-declaration pstate)))
@@ -11473,7 +12075,7 @@
                         ;; so we just return the empty parser state.
                         ;; This is just logical:
                         ;; execution stops at the RAISE above.
-                        (b* ((pstate (init-parstate nil)))
+                        (b* ((pstate (init-parstate nil nil)))
                           (reterr t)))
                        ((mv erp expr1 span-expr1 pstate)
                         (parse-expression pstate))
@@ -11547,7 +12149,7 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((pstate (init-parstate nil)))
+                (b* ((pstate (init-parstate nil nil)))
                   (reterr t)))
                ((erp decl span pstate) (parse-declaration pstate)))
             (retok (amb?-decl/stmt-decl decl) span pstate))))))
@@ -12329,13 +12931,22 @@
      since those are present both in declarations and in function definitions.
      Then we must have a declarator in either case,
      but based on what follows it,
-     we can decide whether we have a declarator or a function definition")
+     we can decide whether we have a declarator or a function definition.")
    (xdoc::p
-    "This may need a more refined treatment,
-     given that there are certain syntactic ambiguities
-     related to declaration specifiers and declarators.
-     We will do that soon,
-     in the broader context of other parts of the parser."))
+    "If GCC extensions are supported, there is a further complication.
+     A function declaration could be followed by an attribute specifier,
+     whose initial @('__attribute__') could also be
+     the start of a declaration (a @('typedef') name),
+     in an old-style function declaration or definition.
+     There are potential ambiguities, which may be actually resolvable,
+     but for now we just assume that, if GCC extensions are supported,
+     an @('__attribute__') starts an attribute specifier,
+     and not old-style declarations and definitions;
+     for now, our goal is not to cover GCC extensions thoroughly,
+     but only to parse practical code that may have
+     certain kinds of GCC extensions.
+     Given this goal, our current approach for parsing external declarations
+     seems reasonable."))
   (b* (((reterr) (irr-extdecl) (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate)))
     (cond
@@ -12356,10 +12967,32 @@
          ;; we must have a declaration without initialization declarators.
          ((equal token2 (token-punctuator ";")) ; declspecs ;
           (retok (extdecl-decl (make-decl-decl :specs declspecs
-                                               :init nil))
+                                               :init nil
+                                               :attrib nil))
                  (span-join span span2)
                  pstate))
+         ;; If token2 is the __attribute__ identifier,
+         ;; and if GCC extensions are supported,
+         ;; we commit to parsing one or more attribute specifiers,
+         ;; and to this external declaration being a declaration.
+         ;; This is not fully general, but seems adequate for now,
+         ;; as discussed in the documentation of this function above.
+         ((and (equal token2 (token-ident (ident "__attribute__")))
+               (parstate->gcc pstate))
+          ;; declspecs __attribute__
+          (b* ((pstate (unread-token pstate)) ; declspecs
+               ((erp attrspecs & pstate) ; declspecs attrspecs
+                (parse-*-attribute-specifier pstate))
+               ((erp last-span pstate) ; declspecs attrspecs ;
+                (read-punctuator ";" pstate)))
+            (retok (extdecl-decl (make-decl-decl :specs declspecs
+                                                 :init nil
+                                                 :attrib attrspecs))
+                   (span-join span last-span)
+                   pstate)))
          ;; If token2 is not a semicolon,
+         ;; and either GCC extensions are not supported
+         ;; or token2 is not the identifier __attribute__,
          ;; we must have at least one declarator, which we parse.
          (t ; declspecs other
           (b* ((pstate (if token2 (unread-token pstate) pstate))
@@ -12369,9 +13002,12 @@
             (cond
              ;; If token3 is an equal sign,
              ;; we must be parsing an intialization declarator,
-             ;; and therefore the external declaration must be a declarator.
+             ;; and therefore the external declaration must be a declaration.
              ;; We parse the rest of the initialization declarator,
              ;; then possibly more initialization declarators.
+             ;; If GCC extensions are supported,
+             ;; we also parse zero or more attribute specifiers
+             ;; before the ending semicolon.
              ((equal token3 (token-punctuator "=")) ; declspecs declor =
               (b* (((erp initer & pstate) ; declspecs declor = initer
                     (parse-initializer pstate))
@@ -12386,7 +13022,8 @@
                            :specs declspecs
                            :init (list (make-initdeclor
                                         :declor declor
-                                        :init? initer))))
+                                        :init? initer))
+                           :attrib nil))
                          (span-join span span4)
                          pstate))
                  ;; If token4 is a comma,
@@ -12396,8 +13033,13 @@
                   (b* (((erp initdeclors & pstate)
                         ;; declspecs declor = initer , initdeclors
                         (parse-init-declarator-list pstate))
+                       ((erp attrspecs & pstate)
+                        (if (parstate->gcc pstate)
+                            (parse-*-attribute-specifier pstate)
+                          (retok nil (irr-span) pstate)))
+                       ;; declspecs declor = initer, initdeclors [attrspecs]
                        ((erp last-span pstate)
-                        ;; declspecs declor = initer , initdeclors ;
+                        ;; declspecs declor = initer , initdeclors [attrspecs] ;
                         (read-punctuator ";" pstate)))
                     (retok (extdecl-decl
                             (make-decl-decl
@@ -12405,7 +13047,31 @@
                              :init (cons (make-initdeclor
                                           :declor declor
                                           :init? initer)
-                                         initdeclors)))
+                                         initdeclors)
+                             :attrib attrspecs))
+                           (span-join span last-span)
+                           pstate)))
+                 ;; If token4 is the identifier __attribute__
+                 ;; and GCC extensions are supported,
+                 ;; we have just one declarator with the initializer,
+                 ;; followed by attribute specifiers, which we parse.
+                 ((and (equal token4 (token-ident (ident "__attribute__")))
+                       (parstate->gcc pstate))
+                  ;; declspecs declor = initer __attribute__
+                  (b* ((pstate (unread-token pstate))
+                       ;; declspecs declor = initer
+                       ((erp attrspecs & pstate)
+                        (parse-*-attribute-specifier pstate))
+                       ;; declspecs declor = initer attrspecs
+                       ((erp last-span pstate) (read-punctuator ";" pstate)))
+                    ;; declspecs declor = initer attrspecs ;
+                    (retok (extdecl-decl
+                            (make-decl-decl
+                             :specs declspecs
+                             :init (list (make-initdeclor
+                                          :declor declor
+                                          :init? initer))
+                             :attrib attrspecs))
                            (span-join span last-span)
                            pstate)))
                  ;; If token4 is anything else, it is an error.
@@ -12424,7 +13090,8 @@
                        :specs declspecs
                        :init (list (make-initdeclor
                                     :declor declor
-                                    :init? nil))))
+                                    :init? nil))
+                       :attrib nil))
                      (span-join span span3)
                      pstate))
              ;; If token3 is a comma,
@@ -12432,18 +13099,49 @@
              ;; an external declaration that is a declaration.
              ;; There must be more initialization declarations,
              ;; which we parse.
+             ;; If GCC extensions are supported,
+             ;; we also parser zero or more attribute specifiers
+             ;; just before the final semicolon.
              ((equal token3 (token-punctuator ",")) ; declspecs declor ,
-              (b* (((erp initdeclors & pstate) ; declspecs declor , initdeclors
+              (b* (((erp initdeclors & pstate)
                     (parse-init-declarator-list pstate))
-                   ((erp last-span pstate) ; declspecs declor , initdeclors ;
-                    (read-punctuator ";" pstate)))
+                   ;; declspecs declor , initdeclors
+                   ((erp attrspecs & pstate)
+                    (if (parstate->gcc pstate)
+                        (parse-*-attribute-specifier pstate)
+                      (retok nil (irr-span) pstate)))
+                   ;; declspecs declor, initdeclors [attrspecs]
+                   ((erp last-span pstate) (read-punctuator ";" pstate)))
+                ;; declspecs declor , initdeclors [attrspecs] ;
                 (retok (extdecl-decl
                         (make-decl-decl
                          :specs declspecs
                          :init (cons (make-initdeclor
                                       :declor declor
                                       :init? nil)
-                                     initdeclors)))
+                                     initdeclors)
+                         :attrib attrspecs))
+                       (span-join span last-span)
+                       pstate)))
+             ;; If token3 is the __attribute__ identifier,
+             ;; and GCC extensions are supported,
+             ;; we commit to this external declaration being a declaration,
+             ;; and we parse one or more attribute specifiers.
+             ((and (equal token3 (token-ident (ident "__attribute__")))
+                   (parstate->gcc pstate))
+              ;; declspecs declor __attribute
+              (b* ((pstate (unread-token pstate)) ; declspecs declor
+                   ((erp attrspecs & pstate) ; declspecs declor attrspecs
+                    (parse-*-attribute-specifier pstate))
+                   ((erp last-span pstate) ; declspecs declor attrspecs ;
+                    (read-punctuator ";" pstate)))
+                (retok (extdecl-decl
+                        (make-decl-decl
+                         :specs declspecs
+                         :init (list (make-initdeclor
+                                      :declor declor
+                                      :init? nil))
+                         :attrib attrspecs))
                        (span-join span last-span)
                        pstate)))
              ;; If token3 is something else,
@@ -12605,11 +13303,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-file ((path filepathp) (data byte-listp))
+(define parse-file ((path filepathp) (data byte-listp) (gcc booleanp))
   :returns (mv erp (tunit transunitp))
   :short "Parse (the data bytes of) a file."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "We also pass a flag saying whether GCC extensions should be accepted.")
    (xdoc::p
     "If successful, the result is a translation unit.
      We initialize the parser state with the data bytes,
@@ -12622,7 +13322,7 @@
      but currently we do not have that information statically available,
      so we add a run-time check that should always succeed."))
   (b* (((reterr) (irr-transunit))
-       (parstate (init-parstate data))
+       (parstate (init-parstate data gcc))
        ((mv erp tunit &) (parse-translation-unit parstate))
        ((when erp)
         (b* (((unless (msgp erp))
@@ -12633,11 +13333,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-fileset ((fileset filesetp))
+(define parse-fileset ((fileset filesetp) (gcc booleanp))
   :returns (mv erp (tunits transunit-ensemblep))
   :short "Parse a file set."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "We also pass a flag saying whether GCC extensions should be accepted.")
    (xdoc::p
     "We go through each file of the file set and parse it,
      obtaining a translation unit for each,
@@ -12648,17 +13350,18 @@
      (they are the keys of the maps)."))
   (b* (((reterr) (irr-transunit-ensemble))
        (filemap (fileset->unwrap fileset))
-       ((erp tunitmap) (parse-fileset-loop filemap)))
+       ((erp tunitmap) (parse-fileset-loop filemap gcc)))
     (retok (transunit-ensemble tunitmap)))
 
   :prepwork
-  ((define parse-fileset-loop ((filemap filepath-filedata-mapp))
+  ((define parse-fileset-loop ((filemap filepath-filedata-mapp)
+                               (gcc booleanp))
      :returns (mv erp (tunitmap filepath-transunit-mapp))
      (b* (((reterr) nil)
           ((when (omap::emptyp filemap)) (retok nil))
           ((mv filepath filedata) (omap::head filemap))
-          ((erp tunit) (parse-file filepath (filedata->unwrap filedata)))
-          ((erp tunitmap) (parse-fileset-loop (omap::tail filemap))))
+          ((erp tunit) (parse-file filepath (filedata->unwrap filedata) gcc))
+          ((erp tunitmap) (parse-fileset-loop (omap::tail filemap) gcc)))
        (retok (omap::update (filepath-fix filepath) tunit tunitmap)))
      :verify-guards :after-returns
 
