@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Generates the identify transformation
-(deftrans identity)
+(deftrans identity-trans)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,23 +120,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst *transunits-copy*
-  (copy-transunit-ensemble *old-transunits*))
+(defconst *transunits-identity-trans*
+  (identity-trans-transunit-ensemble *old-transunits*))
 
-(defconst *fileset-copy*
-  (c$::print-fileset *transunits-copy*))
+(defconst *fileset-identity-trans*
+  (c$::print-fileset *transunits-identity-trans*))
 
-(defconst *filepath-copy*
-  (filepath "file.COPY.c"))
+(defconst *filepath-identity-trans*
+  (filepath "file.IDENTITY-TRANS.c"))
 
-(defconst *filedata-copy*
-  (omap::lookup *filepath-copy*
-                (fileset->unwrap *fileset-copy*)))
+(defconst *filedata-identity-trans*
+  (omap::lookup *filepath-identity-trans*
+                (fileset->unwrap *fileset-identity-trans*)))
 
 (assert-event
  (equal
   (acl2::nats=>string
-   (filedata->unwrap *filedata-copy*))
+   (filedata->unwrap *filedata-identity-trans*))
   "int main() {
   int x = 5;
   return x + 0;
