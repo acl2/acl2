@@ -487,45 +487,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-lex (fn input &key cond)
-  ;; optional COND may be over variables AST, POS/SPAN, PSTATE
+(defmacro test-lex (fn input &key more-inputs pos cond)
+  ;; INPUT is an ACL2 string with the text to parse.
+  ;; Optional MORE-INPUTS go just before parser state input.
+  ;; Optional POS is the initial position for the parser state.
+  ;; Optional COND may be over variables AST, POS/SPAN, PSTATE.
   `(assert-event
-    (b* (((mv erp ?ast ?pos/span ?pstate)
-          (,fn (init-parstate (acl2::string=>nats ,input) nil))))
+    (b* ((pstate (init-parstate (acl2::string=>nats ,input) nil))
+         ,@(and pos
+                `((pstate (change-parstate pstate :position ,pos))))
+         ((mv erp ?ast ?pos/span ?pstate) (,fn ,@more-inputs pstate)))
       (if erp
           (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
         ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
 
-(defmacro test-lex-fail (fn input)
+(defmacro test-lex-fail (fn input &key more-inputs)
+  ;; INPUT is an ACL2 string with the text to parse.
+  ;; Optional MORE-INPUTS go just before parser state input.
   `(assert-event
-    (b* (((mv erp & & &) (,fn (init-parstate (acl2::string=>nats ,input) nil))))
+    (b* (((mv erp & & &)
+          (,fn ,@more-inputs (init-parstate (acl2::string=>nats ,input) nil))))
       erp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; lex-identifier/keyword
 
-(assert-event
- (b* ((first-char (char-code #\w))
-      (first-pos (position 8 3))
-      (pstate (init-parstate (acl2::string=>nats " abc") nil))
-      (pstate (change-parstate pstate :position (position 8 4)))
-      ((mv erp lexeme span &)
-       (lex-identifier/keyword first-char first-pos pstate)))
-   (and (not erp)
-        (equal lexeme (lexeme-token (token-ident (ident "w"))))
-        (equal span (span (position 8 3) (position 8 3))))))
+(test-lex
+ lex-identifier/keyword
+ " abc"
+ :more-inputs ((char-code #\w) (position 8 3))
+ :pos (position 8 4)
+ :cond (and (equal ast (lexeme-token (token-ident (ident "w"))))
+            (equal pos/span (span (position 8 3) (position 8 3)))))
 
-(assert-event
- (b* ((first-char (char-code #\u))
-      (first-pos (position 8 3))
-      (pstate (init-parstate (acl2::string=>nats "abc456") nil))
-      (pstate (change-parstate pstate :position (position 8 4)))
-      ((mv erp lexeme span &)
-       (lex-identifier/keyword first-char first-pos pstate)))
-   (and (not erp)
-        (equal lexeme (lexeme-token (token-ident (ident "uabc456"))))
-        (equal span (span (position 8 3) (position 8 9))))))
+(test-lex
+ lex-identifier/keyword
+ "abc456"
+ :more-inputs ((char-code #\u) (position 8 3))
+ :pos (position 8 4)
+ :cond (and (equal ast (lexeme-token (token-ident (ident "uabc456"))))
+            (equal pos/span (span (position 8 3) (position 8 9)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
