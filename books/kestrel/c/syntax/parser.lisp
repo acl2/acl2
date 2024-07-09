@@ -1325,7 +1325,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called after the first character of the identifier
+    "This is called after the first character of the identifier or keyword
      has been already read;
      that character is passed to this function.
      The position of that character is also passed as input.")
@@ -1410,7 +1410,10 @@
                                    "_Static_assert"
                                    "_Thread_local"))
             (and (parstate->gcc pstate)
-                 (member-equal string '("__restrict"
+                 (member-equal string '("__attribute__"
+                                        "__inline"
+                                        "__inline__"
+                                        "__restrict"
                                         "__restrict__"))))
         (retok (lexeme-token (token-keyword string)) span pstate)
       (retok (lexeme-token (token-ident (ident string))) span pstate)))
@@ -5260,10 +5263,10 @@
      would be identifier tokens, not keyword tokens."))
   (or (equal token? (token-keyword "const"))
       (equal token? (token-keyword "restrict"))
-      (equal token? (token-keyword "__restrict"))
-      (equal token? (token-keyword "__restrict__"))
       (equal token? (token-keyword "volatile"))
-      (equal token? (token-keyword "_Atomic")))
+      (equal token? (token-keyword "_Atomic"))
+      (equal token? (token-keyword "__restrict"))
+      (equal token? (token-keyword "__restrict__")))
   ///
 
   (defrule non-nil-when-token-type-qualifier-p
@@ -5278,20 +5281,12 @@
   :returns (tyqual tyqualp)
   :short "Map a token that is a type qualifier
           to the correspoding type qualifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Both variants @('__restrict') and @('__restrict__') of @('restrict')
-     are mapped to the same type qualifier in abstract syntax,
-     because they represent the same type qualifier.
-     As explained in @(tsee token-type-qualifier-p),
-     these keyword tokens exist only if GCC extensions are supported."))
   (cond ((equal token (token-keyword "const")) (tyqual-const))
         ((equal token (token-keyword "restrict")) (tyqual-restrict))
-        ((equal token (token-keyword "__restrict")) (tyqual-restrict))
-        ((equal token (token-keyword "__restrict__")) (tyqual-restrict))
         ((equal token (token-keyword "volatile")) (tyqual-volatile))
         ((equal token (token-keyword "_Atomic")) (tyqual-atomic))
+        ((equal token (token-keyword "__restrict")) (tyqual-__restrict))
+        ((equal token (token-keyword "__restrict__")) (tyqual-__restrict__))
         (t (prog2$ (impossible) (irr-tyqual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 
@@ -5329,9 +5324,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "All function specifiers consist of single keywords."))
+    "All function specifiers consist of single keywords.")
+   (xdoc::p
+    "We also compare the token against the GCC variants
+     @('__inline') and @('__inline__') of @('inline').
+     Note that these variants are keywords only if GCC extensions are supported:
+     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     So the comparison here with those variant keywords
+     will always fail if GCC extensions are not supported,
+     because in that case both @('__inline') and @('__inline__')
+     would be identifier tokens, not keyword tokens."))
   (or (equal token? (token-keyword "inline"))
-      (equal token? (token-keyword "_Noreturn")))
+      (equal token? (token-keyword "_Noreturn"))
+      (equal token? (token-keyword "__inline"))
+      (equal token? (token-keyword "__inline__")))
   ///
 
   (defrule non-nil-when-token-function-specifier-p
@@ -5348,6 +5354,8 @@
           to the corresponding function specifier."
   (cond ((equal token (token-keyword "inline")) (funspec-inline))
         ((equal token (token-keyword "_Noreturn")) (funspec-noreturn))
+        ((equal token (token-keyword "__inline")) (funspec-__inline))
+        ((equal token (token-keyword "__inline__")) (funspec-__inline__))
         (t (prog2$ (impossible) (irr-funspec))))
   :prepwork ((local (in-theory (enable token-function-specifier-p)))))
 
@@ -11667,12 +11675,12 @@
   (xdoc::topstring
    (xdoc::p
     "This is only used if GCC extensions are supported.
-     We parse a @('*attribute-specifier') in ABNF notation;
+     We parse a @('*attribute-specifier') in ABNF notation,
+     i.e. a repetition of zero or more attribute specifiers;
      see ABNF grammar rule for @('attribute-specifier').")
    (xdoc::p
-    "As mentioned in the documentation of the ABNF grammar,
-     we regard @('__attribute__') as an identifier.
-     If the next token is that, we finish parsing the attribute specifier,
+    "If the next token is the @('__attribute__') keyword,
+     we finish parsing the attribute specifier,
      and we recursively call this function
      to parse zero or more additional attribute specifiers,
      which we combine with the one just parsed.")
@@ -11685,7 +11693,7 @@
      is also the span of the whole sequence."))
   (b* (((reterr) nil (irr-span) (irr-parstate))
        ((erp token first-span pstate) (read-token pstate))
-       ((unless (equal token (token-ident (ident "__attribute__"))))
+       ((unless (equal token (token-keyword "__attribute__")))
         (b* ((pstate (if token (unread-token pstate) pstate)))
           (retok nil (irr-span) pstate)))
        ;; __attribute__
@@ -11693,6 +11701,7 @@
         (parse-attribute-specifier first-span pstate))
        ;; __attribute__ ( ( ... ) )
        ((erp attrspecs last-span pstate) (parse-*-attribute-specifier pstate)))
+    ;; __attribute__ ( ( ... ) ) zero-or-more-attribute-specifiers
     (retok (cons attrspec attrspecs)
            (if attrspecs (span-join span last-span) span)
            pstate))
@@ -11817,16 +11826,7 @@
     "If GCC extensions are supported,
      we must also allow for zero or more attribute specifiers
      ending a declaration, just before the semicolon:
-     see the ABNF grammar rule for @('declaration').
-     Since @('__attribute__') is regarded as an identifier
-     (see documentation of the ABNF grammar),
-     there is a potential ambiguity in the case that
-     there are no initializer declarators in the list:
-     a @('__attribute__((x))') could be equally well
-     an attribute specifier or a declarator.
-     We make the approximate but reasonable decision that
-     an @('__attribute__') identifier always starts an attribute specifier,
-     effectively prohibiting its use as a regular identifier."))
+     see the ABNF grammar rule for @('declaration')."))
   (b* (((reterr) (irr-decl) (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate)))
     (cond
@@ -11839,14 +11839,12 @@
             (parse-declaration-specifiers nil pstate))
            ((erp token2 span2 pstate) (read-token pstate)))
         (cond
-         ;; If token2 is the identifier __attribute__,
+         ;; If token2 is the keyword '__attribute__',
          ;; and if GCC extensions are supported,
-         ;; as explained in the documentation of this function,
-         ;; we regard it as starting an attribute specifier.
-         ;; So we have no initializer declarators,
-         ;; and we parse the attribute specifiers,
+         ;; we have no initializer declarators;
+         ;; we parse the attribute specifiers,
          ;; and the ending semicolon.
-         ((and (equal token2 (token-ident (ident "__attribute__")))
+         ((and (equal token2 (token-keyword "__attribute__"))
                (parstate->gcc pstate))
           ;; declspecs __attribute__
           (b* ((pstate (unread-token pstate))
@@ -11863,18 +11861,8 @@
          ;; which is equivalent to saying that
          ;; it may start an initializer declarator,
          ;; we parse the list of one or more initializer declarators,
+         ;; then a list of zero or more attribute specifiers,
          ;; and then the final semicolon.
-         ;; Note that, if GCC extensions are supported,
-         ;; we have already covered above the case of
-         ;; token2 being the identifier __attribute__,
-         ;; so now we know that, if GCC extensions are supported,
-         ;; token2 is not the identifier __attribute__.
-         ;; If GCC extensions are not supported,
-         ;; token2 could well be __attribute__,
-         ;; which is a valid identifier in standard C.
-         ;; Regardless, if GCC extensions are supported,
-         ;; after the initializer declarators, and before the semicolon,
-         ;; we need to parse zero or more attribute specifiers.
          ((token-declarator-start-p token2) ; declspecs declor...
           (b* ((pstate (unread-token pstate)) ; declspecs
                ((erp initdeclors & pstate) ; declspecs initdeclors
@@ -12931,22 +12919,7 @@
      since those are present both in declarations and in function definitions.
      Then we must have a declarator in either case,
      but based on what follows it,
-     we can decide whether we have a declarator or a function definition.")
-   (xdoc::p
-    "If GCC extensions are supported, there is a further complication.
-     A function declaration could be followed by an attribute specifier,
-     whose initial @('__attribute__') could also be
-     the start of a declaration (a @('typedef') name),
-     in an old-style function declaration or definition.
-     There are potential ambiguities, which may be actually resolvable,
-     but for now we just assume that, if GCC extensions are supported,
-     an @('__attribute__') starts an attribute specifier,
-     and not old-style declarations and definitions;
-     for now, our goal is not to cover GCC extensions thoroughly,
-     but only to parse practical code that may have
-     certain kinds of GCC extensions.
-     Given this goal, our current approach for parsing external declarations
-     seems reasonable."))
+     we can decide whether we have a declarator or a function definition."))
   (b* (((reterr) (irr-extdecl) (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate)))
     (cond
@@ -12971,13 +12944,12 @@
                                                :attrib nil))
                  (span-join span span2)
                  pstate))
-         ;; If token2 is the __attribute__ identifier,
+         ;; If token2 is the '__attribute__' keyword,
          ;; and if GCC extensions are supported,
-         ;; we commit to parsing one or more attribute specifiers,
-         ;; and to this external declaration being a declaration.
-         ;; This is not fully general, but seems adequate for now,
-         ;; as discussed in the documentation of this function above.
-         ((and (equal token2 (token-ident (ident "__attribute__")))
+         ;; we parse one or more attribute specifiers,
+         ;; and this external declaration must be a declaration
+         ;; (we do not support attributes of function definitions).
+         ((and (equal token2 (token-keyword "__attribute__"))
                (parstate->gcc pstate))
           ;; declspecs __attribute__
           (b* ((pstate (unread-token pstate)) ; declspecs
@@ -12992,7 +12964,7 @@
                    pstate)))
          ;; If token2 is not a semicolon,
          ;; and either GCC extensions are not supported
-         ;; or token2 is not the identifier __attribute__,
+         ;; or token2 is not the keyword '__attribute__',
          ;; we must have at least one declarator, which we parse.
          (t ; declspecs other
           (b* ((pstate (if token2 (unread-token pstate) pstate))
@@ -13051,11 +13023,11 @@
                              :attrib attrspecs))
                            (span-join span last-span)
                            pstate)))
-                 ;; If token4 is the identifier __attribute__
+                 ;; If token4 is the keyword '__attribute__'
                  ;; and GCC extensions are supported,
                  ;; we have just one declarator with the initializer,
                  ;; followed by attribute specifiers, which we parse.
-                 ((and (equal token4 (token-ident (ident "__attribute__")))
+                 ((and (equal token4 (token-keyword "__attribute__"))
                        (parstate->gcc pstate))
                   ;; declspecs declor = initer __attribute__
                   (b* ((pstate (unread-token pstate))
@@ -13123,11 +13095,11 @@
                          :attrib attrspecs))
                        (span-join span last-span)
                        pstate)))
-             ;; If token3 is the __attribute__ identifier,
+             ;; If token3 is the '__attribute__' kryword
              ;; and GCC extensions are supported,
              ;; we commit to this external declaration being a declaration,
              ;; and we parse one or more attribute specifiers.
-             ((and (equal token3 (token-ident (ident "__attribute__")))
+             ((and (equal token3 (token-keyword "__attribute__"))
                    (parstate->gcc pstate))
               ;; declspecs declor __attribute
               (b* ((pstate (unread-token pstate)) ; declspecs declor

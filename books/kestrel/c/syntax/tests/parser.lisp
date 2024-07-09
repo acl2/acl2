@@ -1228,7 +1228,11 @@ struct bar
  "extern int sscanf (const char *__s, const char *__format, ...);")
 
 (test-parse
- parse-declaration
-; parse-external-declaration-list
+ parse-external-declaration-list
  "extern int remove (const char *__filename) __attribute__ ((__nothrow__ , __leaf__));"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "typedef int register_t __attribute__ ((__mode__ (__word__)));"
  :gcc t)
