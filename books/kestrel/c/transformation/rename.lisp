@@ -6,11 +6,9 @@
 ;
 ; Author: Grant Jurgensen (grant@kestrel.edu)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "C2C")
-
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
@@ -23,18 +21,12 @@
 (include-book "../syntax/abstract-syntax")
 (include-book "deftrans")
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
-
 (set-induction-depth-limit 0)
 
-
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,7 +46,6 @@
       variables, etc."))
   :order-subtopics t
   :default-parent t)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

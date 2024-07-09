@@ -6,22 +6,19 @@
 ;
 ; Author: Grant Jurgensen (grant@kestrel.edu)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "C2C")
-
 
 (include-book "../deftrans")
 
 (include-book "../../syntax/parser")
 (include-book "../../syntax/printer")
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(deftrans copy)
-
+;; Generates the identify transformation
+(deftrans identity)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -95,7 +92,6 @@
                               (raise "Misusage error: ~x0." (expr-fix expr))
                               (expr-fix expr)))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *old-filepath*
@@ -122,7 +118,6 @@
         (cw "~@0" erp)
       transunits)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *transunits-copy*
@@ -147,7 +142,6 @@
   return x + 0;
 }
 "))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

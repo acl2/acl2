@@ -6,17 +6,14 @@
 ;
 ; Author: Grant Jurgensen (grant@kestrel.edu)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "C2C")
-
 
 (include-book "../rename")
 
 (include-book "../../syntax/parser")
 (include-book "../../syntax/printer")
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
