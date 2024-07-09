@@ -1377,7 +1377,12 @@
         (null (hide-with-comment-p)))
     (fcons-term* 'hide term))
    (t
-    (flet ((reason-string
+    (flet ((comment-fn+
+            (x y) ; X must be a string.
+            (comment-fn (concatenate 'string x ";
+see :DOC comment")
+                        y))
+           (reason-string
             (erp scons-term-p wrld state)
             (let* ((fn (and (consp erp)
                             (eq (car erp)
@@ -1390,10 +1395,10 @@
                            (getpropc fn 'non-executablep nil wrld))
                           (skip-pkg-prefix
                            (symbol-in-current-package-p fn state))
-                          (str0 (if scons-term-p
-                                    "Failed attempt (when building a term) to ~
-                                     call "
-                                  "Failed attempt to call "))
+                          (str0
+                           (if scons-term-p
+                               "Failed attempt (during substitution) to call "
+                             "Failed attempt to call "))
                           (str1 (cond
                                  ((eq fn 'non-exec) "")
                                  (non-executablep "non-executable function ")
@@ -1422,17 +1427,17 @@ its attachment is ignored during proofs"))))
          (let ((reason-string (reason-string erp nil wrld state)))
            (fcons-term* 'hide
                         (if reason-string
-                            (comment-fn reason-string term)
+                            (comment-fn+ reason-string term)
                           term))))
         ((:scons-term . erp)
          (let ((reason-string (reason-string erp t wrld state)))
            (fcons-term* 'hide
                         (if reason-string
-                            (comment-fn reason-string term)
+                            (comment-fn+ reason-string term)
                           term))))
         ((:expand rune . skip-pkg-prefix)
          (fcons-term* 'hide
-                      (comment-fn
+                      (comment-fn+
                        (let ((name
                               (if skip-pkg-prefix
                                   (symbol-name (base-symbol rune))
@@ -1449,7 +1454,7 @@ its attachment is ignored during proofs"))))
         ((:missing-warrant . fn?)
          (fcons-term*
           'hide
-          (comment-fn
+          (comment-fn+
            (let* ((disabledp (consp fn?))
                   (fn (if disabledp
                           (car fn?) ; apply$-fn
@@ -1490,6 +1495,14 @@ its attachment is ignored during proofs"))))
 ; is t iff term is something different than (cons-term fn args); term is
 ; provably equal to (cons-term fn args); and ttree' is an extension of ttree
 ; this equality.
+
+; Warning: If scons-term is used for other than substitution, consider changing
+; hide-with-comment and its call below.  Explanation:
+
+; The leading "s" in scons-term may have originally denoted "smart", but it
+; more precisely denotes "substitution".  The call of hide-with-comment is made
+; below on (cons :scons-term erp) so that hide-with-comment can report that
+; evaluation was attempted on behalf of substitution; see :DOC comment.
 
   (cond
    ((and (all-quoteps args)

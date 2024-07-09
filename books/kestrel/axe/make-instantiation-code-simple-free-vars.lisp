@@ -1,7 +1,7 @@
 ; A tool to generate hyp instantiation code that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -32,13 +32,6 @@
            (iff (assoc-equal key alist)
                 (member-equal key (strip-cars alist))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
-
-;move
-(defthm set-difference-equal-of-union-equal-arg1
-  (equal (set-difference-equal (union-equal x y) z)
-         (union-equal (set-difference-equal x z)
-                      (set-difference-equal y z)))
-  :hints (("Goal" :in-theory (enable set-difference-equal union-equal))))
 
 (defun make-instantiation-code-simple-free-vars-fn (suffix evaluator-base-name)
   (declare (xargs :guard (and (symbolp suffix)
