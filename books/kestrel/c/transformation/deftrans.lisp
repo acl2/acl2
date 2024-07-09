@@ -77,7 +77,8 @@
          "@(':extra-args')"
          (xdoc::p
            "A list of arguments to be passed to the transformation functions, in
-            addition to the AST term."))
+            addition to the AST term. This list is expected to be in the format
+            of @(see std::extended-formals)."))
        (xdoc::li
          "@(':with-output-off')"
          (xdoc::p
@@ -1319,7 +1320,7 @@
       (cons (,(cdr (assoc-eq 'extdecl names)) (car extdecls) ,@extra-args-names)
             (,(cdr (assoc-eq 'extdecl-list names)) (cdr extdecls) ,@extra-args-names)))
    '(:returns (new-extdecls extdecl-listp)
-     :measure (acl2-count decls)
+     :measure (acl2-count extdecls)
      :hints (("Goal" :in-theory nil)))))
 
 (define deftrans-defn-transunit

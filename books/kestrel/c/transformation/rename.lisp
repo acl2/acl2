@@ -15,6 +15,8 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 (include-book "centaur/fty/deftypes" :dir :system)
 
@@ -32,6 +34,26 @@
 
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ rename
+  :parents (transformation-tools)
+  :short "A C-to-C transformation to rename identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "This transformation will rename all identifiers according to a provided
+     alist. Note, it does nothing to ensure substitutions preserve semantic
+     equivalence. For instance, a substitution might introduce variable names
+      which conflict with existing variables.")
+   (xdoc::p
+     "Eventually we may wish for a renaming transformation with options to
+      limit substitution by type of identifier, scope, restrict to free
+      variables, etc."))
+  :order-subtopics t
+  :default-parent t)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
