@@ -1,7 +1,7 @@
 ; Mixed rules about lists of integers
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,10 +13,10 @@
 
 (include-book "all-integerp")
 (include-book "all-natp")
-(local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/take" :dir :system))
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
+;(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+;(local (include-book "kestrel/lists-light/take" :dir :system))
+;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;Disabled since it could be expensive
 (defthmd all-integerp-when-all-natp

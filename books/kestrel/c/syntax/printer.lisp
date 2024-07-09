@@ -177,7 +177,7 @@
                                                         #b00111111)
                                                 #b10000000)))
                   ((< char #x10000) (list (logior (ash char -12)
-                                                  #b1110000)
+                                                  #b11100000)
                                           (logior (logand (ash char -6)
                                                           #b00111111)
                                                   #b10000000)
@@ -994,7 +994,7 @@
    (xdoc::p
     "We ensure that there is at least one character or escape sequence."))
   (b* (((cconst cconst) cconst)
-       (pstate (print-cprefix-option cconst.prefix pstate))
+       (pstate (print-cprefix-option cconst.prefix? pstate))
        (pstate (print-astring "'" pstate))
        ((unless cconst.cchars)
         (raise "Misusage error: ~

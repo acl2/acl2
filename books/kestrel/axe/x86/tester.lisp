@@ -358,7 +358,7 @@
            remove-rules
            remove-lift-rules)
           ;; extra-assumption-rules:
-          (append (lifter-rules64-new)
+          (append ;; (lifter-rules64-new)
                   ;; todo: build these in deeper
                   '(section-assumptions-mach-o-64
                     acl2::mach-o-section-presentp-constant-opener

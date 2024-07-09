@@ -67,6 +67,7 @@
     (xdoc::codeblock
      "(parse-files :const-transunits ...  ; no default"
      "             :const-fileset    ...  ; no default"
+     "             :gcc              ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -93,7 +94,13 @@
        whose value must be a file set.")
      (xdoc::p
       "In the rest of this documentation page,
-       let @('*const-fileset*') be this symbol.")))
+       let @('*const-fileset*') be this symbol."))
+
+    (xdoc::desc
+     "@(':gcc')"
+     (xdoc::p
+      "Boolean saying whether certain GCC extensions
+       should be accepted or not.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +125,8 @@
 (defval *parse-files-allowed-options*
   :short "Keyword options accepted by @(tsee parse-files)."
   (list :const-transunits
-        :const-fileset)
+        :const-fileset
+        :gcc)
   ///
   (assert-event (keyword-listp *parse-files-allowed-options*))
   (assert-event (no-duplicatesp-eq *parse-files-allowed-options*)))
@@ -126,14 +134,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-files-process-inputs ((args true-listp) (wrld plist-worldp))
-  :returns (mv erp (const-transunits symbolp) (value-fileset filesetp))
+  :returns (mv erp (const-transunits symbolp)
+               (value-fileset filesetp)
+               (gcc booleanp))
   :short "Process the inputs."
   :long
   (xdoc::topstring
    (xdoc::p
     "For the file set constant name input,
      we retrieve and return the file set."))
-  (b* (((reterr) nil (fileset nil))
+  (b* (((reterr) nil (fileset nil) nil)
        ;; Check and obtain options.
        ((mv erp extra options)
         (partition-rest-and-keyword-args args *parse-files-allowed-options*))
@@ -174,18 +184,28 @@
                       must satisfy FILESETP, ~
                       but instead its value is ~x1."
                      const-fileset
-                     value-fileset))))
-    (retok const-transunits value-fileset))
+                     value-fileset)))
+       ;; Process :GCC input.
+       (gcc-option (assoc-eq :gcc options))
+       (gcc (if gcc-option
+                (cdr gcc-option)
+              nil))
+       ((unless (booleanp gcc))
+        (reterr (msg "The :GCC input must be a boolean, ~
+                      but it is ~x0 instead."
+                     gcc))))
+    (retok const-transunits value-fileset gcc))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-files-gen-defconst ((const-transunits symbolp)
-                                  (value-fileset filesetp))
+                                  (value-fileset filesetp)
+                                  (gcc booleanp))
   :returns (mv erp (event pseudo-event-formp))
   :short "Generate the named constant event."
   (b* (((reterr) '(_))
-       ((erp tunits) (parse-fileset value-fileset))
+       ((erp tunits) (parse-fileset value-fileset gcc))
        (event `(defconst ,const-transunits ',tunits)))
     (retok event)))
 
@@ -199,10 +219,10 @@
                       (("Goal" :in-theory (disable pseudo-event-formp)))))
   :short "Process the inputs and generate the constant event."
   (b* (((reterr) '(_))
-       ((erp const-transunits value-fileset)
+       ((erp const-transunits value-fileset gcc)
         (parse-files-process-inputs args wrld))
        ((erp event)
-        (parse-files-gen-defconst const-transunits value-fileset)))
+        (parse-files-gen-defconst const-transunits value-fileset gcc)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,7 +1,7 @@
 ; Rules about list operations that treat lists like sets
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -67,3 +67,9 @@
   (implies (subsetp-equal z x)
            (subsetp-equal z (append y (set-difference-equal x y))))
   :hints (("Goal" :in-theory (enable subsetp-equal))))
+
+(defthm set-difference-equal-of-union-equal-arg1
+  (equal (set-difference-equal (union-equal x y) z)
+         (union-equal (set-difference-equal x z)
+                      (set-difference-equal y z)))
+  :hints (("Goal" :in-theory (enable set-difference-equal union-equal))))

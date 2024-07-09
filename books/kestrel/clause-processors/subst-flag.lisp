@@ -571,7 +571,10 @@
                            (pairlis$
                             equality-eval-of-variable
                             set-difference-equal
-                            equality-eval-of-fncall-args-back)))))
+                            equality-eval-of-fncall-args-back
+                            ;; why these 2?:
+                            equality-eval-list-when-quote-listp
+                            equality-eval-list-when-symbol-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

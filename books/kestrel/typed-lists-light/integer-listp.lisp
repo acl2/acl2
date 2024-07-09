@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function integer-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (in-theory (disable integer-listp))
-(local (include-book "../lists-light/len"))
+;;(local (include-book "../lists-light/len"))
 
 (defthm integer-listp-of-cdr
   (implies (integer-listp x)
@@ -31,8 +31,7 @@
   (implies (integer-listp lst)
            (equal (integer-listp (take n lst))
                   (<= (nfix n) (len lst))))
-  :hints (("Goal" :in-theory (e/d (take integer-listp) (;TAKE-OF-CDR-BECOMES-SUBRANGE
-                                              )))))
+  :hints (("Goal" :in-theory (enable take integer-listp))))
 
 ;; better than the version in books/centaur/fty/baselists.lisp
 (defthm integerp-of-car-when-integer-listp-better

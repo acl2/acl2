@@ -111,14 +111,3 @@
                 (member-equal item items))
            (myquotep item))
   :hints (("Goal" :in-theory (enable all-myquotep))))
-
-;;;
-;;; unquote-list
-;;;
-
-(defund unquote-list (lst)
-  (declare (xargs :guard (and (true-listp lst)
-                              (all-myquotep lst))))
-  (cond ((not (consp lst)) nil)
-        (t (cons (unquote (car lst))
-                 (unquote-list (cdr lst))))))

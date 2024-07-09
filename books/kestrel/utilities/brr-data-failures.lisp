@@ -48,12 +48,12 @@
            (ignore ancestors gstack rcnst state))
   t)
 
-(defun update-brr-data-1-failures (lemma target unify-subst type-alist
+(defun update-brr-data-1-failures (lemma target unify-subst type-alist geneqv
                                          ancestors initial-ttree gstack rcnst
                                          pot-lst whs-data)
 
 ; This function is essentially identical to built-in function
-; update-brr-data-1-cw-gstack.
+; update-brr-data-1-builtin
 
   (declare (xargs :guard t))
   (let ((ctx 'update-brr-data-1-failures))
@@ -67,6 +67,7 @@
                                      :target target
                                      :unify-subst unify-subst
                                      :type-alist type-alist
+                                     :geneqv geneqv
                                      :ancestors ancestors
                                      :initial-ttree initial-ttree
                                      :gstack gstack
@@ -85,7 +86,7 @@
                                         whs-data)
 
 ; This function is essentially identical to built-in function
-; update-brr-data-1-cw-gstack except that it takes the opposite action based on
+; update-brr-data-1-builtin except that it takes the opposite action based on
 ; wonp.
 
   (declare (xargs :guard t)
