@@ -1197,7 +1197,10 @@
    :const (print-astring "const" pstate)
    :restrict (print-astring "restrict" pstate)
    :volatile (print-astring "volatile" pstate)
-   :atomic (print-astring "_Atomic" pstate))
+   :atomic (print-astring "_Atomic" pstate)
+   ;; GCC extensions:
+   :__restrict (print-astring "__restrict" pstate)
+   :__restrict__ (print-astring "__restrict__" pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
