@@ -824,6 +824,19 @@
    (schars s-char-list))
   :pred stringlitp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist stringlit-list
+  :short "Fixtype of lists of string literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "String literals are defined in @(tsee stringlit)."))
+  :elt-type stringlit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred stringlit-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum unop
