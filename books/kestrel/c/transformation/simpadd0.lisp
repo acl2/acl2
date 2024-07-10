@@ -557,6 +557,7 @@
     (structdecl-case
      structdecl
      :member (make-structdecl-member
+              :extension structdecl.extension
               :specqual (simpadd0-specqual-list structdecl.specqual)
               :declor (simpadd0-structdeclor-list structdecl.declor))
      :statassert (structdecl-statassert
@@ -694,8 +695,11 @@
   (decl-case
    decl
    :decl (make-decl-decl
+          :extension decl.extension
           :specs (simpadd0-declspec-list decl.specs)
-          :init (simpadd0-initdeclor-list decl.init))
+          :init (simpadd0-initdeclor-list decl.init)
+          :asm? decl.asm?
+          :attrib decl.attrib)
    :statassert (decl-statassert
                 (simpadd0-statassert decl.unwrap)))
   :hooks (:fix))
@@ -825,6 +829,7 @@
   :short "Transform a function definition."
   (b* (((fundef fundef) fundef))
     (make-fundef
+     :extension fundef.extension
      :spec (simpadd0-declspec-list fundef.spec)
      :declor (simpadd0-declor fundef.declor)
      :decls (simpadd0-decl-list fundef.decls)
