@@ -9574,12 +9574,14 @@
                                          "reinitializing"))
                              (cons #\1 ',name))
                        (standard-co *the-live-state*) *the-live-state* nil)
-                  (if non-executable
-                      (assert$
-                       (not (member-eq ',name *non-executable-user-stobj-lst*))
-                       (setq *user-stobj-alist*
-                             (remove1-assoc-eq ',name *user-stobj-alist*)))
-                    (setf (cdr old-pair) ,init-form)))
+                  (cond
+                   (non-executable
+                    (assert (not (member-eq ',name
+                                            *non-executable-user-stobj-lst*)))
+                    (push ',name *non-executable-user-stobj-lst*)
+                    (setq *user-stobj-alist*
+                          (remove1-assoc-eq ',name *user-stobj-alist*)))
+                   (setf (cdr old-pair) ,init-form)))
                  (non-executable
                   (pushnew ',name *non-executable-user-stobj-lst*))
                  (t
