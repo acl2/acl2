@@ -20,13 +20,18 @@
   '(
 
     identp
+    ident-fix
     ident->unwrap
+
+    ident-listp
 
     dec/oct/hex-const-case
     dec/oct/hex-const-oct
 
     iconst
 
+    constp
+    const-fix
     const-case
     const-int->unwrap
 
@@ -34,6 +39,7 @@
     expr-fix
     expr-count
     expr-case
+    expr-ident
     expr-const
     expr-const->unwrap
     expr-paren
@@ -165,9 +171,11 @@
 
     dirdeclorp
     dirdeclor-fix
+    dirdeclor-ident
     dirdeclor-count
     dirdeclor-case
     dirdeclor-paren
+    dirdeclor
     make-dirdeclor-array
     make-dirdeclor-array-static1
     make-dirdeclor-array-static2
