@@ -6562,23 +6562,35 @@
            (setf (get the-live-name 'redundant-raw-lisp-discriminator)
                  discriminator)
 
-; The following assignment to *user-stobj-alist* is structured to keep
-; new ones at the front, so we can more often exploit the optimization
-; in put-assoc-eq-alist.
+; The following assignments to *user-stobj-alist* and
+; *non-executable-user-stobj-lst* are structured to keep new ones at the front
+; of *user-stobj-alist*, so we can more often exploit the optimization in
+; put-assoc-eq-alist.
 
-           (setq *user-stobj-alist*
-                 (cond ((assoc-eq name *user-stobj-alist*)
+           (cond ((assoc-eq name *user-stobj-alist*)
 
 ; This is a redefinition!  We'll just replace the old entry.
 
-                        (if non-executable
-                            (remove1-assoc-eq name *user-stobj-alist*)
-                          (put-assoc-eq name
-                                        (eval init)
-                                        *user-stobj-alist*)))
-                       (non-executable *user-stobj-alist*)
-                       (t (cons (cons name (eval init))
-                                *user-stobj-alist*))))
+                  (assert (not (member-eq name
+                                          *non-executable-user-stobj-lst*)))
+                  (cond (non-executable
+                         (setq *user-stobj-alist*
+                               (remove1-assoc-eq name *user-stobj-alist*))
+                         (push name *non-executable-user-stobj-lst*))
+                        (t
+                         (setq *user-stobj-alist*
+                               (put-assoc-eq name
+                                             (eval init)
+                                             *user-stobj-alist*)))))
+                 (non-executable
+                  (pushnew name *non-executable-user-stobj-lst*
+                           :test 'eq))
+                 (t
+                  (when (member-eq name *non-executable-user-stobj-lst*)
+                    (setq *non-executable-user-stobj-lst*
+                          (remove1 name *non-executable-user-stobj-lst*)))
+                  (push (cons name (eval init))
+                        *user-stobj-alist*)))
 
 ; We eval and compile the raw lisp definitions first, some of which may be
 ; macros (because :inline t was supplied for defstobj, or because we are

@@ -4430,7 +4430,13 @@
                                  state))
       (assert (equal (length stobjs-out) (length vals)))
       (mv nil
-          (cons stobjs-out
+          (cons (if (intersectp-eq stobjs-out *non-executable-user-stobj-lst*)
+                    (loop for x in stobjs-out
+                          collect
+                          (if (member-eq x *non-executable-user-stobj-lst*)
+                              nil
+                            x))
+                  stobjs-out)
                 (if (cdr stobjs-out) vals (car vals)))
           state))))
 
@@ -35757,6 +35763,80 @@
 ; runes-diff-fn) shows one way to get such information.
 
   `(runes-diff-fn ,book-string ,name ,namep ,dir 'runes-diff state))
+
+(defun add-global-stobj (name state)
+  (declare (xargs :guard (symbolp name)
+                  :mode :program
+                  :stobjs state))
+  (let ((user-stobj-alist (user-stobj-alist state))
+        (wrld (w state))
+        (ctx 'add-global-stobj))
+    (cond ((not (stobjp name t wrld))
+           (er soft ctx
+               "~x0 is not the name of a known stobj."
+               name))
+          ((assoc-eq name user-stobj-alist)
+           (er soft ctx
+               "The stobj ~x0 is already global."
+               name))
+          (t
+           (mv-let (erp init-val state)
+             #-acl2-loop-only
+             (let ((creator (access stobj-property
+                                    (getpropc name 'stobj nil wrld)
+                                    :creator)))
+               (assert creator)
+               (assert (member-eq name *non-executable-user-stobj-lst*))
+               (setq *non-executable-user-stobj-lst*
+                     (remove1 name *non-executable-user-stobj-lst*))
+               (value (eval (list creator))))
+             #+acl2-loop-only
+
+; We're perhaps being a bit lazy here.  We might be able to use
+; magic-ev-fncall, ev-fncall, or the like to apply the stobj creator for name,
+; which can be obtained as follows.
+
+;   (access stobj-property
+;           (getpropc name 'stobj nil wrld)
+;           :creator))
+
+; But it is tricky to overcome the problem that the creator is untouchable, so
+; we punt here and use the oracle to represent the value of the creator.  This
+; is just logic-only code that nobody will be reasoning about, since
+; add-global-stobj is in :program mode and the #-acl2-loop-only code above
+; makes it ineligible for conversion to :logic mode.
+
+             (read-acl2-oracle state)
+             (declare (ignore erp))
+             (pprogn (update-user-stobj-alist
+                      (acons name init-val user-stobj-alist)
+                      state)
+                     (value name)))))))
+
+(defun remove-global-stobj (name state)
+  (declare (xargs :guard (symbolp name)
+                  :mode :program
+                  :stobjs state))
+  (let ((user-stobj-alist (user-stobj-alist state))
+        (wrld (w state))
+        (ctx 'add-global-stobj))
+    (cond ((not (stobjp name t wrld))
+           (er soft ctx
+               "~x0 is not the name of a known stobj."
+               name))
+          ((not (assoc-eq name user-stobj-alist))
+           (er soft ctx
+               "The stobj ~x0 is not currently global."
+               name))
+          (t
+           #-acl2-loop-only
+           (progn (assert (not (member-eq name
+                                          *non-executable-user-stobj-lst*)))
+                  (push name *non-executable-user-stobj-lst*))
+           (pprogn (update-user-stobj-alist
+                    (remove-assoc-eq name user-stobj-alist)
+                    state)
+                   (value name))))))
 
 ; Essay on Correctness of Evaluation with Stobjs
 
