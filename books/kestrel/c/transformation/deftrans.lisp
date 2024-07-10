@@ -169,6 +169,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Separates a list into pairs.
+;; E.g. '(foo bar baz qux) becomes '((foo . bar) (baz . qux)).
+(define take-pairs
+  ((list true-listp))
+  :returns (alist alistp)
+  (if (endp list)
+      nil
+    (if (consp (rest list))
+        (cons (cons (first list) (second list))
+              (take-pairs (rest (rest list))))
+      ;; TODO: when the list is odd in length, we use nil as the last
+      ;; value. Should we produce a (soft) error instead?
+      (list (cons (first list) nil))))
+  :hints (("Goal" :in-theory (enable o< o-finp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthy deftrans-theory-forward-chaining
   '((:forward-chaining c$::declspec-kind-possibilities)
     (:forward-chaining c$::dirabsdeclor-kind-possibilities)
@@ -493,7 +510,7 @@
 
 (define deftrans-get-args
   ((args true-listp))
-  :short "Gets arg names from a define-style arg list"
+  :short "Gets arg names from a define-style arg list."
   (if (endp args)
       nil
     (cons (if (consp (first args))
@@ -1784,7 +1801,7 @@
    (bodies alistp))
   (b* ((names (deftrans-mk-names name))
        (name-exprs/decls (acl2::packn-pos (list name '-exprs/decls) name))
-       (name-stmt/blocks (acl2::packn-pos (list name '-stmt/blocks) name))
+       (name-stmts/blocks (acl2::packn-pos (list name '-stmts/blocks) name))
        (extra-args-names (deftrans-get-args extra-args)))
     `(progn
        ,(deftrans-defn-ident      names bodies extra-args)
@@ -1839,7 +1856,7 @@
        ,(deftrans-defn-decl            names bodies extra-args extra-args-names)
        ,(deftrans-defn-decl-list       names bodies extra-args extra-args-names)
        ,(deftrans-defn-label           names bodies extra-args extra-args-names)
-       (defines ,name-stmt/blocks
+       (defines ,name-stmts/blocks
          ,(deftrans-defn-stmt            names bodies extra-args extra-args-names)
          ,(deftrans-defn-block-item      names bodies extra-args extra-args-names)
          ,(deftrans-defn-block-item-list names bodies extra-args extra-args-names)
@@ -1873,21 +1890,6 @@
   :guard-hints (("Goal" :in-theory (enable atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Separates a list into pairs.
-;; E.g. '(foo bar baz qux) becomes '((foo . bar) (baz . qux)).
-(define take-pairs
-  ((list true-listp))
-  :returns (alist alistp)
-  (if (endp list)
-      nil
-    (if (consp (rest list))
-        (cons (cons (first list) (second list))
-              (take-pairs (rest (rest list))))
-      ;; TODO: when the list is odd in length, we use nil as the last
-      ;; value. Should we produce a (soft) error instead?
-      (list (cons (first list) nil))))
-  :hints (("Goal" :in-theory (enable o< o-finp))))
 
 (define deftrans-parse-keywords
   ((list true-listp))
