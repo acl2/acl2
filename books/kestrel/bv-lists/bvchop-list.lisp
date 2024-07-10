@@ -294,7 +294,7 @@
   (equal (equal (bvchop-list size x) x)
          (and (true-listp x)
               (all-unsigned-byte-p (nfix size) x)))
-  :hints (("Goal" :use (:instance bvchop-list-does-nothing-rewrite)
+  :hints (("Goal" :use bvchop-list-does-nothing-rewrite
            :in-theory (disable bvchop-list-does-nothing-rewrite
                                bvchop-list-does-nothing-better))))
 

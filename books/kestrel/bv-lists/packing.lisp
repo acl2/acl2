@@ -74,7 +74,7 @@
   (implies (posp n)
            (equal (all-all-unsigned-byte-p size (group n x))
                   (all-unsigned-byte-p size x)))
-  :hints (("subgoal *1/2" :use (:instance list-split))
+  :hints (("subgoal *1/2" :use list-split)
           ("Goal" :in-theory (e/d (group) (APPEND-OF-TAKE-AND-NTHCDR-2)))))
 
 (defmap map-ungroup (n x) (ungroup n x) :fixed (n))
