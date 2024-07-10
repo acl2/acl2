@@ -2386,8 +2386,8 @@
   (xdoc::topstring
    (xdoc::p
     "This captures the "
-    (xdoc::seetopic "https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html"
-                    "construct to specify assembler names")
+    (xdoc::aref "https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html"
+                "construct to specify assembler names")
     ". It consists of the keyword @('asm') or @('__asm__')
      and a parenthesized string literal.
      Since adjacent string literals may be concatenated [C:5.1.1.2/6],
