@@ -5908,8 +5908,7 @@
   (equal (< (bvplus 32 4294967295 x) (bvchop 31 x))
          (and (equal (getbit 31 x) 0)
               (not (equal 0 (bvchop 31 x)))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))
 
 ;move
 ;; This idiom can arise from the JVM LCMP instruction
