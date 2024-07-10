@@ -10057,12 +10057,12 @@
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
-    (INST "ADDQ"
+    (INST "PADDQ"
           (OP :OP #xFD4 :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PADDB/PADDW/PADDD/PADDQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPADDQ"
           (OP :OP #xFD4
@@ -12081,7 +12081,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PADDB/PADDW/PADDD/PADDQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPADDB"
           (OP :OP #xFFC
@@ -12131,7 +12131,7 @@
           (ARG :OP1 '(V X)
             :OP2 '(H X)
             :OP3 '(W X))
-       'NIL
+       '(X86-PADDB/PADDW/PADDD/PADDQ-SSE)
        '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
  (INST "VPADDW"
        (OP :OP #xFFD
@@ -12181,7 +12181,7 @@
        (ARG :OP1 '(V X)
             :OP2 '(H X)
             :OP3 '(W X))
-       'NIL
+       '(X86-PADDB/PADDW/PADDD/PADDQ-SSE)
        '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
  (INST "VPADDD"
        (OP :OP #xFFE
