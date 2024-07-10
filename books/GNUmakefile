@@ -457,6 +457,11 @@ nonstd/workshops/1999/calculus/book/tree/proof-outline: \
 endif # ifneq ($(ACL2_HAS_REALS), )
 
 
+ifneq ($(ACL2_HAS_PARALLEL), )
+$(info Excluding non-ACL2(p) books: [$(CERT_PL_NON_ACL2P)])
+OK_CERTS := $(filter-out $(CERT_PL_NON_ACL2P), $(OK_CERTS))
+endif # ifneq ($(ACL2_HAS_PARALLEL), )
+
 
 # Set up REALLY_USE_QUICKLISP to be 1 if we really want to use Quicklisp or 0
 # otherwise.  REALLY_USE_QUICKLISP is almost the same as USE_QUICKLISP.
@@ -582,8 +587,7 @@ OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 # regressions, since regression-everything is not generally run for
 # ACl2(p).  Its certification fails with ACL2(p), even with
 # waterfall-parallelism turned off, and it doesn't seem worthwhile to
-# investigate why.  The book demos/geneqv-test-book.lisp is similarly
-# excluded.
+# investigate why.
 
 SLOW_BOOKS := \
   coi/defung/defung-stress-long.cert \
@@ -594,8 +598,7 @@ SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert \
   demos/ppr1-experiments-thm-1-ppr1.cert \
-  kestrel/acl2data/gather/tests/run-tests.cert \
-  demos/geneqv-test-book.cert
+  kestrel/acl2data/gather/tests/run-tests.cert
 
 # The following could well be considered as slow books, too.
 # top.cert

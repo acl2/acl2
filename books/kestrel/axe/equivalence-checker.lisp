@@ -11698,7 +11698,7 @@
                               (consp-with-rationalp-car y))))
   (< (car x) (car y)))
 
-;merge-car-< and merge-sort-car-< are newly defined in ACl2 5.0? just use them?
+;merge-car-< and merge-sort-car-< are newly defined in ACL2 5.0? just use them?
 (defmergesort merge-sort-car-<-2 merge-car-<-2 car-< consp-with-rationalp-car)
 
 (defun make-sorted-pair (fn1 fn2)
