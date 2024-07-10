@@ -915,7 +915,7 @@
            (equal (bvor size (bvshr 32 x amt2) (bvshl 32 x amt))
                   (bvchop size (leftrotate32 amt x))))
   :hints (("Goal" :use bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen
-           :In-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen))))
+           :in-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen))))
 
 ;an idiom for rotating by 16 bits in a 32-bit field:
 ;gen!
