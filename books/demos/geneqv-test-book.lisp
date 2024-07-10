@@ -1,6 +1,5 @@
 (in-package "ACL2")
 
-;; (non-parallel-book)
 ;; cert_param: (non-acl2r)
 
 (assert-event

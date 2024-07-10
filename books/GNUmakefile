@@ -582,7 +582,8 @@ OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 # regressions, since regression-everything is not generally run for
 # ACl2(p).  Its certification fails with ACL2(p), even with
 # waterfall-parallelism turned off, and it doesn't seem worthwhile to
-# investigate why.
+# investigate why.  The book demos/geneqv-test-book.lisp is similarly
+# excluded.
 
 SLOW_BOOKS := \
   coi/defung/defung-stress-long.cert \
@@ -593,7 +594,8 @@ SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert \
   demos/ppr1-experiments-thm-1-ppr1.cert \
-  kestrel/acl2data/gather/tests/run-tests.cert
+  kestrel/acl2data/gather/tests/run-tests.cert \
+  demos/geneqv-test-book.cert
 
 # The following could well be considered as slow books, too.
 # top.cert
