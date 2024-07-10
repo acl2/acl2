@@ -15,6 +15,7 @@
 (include-book "../notation/syntax-abstraction")
 (include-book "../operations/closure")
 (include-book "../operations/well-formedness")
+(include-book "../operations/numeric-range-retrieval")
 
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/std/system/constant-namep" :dir :system)
@@ -25,6 +26,7 @@
 (include-book "std/alists/assoc" :dir :system)
 (include-book "std/typed-alists/string-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/string-symbollist-alistp" :dir :system)
+(include-book "std/typed-lists/nat-listp" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -55,22 +57,23 @@
   (xdoc::ol
    (xdoc::li
     "In the first pass, we go through all the rules of the grammar
-     and generate a @(tsee deftreeops-rulename-info-alist),
-     which mainly contains information about
+     and generate a @(tsee deftreeops-rulename-info-alist)
+     and a @(tsee deftreeops-numrange-info-alist),
+     which mainly contain information about
      the names of the functions and theorems to be generated,
      along with some additional information.")
    (xdoc::li
-    "In the second pass, we go through the alist built in the first pass,
+    "In the second pass, we go through the alists built in the first pass,
      and we generate all the events for the functions and theorems.
-     The names and additional information in the alist
+     The names and additional information in the alists
      provide the means for the events to reference each other as needed.
      Care is taken to generate the events so that
-     there are no forward references.
+     there are no forward references, as required in ACL2.
      The generated events are returned as separate sequences,
      in order to put analogous events next to each other."))
   (xdoc::p
-   "The alist of information about rule names is also stored
-    in the @(tsee deftreeops) table,
+   "The alists of information about rule names and numeric ranges
+    are also stored in the @(tsee deftreeops) table,
     via an event generated along with the functions and theorems.
     This way, the information about the generated functions and theorems
     can be easily accessed, interactively or programmatically.")
@@ -97,7 +100,8 @@
   (xdoc::topstring
    (xdoc::p
     "As discussed in @(see deftreeops-implementation),
-     this is generated in the first pass."))
+     this is generated in the first pass.
+     The events themselves are generated in the second pass."))
   :order-subtopics t
   :default-parent t)
 
@@ -276,21 +280,6 @@
     (implies (deftreeops-rulename-info-alistp alist)
              (iff (deftreeops-rulename-infop (cdr (assoc-equal key alist)))
                   (cdr (assoc-equal key alist))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod num-range
-  :short "Fixtype of numeric range notations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This consists of the @(':range') case of @(tsee num-val),
-     which perhaps should be refactored so that the fixtype introduced here
-     is instead introduced as part of the ABNF abstract syntax."))
-  ((base num-base)
-   (min nat)
-   (max nat))
-  :pred num-range-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1012,6 +1001,61 @@
           (more-info (deftreeops-gen-rulename-info-alist-aux
                        (cdr rules) (cons rulename done) prefix)))
        (acons rulename info more-info))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-numrange-info ((range num-range-p)
+                                      (prefix acl2::symbolp))
+  :returns (info deftreeops-numrange-infop)
+  :short "Generate the information for a numeric range."
+  (b* (((num-range range) range)
+       (percent-base (num-base-case range.base
+                                    :dec "%D"
+                                    :hex "%X"
+                                    :bin "%B"))
+       (get-nat-fn (packn-pos (list prefix
+                                    '-
+                                    percent-base
+                                    '-
+                                    range.min
+                                    '-
+                                    range.max
+                                    '-nat)
+                              prefix))
+       (bounds-thm (packn-pos (list get-nat-fn '-bounds)
+                              prefix)))
+    (make-deftreeops-numrange-info
+     :get-nat-fn get-nat-fn
+     :bounds-thm bounds-thm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-numrange-info-alist ((rules rulelistp)
+                                            (prefix acl2::symbolp))
+  :returns (infos deftreeops-numrange-info-alistp)
+  :short "Generate the alist from numeric ranges to numeric range information,
+          from a list of rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We obtain the set of numeric ranges from the rules,
+     and then we generate an alist from the set."))
+  (deftreeops-gen-numrange-info-alist-aux
+    (rulelist-num-ranges rules) prefix)
+
+  :prepwork
+  ((define deftreeops-gen-numrange-info-alist-aux ((ranges num-range-setp)
+                                                   (prefix acl2::symbolp))
+     :returns (infos deftreeops-numrange-info-alistp
+                     :hyp (num-range-setp ranges))
+     :parents nil
+     (b* (((when (set::emptyp ranges)) nil)
+          (range (set::head ranges))
+          (info (deftreeops-gen-numrange-info range prefix))
+          (infos (deftreeops-gen-numrange-info-alist-aux
+                   (set::tail ranges) prefix)))
+       (acons range info infos))
      :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1895,6 +1939,112 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deftreeops-gen-numrange-events ((range num-range-p)
+                                        (info deftreeops-numrange-infop)
+                                        (prefix acl2::symbolp))
+  :returns (mv (get-nat-fn-event pseudo-event-formp
+                                 "The function
+                                  @('<prefix>-%<b><min>-<max>-nat')
+                                  described in @(tsee deftreeops).")
+               (bounds-thm-event pseudo-event-formp
+                                 "The theorem
+                                  @('<prefix>-%<b><min>-<max>-nat-bounds')
+                                  described in @(tsee deftreeops)."))
+  :short "Generate the function and theorem for a numeric range."
+  (b* (((num-range range) range)
+       ((deftreeops-numrange-info info) info)
+       (matchp (deftreeops-match-pred prefix))
+       (matchp$ (packn-pos (list matchp "$") matchp))
+       (range-desc (pretty-print-num-val-range range.min range.max range.base))
+       (get-nat-fn-event
+        `(define ,info.get-nat-fn ((cst treep))
+           :guard (,matchp cst ,range-desc)
+           :returns (nat natp :hints (("Goal" :in-theory '(,info.get-nat-fn
+                                                           lnfix
+                                                           nfix
+                                                           natp))))
+           (lnfix (nth 0 (tree-leafterm->get cst)))
+           :guard-hints
+           (("Goal" :in-theory '(,matchp$
+                                 tree-match-element-p
+                                 tree-match-num-val-p
+                                 nat-listp-of-tree-leafterm->get
+                                 acl2::natp-of-nth-when-nat-listp
+                                 (:e element-kind)
+                                 (:e element-num-val->get)
+                                 (:e num-val-kind)
+                                 (:e num-val-range->max)
+                                 (:e num-val-range->min)
+                                 (:e nfix)
+                                 (:t tree-leafterm->get))))
+           ///
+           (fty::deffixequiv ,info.get-nat-fn
+             :hints (("Goal"
+                      :in-theory '(,info.get-nat-fn
+                                   tree-leafterm->get$inline-of-tree-fix-x))))))
+       (bounds-thm-event
+        `(defrule ,info.bounds-thm
+           (implies (,matchp cst ,range-desc)
+                    (and (<= ,range.min (,info.get-nat-fn cst))
+                         (<= (,info.get-nat-fn cst) ,range.max)))
+           :rule-classes :linear
+           :hints (("Goal" :in-theory '(,info.get-nat-fn
+                                        ,matchp$
+                                        tree-match-element-p
+                                        tree-match-num-val-p
+                                        lnfix
+                                        nfix
+                                        nth
+                                        acl2::integerp-of-car-when-nat-listp
+                                        nat-listp-of-tree-leafterm->get
+                                        (:e element-kind)
+                                        (:e element-num-val->get)
+                                        (:e num-val-kind)
+                                        (:e num-val-range->max)
+                                        (:e num-val-range->min)
+                                        (:e zp)))))))
+    (mv get-nat-fn-event
+        bounds-thm-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-numrange-alist-events
+  ((range-infos deftreeops-numrange-info-alistp)
+   (prefix acl2::symbolp))
+  :returns (mv (get-nat-fn-events pseudo-event-form-listp)
+               (bounds-thm-events pseudo-event-form-listp))
+  :short "Generate the events for all the numeric ranges in the alist."
+  (b* (((when (endp range-infos)) (mv nil nil))
+       ((cons range info) (car range-infos))
+       ((mv get-nat-fn-event
+            bounds-thm-event)
+        (deftreeops-gen-numrange-events range info prefix))
+       ((mv get-nat-fn-more-events
+            bounds-thm-more-events)
+        (deftreeops-gen-numrange-alist-events (cdr range-infos) prefix)))
+    (mv (cons get-nat-fn-event
+              get-nat-fn-more-events)
+        (cons bounds-thm-event
+              bounds-thm-more-events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-all-numrange-infos+events ((rules rulelistp)
+                                                  (prefix acl2::symbolp))
+  :returns (mv (numrange-infos deftreeops-numrange-info-alistp)
+               (numrange-events pseudo-event-form-listp))
+  :short "Generate the information and events
+          for all the numeric ranges in a grammar."
+  (b* ((infos (deftreeops-gen-numrange-info-alist rules prefix))
+       ((mv get-nat-fn-events
+            bounds-thm-events)
+        (deftreeops-gen-numrange-alist-events infos prefix))
+       (events (append get-nat-fn-events
+                       bounds-thm-events)))
+    (mv infos events)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define deftreeops-gen-everything ((grammar acl2::symbolp)
                                    (rules rulelistp)
                                    (prefix acl2::symbolp)
@@ -1904,7 +2054,8 @@
   (b* ((matchers (deftreeops-gen-matchers grammar prefix))
        ((mv rulename-infos rulename-events)
         (deftreeops-gen-all-rulename-infos+events rules prefix))
-       (numrange-infos nil) ; This will be extended soon.
+       ((mv numrange-infos numrange-events)
+        (deftreeops-gen-all-numrange-infos+events rules prefix))
        (table-value (make-deftreeops-table-value
                      :rulename-info-alist rulename-infos
                      :numrange-info-alist numrange-infos))
@@ -1916,6 +2067,7 @@
                           ").")
                  ,@matchers
                  ,@rulename-events
+                 ,@numrange-events
                  ,(deftreeops-table-add call table-value))))
     event))
 
