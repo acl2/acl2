@@ -592,7 +592,9 @@
    (xdoc::p
     "Support has been added for the following instructions:"
     (xdoc::li
-     "MOVDQA"))
+     "MOVDQA")
+    (xdoc::li
+     "PADDB, PADDW, PADDD, PADDQ (SSE versions)"))
 
    (xdoc::p
     "Some memory accessing functions for larger sizes have been added.")

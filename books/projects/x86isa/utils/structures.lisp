@@ -56,7 +56,7 @@
   :parents (utils)
   :short "<b>@('x86')-specific bit structures</b>."
 
-  :long "<p>We define some bitstructures using @(see fty::defbitstruct) to
+  :long "<p>We define some bit structures using @(see fty::defbitstruct) to
   describe the fields of registers and x86 data structures.</p>" )
 
 (local (xdoc::set-default-parents structures))
