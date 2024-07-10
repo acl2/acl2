@@ -770,9 +770,6 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
 
        (verify-guards-after-returns
          (eq (cdr (assoc :verify-guards kwd-alist)) :after-returns))
-       (kwd-alist (if verify-guards-after-returns
-                      (put-assoc :verify-guards 'nil kwd-alist)
-                    kwd-alist))
 
        (short      (getarg :short   nil kwd-alist))
        (long       (getarg :long    nil kwd-alist))
@@ -807,7 +804,10 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
        (macros      (collect-macros gutslist))
        (set-ignores (make-ignore-events name kwd-alist gutslist))
 
-       (extra-xargs (get-xargs-from-kwd-alist kwd-alist))
+       (extra-xargs (get-xargs-from-kwd-alist
+                      (if verify-guards-after-returns
+                          (put-assoc :verify-guards 'nil kwd-alist)
+                        kwd-alist)))
        (ruler-extenders (getarg :ruler-extenders nil kwd-alist))
        (orig-defs   (collect-main-defs gutslist))
        (final-defs  (if extra-xargs
