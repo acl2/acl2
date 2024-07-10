@@ -1635,13 +1635,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-hex-digits ((pos-so-far positionp) (pstate parstatep))
+(define lex-*-hexadecimal-digit ((pos-so-far positionp) (pstate parstatep))
   :returns (mv erp
                (hexdigs hex-digit-char-listp
                         :hints
                         (("Goal"
                           :induct t
-                          :in-theory (enable lex-hex-digits
+                          :in-theory (enable lex-*-hexadecimal-digit
                                              hex-digit-char-p
                                              unsigned-byte-p
                                              integer-range-p
@@ -1652,6 +1652,9 @@
   :short "Lex zero or more hexadecimal digits, as many as available."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "That is, we read @('*hexadecimal-digit'), in ABNF notation,
+     i.e. a repetition of zero of more instances of @('hexadecimal-digit').")
    (xdoc::p
     "The @('pos-so-far') input is the position that has been read so far,
      just before attempting to read the digits.
@@ -1684,7 +1687,7 @@
           (retok nil (position-fix pos-so-far) pos pstate)))
        (hexdig (code-char char))
        ((erp hexdigs last-pos next-pos pstate)
-        (lex-hex-digits pos pstate)))
+        (lex-*-hexadecimal-digit pos pstate)))
     (retok (cons hexdig hexdigs) last-pos next-pos pstate))
   :measure (parsize pstate)
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -1698,7 +1701,7 @@
    (hexdigs true-listp
             :rule-classes :type-prescription))
 
-  (defret parsize-of-lex-hex-digits-uncond
+  (defret parsize-of-lex-*-hexadecimal-digit-uncond
     (<= (parsize new-pstate)
         (- (parsize pstate)
            (len hexdigs)))
@@ -1810,7 +1813,7 @@
                    pstate))))))
      ((= char (char-code #\x))
       (b* (((erp hexdigs last-pos next-pos pstate)
-            (lex-hex-digits pos pstate)))
+            (lex-*-hexadecimal-digit pos pstate)))
         (if hexdigs
             (retok (escape-hex hexdigs) last-pos pstate)
           (reterr-msg :where (position-to-msg next-pos)
@@ -2778,7 +2781,7 @@
   (b* (((reterr) (irr-const) (irr-position) (irr-parstate))
        ;; 0 x/X
        ((erp hexdigs hexdigs-last-pos & pstate)
-        (lex-hex-digits prefix-last-pos pstate)))
+        (lex-*-hexadecimal-digit prefix-last-pos pstate)))
     ;; 0 x/X [hexdigs]
     (cond
      ((not hexdigs) ; 0 x/X
@@ -2790,7 +2793,7 @@
                       :found (char-to-msg char)))
          ((= char (char-code #\.)) ; 0 x/X .
           (b* (((erp hexdigs2 & hexdigs2-next-pos pstate)
-                (lex-hex-digits pos pstate)))
+                (lex-*-hexadecimal-digit pos pstate)))
             ;; 0 x/X . [hexdigs2]
             (cond
              ((not hexdigs2) ; 0 x/X .
@@ -2835,7 +2838,7 @@
                  pstate))
          ((= char (char-code #\.)) ; 0 x/X hexdigs .
           (b* (((erp hexdigs2 & & pstate)
-                (lex-hex-digits pos pstate)))
+                (lex-*-hexadecimal-digit pos pstate)))
             ;; 0 x/X hexdigs . [hexdigs2]
             (cond
              ((not hexdigs2) ; 0 x/X hexdigs .
