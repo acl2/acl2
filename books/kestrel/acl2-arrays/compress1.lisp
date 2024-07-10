@@ -196,7 +196,7 @@
                  )
             (equal (aref1 array-name (compress1 array-name2 array) n)
                    (aref1 array-name array n)))
-   :hints (("Goal" :in-theory (e/d (aref1 dimensions-intro) ())))))
+   :hints (("Goal" :in-theory (enable aref1 dimensions-intro)))))
 
 (local
  (defthm aref1-of-compress1-too-large
