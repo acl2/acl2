@@ -1116,6 +1116,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-stringlit-list ((strings stringlit-listp) (pstate pristatep))
+  :guard (consp strings)
+  :returns (new-pstate pristatep)
+  :short "Print a list of one or more string literals, separated by spaces."
+  (b* (((unless (mbt (consp strings))) (pristate-fix pstate))
+       (pstate (print-stringlit (car strings) pstate))
+       ((when (endp (cdr strings))) pstate)
+       (pstate (print-astring " " pstate)))
+    (print-stringlit-list (cdr strings) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-unop ((op unopp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a unary operator."
@@ -2680,6 +2693,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-asm-name-spec ((asmspec asm-name-specp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an assembler name specifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check that there is at least one string literal."))
+  (b* (((asm-name-spec asmspec) asmspec)
+       (pstate (if asmspec.uscores
+                   (print-astring "__asm__ (" pstate)
+                 (print-astring "asm (" pstate)))
+       ((unless (consp asmspec.strings))
+        (raise "Misusage error: ~
+                no string literals in assembler name specifier.")
+        pstate)
+       (pstate (print-stringlit-list asmspec.strings pstate))
+       (pstate (print-astring ")" pstate)))
+    pstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-initdeclor ((initdeclor initdeclorp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an initializer declarator."
@@ -2735,6 +2770,11 @@
                   (pstate (print-initdeclor-list decl.init pstate)))
                pstate)
            pstate))
+        (pstate (if decl.asm?
+                    (b* ((pstate (print-astring " " pstate))
+                         (pstate (print-asm-name-spec decl.asm? pstate)))
+                      pstate)
+                  pstate))
         (pstate (if decl.attrib
                     (b* ((pstate (print-astring " " pstate))
                          (pstate (print-attrib-spec-list decl.attrib pstate)))

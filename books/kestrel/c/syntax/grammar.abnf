@@ -439,6 +439,9 @@ keyword = %s"auto"
 ; Our goal here is not to thoroughly cover all the GCC extensions,
 ; but only to cover practical C code that uses certain GCC extensions.
 
+; We include the 'asm' keyword, and its '__asm__' variant;
+; see https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html.
+
 ; We include '__attribute__', which is indicated to be a keyword in
 ; https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html (first paragraph).
 
@@ -453,7 +456,9 @@ keyword = %s"auto"
 ; but it begins with "As with the C front end, ...".
 ; Furthermore, we have seen '__inline' and '__restrict' in actual C code.
 
-gcc-keyword = %s"__attribute__"
+gcc-keyword = %s"asm"
+            / %s"__asm__"
+            / %s"__attribute__"
             / %s"__inline"
             / %s"__inline__"
             / %s"__restrict"
@@ -919,7 +924,34 @@ attribute-specifier =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Assembler Name Specifiers (https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html)
+
+; These are a GCC extension,
+; used to specify the assembler name of declared identifiers.
+; This construct starts with the 'asm' or '__asm__' keyword,
+; followed by a parenthesized sequence of one or more string literals.
+; Adjacent string literals are concatenated [C:5.1.1.2/6],
+; but in order to capture and preserve the information
+; about multiple adjacent string literals instead of their concatenation,
+; we formulate our grammar rule to allow multiple string literals.
+; (We should do the same for other parts of the grammar.)
+
+; Although the GCC documentation does not seem to provide
+; a clear term to describe this construct,
+; we use the term 'assembler name specifier', which seems appropriate.
+
+asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Declarations [C:A.2.2]
+
+; As a GCC extension, we allow an optional assembler name specifier
+; just after the initializer declarators, and before the attributes (see below).
+; The GCC documentation says that an assembler name specifier
+; comes just after a declarator, so our grammar rule may be more liberal;
+; but currently our goal is just to handle practical code with GCC extensions,
+; not to provide a formalization of GCC extensions.
 
 ; As a GCC extension, we allow one or more attribute specifiers
 ; to occur just before the ending semicolon of a declaration.
@@ -935,9 +967,12 @@ attribute-specifier =
 ; but rather to be able to handle practical C code that
 ; does not quite comply with the standard due to the presence of GCC extensions.
 
-declaration =
-      declaration-specifiers [ init-declarator-list ] *attribute-specifier ";"
-    / static-assert-declaration
+declaration = declaration-specifiers
+              [ init-declarator-list ]
+              [ asm-name-specifier ]
+              *attribute-specifier
+              ";"
+            / static-assert-declaration
 
 declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
                        / type-specifier [ declaration-specifiers ]

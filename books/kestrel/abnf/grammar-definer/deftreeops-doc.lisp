@@ -416,4 +416,24 @@
         which asserts that the result of the function
         matches the rule name of the element.")
       (xdoc::li
+       "@(tsee fty::deffixequiv) theorems for the function.")))
+
+    (xdoc::desc
+     "@('<prefix>-%<b><min>-<max>-nat')"
+     (xdoc::p
+      "For each numeric range notation that appears in the grammar,
+       of the form @('%<b><min>-<max>') where
+       @('<b>') is @('d') or @('x') or @('b') (the base),
+       @('<min>') is the minimum of the range (in base @('<b>')), and
+       @('<max>') is the maximum of the range (in base @('<b>')),
+       a function that, given a tree matching the numeric range,
+       returns the natural number that is the (unique) leaf of the tree.
+       The generated function is accompanied by the following theorem:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<prefix>-%<b><min>-<max>-nat-bounds'),
+        which asserts that the natural number returned by the function
+        has @('<min>') as lower bound and @('<max>') as upper bound.
+        This theorem is generated as a linear rule.")
+      (xdoc::li
        "@(tsee fty::deffixequiv) theorems for the function."))))))

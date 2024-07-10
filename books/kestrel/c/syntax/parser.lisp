@@ -1410,7 +1410,9 @@
                                    "_Static_assert"
                                    "_Thread_local"))
             (and (parstate->gcc pstate)
-                 (member-equal string '("__attribute__"
+                 (member-equal string '("asm"
+                                        "__asm__"
+                                        "__attribute__"
                                         "__inline"
                                         "__inline__"
                                         "__restrict"
@@ -11722,6 +11724,136 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-*-stringlit ((pstate parstatep))
+  :returns (mv erp
+               (strings stringlit-listp)
+               (span spanp)
+               (new-pstate parstatep))
+  :short "Parse a list of zero or more string literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, we parse a @('*stringlit'), in ABNF notation.")
+   (xdoc::p
+    "If there are no string literals, we return an irrelevant span.
+     When combining the span of the first string literal (if present)
+     with the span of the remaining zero or more string literals,
+     we join spans only if the remaining ones are one or more;
+     if there are zero, the span of the first string literal
+     is also the span of the whole sequence."))
+  (b* (((reterr) nil (irr-span) (irr-parstate))
+       ((erp token span pstate) (read-token pstate))
+       ((unless (and token (token-case token :string)))
+        (b* ((pstate (if token (unread-token pstate) pstate)))
+          (retok nil (irr-span) pstate)))
+       ;; stringlit
+       (string (token-string->unwrap token))
+       ((erp strings last-span pstate) (parse-*-stringlit pstate)))
+    ;; stringlit stringlits
+    (retok (cons string strings)
+           (if strings (span-join span last-span) span)
+           pstate))
+  :measure (parsize pstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret parsize-of-parse-*-stringlit-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-name-specifier ((uscores booleanp)
+                                  (first-span spanp)
+                                  (pstate parstatep))
+  :returns (mv erp (asmspec asm-name-specp) (span spanp) (new-pstate parstatep))
+  :short "Parse an assembler name specifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used only if GCC extensions are supported.")
+   (xdoc::p
+    "This is called after parsing the initial @('asm') or @('__asm__').
+     We pass to this function a flag distinguishing the two keywords
+     (i.e. whether it has underscores or not),
+     as well as the span of that keyword.
+     We parse the rest of the assembler name specifier,
+     and return its abstract syntax representation.
+     We ensure that there is at least one string literal;
+     see grammar rule for @('asm-name-specifier'), which uses @('1*')."))
+  (b* (((reterr) (irr-asm-name-spec) (irr-span) (irr-parstate))
+       ;; asm-or-__asm__
+       ((erp & pstate) (read-punctuator "(" pstate)) ; asm-or-__asm__ (
+       ((erp token span pstate) (read-token pstate))
+       ((unless (and token (token-case token :string)))
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a string literal"
+                    :found (token-to-msg token)))
+       (pstate (unread-token pstate)) ; asm-or-__asm__ (
+       ((erp strings & pstate) ; asm-or-__asm__ ( strings
+        (parse-*-stringlit pstate))
+       ((erp last-span pstate) ; asm-or-__asm__ ( strings )
+        (read-punctuator ")" pstate)))
+    (retok (make-asm-name-spec :strings strings
+                               :uscores uscores)
+           (span-join first-span last-span)
+           pstate))
+
+  ///
+
+  (defret parsize-of-parse-asm-name-specifier-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-asm-name-specifier-cond
+    (implies (not erp)
+             (<= (parsize new-pstate)
+                 (1- (parsize pstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-?-asm-name-specifier ((pstate parstatep))
+  :returns (mv erp
+               (asmspec? asm-name-spec-optionp)
+               (span spanp)
+               (new-pstate parstatep))
+  :short "Parse an optional assembler name specifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The optionality is conveyed by
+     the question mark in the name of this function.
+     If the next token is the @('asm') or @('__asm__') keyword,
+     we must have an assembler name specifier, which we parse.
+     Otherwise, we put back the token
+     and return no assembler name specifier;
+     in this case, the returned span is an irrelevant one."))
+  (b* (((reterr) nil (irr-span) (irr-parstate))
+       ((erp token span pstate) (read-token pstate)))
+    (cond
+     ((equal token (token-keyword "asm"))
+      (parse-asm-name-specifier nil span pstate))
+     ((equal token (token-keyword "__asm__"))
+      (parse-asm-name-specifier t span pstate))
+     (t
+      (b* ((pstate (if token (unread-token pstate) pstate)))
+        (retok nil (irr-span) pstate)))))
+
+  ///
+
+  (defret parsize-of-parse-?-asm-name-specifier
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parse-init-declarator ((pstate parstatep))
   :returns (mv erp (initdeclor initdeclorp) (span spanp) (new-pstate parstatep))
   :short "Parse an initializer declarator."
@@ -11826,8 +11958,9 @@
      optionally followed by a list of one or more initializer declarators
      and mandatorily followed by a semicolon.")
    (xdoc::p
-    "If GCC extensions are supported,
-     we must also allow for zero or more attribute specifiers
+    "If GCC extensions are supported, we must also allow for
+     an optional assembler name specifier,
+     as well as for zero or more attribute specifiers,
      ending a declaration, just before the semicolon:
      see the ABNF grammar rule for @('declaration')."))
   (b* (((reterr) (irr-decl) (irr-span) (irr-parstate))
@@ -11842,11 +11975,35 @@
             (parse-declaration-specifiers nil pstate))
            ((erp token2 span2 pstate) (read-token pstate)))
         (cond
+         ;; If token2 is the keyword 'asm' or '__asm__',
+         ;; and if GCC extensions are supported,
+         ;; we have no initializer declarators;
+         ;; parse the assembler name specifier,
+         ;; any attribute specifiers after that,
+         ;; and the ending semicolon.
+         ((and (or (equal token2 (token-keyword "asm"))
+                   (equal token2 (token-keyword "__asm__")))
+               (parstate->gcc pstate))
+          ;; declspecs asm-or__asm__
+          (b* ((uscores (equal token2 (token-keyword "__asm__")))
+               ((erp asmspec & pstate) ; declspecs asmspec
+                (parse-asm-name-specifier uscores span2 pstate))
+               ((erp attrspecs & pstate) ; declspecs asmspec [attrspecs]
+                (parse-*-attribute-specifier pstate))
+               ((erp last-span pstate) ; declspecs asmspec [attrspecs] ;
+                (read-punctuator ";" pstate)))
+            (retok (make-decl-decl :specs declspecs
+                                   :init nil
+                                   :asm? asmspec
+                                   :attrib attrspecs)
+                   (span-join span last-span)
+                   pstate)))
          ;; If token2 is the keyword '__attribute__',
          ;; and if GCC extensions are supported,
          ;; we have no initializer declarators;
          ;; we parse the attribute specifiers,
          ;; and the ending semicolon.
+         ;; Note that we have no assembler name specifier in this case.
          ((and (equal token2 (token-keyword "__attribute__"))
                (parstate->gcc pstate))
           ;; declspecs __attribute__
@@ -11857,6 +12014,7 @@
                 (read-punctuator ";" pstate)))
             (retok (make-decl-decl :specs declspecs
                                    :init nil
+                                   :asm? nil
                                    :attrib attrspecs)
                    (span-join span last-span)
                    pstate)))
@@ -11864,20 +12022,29 @@
          ;; which is equivalent to saying that
          ;; it may start an initializer declarator,
          ;; we parse the list of one or more initializer declarators,
+         ;; then an optional assembler name specifier,
          ;; then a list of zero or more attribute specifiers,
          ;; and then the final semicolon.
          ((token-declarator-start-p token2) ; declspecs declor...
           (b* ((pstate (unread-token pstate)) ; declspecs
                ((erp initdeclors & pstate) ; declspecs initdeclors
                 (parse-init-declarator-list pstate))
-               ((erp attrspecs & pstate) ; declspecs initdeclors [attrspecs]
+               ((erp asmspec? & pstate)
+                ;; declspecs initdeclors [asmspec]
+                (if (parstate->gcc pstate)
+                    (parse-?-asm-name-specifier pstate)
+                  (retok nil (irr-span) pstate)))
+               ((erp attrspecs & pstate)
+                ;; declspecs initdeclors [asmspec] [attrspecs]
                 (if (parstate->gcc pstate)
                     (parse-*-attribute-specifier pstate)
                   (retok nil (irr-span) pstate)))
-               ((erp last-span pstate) ; declspecs initdeclors [attrspecs] ;
+               ((erp last-span pstate)
+                ;; declspecs initdeclors [asmspec] [attrspecs] ;
                 (read-punctuator ";" pstate)))
             (retok (make-decl-decl :specs declspecs
                                    :init initdeclors
+                                   :asm? asmspec?
                                    :attrib attrspecs)
                    (span-join span last-span)
                    pstate)))
@@ -11888,6 +12055,7 @@
          ((equal token2 (token-punctuator ";")) ; declspecs ;
           (retok (make-decl-decl :specs declspecs
                                  :init nil
+                                 :asm? nil
                                  :attrib nil)
                  (span-join span span2)
                  pstate))
@@ -12922,7 +13090,10 @@
      since those are present both in declarations and in function definitions.
      Then we must have a declarator in either case,
      but based on what follows it,
-     we can decide whether we have a declarator or a function definition."))
+     we can decide whether we have a declarator or a function definition.")
+   (xdoc::p
+    "If GCC extensions are supported, we must also taken into account
+     the possible presence of attributes and assembler name specifiers."))
   (b* (((reterr) (irr-extdecl) (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate)))
     (cond
@@ -12944,9 +13115,33 @@
          ((equal token2 (token-punctuator ";")) ; declspecs ;
           (retok (extdecl-decl (make-decl-decl :specs declspecs
                                                :init nil
+                                               :asm? nil
                                                :attrib nil))
                  (span-join span span2)
                  pstate))
+         ;; If token2 is the 'asm' or '__asm__' keyword,
+         ;; and if GCC extensions are supported,
+         ;; we parse an assembler name specifier,
+         ;; and this external declaration must be a declaration
+         ;; (we do not support attributes of function definitions).
+         ;; We also conditionally parse any attributes before the semicolon.
+         ((and (or (equal token2 (token-keyword "asm"))
+                   (equal token2 (token-keyword "__asm__")))
+               (parstate->gcc pstate))
+          ;; declspecs asm-or-__asm__
+          (b* ((uscores (equal token2 (token-keyword "__asm__")))
+               ((erp asmspec & pstate) ; declspecs asmspec
+                (parse-asm-name-specifier uscores span2 pstate))
+               ((erp attrspecs & pstate) ; declspecs asmspec [attrspecs]
+                (parse-*-attribute-specifier pstate))
+               ((erp last-span pstate) ; declspecs asmspec [attrspecs] ;
+                (read-punctuator ";" pstate)))
+            (retok (extdecl-decl (make-decl-decl :specs declspecs
+                                                 :init nil
+                                                 :asm? asmspec
+                                                 :attrib attrspecs))
+                   (span-join span last-span)
+                   pstate)))
          ;; If token2 is the '__attribute__' keyword,
          ;; and if GCC extensions are supported,
          ;; we parse one or more attribute specifiers,
@@ -12962,12 +13157,14 @@
                 (read-punctuator ";" pstate)))
             (retok (extdecl-decl (make-decl-decl :specs declspecs
                                                  :init nil
+                                                 :asm? nil
                                                  :attrib attrspecs))
                    (span-join span last-span)
                    pstate)))
          ;; If token2 is not a semicolon,
          ;; and either GCC extensions are not supported
-         ;; or token2 is not the keyword '__attribute__',
+         ;; or token2 is not any of the keywords
+         ;; 'asm', '__asm__', or '__attribute__'.
          ;; we must have at least one declarator, which we parse.
          (t ; declspecs other
           (b* ((pstate (if token2 (unread-token pstate) pstate))
@@ -12981,7 +13178,8 @@
              ;; We parse the rest of the initialization declarator,
              ;; then possibly more initialization declarators.
              ;; If GCC extensions are supported,
-             ;; we also parse zero or more attribute specifiers
+             ;; we also parse an optional assembler name specifier
+             ;; as well as zero or more attribute specifiers,
              ;; before the ending semicolon.
              ((equal token3 (token-punctuator "=")) ; declspecs declor =
               (b* (((erp initer & pstate) ; declspecs declor = initer
@@ -12998,6 +13196,7 @@
                            :init (list (make-initdeclor
                                         :declor declor
                                         :init? initer))
+                           :asm? nil
                            :attrib nil))
                          (span-join span span4)
                          pstate))
@@ -13008,13 +13207,20 @@
                   (b* (((erp initdeclors & pstate)
                         ;; declspecs declor = initer , initdeclors
                         (parse-init-declarator-list pstate))
+                       ((erp asmspec? & pstate)
+                        ;; declspecs declor = initer , initdeclors [asmspec]
+                        (if (parstate->gcc pstate)
+                            (parse-?-asm-name-specifier pstate)
+                          (retok nil (irr-span) pstate)))
                        ((erp attrspecs & pstate)
+                        ;; declspecs declor = initer, initdeclors
+                        ;;   [asmspec] [attrspecs]
                         (if (parstate->gcc pstate)
                             (parse-*-attribute-specifier pstate)
                           (retok nil (irr-span) pstate)))
-                       ;; declspecs declor = initer, initdeclors [attrspecs]
                        ((erp last-span pstate)
-                        ;; declspecs declor = initer , initdeclors [attrspecs] ;
+                        ;; declspecs declor = initer , initdeclors
+                        ;;   [asmspec] [attrspecs] ;
                         (read-punctuator ";" pstate)))
                     (retok (extdecl-decl
                             (make-decl-decl
@@ -13023,6 +13229,36 @@
                                           :declor declor
                                           :init? initer)
                                          initdeclors)
+                             :asm? asmspec?
+                             :attrib attrspecs))
+                           (span-join span last-span)
+                           pstate)))
+                 ;; If token4 is the keyword 'asm' or '__asm__',
+                 ;; and GCC extensions are supported,
+                 ;; we have just one declarator with the initializer,
+                 ;; followed by an assembler name specifier,
+                 ;; and possibly by attribute specifiers.
+                 ((and (or (equal token4 (token-keyword "asm"))
+                           (equal token4 (token-keyword "__asm__")))
+                       (parstate->gcc pstate))
+                  ;; declspecs declor = initer asm-or-__asm__
+                  (b* ((uscore (equal token4 (token-keyword "__asm__")))
+                       ((erp asmspec & pstate)
+                        ;; declspecs declor = initer asmspec
+                        (parse-asm-name-specifier uscore span4 pstate))
+                       ((erp attrspecs & pstate)
+                        ;; declspecs declor = initer asmspec [attrspecs]
+                        (parse-*-attribute-specifier pstate))
+                       ((erp last-span pstate)
+                        ;; declspecs declor = initer asmspec [attrspecs] ;
+                        (read-punctuator ";" pstate)))
+                    (retok (extdecl-decl
+                            (make-decl-decl
+                             :specs declspecs
+                             :init (list (make-initdeclor
+                                          :declor declor
+                                          :init? initer))
+                             :asm? asmspec
                              :attrib attrspecs))
                            (span-join span last-span)
                            pstate)))
@@ -13046,6 +13282,7 @@
                              :init (list (make-initdeclor
                                           :declor declor
                                           :init? initer))
+                             :asm? nil
                              :attrib attrspecs))
                            (span-join span last-span)
                            pstate)))
@@ -13066,6 +13303,7 @@
                        :init (list (make-initdeclor
                                     :declor declor
                                     :init? nil))
+                       :asm? nil
                        :attrib nil))
                      (span-join span span3)
                      pstate))
@@ -13075,19 +13313,24 @@
              ;; There must be more initialization declarations,
              ;; which we parse.
              ;; If GCC extensions are supported,
-             ;; we also parser zero or more attribute specifiers
+             ;; we also parse an optional assembler name specifier
+             ;; as well as zero or more attribute specifiers,
              ;; just before the final semicolon.
              ((equal token3 (token-punctuator ",")) ; declspecs declor ,
               (b* (((erp initdeclors & pstate)
+                    ;; declspecs declor , initdeclors
                     (parse-init-declarator-list pstate))
-                   ;; declspecs declor , initdeclors
+                   ((erp asmspec? & pstate)
+                    ;; declspecs declor , initdeclors [asmspec]
+                    (parse-?-asm-name-specifier pstate))
                    ((erp attrspecs & pstate)
+                    ;; declspecs declor, initdeclors [asmspec] [attrspecs]
                     (if (parstate->gcc pstate)
                         (parse-*-attribute-specifier pstate)
                       (retok nil (irr-span) pstate)))
-                   ;; declspecs declor, initdeclors [attrspecs]
-                   ((erp last-span pstate) (read-punctuator ";" pstate)))
-                ;; declspecs declor , initdeclors [attrspecs] ;
+                   ((erp last-span pstate)
+                    ;; declspecs declor , initdeclors [asmspec] [attrspecs] ;
+                    (read-punctuator ";" pstate)))
                 (retok (extdecl-decl
                         (make-decl-decl
                          :specs declspecs
@@ -13095,12 +13338,43 @@
                                       :declor declor
                                       :init? nil)
                                      initdeclors)
+                         :asm? asmspec?
                          :attrib attrspecs))
                        (span-join span last-span)
                        pstate)))
-             ;; If token3 is the '__attribute__' kryword
+             ;; If token3 is the 'asm' or '__asm__' keyword
              ;; and GCC extensions are supported,
-             ;; we commit to this external declaration being a declaration,
+             ;; this external declaration must be a declaration,
+             ;; and we parse the assembler name specifier,
+             ;; followed by zero or more attribute specifiers,
+             ;; and then the final semicolon.
+             ((and (or (equal token3 (token-keyword "asm"))
+                       (equal token3 (token-keyword "__asm__")))
+                   (parstate->gcc pstate))
+              ;; declspecs declor asm-or-__asm__
+              (b* ((uscores (equal token3 (token-keyword "__asm__")))
+                   ((erp asmspec & pstate)
+                    ;; declspecs declor asmspec
+                    (parse-asm-name-specifier uscores span3 pstate))
+                   ((erp attrspecs & pstate)
+                    ;; declspecs declor asmspec [attrspecs]
+                    (parse-*-attribute-specifier pstate))
+                   ((erp last-span pstate)
+                    ;; declspecs declor asmspec [attrspecs] ;
+                    (read-punctuator ";" pstate)))
+                (retok (extdecl-decl
+                        (make-decl-decl
+                         :specs declspecs
+                         :init (list (make-initdeclor
+                                      :declor declor
+                                      :init? nil))
+                         :asm? asmspec
+                         :attrib attrspecs))
+                       (span-join span last-span)
+                       pstate)))
+             ;; If token3 is the '__attribute__' keyword
+             ;; and GCC extensions are supported,
+             ;; this external declaration must be a declaration,
              ;; and we parse one or more attribute specifiers.
              ((and (equal token3 (token-keyword "__attribute__"))
                    (parstate->gcc pstate))
@@ -13116,6 +13390,7 @@
                          :init (list (make-initdeclor
                                       :declor declor
                                       :init? nil))
+                         :asm? nil
                          :attrib attrspecs))
                        (span-join span last-span)
                        pstate)))
