@@ -7498,31 +7498,19 @@
              (curr-span (span-join prev-span last-span)))
           (parse-postfix-expression-rest curr-expr curr-span pstate)))
        ((equal token (token-punctuator ".")) ; prev-expr .
-        (b* (((erp token2 span2 pstate) (read-token pstate)))
-          (cond
-           ((and token2 (token-case token2 :ident)) ; prev-expr . ident
-            (b* ((curr-expr (make-expr-member
-                             :arg prev-expr
-                             :name (token-ident->unwrap token2)))
-                 (curr-span (span-join prev-span span2)))
-              (parse-postfix-expression-rest curr-expr curr-span pstate)))
-           (t ; prev-expr . other
-            (reterr-msg :where (position-to-msg (span->start span2))
-                        :expected "an identifier"
-                        :found (token-to-msg token2))))))
+        (b* (((erp ident ident-span pstate) ; prev-expr . ident
+              (read-identifier pstate))
+             (curr-expr (make-expr-member :arg prev-expr
+                                          :name ident))
+             (curr-span (span-join prev-span ident-span)))
+          (parse-postfix-expression-rest curr-expr curr-span pstate)))
        ((equal token (token-punctuator "->")) ; prev-expr ->
-        (b* (((erp token2 span2 pstate) (read-token pstate)))
-          (cond
-           ((and token2 (token-case token2 :ident)) ; prev-expr -> ident
-            (b* ((curr-expr (make-expr-memberp
-                             :arg prev-expr
-                             :name (token-ident->unwrap token2)))
-                 (curr-span (span-join prev-span span2)))
-              (parse-postfix-expression-rest curr-expr curr-span pstate)))
-           (t ; prev-expr -> other
-            (reterr-msg :where (position-to-msg (span->start span2))
-                        :expected "an identifier"
-                        :found (token-to-msg token2))))))
+        (b* (((erp ident ident-span pstate) ; prev-expr -> ident
+              (read-identifier pstate))
+             (curr-expr (make-expr-memberp :arg prev-expr
+                                           :name ident))
+             (curr-span (span-join prev-span ident-span)))
+          (parse-postfix-expression-rest curr-expr curr-span pstate)))
        ((equal token (token-punctuator "++")) ; prev-expr ++
         (b* ((curr-expr (make-expr-unary :op (unop-postinc)
                                          :arg prev-expr))
