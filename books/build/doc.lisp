@@ -1396,6 +1396,9 @@ certification using @('make')."
  <li>@('non-acl2r'): only certify when the @(see real) numbers are NOT
  supported, i.e., when NOT using ACL2(r)</li>
 
+  <li>@('non-acl2p'): only certify when @(see parallelism) is NOT
+ supported, i.e., when NOT using ACL2(p)</li>
+
  <li>@('non-allegro'): only certify when the host Lisp is NOT Allegro CL</li>
 
  <li>@('non-cmucl'): only certify when the host Lisp is NOT cmucl</li>
@@ -1438,16 +1441,18 @@ certification using @('make')."
 
  </ul>
 
- <p>There is currently no @('cert_param') related to ACL2(p) (see @(see
- acl2::parallelism)), but see @(see acl2::non-parallel-book) for a related
- utility </p>"))
+ <p>In addition to the @('non-acl2p') @('cert_param') that exludes books from
+ ACL2(p) builds (see @(see acl2::parallelism)), there is also the related @(see
+ acl2::non-parallel-book) utility for turning off @(see
+ waterfall-parallelism).</p>"))
 
-; The following defpointer forms were added by Matt K., 7/14/2021.
+; Some of the following defpointer forms were added by Matt K., 7/14/2021.
 (acl2::defpointer acl2x cert_param)
 (acl2::defpointer acl2xskip cert_param)
 (acl2::defpointer ansi-only cert_param)
 (acl2::defpointer ccl-only cert_param)
 (acl2::defpointer non-acl2r cert_param)
+(acl2::defpointer non-acl2p cert_param)
 (acl2::defpointer non-allegro cert_param)
 (acl2::defpointer non-cmucl cert_param)
 (acl2::defpointer non-gcl cert_param)
