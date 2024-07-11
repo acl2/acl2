@@ -1010,18 +1010,22 @@
   :returns (info deftreeops-numrange-infop)
   :short "Generate the information for a numeric range."
   (b* (((num-range range) range)
-       (percent-base (num-base-case range.base
-                                    :dec "%D"
-                                    :hex "%X"
-                                    :bin "%B"))
-       (get-nat-fn (packn-pos (list prefix
-                                    '-
-                                    percent-base
-                                    '-
-                                    range.min
-                                    '-
-                                    range.max
-                                    '-nat)
+       (range-part-of-name
+        (num-base-case
+         range.base
+         :dec (str::cat "%D"
+                        (str::nat-to-dec-string range.min)
+                        "-"
+                        (str::nat-to-dec-string range.max))
+         :hex (str::cat "%X"
+                        (str::nat-to-hex-string range.min)
+                        "-"
+                        (str::nat-to-hex-string range.max))
+         :bin (str::cat "%B"
+                        (str::nat-to-bin-string range.min)
+                        "-"
+                        (str::nat-to-bin-string range.max))))
+       (get-nat-fn (packn-pos (list prefix '- range-part-of-name '-nat)
                               prefix))
        (bounds-thm (packn-pos (list get-nat-fn '-bounds)
                               prefix)))

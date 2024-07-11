@@ -428,6 +428,10 @@
        @('<max>') is the maximum of the range (in base @('<b>')),
        a function that, given a tree matching the numeric range,
        returns the natural number that is the (unique) leaf of the tree.
+       In the name of this generated function,
+       the @('<min>') and @('<max>') part are expressed
+       in digits in the base indicated by @('<b>'),
+       with unnecessary leading zeros.
        The generated function is accompanied by the following theorem:")
      (xdoc::ul
       (xdoc::li

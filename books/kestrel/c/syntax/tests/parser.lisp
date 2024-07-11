@@ -497,7 +497,8 @@
     (b* ((pstate (init-parstate (acl2::string=>nats ,input) nil))
          ,@(and pos
                 `((pstate (change-parstate pstate :position ,pos))))
-         (,(if (eq fn 'lex-*-digit)
+         (,(if (member-eq fn '(lex-*-digit
+                               lex-*-hexadecimal-digit))
                '(mv erp ?ast ?pos/span ?pos/span2 ?pstate)
              '(mv erp ?ast ?pos/span ?pstate))
           (,fn ,@more-inputs pstate)))
@@ -657,6 +658,37 @@
  :cond (and (equal ast '(#\1 #\8 #\3))
             (equal pos/span (position 10 12))
             (equal pos/span2 (position 10 13))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-hexadecimal-digit
+
+(test-lex
+ lex-*-hexadecimal-digit
+ ""
+ :pos (position 20 88)
+ :more-inputs ((position 20 87))
+ :cond (and (equal ast nil)
+            (equal pos/span (position 20 87))
+            (equal pos/span2 (position 20 88))))
+
+(test-lex
+ lex-*-hexadecimal-digit
+ "dEadbeFf"
+ :pos (position 1 1)
+ :more-inputs ((position 1 0))
+ :cond (and (equal ast '(#\d #\E #\a #\d #\b #\e #\F #\f))
+            (equal pos/span (position 1 8))
+            (equal pos/span2 (position 1 9))))
+
+(test-lex
+ lex-*-hexadecimal-digit
+ "1"
+ :pos (position 10 10)
+ :more-inputs ((position 10 9))
+ :cond (and (equal ast '(#\1))
+            (equal pos/span (position 10 10))
+            (equal pos/span2 (position 10 11))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
