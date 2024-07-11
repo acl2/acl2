@@ -915,8 +915,12 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                          `(with-output :stack :pop ,event))
                      (value '(value-triple :invisible))))))
          (with-output :stack :pop (progn . ,rest-events1))
+         ,@(and verify-guards-after-returns
+                returns-induct
+                `((with-output :stack :pop (verify-guards ,name))))
          ,@fn-sections
          ,@(and verify-guards-after-returns
+                (not returns-induct)
                 `((with-output :stack :pop (verify-guards ,name))))
          ,@sections-rest
          (with-output :stack :pop (progn . ,rest-events2)))
