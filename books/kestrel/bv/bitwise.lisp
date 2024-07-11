@@ -408,7 +408,7 @@
   (equal (bvxor 1 y (bvnot 1 x))
          (bvnot 1 (bvxor 1 y x)))
   :hints (("Goal" :use bvnot-of-bvxor-1-back
-           :in-theory (e/d () (bvnot-of-bvxor-1-back)))))
+           :in-theory (disable bvnot-of-bvxor-1-back))))
 
 ;(local (in-theory (enable BITXOR-COMMUTATIVE BITXOR-COMMUTATIVE-2))) ;hope these don't loop
 
@@ -420,8 +420,7 @@
 (defthm bvxor-of-x-and-bvnot-x-alt
   (equal (bvxor 1 x (bvnot 1 x))
          1)
-  :hints (("Goal" :in-theory (e/d ()
-                                  (equal-of-0-and-bitxor)))))
+  :hints (("Goal" :in-theory (disable equal-of-0-and-bitxor))))
 
 (defthm bvxor-of-x-and-bvnot-x-alt-3terms
   (equal (bvxor 1 x (bvxor 1 (bvnot 1 x) y))

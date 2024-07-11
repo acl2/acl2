@@ -834,9 +834,8 @@
            (equal (bvor size (bvshl size x amt) (bvshr size x amt2))
                   (leftrotate size amt x)))
   :hints (("Goal" :cases ((equal 0 amt2))
-           :in-theory (e/d (bvif myif bvplus bvshr leftrotate bvchop-of-sum-cases
-                                 bvshl-rewrite-with-bvchop)
-                           ()))))
+           :in-theory (enable bvif myif bvplus bvshr leftrotate bvchop-of-sum-cases
+                              bvshl-rewrite-with-bvchop))))
 
 (defthm bvor-of-bvshr-and-bvshl-becomes-leftrotate
   (implies (and (equal size (+ amt amt2)) ;could use bvplus but what size?
@@ -915,7 +914,7 @@
            (equal (bvor size (bvshr 32 x amt2) (bvshl 32 x amt))
                   (bvchop size (leftrotate32 amt x))))
   :hints (("Goal" :use bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen
-           :In-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen))))
+           :in-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen))))
 
 ;an idiom for rotating by 16 bits in a 32-bit field:
 ;gen!
@@ -2144,8 +2143,8 @@
                   (bvplus freesize (- k) x)))
   :hints (("Goal"
 ;          :expand (UNSIGNED-BYTE-P FREESIZE (- K)) ;this expands with the wrong defn..
-           :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases ;unsigned-byte-p
-                              ) ()))))
+           :in-theory (enable bvlt bvplus bvchop-of-sum-cases ;unsigned-byte-p
+                              ))))
 
 (defthm +-of-minus-constant-version
   (implies (and (syntaxp (quotep k))

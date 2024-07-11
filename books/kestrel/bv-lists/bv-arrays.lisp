@@ -394,7 +394,7 @@
            (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
                   (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))
                   ))
-  :hints (("Goal" :use (:instance bv-array-write-of-bv-array-write-diff)
+  :hints (("Goal" :use bv-array-write-of-bv-array-write-diff
            :cases ((not (natp len)))
            :in-theory (disable bv-array-write-of-bv-array-write-diff))))
 
@@ -495,7 +495,7 @@
                                   otherval))
                   (bitxor (bv-array-read 1 256 index (bvxor-list 1 vals1 vals2))
                           otherval)))
-  :hints (("Goal" :use (:instance bitxor-of-bv-array-read-and-bv-array-read-constant-arrays)
+  :hints (("Goal" :use bitxor-of-bv-array-read-and-bv-array-read-constant-arrays
            :in-theory (disable bitxor-of-bv-array-read-and-bv-array-read-constant-arrays))))
 
 ;move
@@ -852,7 +852,7 @@
 ;;            (EQUAL (BV-ARRAY-READ ELEMENT-SIZE LEN INDEX DATA)
 ;;                   (BV-ARRAY-READ ELEMENT-SIZE LEN 0 DATA) ;(BVCHOP ELEMENT-SIZE (CAR DATA))
 ;;                   ))
-;;   :hints (("Goal" :use (:instance ARRAY-REDUCTION-WHEN-ALL-SAME)
+;;   :hints (("Goal" :use ARRAY-REDUCTION-WHEN-ALL-SAME
 ;;            :in-theory (disable ARRAY-REDUCTION-WHEN-ALL-SAME; CAR-BECOMES-NTH-OF-0
 ;;                                ))))
 

@@ -837,7 +837,7 @@
                 (integerp size))
            (equal (bvlt size const x)
                   (equal free (bvchop size x))))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-when-not-bvlt-one-less
   (implies (and (syntaxp (quotep const))
@@ -850,7 +850,7 @@
                 (integerp size))
            (equal (bvlt size x const)
                   (equal free (bvchop size x))))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;rename
 (defthm bvlt-false-when-bvlt-better

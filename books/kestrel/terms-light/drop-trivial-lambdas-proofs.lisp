@@ -139,7 +139,7 @@
                                    ;map-lookup-equal-of-pairlis$-of-empty-eval-list
                                    )
                                   (empty-eval-of-fncall-args-back
-                                   ;map-empty-eval-of-map-lookup-equal-of-pairlis$
+                                   ;empty-eval-list-of-map-lookup-equal-of-pairlis$
                                    )))))
 
 (defthm-flag-drop-trivial-lambdas-induct
@@ -213,7 +213,7 @@
                             alists-equiv-on-redef
                             not-member-equal-of-nil-when-no-nils-in-termsp)
                            (empty-eval-of-fncall-args-back
-                            ;; map-empty-eval-of-map-lookup-equal-of-pairlis$
+                            ;; empty-eval-list-of-map-lookup-equal-of-pairlis$
                             )))))
 
 ;; (defthm-flag-drop-trivial-lambdas
@@ -249,5 +249,5 @@
 ;;                                    alists-equiv-on-redef
 ;;                                    not-member-equal-of-nil-when-no-nils-in-termsp)
 ;;                                   (empty-eval-of-fncall-args-back
-;;                                    ;map-empty-eval-of-map-lookup-equal-of-pairlis$
+;;                                    ;empty-eval-list-of-map-lookup-equal-of-pairlis$
 ;;                                    )))))
