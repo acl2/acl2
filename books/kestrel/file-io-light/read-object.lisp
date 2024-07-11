@@ -42,7 +42,7 @@
 (defthm mv-nth-0-of-read-object-iff
   (iff (mv-nth 0 (read-object channel state))
        (not (consp (cddr (assoc-equal channel (open-input-channels state))))))
-  :hints (("Goal" :in-theory (e/d (read-object) ()))))
+  :hints (("Goal" :in-theory (enable read-object))))
 
 (defthm state-p1-of-mv-nth-2-of-read-object
   (implies (state-p1 state)

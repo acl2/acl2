@@ -209,7 +209,7 @@
                 (equal len (len data)))
            (equal (bv-array-clear-range '8 len start end data)
                   data))
-  :hints (("Goal" :use (:instance bv-array-clear-range-of-repeat-same)
+  :hints (("Goal" :use bv-array-clear-range-of-repeat-same
            :in-theory (e/d (ALL-EQUAL$-WHEN-TRUE-LISTP)
                            (bv-array-clear-range-of-repeat-same
                             equal-of-repeat-of-len-same)))))

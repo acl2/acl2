@@ -935,9 +935,8 @@
 ;;    (implies (natp size)
 ;;             (equal (equal 0 (bvcat 1 x size 0))
 ;;                    (equal (getbit 0 x) 0)))
-;;    :hints (("Goal" :in-theory (e/d (;getbit bvcat slice
-;;                                     )
-;;                                    ()))))
+;;    :hints (("Goal" :in-theory (enable ;getbit bvcat slice
+;;                                     ))))
 
 ;finally the full lemma!
 (defthm slice-of-bvcat-hack-gen

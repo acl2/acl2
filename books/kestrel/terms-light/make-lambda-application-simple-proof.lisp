@@ -196,7 +196,7 @@
          (LOOKUP-EQUAL key (PAIRLIS$ FORMALS (EMPTY-EVAL-LIST ACTUALS A))))
   :hints (("Goal" :in-theory (enable map-lookup-equal lookup-equal assoc-equal pairlis$))))
 
-(defthm map-EMPTY-EVAL-of-map-LOOKUP-EQUAL-of-pairlis$
+(defthm empty-eval-list-of-map-LOOKUP-EQUAL-of-pairlis$
   (equal (EMPTY-EVAL-LIST (MAP-LOOKUP-EQUAL keys (PAIRLIS$ FORMALS ACTUALS)) A)
          (MAP-LOOKUP-EQUAL keys (PAIRLIS$ FORMALS (EMPTY-EVAL-LIST ACTUALS a))))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
