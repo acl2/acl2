@@ -2443,9 +2443,12 @@
     (structdecl-case
      structdecl
      :member
-     (b* (((unless structdecl.specqual)
+     (b* ((pstate (if structdecl.extension
+                      (print-astring "__extension__ " pstate)
+                    (pristate-fix pstate)))
+          ((unless structdecl.specqual)
            (raise "Misusage error: empty specifier/qualifier list.")
-           (pristate-fix pstate))
+           pstate)
           (pstate (print-specqual-list structdecl.specqual pstate))
           (pstate (if structdecl.declor
                       (b* ((pstate (print-astring " " pstate))
@@ -2758,11 +2761,14 @@
   (decl-case
    decl
    :decl
-   (b* (((unless decl.specs)
+   (b* ((pstate (if decl.extension
+                    (print-astring "__extension__ " pstate)
+                  (pristate-fix pstate)))
+        ((unless decl.specs)
          (raise "Misusage error: ~
                  no declaration specifiers in declaration ~x0."
                 decl)
-         (pristate-fix pstate))
+         pstate)
         (pstate (print-declspec-list decl.specs pstate))
         (pstate
          (if decl.init
@@ -3170,9 +3176,12 @@
      then the declarations at the left margin one per line,
      and finally the body with the curly brace starting at the left margin."))
   (b* (((fundef fundef) fundef)
+       (pstate (if fundef.extension
+                   (print-astring "__extension__ " pstate)
+                 (pristate-fix pstate)))
        ((unless fundef.spec)
         (raise "Misusage error: no declaration specifiers.")
-        (pristate-fix pstate))
+        pstate)
        ((unless (stmt-case fundef.body :compound))
         (raise "Misusage error: function body is not a compound statement.")
         (pristate-fix pstate))

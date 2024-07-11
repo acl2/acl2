@@ -1281,6 +1281,7 @@
    `(structdecl-case
       structdecl
       :member (make-structdecl-member
+                :extension structdecl.extension
                 :specqual (,(cdr (assoc-eq 'specqual-list names)) structdecl.specqual ,@extra-args-names)
                 :declor (,(cdr (assoc-eq 'structdeclor-list names)) structdecl.declor ,@extra-args-names))
       :statassert (structdecl-statassert
@@ -1463,8 +1464,11 @@
    `(decl-case
       decl
       :decl (make-decl-decl
+              :extension decl.extension
               :specs (,(cdr (assoc-eq 'declspec-list names)) decl.specs ,@extra-args-names)
-              :init (,(cdr (assoc-eq 'initdeclor-list names)) decl.init ,@extra-args-names))
+              :init (,(cdr (assoc-eq 'initdeclor-list names)) decl.init ,@extra-args-names)
+              :asm? decl.asm?
+              :attrib decl.attrib)
       :statassert (decl-statassert
                     (,(cdr (assoc-eq 'statassert names)) decl.unwrap ,@extra-args-names)))
    '(:returns (new-decl declp))))
@@ -1609,6 +1613,7 @@
    extra-args
    `(b* (((fundef fundef) fundef))
       (make-fundef
+        :extension fundef.extension
         :spec (,(cdr (assoc-eq 'declspec-list names)) fundef.spec ,@extra-args-names)
         :declor (,(cdr (assoc-eq 'declor names)) fundef.declor ,@extra-args-names)
         :decls (,(cdr (assoc-eq 'decl-list names)) fundef.decls ,@extra-args-names)

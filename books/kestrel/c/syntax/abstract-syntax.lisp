@@ -2025,8 +2025,15 @@
        but instead it is a declaration of a member of a structure or union.
        So something like <i>member-declaration</i>
        would be a better name for this grammar nonterminal,
-       but our fixtype name reflects the current grammar."))
-    (:member ((specqual specqual-list)
+       but our fixtype name reflects the current grammar.")
+     (xdoc::p
+      "As a GCC extension, we include the possibility that
+       a member declaration starts with
+       the @('__extension__') GCC keyword.
+       We model that as a boolean that says whether
+       that keyword is present or absent."))
+    (:member ((extension bool)
+              (specqual specqual-list)
               (declor structdeclor-list)))
     (:statassert ((unwrap statassert)))
     :pred structdeclp
@@ -2478,8 +2485,15 @@
      as part of a declaration, meant to come after all the declarators.
      This is not fully general, but it covers a set of cases of interest.
      The list is empty if there are no attribute specifiers,
-     e.g. when sticking to standard C without GCC extensions."))
-  (:decl ((specs declspec-list)
+     e.g. when sticking to standard C without GCC extensions.")
+   (xdoc::p
+    "As a GCC extension,
+     we include the possibility that
+     the declaration starts with the @('__extension__') GCC keyword.
+     We model this as a boolean saying whether
+     the keyword is present or absent."))
+  (:decl ((extension bool)
+          (specs declspec-list)
           (init initdeclor-list)
           (asm? asm-name-spec-option)
           (attrib attrib-spec-list)))
@@ -2671,8 +2685,15 @@
    (xdoc::p
     "This corresponds to <i>function-definition</i> in the grammar in [C].
      Unlike that grammar, we do not constrain the function body
-     to be a compound statement in this fixtype."))
-  ((spec declspec-list)
+     to be a compound statement in this fixtype.")
+   (xdoc::p
+    "As a GCC extension,
+     we include the possibility that
+     the function definition starts with the @('__extension__') GCC keyword.
+     We model this as a boolean saying whether
+     the keyword is present or absent."))
+  ((extension bool)
+   (spec declspec-list)
    (declor declor)
    (decls decl-list)
    (body stmt))

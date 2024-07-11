@@ -459,6 +459,7 @@ keyword = %s"auto"
 gcc-keyword = %s"asm"
             / %s"__asm__"
             / %s"__attribute__"
+            / %s"__extension__"
             / %s"__inline"
             / %s"__inline__"
             / %s"__restrict"
@@ -967,7 +968,12 @@ asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
 ; but rather to be able to handle practical C code that
 ; does not quite comply with the standard due to the presence of GCC extensions.
 
-declaration = declaration-specifiers
+; As a GCC extension, we allow the GCC keyword '__extension__'
+; to occur at the start of a (member) structure declaration
+; and at the start of a declaration (not a static assertion declaration).
+
+declaration = [ %s"__extension__" ]
+              declaration-specifiers
               [ init-declarator-list ]
               [ asm-name-specifier ]
               *attribute-specifier
@@ -1019,7 +1025,10 @@ struct-or-union = %s"struct"
 struct-declaration-list = struct-declaration
                         / struct-declaration-list struct-declaration
 
-struct-declaration = specifier-qualifier-list [ struct-declarator-list ] ";"
+struct-declaration = [ %s"__extension__" ]
+                     specifier-qualifier-list
+                     [ struct-declarator-list ]
+                     ";"
                    / static-assert-declaration
 
 specifier-qualifier-list = type-specifier [ specifier-qualifier-list ]
@@ -1170,14 +1179,20 @@ jump-statement = %s"goto" identifier ";"
 
 ; External definitions [C:A.2.4]
 
+; As a GCC extension, we allow the GCC keyword '__extension__'
+; to occur at the start of a function definition.
+
 translation-unit = external-declaration
                  / translation-unit external-declaration
 
 external-declaration = function-definition
                      / declaration
 
-function-definition =
-    declaration-specifiers declarator [ declaration-list ] compound-statement
+function-definition = [ %s"__extension__" ]
+                      declaration-specifiers
+                      declarator
+                      [ declaration-list ]
+                      compound-statement
 
 declaration-list = declaration
                  / declaration-list declaration
