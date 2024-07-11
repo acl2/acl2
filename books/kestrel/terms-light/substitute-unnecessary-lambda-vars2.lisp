@@ -35,12 +35,6 @@
                     (intersection-equal x z)))
   :hints (("Goal" :in-theory (enable union-equal intersection-equal))))
 
-(defthm map-lookup-equal-of-append
-  (equal (map-lookup-equal (append keys1 keys2) alist)
-         (append (map-lookup-equal keys1 alist)
-                 (map-lookup-equal keys2 alist)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal append))))
-
 (local
   (defthm map-lookup-equal-of-reverse-list
     (equal (map-lookup-equal (reverse-list keys) alist)
