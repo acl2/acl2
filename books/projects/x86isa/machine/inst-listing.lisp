@@ -7663,7 +7663,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSRLDQ)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "PSLLQ"
           (OP :OP #xF73

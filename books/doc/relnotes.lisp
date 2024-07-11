@@ -594,7 +594,9 @@
     (xdoc::li
      "MOVDQA")
     (xdoc::li
-     "PADDB, PADDW, PADDD, PADDQ (SSE versions)"))
+     "PADDB, PADDW, PADDD, PADDQ (SSE versions)")
+    (xdoc::li
+     "PSRLDQ (SSE version)"))
 
    (xdoc::p
     "Some memory accessing functions for larger sizes have been added.")
