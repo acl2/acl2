@@ -413,3 +413,8 @@
   (equal (subsetp-equal (reverse x) y)
          (subsetp-equal x y))
   :hints (("Goal" :in-theory (enable subsetp-equal reverse-list))))
+
+(defthm subsetp-equal-of-reverse-arg2
+  (equal (subsetp-equal x (reverse y))
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable subsetp-equal reverse-list))))
