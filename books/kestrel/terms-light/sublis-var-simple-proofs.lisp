@@ -21,15 +21,6 @@
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
-(local (include-book "kestrel/lists-light/append" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/take" :dir :system))
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
-;(local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
-(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
-(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
-(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;move?
 (local
