@@ -38,9 +38,8 @@
 
 ;move to library
 (defthmd intersection-equal-of-set-difference-equal-when-subsetp-equal
-  (implies (subsetp-equal vars2 formals)
-           (equal (intersection-equal (set-difference-equal vars formals)
-                                      vars2)
+  (implies (subsetp-equal z y)
+           (equal (intersection-equal (set-difference-equal x y) z)
                   nil))
   :hints (("Goal" :in-theory (enable intersection-equal set-difference-equal))))
 
