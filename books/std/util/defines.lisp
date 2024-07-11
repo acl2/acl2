@@ -450,7 +450,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                      (and cliquename
                           (not (eq cliquename guts.name))
                           (list cliquename))))
-       (divide-defsections (and process-returns divide-defsections))
+       (divide-defsections (and process-returns divide-defsections guts.rest-events))
        (rest-events
         `(
 ; Matt K. mod, 8/27/2021, for GitHub Issue #1302: allow current-function to be
