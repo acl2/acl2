@@ -535,21 +535,24 @@
   :guard-hints (("Goal" :in-theory (enable shlx-spec sarx-spec shrx-spec))))
 
 ;; ======================================================================
-;; INSTRUCTION: PSRLDQ
+;; INSTRUCTION: PSLLDQ/PSRLDQ
 ;; ======================================================================
 
-(def-inst x86-psrldq
+(def-inst x86-pslldq/psrldq
 
   :parents (two-byte-opcodes)
 
-  :short "Shift double quadword right logical (SSE variant)."
+  :short "Shift double quadword left/right logical (SSE variant)."
 
   :long
   "<code>
+   PSLLDQ xmm1, imm8
    PSRLDQ xmm1, imm8
    </code>"
 
   :modr/m t
+
+  :guard (member-equal (modr/m->reg modr/m) '(7 3))
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -590,11 +593,16 @@
        ;; an unsigned value larger than 15.
        ;; If the count is larger than 15, the result is just 0.
        ;; If instead the count is between 0 and 15,
-       ;; the operand is shifted by that number of bytes to the right.
-       ;; By using ASH, we automatically get 0 as result
-       ;; if the count is larger than 15.
+       ;; the operand is shifted by that number of bytes to the left or right,
+       ;; and in the case of a left shift we only keep the low 128 bits.
+       ;; We automatically get 0 as result if the count is larger than 15.
+       ;; The left (PSLLDQ) vs. right (PSRLDQ)
+       ;; is determined by the Reg byte, which is an opcode extension.
        ((the (unsigned-byte 128) result)
-        (ash operand (- (* 8 count))))
+        (case reg
+          (7 (logand (1- (expt 2 128)) (ash operand (* 8 count))))
+          (3 (ash operand (- (* 8 count))))
+          (t (prog2$ (acl2::impossible) 0))))
 
        ;; Write the result into the register.
        (x86 (!xmmi-size 16 reg-index result x86))
