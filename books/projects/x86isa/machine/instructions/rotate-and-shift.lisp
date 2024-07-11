@@ -535,3 +535,81 @@
   :guard-hints (("Goal" :in-theory (enable shlx-spec sarx-spec shrx-spec))))
 
 ;; ======================================================================
+;; INSTRUCTION: PSRLDQ
+;; ======================================================================
+
+(def-inst x86-psrldq
+
+  :parents (two-byte-opcodes)
+
+  :short "Shift double quadword right logical (SSE variant)."
+
+  :long
+  "<code>
+   PSRLDQ xmm1, imm8
+   </code>"
+
+  :modr/m t
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* (;; The index of the XMM register
+       ;; is in the R/M portion of the ModR/M byte.
+       ;; It can be extended by one bit via the REX byte.
+       (reg-index (reg-index r/m rex-byte #.*r*))
+
+       ;; Read the 128-bit (i.e. 16-byte) operand from the XMM register.
+       (operand (xmmi-size 16 reg-index x86))
+
+       ;; Read the shift count, which is an 8-bit immediate operand.
+       ((mv flg count x86)
+        (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86))
+       ((when flg) (!!ms-fresh :rme-size-error flg))
+
+       ;; Increment the instruction pointer by 1, to account for the imm8.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip 1 x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; According to Intel Manual (Dec 2023) Volume 2 Section 3.1.1.3,
+       ;; imm8 indicates an 8-bit signed immediate operand,
+       ;; i.e. an integer between -128 and +127.
+       ;; However, the Intel Manual describes PSRLDQ
+       ;; as if the count were unsigned:
+       ;; it says what happens if it is greater than 15,
+       ;; but it does not say what happens if it is negative.
+       ;; We interpret this as if the imm8 is actually signed in this case;
+       ;; thus, a negative value (if signed) is treated as
+       ;; an unsigned value larger than 15.
+       ;; If the count is larger than 15, the result is just 0.
+       ;; If instead the count is between 0 and 15,
+       ;; the operand is shifted by that number of bytes to the right.
+       ;; By using ASH, we automatically get 0 as result
+       ;; if the count is larger than 15.
+       ((the (unsigned-byte 128) result)
+        (ash operand (- (* 8 count))))
+
+       ;; Write the result into the register.
+       (x86 (!xmmi-size 16 reg-index result x86))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p natp)))
+
+  :prepwork
+  ((defrulel verify-guards-lemma
+     (implies (and (unsigned-byte-p 128 a)
+                   (natp b))
+              (unsigned-byte-p 128 (ash a (- (* 8 b))))))))
+
+;; ======================================================================

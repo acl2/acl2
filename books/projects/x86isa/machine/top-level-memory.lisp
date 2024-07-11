@@ -526,7 +526,7 @@
    ;; relevant only for nbytes = 4.
    ((mem-ptr? booleanp) 'nil))
   :returns (mv flg
-               (value natp)
+               (value natp :rule-classes (:rewrite :type-prescription))
                (x86-new x86p :hyp (x86p x86)))
   :parents (top-level-memory)
   :short "Read an unsigned value with the specified number of bytes
