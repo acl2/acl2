@@ -647,11 +647,6 @@
          (subsetp-equal x (binary-append c z)))
   :hints (("Goal" :in-theory (enable subsetp-equal))))
 
-(defthm lambdas-closed-in-termp-of-cdr-of-assoc-equal
-  (implies (lambdas-closed-in-termsp (strip-cdrs alist))
-           (lambdas-closed-in-termp (cdr (assoc-equal key alist))))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
-
 (defthm subsetp-equal-of-free-vars-in-term-of-cdr-of-assoc-equal-and-free-vars-in-terms-of-map-lookup-equal
   (implies (member-equal key keys)
            (subsetp-equal (free-vars-in-term (cdr (assoc-equal key alist)))

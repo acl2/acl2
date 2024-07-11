@@ -22,13 +22,6 @@
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 
-;move?
-(local
- (defthm lambdas-closed-in-termp-of-cdr-of-assoc-equal
-   (implies (lambdas-closed-in-termsp (strip-cdrs alist))
-            (lambdas-closed-in-termp (cdr (assoc-equal term alist))))
-   :hints (("Goal" :in-theory (enable assoc-equal)))))
-
 (defthm-flag-sublis-var-simple
   (defthm lambdas-closed-in-termp-of-sublis-var-simple
     (implies (and (pseudo-termp term)

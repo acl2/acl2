@@ -147,3 +147,10 @@
 (defthm lambdas-closed-in-termsp-when-logic-term-listp
   (implies (logic-term-listp terms w)
            (lambdas-closed-in-termsp terms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm lambdas-closed-in-termp-of-cdr-of-assoc-equal
+   (implies (lambdas-closed-in-termsp (strip-cdrs alist))
+            (lambdas-closed-in-termp (cdr (assoc-equal key alist))))
+   :hints (("Goal" :in-theory (enable assoc-equal))))

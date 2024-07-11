@@ -45,12 +45,6 @@
 
 ;; TODO: Clean up the proofs in this file, and separate them out.
 
-(local
- (defthm lambdas-closed-in-termp-of-cdr-of-assoc-equal
-   (implies (lambdas-closed-in-termsp (strip-cdrs alist))
-            (lambdas-closed-in-termp (cdr (assoc-equal term alist))))
-   :hints (("Goal" :in-theory (enable assoc-equal)))))
-
 (defthm lambdas-closed-in-termsp-of-replace-corresponding-arg
   (implies (and (lambdas-closed-in-termsp args)
                 (lambdas-closed-in-termp new-arg))
