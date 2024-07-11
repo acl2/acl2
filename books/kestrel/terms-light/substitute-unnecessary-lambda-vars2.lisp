@@ -59,12 +59,6 @@
                 (subsetp-equal (free-vars-in-terms (map-lookup-equal (reverse acc) alist)) y)))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
-(defthm intersection-equal-of-add-to-set-equal-arg2-iff
-  (iff (intersection-equal x (add-to-set-equal a y))
-       (or (intersection-equal x y)
-           (member-equal a x)))
-  :hints (("Goal" :in-theory (enable intersection-equal member-equal add-to-set-equal))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; May drop some of the formals-to-maybe-subst.
