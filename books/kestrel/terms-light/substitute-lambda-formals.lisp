@@ -178,12 +178,6 @@
 
 (include-book "kestrel/lists-light/set-difference-equal" :dir :system)
 
-;dup
-(defthm cdr-of-empty-eval-list
-  (equal (cdr (empty-eval-list args a))
-         (empty-eval-list (cdr args) a))
-  :hints (("Goal" :in-theory (enable))))
-
 (defthm get-args-for-formals-of-cons-arg3-when-not-member-equal
   (implies (not (member-equal f formals))
            (equal (get-args-for-formals formals args (cons f target-formals))
