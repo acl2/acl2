@@ -45,6 +45,20 @@
                         (empty-eval if-and-not-eval)
                         (empty-eval-list if-and-not-eval-list)))))
 
+;; switches the evaluator
+;; todo: rectify the names of these correctness rules
+(defthm empty-eval-of-substitute-unnecessary-lambda-vars-in-term2-for-if-and-not-eval
+  (implies (and (pseudo-termp term)
+                (no-nils-in-termp term)
+                (lambdas-closed-in-termp term)
+                (no-duplicate-lambda-formals-in-termp term))
+           (equal (if-and-not-eval (substitute-unnecessary-lambda-vars-in-term2 term print) alist)
+                  (if-and-not-eval term alist)))
+  :hints (("Goal" :use (:functional-instance
+                        empty-eval-of-substitute-unnecessary-lambda-vars-in-term2
+                        (empty-eval if-and-not-eval)
+                        (empty-eval-list if-and-not-eval-list)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm simplify-lambdas-one-step-correct

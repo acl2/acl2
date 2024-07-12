@@ -12,20 +12,21 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; See correctness proof in simplify-lambdas-proofs.lisp.
+;; TODO: Add more kinds of simplifications (e.g., for vars bound to vars)
 
-;; TODO: Add more kinds of simplifications
+;; See correctness proof in simplify-lambdas-proofs.lisp.
 
 (include-book "substitute-constants-in-lambdas")
 (include-book "drop-unused-lambda-bindings")
-;; (include-book "substitute-unnecessary-lambda-vars")
+(include-book "substitute-unnecessary-lambda-vars2")
 (include-book "simplify-ors")
 
+;; todo: think about the order of these steps (but note that we repeat the whole sequence)
 (defund simplify-lambdas-one-step (term)
   (declare (xargs :guard (pseudo-termp term)))
   (let* ((term (substitute-constants-in-lambdas term))
          (term (drop-unused-lambda-bindings term))
-         ;; (term (substitute-unnecessary-lambda-vars-in-term term nil)) ; todo: put back
+         (term (substitute-unnecessary-lambda-vars-in-term2 term nil))
          (term (simplify-ors term nil)) ; could pass in bool-fix, as for a hyp
          )
     term))
