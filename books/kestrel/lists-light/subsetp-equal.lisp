@@ -13,6 +13,8 @@
 
 (local (include-book "member-equal"))
 (local (include-book "remove1-equal"))
+(local (include-book "reverse-list"))
+(local (include-book "reverse"))
 
 (in-theory (disable subsetp-equal))
 
@@ -404,3 +406,15 @@
                   (no-duplicatesp-equal x))
              (<= (len x) (len y)))
     :hints (("Goal" :by <=-of-len-and-len-when-subsetp-equal-and-no-duplicatesp-equal-forward-chaining))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm subsetp-equal-of-reverse-arg1
+  (equal (subsetp-equal (reverse x) y)
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable subsetp-equal reverse-list))))
+
+(defthm subsetp-equal-of-reverse-arg2
+  (equal (subsetp-equal x (reverse y))
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable subsetp-equal reverse-list))))

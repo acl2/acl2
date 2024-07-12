@@ -101,6 +101,12 @@
                   nil))
   :hints (("Goal" :in-theory (enable free-vars-in-term))))
 
+(defthm free-vars-in-terms-when-quote-listp
+  (implies (quote-listp terms)
+           (equal (free-vars-in-terms terms)
+                  nil))
+  :hints (("Goal" :in-theory (enable free-vars-in-terms))))
+
 (defthm free-vars-in-term-of-cons
   (equal (free-vars-in-term (cons fn args))
          (if (eq fn 'quote)

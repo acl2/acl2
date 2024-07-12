@@ -18,13 +18,14 @@
 (include-book "drop-unused-lambda-bindings")
 (include-book "no-duplicate-lambda-formals-in-termp")
 ;(include-book "make-lambda-term-simple")
-;(include-book "no-nils-in-termp")
+(include-book "no-nils-in-termp")
 (include-book "lambdas-closed-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
 (defthm subsetp-equal-of-free-vars-in-term-and-free-vars-in-terms-when-member-equal
   (implies (member-equal term terms)
@@ -153,3 +154,48 @@
                            (empty-eval-of-fncall-args-back)))))
 
 ;; todo: show it preserves logic-termp
+
+(defthm-flag-drop-unused-lambda-bindings
+  (defthm no-nils-in-termp-of-drop-unused-lambda-bindings
+    (implies (and (pseudo-termp term)
+                  (no-nils-in-termp term))
+             (no-nils-in-termp (drop-unused-lambda-bindings term)))
+    :flag drop-unused-lambda-bindings)
+  (defthm no-nils-in-termsp-of-drop-unused-lambda-bindings-lst
+    (implies (and (pseudo-term-listp terms)
+                  (no-nils-in-termsp terms))
+             (no-nils-in-termsp (drop-unused-lambda-bindings-lst terms)))
+    :flag drop-unused-lambda-bindings-lst)
+  :hints (("Goal" :in-theory (enable no-nils-in-termsp-when-symbol-listp))))
+
+(defthm-flag-drop-unused-lambda-bindings
+  (defthm lambdas-closed-in-termp-of-drop-unused-lambda-bindings
+    (implies (and (pseudo-termp term)
+                  (lambdas-closed-in-termp term)
+                  (no-duplicate-lambda-formals-in-termp term))
+             (lambdas-closed-in-termp (drop-unused-lambda-bindings term)))
+    :flag drop-unused-lambda-bindings)
+  (defthm lambdas-closed-in-termsp-of-drop-unused-lambda-bindings-lst
+    (implies (and (pseudo-term-listp terms)
+                  (lambdas-closed-in-termsp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms))
+             (lambdas-closed-in-termsp (drop-unused-lambda-bindings-lst terms)))
+    :flag drop-unused-lambda-bindings-lst)
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp-when-symbol-listp
+                                     lambdas-closed-in-termp ; todo
+                                     ))))
+
+(defthm-flag-drop-unused-lambda-bindings
+  (defthm no-duplicate-lambda-formals-in-termp-of-drop-unused-lambda-bindings
+    (implies (and (pseudo-termp term)
+                  (no-duplicate-lambda-formals-in-termp term))
+             (no-duplicate-lambda-formals-in-termp (drop-unused-lambda-bindings term)))
+    :flag drop-unused-lambda-bindings)
+  (defthm no-duplicate-lambda-formals-in-termsp-of-drop-unused-lambda-bindings-lst
+    (implies (and (pseudo-term-listp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms))
+             (no-duplicate-lambda-formals-in-termsp (drop-unused-lambda-bindings-lst terms)))
+    :flag drop-unused-lambda-bindings-lst)
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp-when-symbol-listp
+                                     no-duplicate-lambda-formals-in-termp ; todo
+                                     ))))

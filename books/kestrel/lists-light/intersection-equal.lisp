@@ -204,3 +204,15 @@
   (equal (intersection-equal x (true-list-fix y))
          (intersection-equal x y))
   :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthm intersection-equal-of-add-to-set-equal-arg1-iff
+  (iff (intersection-equal (add-to-set-equal a x) y)
+       (or (intersection-equal x y)
+           (member-equal a y)))
+  :hints (("Goal" :in-theory (enable intersection-equal member-equal add-to-set-equal))))
+
+(defthm intersection-equal-of-add-to-set-equal-arg2-iff
+  (iff (intersection-equal x (add-to-set-equal a y))
+       (or (intersection-equal x y)
+           (member-equal a x)))
+  :hints (("Goal" :in-theory (enable intersection-equal member-equal add-to-set-equal))))

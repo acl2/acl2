@@ -16,6 +16,7 @@
 (include-book "stored-rules")
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (in-theory (disable fgetprop)) ;move
 

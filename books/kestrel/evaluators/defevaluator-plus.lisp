@@ -61,6 +61,11 @@
                 (len terms))
          :hints (("Goal" :induct (len terms) :in-theory (enable append (:i len)))))
 
+       (defthm ,(add-prefix "CDR-OF-" eval-list-name)
+         (equal (cdr (,eval-list-name terms a))
+                (,eval-list-name (cdr terms) a))
+         :hints (("Goal" :induct (len terms) :in-theory (enable (:i len)))))
+
        (defthm ,(add-suffix (add-prefix "TRUE-LISTP-OF-" eval-list-name) "-TYPE")
          (true-listp (,eval-list-name terms a))
          :rule-classes :type-prescription

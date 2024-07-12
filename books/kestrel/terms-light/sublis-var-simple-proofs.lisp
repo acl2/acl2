@@ -14,6 +14,7 @@
 (include-book "make-lambda-terms-simple")
 (include-book "lambdas-closed-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
+(include-book "no-duplicate-lambda-formals-in-termp")
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -21,32 +22,16 @@
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
-(local (include-book "kestrel/lists-light/append" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/take" :dir :system))
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
-;(local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
-(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
-(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
-(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
-
-;move?
-(local
- (defthm lambdas-closed-in-termp-of-cdr-of-assoc-equal
-   (implies (lambdas-closed-in-termsp (strip-cdrs alist))
-            (lambdas-closed-in-termp (cdr (assoc-equal term alist))))
-   :hints (("Goal" :in-theory (enable assoc-equal)))))
 
 (defthm-flag-sublis-var-simple
   (defthm lambdas-closed-in-termp-of-sublis-var-simple
-    (implies (and (pseudo-termp term)
+    (implies (and ;;(pseudo-termp term)
                   (lambdas-closed-in-termp term)
                   (lambdas-closed-in-termsp (strip-cdrs alist)))
              (lambdas-closed-in-termp (sublis-var-simple alist term)))
     :flag sublis-var-simple)
   (defthm lambdas-closed-in-termp-of-sublis-var-lst-simple
-    (implies (and (pseudo-term-listp terms)
+    (implies (and ;;(pseudo-term-listp terms)
                   (lambdas-closed-in-termsp terms)
                   (lambdas-closed-in-termsp (strip-cdrs alist)))
              (lambdas-closed-in-termsp (sublis-var-simple-lst alist terms)))
@@ -107,7 +92,7 @@
                                      assoc-equal
                                      member-equal-of-strip-cars-iff))))
 
-(defthm subsetp-equal-of-free-vars-in-term-gen
+(defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-gen
   (implies (and (alistp alist)
                 (subsetp-equal (union-equal (set-difference-equal (free-vars-in-term term)
                                                                (strip-cars alist))
@@ -245,3 +230,29 @@
                            (pairlis$
                             set-difference-equal
                             empty-eval-of-fncall-args-back)))))
+
+
+;move
+(defthm no-duplicate-lambda-formals-in-termp-of-cdr-of-assoc-equal
+  (implies (no-duplicate-lambda-formals-in-termsp (strip-cdrs alist))
+           (no-duplicate-lambda-formals-in-termp (cdr (assoc-equal key alist))))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;move up
+(defthm-flag-sublis-var-simple
+  (defthm no-duplicate-lambda-formals-in-termp-of-sublis-var-simple
+    (implies (and ;;(pseudo-termp term)
+                  (no-duplicate-lambda-formals-in-termp term)
+                  (no-duplicate-lambda-formals-in-termsp (strip-cdrs alist)))
+             (no-duplicate-lambda-formals-in-termp (sublis-var-simple alist term)))
+    :flag sublis-var-simple)
+  (defthm no-duplicate-lambda-formals-in-termp-of-sublis-var-lst-simple
+    (implies (and ;;(pseudo-term-listp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms)
+                  (no-duplicate-lambda-formals-in-termsp (strip-cdrs alist)))
+             (no-duplicate-lambda-formals-in-termsp (sublis-var-simple-lst alist terms)))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable sublis-var-simple
+                              sublis-var-simple-lst
+                              no-duplicate-lambda-formals-in-termp))))
