@@ -300,12 +300,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm no-nils-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
-  (implies (and (no-nils-in-termsp actuals)
-                (equal (len formals) (len actuals)))
-           (no-nils-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
 (defthm no-nils-in-termsp-of-mv-nth-1-of-non-trivial-formals-and-args
   (implies (and (no-nils-in-termsp args)
                 (equal (len formals) (len args)))
@@ -871,16 +865,6 @@
                             CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm no-duplicate-lambda-formals-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
-  (implies (no-duplicate-lambda-formals-in-termsp actuals)
-           (no-duplicate-lambda-formals-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
-(defthm no-duplicatesp-equal-of-mv-nth-0-of-filter-formals-and-actuals
-  (implies (no-duplicatesp-equal formals)
-           (no-duplicatesp-equal (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
 
 (defthm no-duplicate-lambda-formals-in-termsp-of-map-lookup-equal
   (implies (no-duplicate-lambda-formals-in-termsp (strip-cdrs alist))

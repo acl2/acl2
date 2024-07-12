@@ -10,6 +10,11 @@
 
 (in-package "ACL2")
 
+(include-book "no-nils-in-termp") ; or make a separate proofs book
+(include-book "lambdas-closed-in-termp")
+(include-book "no-duplicate-lambda-formals-in-termp")
+(local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+
 (in-theory (disable mv-nth))
 
 ;; Returns (mv new-formals new-actuals) where the NEW-FORMALS are those members
@@ -62,3 +67,24 @@
   (equal (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))
          (intersection-equal formals formals-to-keep))
   :hints (("Goal" :in-theory (enable filter-formals-and-actuals) )))
+
+(defthm no-nils-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
+  (implies (and (no-nils-in-termsp actuals)
+                (equal (len formals) (len actuals)))
+           (no-nils-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
+
+(defthm lambdas-closed-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
+  (implies (lambdas-closed-in-termsp actuals)
+           (lambdas-closed-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
+  (implies (no-duplicate-lambda-formals-in-termsp actuals)
+           (no-duplicate-lambda-formals-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
+
+(defthm no-duplicatesp-equal-of-mv-nth-0-of-filter-formals-and-actuals
+  (implies (no-duplicatesp-equal formals)
+           (no-duplicatesp-equal (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
