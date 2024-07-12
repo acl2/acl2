@@ -31,7 +31,10 @@
 
 (local (in-theory (disable strip-cdrs
                            strip-cars
-                           symbol-alistp)))
+                           symbol-alistp
+                           intersection-equal-symmetric-iff)))
+
+(local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
 
 (defthm pseudo-termp-of-lookup-equal
   (implies (pseudo-term-listp (strip-cdrs formal-arg-alist))
@@ -159,8 +162,36 @@
                  formals-to-maybe-subst)
   :hints (("Goal" :in-theory (enable classify-formals-aux))))
 
+(defthm classify-formals-aux-correct-1
+  (subsetp-equal (set-difference-equal formals-to-maybe-subst
+                                       (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+                 (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
+
+(defthm classify-formals-aux-correct-1-alt
+  (implies (no-duplicatesp-equal formals-to-maybe-subst)
+           (subsetp-equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
+                          (set-difference-equal formals-to-maybe-subst
+                                                (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
+  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
+
+(defthm classify-formals-aux-correct-1-alt-strong
+  (implies (no-duplicatesp-equal formals-to-maybe-subst)
+           (equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
+                  (set-difference-equal formals-to-maybe-subst
+                                        (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
+  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
+
+(defthm no-duplicatesp-equal-of-mv-nth-0-of-classify-formals-aux
+  (implies (no-duplicatesp-equal formals-to-maybe-subst)
+           (no-duplicatesp-equal (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
+  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Decides which of the formals-to-maybe-subst we can actually substitute without name clashes.
+;; We have to exclude any formal whose corresponding actual mentions any of the
+;; formals-to-keep, or any of the formals so excluded, and so on.
 ;; optimize?
 ;; Returns (mv reduced-formals-to-maybe-subst extended-formals-to-keep).
 (defund classify-formals (formals-to-maybe-subst formal-arg-alist formals-to-keep)
@@ -188,26 +219,6 @@
                                     (mv-nth 1 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
   :hints (("Goal" :in-theory (e/d (classify-formals) (intersection-equal-symmetric-iff)))))
 
-(defthm classify-formals-aux-correct-1
-  (subsetp-equal (set-difference-equal formals-to-maybe-subst
-                                       (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
-                 (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
-  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
-
-(defthm classify-formals-aux-correct-1-alt
-  (implies (no-duplicatesp-equal formals-to-maybe-subst)
-           (subsetp-equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
-                          (set-difference-equal formals-to-maybe-subst
-                                                (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
-
-(defthm classify-formals-aux-correct-1-alt-strong
-  (implies (no-duplicatesp-equal formals-to-maybe-subst)
-           (equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
-                  (set-difference-equal formals-to-maybe-subst
-                                        (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
-
 ;sanity check
 ;needed?
 (thm
@@ -217,11 +228,6 @@
            (subsetp-equal formals-to-keep
                           (mv-nth 1 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
   :hints (("Goal" :in-theory (enable classify-formals))))
-
-(defthm no-duplicatesp-equal-of-mv-nth-0-of-classify-formals-aux
-  (implies (no-duplicatesp-equal formals-to-maybe-subst)
-           (no-duplicatesp-equal (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
 
 (defthm symbol-listp-of-mv-nth-0-of-classify-formals
   (implies (symbol-listp formals-to-maybe-subst)
@@ -285,9 +291,20 @@
                                   (formals-to-keep (set-difference-equal non-trivial-formals try-vars)))
            :in-theory (disable classify-formals-correct))))
 
+(defthm subsetp-equal-of-mv-nth-0-of-classify-formals
+  (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
+                 formals-to-maybe-subst)
+  :hints (("Goal" :in-theory (enable classify-formals))))
+
+(defthm subsetp-equal-of-mv-nth-0-of-classify-formals-gen
+  (implies (subsetp-equal formals-to-maybe-subst x)
+           (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
+                          x))
+  :hints (("Goal" :in-theory (enable classify-formals))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: deprecate the other one? but add back special treatment of for mv-nth
+;; todo: deprecate the other one? but add back special treatment of for mv-nth (more generally, any set of functions to avoid)
 (mutual-recursion
  (defun substitute-unnecessary-lambda-vars-in-term2 (term print)
    (declare (xargs :guard (pseudo-termp term)
@@ -354,10 +371,6 @@
 
 (make-flag substitute-unnecessary-lambda-vars-in-term2)
 
-(local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
-
-(local (in-theory (disable intersection-equal-symmetric-iff)))
-
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm pseudo-termp-of-substitute-unnecessary-lambda-vars-in-term2
     (implies (pseudo-termp term)
@@ -367,17 +380,6 @@
     (implies (pseudo-term-listp terms)
              (pseudo-term-listp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
     :flag substitute-unnecessary-lambda-vars-in-terms2))
-
-(defthm subsetp-equal-of-mv-nth-0-of-classify-formals
-  (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
-                 formals-to-maybe-subst)
-  :hints (("Goal" :in-theory (enable classify-formals))))
-
-(defthm subsetp-equal-of-mv-nth-0-of-classify-formals-gen
-  (implies (subsetp-equal formals-to-maybe-subst x)
-           (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
-                          x))
-  :hints (("Goal" :in-theory (enable classify-formals))))
 
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm no-nils-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
@@ -415,7 +417,7 @@
   :hints (("Goal" :use subsetp-equal-of-free-vars-in-term-of-substitute-unnecessary-lambda-vars-in-term2
            :in-theory (disable subsetp-equal-of-free-vars-in-term-of-substitute-unnecessary-lambda-vars-in-term2))))
 
-;; the point of this is to change the alist used for the lambda case:
+;; the point of this is to change the alist used for the lambda case (standard trick):
 (mutual-recursion
  (defun induct-substitute-unnecessary-lambda-vars-in-term2 (term print alist)
    (declare (xargs :guard (pseudo-termp term)
