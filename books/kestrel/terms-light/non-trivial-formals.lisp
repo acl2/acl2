@@ -67,3 +67,7 @@
       (len formals))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable non-trivial-formals))))
+
+(defthm subsetp-equal-of-non-trivial-formals
+  (subsetp-equal (non-trivial-formals formals args) formals)
+  :hints (("Goal" :in-theory (enable non-trivial-formals))))

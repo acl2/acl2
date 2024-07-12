@@ -381,10 +381,6 @@
            (subsetp-equal (vars-that-appear-only-once vars term) x))
   :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
 
-(defthm subsetp-equal-of-non-trivial-formals
-  (subsetp-equal (non-trivial-formals formals args) formals)
-  :hints (("Goal" :in-theory (enable non-trivial-formals))))
-
 (defthm no-duplicatesp-equal-of-vars-that-appear-only-once
   (implies (no-duplicatesp-equal vars)
            (no-duplicatesp-equal (vars-that-appear-only-once vars term)))
