@@ -365,8 +365,9 @@
     :flag substitute-unnecessary-lambda-vars-in-terms2))
 
 (defthm subsetp-equal-of-set-difference-equal-and-set-difference-equal
-  (implies (subsetp-equal z y)
-           (subsetp-equal (set-difference-equal x y) (set-difference-equal x z)))
+  (implies (and (subsetp-equal x1 x2)
+                (subsetp-equal z y))
+           (subsetp-equal (set-difference-equal x1 y) (set-difference-equal x2 z)))
   :hints (("Goal" :in-theory (enable subsetp-equal set-difference-equal))))
 
 ;move
