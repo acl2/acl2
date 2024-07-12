@@ -94,3 +94,17 @@
            (equal (remove-equal a x)
                   (true-list-fix x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(local
+ (defthm not-equal-of-remove-equal
+   (implies (< (len (remove-equal x l)) (len y))
+            (not (equal y (remove-equal x l))))))
+
+(defthm equal-of-remove-equal-same
+  (equal (equal l (remove-equal x l))
+         (and (not (member-equal x l))
+              (true-listp l)))
+  :hints (;("subgoal *1/1" :cases ((> (len l) (remove-equal (car l) (cdr l)))))
+          ("Goal" :in-theory (e/d (remove-equal member-equal)
+                                  (remove-equal-of-car-same ; todo: looped
+                                   )))))

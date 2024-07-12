@@ -197,12 +197,6 @@
 
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 
-(defthm equal-of-remove-equal-same
-  (equal (equal x (remove-equal a x))
-         (and (not (member-equal a x))
-              (true-listp x)))
-  :hints (("Goal" :in-theory (enable remove-equal member-equal))))
-
 (defthm classify-formals-aux-correct-1-alt-strong
   (implies (no-duplicatesp-equal formals-to-maybe-subst)
            (equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
