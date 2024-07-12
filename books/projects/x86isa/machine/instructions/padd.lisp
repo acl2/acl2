@@ -130,7 +130,7 @@
         (xmmi-size operand-size src1/dst-index x86))
 
        ;; The second source operand (Operand 2 in the Intel manual)
-       ;; is the XMM regisetr, or memory operand, specified in Mod and R/M.
+       ;; is the XMM register, or memory operand, specified in Mod and R/M.
        (inst-ac? t) ; Intel Manual Volume 2 Table 2-21 (Dec 2023)
        ((mv flg
             (the (unsigned-byte 128) src2)
