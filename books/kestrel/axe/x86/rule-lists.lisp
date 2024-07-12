@@ -983,6 +983,12 @@
     acl2::integerp-of-logxor
     ))
 
+;; Theses are x86-specific since they know about READ:
+(defund logops-to-bv-rules-x86 ()
+  (declare (xargs :guard t))
+  '(logtail-of-read-becomes-slice
+    logapp-of-read-becomes-bvcat))
+
 ;; Rules to introduce our BV operators (todo: move these):
 (defund bitops-to-bv-rules ()
   (declare (xargs :guard t))
@@ -992,6 +998,10 @@
     acl2::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
     acl2::part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
     acl2::part-install-width-low-becomes-bvcat-32
+    acl2::part-install-width-low-becomes-bvcat-64
+    acl2::part-install-width-low-becomes-bvcat-128
+    acl2::part-install-width-low-becomes-bvcat-256
+    acl2::part-install-width-low-becomes-bvcat-512
     acl2::rotate-right-becomes-rightrotate
     acl2::rotate-left-becomes-leftrotate))
 
@@ -1554,6 +1564,7 @@
           (separate-rules)
           (x86-type-rules)
           (logops-to-bv-rules)
+          (logops-to-bv-rules-x86)
           (acl2::bv-of-logext-rules)
           (arith-to-bv-rules)
           (bitops-to-bv-rules)
@@ -4910,3 +4921,9 @@
 (set-axe-rule-priority xw-becomes-set-rax -4)
 
 (set-axe-rule-priority !rip-becomes-set-rip -1) ; drop once this is only rule for 64-bit mode
+
+(set-axe-rule-priority acl2::part-install-width-low-becomes-bvcat-32 1)
+(set-axe-rule-priority acl2::part-install-width-low-becomes-bvcat-64 2)
+(set-axe-rule-priority acl2::part-install-width-low-becomes-bvcat-128 3)
+(set-axe-rule-priority acl2::part-install-width-low-becomes-bvcat-256 4)
+(set-axe-rule-priority acl2::part-install-width-low-becomes-bvcat-512 5) ; try last
