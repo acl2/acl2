@@ -68,10 +68,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is related to @(tsee fty::patbind-ok)
-     and similar to @(tsee patbind-tok),
-     but it is used for most of the parsing functions,
-     in many places."))
+    "This is related to @(tsee fty::patbind-ok).
+     It is used for many of the parsing functions."))
   :decls
   ((declare (xargs :guard (acl2::destructure-guard ok args acl2::forms 1))))
   :body
