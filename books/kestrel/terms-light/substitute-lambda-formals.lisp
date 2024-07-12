@@ -206,11 +206,12 @@
 
 (defthm if-helper (equal (equal (if test x y) y) (if test (equal x y) t)))
 
-(defthm lookup-equal-of-pairlis$-of-empty-eval-list
+(defthmd lookup-equal-of-pairlis$-of-empty-eval-list
   (equal (lookup-equal b (pairlis$ formals (empty-eval-list args a)))
          (empty-eval (lookup-equal b (pairlis$ formals args)) a)))
 
 (local (in-theory (disable empty-eval-of-lookup-equal-of-pairlis$)))
+(local (in-theory (enable lookup-equal-of-pairlis$-of-empty-eval-list)))
 
 (theory-invariant (incompatible (:rewrite empty-eval-of-lookup-equal-of-pairlis$)
                                 (:rewrite lookup-equal-of-pairlis$-of-empty-eval-list)))
@@ -475,8 +476,7 @@
                                       lookup-equal-of-append
                                       empty-eval-cdrs-of-pairlis$
                                       symbolp-when-member-equal-and-symbol-listp
-                                      not-member-equal-of-nil-when-no-nils-in-termsp
-                                      )
+                                      not-member-equal-of-nil-when-no-nils-in-termsp)
                                      (len
                                       alistp
                                       nthcdr-of-append-gen
@@ -516,8 +516,7 @@
                                            lookup-equal-of-append
                                            empty-eval-cdrs-of-pairlis$
                                            symbolp-when-member-equal-and-symbol-listp
-                                           not-member-equal-of-nil-when-no-nils-in-termsp
-                                           )
+                                           not-member-equal-of-nil-when-no-nils-in-termsp)
                                           (len
                                            alistp
                                            nthcdr-of-append-gen

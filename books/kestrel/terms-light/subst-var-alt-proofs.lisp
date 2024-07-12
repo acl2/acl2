@@ -599,10 +599,12 @@
          (empty-eval (cdr (assoc-equal key alist)) a))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-(defthm lookup-equal-of-empty-eval-cdrs
+(defthmd lookup-equal-of-empty-eval-cdrs
   (equal (lookup-equal key (empty-eval-cdrs alist a))
          (empty-eval (lookup-equal key alist) a))
   :hints (("Goal" :in-theory (enable lookup-equal))))
+
+(local (in-theory (enable lookup-equal-of-empty-eval-cdrs)))
 
 (defthmd empty-eval-cdrs-of-pairlis$
   (implies (equal (len keys) (len vals))
