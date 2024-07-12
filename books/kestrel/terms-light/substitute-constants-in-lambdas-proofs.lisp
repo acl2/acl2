@@ -55,6 +55,11 @@
            (no-nils-in-termsp (filter-args-for-formals formals args target-formals)))
   :hints (("Goal" :in-theory (enable filter-args-for-formals))))
 
+(defthm lambdas-closed-in-termsp-of-filter-args-for-formals
+  (implies (lambdas-closed-in-termsp args)
+           (lambdas-closed-in-termsp (filter-args-for-formals formals args target-formals)))
+  :hints (("Goal" :in-theory (enable filter-args-for-formals))))
+
 (defthm subsetp-equal-of-free-vars-in-terms-of-filter-args-for-formals
   (subsetp-equal (free-vars-in-terms (filter-args-for-formals formals args target-formals))
                  (free-vars-in-terms args))
@@ -349,3 +354,59 @@
                                    empty-eval-list-of-map-lookup-equal-of-pairlis$)))))
 
 ;; todo: prove that it preserves logic-termp
+
+(defthm lambdas-closed-in-termsp-of-mv-nth-1-of-formals-and-constant-args
+  (implies t;(no-duplicatesp-equal formals)
+           (lambdas-closed-in-termsp (mv-nth '1 (formals-and-constant-args formals args))))
+  :hints (("Goal" :in-theory (enable formals-and-constant-args))))
+
+;dup!
+(defthm lambdas-closed-in-termsp-of-map-lookup-equal
+  (implies (and ;(subsetp-equal keys (strip-cars alist))
+                (lambdas-closed-in-termsp (strip-cdrs alist)))
+           (lambdas-closed-in-termsp (map-lookup-equal keys alist)))
+  :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
+(defthm-flag-substitute-constants-in-lambdas
+  (defthm lambdas-closed-in-termp-of-substitute-constants-in-lambdas
+    (implies (and (pseudo-termp term)
+                  (no-duplicate-lambda-formals-in-termp term)
+                  (lambdas-closed-in-termp term))
+             (lambdas-closed-in-termp (substitute-constants-in-lambdas term)))
+    :flag substitute-constants-in-lambdas)
+  (defthm lambdas-closed-in-termp-of-substitute-constants-in-lambdas-lst
+    (implies (and (pseudo-term-listp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms)
+                  (lambdas-closed-in-termsp terms))
+             (lambdas-closed-in-termsp (substitute-constants-in-lambdas-lst terms)))
+    :flag substitute-constants-in-lambdas-lst)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable substitute-constants-in-lambdas
+                              substitute-constants-in-lambdas-lst
+                              ;no-duplicate-lambda-formals-in-termp ; todo
+                              lambdas-closed-in-termsp-when-symbol-listp
+                              lambdas-closed-in-termp))))
+
+;dup!
+(defthm no-duplicate-lambda-formals-in-termsp-of-map-lookup-equal
+  (implies (no-duplicate-lambda-formals-in-termsp (strip-cdrs alist))
+           (no-duplicate-lambda-formals-in-termsp (map-lookup-equal keys alist)))
+  :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
+(defthm-flag-substitute-constants-in-lambdas
+  (defthm no-duplicate-lambda-formals-in-termp-of-substitute-constants-in-lambdas
+    (implies (and (pseudo-termp term)
+                  (no-duplicate-lambda-formals-in-termp term))
+             (no-duplicate-lambda-formals-in-termp (substitute-constants-in-lambdas term)))
+    :flag substitute-constants-in-lambdas)
+  (defthm no-duplicate-lambda-formals-in-termp-of-substitute-constants-in-lambdas-lst
+    (implies (and (pseudo-term-listp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms))
+             (no-duplicate-lambda-formals-in-termsp (substitute-constants-in-lambdas-lst terms)))
+    :flag substitute-constants-in-lambdas-lst)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable substitute-constants-in-lambdas
+                              substitute-constants-in-lambdas-lst
+                              ;no-duplicate-lambda-formals-in-termp ; todo
+                              no-duplicate-lambda-formals-in-termsp-when-symbol-listp
+                              no-duplicate-lambda-formals-in-termp))))
