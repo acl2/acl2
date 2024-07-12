@@ -1,7 +1,19 @@
+; Substituting lambda vars that only appear once
+;
+; Copyright (C) 2024 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "substitute-unnecessary-lambda-vars") ;drop?
 (include-book "substitute-lambda-formals")
+(include-book "no-duplicate-lambda-formals-in-termp")
+;(include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -13,6 +25,7 @@
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
@@ -104,7 +117,6 @@
            (symbol-listp (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
   :hints (("Goal" :in-theory (enable classify-formals-aux))))
 
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (defthm subsetp-equal-of-mv-nth-0-of-classify-formals-aux
   (subsetp-equal (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
                  formals-to-maybe-subst)
@@ -355,9 +367,6 @@
     (implies (pseudo-term-listp terms)
              (pseudo-term-listp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
     :flag substitute-unnecessary-lambda-vars-in-terms2))
-
-(include-book "no-duplicate-lambda-formals-in-termp")
-;(include-book "no-nils-in-termp")
 
 (defthm subsetp-equal-of-mv-nth-0-of-classify-formals
   (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
