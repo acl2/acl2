@@ -261,13 +261,6 @@
 
 (include-book "lambdas-closed-in-termp")
 
-(defthm lambdas-closed-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
-  (implies (lambdas-closed-in-termsp actuals)
-           (lambdas-closed-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
-
-
 (defthm lambdas-closed-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)
                 (symbol-listp formals)
