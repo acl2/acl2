@@ -581,15 +581,16 @@
 
 (defund subst-formals-in-lambda-application (formals body args formals-to-subst)
   (declare (xargs :guard (and (symbol-listp formals)
-                              (no-duplicatesp-equal formals)
+                              ;(no-duplicatesp-equal formals)
                               (pseudo-termp body)
                               (pseudo-term-listp args)
                               (true-listp formals-to-subst)
                               (subsetp-equal formals-to-subst (non-trivial-formals formals args)) ; doesn't make sense to subst a trivial formal
                               ;; the args being put in for the formals-to-subst cannot mention any of the remaining non-trivial formals:
                               ;; this avoid clashes:
-                              (not (intersection-eq (free-vars-in-terms (map-lookup-equal formals-to-subst (pairlis$ formals args)))
-                                                    (set-difference-equal (non-trivial-formals formals args) formals-to-subst))))
+                              ;; (not (intersection-eq (free-vars-in-terms (map-lookup-equal formals-to-subst (pairlis$ formals args)))
+                              ;;                       (set-difference-equal (non-trivial-formals formals args) formals-to-subst)))
+                              )
                   :guard-hints (("Goal" :in-theory (enable symbolp-when-member-equal-and-symbol-listp)))))
   (b* ((alist (pairlis$ formals args))
        (args-to-subst (map-lookup-equal formals-to-subst alist)) ; optimize?  maybe get the position of the formals
@@ -669,6 +670,20 @@
            (lambdas-closed-in-termp (subst-formals-in-lambda-application formals body args formals-to-subst)))
   :hints (("Goal" :expand (lambdas-closed-in-termp body)
            :in-theory (enable subst-formals-in-lambda-application lambdas-closed-in-termp))))
+
+(defthm not-of-set-difference-equal-same
+  (not (intersection-equal x (set-difference-equal y x)))
+  :hints (("Goal" :in-theory (enable intersection-equal
+                                     set-difference-equal))))
+
+(defthm no-duplicate-lambda-formals-in-termp-of-subst-formals-in-lambda-application
+  (implies (and (pseudo-term-listp args)
+                (no-duplicate-lambda-formals-in-termp body)
+                (no-duplicate-lambda-formals-in-termsp args)
+                (no-duplicatesp-equal formals))
+           (no-duplicate-lambda-formals-in-termp (subst-formals-in-lambda-application formals body args formals-to-subst)))
+  :hints (("Goal" :expand (no-duplicate-lambda-formals-in-termp body)
+           :in-theory (enable subst-formals-in-lambda-application no-duplicate-lambda-formals-in-termp))))
 
 
 ;; (thm
