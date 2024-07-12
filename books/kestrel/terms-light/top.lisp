@@ -55,6 +55,7 @@
 (include-book "get-conjuncts")
 (include-book "get-hyps-and-conc")
 (include-book "replace-corresponding-arg")
+(include-book "substitute-lambda-formals")
 
 (include-book "sublis-var-simple")
 (include-book "sublis-var-simple-proofs")
@@ -77,6 +78,7 @@
 (include-book "simplify-ors")
 (include-book "simplify-ors-proofs")
 (include-book "substitute-unnecessary-lambda-vars")
+(include-book "substitute-unnecessary-lambda-vars2")
 (include-book "replace-term-with-term")
 
 ;; Transformations about lambdas (and their proofs):
