@@ -73,6 +73,10 @@
   (implies (not (member-equal x l))
            (not (member-equal x (remove-equal y l)))))
 
+(defthm not-member-equal-of-remove-equal-same
+  (not (member-equal x (remove-equal x l)))
+  :hints (("Goal" :in-theory (enable remove-equal))))
+
 (defthm member-equal-of-remove-equal-irrel-iff
   (implies (not (equal x y))
            (iff (member-equal x (remove-equal y l))
