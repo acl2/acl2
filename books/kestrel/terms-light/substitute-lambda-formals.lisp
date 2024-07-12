@@ -4,7 +4,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable get-args-for-formals intersection-equal set-difference-equal member-equal subsetp-equal true-listp))
+(local (in-theory (disable get-args-for-formals intersection-equal set-difference-equal member-equal subsetp-equal true-listp)))
 
 (include-book "make-lambda-application-simple")
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
