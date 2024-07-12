@@ -92,7 +92,7 @@ configured such that certain nodes are identified for certain purposes.  For
 example, the FRAIG transform can find candidate equivalence classes, but it can
 benefit from a configuration which says that only certain nodes are to be
 treated as candidate equivalences.  In a usage such as @(see
-svex-focused-equivalence-checking), these potentially equivalent nodes are
+sv::svex-focused-equivalence-checking), these potentially equivalent nodes are
 known before any transforms are done, but other transforms may need to be run
 before the fraig transform.  Therefore these candidate equivalence nodes are
 added as primary outputs (generally after the \"real\" primary outputs of the
