@@ -231,17 +231,60 @@
                          (slice (+ -1 xsize) (+ low width) x)
                          (+ width low)
                          (bvcat width val low x))))
-  :hints (("Goal" :cases ((NATP (+ (- LOW) (- WIDTH) XSIZE)))))
-)
+  :hints (("Goal" :cases ((NATP (+ (- LOW) (- WIDTH) XSIZE))))))
 
-;this guesses that X fits in 32 bits, which is common when X is (XR :RFLAGS I X86)
+;this guesses that X fits in 32 bits
 (defthm part-install-width-low-becomes-bvcat-32
-  (implies (and (unsigned-byte-p 32 x) ;e.g., the flags
+  (implies (and (unsigned-byte-p 32 x)
                 (natp low)
                 (natp width))
            (equal (bitops::part-install-width-low val x width low)
                   (bvcat (- 32 (+ width low))
-                         (slice (+ -1 32) (+ low width) x)
+                         (slice 31 (+ low width) x)
+                         (+ width low)
+                         (bvcat width val low x)))))
+
+;this guesses that X fits in 64 bits
+(defthm part-install-width-low-becomes-bvcat-64
+  (implies (and (unsigned-byte-p 64 x)
+                (natp low)
+                (natp width))
+           (equal (bitops::part-install-width-low val x width low)
+                  (bvcat (- 64 (+ width low))
+                         (slice 63 (+ low width) x)
+                         (+ width low)
+                         (bvcat width val low x)))))
+
+;this guesses that X fits in 128 bits
+(defthm part-install-width-low-becomes-bvcat-128
+  (implies (and (unsigned-byte-p 128 x)
+                (natp low)
+                (natp width))
+           (equal (bitops::part-install-width-low val x width low)
+                  (bvcat (- 128 (+ width low))
+                         (slice 127 (+ low width) x)
+                         (+ width low)
+                         (bvcat width val low x)))))
+
+;this guesses that X fits in 256 bits
+(defthm part-install-width-low-becomes-bvcat-256
+  (implies (and (unsigned-byte-p 256 x)
+                (natp low)
+                (natp width))
+           (equal (bitops::part-install-width-low val x width low)
+                  (bvcat (- 256 (+ width low))
+                         (slice 255 (+ low width) x)
+                         (+ width low)
+                         (bvcat width val low x)))))
+
+;this guesses that X fits in 512 bits
+(defthm part-install-width-low-becomes-bvcat-512
+  (implies (and (unsigned-byte-p 512 x)
+                (natp low)
+                (natp width))
+           (equal (bitops::part-install-width-low val x width low)
+                  (bvcat (- 512 (+ width low))
+                         (slice 511 (+ low width) x)
                          (+ width low)
                          (bvcat width val low x)))))
 
