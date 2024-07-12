@@ -14,6 +14,7 @@
 
 (include-book "centaur/fty/portcullis" :dir :system)
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
+(include-book "kestrel/apt/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
