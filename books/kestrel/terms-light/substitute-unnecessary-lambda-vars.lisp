@@ -88,6 +88,25 @@
            (symbol-listp (vars-that-appear-only-once vars term)))
   :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
 
+(defthm subsetp-equal-of-vars-that-appear-only-once
+  (subsetp-equal (vars-that-appear-only-once vars term) vars)
+  :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
+
+(defthm subsetp-equal-of-vars-that-appear-only-once-gen
+  (implies (subsetp-equal vars x)
+           (subsetp-equal (vars-that-appear-only-once vars term) x))
+  :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
+
+(defthm not-member-equal--of-vars-that-appear-only-once
+  (implies (not (member-equal var vars))
+           (not (member-equal var (vars-that-appear-only-once vars term))))
+  :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
+
+(defthm no-duplicatesp-equal-of-vars-that-appear-only-once
+  (implies (no-duplicatesp-equal vars)
+           (no-duplicatesp-equal (vars-that-appear-only-once vars term)))
+  :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;walk down the formals and the args in sync

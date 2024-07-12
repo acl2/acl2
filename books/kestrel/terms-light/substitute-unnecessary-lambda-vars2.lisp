@@ -35,6 +35,12 @@
                     (intersection-equal x z)))
   :hints (("Goal" :in-theory (enable union-equal intersection-equal))))
 
+(defthm subsetp-equal-of-set-difference-equal-and-set-difference-equal
+  (implies (and (subsetp-equal x1 x2)
+                (subsetp-equal z y))
+           (subsetp-equal (set-difference-equal x1 y) (set-difference-equal x2 z)))
+  :hints (("Goal" :in-theory (enable subsetp-equal set-difference-equal))))
+
 (local
   (defthm map-lookup-equal-of-reverse-list
     (equal (map-lookup-equal (reverse-list keys) alist)
@@ -364,33 +370,6 @@
              (pseudo-term-listp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
     :flag substitute-unnecessary-lambda-vars-in-terms2))
 
-(defthm subsetp-equal-of-set-difference-equal-and-set-difference-equal
-  (implies (and (subsetp-equal x1 x2)
-                (subsetp-equal z y))
-           (subsetp-equal (set-difference-equal x1 y) (set-difference-equal x2 z)))
-  :hints (("Goal" :in-theory (enable subsetp-equal set-difference-equal))))
-
-;move
-(defthm subsetp-equal-of-vars-that-appear-only-once
-  (subsetp-equal (vars-that-appear-only-once vars term) vars)
-  :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
-
-;move
-(defthm subsetp-equal-of-vars-that-appear-only-once-gen
-  (implies (subsetp-equal vars x)
-           (subsetp-equal (vars-that-appear-only-once vars term) x))
-  :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
-
-(defthm no-duplicatesp-equal-of-vars-that-appear-only-once
-  (implies (no-duplicatesp-equal vars)
-           (no-duplicatesp-equal (vars-that-appear-only-once vars term)))
-  :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
-
-(defthm no-duplicatesp-equal-of-non-trivial-formals
-  (implies (no-duplicatesp-equal formals)
-           (no-duplicatesp-equal (non-trivial-formals formals args)))
-  :hints (("Goal" :in-theory (enable non-trivial-formals))))
-
 (include-book "no-duplicate-lambda-formals-in-termp")
 ;(include-book "no-nils-in-termp")
 
@@ -405,7 +384,6 @@
                           x))
   :hints (("Goal" :in-theory (enable classify-formals))))
 
-;move
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm no-nils-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
     (implies (and (pseudo-termp term)
@@ -447,8 +425,7 @@
  (defun induct-substitute-unnecessary-lambda-vars-in-term2 (term print alist)
    (declare (xargs :guard (pseudo-termp term)
                    :measure (acl2-count term)
-                   :verify-guards nil ; done below
-                   )
+                   :verify-guards nil)
             (irrelevant alist))
    (if (or (variablep term)
            (quotep term))

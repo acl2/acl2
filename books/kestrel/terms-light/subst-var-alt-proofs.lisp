@@ -296,7 +296,9 @@
                             subst-var-alt-lst
                             all-lambdas-serialized-in-termp
                             pseudo-termp-when-symbolp)
-                           (pseudo-termp)))))
+                           (pseudo-termp
+                            no-duplicatesp-equal-of-non-trivial-formals ; why?
+                            )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
