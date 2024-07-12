@@ -12,12 +12,13 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; TODO: Add more kinds of simplifications (e.g., for vars bound to vars)
+;; TODO: Add more kinds of simplifications (e.g., subst lambda vars bound to vars, replace hard-error/cw with nil, replace eql with equal, trivial lambdas, resolve ifs)
 
 ;; See correctness proof in simplify-lambdas-proofs.lisp.
 
 (include-book "substitute-constants-in-lambdas")
 (include-book "drop-unused-lambda-bindings")
+(include-book "drop-trivial-lambdas")
 (include-book "substitute-unnecessary-lambda-vars2")
 (include-book "simplify-ors")
 
@@ -27,7 +28,9 @@
   (let* ((term (substitute-constants-in-lambdas term))
          (term (drop-unused-lambda-bindings term))
          (term (substitute-unnecessary-lambda-vars-in-term2 term nil))
+         ;; todo: this is not really about lambdas.  rename this book?
          (term (simplify-ors term nil)) ; could pass in bool-fix, as for a hyp
+         (term (drop-trivial-lambdas term))
          )
     term))
 
