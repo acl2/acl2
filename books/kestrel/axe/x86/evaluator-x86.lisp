@@ -318,9 +318,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund x86isa::!prefixes->opr-unguarded (opr x)
+  (declare (xargs :guard t))
+  (x86isa::!prefixes->opr (x86isa::8bits-fix-unguarded opr)
+                          (x86isa::prefixes-fix$inline-unguarded x)))
+
+(defthm x86isa::!prefixes->opr-unguarded-correct
+  (equal (x86isa::!prefixes->opr-unguarded opr x)
+         (x86isa::!prefixes->opr opr x))
+  :hints (("Goal" :in-theory (enable x86isa::!prefixes->opr-unguarded x86isa::!prefixes->opr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund bitops::part-select-width-low$inline-unguarded (x width low)
   (declare (xargs :guard t))
-  (loghead$inline-unguarded width (logtail-unguarded low x)))
+  (loghead$inline-unguarded width (logtail$inline-unguarded low x)))
 
 (defthm bitops::part-select-width-low$inline-unguarded-correct
   (equal (bitops::part-select-width-low$inline-unguarded x width low)
@@ -1098,6 +1110,7 @@
             (x86isa::reg-index$inline x86isa::reg-index$inline-unguarded)
             (x86isa::!prefixes->num$inline x86isa::!prefixes->num-unguarded)
             (x86isa::!prefixes->nxt$inline x86isa::!prefixes->nxt-unguarded)
+            (x86isa::!prefixes->opr$inline x86isa::!prefixes->opr-unguarded)
             (x86isa::get-one-byte-prefix-array-code x86isa::get-one-byte-prefix-array-code-unguarded)
             power-of-2p
             logmaskp
@@ -1105,6 +1118,7 @@
             bool->bit$inline
             (evenp evenp-unguarded)
             (logcount logcount-unguarded)
+            (logtail$inline logtail$inline-unguarded)
             (zip zip-unguarded)
             (ash ash-unguarded)
             (acl2::firstn acl2::firstn-unguarded)
