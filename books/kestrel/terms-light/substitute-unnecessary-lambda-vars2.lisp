@@ -12,6 +12,7 @@
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
@@ -181,21 +182,12 @@
                  (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
   :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
 
-(defthm subsetp-equal-of-remove-equal-arg2
-  (equal (subsetp-equal x (remove-equal a y))
-         (if (member-equal a x)
-             nil
-           (subsetp-equal x y)))
-  :hints (("Goal" :in-theory (enable subsetp-equal remove-equal member-equal))))
-
 (defthm classify-formals-aux-correct-1-alt
   (implies (no-duplicatesp-equal formals-to-maybe-subst)
            (subsetp-equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
                           (set-difference-equal formals-to-maybe-subst
                                                 (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
   :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
-
-(local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 
 (defthm classify-formals-aux-correct-1-alt-strong
   (implies (no-duplicatesp-equal formals-to-maybe-subst)
@@ -478,6 +470,7 @@
 
 (make-flag induct-substitute-unnecessary-lambda-vars-in-term2)
 
+;; The induct function is equal to the original function!
 (defthm-flag-induct-substitute-unnecessary-lambda-vars-in-term2
   (defthm induct-substitute-unnecessary-lambda-vars-in-term2-becomes
     (equal (induct-substitute-unnecessary-lambda-vars-in-term2 term print alist)

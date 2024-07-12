@@ -112,3 +112,10 @@
           ("Goal" :in-theory (e/d (remove-equal member-equal)
                                   (remove-equal-of-car-same ; todo: looped
                                    )))))
+
+(defthm subsetp-equal-of-remove-equal-arg2
+  (equal (subsetp-equal x (remove-equal a y))
+         (if (member-equal a x)
+             nil
+           (subsetp-equal x y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal remove-equal member-equal))))
