@@ -911,15 +911,17 @@ in two symbolic SVEX environments."
                                               (env1 svex-env-p)
                                               (env2 svex-env-p)
                                               (symbolic-params alistp)
-                                              (transforms))
-  (declare (ignorable symbolic-params transforms))
+                                              (transforms)
+                                              &key tracked-alist)
+  (declare (ignorable symbolic-params transforms tracked-alist))
   (svexlist-evals-equal x env1 env2)
   ///
 
 
   
   (fgl::def-fgl-rewrite svexlist-evals-equal-with-transforms-fgl
-    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms)
+    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms
+                                                 :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env1 (make-fast-alist (svex-env-fix env1)))
@@ -990,15 +992,17 @@ in two symbolic SVEX environments."
                 
              (fgl::fgl-simplify-ordered evals-equal transforms
                                         :tracked-obj
-                                        (list (cons :evals-equivalent-equiv-classes
-                                                    (cons hint-eval1 hint-eval2))))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons hint-eval1 hint-eval2))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)
                                    (svexlist->a4vec-correct)))))
 
   (fgl::def-fgl-rewrite svexlist-evals-equal-with-transforms-fgl-less-extreme
-    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms)
+    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms
+                                                 :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env1 (make-fast-alist (svex-env-fix env1)))
@@ -1090,8 +1094,9 @@ in two symbolic SVEX environments."
                 
              (fgl::fgl-simplify-ordered evals-equal transforms
                                         :tracked-obj
-                                        (list (cons :evals-equivalent-equiv-classes
-                                                    (cons hint-iso1 hint-iso2))))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons hint-iso1 hint-iso2))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)
@@ -1099,7 +1104,8 @@ in two symbolic SVEX environments."
   
 
   (fgl::def-fgl-rewrite svexlist-evals-equal-with-transforms-fgl-extreme
-    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms)
+    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms
+                                                 :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env1 (make-fast-alist (svex-env-fix env1)))
@@ -1192,8 +1198,9 @@ in two symbolic SVEX environments."
                 
              (fgl::fgl-simplify-ordered evals-equal transforms
                                         :tracked-obj
-                                        (list (cons :evals-equivalent-equiv-classes
-                                                    (cons hint-iso1 hint-iso2))))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons hint-iso1 hint-iso2))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)
@@ -1219,8 +1226,9 @@ in two symbolic SVEX environments."
                                                            (env1 svex-env-p)
                                                            (env2 svex-env-p)
                                                            (symbolic-params alistp)
-                                                           (transforms))
-  (declare (ignorable symbolic-params transforms))
+                                                           (transforms)
+                                                           &key tracked-alist)
+  (declare (ignorable symbolic-params transforms tracked-alist))
   (and (svexlist-evals-equal x env1 env2)
        (integer-listp (svexlist-eval x env1)))
   ///
@@ -1229,7 +1237,8 @@ in two symbolic SVEX environments."
 
 
   (fgl::def-fgl-rewrite svexlist-evals-equal-and-integerp-with-transforms-fgl
-    (equal (svexlist-evals-equal-and-integerp-with-transforms x env1 env2 symbolic-params transforms)
+    (equal (svexlist-evals-equal-and-integerp-with-transforms x env1 env2 symbolic-params transforms
+                                                              :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env1 (make-fast-alist (svex-env-fix env1)))
@@ -1321,8 +1330,9 @@ in two symbolic SVEX environments."
                 
              (fgl::fgl-simplify-ordered evals-equal-and-integerp transforms
                                         :tracked-obj
-                                        (list (cons :evals-equivalent-equiv-classes
-                                                    (cons hint-iso1 hint-iso2))))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons hint-iso1 hint-iso2))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)
@@ -1334,15 +1344,17 @@ in two symbolic SVEX environments."
 (define svexlist-eval-integer-listp-with-transforms ((x svexlist-p)
                                                       (env svex-env-p)
                                                       (symbolic-params alistp)
-                                                      (transforms))
-  (declare (ignorable symbolic-params transforms))
+                                                      (transforms)
+                                                      &key tracked-alist)
+  (declare (ignorable symbolic-params transforms tracked-alist))
   (integer-listp (svexlist-eval x env))
   ///
 
 
   
   (fgl::def-fgl-rewrite svexlist-eval-integer-listp-with-transforms-fgl
-    (equal (svexlist-eval-integer-listp-with-transforms x env symbolic-params transforms)
+    (equal (svexlist-eval-integer-listp-with-transforms x env symbolic-params transforms
+                                                        :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env (make-fast-alist (svex-env-fix env)))
@@ -1402,15 +1414,17 @@ in two symbolic SVEX environments."
                 
              (fgl::fgl-simplify-ordered evals-integer-listp transforms
                                         :tracked-obj
-                                        (list (cons :evals-equivalent-equiv-classes
-                                                    (cons hint-upper hint-lower))))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons hint-upper hint-lower))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)
                                    (svexlist->a4vec-correct)))))
 
   (fgl::def-fgl-rewrite svexlist-eval-integer-listp-with-transforms-fgl-extreme-2
-    (equal (svexlist-eval-integer-listp-with-transforms x env symbolic-params transforms)
+    (equal (svexlist-eval-integer-listp-with-transforms x env symbolic-params transforms
+                                                        :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env (make-fast-alist (svex-env-fix env)))
@@ -1474,8 +1488,9 @@ in two symbolic SVEX environments."
                 
              (fgl::fgl-simplify-ordered integer-listp transforms
                                         :tracked-obj
-                                        (list (cons :evals-equivalent-equiv-classes
-                                                    (cons upper-eval lower-eval))))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons upper-eval lower-eval))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)

@@ -58,25 +58,65 @@ affect the logical equivalence of nodes, using BDDs to compute a
 hopefully-efficient parametrization."
   :long "<p>This is intended to have a similar effect as the @(see
 observability-fix) transform, but perhaps making fraiging more efficient by
-making the substitution applied to the primary inputs simpler and more
-transparent to random simulation vectors.</p>
+making the substitution applied to the primary inputs more transparent to
+random simulation vectors. Currently it only works in the context of
+m-assumption, n-output transforms, i.e. it preserves full combinational
+equivalence for the first m outputs, then combinational equivalence under the
+assumption that the first m outputs are true for the next n outputs.</p>
 
-<p>The observability transform turns each PI involved in the assumed condition
-into a mux: if the condition is true, then the PI, else some fixed value
-that (together with the fixed values chosen by all other PIs) makes the
-condition true. This means that if the condition is usually untrue under purely
-random variable assignments, then few unique inputs will be used to actually
-simulate the AIG.  It also means that the substituted value for every variable
-involved in the condition depends on the whole condition, regardless of what
-the particular constraints on that variable are -- this makes strategies for
-FRAIGing such as level limiting and dependency limiting much less useful.</p>
+<h2>Usage</h2>
 
-<p>This transform is intended to solve that by using BDD parametrization
-instead of a simple mux. We build up a BDD representing the AND of the
-assumptions to include.  Then we map the involved AIG variables to BDD
-variables, parametrize them with to-param-space2, and then convert these
-expressions back to AIG formulas.</p>
+<p>In the context of a sequence of <see topic='@(url
+apply-m-assumption-n-output-transform)'>m-assumption-n-output</see> AIG
+transforms, this transform is invoked by including a @(see parametrize-config)
+object in the list of transforms.</p>
 
+<h2>Concept</h2>
+
+<p>Like the observability transform, this replaces the PIs involved in the
+assumed condition with new expressions.  These expressions equal the PIs
+themselves when the condition holds, and they evaluate to some values for which
+the condition does hold otherwise.  That is, if the inputs are @('ins[i]') for
+@('i=0 to n-1'), the parametrized inputs for a satisfiable condition @('C(ins)') satisfies
+@('C(Param(C,ins))') and @('C(ins) => Param(C,ins) = ins').  The
+parametrization by @('C') can be thought of as a fixing function: it maps the
+set of all input vectors into the subset that satisfy @('C'), keeping those that already
+satisfy @('C') fixed.</p>
+
+<p>So far, this holds for both the parametrize and
+observability transforms. The difference is in how inputs that do not satisfy
+@('C') are mapped to ones that do.</p>
+
+<p>The observability transform maps all inputs that don't satisfy @('C') to a
+fixed value that does satisfy it, except that inputs @('C') doesn't depend on
+keep their values.  This is simple, but has one big downside: it can make
+random simulation nearly useless, because if most input vectors do not satisfy
+@('C') and @('C') depends on most input variables, then most randomly-generated
+vectors will uselessly map to the same value of those inputs. It also means
+that the substituted value for every variable involved in the condition depends
+on the whole condition, regardless of what the particular constraints on that
+variable are -- this makes strategies for FRAIGing such as level limiting and
+dependency limiting much less useful.</p>
+
+<p>The parametrize transform uses a different scheme that can potentially
+distribute randomly-generated input vectors much more evenly over the set of
+inputs that satisfy @('C'). It works by using BDD parametrization. We fix an
+ordering of the input variables (the BDD ordering) and translate the assumption
+@('C') into a BDD. Traversing this BDD lets us generate a set of BDDs giving
+parametrized values for each of the inputs. The parametrized input vector
+resulting from a particular input vector can be found by traversing the input
+vector according to the BDD variable order. We maintain a cube of variable
+assignments starting with the empty (constant-true) cube, for which @('C &
+cube') should always be satisfiable (using the assumption that @('C') is
+satisfiable).  For each variable @('k') in the BDD order, let @('v') be the
+value of @('k') in the input vector.  We check whether @('C & cube & (k=v)') is
+still satisfiable.  If so, then we add @('k=v') to the cube; if not, we add
+@('k=~v') to the cube; either way, @('C & cube') remains satisfiable, and we
+continue on with the next variable in the order.  Once all variables have had
+assignments added to the cube, the cube then gives the parametrized assignment
+satisfying @('C'), and if the original input vector satisfied @('C'), then the
+resulting one is the same since @('C & cube & (k=v)') was satisfiable
+throughout the algorithm.</p>
 
 ")
 
@@ -966,6 +1006,23 @@ expressions back to AIG formulas.</p>
 
 
 (fty::deftagsum parametrize-output-type
+  :parents (parametrize parametrize-config)
+  :short "Indicator of how the @(see parametrize) transform should treat a range of outputs"
+  :long "<p>The possibilities are:</p>
+
+<ul>
+<li>@('(parametrize-output-type-param)'), the default, which
+indicates that the output range should be parametrized (except any part of it
+in the initial range of assumptions, which cannot be parametrized)</li>
+
+<li>@('(parametrize-output-type-ignore)'), indicating these outputs should be copied as-is without parametrization</li>
+
+<li>@('(parametrize-output-type-bdd-order)'), indicating these outputs should
+be used to compute the initial portion of the BDD variable order. This range of
+outputs is traversed in order, with any combinational inputs in the fanin cone
+of each output added to the BDD order unless it is already present.</li>
+
+</ul>"
   (:param nil) ;; default
   (:ignore nil)
   (:bdd-order nil))
@@ -974,12 +1031,23 @@ expressions back to AIG formulas.</p>
   :true-listp t)
 
 (fty::defprod parametrize-config
+  :parents (parametrize)
+  :short "Config object for the @(see parametrize) AIG transform"
+  :long "<p>Two of the fields configure BDD size limits. These limits put an
+approximate upper bound on the size of BDDs, and are maintained by checking
+after each BDD operation to see if the limit is violated. Size limit violations
+are dealt with by using an overapproximation of the assumption, which is sound
+but may not be useful.</p>"
   ((build-limit natp :rule-classes :type-prescription
                 "BDD size limit when recursively building from AIGs.")
    (conjoin-limit natp :rule-classes :type-prescription
                   "Bdd size limit when conjoining hypotheses together. Should
                    be at least as big as build-limit.")
-   (output-types parametrize-output-type-map-p))
+   (output-types parametrize-output-type-map-p
+                 "Mapping from output range names (see @(see
+aignet-output-ranges)) to @(see parametrize-output-type) objects, indicating
+that the outputs are to be treated specially.  The default output type is
+@('(parametrize-output-type-param)').))"))
   :tag :parametrize-config)
 
 

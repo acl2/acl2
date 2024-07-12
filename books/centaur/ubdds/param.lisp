@@ -1019,6 +1019,7 @@
         (t (qcons (to-param-space2 (car p) (car y))
                   (to-param-space2 (cdr p) (cdr y))))))
 
+
 ;; [Jared]: tweaking this to only memoize when car&cdr are non-nil, to slightly
 ;; reduce memo table overhead.
 
@@ -1149,3 +1150,24 @@
   )
 
 
+(defn qv-param2 (p n)
+  (declare (xargs :guard (natp n)))
+  (cond ((atom p) (qv n))
+        ((zp n)
+         (cond ((not (car p)) nil)
+               ((not (cdr p)) t)
+               (t (hons t nil))))
+        ((not (car p)) (let ((rest (qv-param2 (cdr p) (1- n))))
+                           (qcons rest rest)))
+        ((not (cdr p)) (let ((rest (qv-param2 (car p) (1- n))))
+                         (qcons rest rest)))
+        (t (qcons (qv-param2 (car p) (1- n))
+                  (qv-param2 (cdr p) (1- n))))))
+
+(memoize 'qv-param2 :condition '(and (consp p) (car p) (cdr p) (not (eql n 0))))
+
+(defthm qv-param2-is-to-param-space2
+  (equal (qv-param2 p n)
+         (to-param-space2 p (qv n)))
+  :hints(("Goal" :in-theory (enable to-param-space2
+                                    qv))))
