@@ -475,7 +475,7 @@
                   (getbit getbit-unguarded arg1 arg2) ;see getbit-unguarded-correct
                   (cons cons arg1 arg2)               ;primitive
                   (bvchop bvchop-unguarded arg1 arg2) ;see bvchop-unguarded-correct
-                  (logtail$inline logtail-unguarded arg1 arg2) ;see logtail-unguarded-correct
+                  (logtail$inline logtail$inline-unguarded arg1 arg2) ;see logtail$inline-unguarded-correct
                   (logext logext-unguarded arg1 arg2) ;see logext-unguarded-correct
                   (nth nth-unguarded arg1 arg2) ;see nth-unguarded-correct
                   (binary-* binary-*-unguarded arg1 arg2) ;see binary-*-unguarded-correct

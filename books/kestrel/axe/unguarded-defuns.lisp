@@ -324,14 +324,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund logtail-unguarded (size i)
+(defund logtail$inline-unguarded (size i)
   (declare (xargs :guard t))
-  (logtail (nfix size) (ifix i)))
+  (logtail$inline (nfix size) (ifix i)))
 
-(defthm logtail-unguarded-correct
-  (equal (logtail-unguarded size i)
-         (logtail size i))
-  :hints (("Goal" :in-theory (enable logtail-unguarded))))
+(defthm logtail$inline-unguarded-correct
+  (equal (logtail$inline-unguarded size i)
+         (logtail$inline size i))
+  :hints (("Goal" :in-theory (enable logtail$inline-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -340,7 +340,7 @@
   (let ((low (ifix low))
         (high (ifix high)))
        (bvchop-unguarded (+ 1 high (- low))
-                         (logtail-unguarded low val))))
+                         (logtail$inline-unguarded low val))))
 
 (defthm slice-unguarded-correct
   (equal (slice-unguarded high low val)
