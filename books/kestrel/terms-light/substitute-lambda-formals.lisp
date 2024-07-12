@@ -153,7 +153,7 @@
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
 
 ;get rid of one?
-(defthm mv-nth-of-filter-formals-and-actuals
+(defthm mv-nth-of-1-filter-formals-and-actuals
   (equal (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))
          (get-args-for-formals formals actuals formals-to-keep))
   :hints (("Goal" :in-theory (enable filter-formals-and-actuals
