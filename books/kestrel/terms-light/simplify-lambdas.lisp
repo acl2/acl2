@@ -12,6 +12,8 @@
 
 ;; STATUS: IN-PROGRESS
 
+;; See correctness proof in simplify-lambdas-proofs.lisp.
+
 ;; TODO: Add more kinds of simplifications
 
 (include-book "substitute-constants-in-lambdas")
