@@ -13,7 +13,6 @@
 ;; STATUS: IN-PROGRESS
 
 ;; TODO: Add more kinds of simplifications
-;; TODO: Add proofs book
 
 (include-book "substitute-constants-in-lambdas")
 (include-book "drop-unused-lambda-bindings")
@@ -34,6 +33,8 @@
            (pseudo-termp (simplify-lambdas-one-step term)))
   :hints (("Goal" :in-theory (enable simplify-lambdas-one-step))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; count ensures termination
 ;; todo: thread through a print argument
 (defund simplify-lambdas-loop (count term)
@@ -53,6 +54,8 @@
   (implies (pseudo-termp term)
            (pseudo-termp (simplify-lambdas-loop count term)))
   :hints (("Goal" :in-theory (enable simplify-lambdas-loop))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund simplify-lambdas (term print)
   (declare (xargs :guard (and (pseudo-termp term)
