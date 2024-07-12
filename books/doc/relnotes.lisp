@@ -596,6 +596,8 @@
     (xdoc::li
      "PADDB, PADDW, PADDD, PADDQ (SSE versions)")
     (xdoc::li
+     "PSUBB, PSUBW, PSUBD, PSUBQ (SSE versions)")
+    (xdoc::li
      "PSLLDQ, PSRLDQ (SSE versions)"))
 
    (xdoc::p
