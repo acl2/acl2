@@ -72,7 +72,7 @@
              (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
                             (free-vars-in-terms (strip-cdrs alist))))
     :flag free-vars-in-term)
-  (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-lst-and-free-vars-in-terms-of-strip-cdrs
+  (defthm subsetp-equal-of-free-vars-in-terms-of-sublis-var-simple-lst-and-free-vars-in-terms-of-strip-cdrs
     (implies (subsetp-equal (free-vars-in-terms terms)
                             (strip-cars alist))
              (subsetp-equal (free-vars-in-terms (sublis-var-simple-lst alist terms))
@@ -83,6 +83,41 @@
                                      free-vars-in-term
                                      free-vars-in-terms
                                      assoc-equal))))
+
+
+(defthm-flag-free-vars-in-term
+  (defthm subsetp-equal-of-free-vars-in-term
+    (implies (alistp alist)
+             (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
+                            (union-equal (set-difference-equal (free-vars-in-term term)
+                                                               (strip-cars alist))
+                                         (free-vars-in-terms (strip-cdrs alist)))))
+    :flag free-vars-in-term)
+  (defthm subsetp-equal-of-free-vars-in-terms
+    (implies (alistp alist)
+             (subsetp-equal (free-vars-in-terms (sublis-var-simple-lst alist terms))
+                            (union-equal (set-difference-equal (free-vars-in-terms terms)
+                                                               (strip-cars alist))
+                                         (free-vars-in-terms (strip-cdrs alist)))))
+    :flag free-vars-in-terms)
+  :hints (("Goal" :in-theory (enable sublis-var-simple
+                                     sublis-var-simple-lst
+                                     free-vars-in-term
+                                     free-vars-in-terms
+                                     assoc-equal
+                                     member-equal-of-strip-cars-iff))))
+
+(defthm subsetp-equal-of-free-vars-in-term-gen
+  (implies (and (alistp alist)
+                (subsetp-equal (union-equal (set-difference-equal (free-vars-in-term term)
+                                                               (strip-cars alist))
+                                            (free-vars-in-terms (strip-cdrs alist)))
+                               x))
+           (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
+                          x))
+  :hints (("Goal" :use subsetp-equal-of-free-vars-in-term
+           :in-theory (disable subsetp-equal-of-free-vars-in-term))))
+
 
 ;; Simple consequence of the above.
 (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs-gen
@@ -164,6 +199,40 @@
                     (empty-eval-list terms
                                       (pairlis$ (strip-cars alist)
                                                 (empty-eval-list (strip-cdrs alist) a)))))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :expand (PSEUDO-TERMP TERM)
+           :in-theory (e/d (sublis-var-simple
+                            sublis-var-simple-lst
+                            MEMBER-EQUAL-OF-STRIP-CARS-IFF
+                            make-lambda-terms-simple
+                            ;;make-lambda-term-simple
+                            empty-eval-of-fncall-args
+                            empty-eval-of-cdr-of-assoc-equal)
+                           (pairlis$
+                            set-difference-equal
+                            empty-eval-of-fncall-args-back)))))
+
+(defthm-flag-sublis-var-simple
+  (defthmd sublis-var-simple-correct-3
+    (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
+                  (pseudo-term-listp (strip-cdrs alist))
+                  (pseudo-termp term)
+                  ;; since defevaluator has gross behavior on nil:
+                  (not (member-equal nil (free-vars-in-term term))))
+             (equal (empty-eval (sublis-var-simple alist term) a)
+                    (empty-eval term (append (pairlis$ (strip-cars alist)
+                                                       (empty-eval-list (strip-cdrs alist) a))
+                                             a))))
+    :flag sublis-var-simple)
+  (defthmd sublis-var-simple-lst-correct-3
+    (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
+                  (pseudo-term-listp (strip-cdrs alist))
+                  (pseudo-term-listp terms)
+                  (not (member-equal nil (free-vars-in-terms terms))))
+             (equal (empty-eval-list (sublis-var-simple-lst alist terms) a)
+                    (empty-eval-list terms (append (pairlis$ (strip-cars alist)
+                                                             (empty-eval-list (strip-cdrs alist) a))
+                                                   a))))
     :flag sublis-var-simple-lst)
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
            :in-theory (e/d (sublis-var-simple

@@ -13,6 +13,7 @@
 
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 
 (in-theory (disable pairlis$))
 
@@ -81,6 +82,13 @@
   :hints (("Goal" :in-theory (enable pairlis$)
            :induct (double-cdr-induct x z)
            )))
+
+;; less aggressive
+(defthm pairlis$-of-append-and-append
+  (implies (equal (len x1) (len x2))
+           (equal (pairlis$ (append x1 y1) (append x2 y2))
+                  (append (pairlis$ x1 x2)
+                          (pairlis$ y1 y2)))))
 
 (defthm assoc-equal-of-pairlis$-iff
   (iff (assoc-equal key (pairlis$ keys vals))

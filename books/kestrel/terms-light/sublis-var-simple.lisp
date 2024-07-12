@@ -163,3 +163,10 @@
                                      sublis-var-simple-lst
                                      ;no-nils-in-termp ; todo
                                      ))))
+
+(defthm sublis-var-simple-when-not-consp
+  (implies (not (consp term))
+           (equal (sublis-var-simple alist term)
+                  (let ((res (assoc-eq term alist)))
+                    (if res (cdr res) term))))
+  :hints (("Goal" :in-theory (enable sublis-var-simple))))
