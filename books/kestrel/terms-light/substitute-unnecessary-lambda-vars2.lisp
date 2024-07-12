@@ -307,7 +307,9 @@
 ;; todo: deprecate the other one? but add back special treatment of for mv-nth (more generally, any set of functions to avoid)
 (mutual-recursion
  (defun substitute-unnecessary-lambda-vars-in-term2 (term print)
-   (declare (xargs :guard (pseudo-termp term)
+   (declare (xargs :guard (and (pseudo-termp term)
+                               ;; (no-duplicate-lambda-formals-in-termp term) ; because of the call of subst-formals-in-lambda-application
+                               )
                    :measure (acl2-count term)
                    :verify-guards nil ; done below
                    ))
@@ -356,7 +358,9 @@
 
  (defun substitute-unnecessary-lambda-vars-in-terms2 (terms print)
    (declare (xargs :measure (acl2-count terms)
-                   :guard (pseudo-term-listp terms)))
+                   :guard (and (pseudo-term-listp terms)
+                               ;; (no-duplicate-lambda-formals-in-termsp terms)
+                               )))
    (if (endp terms)
        nil
      (cons-with-hint (substitute-unnecessary-lambda-vars-in-term2 (first terms) print)
@@ -380,6 +384,8 @@
     (implies (pseudo-term-listp terms)
              (pseudo-term-listp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
     :flag substitute-unnecessary-lambda-vars-in-terms2))
+
+(verify-guards substitute-unnecessary-lambda-vars-in-term2)
 
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm no-nils-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
@@ -416,6 +422,34 @@
                           x))
   :hints (("Goal" :use subsetp-equal-of-free-vars-in-term-of-substitute-unnecessary-lambda-vars-in-term2
            :in-theory (disable subsetp-equal-of-free-vars-in-term-of-substitute-unnecessary-lambda-vars-in-term2))))
+
+(defthm-flag-substitute-unnecessary-lambda-vars-in-term2
+  (defthm lambdas-closed-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
+    (implies (and (pseudo-termp term)
+                  (lambdas-closed-in-termp term))
+             (lambdas-closed-in-termp (substitute-unnecessary-lambda-vars-in-term2 term print)))
+    :flag substitute-unnecessary-lambda-vars-in-term2)
+  (defthm lambdas-closed-in-termsp-of-substitute-unnecessary-lambda-vars-in-terms2
+    (implies (and (pseudo-term-listp terms)
+                  (lambdas-closed-in-termsp terms))
+             (lambdas-closed-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
+    :flag substitute-unnecessary-lambda-vars-in-terms2)
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termp ;todo
+                                     ))))
+
+(defthm-flag-substitute-unnecessary-lambda-vars-in-term2
+  (defthm no-duplicate-lambda-formals-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
+    (implies (and (pseudo-termp term)
+                  (no-duplicate-lambda-formals-in-termp term))
+             (no-duplicate-lambda-formals-in-termp (substitute-unnecessary-lambda-vars-in-term2 term print)))
+    :flag substitute-unnecessary-lambda-vars-in-term2)
+  (defthm no-duplicate-lambda-formals-in-termsp-of-substitute-unnecessary-lambda-vars-in-terms2
+    (implies (and (pseudo-term-listp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms))
+             (no-duplicate-lambda-formals-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
+    :flag substitute-unnecessary-lambda-vars-in-terms2)
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp ;todo
+                                     ))))
 
 ;; the point of this is to change the alist used for the lambda case (standard trick):
 (mutual-recursion
