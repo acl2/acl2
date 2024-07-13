@@ -20,6 +20,7 @@
 (include-book "sublis-var-simple")
 (include-book "non-trivial-formals")
 (include-book "trivial-formals")
+(local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/utilities/terms" :dir :system))
 (local (include-book "kestrel/utilities/symbol-term-alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
