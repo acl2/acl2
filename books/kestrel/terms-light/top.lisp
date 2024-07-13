@@ -56,6 +56,7 @@
 (include-book "get-hyps-and-conc")
 (include-book "replace-corresponding-arg")
 (include-book "substitute-lambda-formals")
+(include-book "classify-lambda-formals")
 
 (include-book "sublis-var-simple")
 (include-book "sublis-var-simple-proofs")
