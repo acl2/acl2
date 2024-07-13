@@ -10,9 +10,8 @@
 
 (in-package "ACL2")
 
-;; todo: reduce what the book exports
+;; todo: reduce what this book exports
 
-(local (include-book "substitute-lambda-formals")) ; drop
 (include-book "free-vars-in-term")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
