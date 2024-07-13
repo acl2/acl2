@@ -76,7 +76,7 @@ overall evaluations to be equivalent because of relatively simple equivalences
 near the inputs, not because of deep properties that SAT is ill-equipped to
 check.</p>
 
-<p>We do this using FGL's @(see fgl::fgl-simplify-ordered) operation.  This
+<p>We do this using FGL's @('fgl::fgl-simplify-ordered') operation.  This
 operation produces an AIG from an existing symbolic object, arranging the
 outputs of the AIG in a predictable order corresponding to the traversal order
 of the symbolic object -- e.g., car before cdr, integer bits LSB first, etc.
