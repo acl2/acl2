@@ -2255,6 +2255,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum expr/tyname
+  :short "Fixtype of expressions or type names."
+  (:expr ((unwrap expr)))
+  (:tyname ((unwrap tyname)))
+  :pred expr/tyname-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum amb?-expr/tyname
   :short "Fixtype of possibly ambiguous expressions or type names."
   :long
