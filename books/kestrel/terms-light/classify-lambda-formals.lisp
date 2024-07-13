@@ -31,7 +31,7 @@
 (local (include-book "kestrel/lists-light/list-sets" :dir :system))
 (local (include-book "kestrel/alists-light/term-alists" :dir :system))
 
-(local (in-theory (disable mv-nth)))
+(in-theory (disable mv-nth))
 
 (local (in-theory (disable strip-cdrs
                            strip-cars

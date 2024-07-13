@@ -30,8 +30,6 @@
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
-(local (in-theory (disable mv-nth)))
-
 (local (in-theory (disable strip-cdrs
                            strip-cars
                            symbol-alistp
