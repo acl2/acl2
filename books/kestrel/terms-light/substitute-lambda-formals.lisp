@@ -17,6 +17,7 @@
 (local (include-book "kestrel/lists-light/list-sets" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 (local (in-theory (enable ;true-listp-when-symbol-listp-rewrite-unlimited
                           pseudo-term-listp-when-symbol-listp)))
@@ -27,8 +28,6 @@
            (equal (len (get-args-for-formals formals args target-formals))
                   (len (intersection-equal formals target-formals))))
   :hints (("Goal" :in-theory (enable get-args-for-formals intersection-equal))))
-
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 (defthm intersection-equal-of-remove-equal-arg2-when-not-member-equal-arg1
   (implies (not (member-equal a x))
@@ -72,9 +71,6 @@
            (equal (len (get-args-for-formals formals args target-formals))
                   (len target-formals)))
   :hints (("Goal" :in-theory (enable len-of-get-args-for-formals))))
-
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
-
 
 ;; (defthm intersection-equal-of-cdr-arg2-when-not-member-equal-of-car
 ;;   (implies (and ;(no-duplicatesp-equal x)
@@ -142,16 +138,14 @@
 
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
-
-
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 
 (include-book "sublis-var-simple-proofs")
-(include-book "kestrel/alists-light/pairlis-dollar" :dir :system)
+(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
-(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)
-(include-book "kestrel/lists-light/take" :dir :system)
-(include-book "kestrel/lists-light/nthcdr" :dir :system)
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
 ;get rid of one?
 (defthm mv-nth-of-1-filter-formals-and-actuals
@@ -177,7 +171,7 @@
              (member-equal (bad-guy-for-alists-equiv-on keys a1 a2)
                            keys+))))
 
-(include-book "kestrel/lists-light/set-difference-equal" :dir :system)
+(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 
 (defthm get-args-for-formals-of-cons-arg3-when-not-member-equal
   (implies (not (member-equal f formals))
