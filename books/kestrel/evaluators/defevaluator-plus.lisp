@@ -86,6 +86,11 @@
                          (unquote-list l)))
          :hints (("Goal" :in-theory (enable quote-listp unquote-list))))
 
+       (defthm ,(add-suffix eval-list-name "-OF-KWOTE-LST")
+         (equal (,eval-list-name (kwote-lst vals) alist)
+                (true-list-fix vals))
+         :hints (("Goal" :in-theory (enable kwote-lst unquote-list))))
+
        ;; map-lookup-equal seems simpler than ,eval-list-name
        (defthm ,(add-suffix eval-list-name "-WHEN-SYMBOL-LISTP")
          (implies (and (symbol-listp vars)

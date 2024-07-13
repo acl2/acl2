@@ -341,12 +341,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;; true for any eval
-(defthm empty-eval-list-of-kwote-lst
-  (equal (empty-eval-list (kwote-lst vals) a)
-         (true-list-fix vals)))
-
 ;; The whole point of this is to recur on a different alist in the lambda case
 (mutual-recursion
  ;; Replace VAR with REPLACEMENT in TERM.
