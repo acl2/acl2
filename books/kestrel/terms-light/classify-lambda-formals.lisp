@@ -78,12 +78,6 @@
                 (subsetp-equal (free-vars-in-terms (map-lookup-equal acc alist)) y)))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
-(defthm subsetp-equal-of-free-vars-in-terms-of-reverse-alt
-  (implies (true-listp acc)
-           (iff (subsetp-equal (free-vars-in-terms (map-lookup-equal acc alist)) y)
-                (subsetp-equal (free-vars-in-terms (map-lookup-equal (reverse acc) alist)) y)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; May drop some of the formals-to-maybe-subst.

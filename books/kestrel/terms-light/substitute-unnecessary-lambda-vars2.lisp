@@ -34,7 +34,6 @@
                            strip-cars
                            symbol-alistp
                            intersection-equal-symmetric-iff
-                           subsetp-equal-of-free-vars-in-terms-of-reverse-alt ; todo: looped!
                            )))
 
 (local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
