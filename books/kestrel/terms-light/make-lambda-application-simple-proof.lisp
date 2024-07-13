@@ -1,6 +1,6 @@
 ; Proofs of properties of make-lambda-application-simple
 ;
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -30,18 +30,12 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/list-sets" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;; TODO: Clean up and harvest this file
 
 (local (in-theory (disable alistp no-duplicatesp-equal)))
-
-;move to library
-(defthmd intersection-equal-of-set-difference-equal-when-subsetp-equal
-  (implies (subsetp-equal z y)
-           (equal (intersection-equal (set-difference-equal x y) z)
-                  nil))
-  :hints (("Goal" :in-theory (enable intersection-equal set-difference-equal))))
 
 ;; todo: move, dup in letify
 (defthm subsetp-equal-of-append-of-intersection-equal-and-set-difference-equal-swapped

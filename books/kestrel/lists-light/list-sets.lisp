@@ -49,11 +49,18 @@
                                (intersection-equal y z))
          (set-difference-equal x y)))
 
+;; todo: add -arg1 to name
 (defthm intersection-equal-of-set-difference-equal-when-subsetp-equal
   (implies (subsetp-equal x z)
            (equal (intersection-equal x (set-difference-equal y z))
                   nil))
   :hints (("Goal" :in-theory (enable intersection-equal set-difference-equal subsetp-equal))))
+
+(defthmd intersection-equal-of-set-difference-equal-when-subsetp-equal-arg2
+  (implies (subsetp-equal z y)
+           (equal (intersection-equal (set-difference-equal x y) z)
+                  nil))
+  :hints (("Goal" :in-theory (enable intersection-equal set-difference-equal))))
 
 (defthm subsetp-equal-of-append-of-intersection-equal-and-set-difference-equal-swapped
   (subsetp-equal x

@@ -12,7 +12,7 @@
 
 ;; todo: reduce what the book exports
 
-(local (include-book "substitute-lambda-formals")) ; drop, for set-difference-equal-of-cons-arg2
+(local (include-book "substitute-lambda-formals")) ; drop
 (include-book "free-vars-in-term")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
@@ -24,10 +24,12 @@
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 ;(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 ;(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/list-sets" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
