@@ -29,6 +29,7 @@
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/list-sets" :dir :system))
+(local (include-book "kestrel/alists-light/term-alists" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
@@ -38,16 +39,6 @@
                            intersection-equal-symmetric-iff)))
 
 (local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
-
-(defthm pseudo-termp-of-lookup-equal
-  (implies (pseudo-term-listp (strip-cdrs formal-arg-alist))
-           (pseudo-termp (lookup-equal var formal-arg-alist)))
-  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs))))
-
-(defthm pseudo-term-listp-of-map-lookup-equal
-  (implies (pseudo-term-listp (strip-cdrs formal-arg-alist))
-           (pseudo-term-listp (map-lookup-equal vars formal-arg-alist)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal strip-cdrs))))
 
 (defthm intersection-equal-of-union-equal-arg2-iff
   (iff (intersection-equal x (union-equal y z))
