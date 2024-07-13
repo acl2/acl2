@@ -30,7 +30,7 @@
 (in-package "AIGNET")
 
 (include-book "xdoc/archive-matching-topics" :dir :system)
-(include-book "sv/portcullis" :dir :system) ;; need SV package
+(include-book "centaur/sv/portcullis" :dir :system) ;; need SV package
 (local
  (progn
    (include-book "aig-cnf")
