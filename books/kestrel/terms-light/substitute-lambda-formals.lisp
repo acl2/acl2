@@ -18,6 +18,7 @@
 (include-book "non-trivial-formals")
 (include-book "trivial-formals")
 (include-book "sublis-var-simple")
+(local (include-book "helpers"))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
@@ -345,10 +346,7 @@
                   (consp keys)))
     :hints (("Goal" :in-theory (enable bad-guy-for-alists-equiv-on member-equal)))))
 
-(defthm no-nils-in-termp-of-lookup-equal
-  (implies (no-nils-in-termsp (strip-cdrs alist))
-           (iff (no-nils-in-termp (lookup-equal key alist))
-                (member-equal key (strip-cars alist)))))
+
 
 (local (in-theory (disable assoc-equal len)))
 

@@ -25,6 +25,7 @@
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "make-lambda-terms-simple")
+(local (include-book "helpers"))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "make-lambda-application-simple-proof"))
@@ -309,14 +310,6 @@
   :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
 
      ;move
-(defthm no-nils-in-termp-of-map-lookup-equal
-  (implies (and (member-equal key (strip-cars alist))
-                (no-nils-in-termsp (strip-cdrs alist))
-                )
-           (no-nils-in-termp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
-     ;move
 (defthm no-nils-in-termsp-of-map-lookup-equal
   (implies (and (subsetp-equal keys (strip-cars alist))
                 (no-nils-in-termsp (strip-cdrs alist))
@@ -533,7 +526,7 @@
   :hints (("Goal" :use (alists-equiv-on-of-cons-arg2-fw
                         alists-equiv-on-of-cons-arg2-back))))
 
-;; Returns (mv foundp bd-guy)
+;; Returns (mv foundp bad-guy)
 
 (defun bad-guy-for-alists-equiv-on-aux (keys a1 a2)
   (if (endp keys)

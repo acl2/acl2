@@ -59,6 +59,8 @@
 (include-book "classify-lambda-formals")
 (include-book "count-vars")
 
+(include-book "helpers")
+
 (include-book "sublis-var-simple")
 (include-book "sublis-var-simple-proofs")
 (include-book "subst-var-alt")
