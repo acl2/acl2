@@ -309,14 +309,6 @@
            (no-nils-in-termsp (mv-nth 1 (non-trivial-formals-and-args formals args))))
   :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
 
-     ;move
-(defthm no-nils-in-termsp-of-map-lookup-equal
-  (implies (and (subsetp-equal keys (strip-cars alist))
-                (no-nils-in-termsp (strip-cdrs alist))
-                )
-           (no-nils-in-termsp (map-lookup-equal keys alist)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal))))
-
 (defthm-flag-subst-var-alt
   (defthm no-nils-in-termp-of-subst-var-alt
     (implies (and (symbolp var)
