@@ -1,4 +1,4 @@
-; An alternative to subst-var.
+; An alternative to subst-var that can sometimes go into lambda bodies
 ;
 ; Copyright (C) 2023-2024 Kestrel Institute
 ;
