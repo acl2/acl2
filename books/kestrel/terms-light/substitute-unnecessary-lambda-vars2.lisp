@@ -1,7 +1,19 @@
+; Substituting lambda vars that only appear once
+;
+; Copyright (C) 2024 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "substitute-unnecessary-lambda-vars") ;drop?
 (include-book "substitute-lambda-formals")
+(include-book "no-duplicate-lambda-formals-in-termp")
+;(include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -12,12 +24,17 @@
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "kestrel/lists-light/remove-equal" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
 (local (in-theory (disable strip-cdrs
                            strip-cars
-                           symbol-alistp)))
+                           symbol-alistp
+                           intersection-equal-symmetric-iff)))
+
+(local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
 
 (defthm pseudo-termp-of-lookup-equal
   (implies (pseudo-term-listp (strip-cdrs formal-arg-alist))
@@ -31,21 +48,15 @@
 
 (defthm intersection-equal-of-union-equal-arg2-iff
   (iff (intersection-equal x (union-equal y z))
-       (union-equal (intersection-equal x y)
-                    (intersection-equal x z)))
+       (or (intersection-equal x y)
+           (intersection-equal x z)))
   :hints (("Goal" :in-theory (enable union-equal intersection-equal))))
 
-;move
-(defthm subsetp-equal-of-reverse-arg1
-  (equal (subsetp-equal (reverse x) y)
-         (subsetp-equal x y))
-  :hints (("Goal" :in-theory (enable subsetp-equal reverse-list))))
-
-(defthm map-lookup-equal-of-append
-  (equal (map-lookup-equal (append keys1 keys2) alist)
-         (append (map-lookup-equal keys1 alist)
-                 (map-lookup-equal keys2 alist)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal append))))
+(defthm subsetp-equal-of-set-difference-equal-and-set-difference-equal
+  (implies (and (subsetp-equal x1 x2)
+                (subsetp-equal z y))
+           (subsetp-equal (set-difference-equal x1 y) (set-difference-equal x2 z)))
+  :hints (("Goal" :in-theory (enable subsetp-equal set-difference-equal))))
 
 (local
   (defthm map-lookup-equal-of-reverse-list
@@ -70,12 +81,6 @@
            (iff (subsetp-equal (free-vars-in-terms (map-lookup-equal acc alist)) y)
                 (subsetp-equal (free-vars-in-terms (map-lookup-equal (reverse acc) alist)) y)))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
-
-(defthm intersection-equal-of-add-to-set-equal-arg2-iff
-  (iff (intersection-equal x (add-to-set-equal a y))
-       (or (intersection-equal x y)
-           (member-equal a x)))
-  :hints (("Goal" :in-theory (enable intersection-equal member-equal add-to-set-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,7 +120,6 @@
            (symbol-listp (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
   :hints (("Goal" :in-theory (enable classify-formals-aux))))
 
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (defthm subsetp-equal-of-mv-nth-0-of-classify-formals-aux
   (subsetp-equal (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
                  formals-to-maybe-subst)
@@ -158,8 +162,36 @@
                  formals-to-maybe-subst)
   :hints (("Goal" :in-theory (enable classify-formals-aux))))
 
+(defthm classify-formals-aux-correct-1
+  (subsetp-equal (set-difference-equal formals-to-maybe-subst
+                                       (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+                 (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
+
+(defthm classify-formals-aux-correct-1-alt
+  (implies (no-duplicatesp-equal formals-to-maybe-subst)
+           (subsetp-equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
+                          (set-difference-equal formals-to-maybe-subst
+                                                (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
+  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
+
+(defthm classify-formals-aux-correct-1-alt-strong
+  (implies (no-duplicatesp-equal formals-to-maybe-subst)
+           (equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
+                  (set-difference-equal formals-to-maybe-subst
+                                        (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
+  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
+
+(defthm no-duplicatesp-equal-of-mv-nth-0-of-classify-formals-aux
+  (implies (no-duplicatesp-equal formals-to-maybe-subst)
+           (no-duplicatesp-equal (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
+  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Decides which of the formals-to-maybe-subst we can actually substitute without name clashes.
+;; We have to exclude any formal whose corresponding actual mentions any of the
+;; formals-to-keep, or any of the formals so excluded, and so on.
 ;; optimize?
 ;; Returns (mv reduced-formals-to-maybe-subst extended-formals-to-keep).
 (defund classify-formals (formals-to-maybe-subst formal-arg-alist formals-to-keep)
@@ -187,41 +219,6 @@
                                     (mv-nth 1 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
   :hints (("Goal" :in-theory (e/d (classify-formals) (intersection-equal-symmetric-iff)))))
 
-(defthm classify-formals-aux-correct-1
-  (subsetp-equal (set-difference-equal formals-to-maybe-subst
-                                       (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
-                 (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
-  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
-
-(defthm subsetp-equal-of-remove-equal-arg2
-  (equal (subsetp-equal x (remove-equal a y))
-         (if (member-equal a x)
-             nil
-           (subsetp-equal x y)))
-  :hints (("Goal" :in-theory (enable subsetp-equal remove-equal member-equal))))
-
-(defthm classify-formals-aux-correct-1-alt
-  (implies (no-duplicatesp-equal formals-to-maybe-subst)
-           (subsetp-equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
-                          (set-difference-equal formals-to-maybe-subst
-                                                (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
-
-(local (include-book "kestrel/lists-light/remove-equal" :dir :system))
-
-(defthm equal-of-remove-equal-same
-  (equal (equal x (remove-equal a x))
-         (and (not (member-equal a x))
-              (true-listp x)))
-  :hints (("Goal" :in-theory (enable remove-equal member-equal))))
-
-(defthm classify-formals-aux-correct-1-alt-strong
-  (implies (no-duplicatesp-equal formals-to-maybe-subst)
-           (equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
-                  (set-difference-equal formals-to-maybe-subst
-                                        (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
-
 ;sanity check
 ;needed?
 (thm
@@ -231,11 +228,6 @@
            (subsetp-equal formals-to-keep
                           (mv-nth 1 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
   :hints (("Goal" :in-theory (enable classify-formals))))
-
-(defthm no-duplicatesp-equal-of-mv-nth-0-of-classify-formals-aux
-  (implies (no-duplicatesp-equal formals-to-maybe-subst)
-           (no-duplicatesp-equal (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
 
 (defthm symbol-listp-of-mv-nth-0-of-classify-formals
   (implies (symbol-listp formals-to-maybe-subst)
@@ -299,12 +291,25 @@
                                   (formals-to-keep (set-difference-equal non-trivial-formals try-vars)))
            :in-theory (disable classify-formals-correct))))
 
+(defthm subsetp-equal-of-mv-nth-0-of-classify-formals
+  (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
+                 formals-to-maybe-subst)
+  :hints (("Goal" :in-theory (enable classify-formals))))
+
+(defthm subsetp-equal-of-mv-nth-0-of-classify-formals-gen
+  (implies (subsetp-equal formals-to-maybe-subst x)
+           (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
+                          x))
+  :hints (("Goal" :in-theory (enable classify-formals))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: deprecate the other one? but add back special treatment of for mv-nth
+;; todo: deprecate the other one? but add back special treatment of for mv-nth (more generally, any set of functions to avoid)
 (mutual-recursion
  (defun substitute-unnecessary-lambda-vars-in-term2 (term print)
-   (declare (xargs :guard (pseudo-termp term)
+   (declare (xargs :guard (and (pseudo-termp term)
+                               ;; (no-duplicate-lambda-formals-in-termp term) ; because of the call of subst-formals-in-lambda-application
+                               )
                    :measure (acl2-count term)
                    :verify-guards nil ; done below
                    ))
@@ -353,7 +358,9 @@
 
  (defun substitute-unnecessary-lambda-vars-in-terms2 (terms print)
    (declare (xargs :measure (acl2-count terms)
-                   :guard (pseudo-term-listp terms)))
+                   :guard (and (pseudo-term-listp terms)
+                               ;; (no-duplicate-lambda-formals-in-termsp terms)
+                               )))
    (if (endp terms)
        nil
      (cons-with-hint (substitute-unnecessary-lambda-vars-in-term2 (first terms) print)
@@ -368,10 +375,6 @@
 
 (make-flag substitute-unnecessary-lambda-vars-in-term2)
 
-(local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
-
-(local (in-theory (disable intersection-equal-symmetric-iff)))
-
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm pseudo-termp-of-substitute-unnecessary-lambda-vars-in-term2
     (implies (pseudo-termp term)
@@ -382,51 +385,8 @@
              (pseudo-term-listp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
     :flag substitute-unnecessary-lambda-vars-in-terms2))
 
-(defthm subsetp-equal-of-set-difference-equal-and-set-difference-equal
-  (implies (subsetp-equal z y)
-           (subsetp-equal (set-difference-equal x y) (set-difference-equal x z)))
-  :hints (("Goal" :in-theory (enable subsetp-equal set-difference-equal))))
+(verify-guards substitute-unnecessary-lambda-vars-in-term2)
 
-;move
-(defthm subsetp-equal-of-vars-that-appear-only-once
-  (subsetp-equal (vars-that-appear-only-once vars term) vars)
-  :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
-
-;move
-(defthm subsetp-equal-of-vars-that-appear-only-once-gen
-  (implies (subsetp-equal vars x)
-           (subsetp-equal (vars-that-appear-only-once vars term) x))
-  :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
-
-(defthm subsetp-equal-of-non-trivial-formals
-  (subsetp-equal (non-trivial-formals formals args) formals)
-  :hints (("Goal" :in-theory (enable non-trivial-formals))))
-
-(defthm no-duplicatesp-equal-of-vars-that-appear-only-once
-  (implies (no-duplicatesp-equal vars)
-           (no-duplicatesp-equal (vars-that-appear-only-once vars term)))
-  :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
-
-(defthm no-duplicatesp-equal-of-non-trivial-formals
-  (implies (no-duplicatesp-equal formals)
-           (no-duplicatesp-equal (non-trivial-formals formals args)))
-  :hints (("Goal" :in-theory (enable non-trivial-formals))))
-
-(include-book "no-duplicate-lambda-formals-in-termp")
-;(include-book "no-nils-in-termp")
-
-(defthm subsetp-equal-of-mv-nth-0-of-classify-formals
-  (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
-                 formals-to-maybe-subst)
-  :hints (("Goal" :in-theory (enable classify-formals))))
-
-(defthm subsetp-equal-of-mv-nth-0-of-classify-formals-gen
-  (implies (subsetp-equal formals-to-maybe-subst x)
-           (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
-                          x))
-  :hints (("Goal" :in-theory (enable classify-formals))))
-
-;move
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm no-nils-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
     (implies (and (pseudo-termp term)
@@ -463,13 +423,40 @@
   :hints (("Goal" :use subsetp-equal-of-free-vars-in-term-of-substitute-unnecessary-lambda-vars-in-term2
            :in-theory (disable subsetp-equal-of-free-vars-in-term-of-substitute-unnecessary-lambda-vars-in-term2))))
 
-;; the point of this is to change the alist used for the lambda case:
+(defthm-flag-substitute-unnecessary-lambda-vars-in-term2
+  (defthm lambdas-closed-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
+    (implies (and (pseudo-termp term)
+                  (lambdas-closed-in-termp term))
+             (lambdas-closed-in-termp (substitute-unnecessary-lambda-vars-in-term2 term print)))
+    :flag substitute-unnecessary-lambda-vars-in-term2)
+  (defthm lambdas-closed-in-termsp-of-substitute-unnecessary-lambda-vars-in-terms2
+    (implies (and (pseudo-term-listp terms)
+                  (lambdas-closed-in-termsp terms))
+             (lambdas-closed-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
+    :flag substitute-unnecessary-lambda-vars-in-terms2)
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termp ;todo
+                                     ))))
+
+(defthm-flag-substitute-unnecessary-lambda-vars-in-term2
+  (defthm no-duplicate-lambda-formals-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
+    (implies (and (pseudo-termp term)
+                  (no-duplicate-lambda-formals-in-termp term))
+             (no-duplicate-lambda-formals-in-termp (substitute-unnecessary-lambda-vars-in-term2 term print)))
+    :flag substitute-unnecessary-lambda-vars-in-term2)
+  (defthm no-duplicate-lambda-formals-in-termsp-of-substitute-unnecessary-lambda-vars-in-terms2
+    (implies (and (pseudo-term-listp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms))
+             (no-duplicate-lambda-formals-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
+    :flag substitute-unnecessary-lambda-vars-in-terms2)
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp ;todo
+                                     ))))
+
+;; the point of this is to change the alist used for the lambda case (standard trick):
 (mutual-recursion
  (defun induct-substitute-unnecessary-lambda-vars-in-term2 (term print alist)
    (declare (xargs :guard (pseudo-termp term)
                    :measure (acl2-count term)
-                   :verify-guards nil ; done below
-                   )
+                   :verify-guards nil)
             (irrelevant alist))
    (if (or (variablep term)
            (quotep term))
@@ -528,6 +515,7 @@
 
 (make-flag induct-substitute-unnecessary-lambda-vars-in-term2)
 
+;; The induct function is equal to the original function!
 (defthm-flag-induct-substitute-unnecessary-lambda-vars-in-term2
   (defthm induct-substitute-unnecessary-lambda-vars-in-term2-becomes
     (equal (induct-substitute-unnecessary-lambda-vars-in-term2 term print alist)

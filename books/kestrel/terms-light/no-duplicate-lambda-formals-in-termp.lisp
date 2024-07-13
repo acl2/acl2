@@ -48,7 +48,13 @@
            (no-duplicate-lambda-formals-in-termp (car terms)))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp))))
 
-(defthm no-duplicate-lambda-formals-in-termp-of-append
+(defthm no-duplicate-lambda-formals-in-termp-of-lambda-body
+  (implies (and (no-duplicate-lambda-formals-in-termp term)
+                (consp (car term)))
+           (no-duplicate-lambda-formals-in-termp (lambda-body (car term))))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-of-append
   (equal (no-duplicate-lambda-formals-in-termsp (append terms1 terms2))
          (and (no-duplicate-lambda-formals-in-termsp terms1)
               (no-duplicate-lambda-formals-in-termsp terms2)))
@@ -64,6 +70,13 @@
            (no-duplicate-lambda-formals-in-termsp terms))
   :hints (("Goal" :in-theory (enable symbol-listp
                                      no-duplicate-lambda-formals-in-termsp))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-when-quote-listp
+  (implies (quote-listp terms)
+           (no-duplicate-lambda-formals-in-termsp terms))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp
+                                     no-duplicate-lambda-formals-in-termp ; todo
+                                     ))))
 
 (defthm no-duplicate-lambda-formals-in-termsp-of-when-no-duplicate-lambda-formals-in-termp
    (implies (and (no-duplicate-lambda-formals-in-termp term)

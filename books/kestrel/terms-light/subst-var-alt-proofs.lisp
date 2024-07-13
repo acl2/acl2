@@ -45,12 +45,6 @@
 
 ;; TODO: Clean up the proofs in this file, and separate them out.
 
-(local
- (defthm lambdas-closed-in-termp-of-cdr-of-assoc-equal
-   (implies (lambdas-closed-in-termsp (strip-cdrs alist))
-            (lambdas-closed-in-termp (cdr (assoc-equal term alist))))
-   :hints (("Goal" :in-theory (enable assoc-equal)))))
-
 (defthm lambdas-closed-in-termsp-of-replace-corresponding-arg
   (implies (and (lambdas-closed-in-termsp args)
                 (lambdas-closed-in-termp new-arg))
@@ -302,15 +296,11 @@
                             subst-var-alt-lst
                             all-lambdas-serialized-in-termp
                             pseudo-termp-when-symbolp)
-                           (pseudo-termp)))))
+                           (pseudo-termp
+                            no-duplicatesp-equal-of-non-trivial-formals ; why?
+                            )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm no-nils-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
-  (implies (and (no-nils-in-termsp actuals)
-                (equal (len formals) (len actuals)))
-           (no-nils-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
 
 (defthm no-nils-in-termsp-of-mv-nth-1-of-non-trivial-formals-and-args
   (implies (and (no-nils-in-termsp args)
@@ -611,10 +601,12 @@
          (empty-eval (cdr (assoc-equal key alist)) a))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-(defthm lookup-equal-of-empty-eval-cdrs
+(defthmd lookup-equal-of-empty-eval-cdrs
   (equal (lookup-equal key (empty-eval-cdrs alist a))
          (empty-eval (lookup-equal key alist) a))
   :hints (("Goal" :in-theory (enable lookup-equal))))
+
+(local (in-theory (enable lookup-equal-of-empty-eval-cdrs)))
 
 (defthmd empty-eval-cdrs-of-pairlis$
   (implies (equal (len keys) (len vals))
@@ -877,16 +869,6 @@
                             CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm no-duplicate-lambda-formals-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
-  (implies (no-duplicate-lambda-formals-in-termsp actuals)
-           (no-duplicate-lambda-formals-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
-(defthm no-duplicatesp-equal-of-mv-nth-0-of-filter-formals-and-actuals
-  (implies (no-duplicatesp-equal formals)
-           (no-duplicatesp-equal (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
 
 (defthm no-duplicate-lambda-formals-in-termsp-of-map-lookup-equal
   (implies (no-duplicate-lambda-formals-in-termsp (strip-cdrs alist))

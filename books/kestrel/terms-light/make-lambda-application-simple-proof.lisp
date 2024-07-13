@@ -38,9 +38,8 @@
 
 ;move to library
 (defthmd intersection-equal-of-set-difference-equal-when-subsetp-equal
-  (implies (subsetp-equal vars2 formals)
-           (equal (intersection-equal (set-difference-equal vars formals)
-                                      vars2)
+  (implies (subsetp-equal z y)
+           (equal (intersection-equal (set-difference-equal x y) z)
                   nil))
   :hints (("Goal" :in-theory (enable intersection-equal set-difference-equal))))
 
@@ -261,13 +260,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "lambdas-closed-in-termp")
-
-(defthm lambdas-closed-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
-  (implies (lambdas-closed-in-termsp actuals)
-           (lambdas-closed-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
-
 
 (defthm lambdas-closed-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)

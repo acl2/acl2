@@ -90,7 +90,7 @@
     (implies (pseudo-termp term)
              (pseudo-termp (drop-unused-lambda-bindings term)))
     :flag drop-unused-lambda-bindings)
-  (defthm pseudo-termp-of-drop-unused-lambda-bindings-lst
+  (defthm pseudo-term-listp-of-drop-unused-lambda-bindings-lst
     (implies (pseudo-term-listp terms)
              (pseudo-term-listp (drop-unused-lambda-bindings-lst terms)))
     :flag drop-unused-lambda-bindings-lst)
