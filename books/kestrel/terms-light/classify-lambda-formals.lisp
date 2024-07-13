@@ -40,12 +40,6 @@
 
 (local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
 
-(defthm intersection-equal-of-union-equal-arg2-iff
-  (iff (intersection-equal x (union-equal y z))
-       (or (intersection-equal x y)
-           (intersection-equal x z)))
-  :hints (("Goal" :in-theory (enable union-equal intersection-equal))))
-
 (defthm subsetp-equal-of-set-difference-equal-and-set-difference-equal
   (implies (and (subsetp-equal x1 x2)
                 (subsetp-equal z y))
