@@ -11,11 +11,11 @@
 (in-package "ACL2")
 
 (include-book "classify-lambda-formals")
-(include-book "substitute-unnecessary-lambda-vars") ;drop?
-(include-book "substitute-lambda-formals")
+(include-book "count-vars")
+(include-book "substitute-lambda-formals") ; for subst-formals-in-lambda-application; make those names more consistent
 (include-book "no-duplicate-lambda-formals-in-termp")
 ;(include-book "no-nils-in-termp")
-(include-book "kestrel/alists-light/lookup-eq" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq-def" :dir :system)
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
