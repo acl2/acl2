@@ -703,13 +703,6 @@
              :in-theory (disable member-equal-of-bad-guy-for-alists-equiv-on-sam
                                  member-equal-of-bad-guy-for-alists-equiv-when-subsetp-equal)))))
 
-(defthm not-intersection-equal-when-not-intersection-equal-and-both-subsetp-equal
-  (implies (and (not (intersection-equal c d))
-                (subsetp-equal a c)
-                (subsetp-equal b d))
-           (not (intersection-equal a b)))
-  :hints (("Goal" :in-theory (enable intersection-equal subsetp-equal))))
-
 (local
   (defthm not-member-equal-of-bad-guy-for-alists-equiv-on-when-not-intersection-equal-alt-gen
     (implies (and (not (intersection-equal keys (set-difference-equal set diff))) ; flipped

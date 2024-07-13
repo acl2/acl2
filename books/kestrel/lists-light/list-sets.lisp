@@ -80,3 +80,10 @@
          (union-equal (set-difference-equal x z)
                       (set-difference-equal y z)))
   :hints (("Goal" :in-theory (enable set-difference-equal union-equal))))
+
+(defthm not-intersection-equal-when-not-intersection-equal-and-both-subsetp-equal
+  (implies (and (not (intersection-equal c d))
+                (subsetp-equal a c)
+                (subsetp-equal b d))
+           (not (intersection-equal a b)))
+  :hints (("Goal" :in-theory (enable intersection-equal subsetp-equal))))
