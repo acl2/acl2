@@ -409,11 +409,6 @@
 
 (local (make-flag induct-subst-var-alt))
 
-;true of any evalauator
-(defthm car-of-empty-eval-list
-  (equal (car (empty-eval-list terms a))
-         (empty-eval (car terms) a)))
-
 (defthm cdr-of-assoc-equal-of-pairlis$-of-empty-eval-list-when-member-equal-of-trivial-formals
   (implies (and (member-equal var (trivial-formals formals args))
      ;               (member-equal var formals)  ;drop?
