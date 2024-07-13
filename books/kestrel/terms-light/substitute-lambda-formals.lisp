@@ -1,16 +1,25 @@
-(in-package "ACL2")
-
-(include-book "substitute-unnecessary-lambda-vars")
+; A tool to substitute lambda formals when we can do so without causing clashes
+;
+; Copyright (C) 2024 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (disable get-args-for-formals intersection-equal set-difference-equal member-equal subsetp-equal true-listp)))
+(in-package "ACL2")
 
-(include-book "make-lambda-application-simple")
+(include-book "substitute-unnecessary-lambda-vars") ; drop, for get-args-for-formals but do we need that?
+(include-book "lambdas-closed-in-termp")
+(include-book "no-duplicate-lambda-formals-in-termp")
+(include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
+(include-book "kestrel/evaluators/empty-eval" :dir :system) ; todo: split out into a proofs book
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -18,6 +27,24 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "sublis-var-simple-proofs"))
+(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "drop-unused-lambda-bindings-proofs")) ; todo: for subsetp-equal-of-free-vars-in-terms-of-map-lookup-equal-of-pairlis$
+(local (include-book "make-lambda-application-simple-proof")) ;todo, for empty-eval-of-lookup-equal-of-pairlis$
+(local (include-book "subst-var-alt-proofs")) ; for the bad guy rule
+
+(local (in-theory (enable sublis-var-simple-correct-3)))
+
+(local (in-theory (disable get-args-for-formals intersection-equal set-difference-equal member-equal subsetp-equal true-listp)))
+
+(local (in-theory (disable lookup-equal-of-empty-eval-cdrs)))
+
+(theory-invariant (incompatible (:rewrite empty-eval-of-lookup-equal-of-pairlis$)
+                                (:rewrite lookup-equal-of-empty-eval-cdrs)))
 
 (local (in-theory (enable ;true-listp-when-symbol-listp-rewrite-unlimited
                           pseudo-term-listp-when-symbol-listp)))
@@ -120,7 +147,7 @@
                   (cons new-formals (cons body 'nil)))
             new-actuals))))
 
-(include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
+
 
 ;think about the order!
 
@@ -136,33 +163,12 @@
            (pseudo-term-listp (map-lookup-equal keys (pairlis$ formals args))))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
-(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-
-(include-book "kestrel/evaluators/empty-eval" :dir :system)
-
-(include-book "sublis-var-simple-proofs")
-(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
-(include-book "kestrel/alists-light/lookup-equal" :dir :system)
-(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
-(local (include-book "kestrel/lists-light/take" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-
-;get rid of one?
-(defthm mv-nth-of-1-filter-formals-and-actuals
-  (equal (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))
-         (get-args-for-formals formals actuals formals-to-keep))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals
-                                     get-args-for-formals))))
-
-(local (include-book "make-lambda-application-simple-proof")) ;todo
-(local (include-book "subst-var-alt-proofs")) ; for the bad guy rule
-
-(local (in-theory (enable sublis-var-simple-correct-3)))
-
-(local (in-theory (disable lookup-equal-of-empty-eval-cdrs)))
-
-(theory-invariant (incompatible (:rewrite empty-eval-of-lookup-equal-of-pairlis$)
-                                (:rewrite lookup-equal-of-empty-eval-cdrs)))
+;; ;get rid of one?
+;; (defthm mv-nth-of-1-filter-formals-and-actuals
+;;   (equal (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))
+;;          (get-args-for-formals formals actuals formals-to-keep))
+;;   :hints (("Goal" :in-theory (enable filter-formals-and-actuals
+;;                                      get-args-for-formals))))
 
 (local
   (defthm member-equal-of-bad-guy-for-alists-equiv-when-subsetp-equal
@@ -170,8 +176,6 @@
                   (consp keys))
              (member-equal (bad-guy-for-alists-equiv-on keys a1 a2)
                            keys+))))
-
-(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 
 (defthm get-args-for-formals-of-cons-arg3-when-not-member-equal
   (implies (not (member-equal f formals))
@@ -265,8 +269,6 @@
            nil))
   :hints (("Goal" :expand (pairlis$ keys vals)
            :in-theory (enable map-lookup-equal pairlis$))))
-
-;(include-book "tools/trivial-ancestors-check" :dir :system)
 
 (defthm lookup-equal-of-pairlis$-same
   (equal (lookup-equal key (pairlis$ keys keys))
@@ -956,8 +958,6 @@
                             empty-eval-list-when-symbol-listp
                             empty-eval-list-of-cons
                             )))))
-
-(local (include-book "drop-unused-lambda-bindings-proofs")) ; todo: for subsetp-equal-of-free-vars-in-terms-of-map-lookup-equal-of-pairlis$
 
 ;move!
 (defthm subsetp-equal-of-remove-duplicates-equal
