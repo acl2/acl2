@@ -66,10 +66,11 @@
                   (intersection-equal x y)))
   :hints (("Goal" :in-theory (enable intersection-equal remove-equal))))
 
-(defun cdr-remove-equal-induct (x y)
-  (if (endp x)
-      (list x y)
-    (cdr-remove-equal-induct (cdr x) (remove-equal (car x) y))))
+(local
+  (defun cdr-remove-equal-induct (x y)
+    (if (endp x)
+        (list x y)
+      (cdr-remove-equal-induct (cdr x) (remove-equal (car x) y)))))
 
 (defthm len-of-remove-equal-when-no-duplicatesp-equal
   (implies (no-duplicatesp-equal x)
@@ -363,7 +364,7 @@
 
 ;;todo: prove and use above.  also use in expand-lambdas?
 ;reorder args?
-(defun subst-formal-in-lambda-application (formals body args formal-to-subst)
+(defund subst-formal-in-lambda-application (formals body args formal-to-subst)
   (declare (xargs :guard (and (symbol-listp formals)
                               (no-duplicatesp-equal formals)
                               (pseudo-termp body)
@@ -551,7 +552,8 @@
                                            )))
           ("Goal" :do-not '(generalize eliminate-destructors)
 ;           :cases ((member-eq formal-to-subst (free-vars-in-term (lookup-equal formal-to-subst (pairlis$ formals args)))))
-           :in-theory (e/d (;make-lambda-application-simple
+           :in-theory (e/d (subst-formal-in-lambda-application
+                            ;;make-lambda-application-simple
                             make-lambda-term-simple
                             make-lambda-application-simpler
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
