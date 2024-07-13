@@ -42,8 +42,8 @@
 
 (defthm subsetp-equal-of-set-difference-equal-and-set-difference-equal
   (implies (and (subsetp-equal x1 x2)
-                (subsetp-equal z y))
-           (subsetp-equal (set-difference-equal x1 y) (set-difference-equal x2 z)))
+                (subsetp-equal y2 y1))
+           (subsetp-equal (set-difference-equal x1 y1) (set-difference-equal x2 y2)))
   :hints (("Goal" :in-theory (enable subsetp-equal set-difference-equal))))
 
 (local
