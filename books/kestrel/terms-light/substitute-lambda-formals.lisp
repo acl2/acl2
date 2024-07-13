@@ -10,11 +10,14 @@
 
 (in-package "ACL2")
 
-(include-book "substitute-unnecessary-lambda-vars") ; drop, for get-args-for-formals but do we need that?
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
+(include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
 (include-book "kestrel/evaluators/empty-eval" :dir :system) ; todo: split out into a proofs book
+(include-book "non-trivial-formals")
+(include-book "trivial-formals")
+(include-book "sublis-var-simple")
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
@@ -39,7 +42,8 @@
 
 (local (in-theory (enable sublis-var-simple-correct-3)))
 
-(local (in-theory (disable get-args-for-formals intersection-equal set-difference-equal member-equal subsetp-equal true-listp)))
+(local (in-theory (disable ;get-args-for-formals
+                           intersection-equal set-difference-equal member-equal subsetp-equal true-listp)))
 
 (local (in-theory (disable lookup-equal-of-empty-eval-cdrs)))
 
@@ -49,12 +53,12 @@
 (local (in-theory (enable ;true-listp-when-symbol-listp-rewrite-unlimited
                           pseudo-term-listp-when-symbol-listp)))
 
-(defthmd len-of-get-args-for-formals
-  (implies (and (no-duplicatesp-equal formals)
-                (no-duplicatesp-equal target-formals))
-           (equal (len (get-args-for-formals formals args target-formals))
-                  (len (intersection-equal formals target-formals))))
-  :hints (("Goal" :in-theory (enable get-args-for-formals intersection-equal))))
+;; (defthmd len-of-get-args-for-formals
+;;   (implies (and (no-duplicatesp-equal formals)
+;;                 (no-duplicatesp-equal target-formals))
+;;            (equal (len (get-args-for-formals formals args target-formals))
+;;                   (len (intersection-equal formals target-formals))))
+;;   :hints (("Goal" :in-theory (enable get-args-for-formals intersection-equal))))
 
 (defthm intersection-equal-of-remove-equal-arg2-when-not-member-equal-arg1
   (implies (not (member-equal a x))
@@ -91,13 +95,13 @@
            :induct (cdr-remove-equal-induct x y)
            :in-theory (enable subsetp-equal intersection-equal no-duplicatesp-equal))))
 
-(defthm len-of-get-args-for-formals-2
-  (implies (and (subsetp-equal target-formals formals)
-                (no-duplicatesp-equal formals)
-                (no-duplicatesp-equal target-formals))
-           (equal (len (get-args-for-formals formals args target-formals))
-                  (len target-formals)))
-  :hints (("Goal" :in-theory (enable len-of-get-args-for-formals))))
+;; (defthm len-of-get-args-for-formals-2
+;;   (implies (and (subsetp-equal target-formals formals)
+;;                 (no-duplicatesp-equal formals)
+;;                 (no-duplicatesp-equal target-formals))
+;;            (equal (len (get-args-for-formals formals args target-formals))
+;;                   (len target-formals)))
+;;   :hints (("Goal" :in-theory (enable len-of-get-args-for-formals))))
 
 ;; (defthm intersection-equal-of-cdr-arg2-when-not-member-equal-of-car
 ;;   (implies (and ;(no-duplicatesp-equal x)
@@ -177,30 +181,30 @@
              (member-equal (bad-guy-for-alists-equiv-on keys a1 a2)
                            keys+))))
 
-(defthm get-args-for-formals-of-cons-arg3-when-not-member-equal
-  (implies (not (member-equal f formals))
-           (equal (get-args-for-formals formals args (cons f target-formals))
-                  (get-args-for-formals formals args target-formals)))
-  :hints (("Goal" :in-theory (enable get-args-for-formals))))
+;; (defthm get-args-for-formals-of-cons-arg3-when-not-member-equal
+;;   (implies (not (member-equal f formals))
+;;            (equal (get-args-for-formals formals args (cons f target-formals))
+;;                   (get-args-for-formals formals args target-formals)))
+;;   :hints (("Goal" :in-theory (enable get-args-for-formals))))
 
-(defthm lookup-equal-helper
-  (implies (and (not (member-equal bg formals-to-subst))
-                (no-duplicatesp-equal formals))
-           (equal (lookup-equal
-                    bg
-                    (pairlis$
-                      (set-difference-equal formals formals-to-subst)
-                      (empty-eval-list
-                        (get-args-for-formals formals args
-                                              (set-difference-equal formals formals-to-subst))
-                        a)))
-                  (lookup-equal bg (pairlis$ formals (empty-eval-list args a)))))
-  :hints (("Goal" :in-theory (e/d (pairlis$
-                                   empty-eval-cdrs-of-pairlis$
-                                   get-args-for-formals
-                                   set-difference-equal
-                                   no-duplicatesp-equal)
-                                  (pairlis$-of-empty-eval-list)))))
+;; (defthm lookup-equal-helper
+;;   (implies (and (not (member-equal bg formals-to-subst))
+;;                 (no-duplicatesp-equal formals))
+;;            (equal (lookup-equal
+;;                     bg
+;;                     (pairlis$
+;;                       (set-difference-equal formals formals-to-subst)
+;;                       (empty-eval-list
+;;                         (get-args-for-formals formals args
+;;                                               (set-difference-equal formals formals-to-subst))
+;;                         a)))
+;;                   (lookup-equal bg (pairlis$ formals (empty-eval-list args a)))))
+;;   :hints (("Goal" :in-theory (e/d (pairlis$
+;;                                    empty-eval-cdrs-of-pairlis$
+;;                                    get-args-for-formals
+;;                                    set-difference-equal
+;;                                    no-duplicatesp-equal)
+;;                                   (pairlis$-of-empty-eval-list)))))
 
 
 (defthm if-helper (equal (equal (if test x y) y) (if test (equal x y) t)))
@@ -215,32 +219,32 @@
 (theory-invariant (incompatible (:rewrite empty-eval-of-lookup-equal-of-pairlis$)
                                 (:rewrite lookup-equal-of-pairlis$-of-empty-eval-list)))
 
-(defthm get-args-for-formals-of-true-list-fix-arg3
-  (equal (get-args-for-formals formals args (true-list-fix f))
-         (get-args-for-formals formals args f))
-  :hints (("Goal" :in-theory (enable get-args-for-formals))))
+;; (defthm get-args-for-formals-of-true-list-fix-arg3
+;;   (equal (get-args-for-formals formals args (true-list-fix f))
+;;          (get-args-for-formals formals args f))
+;;   :hints (("Goal" :in-theory (enable get-args-for-formals))))
 
-(defthm get-args-for-formals-same
-  (implies (and (subsetp-equal formals formals2)
-                (equal (len formals) (len args)))
-           (equal (get-args-for-formals formals args formals2)
-                  (true-list-fix args)))
-  :hints (("Goal" :in-theory (enable get-args-for-formals))))
+;; (defthm get-args-for-formals-same
+;;   (implies (and (subsetp-equal formals formals2)
+;;                 (equal (len formals) (len args)))
+;;            (equal (get-args-for-formals formals args formals2)
+;;                   (true-list-fix args)))
+;;   :hints (("Goal" :in-theory (enable get-args-for-formals))))
 
-(defthm lookup-equal-helper2
-  (implies (and (not (member-equal b formals-to-subst))
-                ;(subsetp-equal formals-to-subst formals)
-                (equal (len formals) (len args))
-                (no-duplicatesp-equal formals)
-                )
-           (equal (lookup-equal b (pairlis$ (set-difference-equal formals formals-to-subst)
-                                            (get-args-for-formals formals args (set-difference-equal formals formals-to-subst))))
-                  (lookup-equal b (pairlis$ formals args))))
-  :hints (("Goal"  ;:induct (cdr-remove-equal-induct formals-to-subst formals)
-           :do-not '(generalize eliminate-destructors)
-           :expand (set-difference-equal formals formals-to-subst)
-           :in-theory (enable get-args-for-formals set-difference-equal pairlis$ subsetp-equal member-equal
-                              no-duplicatesp-equal))))
+;; (defthm lookup-equal-helper2
+;;   (implies (and (not (member-equal b formals-to-subst))
+;;                 ;(subsetp-equal formals-to-subst formals)
+;;                 (equal (len formals) (len args))
+;;                 (no-duplicatesp-equal formals)
+;;                 )
+;;            (equal (lookup-equal b (pairlis$ (set-difference-equal formals formals-to-subst)
+;;                                             (get-args-for-formals formals args (set-difference-equal formals formals-to-subst))))
+;;                   (lookup-equal b (pairlis$ formals args))))
+;;   :hints (("Goal"  ;:induct (cdr-remove-equal-induct formals-to-subst formals)
+;;            :do-not '(generalize eliminate-destructors)
+;;            :expand (set-difference-equal formals formals-to-subst)
+;;            :in-theory (enable get-args-for-formals set-difference-equal pairlis$ subsetp-equal member-equal
+;;                               no-duplicatesp-equal))))
 
 ;; (defun inductf (x y z)
 ;;   (if (endp x)
