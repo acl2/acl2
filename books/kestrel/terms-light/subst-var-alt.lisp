@@ -58,9 +58,10 @@
                          (not (mbt (equal (len formals) (len args)))) ; for termination
                          )
                      ;; Possible clash, so be conservative: just wrap a binding of var around the term:
-                     ;; TODO: Do we every want to avoid making this lambda?
+                     ;; TODO: Do we ever want to avoid making this lambda?
                      (make-lambda-application-simple (list var) (list replacement) term)
                    ;; No clash, so we can move into the body:
+                   ;; todo: just remove the formal and arg for x and call something simpler here?
                    (make-lambda-application-simple non-trivial-formals
                                                    ;; Fixup all the non-trivial args (trivial args other than var are not affected by the replacement of var)
                                                    (subst-var-alt-lst var replacement non-trivial-args)
