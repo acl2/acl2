@@ -285,6 +285,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-expr/tyname
+  :short "An irrelevant expression or type name."
+  :type expr/tyname-p
+  :body (expr/tyname-expr (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-amb?-expr/tyname
   :short "An irrelevant possibly ambiguous expression or type name."
   :type amb?-expr/tyname-p
