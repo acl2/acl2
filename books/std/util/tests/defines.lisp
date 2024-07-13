@@ -28,6 +28,7 @@
 ;
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
+; Contributing author: Grant Jurgensen <grant@kestrel.edu>
 
 (in-package "STD")
 (include-book "../defines")
@@ -217,6 +218,53 @@
       (append (my-flatten-term2 (car x))
               (my-flatten-term2-list (cdr x))))))
 
+(defines count-vars
+  (define count-vars ((term pseudo-termp) (i natp))
+    :returns (count natp :hyp (natp i))
+    (cond ((acl2::variablep term)
+           (+ 1 i))
+          ((acl2::fquotep term)
+           i)
+          ((acl2::flambda-applicationp term)
+           (count-vars (acl2::lambda-body (acl2::ffn-symb term))
+                       (count-vars-list (acl2::fargs term) i)))
+          (t
+            (count-vars-list (acl2::fargs term) i))))
+
+  (define count-vars-list ((terms pseudo-term-listp) (i natp))
+    :returns (count natp :hyp (natp i))
+    (if (endp terms)
+        i
+      (count-vars (first terms)
+                  (count-vars-list (rest terms) i))))
+  :verify-guards :after-returns)
+
+(defines count-vars2
+  :returns-no-induct t
+  (define count-vars2 ((term pseudo-termp) (i natp))
+    :returns
+    (count natp :hyp (natp i)
+           :hints (("Goal" :expand (count-vars2 term i))))
+    (cond ((acl2::variablep term)
+           (+ 1 i))
+          ((acl2::fquotep term)
+           i)
+          ((acl2::flambda-applicationp term)
+           (nfix (count-vars2 (acl2::lambda-body (acl2::ffn-symb term))
+                              (count-vars-list2 (acl2::fargs term) i))))
+          (t
+            (nfix (count-vars-list2 (acl2::fargs term) i)))))
+
+  (define count-vars-list2 ((terms pseudo-term-listp) (i natp))
+    :returns (count natp :hyp (natp i))
+    (if (endp terms)
+        i
+      (nfix (count-vars2 (first terms)
+                         (count-vars-list2 (rest terms) i)))))
+  :verify-guards :after-returns
+  ;; Prevent guard proof from succeeding without returns theorem
+  :guard-hints (("Goal" :in-theory (disable acl2::natp-compound-recognizer))))
+
 
 (defines doc-test
   :short "Test of local stuff."
@@ -261,6 +309,70 @@
         (or (not (str::substrp "LOCAL2" long))
             (er hard? 'doc-test "Accidentally have local2")))))
 
+
+(defines doc-test-after-returns
+  :short "Testing that :after-returns does not interfere with doc."
+  (define doc-test-after-returns ((term pseudo-termp) (i natp))
+    :returns (count natp :hyp (natp i))
+    (cond ((acl2::variablep term)
+           (+ 1 i))
+          ((acl2::fquotep term)
+           i)
+          ((acl2::flambda-applicationp term)
+           (doc-test-after-returns (acl2::lambda-body (acl2::ffn-symb term))
+                                   (doc-test-after-returns-list (acl2::fargs term) i)))
+          (t
+            (doc-test-after-returns-list (acl2::fargs term) i)))
+    ///
+    (defthm acl2-numberp-of-doc-test-after-returns
+      (implies (natp i)
+               (acl2-numberp (doc-test-after-returns term i)))))
+
+  (define doc-test-after-returns-list ((terms pseudo-term-listp) (i natp))
+    :returns (count natp :hyp (natp i))
+    (if (endp terms)
+        i
+      (doc-test-after-returns (first terms)
+                              (doc-test-after-returns-list (rest terms) i)))
+    ///
+    (defthm acl2-numberp-of-doc-test-after-returns-list
+      (implies (natp i)
+               (acl2-numberp (doc-test-after-returns-list terms i)))))
+  :verify-guards :after-returns)
+
+(defines doc-test-after-returns2
+  :short "Testing that :after-returns does not interfere with doc when combined
+  with :returns-no-induct t."
+  :returns-no-induct t
+  (define doc-test-after-returns2 ((term pseudo-termp) (i natp))
+    :returns
+    (count natp :hyp (natp i)
+           :hints (("Goal" :expand (doc-test-after-returns2 term i))))
+    (cond ((acl2::variablep term)
+           (+ 1 i))
+          ((acl2::fquotep term)
+           i)
+          ((acl2::flambda-applicationp term)
+           (nfix (doc-test-after-returns2 (acl2::lambda-body (acl2::ffn-symb term))
+                                          (doc-test-after-returns-list2 (acl2::fargs term) i))))
+          (t
+            (nfix (doc-test-after-returns-list2 (acl2::fargs term) i))))
+    ///
+    (defthm acl2-numberp-of-doc-test-after-returns2
+      (implies (natp i)
+               (acl2-numberp (doc-test-after-returns2 term i)))))
+
+  (define doc-test-after-returns-list2 ((terms pseudo-term-listp) (i natp))
+    :returns (count natp :hyp (natp i))
+    (if (endp terms)
+        i
+      (nfix (doc-test-after-returns2 (first terms)
+                                     (doc-test-after-returns-list2 (rest terms) i))))
+    ///
+    (defthm acl2-numberp-of-doc-test-after-returns-list2
+      (implies (natp i)
+               (acl2-numberp (doc-test-after-returns-list2 terms i)))))
+  :verify-guards :after-returns)
 
 
 ;; BOZO this isn't really working yet
