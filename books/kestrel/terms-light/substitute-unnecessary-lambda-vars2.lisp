@@ -87,7 +87,7 @@
 ;; May drop some of the formals-to-maybe-subst.
 ;; whose actuals mention any of the formals-to-keep.
 ;; Returns (mv formals-to-maybe-subst formals-to-keep).
-(defund classify-formals-aux (formals-to-maybe-subst formal-arg-alist formals-to-keep)
+(defund classify-lambda-formals-aux (formals-to-maybe-subst formal-arg-alist formals-to-keep)
   (declare (xargs :guard (and (symbol-listp formals-to-maybe-subst)
                               (symbol-alistp formal-arg-alist)
                               (pseudo-term-listp (strip-cdrs formal-arg-alist))
@@ -103,29 +103,29 @@
           ;; We cannot substitute for this formal, because its arg mentions bad vars.
           ;; todo: optimise by adding it to the formals-to-keep now?
           (mv-let (x y)
-            (classify-formals-aux (rest formals-to-maybe-subst) formal-arg-alist formals-to-keep)
+            (classify-lambda-formals-aux (rest formals-to-maybe-subst) formal-arg-alist formals-to-keep)
             (mv x (cons formal y)))
         ;; No problem currently with this formal:
           (mv-let (x y)
-            (classify-formals-aux (rest formals-to-maybe-subst) formal-arg-alist formals-to-keep)
+            (classify-lambda-formals-aux (rest formals-to-maybe-subst) formal-arg-alist formals-to-keep)
             (mv (cons formal x) y))))))
 
-(defthm symbol-listp-of-mv-nth-0-of-classify-formals-aux
+(defthm symbol-listp-of-mv-nth-0-of-classify-lambda-formals-aux
   (implies (symbol-listp formals-to-maybe-subst)
-           (symbol-listp (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+           (symbol-listp (mv-nth 0 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux))))
 
-(defthm symbol-listp-of-mv-nth-1-of-classify-formals-aux
+(defthm symbol-listp-of-mv-nth-1-of-classify-lambda-formals-aux
   (implies (symbol-listp formals-to-maybe-subst)
-           (symbol-listp (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+           (symbol-listp (mv-nth 1 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux))))
 
-(defthm subsetp-equal-of-mv-nth-0-of-classify-formals-aux
-  (subsetp-equal (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
+(defthm subsetp-equal-of-mv-nth-0-of-classify-lambda-formals-aux
+  (subsetp-equal (mv-nth 0 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
                  formals-to-maybe-subst)
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux))))
 
-(defthm classify-formals-aux-correct
+(defthm classify-lambda-formals-aux-correct
   (implies (and (symbol-listp formals-to-maybe-subst)
                 (symbol-alistp formal-arg-alist)
                 (pseudo-term-listp (strip-cdrs formal-arg-alist))
@@ -133,59 +133,59 @@
                 (subsetp-equal formals-to-maybe-subst (strip-cars formal-arg-alist))
                 (subsetp-equal formals-to-keep (strip-cars formal-arg-alist))
                 )
-           (not (intersection-equal (free-vars-in-terms (map-lookup-equal (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)) formal-arg-alist))
+           (not (intersection-equal (free-vars-in-terms (map-lookup-equal (mv-nth 0 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)) formal-arg-alist))
                                     formals-to-keep)))
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux))))
 
-(defthm len-of-mv-nth-0-of-classify-formals-aux-linear
-  (<= (len (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+(defthm len-of-mv-nth-0-of-classify-lambda-formals-aux-linear
+  (<= (len (mv-nth 0 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
       (len formals-to-maybe-subst))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux))))
 
-(defthm classify-formals-aux-stopping
-  (iff (equal (len (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+(defthm classify-lambda-formals-aux-stopping
+  (iff (equal (len (mv-nth 0 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
               (len formals-to-maybe-subst))
        (not (intersection-eq (free-vars-in-terms (map-lookup-equal formals-to-maybe-subst formal-arg-alist))
                              formals-to-keep)))
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux))))
 
-(defthm classify-formals-aux-stopping-2
-  (iff (< (len (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+(defthm classify-lambda-formals-aux-stopping-2
+  (iff (< (len (mv-nth 0 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
           (len formals-to-maybe-subst))
        (intersection-eq (free-vars-in-terms (map-lookup-equal formals-to-maybe-subst formal-arg-alist))
                         formals-to-keep))
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux))))
 
-(defthm subsetp-equal-of-mv-nth-1-of-classify-formals-aux
-  (subsetp-equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
+(defthm subsetp-equal-of-mv-nth-1-of-classify-lambda-formals-aux
+  (subsetp-equal (mv-nth 1 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
                  formals-to-maybe-subst)
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux))))
 
-(defthm classify-formals-aux-correct-1
+(defthm classify-lambda-formals-aux-correct-1
   (subsetp-equal (set-difference-equal formals-to-maybe-subst
-                                       (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
-                 (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
-  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
+                                       (mv-nth 0 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+                 (mv-nth 1 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux set-difference-equal))))
 
-(defthm classify-formals-aux-correct-1-alt
+(defthm classify-lambda-formals-aux-correct-1-alt
   (implies (no-duplicatesp-equal formals-to-maybe-subst)
-           (subsetp-equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
+           (subsetp-equal (mv-nth 1 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
                           (set-difference-equal formals-to-maybe-subst
-                                                (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
+                                                (mv-nth 0 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux set-difference-equal))))
 
-(defthm classify-formals-aux-correct-1-alt-strong
+(defthm classify-lambda-formals-aux-correct-1-alt-strong
   (implies (no-duplicatesp-equal formals-to-maybe-subst)
-           (equal (mv-nth 1 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
+           (equal (mv-nth 1 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))
                   (set-difference-equal formals-to-maybe-subst
-                                        (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux set-difference-equal))))
+                                        (mv-nth 0 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux set-difference-equal))))
 
-(defthm no-duplicatesp-equal-of-mv-nth-0-of-classify-formals-aux
+(defthm no-duplicatesp-equal-of-mv-nth-0-of-classify-lambda-formals-aux
   (implies (no-duplicatesp-equal formals-to-maybe-subst)
-           (no-duplicatesp-equal (mv-nth 0 (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
-  :hints (("Goal" :in-theory (enable classify-formals-aux))))
+           (no-duplicatesp-equal (mv-nth 0 (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals-aux))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,7 +194,7 @@
 ;; formals-to-keep, or any of the formals so excluded, and so on.
 ;; optimize?
 ;; Returns (mv reduced-formals-to-maybe-subst extended-formals-to-keep).
-(defund classify-formals (formals-to-maybe-subst formal-arg-alist formals-to-keep)
+(defund classify-lambda-formals (formals-to-maybe-subst formal-arg-alist formals-to-keep)
   (declare (xargs :guard (and (symbol-listp formals-to-maybe-subst)
                               (symbol-alistp formal-arg-alist)
                               (pseudo-term-listp (strip-cdrs formal-arg-alist))
@@ -203,21 +203,21 @@
                               (subsetp-equal formals-to-keep (strip-cars formal-arg-alist)))
                   :measure (len formals-to-maybe-subst)))
   (mv-let (new-formals-to-maybe-subst extra-formals-to-keep)
-    (classify-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)
+    (classify-lambda-formals-aux formals-to-maybe-subst formal-arg-alist formals-to-keep)
     (if (>= (len new-formals-to-maybe-subst) (len formals-to-maybe-subst)) ; can't actually be greater
         (mv formals-to-maybe-subst formals-to-keep) ; done!
-      (classify-formals new-formals-to-maybe-subst formal-arg-alist (append extra-formals-to-keep formals-to-keep)))))
+      (classify-lambda-formals new-formals-to-maybe-subst formal-arg-alist (append extra-formals-to-keep formals-to-keep)))))
 
-(defthm classify-formals-correct
+(defthm classify-lambda-formals-correct
   (implies (and (symbol-listp formals-to-maybe-subst)
                 (symbol-alistp formal-arg-alist)
                 (pseudo-term-listp (strip-cdrs formal-arg-alist))
                 (symbol-listp formals-to-keep)
                 (subsetp-equal formals-to-maybe-subst (strip-cars formal-arg-alist))
                 (subsetp-equal formals-to-keep (strip-cars formal-arg-alist)))
-           (not (intersection-equal (free-vars-in-terms (map-lookup-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)) formal-arg-alist))
-                                    (mv-nth 1 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
-  :hints (("Goal" :in-theory (e/d (classify-formals) (intersection-equal-symmetric-iff)))))
+           (not (intersection-equal (free-vars-in-terms (map-lookup-equal (mv-nth 0 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)) formal-arg-alist))
+                                    (mv-nth 1 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
+  :hints (("Goal" :in-theory (e/d (classify-lambda-formals) (intersection-equal-symmetric-iff)))))
 
 ;sanity check
 ;needed?
@@ -226,13 +226,13 @@
              ;(no-duplicatesp-equal formals-to-maybe-subst)
              )
            (subsetp-equal formals-to-keep
-                          (mv-nth 1 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
-  :hints (("Goal" :in-theory (enable classify-formals))))
+                          (mv-nth 1 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals))))
 
-(defthm symbol-listp-of-mv-nth-0-of-classify-formals
+(defthm symbol-listp-of-mv-nth-0-of-classify-lambda-formals
   (implies (symbol-listp formals-to-maybe-subst)
-           (symbol-listp (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
-  :hints (("Goal" :in-theory (enable classify-formals))))
+           (symbol-listp (mv-nth 0 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals))))
 
 (defthm set-helper1
   (equal (subsetp-equal (set-difference-equal x this) (append (set-difference-equal y this) z))
@@ -257,23 +257,23 @@
 ;;              (no-duplicatesp-equal formals-to-maybe-subst)
 ;;              )
 ;;            (subsetp-equal (set-difference-equal formals-to-maybe-subst
-;;                                                 (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)))
-;;                           (mv-nth 1 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
+;;                                                 (mv-nth 0 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+;;                           (mv-nth 1 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-;;            :in-theory (enable classify-formals))))
+;;            :in-theory (enable classify-lambda-formals))))
 
 ;; the final formals-to-keep should include all the formals-to-maybe-subst that we had to drop:
-(defthm classify-formals-lemma ;rename
+(defthm classify-lambda-formals-lemma ;rename
     (implies (and (subsetp-equal formals-to-maybe-subst oformals-to-maybe-subst)
                   (subsetp-equal (set-difference-equal oformals-to-maybe-subst formals-to-maybe-subst) formals-to-keep)
                   (no-duplicatesp-equal formals-to-maybe-subst))
              (subsetp-equal (set-difference-equal oformals-to-maybe-subst
-                                                  (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)))
-                            (mv-nth 1 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
+                                                  (mv-nth 0 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)))
+                            (mv-nth 1 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (classify-formals) (intersection-equal-symmetric-iff)))))
+           :in-theory (e/d (classify-lambda-formals) (intersection-equal-symmetric-iff)))))
 
-(defthm call-of-classify-formals-ok
+(defthm call-of-classify-lambda-formals-ok
   (implies (and (subsetp-equal try-vars non-trivial-formals)
                 (symbol-listp try-vars)
                 (symbol-alistp alist)
@@ -283,24 +283,24 @@
                 (subsetp-equal non-trivial-formals (strip-cars alist))
                 (no-duplicatesp-equal try-vars))
            (not
-             (intersection-equal (free-vars-in-terms (map-lookup-equal (mv-nth 0 (classify-formals try-vars alist (set-difference-equal non-trivial-formals try-vars))) alist))
-                                 (set-difference-equal non-trivial-formals (mv-nth '0 (classify-formals try-vars alist (set-difference-equal non-trivial-formals try-vars)))))))
-  :hints (("Goal" :use (:instance classify-formals-correct
+             (intersection-equal (free-vars-in-terms (map-lookup-equal (mv-nth 0 (classify-lambda-formals try-vars alist (set-difference-equal non-trivial-formals try-vars))) alist))
+                                 (set-difference-equal non-trivial-formals (mv-nth '0 (classify-lambda-formals try-vars alist (set-difference-equal non-trivial-formals try-vars)))))))
+  :hints (("Goal" :use (:instance classify-lambda-formals-correct
                                   (formals-to-maybe-subst try-vars)
                                   (formal-arg-alist alist)
                                   (formals-to-keep (set-difference-equal non-trivial-formals try-vars)))
-           :in-theory (disable classify-formals-correct))))
+           :in-theory (disable classify-lambda-formals-correct))))
 
-(defthm subsetp-equal-of-mv-nth-0-of-classify-formals
-  (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
+(defthm subsetp-equal-of-mv-nth-0-of-classify-lambda-formals
+  (subsetp-equal (mv-nth 0 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
                  formals-to-maybe-subst)
-  :hints (("Goal" :in-theory (enable classify-formals))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals))))
 
-(defthm subsetp-equal-of-mv-nth-0-of-classify-formals-gen
+(defthm subsetp-equal-of-mv-nth-0-of-classify-lambda-formals-gen
   (implies (subsetp-equal formals-to-maybe-subst x)
-           (subsetp-equal (mv-nth 0 (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
+           (subsetp-equal (mv-nth 0 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
                           x))
-  :hints (("Goal" :in-theory (enable classify-formals))))
+  :hints (("Goal" :in-theory (enable classify-lambda-formals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -346,10 +346,10 @@
                   ;(bad-arg-vars (set-difference-eq non-trivial-formals formals-to-maybe-subst))
                   ;; Not being able so subst for a formal means it may block other formals (in whose args it appears):
                   ;(formals-to-subst (maybe-remove-more-formals formals-to-maybe-subst formal-arg-alist bad-arg-vars))
-                  (formals-to-keep (set-difference-eq non-trivial-formals formals-to-maybe-subst)) ; may be extended by classify-formals
+                  (formals-to-keep (set-difference-eq non-trivial-formals formals-to-maybe-subst)) ; may be extended by classify-lambda-formals
                   )
              (mv-let (formals-to-subst formals-to-keep)
-               (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)
+               (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)
                (declare (ignore formals-to-keep)) ; todo
                (progn$ (and print "Will subst for ~x0 in lambda.~%" formals-to-subst)
                        (subst-formals-in-lambda-application formals lambda-body args formals-to-subst))))
@@ -493,10 +493,10 @@
                   ;(bad-arg-vars (set-difference-eq non-trivial-formals formals-to-maybe-subst))
                   ;; Not being able so subst for a formal means it may block other formals (in whose args it appears):
                   ;(formals-to-subst (maybe-remove-more-formals formals-to-maybe-subst formal-arg-alist bad-arg-vars))
-                  (formals-to-keep (set-difference-eq non-trivial-formals formals-to-maybe-subst)) ; may be extended by classify-formals
+                  (formals-to-keep (set-difference-eq non-trivial-formals formals-to-maybe-subst)) ; may be extended by classify-lambda-formals
                   )
              (mv-let (formals-to-subst formals-to-keep)
-               (classify-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)
+               (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)
                (declare (ignore formals-to-keep)) ; todo
                (progn$ (and print "Will subst for ~x0 in lambda.~%" formals-to-subst)
                        (subst-formals-in-lambda-application formals lambda-body args formals-to-subst))))
