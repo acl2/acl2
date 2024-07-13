@@ -27,7 +27,7 @@
   (declare (xargs :guard (pseudo-termp term)))
   (let* ((term (substitute-constants-in-lambdas term))
          (term (drop-unused-lambda-bindings term))
-         (term (substitute-unnecessary-lambda-vars-in-term2 term nil))
+         (term (substitute-unnecessary-lambda-vars-in-term2 term nil nil))
          ;; todo: this is not really about lambdas.  rename this book?
          (term (simplify-ors term nil)) ; could pass in bool-fix, as for a hyp
          (term (drop-trivial-lambdas term))

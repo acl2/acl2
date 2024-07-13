@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; Note: Consider calling drop-trivial-lambdas after calling this utility.
+
 (include-book "classify-lambda-formals")
 (include-book "count-vars")
 (include-book "substitute-lambda-formals") ; for subst-formals-in-lambda-application; make those names more consistent
@@ -40,11 +42,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Gather the formals whose corresponding args call none of the hands-off-fns.
+(defund formals-whose-args-call-none (formals args hands-off-fns)
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (pseudo-term-listp args)
+                              (equal (len formals) (len args))
+                              (true-listp hands-off-fns))))
+  (if (endp formals)
+      nil
+    (let ((formal (first formals))
+          (arg (first args)))
+      (if (and (consp arg)
+               (member-equal (ffn-symb arg) hands-off-fns))
+          (formals-whose-args-call-none (rest formals) (rest args) hands-off-fns)
+        (cons-with-hint formal (formals-whose-args-call-none (rest formals) (rest args) hands-off-fns) formals)))))
+
+(local
+  (defthm symbol-listp-of-formals-whose-args-call-none
+    (implies (symbol-listp formals)
+             (symbol-listp (formals-whose-args-call-none formals args hands-off-fns)))
+    :hints (("Goal" :in-theory (enable formals-whose-args-call-none)))))
+
+(local
+  (defthm subsetp-equal-of-formals-whose-args-call-none
+    (subsetp-equal (formals-whose-args-call-none formals args hands-off-fns) formals)
+    :hints (("Goal" :in-theory (enable formals-whose-args-call-none)))))
+
+(local
+  (defthm subsetp-equal-of-formals-whose-args-call-none-gen
+    (implies (subsetp-equal formals x)
+             (subsetp-equal (formals-whose-args-call-none formals args hands-off-fns) x))
+    :hints (("Goal" :in-theory (enable formals-whose-args-call-none)))))
+
+(local
+  (defthm no-duplicatesp-equal-of-formals-whose-args-call-none
+    (implies (no-duplicatesp-equal formals)
+             (no-duplicatesp-equal (formals-whose-args-call-none formals args hands-off-fns)))
+    :hints (("Goal" :in-theory (enable formals-whose-args-call-none)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; todo: deprecate the other one? but add back special treatment of for mv-nth (more generally, any set of functions to avoid)
 (mutual-recursion
- (defun substitute-unnecessary-lambda-vars-in-term2 (term print)
+ (defun substitute-unnecessary-lambda-vars-in-term2 (term print hands-off-fns)
    (declare (xargs :guard (and (pseudo-termp term)
                                ;; (no-duplicate-lambda-formals-in-termp term) ; because of the call of subst-formals-in-lambda-application
+                               (true-listp hands-off-fns) ; usually symbols buy perhaps lambdas as well
                                )
                    :measure (acl2-count term)
                    :verify-guards nil ; done below
@@ -54,13 +97,13 @@
        term
      ;;it's a function call (maybe a lambda application):
      (let* ((args (fargs term))
-            (args (substitute-unnecessary-lambda-vars-in-terms2 args print)) ;process the args first
+            (args (substitute-unnecessary-lambda-vars-in-terms2 args print hands-off-fns)) ;process the args first
             (fn (ffn-symb term)))
        (if (consp fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
            (let* ((formals (lambda-formals fn))
                   (lambda-body (lambda-body fn))
                   ;;apply recursively to the lambda body:
-                  (lambda-body (substitute-unnecessary-lambda-vars-in-term2 lambda-body print))
+                  (lambda-body (substitute-unnecessary-lambda-vars-in-term2 lambda-body print hands-off-fns))
                   (formal-arg-alist (pairlis$ formals args))
                   ;; (trivial-formals (trivial-formals formals args))
                   ;; (formals-bound-to-mv-nths (vars-bound-to-mv-nths formals args))
@@ -71,10 +114,11 @@
                   ;; 2) It is not bound to itself (trivial formals
                   ;; don't really "count against" us, since lambdas must be closed)
                   ;; and
-                  ;; ;; 3) It is not bound to an mv-nth (to avoid messing up MV-LET patterns)
-                  ;; ;; and
+                  ;; 3) It is not bound to any of the hands-off-fns (e.g. mv-nth ,to avoid messing up MV-LET patterns)
+                  ;; and
                   ;; 4) It is bound to a term that does not mention any of the remaining non-trivial formals.
                   (formals-to-maybe-subst (vars-that-appear-only-once non-trivial-formals lambda-body))
+                  (formals-to-maybe-subst (formals-whose-args-call-none formals-to-maybe-subst (map-lookup-equal formals-to-maybe-subst formal-arg-alist) hands-off-fns))
                   ;; (formals-to-maybe-subst (set-difference-eq formals-to-maybe-subst trivial-formals))
                   ;; (formals-to-maybe-subst (set-difference-eq formals-to-maybe-subst formals-bound-to-mv-nths)) ; todo: make this optional
                   ;; (formals-to-drop (vars-expressible-without-clashes formals-to-maybe-subst formal-arg-alist non-trivial-formals)) ; would be ok to mention formals we are substituting?
@@ -92,19 +136,20 @@
          ;;not a lambda application, so just rebuild the function call:
          (cons-with-hint fn args term)))))
 
- (defun substitute-unnecessary-lambda-vars-in-terms2 (terms print)
+ (defun substitute-unnecessary-lambda-vars-in-terms2 (terms print hands-off-fns)
    (declare (xargs :measure (acl2-count terms)
                    :guard (and (pseudo-term-listp terms)
                                ;; (no-duplicate-lambda-formals-in-termsp terms)
+                               (true-listp hands-off-fns) ; usually symbols buy perhaps lambdas as well
                                )))
    (if (endp terms)
        nil
-     (cons-with-hint (substitute-unnecessary-lambda-vars-in-term2 (first terms) print)
-                     (substitute-unnecessary-lambda-vars-in-terms2 (rest terms) print)
+     (cons-with-hint (substitute-unnecessary-lambda-vars-in-term2 (first terms) print hands-off-fns)
+                     (substitute-unnecessary-lambda-vars-in-terms2 (rest terms) print hands-off-fns)
                      terms))))
 
 (defthm len-of-substitute-unnecessary-lambda-vars-in-terms2
-  (equal (len (substitute-unnecessary-lambda-vars-in-terms2 terms print))
+  (equal (len (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns))
          (len terms))
   :hints (("Goal" :induct (len terms)
            :in-theory (enable (:i len)))))
@@ -114,11 +159,11 @@
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm pseudo-termp-of-substitute-unnecessary-lambda-vars-in-term2
     (implies (pseudo-termp term)
-             (pseudo-termp (substitute-unnecessary-lambda-vars-in-term2 term print)))
+             (pseudo-termp (substitute-unnecessary-lambda-vars-in-term2 term print hands-off-fns)))
     :flag substitute-unnecessary-lambda-vars-in-term2)
   (defthm pseudo-term-listp-of-substitute-unnecessary-lambda-vars-in-terms2
     (implies (pseudo-term-listp terms)
-             (pseudo-term-listp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
+             (pseudo-term-listp (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns)))
     :flag substitute-unnecessary-lambda-vars-in-terms2))
 
 (verify-guards substitute-unnecessary-lambda-vars-in-term2)
@@ -127,12 +172,12 @@
   (defthm no-nils-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
     (implies (and (pseudo-termp term)
                   (no-nils-in-termp term))
-             (no-nils-in-termp (substitute-unnecessary-lambda-vars-in-term2 term print)))
+             (no-nils-in-termp (substitute-unnecessary-lambda-vars-in-term2 term print hands-off-fns)))
     :flag substitute-unnecessary-lambda-vars-in-term2)
   (defthm no-nils-in-termsp-of-substitute-unnecessary-lambda-vars-in-terms2
     (implies (and (pseudo-term-listp terms)
                   (no-nils-in-termsp terms))
-             (no-nils-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
+             (no-nils-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns)))
     :flag substitute-unnecessary-lambda-vars-in-terms2))
 
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
@@ -140,21 +185,21 @@
     (implies (and (pseudo-termp term)
                   ;(no-nils-in-termp term)
                   )
-             (subsetp-equal (free-vars-in-term (substitute-unnecessary-lambda-vars-in-term2 term print))
+             (subsetp-equal (free-vars-in-term (substitute-unnecessary-lambda-vars-in-term2 term print hands-off-fns))
                             (free-vars-in-term term)))
     :flag substitute-unnecessary-lambda-vars-in-term2)
   (defthm subsetp-equal-of-free-vars-in-terms-of-substitute-unnecessary-lambda-vars-in-terms2
     (implies (and (pseudo-term-listp terms)
                   ;(no-nils-in-termsp terms)
                   )
-             (subsetp-equal (free-vars-in-terms (substitute-unnecessary-lambda-vars-in-terms2 terms print))
+             (subsetp-equal (free-vars-in-terms (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns))
                             (free-vars-in-terms terms)))
     :flag substitute-unnecessary-lambda-vars-in-terms2))
 
 (defthm subsetp-equal-of-free-vars-in-term-of-substitute-unnecessary-lambda-vars-in-term2-gen
   (implies (and (subsetp-equal (free-vars-in-term term) x)
                 (pseudo-termp term))
-           (subsetp-equal (free-vars-in-term (substitute-unnecessary-lambda-vars-in-term2 term print))
+           (subsetp-equal (free-vars-in-term (substitute-unnecessary-lambda-vars-in-term2 term print hands-off-fns))
                           x))
   :hints (("Goal" :use subsetp-equal-of-free-vars-in-term-of-substitute-unnecessary-lambda-vars-in-term2
            :in-theory (disable subsetp-equal-of-free-vars-in-term-of-substitute-unnecessary-lambda-vars-in-term2))))
@@ -163,12 +208,12 @@
   (defthm lambdas-closed-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
     (implies (and (pseudo-termp term)
                   (lambdas-closed-in-termp term))
-             (lambdas-closed-in-termp (substitute-unnecessary-lambda-vars-in-term2 term print)))
+             (lambdas-closed-in-termp (substitute-unnecessary-lambda-vars-in-term2 term print hands-off-fns)))
     :flag substitute-unnecessary-lambda-vars-in-term2)
   (defthm lambdas-closed-in-termsp-of-substitute-unnecessary-lambda-vars-in-terms2
     (implies (and (pseudo-term-listp terms)
                   (lambdas-closed-in-termsp terms))
-             (lambdas-closed-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
+             (lambdas-closed-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns)))
     :flag substitute-unnecessary-lambda-vars-in-terms2)
   :hints (("Goal" :in-theory (enable lambdas-closed-in-termp ;todo
                                      ))))
@@ -177,19 +222,19 @@
   (defthm no-duplicate-lambda-formals-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
     (implies (and (pseudo-termp term)
                   (no-duplicate-lambda-formals-in-termp term))
-             (no-duplicate-lambda-formals-in-termp (substitute-unnecessary-lambda-vars-in-term2 term print)))
+             (no-duplicate-lambda-formals-in-termp (substitute-unnecessary-lambda-vars-in-term2 term print hands-off-fns)))
     :flag substitute-unnecessary-lambda-vars-in-term2)
   (defthm no-duplicate-lambda-formals-in-termsp-of-substitute-unnecessary-lambda-vars-in-terms2
     (implies (and (pseudo-term-listp terms)
                   (no-duplicate-lambda-formals-in-termsp terms))
-             (no-duplicate-lambda-formals-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print)))
+             (no-duplicate-lambda-formals-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns)))
     :flag substitute-unnecessary-lambda-vars-in-terms2)
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp ;todo
                                      ))))
 
 ;; the point of this is to change the alist used for the lambda case (standard trick):
 (mutual-recursion
- (defun induct-substitute-unnecessary-lambda-vars-in-term2 (term print alist)
+ (defun induct-substitute-unnecessary-lambda-vars-in-term2 (term print hands-off-fns alist)
    (declare (xargs :guard (pseudo-termp term)
                    :measure (acl2-count term)
                    :verify-guards nil)
@@ -199,13 +244,13 @@
        term
      ;;it's a function call (maybe a lambda application):
      (let* ((args (fargs term))
-            (args (induct-substitute-unnecessary-lambda-vars-in-terms2 args print alist)) ;process the args first
+            (args (induct-substitute-unnecessary-lambda-vars-in-terms2 args print hands-off-fns alist)) ;process the args first
             (fn (ffn-symb term)))
        (if (consp fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
            (let* ((formals (lambda-formals fn))
                   (lambda-body (lambda-body fn))
                   ;;apply recursively to the lambda body:
-                  (lambda-body (induct-substitute-unnecessary-lambda-vars-in-term2 lambda-body print
+                  (lambda-body (induct-substitute-unnecessary-lambda-vars-in-term2 lambda-body print hands-off-fns
                                                                                    ;; note this:
                                                                                    (pairlis$ (lambda-formals fn) (empty-eval-list args alist))))
                   (formal-arg-alist (pairlis$ formals args))
@@ -222,6 +267,7 @@
                   ;; ;; and
                   ;; 4) It is bound to a term that does not mention any of the remaining non-trivial formals.
                   (formals-to-maybe-subst (vars-that-appear-only-once non-trivial-formals lambda-body))
+                  (formals-to-maybe-subst (formals-whose-args-call-none formals-to-maybe-subst (map-lookup-equal formals-to-maybe-subst formal-arg-alist) hands-off-fns))
                   ;; (formals-to-maybe-subst (set-difference-eq formals-to-maybe-subst trivial-formals))
                   ;; (formals-to-maybe-subst (set-difference-eq formals-to-maybe-subst formals-bound-to-mv-nths)) ; todo: make this optional
                   ;; (formals-to-drop (vars-expressible-without-clashes formals-to-maybe-subst formal-arg-alist non-trivial-formals)) ; would be ok to mention formals we are substituting?
@@ -234,19 +280,19 @@
              (mv-let (formals-to-subst formals-to-keep)
                (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)
                (declare (ignore formals-to-keep)) ; todo
-               (progn$ (and print "Will subst for ~x0 in lambda.~%" formals-to-subst)
+               (progn$ (and print hands-off-fns "Will subst for ~x0 in lambda.~%" formals-to-subst)
                        (subst-formals-in-lambda-application formals lambda-body args formals-to-subst))))
          ;;not a lambda application, so just rebuild the function call:
          (cons-with-hint fn args term)))))
 
- (defun induct-substitute-unnecessary-lambda-vars-in-terms2 (terms print alist)
+ (defun induct-substitute-unnecessary-lambda-vars-in-terms2 (terms print hands-off-fns alist)
    (declare (xargs :measure (acl2-count terms)
                    :guard (pseudo-term-listp terms))
             (irrelevant alist))
    (if (endp terms)
        nil
-     (cons-with-hint (induct-substitute-unnecessary-lambda-vars-in-term2 (first terms) print alist)
-                     (induct-substitute-unnecessary-lambda-vars-in-terms2 (rest terms) print alist)
+     (cons-with-hint (induct-substitute-unnecessary-lambda-vars-in-term2 (first terms) print hands-off-fns alist)
+                     (induct-substitute-unnecessary-lambda-vars-in-terms2 (rest terms) print hands-off-fns alist)
                      terms))))
 
 (make-flag induct-substitute-unnecessary-lambda-vars-in-term2)
@@ -254,12 +300,12 @@
 ;; The induct function is equal to the original function!
 (defthm-flag-induct-substitute-unnecessary-lambda-vars-in-term2
   (defthm induct-substitute-unnecessary-lambda-vars-in-term2-becomes
-    (equal (induct-substitute-unnecessary-lambda-vars-in-term2 term print alist)
-           (substitute-unnecessary-lambda-vars-in-term2 term print))
+    (equal (induct-substitute-unnecessary-lambda-vars-in-term2 term print hands-off-fns alist)
+           (substitute-unnecessary-lambda-vars-in-term2 term print hands-off-fns))
     :flag induct-substitute-unnecessary-lambda-vars-in-term2)
   (defthm induct-substitute-unnecessary-lambda-vars-in-terms2-becomes
-    (equal (induct-substitute-unnecessary-lambda-vars-in-terms2 terms print alist)
-           (substitute-unnecessary-lambda-vars-in-terms2 terms print))
+    (equal (induct-substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns alist)
+           (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns))
     :flag induct-substitute-unnecessary-lambda-vars-in-terms2))
 
 ;; substitute-unnecessary-lambda-vars-in-term2 does not change the meaning of terms
@@ -269,7 +315,7 @@
                   (no-nils-in-termp term)
                   (lambdas-closed-in-termp term)
                   (no-duplicate-lambda-formals-in-termp term))
-             (equal (empty-eval (substitute-unnecessary-lambda-vars-in-term2 term print) alist)
+             (equal (empty-eval (substitute-unnecessary-lambda-vars-in-term2 term print hands-off-fns) alist)
                     (empty-eval term alist)))
     :flag induct-substitute-unnecessary-lambda-vars-in-term2)
   (defthm empty-eval-list-of-substitute-unnecessary-lambda-vars-in-terms2
@@ -277,7 +323,7 @@
                   (no-nils-in-termsp terms)
                   (lambdas-closed-in-termsp terms)
                   (no-duplicate-lambda-formals-in-termsp terms))
-             (equal (empty-eval-list (substitute-unnecessary-lambda-vars-in-terms2 terms print) alist)
+             (equal (empty-eval-list (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns) alist)
                     (empty-eval-list terms alist)))
     :flag induct-substitute-unnecessary-lambda-vars-in-terms2)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
