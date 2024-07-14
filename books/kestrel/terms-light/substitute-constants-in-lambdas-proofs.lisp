@@ -18,6 +18,7 @@
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system) ; make local?
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
+(local (include-book "empty-eval-helpers"))
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
@@ -31,7 +32,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
-(local (include-book "make-lambda-application-simple-proof")) ; for empty-eval-list-of-map-lookup-equal-of-pairlis$ ;todo: reduce
+(local (include-book "make-lambda-application-simple-proof")) ; why ;todo: reduce
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 
@@ -90,15 +91,6 @@
   :hints (("Goal" :in-theory (enable filter-args-for-formals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;can loop?
-(defthmd map-lookup-equal-of-pairlis$-of-empty-eval-list
-  (implies (and ;(equal (len keys2) (len terms))
-                ;(subsetp-equal keys keys2)
-                )
-           (equal (map-lookup-equal keys (pairlis$ keys2 (empty-eval-list terms alist)))
-                  (empty-eval-list (map-lookup-equal keys (pairlis$ keys2 terms)) alist)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
 ;todo: nested induction
 (defthm alists-equiv-on-of-pairlis$-same

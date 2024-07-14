@@ -23,6 +23,7 @@
 (include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system) ; make local?
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
+(local (include-book "empty-eval-helpers"))
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
@@ -51,6 +52,7 @@
 ;; (local (make-flag drop-trivial-lambdas))
 
 ;; The point here is to recur on a different alist.
+;; todo: can we use this less below and move this down?
 (local
  (mutual-recursion
   (defund drop-trivial-lambdas-induct (term alist)

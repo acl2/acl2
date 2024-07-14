@@ -16,6 +16,7 @@
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
+(local (include-book "empty-eval-helpers"))
 (local (include-book "helpers"))
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
@@ -37,15 +38,6 @@
 
 ;; TODO: Clean up and harvest this file
 
-(local (in-theory (disable alistp no-duplicatesp-equal)))
-
-;; todo: move, dup in letify
-(defthm subsetp-equal-of-append-of-intersection-equal-and-set-difference-equal-swapped
-  (subsetp-equal x
-                 (append (intersection-equal y x)
-                         (set-difference-equal x y)))
-  :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal set-difference-equal))))
-
 
 ;todo: nested induction
 ;; (thm
@@ -54,31 +46,12 @@
 ;;         nil)
 ;;  :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS))))
 
-;move or gen to a subsetp fact, or gen the second x to z
-(defthm intersection-equal-of-intersection-equal-and-intersection-equal-swapped
-  (equal (intersection-equal (intersection-equal x y)
-                             (intersection-equal y x))
-         (intersection-equal x y))
-  :hints (("Goal" ;:induct (intersection-equal y x)
-           :in-theory (enable intersection-equal))))
-
 (defthm equal-of-cons-of-cdr-of-assoc-equal-and-assoc-equal-iff
   (implies (alistp a)
            (iff (equal (cons key (cdr (assoc-equal key a)))
                        (assoc-equal key a))
                 (assoc-equal key a)))
   :hints (("Goal" :in-theory (enable assoc-equal alistp))))
-
-(defthm cdr-of-assoc-equal-of-pairlis$-of-map-lookup-equal
-  (implies (and (member-equal key keys)
-                ;(assoc-equal key a)
-                (alistp a))
-           (equal (cdr (assoc-equal key (pairlis$ keys (map-lookup-equal keys a))))
-                  (cdr (assoc-equal key a))))
-  :hints (("Goal" :in-theory (enable pairlis$
-                                     map-lookup-equal
-                                     LOOKUP-EQUAL ;todo
-                                     ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,35 +72,7 @@
                                      pairlis$
                                      symbolp-when-member-equal-and-symbol-listp))))
 
-(defthm-flag-free-vars-in-term
-  ;; If the alists agree on some set of keys that includes all the free vars in the term,
-  ;; the the evaluations give the same result.
-  (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-alt ; todo: similar to one in the proof of expand-lambdas
-    (implies (and (alists-equiv-on keys alist1 alist2)
-                  (subsetp-equal (free-vars-in-term term) keys)
-                  (pseudo-termp term))
-             (equal (equal (empty-eval term alist1)
-                           (empty-eval term alist2))
-                    t))
-    :flag free-vars-in-term)
-  (defthm equal-of-empty-eval-list-and-empty-eval-list-when-alists-equiv-on-alt
-    (implies (and (alists-equiv-on keys alist1 alist2)
-                  (subsetp-equal (free-vars-in-terms terms) keys)
-                  (pseudo-term-listp terms))
-             (equal (equal (empty-eval-list terms alist1)
-                           (empty-eval-list terms alist2))
-                    t))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :expand (free-vars-in-terms term)
-           :in-theory (e/d (empty-eval-of-fncall-args)
-                           (empty-eval-of-fncall-args-back)))))
 
-(defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special
-  (implies (and (alists-equiv-on (free-vars-in-term term) alist1 alist2)
-                (pseudo-termp term))
-           (equal (equal (empty-eval term alist1)
-                         (empty-eval term alist2))
-                  t)))
 
 ;; (thm
 ;;  (implies (and (alistp a)
@@ -184,17 +129,6 @@
                                      INTERSECTION-EQUAL
                                      map-lookup-equal
                                      PAIRLIS$) )))
-
-
-(defthm EMPTY-EVAL-of-LOOKUP-EQUAL-of-pairlis$
-  (EQUAL (EMPTY-EVAL (LOOKUP-EQUAL key (PAIRLIS$ FORMALS ACTUALS)) A)
-         (LOOKUP-EQUAL key (PAIRLIS$ FORMALS (EMPTY-EVAL-LIST ACTUALS A))))
-  :hints (("Goal" :in-theory (enable map-lookup-equal lookup-equal assoc-equal pairlis$))))
-
-(defthm empty-eval-list-of-map-LOOKUP-EQUAL-of-pairlis$
-  (equal (EMPTY-EVAL-LIST (MAP-LOOKUP-EQUAL keys (PAIRLIS$ FORMALS ACTUALS)) A)
-         (MAP-LOOKUP-EQUAL keys (PAIRLIS$ FORMALS (EMPTY-EVAL-LIST ACTUALS a))))
-  :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
 ;; Correctness theorem for make-lambda-application-simple
 (defthm empty-eval-of-make-lambda-application-simple-correct-1
