@@ -100,3 +100,11 @@
          (set-difference-equal (intersection-equal x y) z))
   :hints (("Goal" :in-theory (enable intersection-equal
                                      set-difference-equal))))
+
+;move or gen to a subsetp fact, or gen the second x to z
+(defthm intersection-equal-of-intersection-equal-and-intersection-equal-swapped
+  (equal (intersection-equal (intersection-equal x y)
+                             (intersection-equal y x))
+         (intersection-equal x y))
+  :hints (("Goal" ;:induct (intersection-equal y x)
+           :in-theory (enable intersection-equal))))
