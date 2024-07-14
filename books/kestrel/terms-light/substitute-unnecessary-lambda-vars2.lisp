@@ -22,16 +22,6 @@
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 
-(local (in-theory (disable strip-cdrs
-                           strip-cars
-                           symbol-alistp
-                           intersection-equal-symmetric-iff
-                           )))
-
-(local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Gather the formals whose corresponding args call none of the hands-off-fns.
 (defund formals-whose-args-call-none (formals args hands-off-fns)
   (declare (xargs :guard (and (symbol-listp formals)
@@ -54,20 +44,9 @@
     :hints (("Goal" :in-theory (enable formals-whose-args-call-none)))))
 
 (local
-  (defthm subsetp-equal-of-formals-whose-args-call-none
-    (subsetp-equal (formals-whose-args-call-none formals args hands-off-fns) formals)
-    :hints (("Goal" :in-theory (enable formals-whose-args-call-none)))))
-
-(local
   (defthm subsetp-equal-of-formals-whose-args-call-none-gen
     (implies (subsetp-equal formals x)
              (subsetp-equal (formals-whose-args-call-none formals args hands-off-fns) x))
-    :hints (("Goal" :in-theory (enable formals-whose-args-call-none)))))
-
-(local
-  (defthm no-duplicatesp-equal-of-formals-whose-args-call-none
-    (implies (no-duplicatesp-equal formals)
-             (no-duplicatesp-equal (formals-whose-args-call-none formals args hands-off-fns)))
     :hints (("Goal" :in-theory (enable formals-whose-args-call-none)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

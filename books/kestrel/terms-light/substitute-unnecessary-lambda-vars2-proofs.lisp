@@ -25,17 +25,12 @@
                            intersection-equal-symmetric-iff
                            )))
 
-(local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
+;(local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
 
 (local
   (defthm symbol-listp-of-formals-whose-args-call-none
     (implies (symbol-listp formals)
              (symbol-listp (formals-whose-args-call-none formals args hands-off-fns)))
-    :hints (("Goal" :in-theory (enable formals-whose-args-call-none)))))
-
-(local
-  (defthm subsetp-equal-of-formals-whose-args-call-none
-    (subsetp-equal (formals-whose-args-call-none formals args hands-off-fns) formals)
     :hints (("Goal" :in-theory (enable formals-whose-args-call-none)))))
 
 (local

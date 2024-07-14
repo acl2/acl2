@@ -606,10 +606,10 @@
     (let ((extra-vars (set-difference-equal args-to-subst-vars remaining-formals)))
       `((lambda ,(append remaining-formals extra-vars) ,body) ,@remaining-args ,@extra-vars))))
 
-(defthm helper11
-  (implies (member-equal b formals-to-subst)
-           (subsetp-equal (free-vars-in-term (lookup-equal b alist))
-                          (free-vars-in-terms (map-lookup-equal formals-to-subst alist))))
+(defthm subsetp-equal-of-free-vars-in-term-of-lookup-equal-and-free-vars-in-terms-of-map-lookup-equal
+  (implies (member-equal key keys)
+           (subsetp-equal (free-vars-in-term (lookup-equal key alist))
+                          (free-vars-in-terms (map-lookup-equal keys alist))))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
 (defthm pseudo-termp-of-subst-formals-in-lambda-application
@@ -641,8 +641,8 @@
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
 (defthm subsetp-equal-of-append-of-set-difference-equal-same
-  (equal (subsetp-equal x (binary-append c (set-difference-equal z c)))
-         (subsetp-equal x (binary-append c z)))
+  (equal (subsetp-equal x (append c (set-difference-equal z c)))
+         (subsetp-equal x (append c z)))
   :hints (("Goal" :in-theory (enable subsetp-equal))))
 
 (defthm subsetp-equal-of-free-vars-in-term-of-cdr-of-assoc-equal-and-free-vars-in-terms-of-map-lookup-equal

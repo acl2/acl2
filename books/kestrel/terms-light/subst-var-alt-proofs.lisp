@@ -482,7 +482,7 @@
            (equal (lookup-equal somevar
                                 (cons
                                  (cons var (empty-eval replacement a))
-                                 (binary-append
+                                 (append
                                   (pairlis$
                                    (non-trivial-formals formals args)
                                    (empty-eval-list (mv-nth '1
@@ -515,7 +515,7 @@
             (free-vars-in-term body)
             (cons
              (cons var (empty-eval replacement a))
-             (binary-append
+             (append
               (pairlis$
                (non-trivial-formals formals args)
                (empty-eval-list (mv-nth '1
@@ -537,7 +537,7 @@
                              (keys  (free-vars-in-term body))
                              (a1             (cons
                                               (cons var (empty-eval replacement a))
-                                              (binary-append
+                                              (append
                                                (pairlis$
                                                 (non-trivial-formals formals args)
                                                 (empty-eval-list (mv-nth '1
@@ -555,7 +555,7 @@
                                       (FREE-VARS-IN-TERM BODY)
                                       (cons
                                        (cons var (empty-eval replacement a))
-                                       (binary-append
+                                       (append
                                         (pairlis$
                                          (non-trivial-formals formals args)
                                          (empty-eval-list (mv-nth '1
