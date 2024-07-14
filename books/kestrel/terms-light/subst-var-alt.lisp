@@ -26,7 +26,8 @@
 ;; maybe replace the name "alt" with "deep"
 
 (mutual-recursion
- ;; Replace VAR with REPLACEMENT in TERM.
+  ;; Replace VAR with REPLACEMENT in TERM.
+  ;; Note the order of the arguments!
  (defund subst-var-alt (var replacement term)
    (declare (xargs :guard (and (symbolp var)
                                (pseudo-termp replacement)
