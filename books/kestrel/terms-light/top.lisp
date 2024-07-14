@@ -65,6 +65,8 @@
 (include-book "sublis-var-simple-proofs")
 (include-book "subst-var-alt")
 (include-book "subst-var-alt-proofs")
+(include-book "subst-var-deep")
+(include-book "subst-var-deep-proofs")
 (include-book "sublis-var-and-magic-eval")
 
 ;; Template transformation:
