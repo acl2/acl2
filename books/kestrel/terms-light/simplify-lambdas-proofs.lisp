@@ -53,7 +53,7 @@
                 (no-nils-in-termp term)
                 (lambdas-closed-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term))
-           (equal (if-and-not-eval (substitute-unnecessary-lambda-vars-in-term2 term print) alist)
+           (equal (if-and-not-eval (substitute-unnecessary-lambda-vars-in-term2 term print hands-off-fns) alist)
                   (if-and-not-eval term alist)))
   :hints (("Goal" :use (:functional-instance
                         empty-eval-of-substitute-unnecessary-lambda-vars-in-term2

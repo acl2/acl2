@@ -56,11 +56,17 @@
 (include-book "get-hyps-and-conc")
 (include-book "replace-corresponding-arg")
 (include-book "substitute-lambda-formals")
+(include-book "classify-lambda-formals")
+(include-book "count-vars")
+
+(include-book "helpers")
 
 (include-book "sublis-var-simple")
 (include-book "sublis-var-simple-proofs")
 (include-book "subst-var-alt")
 (include-book "subst-var-alt-proofs")
+(include-book "subst-var-deep")
+(include-book "subst-var-deep-proofs")
 (include-book "sublis-var-and-magic-eval")
 
 ;; Template transformation:

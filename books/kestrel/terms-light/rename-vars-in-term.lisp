@@ -1,6 +1,6 @@
 ; Renaming variables in terms
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "bound-vars-in-term")
 (include-book "sublis-var-simple")
 (include-book "no-duplicate-lambda-formals-in-termp")
+(local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))

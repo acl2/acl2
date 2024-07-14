@@ -9,6 +9,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Added by Matt K. 7/13/2024 because of failed proof of the guard conjecture
+; for CHECK-TREE-NUM-RANGE in ACL2(r):
+; cert_param: (non-acl2r)
+
 (in-package "PFCS")
 
 (include-book "kestrel/abnf/notation/semantics" :dir :system)

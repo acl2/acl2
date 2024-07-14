@@ -1,7 +1,7 @@
 ; Converting DAGs to terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,7 @@
 
 (include-book "dags")
 (include-book "dag-arrays") ;for greatest-nodenum-in-list (factor out?)
+(include-book "tools/flag" :dir :system)
 
 (defun dag-walker-measure-for-item (nodenum-or-quotep)
   (make-ord 1

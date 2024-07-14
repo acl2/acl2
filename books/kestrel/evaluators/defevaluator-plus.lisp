@@ -66,6 +66,10 @@
                 (,eval-list-name (cdr terms) a))
          :hints (("Goal" :induct (len terms) :in-theory (enable (:i len)))))
 
+       (defthm ,(add-prefix "CAR-OF-" eval-list-name)
+         (equal (car (,eval-list-name terms a))
+                (,eval-name (car terms) a)))
+
        (defthm ,(add-suffix (add-prefix "TRUE-LISTP-OF-" eval-list-name) "-TYPE")
          (true-listp (,eval-list-name terms a))
          :rule-classes :type-prescription
@@ -81,6 +85,11 @@
                   (equal (,eval-list-name l alist)
                          (unquote-list l)))
          :hints (("Goal" :in-theory (enable quote-listp unquote-list))))
+
+       (defthm ,(add-suffix eval-list-name "-OF-KWOTE-LST")
+         (equal (,eval-list-name (kwote-lst vals) alist)
+                (true-list-fix vals))
+         :hints (("Goal" :in-theory (enable kwote-lst unquote-list))))
 
        ;; map-lookup-equal seems simpler than ,eval-list-name
        (defthm ,(add-suffix eval-list-name "-WHEN-SYMBOL-LISTP")

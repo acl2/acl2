@@ -88,3 +88,8 @@
   (implies (no-duplicatesp-equal formals)
            (no-duplicatesp-equal (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))))
   :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
+
+(defthm filter-formals-and-actuals-of-nil-arg1
+  (equal (filter-formals-and-actuals nil actuals formals-to-keep)
+         (mv nil nil))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
