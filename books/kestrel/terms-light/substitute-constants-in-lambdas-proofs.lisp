@@ -18,6 +18,7 @@
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system) ; make local?
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
+(local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
@@ -47,6 +48,17 @@
   (implies (pseudo-term-listp args)
            (quote-listp (mv-nth 1 (formals-and-constant-args formals args))))
   :hints (("Goal" :in-theory (enable formals-and-constant-args))))
+
+(defthm no-duplicatesp-equal-of-mv-nth-0-of-formals-and-constant-args
+  (implies (no-duplicatesp-equal formals)
+           (no-duplicatesp-equal (mv-nth '0 (formals-and-constant-args formals args))))
+  :hints (("Goal" :in-theory (enable formals-and-constant-args))))
+
+(defthm map-lookup-equal-of-mv-nth-0-of-formals-and-constant-args-of-pairlis$-same
+  (implies (no-duplicatesp-equal formals)
+           (equal (map-lookup-equal (mv-nth 0 (formals-and-constant-args formals args)) (pairlis$ formals args))
+                  (mv-nth 1 (formals-and-constant-args formals args))))
+  :hints (("Goal" :in-theory (enable formals-and-constant-args map-lookup-equal pairlis$))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,16 +317,7 @@
            :in-theory (enable filter-args-for-formals map-lookup-equal set-difference-equal pairlis$
                               no-duplicatesp-equal))))
 
-(defthm no-duplicatesp-equal-of-mv-nth-0-of-formals-and-constant-args
-  (implies (no-duplicatesp-equal formals)
-           (no-duplicatesp-equal (mv-nth '0 (formals-and-constant-args formals args))))
-  :hints (("Goal" :in-theory (enable formals-and-constant-args))))
 
-(defthm map-lookup-equal-of-mv-nth-0-of-formals-and-constant-args-of-pairlis$-same
-  (implies (no-duplicatesp-equal formals)
-           (equal (map-lookup-equal (mv-nth 0 (formals-and-constant-args formals args)) (pairlis$ formals args))
-                  (mv-nth 1 (formals-and-constant-args formals args))))
-  :hints (("Goal" :in-theory (enable formals-and-constant-args map-lookup-equal pairlis$))))
 
 ;; Proof that substitute-constants-in-lambdas preserves the meaning of terms
 (defthm-flag-substitute-constants-in-lambdas-induct
@@ -351,13 +354,6 @@
   (implies t;(no-duplicatesp-equal formals)
            (lambdas-closed-in-termsp (mv-nth '1 (formals-and-constant-args formals args))))
   :hints (("Goal" :in-theory (enable formals-and-constant-args))))
-
-;dup!
-(defthm lambdas-closed-in-termsp-of-map-lookup-equal
-  (implies (and ;(subsetp-equal keys (strip-cars alist))
-                (lambdas-closed-in-termsp (strip-cdrs alist)))
-           (lambdas-closed-in-termsp (map-lookup-equal keys alist)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
 (defthm-flag-substitute-constants-in-lambdas
   (defthm lambdas-closed-in-termp-of-substitute-constants-in-lambdas

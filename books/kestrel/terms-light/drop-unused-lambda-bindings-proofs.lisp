@@ -21,17 +21,13 @@
 (include-book "no-nils-in-termp")
 (include-book "lambdas-closed-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
-(include-book "kestrel/alists-light/lookup-equal" :dir :system)
+;(include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
+(local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
-
-(defthm subsetp-equal-of-free-vars-in-term-and-free-vars-in-terms-when-member-equal
-  (implies (member-equal term terms)
-           (subsetp-equal (free-vars-in-term term)
-                          (free-vars-in-terms terms))))
 
 (defthm member-equal-of-lookup-equal-of-pairlis$-same
   (implies (and (member-equal key keys)
@@ -104,10 +100,8 @@
 
 ;;todo: reduce these!
 (local (include-book "make-lambda-application-simple-proof"))
-(local (include-book "drop-trivial-lambdas-proofs"))
+(local (include-book "drop-trivial-lambdas-proofs")) ; for alists-equiv-on-redef
 (local (include-book "substitute-constants-in-lambdas-proofs"))
-
-
 
 (defthm-flag-drop-unused-lambda-bindings
   (defthm subsetp-equal-of-free-vars-in-term-of-drop-unused-lambda-bindings

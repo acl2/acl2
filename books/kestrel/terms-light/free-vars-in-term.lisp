@@ -223,3 +223,8 @@
   (subsetp-equal (free-vars-in-term term)
                  (all-vars term))
   :hints (("Goal" :use (:instance all-vars))))
+
+(defthm subsetp-equal-of-free-vars-in-term-and-free-vars-in-terms-when-member-equal
+  (implies (member-equal term terms)
+           (subsetp-equal (free-vars-in-term term)
+                          (free-vars-in-terms terms))))

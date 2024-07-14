@@ -107,6 +107,12 @@
            (lambdas-closed-in-termsp (mv-nth 1 (non-trivial-formals-and-args formals args))))
   :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
 
+(defthm lambdas-closed-in-termsp-of-map-lookup-equal
+  (implies (and ;(subsetp-equal keys (strip-cars alist))
+                (lambdas-closed-in-termsp (strip-cdrs alist)))
+           (lambdas-closed-in-termsp (map-lookup-equal keys alist)))
+  :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
 (defthm cdr-of-assoc-equal-of-pairlis$_when-member-equal-of-trivial-formals
   (implies (and (MEMBER-EQUAL VAR (TRIVIAL-FORMALS FORMALS ARGS))
                 (no-duplicatesp-equal formals))

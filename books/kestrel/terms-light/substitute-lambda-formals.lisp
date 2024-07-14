@@ -62,31 +62,11 @@
 ;;                   (len (intersection-equal formals target-formals))))
 ;;   :hints (("Goal" :in-theory (enable get-args-for-formals intersection-equal))))
 
-(defthm intersection-equal-of-remove-equal-arg2-when-not-member-equal-arg1
-  (implies (not (member-equal a x))
-           (equal (intersection-equal x (remove-equal a y))
-                  (intersection-equal x y)))
-  :hints (("Goal" :in-theory (enable intersection-equal remove-equal))))
-
 (local
   (defun cdr-remove-equal-induct (x y)
     (if (endp x)
         (list x y)
       (cdr-remove-equal-induct (cdr x) (remove-equal (car x) y)))))
-
-(defthm len-of-remove-equal-when-no-duplicatesp-equal
-  (implies (no-duplicatesp-equal x)
-           (equal (len (remove-equal a x))
-                  (if (member-equal a x)
-                      (+ -1 (len x))
-                    (len x))))
-  :hints (("Goal" :in-theory (enable remove-equal))))
-
-(defthm subsetp-equal-of-cdr-arg2-when-not-member-equal-of-car
-  (implies (not (member-equal (car x) y))
-           (equal (subsetp-equal y (cdr x))
-                  (subsetp-equal y x)))
-  :hints (("Goal" :in-theory (enable subsetp-equal))))
 
 (defthm len-of-intersection-equal-when-subsetp-equal
   (implies (and (subsetp-equal y x)
@@ -633,12 +613,6 @@
                 )
            (no-nils-in-termp (subst-formals-in-lambda-application formals body args formals-to-subst)))
   :hints (("Goal" :in-theory (enable subst-formals-in-lambda-application))))
-
-(defthm lambdas-closed-in-termsp-of-map-lookup-equal
-  (implies (and ;(subsetp-equal keys (strip-cars alist))
-                (lambdas-closed-in-termsp (strip-cdrs alist)))
-           (lambdas-closed-in-termsp (map-lookup-equal keys alist)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
 (defthm subsetp-equal-of-append-of-set-difference-equal-same
   (equal (subsetp-equal x (append c (set-difference-equal z c)))
