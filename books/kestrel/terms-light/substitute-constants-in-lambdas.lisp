@@ -18,6 +18,8 @@
 ;; TODO: 2. Avoid trivial lambdas (all formals bound to themselves).  Maybe.  Or just call drop-trivial-lambdas.
 
 (include-book "sublis-var-simple")
+(include-book "no-nils-in-termp")
+(local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
