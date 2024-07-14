@@ -142,23 +142,27 @@
   :hints (("Goal" :in-theory (enable intersection-equal
                                      set-difference-equal))))
 
+(defthm set-difference-equal-of-remove-equal-when-not-member-equal
+  (implies (not (member-equal a x))
+           (equal (set-difference-equal x (remove-equal a y))
+                  (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal remove-equal))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This adds any extra vars needed to make the lambda closed.
-(defund make-lambda-application-simpler (formals actuals body)
-  (declare (xargs :guard (and (pseudo-termp body)
-                              (symbol-listp formals)
-                              (pseudo-term-listp actuals)
-                              (equal (len formals) (len actuals)))))
-  (let ((free-vars (free-vars-in-term body)))
-    (let* ((extra-vars (set-difference-eq free-vars formals))
-           (new-formals (append formals extra-vars))
-           (new-actuals (append actuals extra-vars)))
-      (cons (cons 'lambda
-                  (cons new-formals (cons body 'nil)))
-            new-actuals))))
-
-
+;; ;; This adds any extra vars needed to make the lambda closed.
+;; (defund make-lambda-application-simpler (formals actuals body)
+;;   (declare (xargs :guard (and (pseudo-termp body)
+;;                               (symbol-listp formals)
+;;                               (pseudo-term-listp actuals)
+;;                               (equal (len formals) (len actuals)))))
+;;   (let ((free-vars (free-vars-in-term body)))
+;;     (let* ((extra-vars (set-difference-eq free-vars formals))
+;;            (new-formals (append formals extra-vars))
+;;            (new-actuals (append actuals extra-vars)))
+;;       (cons (cons 'lambda
+;;                   (cons new-formals (cons body 'nil)))
+;;             new-actuals))))
 
 ;think about the order!
 
@@ -327,11 +331,6 @@
                            (empty-eval term alist2))
                     t))))
 
-(defthm set-difference-equal-of-remove-equal-when-not-member-equal
-  (implies (not (member-equal a x))
-           (equal (set-difference-equal x (remove-equal a y))
-                  (set-difference-equal x y)))
-  :hints (("Goal" :in-theory (enable set-difference-equal remove-equal))))
 
 (local
   (defthm symbolp-of-bad-guy-for-alists-equiv-on
@@ -470,8 +469,8 @@
            (equal (empty-eval (subst-formal-in-lambda-application formals body args formal-to-subst) a)
                   (empty-eval `((lambda ,formals ,body) ,@args) a)))
   :hints (("[2]Goal" :in-theory (e/d (;make-lambda-application-simple
-                                      make-lambda-term-simple
-                                      make-lambda-application-simpler
+                                      ;; make-lambda-term-simple
+                                      ;; make-lambda-application-simpler
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                       alists-equiv-on-when-agree-on-bad-guy
                                       lookup-equal-of-append
@@ -510,8 +509,8 @@
                                    a) (trivial-formals formals args)))
            )
           ("[1]Subgoal 1" :in-theory (e/d (;make-lambda-application-simple
-                                           make-lambda-term-simple
-                                           make-lambda-application-simpler
+                                           ;; make-lambda-term-simple
+                                           ;; make-lambda-application-simpler
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                            alists-equiv-on-when-agree-on-bad-guy
                                            lookup-equal-of-append
@@ -529,8 +528,8 @@
                                            PAIRLIS$-of-empty-eval-list
                                            )))
           ("[1]Subgoal 2" :in-theory (e/d (;make-lambda-application-simple
-                                           make-lambda-term-simple
-                                           make-lambda-application-simpler
+                                           ;; make-lambda-term-simple
+                                           ;; make-lambda-application-simpler
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                            alists-equiv-on-when-agree-on-bad-guy
                                            lookup-equal-of-append
@@ -553,8 +552,8 @@
 ;           :cases ((member-eq formal-to-subst (free-vars-in-term (lookup-equal formal-to-subst (pairlis$ formals args)))))
            :in-theory (e/d (subst-formal-in-lambda-application
                             ;;make-lambda-application-simple
-                            make-lambda-term-simple
-                            make-lambda-application-simpler
+                            ;; make-lambda-term-simple
+                            ;; make-lambda-application-simpler
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                             alists-equiv-on-when-agree-on-bad-guy
                             lookup-equal-of-append
@@ -710,7 +709,7 @@
                                  not-member-equal-of-bad-guy-for-alists-equiv-on-when-not-intersection-equal-alt-gen
                                  )))))
 
-(local (in-theory (disable intersection-equal-symmetric-iff))) ; or drop this by rephrase hyps above
+(local (in-theory (disable intersection-equal-symmetric-iff))) ; or drop this by rephrasing hyps above
 
 ;; Correctness theorem for subst-formal-in-lambda-application.  Shows that it
 ;; doesn't change the meaning of terms.
@@ -735,8 +734,8 @@
            (equal (empty-eval (subst-formals-in-lambda-application formals body args formals-to-subst) a)
                   (empty-eval `((lambda ,formals ,body) ,@args) a)))
   :hints (("[2]Goal" :in-theory (e/d (;make-lambda-application-simple
-                                      make-lambda-term-simple
-                                      make-lambda-application-simpler
+                                      ;; make-lambda-term-simple
+                                      ;; make-lambda-application-simpler
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                       alists-equiv-on-when-agree-on-bad-guy
                                       lookup-equal-of-append
@@ -869,8 +868,8 @@
                                    a) (trivial-formals formals args)))
            )
           ("[1]Subgoal 1" :in-theory (e/d (;make-lambda-application-simple
-                                           make-lambda-term-simple
-                                           make-lambda-application-simpler
+                                           ;; make-lambda-term-simple
+                                           ;; make-lambda-application-simpler
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                            alists-equiv-on-when-agree-on-bad-guy
                                            lookup-equal-of-append
@@ -889,8 +888,8 @@
                                            PAIRLIS$-of-empty-eval-list
                                            )))
           ("[1]Subgoal 2" :in-theory (e/d (;make-lambda-application-simple
-                                           make-lambda-term-simple
-                                           make-lambda-application-simpler
+                                           ;; make-lambda-term-simple
+                                           ;; make-lambda-application-simpler
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                            alists-equiv-on-when-agree-on-bad-guy
                                            lookup-equal-of-append
@@ -913,8 +912,8 @@
 ;           :cases ((member-eq formal-to-subst (free-vars-in-term (lookup-equal formal-to-subst (pairlis$ formals args)))))
            :in-theory (e/d (subst-formals-in-lambda-application
 ;make-lambda-application-simple
-                            make-lambda-term-simple
-                            make-lambda-application-simpler
+                            ;; make-lambda-term-simple
+                            ;; make-lambda-application-simpler
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                             alists-equiv-on-when-agree-on-bad-guy
                             lookup-equal-of-append
@@ -937,12 +936,6 @@
                             empty-eval-list-when-symbol-listp
                             empty-eval-list-of-cons
                             )))))
-
-;move!
-(defthm subsetp-equal-of-remove-duplicates-equal
-  (equal (subsetp-equal (remove-duplicates-equal x) y)
-         (subsetp-equal x y))
-  :hints (("Goal" :in-theory (enable subsetp-equal))))
 
 ;drop some hyps?
 (defthm subsetp-equal-of-free-vars-in-term-of-subst-formals-in-lambda-application
