@@ -86,6 +86,7 @@
 (include-book "simplify-ors-proofs")
 (include-book "substitute-unnecessary-lambda-vars")
 (include-book "substitute-unnecessary-lambda-vars2")
+(include-book "substitute-unnecessary-lambda-vars2-proofs")
 (include-book "replace-term-with-term")
 
 ;; Transformations about lambdas (and their proofs):

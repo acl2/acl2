@@ -20,6 +20,7 @@
 (include-book "drop-unused-lambda-bindings-proofs")
 (include-book "substitute-constants-in-lambdas-proofs")
 (include-book "drop-trivial-lambdas-proofs")
+(local (include-book "substitute-unnecessary-lambda-vars2-proofs"))
 
 ;; switches the evaluator
 (defthm drop-unused-lambda-bindings-correct-for-if-and-not-eval
