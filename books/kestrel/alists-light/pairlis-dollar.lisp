@@ -48,15 +48,15 @@
   :hints (("Goal" :in-theory (enable pairlis$ take))))
 
 (defthmd pairlis$-opener
-  (implies (not (atom keys))
+  (implies (consp keys)
            (equal (pairlis$ keys vals)
                   (acons (car keys)
                          (car vals)
                          (pairlis$ (cdr keys) (cdr vals)))))
   :hints (("Goal" :in-theory (enable pairlis$))))
 
-(defthmd pairlis$-base
-  (implies (atom keys)
+(defthmd pairlis$-when-not-consp
+  (implies (not (consp keys))
            (equal (pairlis$ keys vals)
                   nil))
   :hints (("Goal" :in-theory (enable pairlis$))))
