@@ -59,3 +59,13 @@
          (append (map-lookup-equal keys1 alist)
                  (map-lookup-equal keys2 alist)))
   :hints (("Goal" :in-theory (enable map-lookup-equal append))))
+
+(defthm cdr-of-assoc-equal-of-pairlis$-of-map-lookup-equal
+  (implies (member-equal key keys)
+           ;; can we remove the cdrs here?:
+           (equal (cdr (assoc-equal key (pairlis$ keys (map-lookup-equal keys a))))
+                  (cdr (assoc-equal key a))))
+  :hints (("Goal" :in-theory (enable pairlis$
+                                     map-lookup-equal
+                                     lookup-equal ;todo
+                                     ))))
