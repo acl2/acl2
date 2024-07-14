@@ -424,3 +424,13 @@
            (equal (subsetp-equal y (cdr x))
                   (subsetp-equal y x)))
   :hints (("Goal" :in-theory (enable subsetp-equal))))
+
+(defthm subsetp-equal-of-remove-duplicates-equal-arg1
+  (equal (subsetp-equal (remove-duplicates-equal x) y)
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))
+
+(defthm subsetp-equal-of-remove-duplicates-equal-arg2
+  (equal (subsetp-equal x (remove-duplicates-equal y))
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))
