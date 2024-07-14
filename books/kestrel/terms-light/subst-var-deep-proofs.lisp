@@ -18,7 +18,7 @@
 (include-book "make-lambda-term-simple")
 ;(include-book "all-lambdas-serialized-in-termp")
 (include-book "replace-corresponding-arg")
-(include-book "kestrel/evaluators/empty-eval" :dir :system) ; move to a proofs book
+(include-book "kestrel/evaluators/empty-eval" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
@@ -295,11 +295,6 @@
            (equal (empty-eval replacement (append (pairlis$ formals (empty-eval-list args a)) a))
                   (empty-eval replacement a)))
   :hints (("Goal" :in-theory (disable alists-equiv-on-of-append-arg1))))
-
-
-
-
-
 
      ;dup
 (defthm empty-eval-of-append-irrel-arg1

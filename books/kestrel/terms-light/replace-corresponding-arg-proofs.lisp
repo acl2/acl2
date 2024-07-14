@@ -14,7 +14,7 @@
 (include-book "lambdas-closed-in-termp")
 (include-book "no-nils-in-termp")
 (include-book "non-trivial-formals")
-(include-book "kestrel/evaluators/empty-eval" :dir :system) ; move to a proofs book
+(include-book "kestrel/evaluators/empty-eval" :dir :system)
 
 (defthm lambdas-closed-in-termsp-of-replace-corresponding-arg
   (implies (and (lambdas-closed-in-termsp args)

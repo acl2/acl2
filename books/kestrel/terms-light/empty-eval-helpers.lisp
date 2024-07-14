@@ -10,8 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/evaluators/empty-eval" :dir :system) ; move to a proofs book
-
+(include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "non-trivial-formals")
 (include-book "trivial-formals")
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
