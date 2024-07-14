@@ -19,6 +19,7 @@
 (include-book "trivial-formals")
 (include-book "sublis-var-simple")
 (local (include-book "helpers"))
+(local (include-book "empty-eval-helpers"))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
@@ -210,10 +211,6 @@
 
 
 (defthm if-helper (equal (equal (if test x y) y) (if test (equal x y) t)))
-
-(defthmd lookup-equal-of-pairlis$-of-empty-eval-list
-  (equal (lookup-equal b (pairlis$ formals (empty-eval-list args a)))
-         (empty-eval (lookup-equal b (pairlis$ formals args)) a)))
 
 (local (in-theory (disable empty-eval-of-lookup-equal-of-pairlis$)))
 (local (in-theory (enable lookup-equal-of-pairlis$-of-empty-eval-list)))

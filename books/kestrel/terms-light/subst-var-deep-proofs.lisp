@@ -1,6 +1,6 @@
 ; Proofs about subst-var-deep
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,6 +26,7 @@
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "make-lambda-terms-simple")
 (local (include-book "helpers"))
+(local (include-book "empty-eval-helpers"))
 (local (include-book "replace-corresponding-arg-proofs"))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
@@ -40,20 +41,12 @@
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
 ;; TODO: Clean up the proofs in this file, and separate them out.
 ;; TODO: Remove duplication between this file and subsrt-var-alt-proofs.lisp !
-
-(defthm lambdas-closed-in-termsp-of-mv-nth-1-of-non-trivial-formals-and-args
-  (implies (lambdas-closed-in-termsp args)
-           (lambdas-closed-in-termsp (mv-nth 1 (non-trivial-formals-and-args formals args))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
-;; End of library material
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -79,6 +72,32 @@
            :in-theory (enable subst-var-deep
                               subst-var-deep-lst
                               lambdas-closed-in-termp))))
+
+
+;gen?
+(defthm-flag-subst-var-deep
+  (defthm no-duplicate-lambda-formals-in-termp-of-subst-var-deep
+    (implies (and (symbolp var)
+                  (pseudo-termp replacement)
+                  (no-duplicate-lambda-formals-in-termp replacement)
+                  (pseudo-termp term)
+                  (no-duplicate-lambda-formals-in-termp term))
+             (no-duplicate-lambda-formals-in-termp (subst-var-deep var replacement term)))
+    :flag subst-var-deep)
+  (defthm no-duplicate-lambda-formals-in-termsp-of-subst-var-deep-lst
+    (implies (and (symbolp var)
+                  (pseudo-termp replacement)
+                  (no-duplicate-lambda-formals-in-termp replacement)
+                  (pseudo-term-listp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms))
+             (no-duplicate-lambda-formals-in-termsp (subst-var-deep-lst var replacement terms)))
+    :flag subst-var-deep-lst)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (subst-var-deep
+                            subst-var-deep-lst
+                            pseudo-termp-when-symbolp
+                            no-duplicate-lambda-formals-in-termp)
+                           (pseudo-termp)))))
 
 (defthm subst-var-deep-when-symbolp
   (implies (symbolp term)
@@ -264,99 +283,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The whole point of this is to recur on a different alist in the lambda case
-(mutual-recursion
- ;; Replace VAR with REPLACEMENT in TERM.
- (defund induct-subst-var-deep (var replacement term a)
-   (declare (xargs :measure (acl2-count term))
-            (irrelevant a)
-            )
-   (if (variablep term)
-       (if (equal term var)
-            replacement
-         term)
-     (if (fquotep term)
-         term
-       (let ((fn (ffn-symb term)))
-         (if (flambdap fn)
-             ;; Lambda application:
-             (b* ((formals (lambda-formals fn))
-                    (body (lambda-body fn))
-                    (args (fargs term))
-                    ;;(non-trivial-formals (non-trivial-formals formals args))
-                    ;;(trivial-formals (trivial-formals formals args))
-                    ((mv non-trivial-formals non-trivial-args)
-                     (non-trivial-formals-and-args formals args))
-                    )
-               (if (or (not (member-eq var formals)) ; no need to go into the body
-                       (member-eq var non-trivial-formals) ; can't substitute in the body because the var is shadowed there
-                       (intersection-eq (free-vars-in-term replacement) non-trivial-formals) ; can't subst in the body because the replacemnt term has a different meaning
-                       (not (mbt (equal (len formals) (len args)))) ; for termination
-                       )
-                   ;; Replace in the args only:
-                   (cons-with-hint fn (induct-subst-var-deep-lst var replacement args a) term)
-                 ;; Var is a trivial formal.  We could just substitute in its actual, but instead we  go into the lambda-body:
-                 ;; todo: just remove the formal and arg for x and call something simpler here?
-                 (make-lambda-application-simple non-trivial-formals
-                                                 ;; Fixup all the non-trivial args (trivial args other than var are not affected by the replacement of var)
-                                                 (induct-subst-var-deep-lst var replacement non-trivial-args a)
-                                                 (induct-subst-var-deep var replacement body
-                                                                (append (pairlis$ non-trivial-formals
-                                                                                           (empty-eval-list (induct-subst-var-deep-lst var replacement non-trivial-args a) a))
-                                                                        a)))))
-           ;; Not a lambda application:
-           (cons ;try fcons-term
-            fn
-            (induct-subst-var-deep-lst var replacement (fargs term) a)))))))
-
- (defund induct-subst-var-deep-lst (var replacement terms a)
-   (declare (xargs :measure (acl2-count terms))
-            (irrelevant a))
-   (if (endp terms)
-       nil
-     (cons (induct-subst-var-deep var replacement (first terms) a)
-           (induct-subst-var-deep-lst var replacement (rest terms) a)))))
-
-(local (make-flag induct-subst-var-deep))
-
-(defthm cdr-of-assoc-equal-of-pairlis$-of-empty-eval-list-when-member-equal-of-trivial-formals
-  (implies (and (member-equal var (trivial-formals formals args))
-     ;               (member-equal var formals)  ;drop?
-     ;              (symbol-listp formals)
-                (no-duplicatesp-equal formals)
-                var
-                (symbolp var))
-           (equal (cdr (assoc-equal var (pairlis$ formals (empty-eval-list args a))))
-                  (cdr (assoc-equal var a)) ; (empty-eval var a)
-                  ))
-  :hints (("Goal" :in-theory (enable trivial-formals pairlis$))))
-
-;; slight rephrasing of the above
-(defthm cdr-of-assoc-equal-of-pairlis$-of-empty-eval-list-when-not-member-equal-of-non-trivial-formals
-  (implies (and (not (member-equal var (non-trivial-formals formals args)))
-                (member-equal var formals)
-     ;              (symbol-listp formals)
-                (no-duplicatesp-equal formals)
-                var
-                (symbolp var))
-           (equal (cdr (assoc-equal var (pairlis$ formals (empty-eval-list args a))))
-                  (cdr (assoc-equal var a)) ; (empty-eval var a)
-                  ))
-  :hints (("Goal" :in-theory (enable trivial-formals pairlis$))))
-
-(defthm helper1
-  (implies (and (not (intersection-equal vars (non-trivial-formals formals args)))
-                (no-duplicatesp-equal formals)
-                (symbol-listp formals)
-                (symbol-listp vars)
-                (not (member-equal nil vars)))
-           (alists-equiv-on vars
-                            (append (pairlis$ formals (empty-eval-list args a)) a)
-                            a))
-  :hints (("Goal" :in-theory (enable alists-equiv-on symbol-listp intersection-equal))))
-
 (local (in-theory (disable symbol-listp no-duplicatesp-equal)))
 
+;needs stuff from make-lambda-application-simple-proof
 (defthm helper2
   (implies (and (not (intersection-equal (free-vars-in-term replacement) (non-trivial-formals formals args)))
                 (no-duplicatesp-equal formals)
@@ -368,20 +297,7 @@
   :hints (("Goal" :in-theory (disable alists-equiv-on-of-append-arg1))))
 
 
-(local
- (defthm-flag-induct-subst-var-deep
-   (defthm subst-var-deep-induct-removal
-     (equal (induct-subst-var-deep var replacement term a)
-            (subst-var-deep var replacement term))
-     :flag induct-subst-var-deep)
-   (defthm subst-var-deep-lst-induct-removal
-     (equal (induct-subst-var-deep-lst var replacement terms a)
-            (subst-var-deep-lst var replacement terms))
-     :flag induct-subst-var-deep-lst)
-   :hints (("Goal" :in-theory (enable subst-var-deep
-                                      subst-var-deep-lst
-                                      induct-subst-var-deep
-                                      induct-subst-var-deep-lst)))))
+
 
 
 
@@ -504,47 +420,12 @@
 
 ;; (theory-invariant (incompatible (:rewrite PAIRLIS$-OF-EMPTY-EVAL-LIST) (:rewrite empty-eval-cdrs-of-pairlis$)))
 
-(defthm cdr-of-assoc-equal-of-pairlis$_when-member-equal-of-trivial-formals
-  (implies (and (MEMBER-EQUAL VAR (TRIVIAL-FORMALS FORMALS ARGS))
-                (no-duplicatesp-equal formals))
-           (equal (CDR (ASSOC-EQUAL VAR (PAIRLIS$ FORMALS ARGS)))
-                  var))
-  :hints (("Goal" :in-theory (enable PAIRLIS$ trivial-formals))))
-
-(defthm symbolp-when-MEMBER-EQUAL-of-trivial-formals
-  (implies (and (MEMBER-EQUAL VAR (TRIVIAL-FORMALS FORMALS ARGS))
-                (symbol-listp formals))
-           (symbolp var))
-  :hints (("Goal" :in-theory (enable TRIVIAL-FORMALS))))
-
-(defthm lookup-equal-of-pairlis$-when-member-equal-of-trivial-formals
-  (IMPLIES (AND (MEMBER-EQUAL SOMEVAR (TRIVIAL-FORMALS FORMALS ARGS))
-                (no-duplicatesp-equal formals))
-           (equal (LOOKUP-EQUAL SOMEVAR (PAIRLIS$ FORMALS ARGS))
-                  somevar))
-  :hints (("Goal" :in-theory (enable TRIVIAL-FORMALS pairlis$ lookup-equal assoc-equal))))
-
 ;; (defthm ASSOC-EQUAL-of-EMPTY-EVAL-CDRS-iff
 ;;  (implies (alistp alist)
 ;;           (iff (ASSOC-EQUAL SOMEVAR (EMPTY-EVAL-CDRS alist a))
 ;;                (ASSOC-EQUAL SOMEVAR alist)))
 
 ;;  :hints (("Goal" :in-theory (enable empty-eval-cdrs assoc-equal))))
-
-(defthm LOOKUP-EQUAL-of-PAIRLIS$-of-NON-TRIVIAL-FORMALS-and-mv-nth-1-of-NON-TRIVIAL-FORMALS-AND-ARGS
- (implies (no-duplicatesp-equal formals)
-          (equal (LOOKUP-EQUAL var (PAIRLIS$ (NON-TRIVIAL-FORMALS FORMALS ARGS)
-                                             ;; could name this non-trivial-args:
-                                             (MV-NTH 1 (NON-TRIVIAL-FORMALS-AND-ARGS FORMALS ARGS))))
-                 (if (member-equal var (NON-TRIVIAL-FORMALS FORMALS ARGS))
-                     (lookup-equal var (pairlis$ formals args))
-                   nil)))
- :hints (("Goal" :in-theory (enable NON-TRIVIAL-FORMALS NON-TRIVIAL-FORMALS-and-args pairlis$))))
-
-;dup!
-(defthmd lookup-equal-of-pairlis$-of-empty-eval-list
-  (equal (lookup-equal b (pairlis$ formals (empty-eval-list args a)))
-         (empty-eval (lookup-equal b (pairlis$ formals args)) a)))
 
 (defthm main.help.help
   (implies (and (member-eq somevar (free-vars-in-term body))
@@ -690,6 +571,77 @@
 
 ;(theory-invariant (incompatible (:rewrite CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS ) (:rewrite EMPTY-EVAL-OF-CDR-OF-ASSOC-EQUAL)))
 
+
+;; The whole point of this is to recur on a different alist in the lambda case
+(mutual-recursion
+ ;; Replace VAR with REPLACEMENT in TERM.
+ (defund induct-subst-var-deep (var replacement term a)
+   (declare (xargs :measure (acl2-count term))
+            (irrelevant a)
+            )
+   (if (variablep term)
+       (if (equal term var)
+            replacement
+         term)
+     (if (fquotep term)
+         term
+       (let ((fn (ffn-symb term)))
+         (if (flambdap fn)
+             ;; Lambda application:
+             (b* ((formals (lambda-formals fn))
+                    (body (lambda-body fn))
+                    (args (fargs term))
+                    ;;(non-trivial-formals (non-trivial-formals formals args))
+                    ;;(trivial-formals (trivial-formals formals args))
+                    ((mv non-trivial-formals non-trivial-args)
+                     (non-trivial-formals-and-args formals args))
+                    )
+               (if (or (not (member-eq var formals)) ; no need to go into the body
+                       (member-eq var non-trivial-formals) ; can't substitute in the body because the var is shadowed there
+                       (intersection-eq (free-vars-in-term replacement) non-trivial-formals) ; can't subst in the body because the replacemnt term has a different meaning
+                       (not (mbt (equal (len formals) (len args)))) ; for termination
+                       )
+                   ;; Replace in the args only:
+                   (cons-with-hint fn (induct-subst-var-deep-lst var replacement args a) term)
+                 ;; Var is a trivial formal.  We could just substitute in its actual, but instead we  go into the lambda-body:
+                 ;; todo: just remove the formal and arg for x and call something simpler here?
+                 (make-lambda-application-simple non-trivial-formals
+                                                 ;; Fixup all the non-trivial args (trivial args other than var are not affected by the replacement of var)
+                                                 (induct-subst-var-deep-lst var replacement non-trivial-args a)
+                                                 (induct-subst-var-deep var replacement body
+                                                                (append (pairlis$ non-trivial-formals
+                                                                                           (empty-eval-list (induct-subst-var-deep-lst var replacement non-trivial-args a) a))
+                                                                        a)))))
+           ;; Not a lambda application:
+           (cons ;try fcons-term
+            fn
+            (induct-subst-var-deep-lst var replacement (fargs term) a)))))))
+
+ (defund induct-subst-var-deep-lst (var replacement terms a)
+   (declare (xargs :measure (acl2-count terms))
+            (irrelevant a))
+   (if (endp terms)
+       nil
+     (cons (induct-subst-var-deep var replacement (first terms) a)
+           (induct-subst-var-deep-lst var replacement (rest terms) a)))))
+
+(local (make-flag induct-subst-var-deep))
+
+(local
+ (defthm-flag-induct-subst-var-deep
+   (defthm subst-var-deep-induct-removal
+     (equal (induct-subst-var-deep var replacement term a)
+            (subst-var-deep var replacement term))
+     :flag induct-subst-var-deep)
+   (defthm subst-var-deep-lst-induct-removal
+     (equal (induct-subst-var-deep-lst var replacement terms a)
+            (subst-var-deep-lst var replacement terms))
+     :flag induct-subst-var-deep-lst)
+   :hints (("Goal" :in-theory (enable subst-var-deep
+                                      subst-var-deep-lst
+                                      induct-subst-var-deep
+                                      induct-subst-var-deep-lst)))))
+
 ;; subst-var-deep preserves the meaning of terms
 (defthm-flag-induct-subst-var-deep
   (defthm subst-var-deep-correct
@@ -758,28 +710,3 @@
                             )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;gen?
-(defthm-flag-subst-var-deep
-  (defthm no-duplicate-lambda-formals-in-termp-of-subst-var-deep
-    (implies (and (symbolp var)
-                  (pseudo-termp replacement)
-                  (no-duplicate-lambda-formals-in-termp replacement)
-                  (pseudo-termp term)
-                  (no-duplicate-lambda-formals-in-termp term))
-             (no-duplicate-lambda-formals-in-termp (subst-var-deep var replacement term)))
-    :flag subst-var-deep)
-  (defthm no-duplicate-lambda-formals-in-termsp-of-subst-var-deep-lst
-    (implies (and (symbolp var)
-                  (pseudo-termp replacement)
-                  (no-duplicate-lambda-formals-in-termp replacement)
-                  (pseudo-term-listp terms)
-                  (no-duplicate-lambda-formals-in-termsp terms))
-             (no-duplicate-lambda-formals-in-termsp (subst-var-deep-lst var replacement terms)))
-    :flag subst-var-deep-lst)
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (subst-var-deep
-                            subst-var-deep-lst
-                            pseudo-termp-when-symbolp
-                            no-duplicate-lambda-formals-in-termp)
-                           (pseudo-termp)))))

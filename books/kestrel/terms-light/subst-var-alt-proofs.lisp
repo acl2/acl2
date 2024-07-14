@@ -1,6 +1,6 @@
 ; Proofs about subst-var-alt
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
 (include-book "make-lambda-term-simple")
 (include-book "all-lambdas-serialized-in-termp")
 (include-book "replace-corresponding-arg")
-(include-book "kestrel/evaluators/empty-eval" :dir :system) ; move to a proofs book
+(include-book "kestrel/evaluators/empty-eval" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
@@ -27,6 +27,7 @@
 (include-book "make-lambda-terms-simple")
 (local (include-book "replace-corresponding-arg-proofs"))
 (local (include-book "helpers"))
+(local (include-book "empty-eval-helpers"))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "make-lambda-application-simple-proof"))
@@ -40,19 +41,11 @@
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
 ;; TODO: Clean up the proofs in this file, and separate them out.
-
-(defthm lambdas-closed-in-termsp-of-mv-nth-1-of-non-trivial-formals-and-args
-  (implies (lambdas-closed-in-termsp args)
-           (lambdas-closed-in-termsp (mv-nth 1 (non-trivial-formals-and-args formals args))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
-;; End of library material
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -323,42 +316,6 @@
 
 (local (make-flag induct-subst-var-alt))
 
-(defthm cdr-of-assoc-equal-of-pairlis$-of-empty-eval-list-when-member-equal-of-trivial-formals
-  (implies (and (member-equal var (trivial-formals formals args))
-     ;               (member-equal var formals)  ;drop?
-     ;              (symbol-listp formals)
-                (no-duplicatesp-equal formals)
-                var
-                (symbolp var))
-           (equal (cdr (assoc-equal var (pairlis$ formals (empty-eval-list args a))))
-                  (cdr (assoc-equal var a)) ; (empty-eval var a)
-                  ))
-  :hints (("Goal" :in-theory (enable trivial-formals pairlis$))))
-
-;; slight rephrasing of the above
-(defthm cdr-of-assoc-equal-of-pairlis$-of-empty-eval-list-when-not-member-equal-of-non-trivial-formals
-  (implies (and (not (member-equal var (non-trivial-formals formals args)))
-                (member-equal var formals)
-     ;              (symbol-listp formals)
-                (no-duplicatesp-equal formals)
-                var
-                (symbolp var))
-           (equal (cdr (assoc-equal var (pairlis$ formals (empty-eval-list args a))))
-                  (cdr (assoc-equal var a)) ; (empty-eval var a)
-                  ))
-  :hints (("Goal" :in-theory (enable trivial-formals pairlis$))))
-
-(defthm helper1
-  (implies (and (not (intersection-equal vars (non-trivial-formals formals args)))
-                (no-duplicatesp-equal formals)
-                (symbol-listp formals)
-                (symbol-listp vars)
-                (not (member-equal nil vars)))
-           (alists-equiv-on vars
-                            (append (pairlis$ formals (empty-eval-list args a)) a)
-                            a))
-  :hints (("Goal" :in-theory (enable alists-equiv-on symbol-listp intersection-equal))))
-
 (local (in-theory (disable symbol-listp no-duplicatesp-equal)))
 
 (defthm helper2
@@ -505,42 +462,12 @@
 
 (theory-invariant (incompatible (:rewrite PAIRLIS$-OF-EMPTY-EVAL-LIST) (:rewrite empty-eval-cdrs-of-pairlis$)))
 
-(defthm cdr-of-assoc-equal-of-pairlis$_when-member-equal-of-trivial-formals
-  (implies (and (MEMBER-EQUAL VAR (TRIVIAL-FORMALS FORMALS ARGS))
-                (no-duplicatesp-equal formals))
-           (equal (CDR (ASSOC-EQUAL VAR (PAIRLIS$ FORMALS ARGS)))
-                  var))
-  :hints (("Goal" :in-theory (enable PAIRLIS$ trivial-formals))))
-
-(defthm symbolp-when-MEMBER-EQUAL-of-trivial-formals
-  (implies (and (MEMBER-EQUAL VAR (TRIVIAL-FORMALS FORMALS ARGS))
-                (symbol-listp formals))
-           (symbolp var))
-  :hints (("Goal" :in-theory (enable TRIVIAL-FORMALS))))
-
-(defthm lookup-equal-of-pairlis$-when-member-equal-of-trivial-formals
-  (IMPLIES (AND (MEMBER-EQUAL SOMEVAR (TRIVIAL-FORMALS FORMALS ARGS))
-                (no-duplicatesp-equal formals))
-           (equal (LOOKUP-EQUAL SOMEVAR (PAIRLIS$ FORMALS ARGS))
-                  somevar))
-  :hints (("Goal" :in-theory (enable TRIVIAL-FORMALS pairlis$ lookup-equal assoc-equal))))
-
 (defthm ASSOC-EQUAL-of-EMPTY-EVAL-CDRS-iff
  (implies (alistp alist)
           (iff (ASSOC-EQUAL SOMEVAR (EMPTY-EVAL-CDRS alist a))
                (ASSOC-EQUAL SOMEVAR alist)))
 
  :hints (("Goal" :in-theory (enable empty-eval-cdrs assoc-equal))))
-
-(defthm LOOKUP-EQUAL-of-PAIRLIS$-of-NON-TRIVIAL-FORMALS-and-mv-nth-1-of-NON-TRIVIAL-FORMALS-AND-ARGS
- (implies (no-duplicatesp-equal formals)
-          (equal (LOOKUP-EQUAL var (PAIRLIS$ (NON-TRIVIAL-FORMALS FORMALS ARGS)
-                                             ;; could name this non-trivial-args:
-                                             (MV-NTH 1 (NON-TRIVIAL-FORMALS-AND-ARGS FORMALS ARGS))))
-                 (if (member-equal var (NON-TRIVIAL-FORMALS FORMALS ARGS))
-                     (lookup-equal var (pairlis$ formals args))
-                   nil)))
- :hints (("Goal" :in-theory (enable NON-TRIVIAL-FORMALS NON-TRIVIAL-FORMALS-and-args pairlis$))))
 
 (defthm main.help.help
   (implies (and (member-eq somevar (free-vars-in-term body))

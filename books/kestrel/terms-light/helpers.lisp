@@ -94,3 +94,32 @@
   (implies (no-duplicatesp-equal formals)
            (no-duplicatesp-equal (non-trivial-formals formals args)))
   :hints (("Goal" :in-theory (enable non-trivial-formals no-duplicatesp-equal))))
+
+(defthm lookup-equal-of-pairlis$-when-member-equal-of-trivial-formals
+  (implies (and (member-equal formal (trivial-formals formals args))
+                (no-duplicatesp-equal formals))
+           (equal (lookup-equal formal (pairlis$ formals args))
+                  formal))
+  :hints (("Goal" :in-theory (enable trivial-formals pairlis$ lookup-equal assoc-equal))))
+
+(defthm lambdas-closed-in-termsp-of-mv-nth-1-of-non-trivial-formals-and-args
+  (implies (lambdas-closed-in-termsp args)
+           (lambdas-closed-in-termsp (mv-nth 1 (non-trivial-formals-and-args formals args))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
+
+(defthm cdr-of-assoc-equal-of-pairlis$_when-member-equal-of-trivial-formals
+  (implies (and (MEMBER-EQUAL VAR (TRIVIAL-FORMALS FORMALS ARGS))
+                (no-duplicatesp-equal formals))
+           (equal (CDR (ASSOC-EQUAL VAR (PAIRLIS$ FORMALS ARGS)))
+                  var))
+  :hints (("Goal" :in-theory (enable PAIRLIS$ trivial-formals))))
+
+(defthm LOOKUP-EQUAL-of-PAIRLIS$-of-NON-TRIVIAL-FORMALS-and-mv-nth-1-of-NON-TRIVIAL-FORMALS-AND-ARGS
+ (implies (no-duplicatesp-equal formals)
+          (equal (LOOKUP-EQUAL var (PAIRLIS$ (NON-TRIVIAL-FORMALS FORMALS ARGS)
+                                             ;; could name this non-trivial-args:
+                                             (MV-NTH 1 (NON-TRIVIAL-FORMALS-AND-ARGS FORMALS ARGS))))
+                 (if (member-equal var (NON-TRIVIAL-FORMALS FORMALS ARGS))
+                     (lookup-equal var (pairlis$ formals args))
+                   nil)))
+ :hints (("Goal" :in-theory (enable NON-TRIVIAL-FORMALS NON-TRIVIAL-FORMALS-and-args pairlis$))))

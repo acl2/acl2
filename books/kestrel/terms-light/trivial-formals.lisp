@@ -39,3 +39,9 @@
 (defthm subsetp-equal-of-trivial-formals
   (subsetp-equal (trivial-formals formals args) formals)
   :hints (("Goal" :in-theory (enable trivial-formals))))
+
+(defthm symbolp-when-member-equal-of-trivial-formals
+  (implies (and (member-equal var (trivial-formals formals args))
+                (symbol-listp formals))
+           (symbolp var))
+  :hints (("Goal" :in-theory (enable trivial-formals))))

@@ -60,6 +60,7 @@
 (include-book "count-vars")
 
 (include-book "helpers")
+(include-book "empty-eval-helpers")
 
 (include-book "sublis-var-simple")
 (include-book "sublis-var-simple-proofs")
