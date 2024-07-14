@@ -119,3 +119,11 @@
              nil
            (subsetp-equal x y)))
   :hints (("Goal" :in-theory (enable subsetp-equal remove-equal member-equal))))
+
+(defthm len-of-remove-equal-when-no-duplicatesp-equal
+  (implies (no-duplicatesp-equal x)
+           (equal (len (remove-equal a x))
+                  (if (member-equal a x)
+                      (+ -1 (len x))
+                    (len x))))
+  :hints (("Goal" :in-theory (enable remove-equal))))

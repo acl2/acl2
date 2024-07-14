@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function subsetp-equal.
 ;
-; Copyright (C) 2016-2022 Kestrel Institute
+; Copyright (C) 2016-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -418,3 +418,9 @@
   (equal (subsetp-equal x (reverse y))
          (subsetp-equal x y))
   :hints (("Goal" :in-theory (enable subsetp-equal reverse-list))))
+
+(defthm subsetp-equal-of-cdr-arg2-when-not-member-equal-of-car
+  (implies (not (member-equal (car x) y))
+           (equal (subsetp-equal y (cdr x))
+                  (subsetp-equal y x)))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))

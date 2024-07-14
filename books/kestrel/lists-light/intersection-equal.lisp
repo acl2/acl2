@@ -216,3 +216,9 @@
        (or (intersection-equal x y)
            (member-equal a x)))
   :hints (("Goal" :in-theory (enable intersection-equal member-equal add-to-set-equal))))
+
+(defthm intersection-equal-of-remove-equal-arg2-when-not-member-equal-arg1
+  (implies (not (member-equal a x))
+           (equal (intersection-equal x (remove-equal a y))
+                  (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable intersection-equal remove-equal))))
