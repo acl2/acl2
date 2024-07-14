@@ -25,6 +25,7 @@
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "make-lambda-terms-simple")
+(local (include-book "replace-corresponding-arg-proofs"))
 (local (include-book "helpers"))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
@@ -45,23 +46,6 @@
 (local (in-theory (disable mv-nth)))
 
 ;; TODO: Clean up the proofs in this file, and separate them out.
-
-(defthm lambdas-closed-in-termsp-of-replace-corresponding-arg
-  (implies (and (lambdas-closed-in-termsp args)
-                (lambdas-closed-in-termp new-arg))
-           (lambdas-closed-in-termsp (replace-corresponding-arg new-arg args formal formals)))
-  :hints (("Goal" :in-theory (enable replace-corresponding-arg))))
-
-(defthm empty-eval-list-of-replace-corresponding-arg
-  (equal (empty-eval-list (replace-corresponding-arg new-arg args formal formals) a)
-         (replace-corresponding-arg (empty-eval new-arg a) (empty-eval-list args a) formal formals))
-  :hints (("Goal" :in-theory (enable replace-corresponding-arg))))
-
-(defthm no-nils-in-termsp-of-replace-corresponding-arg
-  (implies (and (no-nils-in-termsp args)
-                (no-nils-in-termp new-arg))
-           (no-nils-in-termsp (replace-corresponding-arg new-arg args formal formals)))
-  :hints (("Goal" :in-theory (enable replace-corresponding-arg))))
 
 (defthm lambdas-closed-in-termsp-of-mv-nth-1-of-non-trivial-formals-and-args
   (implies (lambdas-closed-in-termsp args)
@@ -150,32 +134,6 @@
            (all-lambdas-serialized-in-termsp (mv-nth 1 (non-trivial-formals-and-args formals args))))
   :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
 
-(defthm mv-nth-0-of-non-trivial-formals-and-args
-  (equal (mv-nth 0 (non-trivial-formals-and-args formals args))
-         (non-trivial-formals formals args))
-  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args
-                                     non-trivial-formals))))
-
-(defthm formals-get-shorter ;rename
- (implies
-  (and
-   (symbol-listp formals)
-   (pseudo-term-listp actuals)
-   (equal (len formals) (len actuals)))
-  (<=
-   (len
-    (non-trivial-formals
-     (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))
-     (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
-   (len (non-trivial-formals formals actuals))))
- :rule-classes :linear
- :hints (("Goal" :in-theory (enable non-trivial-formals filter-formals-and-actuals))))
-
-(defthm filter-formals-and-actuals-of-nil-arg1
-  (equal (filter-formals-and-actuals nil actuals formals-to-keep)
-         (mv nil nil))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
 (defthm all-lambdas-serialized-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)
                 (symbol-listp formals)
@@ -212,43 +170,11 @@
   :hints (("Goal" ; :induct (make-lambda-application-simple formals actuals body)
            :in-theory (e/d (make-lambda-application-simple) (mv-nth-0-of-filter-formals-and-actuals)))))
 
-(defthm no-duplicate-lambda-formals-in-termsp-of-mv-nth-1-of-non-trivial-formals-and-args
-  (implies (no-duplicate-lambda-formals-in-termsp args)
-           (no-duplicate-lambda-formals-in-termsp (mv-nth 1 (non-trivial-formals-and-args formals args))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
-(defthm not-member-equal-of-trivial-formals-when-member-equal-of-non-trivial-formals
-  (implies (and (member-equal var (non-trivial-formals formals args))
-                (no-duplicatesp-equal formals))
-           (not (member-equal var (trivial-formals formals args))))
-  :hints (("Goal" :in-theory (enable trivial-formals non-trivial-formals))))
-
-(defthm member-equal-of-trivial-formals-when-not-member-equal-of-non-trivial-formals
-  (implies (and (not (member-equal var (non-trivial-formals formals args)))
-                (no-duplicatesp-equal formals)
-                (member-equal var formals))
-           (member-equal var (trivial-formals formals args)))
-  :hints (("Goal" :in-theory (enable trivial-formals non-trivial-formals))))
-
-(defthm member-equal-of-non-trivial-formals-becomes-not-member-equal-of-non-trivial-formals
-  (implies (and  (no-duplicatesp-equal formals)
-                 (member-equal var formals))
-           (iff (member-equal var (non-trivial-formals formals args))
-                (not (member-equal var (trivial-formals formals args)))))
-  :hints (("Goal" :in-theory (enable trivial-formals non-trivial-formals))))
-
 (defthm all-lambdas-serialized-in-termsp-of-replace-corresponding-arg
   (implies (and (all-lambdas-serialized-in-termsp args)
                 (all-lambdas-serialized-in-termp new-arg))
            (all-lambdas-serialized-in-termsp (replace-corresponding-arg new-arg args formal formals)))
   :hints (("Goal" :in-theory (enable replace-corresponding-arg))))
-
-     ;drop?
-(defthm len-of-non-trivial-formals-of-replace-corresponding-arg-linear
-  (<= (len (non-trivial-formals formals (replace-corresponding-arg var args var formals)))
-      (len (non-trivial-formals formals args)))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable replace-corresponding-arg non-trivial-formals))))
 
 (defthm len-of-non-trivial-formals-of-replace-corresponding-arg-of-subst-var-alt-lst-linear
   (implies (symbol-listp formals)
@@ -257,7 +183,7 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable replace-corresponding-arg non-trivial-formals subst-var-alt-lst))))
 
-(local (defthm len-of-if (equal (len (if test tp ep)) (if test (len tp) (len ep)))))
+;(local (defthm len-of-if (equal (len (if test tp ep)) (if test (len tp) (len ep)))))
 
 ;; (thm
 ;;  (implies (and (not (intersection-equal (free-vars-in-term replacement) formals))
@@ -302,12 +228,6 @@
                             )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm no-nils-in-termsp-of-mv-nth-1-of-non-trivial-formals-and-args
-  (implies (and (no-nils-in-termsp args)
-                (equal (len formals) (len args)))
-           (no-nils-in-termsp (mv-nth 1 (non-trivial-formals-and-args formals args))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
 
 (defthm-flag-subst-var-alt
   (defthm no-nils-in-termp-of-subst-var-alt
@@ -467,11 +387,6 @@
                                       induct-subst-var-alt
                                       induct-subst-var-alt-lst)))))
 
-(defthm no-duplicatesp-equal-of-non-trivial-formals
-  (implies (no-duplicatesp-equal formals)
-           (no-duplicatesp-equal (non-trivial-formals formals args)))
-  :hints (("Goal" :in-theory (enable non-trivial-formals no-duplicatesp-equal))))
-
      ;dup
 (defthm empty-eval-of-append-irrel-arg1
   (implies (and (not (intersection-equal (free-vars-in-term term) (strip-cars a1)))
@@ -548,6 +463,7 @@
            (member-equal (bad-guy-for-alists-equiv-on keys a1 a2) keys))
   :hints (("Goal" :in-theory (enable BAD-GUY-FOR-ALISTS-EQUIV-ON))))
 
+;; can we get rid of this, like we did in subst-var-deep-proofs.lisp
 (defun EMPTY-EVAL-cdrs (alist a)
   (if (endp alist)
       nil
@@ -625,13 +541,6 @@
                      (lookup-equal var (pairlis$ formals args))
                    nil)))
  :hints (("Goal" :in-theory (enable NON-TRIVIAL-FORMALS NON-TRIVIAL-FORMALS-and-args pairlis$))))
-
-(defthmd cdr-of-assoc-equal-becomes-lookup-equal
-  (equal (cdr (assoc-equal key alist))
-         (lookup-equal key alist))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
-(theory-invariant (incompatible (:rewrite cdr-of-assoc-equal-becomes-lookup-equal) (:definition lookup-equal)))
 
 (defthm main.help.help
   (implies (and (member-eq somevar (free-vars-in-term body))
@@ -843,25 +752,6 @@
                             CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm no-duplicate-lambda-formals-in-termsp-of-map-lookup-equal
-  (implies (no-duplicate-lambda-formals-in-termsp (strip-cdrs alist))
-           (no-duplicate-lambda-formals-in-termsp (map-lookup-equal keys alist)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal))))
-
-;move
-(defthm no-duplicate-lambda-formals-in-termp-of-make-lambda-application-simple
-  (implies (and (pseudo-termp body)
-                (no-duplicate-lambda-formals-in-termp body)
-                (symbol-listp formals)
-                (no-duplicatesp-equal formals)
-                (pseudo-term-listp actuals)
-                (no-duplicate-lambda-formals-in-termsp actuals)
-                (equal (len formals) (len actuals)))
-           (no-duplicate-lambda-formals-in-termp (make-lambda-application-simple formals actuals body)))
-  :hints (("Goal" :in-theory (e/d (make-lambda-application-simple
-                                   no-duplicate-lambda-formals-in-termp)
-                                  (mv-nth-0-of-filter-formals-and-actuals len)))))
 
 ;gen?
 (defthm-flag-subst-var-alt

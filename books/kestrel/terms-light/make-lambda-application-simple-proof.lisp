@@ -13,8 +13,10 @@
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "make-lambda-application-simple")
 (include-book "no-nils-in-termp")
+(include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
+(local (include-book "helpers"))
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -278,3 +280,16 @@
            :in-theory (enable make-lambda-application-simple
                               no-nils-in-termp ;todo
                               ))))
+
+(defthm no-duplicate-lambda-formals-in-termp-of-make-lambda-application-simple
+  (implies (and (pseudo-termp body)
+                (no-duplicate-lambda-formals-in-termp body)
+                (symbol-listp formals)
+                (no-duplicatesp-equal formals)
+                (pseudo-term-listp actuals)
+                (no-duplicate-lambda-formals-in-termsp actuals)
+                (equal (len formals) (len actuals)))
+           (no-duplicate-lambda-formals-in-termp (make-lambda-application-simple formals actuals body)))
+  :hints (("Goal" :in-theory (e/d (make-lambda-application-simple
+                                   no-duplicate-lambda-formals-in-termp)
+                                  (mv-nth-0-of-filter-formals-and-actuals len)))))
