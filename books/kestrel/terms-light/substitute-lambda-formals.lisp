@@ -120,6 +120,30 @@
 ;;                     (intersection-equal y x))
 ;;            :in-theory (enable subsetp-equal intersection-equal))))
 
+(defthm subsetp-equal-of-free-vars-in-term-of-lookup-equal-and-free-vars-in-terms-of-map-lookup-equal
+  (implies (member-equal key keys)
+           (subsetp-equal (free-vars-in-term (lookup-equal key alist))
+                          (free-vars-in-terms (map-lookup-equal keys alist))))
+  :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
+(defthm subsetp-equal-of-append-of-set-difference-equal-same
+  (equal (subsetp-equal x (append c (set-difference-equal z c)))
+         (subsetp-equal x (append c z)))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))
+
+(defthm subsetp-equal-of-free-vars-in-term-of-cdr-of-assoc-equal-and-free-vars-in-terms-of-map-lookup-equal
+  (implies (member-equal key keys)
+           (subsetp-equal (free-vars-in-term (cdr (assoc-equal key alist)))
+                          (free-vars-in-terms (map-lookup-equal keys alist))))
+  :hints (("Goal" :in-theory (enable map-lookup-equal lookup-equal))))
+
+(defthm not-intersection-equal-of-set-difference-equal-same-arg2-arg2
+  (not (intersection-equal x (set-difference-equal y x)))
+  :hints (("Goal" :in-theory (enable intersection-equal
+                                     set-difference-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; This adds any extra vars needed to make the lambda closed.
 (defund make-lambda-application-simpler (formals actuals body)
   (declare (xargs :guard (and (pseudo-termp body)
@@ -580,17 +604,15 @@
        ;; ((when clashing-vars) ; can't happen if we assume the guard
        ;;  (er hard 'subst-some-formals-in-lambda-application "Variable clash on ~x0." clashing-vars)
        ;;  `((lambda ,formals ,body) ,@args))
-       (body (sublis-var-simple (pairlis$ formals-to-subst args-to-subst) body)))
-    ;; todo: this can add back formal in a different position:
-    ;;(make-lambda-application-simpler remaining-formals remaining-args body)
-    (let ((extra-vars (set-difference-equal args-to-subst-vars remaining-formals)))
-      `((lambda ,(append remaining-formals extra-vars) ,body) ,@remaining-args ,@extra-vars))))
-
-(defthm subsetp-equal-of-free-vars-in-term-of-lookup-equal-and-free-vars-in-terms-of-map-lookup-equal
-  (implies (member-equal key keys)
-           (subsetp-equal (free-vars-in-term (lookup-equal key alist))
-                          (free-vars-in-terms (map-lookup-equal keys alist))))
-  :hints (("Goal" :in-theory (enable map-lookup-equal))))
+       (new-body (sublis-var-simple (pairlis$ formals-to-subst args-to-subst) body))
+       ;; todo: this can add back formal in a different position:
+       ;;(make-lambda-application-simpler remaining-formals remaining-args new-body)
+       (extra-vars (set-difference-equal args-to-subst-vars remaining-formals))
+       (new-formals (append remaining-formals extra-vars))
+       (new-args (append remaining-args extra-vars)))
+    (if nil ; (equal new-formals new-args) ; avoid trivial lambda ;; todo: put back!
+        new-body
+    `((lambda ,new-formals ,new-body) ,@new-args))))
 
 (defthm pseudo-termp-of-subst-formals-in-lambda-application
   (implies (and (symbol-listp formals)
@@ -614,18 +636,6 @@
            (no-nils-in-termp (subst-formals-in-lambda-application formals body args formals-to-subst)))
   :hints (("Goal" :in-theory (enable subst-formals-in-lambda-application))))
 
-(defthm subsetp-equal-of-append-of-set-difference-equal-same
-  (equal (subsetp-equal x (append c (set-difference-equal z c)))
-         (subsetp-equal x (append c z)))
-  :hints (("Goal" :in-theory (enable subsetp-equal))))
-
-(defthm subsetp-equal-of-free-vars-in-term-of-cdr-of-assoc-equal-and-free-vars-in-terms-of-map-lookup-equal
-  (implies (member-equal key keys)
-           (subsetp-equal (free-vars-in-term (cdr (assoc-equal key alist)))
-                          (free-vars-in-terms (map-lookup-equal keys alist))))
-  :hints (("Goal" :in-theory (enable map-lookup-equal lookup-equal))))
-
-
 ;drop some hyps?
 (defthm lambdas-closed-in-termp-of-subst-formals-in-lambda-application
   (implies (and (symbol-listp formals)
@@ -643,11 +653,6 @@
   :hints (("Goal" :expand (lambdas-closed-in-termp body)
            :in-theory (enable subst-formals-in-lambda-application lambdas-closed-in-termp))))
 
-(defthm not-of-set-difference-equal-same
-  (not (intersection-equal x (set-difference-equal y x)))
-  :hints (("Goal" :in-theory (enable intersection-equal
-                                     set-difference-equal))))
-
 (defthm no-duplicate-lambda-formals-in-termp-of-subst-formals-in-lambda-application
   (implies (and (pseudo-term-listp args)
                 (no-duplicate-lambda-formals-in-termp body)
@@ -656,7 +661,6 @@
            (no-duplicate-lambda-formals-in-termp (subst-formals-in-lambda-application formals body args formals-to-subst)))
   :hints (("Goal" :expand (no-duplicate-lambda-formals-in-termp body)
            :in-theory (enable subst-formals-in-lambda-application no-duplicate-lambda-formals-in-termp))))
-
 
 ;; (thm
 ;;   (implies (and (not (intersection-eq (free-vars-in-terms (map-lookup-equal formals-to-subst (pairlis$ formals args)))
