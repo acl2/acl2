@@ -21,6 +21,8 @@
 
 ;; This books deals with replacement of single vars, but see the sublis-varXXX functions.
 
+;; See tests in subst-var-alt-tests.lisp.
+
 (local (in-theory (disable mv-nth)))
 
 ;; maybe replace the name "alt" with "deep"
