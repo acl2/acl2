@@ -24,16 +24,9 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
-;(local (include-book "kestrel/lists-light/list-sets" :dir :system)) ; drop?
+(local (include-book "kestrel/lists-light/list-sets" :dir :system))
 
 (in-theory (disable mv-nth))
-
-;move
-(defthm intersection-equal-of-set-difference-equal-arg2
-  (equal (intersection-equal x (set-difference-equal y z))
-         (set-difference-equal (intersection-equal x y) z))
-  :hints (("Goal" :in-theory (enable intersection-equal
-                                     set-difference-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -172,6 +165,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable substitute-constants-in-lambdas
                               substitute-constants-in-lambdas-lst
-                              pseudo-term-listp-when-symbol-listp))))
+                              pseudo-term-listp-when-symbol-listp
+                              intersection-equal-of-set-difference-equal-arg2))))
 
 (verify-guards substitute-constants-in-lambdas :hints (("Goal" :expand ((PSEUDO-TERMP TERM)))))

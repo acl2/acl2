@@ -93,3 +93,10 @@
        (or (intersection-equal x y)
            (intersection-equal x z)))
   :hints (("Goal" :in-theory (enable union-equal intersection-equal))))
+
+;; enabling this caused problems in ../axe
+(defthmd intersection-equal-of-set-difference-equal-arg2
+  (equal (intersection-equal x (set-difference-equal y z))
+         (set-difference-equal (intersection-equal x y) z))
+  :hints (("Goal" :in-theory (enable intersection-equal
+                                     set-difference-equal))))

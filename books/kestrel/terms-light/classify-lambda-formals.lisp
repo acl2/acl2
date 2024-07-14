@@ -271,7 +271,8 @@
                                   (formals-to-maybe-subst try-vars)
                                   (formal-arg-alist alist)
                                   (formals-to-keep (set-difference-equal non-trivial-formals try-vars)))
-           :in-theory (disable classify-lambda-formals-correct))))
+           :in-theory (disable classify-lambda-formals-correct
+                               intersection-equal-of-set-difference-equal-arg2))))
 
 (defthm subsetp-equal-of-mv-nth-0-of-classify-lambda-formals
   (subsetp-equal (mv-nth 0 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))
