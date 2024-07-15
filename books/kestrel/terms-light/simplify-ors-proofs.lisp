@@ -13,6 +13,8 @@
 (include-book "simplify-ors")
 (include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 (include-book "no-nils-in-termp")
+(include-book "lambdas-closed-in-termp")
+(include-book "no-duplicate-lambda-formals-in-termp")
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "termp-simple")) ; nicer definition of termp
 (local (include-book "arglistp1"))
@@ -36,6 +38,22 @@
            :in-theory (enable simplify-ors simplify-ors-lst))))
 
 (defthm-flag-simplify-ors
+  (defthm no-duplicate-lambda-formals-in-termp-of-simplify-ors
+    (implies (and (pseudo-termp term)
+                  (no-duplicate-lambda-formals-in-termp term))
+             (no-duplicate-lambda-formals-in-termp (simplify-ors term bool-fix)))
+    :flag simplify-ors)
+  (defthm no-duplicate-lambda-formals-in-termp-of-simplify-ors-lst
+    (implies (and (pseudo-term-listp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms))
+             (no-duplicate-lambda-formals-in-termsp (simplify-ors-lst terms)))
+    :flag simplify-ors-lst)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable simplify-ors simplify-ors-lst
+                              no-duplicate-lambda-formals-in-termp ; todo
+                              ))))
+
+(defthm-flag-simplify-ors
   (defthm subsetp-equal-of-free-vars-in-term-of-simplify-ors
     (implies (pseudo-termp term)
              (subsetp-equal (free-vars-in-term (simplify-ors term bool-fix))
@@ -51,6 +69,21 @@
            :in-theory (enable simplify-ors
                               simplify-ors-lst
                               free-vars-in-terms-when-symbol-listp))))
+
+(defthm-flag-simplify-ors
+  (defthm lambdas-closed-in-termp-of-simplify-ors
+    (implies (and (pseudo-termp term)
+                  (lambdas-closed-in-termp term))
+             (lambdas-closed-in-termp (simplify-ors term bool-fix)))
+    :flag simplify-ors)
+  (defthm lambdas-closed-in-termp-of-simplify-ors-lst
+    (implies (and (pseudo-term-listp terms)
+                  (lambdas-closed-in-termsp terms))
+             (lambdas-closed-in-termsp (simplify-ors-lst terms)))
+    :flag simplify-ors-lst)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable simplify-ors simplify-ors-lst
+                              lambdas-closed-in-termp))))
 
 (defthm-flag-simplify-ors
   (defthm termp-of-simplify-ors

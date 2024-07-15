@@ -91,3 +91,10 @@
            (assoc-equal key alist))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable lookup-equal))))
+
+(defthmd cdr-of-assoc-equal-becomes-lookup-equal
+  (equal (cdr (assoc-equal key alist))
+         (lookup-equal key alist))
+  :hints (("Goal" :in-theory (enable lookup-equal))))
+
+(theory-invariant (incompatible (:rewrite cdr-of-assoc-equal-becomes-lookup-equal) (:definition lookup-equal)))

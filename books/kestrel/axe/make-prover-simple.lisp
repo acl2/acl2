@@ -63,6 +63,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))
 
 ;move
 (defthm symbol-doublet-listp-forward-to-alistp

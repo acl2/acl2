@@ -1,17 +1,19 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
 ; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; Copyright (C) 2024 Aleo Systems Inc. (https://www.aleo.org)
+; modifications Copyright (C) 2024 Provable Inc. (https://www.provable.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "PFCS")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -74,6 +76,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult expression-result
+  :short "Fixtype of errors and PFCS expressions."
+  :ok expression
+  :pred expression-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist expression-list
   :short "Fixtype of lists of expressions."
   :elt-type expression
@@ -81,6 +90,11 @@
   :elementp-of-nil nil
   :pred expression-listp
   :prepwork ((local (in-theory (enable nfix)))))
+
+(fty::defresult expression-list-result
+  :short "Fixtype of errors and lists of PFCS expressions."
+  :ok expression-list
+  :pred expression-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,6 +115,12 @@
               (args expression-list)))
   :pred constraintp)
 
+(fty::defresult constraint-result
+  :short "Fixtype of errors and PFCS constraints."
+  :ok constraint
+  :pred constraint-resultp
+  :prepwork ((local (in-theory (enable constraint-kind)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist constraint-list
@@ -110,6 +130,11 @@
   :elementp-of-nil nil
   :pred constraint-listp
   :prepwork ((local (in-theory (enable nfix)))))
+
+(fty::defresult constraint-list-result
+  :short "Fixtype of errors and lists of PFCS constraints."
+  :ok constraint-list
+  :pred constraint-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,6 +159,11 @@
   :tag :definition
   :pred definitionp)
 
+(fty::defresult definition-result
+  :short "Fixtype of errors and PFCS definitions."
+  :ok definition
+  :pred definition-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption definition-option
@@ -157,6 +187,11 @@
            (definition-list-fix (rev defs)))
     :enable definition-list-fix))
 
+(fty::defresult definition-list-result
+  :short "Fixtype of errors and lists of PFCS definitions."
+  :ok definition-list
+  :pred definition-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod system
@@ -167,4 +202,11 @@
     "A system consists of a list of definitions and a list of constraints."))
   ((definitions definition-list)
    (constraints constraint-list))
+  :tag :system ; added to get the defresult to certify
   :pred systemp)
+
+(fty::defresult system-result
+  :short "Fixtype of errors and PFCS systems."
+  :ok system
+  :pred system-resultp)
+

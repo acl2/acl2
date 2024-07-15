@@ -55,11 +55,18 @@
 (include-book "get-conjuncts")
 (include-book "get-hyps-and-conc")
 (include-book "replace-corresponding-arg")
+(include-book "substitute-lambda-formals")
+(include-book "classify-lambda-formals")
+(include-book "count-vars")
+
+(include-book "helpers")
 
 (include-book "sublis-var-simple")
 (include-book "sublis-var-simple-proofs")
 (include-book "subst-var-alt")
 (include-book "subst-var-alt-proofs")
+(include-book "subst-var-deep")
+(include-book "subst-var-deep-proofs")
 (include-book "sublis-var-and-magic-eval")
 
 ;; Template transformation:
@@ -77,6 +84,7 @@
 (include-book "simplify-ors")
 (include-book "simplify-ors-proofs")
 (include-book "substitute-unnecessary-lambda-vars")
+(include-book "substitute-unnecessary-lambda-vars2")
 (include-book "replace-term-with-term")
 
 ;; Transformations about lambdas (and their proofs):
@@ -95,3 +103,4 @@
 (include-book "drop-trivial-lambdas-proofs")
 ;; Combines several transformations on lambdas:
 (include-book "simplify-lambdas")
+(include-book "simplify-lambdas-proofs")

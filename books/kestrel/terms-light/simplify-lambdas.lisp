@@ -12,20 +12,25 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; TODO: Add more kinds of simplifications
-;; TODO: Add proofs book
+;; TODO: Add more kinds of simplifications (e.g., subst lambda vars bound to vars, replace hard-error/cw with nil, replace eql with equal, trivial lambdas, resolve ifs)
+
+;; See correctness proof in simplify-lambdas-proofs.lisp.
 
 (include-book "substitute-constants-in-lambdas")
 (include-book "drop-unused-lambda-bindings")
-;; (include-book "substitute-unnecessary-lambda-vars")
+(include-book "drop-trivial-lambdas")
+(include-book "substitute-unnecessary-lambda-vars2")
 (include-book "simplify-ors")
 
+;; todo: think about the order of these steps (but note that we repeat the whole sequence)
 (defund simplify-lambdas-one-step (term)
   (declare (xargs :guard (pseudo-termp term)))
   (let* ((term (substitute-constants-in-lambdas term))
          (term (drop-unused-lambda-bindings term))
-         ;; (term (substitute-unnecessary-lambda-vars-in-term term nil)) ; todo: put back
+         (term (substitute-unnecessary-lambda-vars-in-term2 term nil nil))
+         ;; todo: this is not really about lambdas.  rename this book?
          (term (simplify-ors term nil)) ; could pass in bool-fix, as for a hyp
+         (term (drop-trivial-lambdas term))
          )
     term))
 
@@ -33,6 +38,8 @@
   (implies (pseudo-termp term)
            (pseudo-termp (simplify-lambdas-one-step term)))
   :hints (("Goal" :in-theory (enable simplify-lambdas-one-step))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; count ensures termination
 ;; todo: thread through a print argument
@@ -53,6 +60,8 @@
   (implies (pseudo-termp term)
            (pseudo-termp (simplify-lambdas-loop count term)))
   :hints (("Goal" :in-theory (enable simplify-lambdas-loop))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund simplify-lambdas (term print)
   (declare (xargs :guard (and (pseudo-termp term)

@@ -1,6 +1,6 @@
-; An alternative to subst-var.
+; An alternative to subst-var that can sometimes go into lambda bodies
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,11 +19,17 @@
 ;; substituting in the arguments.  This also avoids introducing unserialized
 ;; lambdas (ones with multiple non-trivial formals).
 
+;; This books deals with replacement of single vars, but see the sublis-varXXX functions.
+
+;; See tests in subst-var-alt-tests.lisp.
+
 (local (in-theory (disable mv-nth)))
 
-;; Can only replace on var at a time.
+;; maybe replace the name "alt" with "deep"
+
 (mutual-recursion
- ;; Replace VAR with REPLACEMENT in TERM.
+  ;; Replace VAR with REPLACEMENT in TERM.
+  ;; Note the order of the arguments!
  (defund subst-var-alt (var replacement term)
    (declare (xargs :guard (and (symbolp var)
                                (pseudo-termp replacement)
@@ -41,35 +47,30 @@
              ;; Lambda application:
              (b* ((formals (lambda-formals fn))
                   (body (lambda-body fn))
-                  (args (fargs term))
-                  ;;(non-trivial-formals (non-trivial-formals formals args))
-                  ;;(trivial-formals (trivial-formals formals args))
+                  (args (fargs term)) ; we don't subst in these right away in case var is a trivial formal
                   ((mv non-trivial-formals non-trivial-args)
-                   (non-trivial-formals-and-args formals args))
-                  )
+                   (non-trivial-formals-and-args formals args)))
                (if (or (not (member-eq var formals)) ; no need to go into the body
                        (member-eq var non-trivial-formals) ; can't substitute in the body because the var is shadowed there
                        )
-                   ;;(not (member-eq var trivial-formals))
                    ;; Replace in the args only:
-                   (cons ;try fcons-term
-                    fn
-                    (subst-var-alt-lst var replacement args))
-                 ;; Var is a trivial formal.  Avoid making its formal non-trivial:
-                 (if (or (intersection-eq (free-vars-in-term replacement)
-                                          non-trivial-formals)
-                         (not (mbt (equal (len formals) (len args)))))
+                   (cons-with-hint fn (subst-var-alt-lst var replacement args) term)
+                 ;; Var is a trivial formal.  We could just substitute in its
+                 ;; actual, but instead we attempt to go into he lambda-body:
+                 (if (or (intersection-eq (free-vars-in-term replacement) non-trivial-formals)
+                         (not (mbt (equal (len formals) (len args)))) ; for termination
+                         )
                      ;; Possible clash, so be conservative: just wrap a binding of var around the term:
+                     ;; TODO: Do we ever want to avoid making this lambda?
                      (make-lambda-application-simple (list var) (list replacement) term)
                    ;; No clash, so we can move into the body:
+                   ;; todo: just remove the formal and arg for x and call something simpler here?
                    (make-lambda-application-simple non-trivial-formals
-                                                   ;; Fixup all the non-trivial args (trivial args other than var are not affected by the subst)
+                                                   ;; Fixup all the non-trivial args (trivial args other than var are not affected by the replacement of var)
                                                    (subst-var-alt-lst var replacement non-trivial-args)
                                                    (subst-var-alt var replacement body)))))
            ;; Not a lambda application:
-           (cons ;try fcons-term
-            fn
-            (subst-var-alt-lst var replacement (fargs term))))))))
+           (cons-with-hint fn (subst-var-alt-lst var replacement (fargs term)) term))))))
 
  (defund subst-var-alt-lst (var replacement terms)
    (declare (xargs :guard (and (symbolp var)
@@ -78,8 +79,9 @@
                    :measure (acl2-count terms)))
    (if (endp terms)
        nil
-     (cons (subst-var-alt var replacement (first terms))
-           (subst-var-alt-lst var replacement (rest terms))))))
+     (cons-with-hint (subst-var-alt var replacement (first terms))
+                     (subst-var-alt-lst var replacement (rest terms))
+                     terms))))
 
 (make-flag subst-var-alt)
 

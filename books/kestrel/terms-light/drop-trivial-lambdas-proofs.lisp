@@ -114,6 +114,7 @@
 
 ;(local (in-theory (enable not-member-equal-of-nil-when-no-nils-in-termsp)))
 
+;;todo: do we need the special induct for these?
 (defthm-flag-drop-trivial-lambdas-induct
   (defthm no-nils-in-termp-of-drop-trivial-lambdas
     (implies (and (pseudo-termp term)
@@ -181,6 +182,57 @@
                 (lambdas-closed-in-termp term))
            (subsetp-equal (free-vars-in-term (drop-trivial-lambdas term))
                           x)))
+
+(defthm-flag-drop-trivial-lambdas-induct
+  (defthm lambdas-closed-in-termp-of-drop-trivial-lambdas
+    (implies (and (pseudo-termp term)
+                  (lambdas-closed-in-termp term)
+                  (no-duplicate-lambda-formals-in-termp term))
+             (lambdas-closed-in-termp (drop-trivial-lambdas term)))
+    :flag drop-trivial-lambdas-induct)
+  (defthm lambdas-closed-in-termp-of-drop-trivial-lambdas-lst
+    (implies (and (pseudo-term-listp terms)
+                  (lambdas-closed-in-termsp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms))
+             (lambdas-closed-in-termsp (drop-trivial-lambdas-lst terms)))
+    :flag drop-trivial-lambdas-induct-lst)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (drop-trivial-lambdas
+                                   drop-trivial-lambdas-lst
+                                   empty-eval-of-fncall-args
+                                   true-listp-when-symbol-alistp
+                                   make-lambda-term-simple
+                                   lambdas-closed-in-termp
+                                   ;map-lookup-equal-of-pairlis$-of-empty-eval-list
+                                   )
+                                  (empty-eval-of-fncall-args-back
+                                   ;empty-eval-list-of-map-lookup-equal-of-pairlis$
+                                   )))))
+
+(defthm-flag-drop-trivial-lambdas-induct
+  (defthm no-duplicate-lambda-formals-in-termp-of-drop-trivial-lambdas
+    (implies (and (pseudo-termp term)
+                  (no-duplicate-lambda-formals-in-termp term))
+             (no-duplicate-lambda-formals-in-termp (drop-trivial-lambdas term)))
+    :flag drop-trivial-lambdas-induct)
+  (defthm no-duplicate-lambda-formals-in-termp-of-drop-trivial-lambdas-lst
+    (implies (and (pseudo-term-listp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms))
+             (no-duplicate-lambda-formals-in-termsp (drop-trivial-lambdas-lst terms)))
+    :flag drop-trivial-lambdas-induct-lst)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (drop-trivial-lambdas
+                                   drop-trivial-lambdas-lst
+                                   empty-eval-of-fncall-args
+                                   true-listp-when-symbol-alistp
+                                   make-lambda-term-simple
+                                   lambdas-closed-in-termp
+                                   ;map-lookup-equal-of-pairlis$-of-empty-eval-list
+                                   no-duplicate-lambda-formals-in-termp ; todo
+                                   )
+                                  (empty-eval-of-fncall-args-back
+                                   ;empty-eval-list-of-map-lookup-equal-of-pairlis$
+                                   )))))
 
 ;; Proof that drop-trivial-lambdas preserves the meaning of terms.
 (defthm-flag-drop-trivial-lambdas-induct

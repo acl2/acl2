@@ -1,7 +1,7 @@
 ; Generate a function to check if all items in a list satisfy a predicate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,6 +29,7 @@
 
 ;TODO: Consider using :by hints instead of :use hints here.
 
+(include-book "std/util/bstar" :dir :system) ; todo: reduce
 (include-book "generics-utilities")
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
@@ -40,6 +41,7 @@
 (include-book "kestrel/utilities/make-or" :dir :system)
 (include-book "kestrel/utilities/make-doublets" :dir :system)
 (include-book "kestrel/utilities/make-and" :dir :system)
+(local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))

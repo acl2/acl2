@@ -1,6 +1,6 @@
 ; Proofs of properties of make-lambda-application-simple
 ;
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,8 +13,10 @@
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "make-lambda-application-simple")
 (include-book "no-nils-in-termp")
+(include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
+(local (include-book "helpers"))
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -30,19 +32,12 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/list-sets" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;; TODO: Clean up and harvest this file
 
 (local (in-theory (disable alistp no-duplicatesp-equal)))
-
-;move to library
-(defthmd intersection-equal-of-set-difference-equal-when-subsetp-equal
-  (implies (subsetp-equal vars2 formals)
-           (equal (intersection-equal (set-difference-equal vars formals)
-                                      vars2)
-                  nil))
-  :hints (("Goal" :in-theory (enable intersection-equal set-difference-equal))))
 
 ;; todo: move, dup in letify
 (defthm subsetp-equal-of-append-of-intersection-equal-and-set-difference-equal-swapped
@@ -262,13 +257,6 @@
 
 (include-book "lambdas-closed-in-termp")
 
-(defthm lambdas-closed-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
-  (implies (lambdas-closed-in-termsp actuals)
-           (lambdas-closed-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
-
-
 (defthm lambdas-closed-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)
                 (symbol-listp formals)
@@ -292,3 +280,16 @@
            :in-theory (enable make-lambda-application-simple
                               no-nils-in-termp ;todo
                               ))))
+
+(defthm no-duplicate-lambda-formals-in-termp-of-make-lambda-application-simple
+  (implies (and (pseudo-termp body)
+                (no-duplicate-lambda-formals-in-termp body)
+                (symbol-listp formals)
+                (no-duplicatesp-equal formals)
+                (pseudo-term-listp actuals)
+                (no-duplicate-lambda-formals-in-termsp actuals)
+                (equal (len formals) (len actuals)))
+           (no-duplicate-lambda-formals-in-termp (make-lambda-application-simple formals actuals body)))
+  :hints (("Goal" :in-theory (e/d (make-lambda-application-simple
+                                   no-duplicate-lambda-formals-in-termp)
+                                  (mv-nth-0-of-filter-formals-and-actuals len)))))

@@ -35,6 +35,7 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/bv/intro" :dir :system))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
@@ -3552,6 +3553,28 @@
                                   (acl2::width width)
                                   (acl2::val val))
            :in-theory (disable acl2::part-install-width-low-becomes-bvcat))))
+
+(defthm logtail-of-read-becomes-slice
+  (implies (and ;(< n (* 8 n2))
+                (natp n)
+                (natp n2)
+                )
+           (equal (logtail n (read n2 addr x86))
+                  (slice (+ -1 (* 8 n2)) n (read n2 addr x86))))
+  :hints (("Goal" :use (:instance acl2::logtail-becomes-slice
+                                  (x (read n2 addr x86))
+                                  (m (* 8 n2)))
+           :in-theory (disable acl2::logtail-becomes-slice))))
+
+(defthm logapp-of-read-becomes-bvcat
+  (implies (natp n2)
+           (equal (logapp size i (read n2 addr x86))
+                  (bvcat (* 8 n2) (read n2 addr x86) size i)))
+  :hints (("Goal" :use (:instance acl2::logapp-becomes-bvcat-when-bv
+                                  (jsize (* 8 n2))
+                                  (j (read n2 addr x86)))
+           :in-theory (e/d (unsigned-byte-p-forced) (acl2::logapp-becomes-bvcat-when-bv)))))
+
 
 ;move up
 (defthm bvcat-of-read-and-read-combine

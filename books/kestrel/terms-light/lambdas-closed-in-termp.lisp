@@ -70,7 +70,7 @@
 
 (defthm lambdas-closed-in-termsp-of-revappend
   (equal (lambdas-closed-in-termsp (revappend terms1 terms2))
-         (and (lambdas-closed-in-termsp (true-list-fix terms1))
+         (and (lambdas-closed-in-termsp terms1)
               (lambdas-closed-in-termsp terms2)))
   :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp revappend))))
 
@@ -79,8 +79,18 @@
            (lambdas-closed-in-termsp (set-difference-equal terms1 terms2)))
   :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp set-difference-equal))))
 
+(defthm lambdas-closed-in-termsp-of-true-listp-fix
+  (equal (lambdas-closed-in-termsp (true-list-fix terms))
+         (lambdas-closed-in-termsp terms))
+  :hints (("Goal" :in-theory (enable true-list-fix lambdas-closed-in-termsp))))
+
 (defthm lambdas-closed-in-termp-when-symbolp
   (implies (symbolp term)
+           (lambdas-closed-in-termp term))
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termp))))
+
+(defthm lambdas-closed-in-termp-when-equal-of-car-and-quote
+  (implies (equal 'quote (car term))
            (lambdas-closed-in-termp term))
   :hints (("Goal" :in-theory (enable lambdas-closed-in-termp))))
 
@@ -147,3 +157,10 @@
 (defthm lambdas-closed-in-termsp-when-logic-term-listp
   (implies (logic-term-listp terms w)
            (lambdas-closed-in-termsp terms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm lambdas-closed-in-termp-of-cdr-of-assoc-equal
+   (implies (lambdas-closed-in-termsp (strip-cdrs alist))
+            (lambdas-closed-in-termp (cdr (assoc-equal key alist))))
+   :hints (("Goal" :in-theory (enable assoc-equal))))
