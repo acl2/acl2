@@ -387,6 +387,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-postfix/primary-p ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is postfix or primary."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to the grammar definition,
+     postfix expressions include primary expressions;
+     the grammar defines expressions hierarchically.
+     So this test, performed on abstract syntax,
+     is equivalent to testing whether the expression
+     is a postfix one according to the grammar."))
+  (and (member-eq (expr-kind expr)
+                  '(:ident
+                    :const
+                    :string
+                    :paren
+                    :gensel
+                    :arrsub
+                    :funcall
+                    :member
+                    :memberp
+                    :complit))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-unary/postfix/primary-p ((expr exprp))
   :returns (yes/no booleanp)
   :short "Check if an expression is unary or postfix or primary."
@@ -972,4 +1000,28 @@
               :inc (make-expr-unary :op (unop-postinc) :arg expr)
               :dec (make-expr-unary :op (unop-postdec) :arg expr))))
     (apply-post-inc/dec-ops expr (cdr ops)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-to-asg-expr-list ((expr exprp))
+  :returns (asg-exprs expr-listp)
+  :short "Turn an expression into a list of assignment expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the grammar, an expression is defined as
+     a comma-separated sequence of one or more assignment expressions.
+     If there are no commas, then the expression is an assignment expression.")
+   (xdoc::p
+    "In abstract syntax,
+     we flatten the expression according to the @(':comma')s.
+     We do it for both sub-expressions of each @(':comma'),
+     recursively, regardless of the nesting resulting from the parser."))
+  (if (expr-case expr :comma)
+      (append (expr-to-asg-expr-list (expr-comma->first expr))
+              (expr-to-asg-expr-list (expr-comma->next expr)))
+    (list (expr-fix expr)))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
