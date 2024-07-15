@@ -932,3 +932,24 @@
               (specqual-list-to-tyspec-list (cdr specquals)))
       (specqual-list-to-tyspec-list (cdr specquals))))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define apply-pre-inc/dec-ops ((ops inc/dec-op-listp) (expr exprp))
+  :returns (new-expr exprp)
+  :short "Apply a sequence of pre-increment and pre-decrement operators
+          to an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first one in the list will be the outermost,
+     and the last one in the list will be the innermost."))
+  (b* (((when (endp ops)) (expr-fix expr))
+       (op (car ops))
+       (expr (apply-pre-inc/dec-ops (cdr ops) expr)))
+    (inc/dec-op-case
+     op
+     :inc (make-expr-unary :op (unop-preinc) :arg expr)
+     :dec (make-expr-unary :op (unop-predec) :arg expr)))
+  :verify-guards :after-returns
+  :hooks (:fix))
