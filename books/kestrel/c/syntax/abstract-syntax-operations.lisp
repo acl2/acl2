@@ -953,3 +953,23 @@
      :dec (make-expr-unary :op (unop-predec) :arg expr)))
   :verify-guards :after-returns
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define apply-post-inc/dec-ops ((expr exprp) (ops inc/dec-op-listp))
+  :returns (new-expr exprp)
+  :short "Apply a sequence of post-increment and post-decrement operators
+          to an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first one in the list will be the innermost,
+     and the last one in the list will be the outermost."))
+  (b* (((when (endp ops)) (expr-fix expr))
+       (op (car ops))
+       (expr (inc/dec-op-case
+              op
+              :inc (make-expr-unary :op (unop-postinc) :arg expr)
+              :dec (make-expr-unary :op (unop-postdec) :arg expr))))
+    (apply-post-inc/dec-ops expr (cdr ops)))
+  :hooks (:fix))
