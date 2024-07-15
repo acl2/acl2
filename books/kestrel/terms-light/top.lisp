@@ -104,5 +104,5 @@
 (include-book "drop-trivial-lambdas")
 (include-book "drop-trivial-lambdas-proofs")
 ;; Combines several transformations on lambdas:
-(include-book "simplify-lambdas")
-(include-book "simplify-lambdas-proofs")
+(include-book "pre-simplify-term")
+(include-book "pre-simplify-term-proofs")

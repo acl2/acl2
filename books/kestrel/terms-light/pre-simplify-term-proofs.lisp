@@ -1,4 +1,4 @@
-; Proofs about simplify-lambdas
+; Proofs about pre-simplify-term
 ;
 ; Copyright (C) 2024 Kestrel Institute
 ;
@@ -13,7 +13,7 @@
 ;; The proofs in this book use the if-and-not-eval because simplify-ors requires it.
 
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
-(include-book "simplify-lambdas")
+(include-book "pre-simplify-term")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "lambdas-closed-in-termp")
 (include-book "simplify-ors-proofs")
@@ -76,57 +76,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm simplify-lambdas-one-step-correct
+(defthm pre-simplify-term-one-step-correct
   (implies (and (pseudo-termp term)
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (equal (if-and-not-eval (simplify-lambdas-one-step term) alist)
+           (equal (if-and-not-eval (pre-simplify-term-one-step term) alist)
                   (if-and-not-eval term alist)))
-  :hints (("Goal" :in-theory (enable simplify-lambdas-one-step))))
+  :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
 
-(defthm no-nils-in-termp-of-simplify-lambdas-one-step
+(defthm no-nils-in-termp-of-pre-simplify-term-one-step
   (implies (and (pseudo-termp term)
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (no-nils-in-termp (simplify-lambdas-one-step term)))
-  :hints (("Goal" :in-theory (enable simplify-lambdas-one-step))))
+           (no-nils-in-termp (pre-simplify-term-one-step term)))
+  :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
 
-(defthm lambdas-closed-in-termp-of-simplify-lambdas-one-step
+(defthm lambdas-closed-in-termp-of-pre-simplify-term-one-step
   (implies (and (pseudo-termp term)
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (lambdas-closed-in-termp (simplify-lambdas-one-step term)))
-  :hints (("Goal" :in-theory (enable simplify-lambdas-one-step))))
+           (lambdas-closed-in-termp (pre-simplify-term-one-step term)))
+  :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
 
-(defthm no-duplicate-lambda-formals-in-termp-of-simplify-lambdas-one-step
+(defthm no-duplicate-lambda-formals-in-termp-of-pre-simplify-term-one-step
   (implies (and (pseudo-termp term)
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term))
-           (no-duplicate-lambda-formals-in-termp (simplify-lambdas-one-step term)))
-  :hints (("Goal" :in-theory (enable simplify-lambdas-one-step))))
+           (no-duplicate-lambda-formals-in-termp (pre-simplify-term-one-step term)))
+  :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm simplify-lambdas-loop-correct
+(defthm pre-simplify-term-loop-correct
   (implies (and (pseudo-termp term)
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (equal (if-and-not-eval (simplify-lambdas-loop count term) alist)
+           (equal (if-and-not-eval (pre-simplify-term-loop count term) alist)
                   (if-and-not-eval term alist)))
-  :hints (("Goal" :in-theory (enable simplify-lambdas-loop))))
+  :hints (("Goal" :in-theory (enable pre-simplify-term-loop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Simplify-lambdas does not change the meaning of terms.
-(defthm simplify-lambdas-correct
+;; pre-simplify-term does not change the meaning of terms.
+(defthm pre-simplify-term-correct
   (implies (and (pseudo-termp term)
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (equal (if-and-not-eval (simplify-lambdas term print) alist)
+           (equal (if-and-not-eval (pre-simplify-term term print) alist)
                   (if-and-not-eval term alist)))
-  :hints (("Goal" :in-theory (enable simplify-lambdas))))
+  :hints (("Goal" :in-theory (enable pre-simplify-term))))

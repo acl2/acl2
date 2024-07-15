@@ -17,7 +17,7 @@
 (include-book "kestrel/utilities/terms" :dir :system)
 ;(include-book "../utilities/basic")
 ;(include-book "kestrel/terms-light/drop-unused-lambda-bindings" :dir :system)
-(include-book "kestrel/terms-light/simplify-lambdas" :dir :system)
+(include-book "kestrel/terms-light/pre-simplify-term" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
@@ -1425,7 +1425,7 @@
                 ;; faster to open functions defined using MBE:
                 (body (remove-guard-holders-and-clean-up-lambdas body) ;(strip-return-last body)
                       )
-                (body (simplify-lambdas body nil))
+                (body (pre-simplify-term body nil))
                 (clique (true-list-fix ; drop?
                           (recursivep rule-name nil wrld))) ; todo: consider :definition rules and the flg option here
                 (body-fns (all-fnnames body))
@@ -1452,6 +1452,7 @@
                 (theorem-body ;(strip-return-last theorem-body)
                  (remove-guard-holders-and-clean-up-lambdas theorem-body))
                 (theorem-body (drop-unused-lambda-bindings theorem-body))
+                ;(theorem-body (pre-simplify-term theorem-body nil)) ; todo
                 ((mv erp rules)
                  (make-axe-rules-from-theorem theorem-body rule-name rule-classes known-boolean-fns print wrld))
                 ((when erp) (mv erp acc)))
