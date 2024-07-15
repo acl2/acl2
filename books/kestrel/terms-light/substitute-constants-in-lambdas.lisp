@@ -107,6 +107,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund any-quotep (items)
+  (declare (xargs :guard (true-listp items))) ; strenghten to requite pseudo-terms?
+  (if (atom items)
+      nil
+    (or (quotep (first items))
+        (any-quotep (rest items)))))
+
+(defun make-lambda-with-hint (formals body
+                                      hint ; (lambda <formals> <body>)
+                                      )
+  (declare (xargs :guard (and (true-listp hint)
+                              (= 3 (len hint))
+                              (eq 'lambda (car hint)))))
+  (if (and (equal formals (cadr hint))
+           (equal body (caddr hint)))
+      hint
+    `(lambda ,formals ,body)))
+
 (mutual-recursion
  (defund substitute-constants-in-lambdas (term)
    (declare (xargs :guard (pseudo-termp term)
@@ -117,24 +135,32 @@
      (let ((fn (ffn-symb term)))
        (if (eq 'quote fn)
            term
+         ;; function call or lambda:
          (let ((args (substitute-constants-in-lambdas-lst (fargs term))))
            (if (consp fn)
                ;; it's a lambda:
-               (let* ((body (lambda-body fn))
-                      (body (substitute-constants-in-lambdas body))
-                      (formals (lambda-formals fn)))
-                 ;; could make a single pass to compute both formal lists and both arg lists
-                 (mv-let (formals-for-constant-args constant-args)
-                   (formals-and-constant-args formals args)
-                   (let* ((remaining-formals (set-difference-eq formals formals-for-constant-args))
-                          (remaining-args (filter-args-for-formals formals args remaining-formals))
-                          (body (sublis-var-simple (pairlis$ formals-for-constant-args constant-args)
-                                                   body)))
-                     ;;(if (equal remaining-formals remaining-args) ; avoid trivial lambda application
-                       ;;  body
-                       `((lambda ,remaining-formals ,body) ,@remaining-args)
-                   ;;  )
-                   )))
+               (let* ((formals (lambda-formals fn))
+                      (body (lambda-body fn))
+                      ;; always transform the body (todo: do this after we substitute!?):
+                      (body (substitute-constants-in-lambdas body)))
+                 (if (any-quotep args)
+                     ;; There is something to change:
+                     ;; could make a single pass to compute both formal lists and both arg lists
+                     (mv-let (formals-for-constant-args constant-args)
+                       (formals-and-constant-args formals args)
+                       (let* ((remaining-formals (set-difference-eq formals formals-for-constant-args))
+                              (remaining-args (filter-args-for-formals formals args remaining-formals))
+                              ;; todo: do a deeper subst here?
+                              (body (sublis-var-simple (pairlis$ formals-for-constant-args constant-args)
+                                                       body)))
+                         ;;(if (equal remaining-formals remaining-args) ; avoid trivial lambda application
+                         ;;  body
+                         `((lambda ,remaining-formals ,body) ,@remaining-args)
+                         ;;  )
+                         ))
+                   ;; There is nothing to change (but we may have a new lambda-body and args):
+                   (cons-with-hint (make-lambda-with-hint formals body fn)
+                                   args term)))
              ;; not a lambda:
              (cons-with-hint fn args term)))))))
  (defund substitute-constants-in-lambdas-lst (terms)
@@ -163,9 +189,13 @@
              (pseudo-term-listp (substitute-constants-in-lambdas-lst terms)))
     :flag substitute-constants-in-lambdas-lst)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable substitute-constants-in-lambdas
+           :expand (pseudo-termp (cons (car term)
+                        (substitute-constants-in-lambdas-lst (cdr term))))
+           :in-theory (enable pseudo-termp
+                              substitute-constants-in-lambdas
                               substitute-constants-in-lambdas-lst
                               pseudo-term-listp-when-symbol-listp
-                              intersection-equal-of-set-difference-equal-arg2))))
+                              intersection-equal-of-set-difference-equal-arg2
+                              true-listp-when-symbol-listp-rewrite-unlimited))))
 
 (verify-guards substitute-constants-in-lambdas :hints (("Goal" :expand ((PSEUDO-TERMP TERM)))))

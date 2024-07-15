@@ -152,6 +152,7 @@
     :flag substitute-constants-in-lambdas-lst)
   :hints (("Goal" ;:expand (PSEUDO-TERMP TERM)
            :do-not '(generalize eliminate-destructors)
+           :expand   (no-nils-in-termp (cons (car term) (substitute-constants-in-lambdas-lst (cdr term))))
            :in-theory (e/d (substitute-constants-in-lambdas
                             substitute-constants-in-lambdas-lst
                             ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
@@ -265,16 +266,28 @@
          (let ((args (substitute-constants-in-lambdas-induct-lst (fargs term) alist)))
            (if (consp fn)
                ;; it's a lambda:
-               (let* ((body (lambda-body fn))
-                      (body (substitute-constants-in-lambdas-induct body (pairlis$ (lambda-formals fn) (empty-eval-list args alist))))
-                      (formals (lambda-formals fn)))
-                 (mv-let (formals-for-constant-args constant-args)
-                   (formals-and-constant-args formals args)
-                   (let* ((remaining-formals (set-difference-eq formals formals-for-constant-args))
-                          (remaining-args (filter-args-for-formals formals args remaining-formals))
-                          (body (sublis-var-simple (pairlis$ formals-for-constant-args constant-args)
-                                                   body)))
-                     `((lambda ,remaining-formals ,body) ,@remaining-args))))
+               (let* ((formals (lambda-formals fn))
+                      (body (lambda-body fn))
+                      ;; always transform the body (todo: do this after we substitute!?):
+                      (body (substitute-constants-in-lambdas-induct body (pairlis$ (lambda-formals fn) (empty-eval-list args alist)))))
+                 (if (any-quotep args)
+                     ;; There is something to change:
+                     ;; could make a single pass to compute both formal lists and both arg lists
+                     (mv-let (formals-for-constant-args constant-args)
+                       (formals-and-constant-args formals args)
+                       (let* ((remaining-formals (set-difference-eq formals formals-for-constant-args))
+                              (remaining-args (filter-args-for-formals formals args remaining-formals))
+                              ;; todo: do a deeper subst here?
+                              (body (sublis-var-simple (pairlis$ formals-for-constant-args constant-args)
+                                                       body)))
+                         ;;(if (equal remaining-formals remaining-args) ; avoid trivial lambda application
+                         ;;  body
+                         `((lambda ,remaining-formals ,body) ,@remaining-args)
+                         ;;  )
+                         ))
+                   ;; There is nothing to change (but we may have a new lambda-body and args):
+                   (cons-with-hint (make-lambda-with-hint formals body fn)
+                                   args term)))
              ;; not a lambda:
              (cons-with-hint fn args term)))))))
  (defund substitute-constants-in-lambdas-induct-lst (terms alist)
