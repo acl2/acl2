@@ -14,6 +14,7 @@
 (include-book "non-trivial-formals")
 (include-book "trivial-formals")
 (include-book "free-vars-in-term")
+(include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 (local (include-book "helpers"))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
@@ -118,3 +119,22 @@
            (equal (equal (empty-eval term alist1)
                          (empty-eval term alist2))
                   t)))
+
+(defthm helper2 ;rename!
+  (implies (and (not (intersection-equal (free-vars-in-term replacement) (non-trivial-formals formals args)))
+                (no-duplicatesp-equal formals)
+                (symbol-listp formals)
+                (pseudo-termp replacement)
+                (no-nils-in-termp replacement) ; needed?
+                )
+           (equal (empty-eval replacement (append (pairlis$ formals (empty-eval-list args a)) a))
+                  (empty-eval replacement a)))
+  :hints (("Goal" :in-theory (disable alists-equiv-on-of-append-arg1))))
+
+(defthm empty-eval-of-append-irrel-arg1
+  (implies (and (not (intersection-equal (free-vars-in-term term) (strip-cars a1)))
+                (alistp a1)
+                (pseudo-termp term))
+           (equal (empty-eval term (append a1 a2))
+                  (empty-eval term a2)))
+  :hints (("Goal" :in-theory (enable append subsetp-equal))))

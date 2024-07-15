@@ -185,12 +185,6 @@
 ;;   :hints (("Goal" :in-theory (enable filter-formals-and-actuals
 ;;                                      get-args-for-formals))))
 
-(local
-  (defthm member-equal-of-bad-guy-for-alists-equiv-when-subsetp-equal
-    (implies (and (subsetp-equal keys keys+)
-                  (consp keys))
-             (member-equal (bad-guy-for-alists-equiv-on keys a1 a2)
-                           keys+))))
 
 ;; (defthm get-args-for-formals-of-cons-arg3-when-not-member-equal
 ;;   (implies (not (member-equal f formals))
@@ -331,23 +325,6 @@
                            (empty-eval term alist2))
                     t))))
 
-
-(local
-  (defthm symbolp-of-bad-guy-for-alists-equiv-on
-    (implies (symbol-listp keys)
-             (symbolp (bad-guy-for-alists-equiv-on keys a1 a2)))
-    :hints (("Goal" :in-theory (enable bad-guy-for-alists-equiv-on)))))
-
-(local
-  (defthm bad-guy-for-alists-equiv-on-not-nil
-    (implies (and (not (member-equal nil keys))
-                  )
-             (iff (bad-guy-for-alists-equiv-on keys a1 a2)
-                  (consp keys)))
-    :hints (("Goal" :in-theory (enable bad-guy-for-alists-equiv-on member-equal)))))
-
-
-
 (local (in-theory (disable assoc-equal len)))
 
 (defthm not-assoc-equal-of-nil
@@ -405,8 +382,6 @@
 ;;            (equal (empty-eval term (binary-append a1 (pairlis$ vars (empty-eval-list vars a))))
 ;;                   (empty-eval term (append a1 a))))
 ;;   :hints (("Goal" :in-theory (disable pairlis$-of-empty-eval-list))))
-
-;; rename alists-equiv-on-when-agree-on-bad-guy since it's an IFF rule
 
 (local (in-theory (enable not-member-equal-of-nil-when-no-nils-in-termsp)))
 

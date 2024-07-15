@@ -23,9 +23,9 @@
 
 ;; See tests in subst-var-alt-tests.lisp.
 
-(local (in-theory (disable mv-nth)))
+;; TODO: Deprecate this book in favor of subst-var-deep -- except this book is used in serialize-lambdas.
 
-;; maybe replace the name "alt" with "deep"
+(local (in-theory (disable mv-nth)))
 
 (mutual-recursion
   ;; Replace VAR with REPLACEMENT in TERM.

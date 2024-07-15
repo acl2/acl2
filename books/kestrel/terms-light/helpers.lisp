@@ -20,6 +20,8 @@
 (include-book "non-trivial-formals")
 (include-book "trivial-formals")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
+(include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
 (defthm no-nils-in-termp-of-lookup-equal
   (implies (no-nils-in-termsp (strip-cdrs alist))
@@ -129,3 +131,93 @@
                      (lookup-equal var (pairlis$ formals args))
                    nil)))
  :hints (("Goal" :in-theory (enable NON-TRIVIAL-FORMALS NON-TRIVIAL-FORMALS-and-args pairlis$))))
+
+     ;todo: nested induction
+(defthmd alists-equiv-on-of-cons-arg2-fw
+  (implies (if (member-equal (car pair) keys)
+               (and (equal (cdr pair) (cdr (assoc-equal (car pair) a2)))
+                    (alists-equiv-on (remove-equal (car pair) keys) a1 a2))
+             (alists-equiv-on keys a1 a2))
+           (alists-equiv-on keys (cons pair a1) a2))
+  :hints (("Goal" :in-theory (enable alists-equiv-on remove-equal))))
+
+(defthmd alists-equiv-on-of-cons-arg2-back
+  (implies (alists-equiv-on keys (cons pair a1) a2)
+           (if (member-equal (car pair) keys)
+               (and (equal (cdr pair) (cdr (assoc-equal (car pair) a2)))
+                    (alists-equiv-on (remove-equal (car pair) keys) a1 a2))
+             (alists-equiv-on keys a1 a2)))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
+
+(defthm alists-equiv-on-of-cons-arg2
+  (equal (alists-equiv-on keys (cons pair a1) a2)
+         (if (member-equal (car pair) keys)
+             (and (equal (cdr pair) (cdr (assoc-equal (car pair) a2)))
+                  (alists-equiv-on (remove-equal (car pair) keys) a1 a2))
+           (alists-equiv-on keys a1 a2)))
+  :hints (("Goal" :use (alists-equiv-on-of-cons-arg2-fw
+                        alists-equiv-on-of-cons-arg2-back))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv foundp bad-guy)
+(defun bad-guy-for-alists-equiv-on-aux (keys a1 a2)
+  (if (endp keys)
+      (mv nil nil)
+    (let ((key (first keys)))
+      (if (not (equal (lookup-equal key a1) (lookup-equal key a2)))
+          (mv t key)
+        (mv-let (foundp bad-guy)
+          (bad-guy-for-alists-equiv-on-aux (rest keys) a1 a2)
+          (if foundp
+              (mv t bad-guy)
+            (mv nil nil)))))))
+
+;; If A1 and A2 differ on any of the keys, this returns such a key.
+(defund bad-guy-for-alists-equiv-on (keys a1 a2)
+  (mv-let (foundp bad-guy)
+    (bad-guy-for-alists-equiv-on-aux keys a1 a2)
+    (if foundp
+        bad-guy
+      (first keys))))
+
+(defthmd alists-equiv-on-when-agree-on-bad-guy-helper
+  (iff (alists-equiv-on keys a1 a2)
+       (not (mv-nth 0 (bad-guy-for-alists-equiv-on-aux keys a1 a2)))
+       )
+  :hints (("Goal" :in-theory (enable alists-equiv-on lookup-equal))))
+
+;; The "bad guy trick" for alists-equiv-on.  To show that 2 alists agree with
+;; respect to a set of keys, it suffices to show that they agree for the
+;; bad-guy key.
+(defthmd alists-equiv-on-when-agree-on-bad-guy
+  (equal (alists-equiv-on keys a1 a2)
+         (or (not (consp keys))
+             (equal (lookup-equal (bad-guy-for-alists-equiv-on keys a1 a2) a1)
+                    (lookup-equal (bad-guy-for-alists-equiv-on keys a1 a2) a2))))
+  :hints (("Goal" :in-theory (enable lookup-equal
+                                     bad-guy-for-alists-equiv-on
+                                     alists-equiv-on-when-agree-on-bad-guy-helper))))
+
+(defthm member-equal-of-bad-guy-for-alists-equiv-on-sam
+  (implies (consp keys)
+           (member-equal (bad-guy-for-alists-equiv-on keys a1 a2) keys))
+  :hints (("Goal" :in-theory (enable bad-guy-for-alists-equiv-on))))
+
+(defthm member-equal-of-bad-guy-for-alists-equiv-when-subsetp-equal
+  (implies (and (subsetp-equal keys keys+)
+                (consp keys))
+           (member-equal (bad-guy-for-alists-equiv-on keys a1 a2)
+                         keys+)))
+
+(defthm symbolp-of-bad-guy-for-alists-equiv-on
+  (implies (symbol-listp keys)
+           (symbolp (bad-guy-for-alists-equiv-on keys a1 a2)))
+  :hints (("Goal" :in-theory (enable bad-guy-for-alists-equiv-on))))
+
+(defthm bad-guy-for-alists-equiv-on-not-nil
+  (implies (and (not (member-equal nil keys))
+                )
+           (iff (bad-guy-for-alists-equiv-on keys a1 a2)
+                (consp keys)))
+  :hints (("Goal" :in-theory (enable bad-guy-for-alists-equiv-on member-equal))))

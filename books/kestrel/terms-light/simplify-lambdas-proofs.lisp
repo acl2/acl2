@@ -121,6 +121,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Simplify-lambdas does not change the meaning of terms.
 (defthm simplify-lambdas-correct
   (implies (and (pseudo-termp term)
                 (no-nils-in-termp term)

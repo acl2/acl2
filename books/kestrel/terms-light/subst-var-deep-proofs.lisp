@@ -285,93 +285,6 @@
 
 (local (in-theory (disable symbol-listp no-duplicatesp-equal)))
 
-;needs stuff from make-lambda-application-simple-proof
-(defthm helper2
-  (implies (and (not (intersection-equal (free-vars-in-term replacement) (non-trivial-formals formals args)))
-                (no-duplicatesp-equal formals)
-                (symbol-listp formals)
-                (pseudo-termp replacement)
-                (no-nils-in-termp replacement))
-           (equal (empty-eval replacement (append (pairlis$ formals (empty-eval-list args a)) a))
-                  (empty-eval replacement a)))
-  :hints (("Goal" :in-theory (disable alists-equiv-on-of-append-arg1))))
-
-     ;dup
-(defthm empty-eval-of-append-irrel-arg1
-  (implies (and (not (intersection-equal (free-vars-in-term term) (strip-cars a1)))
-                (alistp a1)
-                (pseudo-termp term))
-           (equal (empty-eval term (append a1 a2))
-                  (empty-eval term a2)))
-  :hints (("Goal" :in-theory (enable append subsetp-equal))))
-
-     ;todo: nested induction
-(defthmd alists-equiv-on-of-cons-arg2-fw
-  (implies (if (member-equal (car pair) keys)
-               (and (equal (cdr pair) (cdr (assoc-equal (car pair) a2)))
-                    (alists-equiv-on (remove-equal (car pair) keys) a1 a2))
-             (alists-equiv-on keys a1 a2))
-           (alists-equiv-on keys (cons pair a1) a2))
-  :hints (("Goal" :in-theory (enable alists-equiv-on remove-equal))))
-
-(defthmd alists-equiv-on-of-cons-arg2-back
-  (implies (alists-equiv-on keys (cons pair a1) a2)
-           (if (member-equal (car pair) keys)
-               (and (equal (cdr pair) (cdr (assoc-equal (car pair) a2)))
-                    (alists-equiv-on (remove-equal (car pair) keys) a1 a2))
-             (alists-equiv-on keys a1 a2)))
-  :hints (("Goal" :in-theory (enable alists-equiv-on))))
-
-(defthm alists-equiv-on-of-cons-arg2
-  (equal (alists-equiv-on keys (cons pair a1) a2)
-         (if (member-equal (car pair) keys)
-             (and (equal (cdr pair) (cdr (assoc-equal (car pair) a2)))
-                  (alists-equiv-on (remove-equal (car pair) keys) a1 a2))
-           (alists-equiv-on keys a1 a2)))
-  :hints (("Goal" :use (alists-equiv-on-of-cons-arg2-fw
-                        alists-equiv-on-of-cons-arg2-back))))
-
-;; Returns (mv foundp bad-guy)
-
-(defun bad-guy-for-alists-equiv-on-aux (keys a1 a2)
-  (if (endp keys)
-      (mv nil nil)
-    (let ((key (first keys)))
-      (if (not (equal (lookup-equal key a1) (lookup-equal key a2)))
-          (mv t key)
-        (mv-let (foundp bad-guy)
-          (bad-guy-for-alists-equiv-on-aux (rest keys) a1 a2)
-          (if foundp
-              (mv t bad-guy)
-            (mv nil nil)))))))
-
-(defund bad-guy-for-alists-equiv-on (keys a1 a2)
-  (mv-let (foundp bad-guy)
-    (bad-guy-for-alists-equiv-on-aux keys a1 a2)
-    (if foundp
-        bad-guy
-      (first keys))))
-
-(defthmd alists-equiv-on-when-agree-on-bad-guy-helper
-  (iff (alists-equiv-on keys a1 a2)
-       (not (mv-nth 0 (bad-guy-for-alists-equiv-on-aux keys a1 a2)))
-       )
-  :hints (("Goal" :in-theory (enable alists-equiv-on lookup-equal))))
-
-(defthmd alists-equiv-on-when-agree-on-bad-guy
-  (iff (alists-equiv-on keys a1 a2)
-       (or (not (consp keys))
-           (equal (lookup-equal (bad-guy-for-alists-equiv-on keys a1 a2) a1)
-                  (lookup-equal (bad-guy-for-alists-equiv-on keys a1 a2) a2))))
-  :hints (("Goal" :in-theory (enable lookup-equal
-                                     bad-guy-for-alists-equiv-on
-                                     alists-equiv-on-when-agree-on-bad-guy-helper))))
-
-(defthm member-equal-of-bad-guy-for-alists-equiv-on-sam
-  (implies (consp keys)
-           (member-equal (bad-guy-for-alists-equiv-on keys a1 a2) keys))
-  :hints (("Goal" :in-theory (enable BAD-GUY-FOR-ALISTS-EQUIV-ON))))
-
 ;; (defun EMPTY-EVAL-cdrs (alist a)
 ;;   (if (endp alist)
 ;;       nil
@@ -593,7 +506,7 @@
                     )
                (if (or (not (member-eq var formals)) ; no need to go into the body
                        (member-eq var non-trivial-formals) ; can't substitute in the body because the var is shadowed there
-                       (intersection-eq (free-vars-in-term replacement) non-trivial-formals) ; can't subst in the body because the replacemnt term has a different meaning
+                       (intersection-eq (free-vars-in-term replacement) non-trivial-formals) ; can't subst in the body because the replacement term has a different meaning
                        (not (mbt (equal (len formals) (len args)))) ; for termination
                        )
                    ;; Replace in the args only:
