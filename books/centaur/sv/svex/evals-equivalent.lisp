@@ -207,23 +207,23 @@ to the svexes.</p>"
         
 
 
-(define transforms-update-fraig-configs-for-n-outputs ((n natp) transforms)
-  ;; BOZO We don't want to load the fraig book just to be able to write an updater for its config.
-  ;; So we're going to assume the basic form of a fraig config object which is (:fraig . alist)
-  (if (atom transforms)
-      nil
-    (cons (b* ((x (car transforms))
-               ((unless (aignet::fraig-config-p x))
-                x)
-               ((aignet::fraig-config x))
-               ;; Change the config: find the AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES entry
-               ;; and replace it with `(AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES . ,n)
-               ((unless x.n-outputs-are-initial-equiv-classes)
-                x))
-            (aignet::change-fraig-config x
-                                         :n-outputs-are-initial-equiv-classes n
-                                         :initial-equiv-classes-last t))
-          (transforms-update-fraig-configs-for-n-outputs n (cdr transforms)))))
+;; (define transforms-update-fraig-configs-for-n-outputs ((n natp) transforms)
+;;   ;; BOZO We don't want to load the fraig book just to be able to write an updater for its config.
+;;   ;; So we're going to assume the basic form of a fraig config object which is (:fraig . alist)
+;;   (if (atom transforms)
+;;       nil
+;;     (cons (b* ((x (car transforms))
+;;                ((unless (aignet::fraig-config-p x))
+;;                 x)
+;;                ((aignet::fraig-config x))
+;;                ;; Change the config: find the AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES entry
+;;                ;; and replace it with `(AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES . ,n)
+;;                ((unless x.n-outputs-are-initial-equiv-classes)
+;;                 x))
+;;             (aignet::change-fraig-config x
+;;                                          :n-outputs-are-initial-equiv-classes n
+;;                                          :initial-equiv-classes-last t))
+;;           (transforms-update-fraig-configs-for-n-outputs n (cdr transforms)))))
 
 
 (local (include-book "std/lists/sets" :dir :system))

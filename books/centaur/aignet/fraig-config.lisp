@@ -56,12 +56,20 @@ depend on them.</li>
 
 <ul>
 
-<li>@('(fraig-output-type-simplify)') is the default sort of output,
-which is simplified unless other output map entries or configurations say not
-to.</li>
+<li>@('(fraig-output-type-simplify)') is the default sort of output, which is
+simplified unless other output map entries or configurations say not to.  That
+is, all nodes in the fanin cone of such an output are simplified unless they
+are required not to be simplified by a do-not-simplify-fanouts marker (see
+below).</li>
 
-<li>@('(fraig-output-type-do-not-simplify-fanouts)') signifies that the outputs in 
-the given range are nodes that should be avoided by the fraig transform -- that is, their fanin cones may be simplified but they and their fanout cones will not be.</li>
+<li>@('(fraig-output-type-ignore)') means we don't specifically simplify these
+outputs.  The fanin cone of such an output may be simplified anyway, to the
+extent that it intersects the fanin cones of outputs to be simplified.</li>
+
+<li>@('(fraig-output-type-do-not-simplify-fanouts)') signifies that the outputs
+in the given range are nodes that should be avoided by the fraig transform --
+that is, their fanin cones may be simplified but they and their fanout cones
+will not be.</li>
 
 <li>@('(fraig-output-type-initial-equiv-classes)') signifies that instead of
 starting with all nodes in one equivalence class as usual, we instead start
@@ -78,6 +86,7 @@ for @('0 <= j < i').  This is useful in cases where we know what nodes are likel
 "
   (:simplify ;; ((count natp :rule-classes :type-prescription))
    nil)
+  (:ignore nil)
   (:do-not-simplify-fanouts ;; ((count natp :rule-classes :type-prescription))
    nil)
   (:initial-equiv-classes ;; ((count natp :rule-classes :type-prescription))
@@ -119,18 +128,18 @@ avoids checking false equivalences."
 node's candidatae equivalence if its level (see @(see aignet-record-levels)) is
 less than or equal to the level limit.")
 
-   (n-outputs-are-initial-equiv-classes
-    acl2::maybe-natp
-    :default nil
-    "If set to a natural number N, then the initial equiv classes will be built
-by joining pairs of outputs @('(i, i+N)'). The range of @('i') depends on the
-setting of initial-equiv-classes-last.  If nonnil, then @('i') ranges from
-@('numOuts-2N') to @('numOuts-N-1'); if nil, then it ranges from @('0') to
-@('N-1').  Larger equivalence classes may be built by pairing the same node
-more than once.  Combinational equivalence is preserved for all outputs.  Not
-compatible with @(':miters-only') or @('output-map').")
-   (initial-equiv-classes-last booleanp :default nil
-                               "See the n-outputs-are-initial-equiv-classes option.")
+;;    (n-outputs-are-initial-equiv-classes
+;;     acl2::maybe-natp
+;;     :default nil
+;;     "If set to a natural number N, then the initial equiv classes will be built
+;; by joining pairs of outputs @('(i, i+N)'). The range of @('i') depends on the
+;; setting of initial-equiv-classes-last.  If nonnil, then @('i') ranges from
+;; @('numOuts-2N') to @('numOuts-N-1'); if nil, then it ranges from @('0') to
+;; @('N-1').  Larger equivalence classes may be built by pairing the same node
+;; more than once.  Combinational equivalence is preserved for all outputs.  Not
+;; compatible with @(':miters-only') or @('output-map').")
+;;    (initial-equiv-classes-last booleanp :default nil
+;;                                "See the n-outputs-are-initial-equiv-classes option.")
    (output-types fraig-output-type-map :default nil
                "If this is empty, then all outputs are treated as nodes to
 simplify.  Otherwise, it gives a mapping from output range names (see @(see

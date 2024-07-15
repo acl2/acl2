@@ -122,10 +122,11 @@
          (fraig-initial-nclass-lits fraig-stats))
       "100.00%"))
 
-(define print-fraig-stats-noninitial (classes ipasir fraig-stats &key ((start-node natp) '0))
+(define print-fraig-stats-noninitial (classes ipasir fraig-stats mark &key ((start-node natp) '0))
   :guard (and (non-exec (not (eq (ipasir::ipasir$a->status ipasir) :undef)))
-              (<= start-node (classes-size classes)))
-  (b* (((mv nclasses nconst-lits nclass-lits) (classes-counts classes :start-node start-node))
+              (<= start-node (classes-size classes))
+              (<= (classes-size classes) (bits-length mark)))
+  (b* (((mv nclasses nconst-lits nclass-lits) (classes-counts-with-mark classes mark :start-node start-node))
        (norig-lits (+ (fraig-initial-nconst-lits fraig-stats)
                       (fraig-initial-nclass-lits fraig-stats)))
        ((when (eql norig-lits 0))
@@ -2072,9 +2073,10 @@
            ;; copy needs to be updated again if we prove an equivalence.
            (aignet-refcounts (aignet-maybe-update-refs prev-count aignet-refcounts aignet2))
            (copy (set-lit n and-lit copy))
+           ((when (eql 0 (get-bit n mark)))  ;; not marked to be simplified (e.g. past level limit)
+            (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))
            (equiv-node (node-head n classes))
-           ((when (>= equiv-node n))
-            ;; no equivalent, done
+           ((when (>= equiv-node n)) ;; no equivalent
             (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))
            (equiv-lit (make-lit equiv-node
                                 (b-xor (id->phase equiv-node aignet)
@@ -2084,11 +2086,8 @@
             ;; already hashed/simplified to equivalent, done
             (b* ((fraig-stats (fraig-stats-increment-coincident-nodes fraig-stats)))
               (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state)))
-           ((unless (eql 1 (get-bit n mark)))
-            ;; past level limit, done
-            (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))
            (- (and (eql 0 (logand #xff (fraig-total-checks fraig-stats)))
-                   (print-fraig-stats-noninitial classes ipasir fraig-stats :start-node n)))
+                   (print-fraig-stats-noninitial classes ipasir fraig-stats mark :start-node n)))
            (- (and (eql (lit-id equiv-copy)
                         (lit-id and-lit))
                    (raise "Programming error -- node and equivalence candidate were the same ID but negated")))
@@ -2532,7 +2531,7 @@
        (fraig-ctrexes
         (fraig-ctrexes-init config.sim-words fraig-ctrexes aignet))
        (sat-lits (resize-aignet->sat (ash (num-fanins aignet) -1) sat-lits))
-       ((mv nclasses nconst-lits nclass-lits) (classes-counts classes))
+       ((mv nclasses nconst-lits nclass-lits) (classes-counts-with-mark classes mark))
        (fraig-stats (update-fraig-initial-nclasses nclasses fraig-stats))
        (fraig-stats (update-fraig-initial-nconst-lits nconst-lits fraig-stats))
        (fraig-stats (update-fraig-initial-nclass-lits nclass-lits fraig-stats))
@@ -2540,7 +2539,7 @@
        ((mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state)
         (fraig-sweep-aux 0 aignet aignet2 copy strash fraig-ctrexes classes mark aignet-refcounts sat-lits ipasir fraig-stats config state))
        (- (print-aignet-stats "Tmp" aignet2))
-       (- (print-fraig-stats-noninitial classes ipasir fraig-stats)))
+       (- (print-fraig-stats-noninitial classes ipasir fraig-stats mark)))
     (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))
   ///
   (def-aignet-preservation-thms fraig-sweep :stobjname aignet2)
@@ -3054,8 +3053,9 @@
         (fraig-add-equiv-class-outputs-aux-1 (1+ (lnfix n)) max classes copy aignet2))
        (head-copy (get-lit head copy))
        (n-copy (get-lit n copy))
-       ((when (eql head-copy n-copy))
+       ((when (eql (lit-id head-copy) (lit-id n-copy)))
         (fraig-add-equiv-class-outputs-aux-1 (1+ (lnfix n)) max classes copy aignet2))
+       ;; (- (cw "~x0~%" (lit-id head-copy)))
        (aignet2
         (aignet-add-out head-copy aignet2)))
     (fraig-add-equiv-class-outputs-aux-1 (1+ (lnfix n)) max classes copy aignet2))
@@ -3086,8 +3086,9 @@
         (fraig-add-equiv-class-outputs-aux-2 (1+ (lnfix n)) max classes copy aignet2))
        (head-copy (get-lit head copy))
        (n-copy (get-lit n copy))
-       ((when (eql head-copy n-copy))
+       ((when (eql (lit-id head-copy) (lit-id n-copy)))
         (fraig-add-equiv-class-outputs-aux-2 (1+ (lnfix n)) max classes copy aignet2))
+       ;; (- (cw "~x0~%" (lit-id n-copy)))
        (aignet2
         (aignet-add-out n-copy aignet2)))
     (fraig-add-equiv-class-outputs-aux-2 (1+ (lnfix n)) max classes copy aignet2))
@@ -3109,8 +3110,12 @@
                new-aignet2)
   (b* ((orig-outs (num-outs aignet2))
        (size (classes-size classes))
+       ;; (- (cw "heads: (~%"))
        (aignet2 (fraig-add-equiv-class-outputs-aux-1 0 size classes copy aignet2))
+       ;; (- (cw ")~%")
+       ;;    (cw "nodes: (~%"))
        (aignet2 (fraig-add-equiv-class-outputs-aux-2 0 size classes copy aignet2)))
+    ;; (cw ")~%")
     (mv (- (num-outs aignet2) orig-outs) aignet2))
   ///
   (defret aignet-extension-p-of-<fn>
@@ -3322,7 +3327,25 @@
            (implies x
                     (equal (acl2::maybe-natp-fix x) (nfix x)))
            :hints(("Goal" :in-theory (enable acl2::maybe-natp-fix))))))
-       
+
+
+(define fraig-debug-output-ranges ((output-ranges aignet-output-range-map-p)
+                                   aignet)
+  (progn$
+   (cw "----- Debug output ranges:~%")
+   (cw "Number of outputs: ~x0~%" (num-outs aignet))
+   (cw "Output-ranges length: ~x0~%" (aignet-output-range-map-length output-ranges))
+   (cw "output-ranges: ~x0~%" output-ranges)
+   (cw "----- End debug output ranges~%")))
+
+(define print-classes-counts (classes)
+  (b* (((mv nclasses nconst-lits nclass-lits) (classes-counts classes)))
+    (cw "Number of classes: ~x0 Const lits: ~x1 Class lits: ~x2~%" nclasses nconst-lits nclass-lits)))
+
+(define print-classes-counts-with-mark (classes mark)
+  :guard (<= (classes-size classes) (bits-length mark))
+  (b* (((mv nclasses nconst-lits nclass-lits) (classes-counts-with-mark classes mark)))
+    (cw "Number of classes: ~x0 Const lits: ~x1 Class lits: ~x2~%" nclasses nconst-lits nclass-lits)))
 
 
 (define fraig-core-aux ((strict-count acl2::maybe-natp
@@ -3345,6 +3368,7 @@
                (new-output-ranges aignet-output-range-map-p)
                new-state)
   (b* (((fraig-config config))
+       (- (fraig-debug-output-ranges output-ranges aignet))
        ((mv outmap output-ranges) (fraig-config-normalized-output-map config output-ranges aignet))
        (- (and config.random-seed-name (acl2::seed-random$ config.random-seed-name)))
        (classes (mbe :logic (non-exec (create-classes))
@@ -3353,12 +3377,17 @@
                       (config.miters-only (classes-init-out-miters classes aignet))
                       ((fraig-output-map-has-initial-equivs outmap)
                        (b* (((mv offset count)
-                             (fraig-output-map-initial-equiv-start/count outmap 0)))
-                         (classes-init-n-outputs count offset classes aignet)))
+                             (fraig-output-map-initial-equiv-start/count outmap 0))
+                            (classes
+                             (classes-init-n-outputs count offset classes aignet)))
+                         (classes-check-consistency (num-fanins aignet) classes)
+                         (print-classes-counts classes)
+                         classes))
                       (t (classes-init (num-fanins aignet) classes))))
        (mark (fraig-create-aignet-node-mask aignet outmap config.level-limit mark))
-       (classes (classes-remove-unmarked 0 classes mark))
-       (- (classes-check-consistency (num-fanins aignet) classes))
+       ;; (classes (classes-remove-unmarked 0 classes mark))
+       (- (print-classes-counts-with-mark classes mark)
+          (classes-check-consistency (num-fanins aignet) classes))
        (s32v (mbe :logic (non-exec (create-s32v))
                   :exec s32v))
        (s32v (s32v-resize-cols config.initial-sim-words s32v))

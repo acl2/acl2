@@ -182,6 +182,22 @@ throughout the algorithm.</p>
     (<= (aignet-count-ubdd-branches ubdd limit) (nfix limit))
     :rule-classes :linear))
 
+(define aignet-count-ubdd-branches-wrap ((count0 natp)
+                                         (count1 natp)
+                                         (ubdd acl2::ubddp)
+                                         (limit natp))
+  ;; Returns a count <= the limit.  If less, this is the actual count,
+  ;; otherwise it is the limit or greater.
+  :returns (count natp :rule-classes :type-prescription)
+  (let ((est (* (lnfix count0) (lnfix count1))))
+    (if (<= est (lnfix limit))
+        est
+      (aignet-count-ubdd-branches ubdd limit)))
+  ///
+  (defthm aignet-count-ubdd-branches-wrap-bound
+    (<= (aignet-count-ubdd-branches-wrap count0 count1 ubdd limit) (nfix limit))
+    :rule-classes :linear))
+
 (define ubdd-negate-cond ((neg bitp) (x acl2::ubddp))
   :returns (new-x acl2::ubddp)
   (let ((x (lubdd-fix x)))
@@ -342,9 +358,11 @@ throughout the algorithm.</p>
                        (mark (set-bit id 1 mark)))
                     (mv mark mark2 ubdd-arr u32arr)))
 
+                 (count0 (get-u32 (lit->var f0) u32arr))
+                 (count1 (get-u32 (lit->var f1) u32arr))
                  (build (aignet-node-to-ubdd-build-cond ok0 ok1
-                                                        (get-u32 (lit->var f0) u32arr)
-                                                        (get-u32 (lit->var f1) u32arr)
+                                                        count0
+                                                        count1
                                                         limit))
                  
                  ((unless build)
@@ -359,7 +377,7 @@ throughout the algorithm.</p>
 
                  (mark (set-bit id 1 mark))
                  (ubdd-arr (set-ubdd id gate-ubdd ubdd-arr))
-                 (u32arr (set-u32 id (aignet-count-ubdd-branches gate-ubdd limit) u32arr)))
+                 (u32arr (set-u32 id (aignet-count-ubdd-branches-wrap count0 count1 gate-ubdd limit) u32arr)))
               (mv mark mark2 ubdd-arr u32arr))))
   ///
   (local (in-theory (disable (:d aignet-node-to-ubdd))))

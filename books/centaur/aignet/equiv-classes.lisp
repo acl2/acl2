@@ -1476,7 +1476,7 @@
         classes)
        (id1 (lit->var (outnum->fanin idx aignet)))
        (id2 (lit->var (outnum->fanin (+ (lnfix idx) (lnfix offset)) aignet)))
-        
+       ;; (- (and (not (eql id1 id2)) (cw " (~x0 ~x1)~%" id1 id2)))
        (classes (uf-join-classes-compress id1 id2 classes)))
     (classes-join-po-pairs (1+ (lnfix idx)) offset n aignet classes))
   ///
@@ -1552,8 +1552,10 @@ so in this case the aignet should have at least ~x2 outputs, but in fact it has 
         ;; transform will just copy.  But (FIXME) we should add a way to
         ;; prevent class refinement after this, since it will be useless.
         classes)
-                           
+
+       ;; (- (cw "(~%"))
        (classes (classes-join-po-pairs start n (+ (lnfix start) (lnfix n)) aignet classes))
+       ;; (- (cw ")~%"))
        (classes (uf-fix-to-equiv-class-format 0 classes)))
     (classes-report-sizes classes)
     (classes-check-consistency (num-fanins aignet) classes)
@@ -2322,6 +2324,63 @@ so in this case the aignet should have at least ~x2 outputs, but in fact it has 
                (nconst-lits natp :rule-classes :type-prescription)
                (nclass-lits natp :rule-classes :type-prescription))
   (classes-counts-aux start-node (classes-size classes) 0 0 0 classes))
+
+
+
+(define classes-counts-with-mark-aux ((n natp)
+                                      (max natp)
+                                      (nclasses natp)
+                                      (nconst-lits natp)
+                                      (nclass-lits natp)
+                                      (classes)
+                                      (mark))
+  :guard (and (eql max (classes-size classes))
+              (<= max (bits-length mark))
+              (<= (nfix n) (classes-size classes)))
+  :returns (mv (nclasses-out natp :rule-classes :type-prescription)
+               (nconst-lits-out natp :rule-classes :type-prescription)
+               (nclass-lits-out natp :rule-classes :type-prescription))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  ;; The three stats returned are disjoint subsets of the nodes, so the number of nodes with no equivalences is
+  ;; (- (num-fanins) (+ nconst-lits nclasses nclass-lits)) (where the 1 is for the constant-0 node).
+  (b* ((nclasses (lnfix nclasses))
+       (nconst-lits (lnfix nconst-lits))
+       (nclass-lits (lnfix nclass-lits))
+       ((when (mbe :logic (zp (- (classes-size classes) (nfix n)))
+                   :exec (eql n max)))
+        (mv nclasses nconst-lits nclass-lits))
+       (n (lnfix n))
+       ((mv nclasses nconst-lits nclass-lits)
+        (b* (((when (eql 0 (node-head n classes)))
+              ;; node is equivalent to 0
+              (if (or (eql n 0)
+                      (eql (get-bit n mark) 0))
+                  (mv nclasses nconst-lits nclass-lits)
+                (mv nclasses (+ 1 nconst-lits) nclass-lits)))
+             ((when (< (node-head n classes) n))
+              ;; node is in some other equivalence class
+              (mv nclasses nconst-lits
+                  (if (or (eql (get-bit n mark) 0)
+                          (eql (get-bit (node-head n classes) mark) 0))
+                      nclass-lits
+                    (+ 1 nclass-lits))))
+             ;; node is its own head -- check whether it has a next, otherwise it's a singleton class
+             ((when (or (<= (node-next n classes) n)
+                        (eql (get-bit n mark) 0)))
+              (mv nclasses nconst-lits nclass-lits)))
+          (mv (+ 1 nclasses) nconst-lits nclass-lits))))
+    (classes-counts-with-mark-aux (1+ n) max nclasses nconst-lits nclass-lits classes mark))
+  ///
+  ;; somehow the definition being enabled messes up the fixequiv expand hint
+  (local (in-theory (disable (:d classes-counts-with-mark-aux)))))
+
+(define classes-counts-with-mark (classes mark &key ((start-node natp) '0))
+  :guard (and (<= start-node (classes-size classes))
+              (<= (classes-size classes) (bits-length mark)))
+  :returns (mv (nclasses natp :rule-classes :type-prescription)
+               (nconst-lits natp :rule-classes :type-prescription)
+               (nclass-lits natp :rule-classes :type-prescription))
+  (classes-counts-with-mark-aux start-node (classes-size classes) 0 0 0 classes mark))
 
 
 
