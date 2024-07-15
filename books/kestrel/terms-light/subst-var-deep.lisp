@@ -25,8 +25,6 @@
 
 (local (in-theory (disable mv-nth)))
 
-;; maybe replace the name "alt" with "deep"
-
 (mutual-recursion
   ;; Replace VAR with REPLACEMENT in TERM.
   ;; Note the order of the arguments!
@@ -52,7 +50,7 @@
                    (non-trivial-formals-and-args formals args)))
                (if (or (not (member-eq var formals)) ; no need to go into the body
                        (member-eq var non-trivial-formals) ; can't substitute in the body because the var is shadowed there
-                       (intersection-eq (free-vars-in-term replacement) non-trivial-formals) ; can't subst in the body because the replacemnt term has a different meaning
+                       (intersection-eq (free-vars-in-term replacement) non-trivial-formals) ; can't subst in the body because the replacement term has a different meaning
                        (not (mbt (equal (len formals) (len args)))) ; for termination
                        )
                    ;; Replace in the args only:
