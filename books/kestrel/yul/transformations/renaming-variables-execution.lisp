@@ -1189,7 +1189,7 @@
    (xdoc::p
     "The motivation for this theorem is that,
      when a list of statements (in a block) is executed,
-     execution may not reach the end of the statemnts.
+     execution may not reach the end of the statements.
      However, statically, when we consider that list of statements,
      we extend the variable renaming
      according to the whole list of statements.

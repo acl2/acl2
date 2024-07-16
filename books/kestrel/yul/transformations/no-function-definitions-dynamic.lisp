@@ -19,7 +19,7 @@
 (defxdoc+ no-function-definitions-in-dynamic-semantics
   :parents (no-function-definitions)
   :short "The condition in which function definitions are elsewhere,
-          applied to entities in the dynamic semntics."
+          applied to entities in the dynamic semantics."
   :long
   (xdoc::topstring
    (xdoc::p
