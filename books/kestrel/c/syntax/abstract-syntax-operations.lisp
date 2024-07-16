@@ -285,6 +285,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-expr/tyname
+  :short "An irrelevant expression or type name."
+  :type expr/tyname-p
+  :body (expr/tyname-expr (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-amb?-expr/tyname
   :short "An irrelevant possibly ambiguous expression or type name."
   :type amb?-expr/tyname-p
@@ -379,6 +386,34 @@
   :body (transunit-ensemble nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-postfix/primary-p ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is postfix or primary."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to the grammar definition,
+     postfix expressions include primary expressions;
+     the grammar defines expressions hierarchically.
+     So this test, performed on abstract syntax,
+     is equivalent to testing whether the expression
+     is a postfix one according to the grammar."))
+  (and (member-eq (expr-kind expr)
+                  '(:ident
+                    :const
+                    :string
+                    :paren
+                    :gensel
+                    :arrsub
+                    :funcall
+                    :member
+                    :memberp
+                    :complit))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-unary/postfix/primary-p ((expr exprp))
   :returns (yes/no booleanp)
@@ -770,6 +805,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-expr-binary ((expr exprp))
+  :returns (mv (yes/no booleanp) (op binopp) (arg1 exprp) (arg2 exprp))
+  :short "Check if an expression is a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If it is, return its operator and sub-expressions."))
+  (if (expr-case expr :binary)
+      (mv t
+          (expr-binary->op expr)
+          (expr-binary->arg1 expr)
+          (expr-binary->arg2 expr))
+    (mv nil (irr-binop) (irr-expr) (irr-expr)))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-count-of-check-expr-binary-arg1
+    (implies yes/no
+             (< (expr-count arg1)
+                (expr-count expr)))
+    :rule-classes :linear)
+
+  (defret expr-count-of-check-expr-binary-arg2
+    (implies yes/no
+             (< (expr-count arg2)
+                (expr-count expr)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-expr-mul ((expr exprp))
+  :returns (mv (yes/no booleanp) (arg1 exprp) (arg2 exprp))
+  :short "Check if an expression is a multiplication."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If it is, return its two sub-expressions."))
+  (if (and (expr-case expr :binary)
+           (binop-case (expr-binary->op expr) :mul))
+      (mv t (expr-binary->arg1 expr) (expr-binary->arg2 expr))
+    (mv nil (irr-expr) (irr-expr)))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-count-of-check-expr-mul-arg1
+    (implies yes/no
+             (< (expr-count arg1)
+                (expr-count expr)))
+    :rule-classes :linear)
+
+  (defret expr-count-of-check-expr-mul-arg2
+    (implies yes/no
+             (< (expr-count arg2)
+                (expr-count expr)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-strunispec-no-members ((strunispec strunispecp))
   :returns (ident? ident-optionp)
   :short "Check if a structure or union specifier has no members,
@@ -924,4 +1019,69 @@
         (cons (specqual-tyspec->unwrap specqual)
               (specqual-list-to-tyspec-list (cdr specquals)))
       (specqual-list-to-tyspec-list (cdr specquals))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define apply-pre-inc/dec-ops ((ops inc/dec-op-listp) (expr exprp))
+  :returns (new-expr exprp)
+  :short "Apply a sequence of pre-increment and pre-decrement operators
+          to an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first one in the list will be the outermost,
+     and the last one in the list will be the innermost."))
+  (b* (((when (endp ops)) (expr-fix expr))
+       (op (car ops))
+       (expr (apply-pre-inc/dec-ops (cdr ops) expr)))
+    (inc/dec-op-case
+     op
+     :inc (make-expr-unary :op (unop-preinc) :arg expr)
+     :dec (make-expr-unary :op (unop-predec) :arg expr)))
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define apply-post-inc/dec-ops ((expr exprp) (ops inc/dec-op-listp))
+  :returns (new-expr exprp)
+  :short "Apply a sequence of post-increment and post-decrement operators
+          to an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first one in the list will be the innermost,
+     and the last one in the list will be the outermost."))
+  (b* (((when (endp ops)) (expr-fix expr))
+       (op (car ops))
+       (expr (inc/dec-op-case
+              op
+              :inc (make-expr-unary :op (unop-postinc) :arg expr)
+              :dec (make-expr-unary :op (unop-postdec) :arg expr))))
+    (apply-post-inc/dec-ops expr (cdr ops)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-to-asg-expr-list ((expr exprp))
+  :returns (asg-exprs expr-listp)
+  :short "Turn an expression into a list of assignment expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the grammar, an expression is defined as
+     a comma-separated sequence of one or more assignment expressions.
+     If there are no commas, then the expression is an assignment expression.")
+   (xdoc::p
+    "In abstract syntax,
+     we flatten the expression according to the @(':comma')s.
+     We do it for both sub-expressions of each @(':comma'),
+     recursively, regardless of the nesting resulting from the parser."))
+  (if (expr-case expr :comma)
+      (append (expr-to-asg-expr-list (expr-comma->first expr))
+              (expr-to-asg-expr-list (expr-comma->next expr)))
+    (list (expr-fix expr)))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))

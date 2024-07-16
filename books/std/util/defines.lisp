@@ -770,6 +770,9 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
 
        (verify-guards-after-returns
          (eq (cdr (assoc :verify-guards kwd-alist)) :after-returns))
+       (verify-guards-name
+         (and verify-guards-after-returns
+              (defguts->name-fn (car gutslist))))
 
        (short      (getarg :short   nil kwd-alist))
        (long       (getarg :long    nil kwd-alist))
@@ -917,11 +920,11 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
          (with-output :stack :pop (progn . ,rest-events1))
          ,@(and verify-guards-after-returns
                 returns-induct
-                `((with-output :stack :pop (verify-guards ,name))))
+                `((with-output :stack :pop (verify-guards ,verify-guards-name))))
          ,@fn-sections
          ,@(and verify-guards-after-returns
                 (not returns-induct)
-                `((with-output :stack :pop (verify-guards ,name))))
+                `((with-output :stack :pop (verify-guards ,verify-guards-name))))
          ,@sections-rest
          (with-output :stack :pop (progn . ,rest-events2)))
 
