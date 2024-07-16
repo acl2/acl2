@@ -5170,7 +5170,7 @@
   :returns (stoclaspec stoclaspecp)
   :short "Map a token that is a storage class specifier
           to the correspoding storage class specifier."
-  (cond ((equal token (token-keyword "typedef")) (stoclaspec-tydef))
+  (cond ((equal token (token-keyword "typedef")) (stoclaspec-typedef))
         ((equal token (token-keyword "extern")) (stoclaspec-extern))
         ((equal token (token-keyword "static")) (stoclaspec-static))
         ((equal token (token-keyword "_Thread_local")) (stoclaspec-threadloc))
