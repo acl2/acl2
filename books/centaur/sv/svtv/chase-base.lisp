@@ -67,6 +67,24 @@
 (deflist chase-stack :elt-type chase-position :true-listp t)
 
 
+(defprod svtv-chase-evaldata
+  ((evaldata svtv-evaldata :default (make-svtv-evaldata))
+   (updates svex-alist-p))
+  :layout :list
+  :extra-binder-names (nextstate inputs initst)
+  ///
+  (define svtv-chase-evaldata->nextstate ((x svtv-chase-evaldata-p))
+    :enabled t
+    (svtv-evaldata->nextstate (svtv-chase-evaldata->evaldata x)))
+
+  (define svtv-chase-evaldata->inputs ((x svtv-chase-evaldata-p))
+    :enabled t
+    (svtv-evaldata->inputs (svtv-chase-evaldata->evaldata x)))
+
+  (define svtv-chase-evaldata->initst ((x svtv-chase-evaldata-p))
+    :enabled t
+    (svtv-evaldata->initst (svtv-chase-evaldata->evaldata x))))
+
 
 (local (defun svtv-chase-data-renaming (field-names)
          (b* (((when (atom field-names)) nil)
@@ -81,7 +99,7 @@
                        (cons (list pred new-pred)
                              (svtv-chase-data-renaming (cdr field-names))))))))
 
-(fty::defoption maybe-svtv-evaldata svtv-evaldata-p)
+(fty::defoption maybe-svtv-chase-evaldata svtv-chase-evaldata-p)
 
 
 
@@ -92,12 +110,12 @@
          (vars :type (satisfies 4vmask-alist-p))
          (expr :type (satisfies svex-p) :initially ,(svex-x))
          ;; (new-phase :type (integer 0 *) :initially 0)
-         (evaldata :type (satisfies svtv-evaldata-p) :initially ,(make-svtv-evaldata))
-         (evaldata2 :type (satisfies maybe-svtv-evaldata-p) :initially nil)
+         (evaldata :type (satisfies svtv-chase-evaldata-p) :initially ,(make-svtv-chase-evaldata))
+         (evaldata2 :type (satisfies maybe-svtv-chase-evaldata-p) :initially nil)
          (data2-offset :type integer :initially 0)
          (smartp :initially t)
          (phaselabels :type (satisfies symbol-listp))
-         (updates :type (satisfies svex-alist-p))
+         ;; (updates :type (satisfies svex-alist-p))
          (delays :type (satisfies svex-alist-p))
          (assigns :type (satisfies svex-alist-p))
          (override-alist :type (satisfies svex-alist-p))
@@ -172,7 +190,7 @@
 
 (define svtv-chase-eval-override ((var svar-p)
                                   (phase integerp)
-                                  (evaldata svtv-evaldata-p)
+                                  (evaldata svtv-chase-evaldata-p)
                                   &key
                                   (svtv-chase-data 'svtv-chase-data))
   :returns (mv (override-mask integerp)
@@ -182,24 +200,24 @@
                      '(:in-theory (enable svtv-chase-datap))))
   (b* (((mv var phase) (svtv-chase-normalize-var/phase var phase))
        ((svtv-chase-data svtv-chase-data))
-       ((svtv-evaldata evaldata))
+       ((svtv-chase-evaldata evaldata))
        ((when (< 0 (svar->delay var)))
         (b* ((val (svex-env-lookup var evaldata.initst)))
           (mv 0 0 val)))
        (override-mux (svex-fastlookup var svtv-chase-data.override-alist))
-       (computed-expr (svex-compose (svex-var var) svtv-chase-data.updates))
-       (computed-val (svex-eval-svtv-phases computed-expr phase evaldata))
+       (computed-expr (svex-compose (svex-var var) evaldata.updates))
+       (computed-val (svex-eval-svtv-phases computed-expr phase evaldata.evaldata))
        ((unless override-mux)
         (mv 0 0 computed-val))
        (override-test-expr (svex-var (svar-change-override var :test)))
        (override-val-expr (svex-var (svar-change-override var :val))))
-    (mv (4vec-1mask (svex-eval-svtv-phases override-test-expr phase evaldata))
-        (svex-eval-svtv-phases override-val-expr phase evaldata)
+    (mv (4vec-1mask (svex-eval-svtv-phases override-test-expr phase evaldata.evaldata))
+        (svex-eval-svtv-phases override-val-expr phase evaldata.evaldata)
         computed-val)))
   
 (define svtv-chase-eval ((var svar-p)
                          (phase integerp)
-                         (evaldata svtv-evaldata-p)
+                         (evaldata svtv-chase-evaldata-p)
                          &key
                          (svtv-chase-data 'svtv-chase-data))
   :returns (val 4vec-p)
@@ -207,17 +225,17 @@
                      '(:in-theory (enable svtv-chase-datap))))
   (b* (((mv var phase) (svtv-chase-normalize-var/phase var phase))
        ((svtv-chase-data svtv-chase-data))
-       ((svtv-evaldata evaldata))
+       ((svtv-chase-evaldata evaldata))
        ((when (< 0 (svar->delay var)))
         (svex-env-lookup var evaldata.initst))
        (override-mux (svex-fastlookup var svtv-chase-data.override-alist))
-       (overridden-val (svex-compose (or override-mux (svex-var var)) svtv-chase-data.updates)))
-    (svex-eval-svtv-phases overridden-val phase evaldata)))
+       (overridden-val (svex-compose (or override-mux (svex-var var)) evaldata.updates)))
+    (svex-eval-svtv-phases overridden-val phase evaldata.evaldata)))
 
 
 (define svtv-chase-evallist ((vars svarlist-p)
                              (phase integerp)
-                             (evaldata svtv-evaldata-p)
+                             (evaldata svtv-chase-evaldata-p)
                              &key
                              (svtv-chase-data 'svtv-chase-data))
   :returns (vals 4veclist-p)
@@ -326,7 +344,7 @@
                               (phase natp)
                               (rsh natp)
                               (mask 4vmask-p)
-                              (evaldata svtv-evaldata-p)
+                              (evaldata svtv-chase-evaldata-p)
                               &key
                               (svtv-chase-data 'svtv-chase-data))
   :returns (deps svex-mask-alist-p)
@@ -390,7 +408,7 @@
        (phase (lnfix phase))
        (var (svar-fix var))
        (type
-        (b* ((svex (svex-fastlookup var svtv-chase-data.updates))
+        (b* ((svex (svex-fastlookup var (svtv-chase-evaldata->updates svtv-chase-data.evaldata)))
              ((when svex)
               :update)
              (prev-var-look (hons-get var (svex-alist-fix svtv-chase-data.delays)))
@@ -906,7 +924,7 @@
                                          (rsh natp)
                                          (width maybe-posp)
                                          (mask integerp)
-                                         (evaldata svtv-evaldata-p)
+                                         (evaldata svtv-chase-evaldata-p)
                                          (print-with-masked-val)
                                          &key
                                          (svtv-chase-data 'svtv-chase-data))
@@ -1717,7 +1735,7 @@
        ((unless (consp stack))
         (cw! "Empty stack"))
        ((chase-position pos) (car stack))
-       (nphases (len (svtv-evaldata->inputs (svtv-chase-data->evaldata svtv-chase-data))))
+       (nphases (len (svtv-chase-evaldata->inputs (svtv-chase-data->evaldata svtv-chase-data))))
        (first-phase (mod pos.phase (lposfix by)))
        (first-pos (change-chase-position pos :phase first-phase))
        (lines (svtv-chase-print-history-range first-pos (1- nphases) by)))

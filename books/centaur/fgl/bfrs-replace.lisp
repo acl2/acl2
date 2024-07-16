@@ -241,7 +241,10 @@
                          (fgl-object-alist-eval x env logicman))))
       :fn fgl-object-alist-replace-bfrlist))
 
-  (verify-guards fgl-object-replace-bfrlist))
+  (verify-guards fgl-object-replace-bfrlist)
+
+  (local (in-theory (enable fgl-object-alist-fix)))
+  (fty::deffixequiv-mutual fgl-object-replace-bfrlist))
 
 
       

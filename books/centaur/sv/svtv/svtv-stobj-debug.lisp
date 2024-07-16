@@ -315,7 +315,6 @@
        (svtv-chase-data (set-svtv-chase-data->phaselabels labels svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->probes probes svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->namemap namemap svtv-chase-data))
-       (svtv-chase-data (set-svtv-chase-data->updates (make-fast-alist fsm.values) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->delays (make-fast-alist flatnorm.delays) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->assigns (make-fast-alist flatnorm.assigns) svtv-chase-data))
        (override-alist (svtv-override-alist flatnorm.assigns (svtv-data->phase-fsm-setup svtv-data))))
@@ -326,12 +325,14 @@
                                       (initst svex-env-p)
                                       &key
                                       (svtv-data 'svtv-data))
-  :returns (evaldata svtv-evaldata-p)
+  :returns (evaldata svtv-chase-evaldata-p)
   (b* (((fsm fsm) (svtv-data->phase-fsm svtv-data)))
-    (make-svtv-evaldata
-     :nextstate (make-fast-alist fsm.nextstate)
-     :inputs (make-fast-alists ins)
-     :initst (make-fast-alist initst))))
+    (make-svtv-chase-evaldata
+     :evaldata (make-svtv-evaldata
+                :nextstate (make-fast-alist fsm.nextstate)
+                :inputs (make-fast-alists ins)
+                :initst (make-fast-alist initst))
+     :updates fsm.values)))
 
 
 
@@ -432,7 +433,7 @@
                                       (initst svex-env-p)
                                       &key
                                       (svtv-data 'svtv-data))
-  :returns (evaldata svtv-evaldata-p)
+  :returns (evaldata svtv-chase-evaldata-p)
   (b* ((phases (svtv-data->cycle-phases svtv-data))
        (base-ins (svtv-cycle-run-fsm-inputs ins phases)))
     (svtv-data-phase-fsm-evaldata base-ins initst)))
@@ -550,7 +551,7 @@
               (svtv-data->flatten-validp svtv-data)
               (or (svtv-cycle-output-phase (svtv-data->cycle-phases svtv-data))
                   (not (svtv-data->cycle-phases svtv-data))))
-  :returns (evaldata svtv-evaldata-p)
+  :returns (evaldata svtv-chase-evaldata-p)
   (b* (((mv cycle-ins initst)
         (svtv-pipeline-setup-to-cycle-inputs env
                                              setup
@@ -564,7 +565,7 @@
               (svtv-data->flatten-validp svtv-data)
               (or (svtv-cycle-output-phase (svtv-data->cycle-phases svtv-data))
                   (not (svtv-data->cycle-phases svtv-data))))
-  :returns (evaldata svtv-evaldata-p)
+  :returns (evaldata svtv-chase-evaldata-p)
   (svtv-data-pipeline-evaldata-aux env (svtv-data->pipeline-setup svtv-data)))
 
 
@@ -580,18 +581,38 @@
                (find-make-defsvtv-args (cdr x))))))
     
 
-(defun translate-defsvtv-form-for-debug (defsvtv$-form wrld)
-  (declare (xargs :mode :program))
-  (b* (((mv err val) (acl2::macroexpand1-cmp defsvtv$-form
-                                             'translate-defsvtv-form-for-debug
-                                             wrld
-                                             (default-state-vars nil)))
-       ((when err) (mv err val))
-       (make-defsvtv-args (find-make-defsvtv-args val))
-       ((unless make-defsvtv-args)
-        (translate-defsvtv-form-for-debug val wrld)))
-    (mv nil make-defsvtv-args)))
+(defun translate1-defsvtv-form-for-debug (defsvtv$-form state)
+  (declare (xargs :mode :program :stobjs state))
+  (b* (((when (and (consp defsvtv$-form)
+                   (eq (car defsvtv$-form) 'acl2::make-event)))
+        (b* ((make-event-form (cadr defsvtv$-form))
+             ((mv err (cons ?stobjs-out return-vals) state)
+              (trans-eval make-event-form 'translate1-defsvtv-form-for-debug state t))
+             ((when err) (mv err nil state))
+             ;; Return-vals is either the value itself, if stobjs-out is '(nil), or (list err val ...)
+             ((mv err exp)
+              (if (equal stobjs-out '(nil))
+                  (mv nil return-vals)
+                (mv (car return-vals) (cadr return-vals))))
+             ;; Note we're not dealing with exotic make-event expansion forms
+             ;; like :OR or :DO-PROOFS. But then we're also not dealing with
+             ;; anything that does more than produce a single defsvtv form.
+             ((when err) (mv err nil state)))
+          (value exp)))
+             
+        ((mv err val) (acl2::macroexpand1-cmp defsvtv$-form
+                                             'translate1-defsvtv-form-for-debug
+                                             (w state)
+                                             (default-state-vars nil))))
+    (mv err val state)))
 
+(defun translate-defsvtv-form-for-debug (defsvtv$-form state)
+  (declare (xargs :mode :program :stobjs state))
+  (b* ((make-defsvtv-args (find-make-defsvtv-args defsvtv$-form))
+       ((when make-defsvtv-args)
+        (value make-defsvtv-args))
+       ((er next-form) (translate1-defsvtv-form-for-debug defsvtv$-form state)))
+    (translate-defsvtv-form-for-debug next-form state)))
 
 
 
@@ -714,8 +735,8 @@
 (define svtv-debug-get-defsvtv-args (form state)
   :returns (mv err val state)
   :mode :program
-  (b* (((mv err make-defsvtv-args-form)
-        (translate-defsvtv-form-for-debug form (w state)))
+  (b* (((mv err make-defsvtv-args-form state)
+        (translate-defsvtv-form-for-debug form state))
        ((when err)
         (er soft 'svtv-debug-get-defsvtv-args "Error translating defsvtv$ form: ~@0~%" make-defsvtv-args-form))
        ((mv err (cons ?stobjs-out defsvtv-args) state)
@@ -787,7 +808,7 @@
                                          &key
                                          (svtv-data 'svtv-data))
   :guard (and (modalist-addr-p (design->modalist (defsvtv-args->design args))))
-  :returns (mv err (evaldata (implies (not err) (svtv-evaldata-p evaldata))) new-svtv-data)
+  :returns (mv err (evaldata (implies (not err) (svtv-chase-evaldata-p evaldata))) new-svtv-data)
   (b* ((args (defsvtv-args-expand-stages args))
        ((mv err pipeline-setup svtv-data)
         (defsvtv-stobj-pipeline-setup args svtv-data :skip-cycle t))
@@ -902,6 +923,7 @@
                                            (offset)
                                            (offset-phases)
                                            (svtv-data 'svtv-data)
+                                           (svtv-data2 'svtv-data2)
                                            (svtv-chase-data 'svtv-chase-data)
                                            (state 'state))
   :mode :program
@@ -909,23 +931,23 @@
         (svtv-debug-get-defsvtv-args form1 state))
        ((when err)
         (er hard? 'svtv-chase$ "Error recreating defsvtv-args object: ~@0~%" err)
-        (mv err svtv-chase-data svtv-data state))
+        (mv err svtv-chase-data svtv-data svtv-data2 state))
        ((mv err defsvtv-args2 state)
         (if form2
             (svtv-debug-get-defsvtv-args form2 state)
           (mv nil defsvtv-args state)))
        ((when err)
         (er hard? 'svtv-chase$ "Error recreating defsvtv-args object: ~@0~%" err)
-        (mv err svtv-chase-data svtv-data state))
+        (mv err svtv-chase-data svtv-data svtv-data2 state))
        (defsvtv-args2 (defsvtv-args-expand-stages defsvtv-args2))
        ((mv err svtv-chase-data svtv-data)
         (svtv-data-defsvtv-args-setup-chase defsvtv-args env1))
        ((when err)
-        (mv err svtv-chase-data svtv-data state))
-       ((mv err evaldata2 svtv-data)
-        (svtv-data-defsvtv-args-evaldata defsvtv-args2 env2))
+        (mv err svtv-chase-data svtv-data svtv-data2 state))
+       ((mv err evaldata2 svtv-data2)
+        (svtv-data-defsvtv-args-evaldata defsvtv-args2 env2 :svtv-data svtv-data2))
        ((when err)
-        (mv err svtv-chase-data svtv-data state))
+        (mv err svtv-chase-data svtv-data svtv-data2 state))
        (svtv-chase-data (set-svtv-chase-data->evaldata2 evaldata2 svtv-chase-data))
        (offset (svtv-chase$-compare-decide-offset offset
                                                   (svtv-chase-offsets-maybe-remove-unlisted
@@ -938,7 +960,7 @@
                                                    offset-phases)))
        (svtv-chase-data (set-svtv-chase-data->data2-offset offset svtv-chase-data))
        ((mv svtv-chase-data state) (svtv-chase$-repl)))
-    (mv nil svtv-chase-data svtv-data state)))
+    (mv nil svtv-chase-data svtv-data svtv-data2 state)))
 
 
 (define svtv-chase$ ((svtv svtv-p)
@@ -981,6 +1003,7 @@
                                 (offset)
                                 (offset-phases)
                                 (svtv-data 'svtv-data)
+                                (svtv-data2 'svtv-data2)
                                 (svtv-chase-data 'svtv-chase-data)
                                 (state 'state))
   :mode :program
@@ -1011,6 +1034,7 @@
                                 (offset)
                                 (offset-phases)
                                 (svtv-data 'svtv-data)
+                                (svtv-data2 'svtv-data2)
                                 (svtv-chase-data 'svtv-chase-data))
   `(svtv-chase$-compare-aux
     :form ',form
@@ -1025,6 +1049,7 @@
     :offset ,offset
     :offset-phases ',offset-phases
     :svtv-data ,svtv-data
+    :svtv-data2 ,svtv-data2
     :svtv-chase-data ,svtv-chase-data))
 
 
