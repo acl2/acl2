@@ -46,7 +46,17 @@
 (include-book "utilities" :dir :utils)
 (include-book "structures" :dir :utils)
 (include-book "centaur/defrstobj2/defrstobj" :dir :system)
+
+; WAHJr. We lack a mechanism to decide what memory model we should use.  Note,
+; we could replace the slow memory in ``bignum-asymmetric'' to gain performance
+; above the linear memory limit.
+
+; The orginal three-level memory model.
 (include-book "centaur/bigmem/bigmem" :dir :system)
+
+; Asymmetric memory model; faster for "small" addresses, and otherwise slower.
+; (include-book "centaur/bigmem-asymmetric/bigmem-asymmetric" :dir :system)
+
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
 (include-book "hacking/hacker" :dir :system)
@@ -743,23 +753,22 @@
     :long ,(str::cat
             "<h4>Definition of the @('x86isa') state</h4>
 
- <p>The definition of the state uses nested and abstract stobjs by way
- of community books @(tsee rstobj2::defrstobj) and @(tsee
- bigmem::bigmem).  It may be interesting to read about the old
- definition to see how the current definition supports all of its
+ <p>The definition of the state uses nested and abstract stobjs by way of
+ community books @(tsee rstobj2::defrstobj), @(tsee bigmem::bigmem), or @(tsee
+ bigmem-asymmetric::bigmem-asymmetric).  It may be interesting to read about
+ the old definition to see how the current definition supports all of its
  functionality but in a more maintainable way; see @(see
  x86isa-state-history).</p>
 
- <p>The @('bigmem') books define a memory model similar to the old
- @('x86isa') memory model in that it provides a record representation
- for reasoning and an allocate-on-demand, array-like performance for
- execution. The x86 concrete stobj has the @('bigmem') stobj for its
- memory field; @('defrstobj') exports the @('bigmem') memory accessor
- and updater functions alongside those of other x86 fields and gives
- us a state definition that's logically a multi-typed record.
- @('defrstobj') also allows the definition of a universal accessor and
- updater, so we still retain that feature in the @('x86isa')
- books.</p>
+ <p>The @('bigmem') and @('bigmem-asymmetric') books define a memory model
+ similar to the old @('x86isa') memory model in that it provides a record
+ representation for reasoning and an allocate-on-demand, array-like performance
+ for execution. The x86 concrete stobj has the @('bigmem') stobj for its memory
+ field; @('defrstobj') exports the @('bigmem') memory accessor and updater
+ functions alongside those of other x86 fields and gives us a state definition
+ that's logically a multi-typed record.  @('defrstobj') also allows the
+ definition of a universal accessor and updater, so we still retain that
+ feature in the @('x86isa') books.</p>
 
  <p>Note that the @('bigmem') books define a 64-bit address space,
  though the @('x86isa') state restricts that to a 52-bit address space
@@ -778,10 +787,10 @@
 
   :long "<h4>Old definition of the @('x86isa') state</h4>
 
- <p>Before @(tsee bigmem::bigmem) and @(tsee rstobj2::defrstobj)
- were used to define the x86 state, the x86 state's definition was
- rather tedious.  (For future reference, the following git revision
- has that old definition:
+ <p>Before @(tsee bigmem-asymmetric::bigmem-asymmetric), @(tsee bigmem::bigmem)
+ and @(tsee rstobj2::defrstobj) were used to define the x86 state, the x86
+ state's definition was rather tedious.  (For future reference, the following
+ git revision has that old definition:
  @('dea40263247bd930077205526934bc596686bfb0')).</p>
 
  <p>This current file @('state.lisp') replaces the following old
