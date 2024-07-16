@@ -805,6 +805,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-expr-mul ((expr exprp))
+  :returns (mv (yes/no booleanp) (arg1 exprp) (arg2 exprp))
+  :short "Check if an expression is a multiplication."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If it is, return its two sub-expressions."))
+  (if (and (expr-case expr :binary)
+           (binop-case (expr-binary->op expr) :mul))
+      (mv t (expr-binary->arg1 expr) (expr-binary->arg2 expr))
+    (mv nil (irr-expr) (irr-expr)))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-count-of-check-expr-mul-arg1
+    (implies yes/no
+             (< (expr-count arg1)
+                (expr-count expr)))
+    :rule-classes :linear)
+
+  (defret expr-count-of-check-expr-mul-arg2
+    (implies yes/no
+             (< (expr-count arg2)
+                (expr-count expr)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-strunispec-no-members ((strunispec strunispecp))
   :returns (ident? ident-optionp)
   :short "Check if a structure or union specifier has no members,
