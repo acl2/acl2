@@ -1,7 +1,7 @@
 ; Additions to osets
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -130,21 +130,22 @@
 ;(local (in-theory (disable set::never-in-empty)))
 
 ;would like a pick-a-point-proof-strategy for empty
-(defthm helper
-  (set::subset (set::intersect (set::difference s1 s0)
-                               (set::difference s0 s1))
-               (set::emptyset))
-  :hints (("Goal" :in-theory (e/d (;set::difference
-                                                                      )
-                                  (set::never-in-empty
-                                   set::emptyp-subset-2)))))
+(local
+ (defthm intersect-difference-forward
+   (set::subset (set::intersect (set::difference s1 s0)
+                                (set::difference s0 s1))
+                (set::emptyset))
+   :hints (("Goal" :in-theory (e/d (;set::difference
+                                    )
+                                   (set::never-in-empty
+                                    set::emptyp-subset-2))))))
 
 (defthm intersect-difference-both-ways
   (equal (set::intersect (set::difference s1 s0)
                          (set::difference s0 s1))
          (set::emptyset))
-  :hints (("Goal" :in-theory (e/d (set::emptyp) ( helper))
-           :use (:instance helper))))
+  :hints (("Goal" :in-theory (e/d (set::emptyp) (intersect-difference-forward))
+           :use intersect-difference-forward)))
 
 (defthm union-with-difference-same
  (equal (set::union s1 (set::difference s1 s0))
