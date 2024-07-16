@@ -853,7 +853,7 @@
      returning as soon as we get a non-error.
      If all the alternatives give an error,
      we return an error that includes all the errors for the alternatives:
-     this is the reason for using and incremnting indices,
+     this is the reason for using and incrementing indices,
      i.e. so that we can combine them in case of error,
      not because we want to combine them in case of success.")
    (xdoc::p

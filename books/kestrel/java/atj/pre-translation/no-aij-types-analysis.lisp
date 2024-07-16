@@ -104,7 +104,7 @@
      and those calls are checked as a whole,
      without recursively descending in their arguments.")
    (xdoc::p
-    "We disallow calls of the ACL2 functions natively implemnted in AIJ,
+    "We disallow calls of the ACL2 functions natively implemented in AIJ,
      except for @(tsee equal), @(tsee if), and @(tsee not).
      In the context of the other checks,
      these do not cause the use of AIJ types.
