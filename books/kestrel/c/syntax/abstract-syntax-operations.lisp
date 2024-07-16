@@ -805,6 +805,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-expr-binary ((expr exprp))
+  :returns (mv (yes/no booleanp) (op binopp) (arg1 exprp) (arg2 exprp))
+  :short "Check if an expression is a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If it is, return its operator and sub-expressions."))
+  (if (expr-case expr :binary)
+      (mv t
+          (expr-binary->op expr)
+          (expr-binary->arg1 expr)
+          (expr-binary->arg2 expr))
+    (mv nil (irr-binop) (irr-expr) (irr-expr)))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-count-of-check-expr-binary-arg1
+    (implies yes/no
+             (< (expr-count arg1)
+                (expr-count expr)))
+    :rule-classes :linear)
+
+  (defret expr-count-of-check-expr-binary-arg2
+    (implies yes/no
+             (< (expr-count arg2)
+                (expr-count expr)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-expr-mul ((expr exprp))
   :returns (mv (yes/no booleanp) (arg1 exprp) (arg2 exprp))
   :short "Check if an expression is a multiplication."
