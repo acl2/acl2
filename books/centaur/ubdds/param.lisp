@@ -1019,6 +1019,7 @@
         (t (qcons (to-param-space2 (car p) (car y))
                   (to-param-space2 (cdr p) (cdr y))))))
 
+
 ;; [Jared]: tweaking this to only memoize when car&cdr are non-nil, to slightly
 ;; reduce memo table overhead.
 
@@ -1066,4 +1067,107 @@
 
 
 
+(encapsulate nil
 
+  (local
+   (defthm to-param-space2-list-of-consp-p-qv-list
+     (implies (and (consp p)
+                   (posp start))
+              (equal (to-param-space2-list p (qv-list start 1 n))
+                     (b* ((rest-car (to-param-space2-list (car p) (qv-list (1- start) 1 n)))
+                          (rest-cdr (to-param-space2-list (cdr p) (qv-list (1- start) 1 n))))
+                       (cond ((eq (car p) nil) (q-zipper rest-cdr rest-cdr))
+                             ((eq (cdr p) nil) (q-zipper rest-car rest-car))
+                             (t (q-zipper rest-car rest-cdr))))))
+     :hints(("Goal" :induct (qv-list start 1 n)
+             :expand ((:free (a b) (to-param-space2-list p (cons a b)))
+                      (:free (a b c d)
+                       (q-zipper (cons a b) (cons c d)))
+                      (:free (a b) (to-param-space2 p (cons a b)))
+                      (qv start))
+             :do-not-induct t))))
+
+  (local (defthm consp-of-eval-bdd-list
+           (equal (consp (Eval-bdd-list x y))
+                  (consp x))
+           :hints(("Goal" :in-theory (enable eval-bdd-list)))))
+
+  (local (defthm consp-of-to-param-space2-list
+           (equal (consp (to-param-space2-list x y))
+                  (consp y))
+           :hints(("Goal" :in-theory (enable to-param-space2-list)))))
+
+  (local (defthm len-of-to-param-space2-list
+           (equal (len (to-param-space2-list x y))
+                  (len y))
+           :hints(("Goal" :in-theory (enable to-param-space2-list)))))
+
+  (local (defthm consp-of-qv-list
+           (equal (consp (qv-list x y z))
+                  (posp z))
+           :hints(("Goal" :in-theory (enable qv-list)))))
+
+  
+  (local (defun eval-bdd-of-p-under-to-param-space2-list-ind (p n env)
+           (if (atom p)
+               (list n env)
+             (list
+              (eval-bdd-of-p-under-to-param-space2-list-ind
+               (car p) (+ -1 n) (cdr env))
+              (eval-bdd-of-p-under-to-param-space2-list-ind
+               (cdr p) (+ -1 n) (cdr env))))))
+  
+  (defthm eval-bdd-of-p-under-to-param-space2-list
+    (implies (and (<= (max-depth p) (nfix n))
+                  ; (natp start)
+                  ;; (eval-bdd p (find-diff p nil))
+                  (ubddp p)
+                  p)
+             (eval-bdd p
+                       (eval-bdd-list
+                        (to-param-space2-list p (qv-list 0 1 n))
+                        env)))
+    :hints (("goal" :induct (eval-bdd-of-p-under-to-param-space2-list-ind
+                             p n env)
+             :in-theory (disable to-param-space2-list
+                                 eval-bdd-list
+                                 qv-list
+                                 eval-bdd
+                                 qv
+                                 (qv))
+             :do-not-induct t
+             :expand ((qv-list 0 1 n)
+                      (qv 0)
+                      (find-diff p nil)
+                      (:free (a b) (to-param-space2-list p (cons a b)))
+                      (:free (var) (to-param-space2 p var))
+                      (:free (a b)
+                       (eval-bdd-list (cons a b) env))
+                      (:free (env) (eval-bdd p env))
+                      (eval-bdd '(t) env)
+                      (max-depth p)))))
+  
+  )
+
+
+(defn qv-param2 (p n)
+  (declare (xargs :guard (natp n)))
+  (cond ((atom p) (qv n))
+        ((zp n)
+         (cond ((not (car p)) nil)
+               ((not (cdr p)) t)
+               (t (hons t nil))))
+        ((not (car p)) (let ((rest (qv-param2 (cdr p) (1- n))))
+                           (qcons rest rest)))
+        ((not (cdr p)) (let ((rest (qv-param2 (car p) (1- n))))
+                         (qcons rest rest)))
+        (t (qcons (qv-param2 (car p) (1- n))
+                  (qv-param2 (cdr p) (1- n))))))
+
+(memoize 'qv-param2 :condition '(and (consp p) (car p) (cdr p) (not (eql n 0))))
+
+(defthm qv-param2-is-to-param-space2
+  (equal (qv-param2 p n)
+         (to-param-space2 p (qv n)))
+  :hints(("Goal" :in-theory (enable to-param-space2
+                                    qv))))

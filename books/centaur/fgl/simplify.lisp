@@ -39,6 +39,8 @@
 (include-book "interp-st-bfrs-ok")
 (include-book "add-primitives")
 (include-book "pathcond-transform")
+(include-book "fast-alists-base")
+(include-book "bfrcount")
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
@@ -250,7 +252,12 @@
     (iff (aignet-copies-above-n-in-bounds n litarr aignet)
          (aignet-litp (nth-lit out-of-bounds-idx litarr) aignet))
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable nth-lit))))))
+                 '(:in-theory (enable nth-lit)))))
+
+  (defthm aignet-copies-above-n-in-bounds-when-aignet-copies-in-bounds
+    (implies (aignet-copies-in-bounds litarr aignet)
+             (aignet-copies-above-n-in-bounds n litarr aignet))
+    :hints(("Goal" :in-theory (enable in-bounds-by-aignet-copies-above-n-in-bounds-witness)))))
 
 #!aignet
 (define aignet-copies-below-n-in-bounds ((n natp) litarr aignet)
@@ -1023,35 +1030,35 @@
    :hints(("Goal" :in-theory (enable aignet-input-copies-in-bounds)))))
 
 
-(local
- #!aignet
- (defthm aignet-copies-above-n-in-bounds-of-aignet-simplify-marked-with-tracking
-   (b* (((mv ?new-aignet ?new-litarr ?new-copy ?new-state)
-         (aignet-simplify-marked-with-tracking
-          aignet bitarr mark assum-lits lits
-          (acl2::repeat m 0)
-          (acl2::repeat m 0)
-          config state)))
-     (and (aignet-copies-above-n-in-bounds
-           n new-litarr new-aignet)
-          (aignet-copies-above-n-in-bounds
-           n new-copy new-aignet)))
-   :hints (("goal" :in-theory (enable in-bounds-by-aignet-copies-above-n-in-bounds-witness)))))
+;; (local
+;;  #!aignet
+;;  (defthm aignet-copies-above-n-in-bounds-of-aignet-simplify-marked-with-tracking
+;;    (b* (((mv ?new-aignet ?new-litarr ?new-copy ?new-state)
+;;          (aignet-simplify-marked-with-tracking
+;;           aignet bitarr assum-lits litmap
+;;           (acl2::repeat m 0)
+;;           (acl2::repeat m 0)
+;;           config state)))
+;;      (and (aignet-copies-above-n-in-bounds
+;;            n new-litarr new-aignet)
+;;           (aignet-copies-above-n-in-bounds
+;;            n new-copy new-aignet)))
+;;    :hints (("goal" :in-theory (enable in-bounds-by-aignet-copies-above-n-in-bounds-witness)))))
 
-(local
- #!aignet
- (defthm aignet-copies-in-bounds-of-aignet-simplify-marked-with-tracking
-   (b* (((mv ?new-aignet ?new-litarr ?new-copy ?new-state)
-         (aignet-simplify-marked-with-tracking
-          aignet bitarr mark assum-lits lits
-          (acl2::repeat m 0)
-          (acl2::repeat m 0)
-          config state)))
-     (and (aignet-copies-in-bounds
-           new-litarr new-aignet)
-          (aignet-copies-in-bounds
-           new-copy new-aignet)))
-   :hints (("goal" :in-theory (enable aignet-copies-in-bounds)))))
+;; (local
+;;  #!aignet
+;;  (defthm aignet-copies-in-bounds-of-aignet-simplify-marked-with-tracking
+;;    (b* (((mv ?new-aignet ?new-litarr ?new-copy ?new-state)
+;;          (aignet-simplify-marked-with-tracking
+;;           aignet bitarr mark assum-lits lits
+;;           (acl2::repeat m 0)
+;;           (acl2::repeat m 0)
+;;           config state)))
+;;      (and (aignet-copies-in-bounds
+;;            new-litarr new-aignet)
+;;           (aignet-copies-in-bounds
+;;            new-copy new-aignet)))
+;;    :hints (("goal" :in-theory (enable aignet-copies-in-bounds)))))
 
 (local
  #!aignet
@@ -1446,12 +1453,6 @@
 ;;    :hints (("goal" :in-theory (enable lit-listp-when-set-equiv)))))
 
 
-(local
- #!aignet
- (defthm aignet-copies-above-n-in-bounds-when-aignet-copies-in-bounds
-   (implies (aignet-copies-in-bounds copy aignet)
-            (aignet-copies-above-n-in-bounds n copy aignet))
-   :hints(("Goal" :in-theory (enable aignet-copies-above-n-in-bounds)))))
 
 (local
  #!aignet
@@ -1627,6 +1628,123 @@
          (boolean-listp (bfr-list-eval x env))
          :hints(("Goal" :in-theory (enable bfr-list-eval)))))
 
+
+(define fgl-simplify-tracked-obj-to-alist ((x fgl-object-p))
+  :returns (mv was-alist
+               (alist fgl-object-alist-p))
+  (b* (((mv ok alist) (fgl-make-fast-alist-rec-tr x nil))
+       ((when (and ok
+                   (symbol-listp (alist-keys alist))))
+        (mv ok alist)))
+    (mv nil (list (cons :fgl-simplify-tracked-obj (fgl-object-fix x)))))
+  ///
+  (defret bfrs-of-<fn>
+    (implies (not (member v (fgl-object-bfrlist x)))
+             (not (member v (fgl-object-alist-bfrlist alist)))))
+
+  (defret bfr-listp-of-<fn>
+    (implies (bfr-listp (fgl-object-bfrlist x))
+             (bfr-listp (fgl-object-alist-bfrlist alist)))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness))))
+
+  (defret symbol-listp-alist-keys-of-<fn>
+    (symbol-listp (alist-keys alist))))
+
+
+(define fgl-object-alist-to-named-lit-list-map ((x fgl-object-alist-p)
+                                                (bfrstate bfrstate-p))
+  :guard (and (symbol-listp (alist-keys x))
+              (bfrstate-mode-is :aignet)
+              (bfr-listp (fgl-object-alist-bfrlist x)))
+  :guard-debug t
+  :guard-hints (("goal" :expand ((fgl-object-alist-bfrlist x))))
+  :returns (litmap aignet::named-lit-list-map-p)
+  (if (atom x)
+      nil
+    (if (mbt (consp (car x)))
+        (cons (cons (mbe :logic (acl2::symbol-fix (caar x))
+                         :exec (caar x))
+                    (bfrlist->aignet-lits (fgl-object-bfrlist (cdar x))))
+              (fgl-object-alist-to-named-lit-list-map (cdr x) bfrstate))
+      (fgl-object-alist-to-named-lit-list-map (cdr x) bfrstate)))
+  ///
+  (defret named-lit-list-map-aignet-okp-of-<fn>
+    (implies (and (bfr-listp (fgl-object-alist-bfrlist x) bfrstate)
+                  (bfrstate-mode-is :aignet)
+                  (equal (bfrstate->bound bfrstate) (aignet::fanin-count aignet)))
+             (aignet::named-lit-list-map-aignet-okp litmap aignet))
+    :hints(("Goal" :in-theory (enable aignet::named-lit-list-map-aignet-okp)
+            :induct <call>
+            :expand ((fgl-object-alist-bfrlist x)))))
+  
+  (local (in-theory (enable fgl-object-alist-fix))))
+
+
+#!aignet
+(define named-lit-list-map-max-id-val ((x named-lit-list-map-p))
+  :returns (max natp :rule-classes :type-prescription)
+  (if (atom x)
+      0
+    (if (mbt (consp (car x)))
+        (max (lits-max-id-val (cdar x))
+             (named-lit-list-map-max-id-val (cdr x)))
+      (named-lit-list-map-max-id-val (cdr x))))
+  ///
+  (defret max-id-val-when-named-lit-list-map-aignet-okp
+    (implies (named-lit-list-map-aignet-okp x aignet)
+             (<= (named-lit-list-map-max-id-val x) (fanin-count aignet)))
+    :hints(("Goal" :in-theory (enable named-lit-list-map-aignet-okp))))
+
+  (defret lits-max-id-val-of-lookup-when-<fn>
+    (<= (lits-max-id-val (cdr (hons-assoc-equal k x))) (named-lit-list-map-max-id-val x))
+    :rule-classes :linear)
+  
+  (local (in-theory (enable named-lit-list-map-fix))))
+
+(define fgl-object-alist-replace-bfrs-from-lit-list-map ((x fgl-object-alist-p)
+                                                         (lit-list-map aignet::named-lit-list-map-p)
+                                                         (bfrstate bfrstate-p))
+  :guard (and (bfrstate-mode-is :aignet)
+              (<= (aignet::named-lit-list-map-max-id-val lit-list-map)
+                  (bfrstate->bound bfrstate)))
+  :returns (new-x fgl-object-alist-p)
+  (b* (((when (atom x)) x)
+       ((unless (mbt (consp (car x))))
+        (fgl-object-alist-replace-bfrs-from-lit-list-map (cdr x) lit-list-map bfrstate))
+       ((cons key obj) (car x))
+       (look (hons-get key (aignet::named-lit-list-map-fix lit-list-map)))
+       ((when (and look (<= (fgl-object-bfrcount obj) (len (cdr look)))))
+        (b* (((mv new-obj &) (fgl-object-replace-bfrlist obj (aignet-lits->bfrlist (cdr look)))))
+          (cons (cons key new-obj)
+                (fgl-object-alist-replace-bfrs-from-lit-list-map (cdr x) lit-list-map bfrstate)))))
+    (cw "Fgl-simplify: insufficiently many literals mapped to key ~x0 for reconstituting tracked object~%" key)
+    (fgl-object-alist-replace-bfrs-from-lit-list-map (cdr x) lit-list-map bfrstate))
+  ///
+
+  (defret bfr-listp-of-<fn>
+    (implies (bfrstate-mode-is :aignet)
+             (bfr-listp (fgl-object-alist-bfrlist new-x) bfrstate))
+    :hints(("Goal" :in-theory (enable fgl-object-alist-bfrlist))))
+  
+  (local (in-theory (enable fgl-object-alist-fix))))
+
+(define fgl-simplify-alist-to-tracked-obj ((x fgl-object-alist-p)
+                                           (was-alist))
+  :returns (obj fgl-object-p)
+  (if was-alist
+      (g-map '(:g-map) (make-fast-alist x))
+    (cdr (hons-assoc-equal :fgl-simplify-tracked-obj (fgl-object-alist-fix x))))
+  ///
+  (local (defthm member-lookup-of-fgl-object-alist
+           (implies (not (member v (fgl-object-alist-bfrlist x)))
+                    (not (member v (fgl-object-bfrlist (cdr (hons-assoc-equal k x))))))
+           :hints(("Goal" :in-theory (enable fgl-object-alist-bfrlist)
+                   :induct (len x)))))
+  
+  (defret bfrs-of-<fn>
+    (implies (not (member v (fgl-object-alist-bfrlist x)))
+             (not (member v (fgl-object-bfrlist obj))))))
+
 (define fgl-simplify-object-ordered-logicman ((x fgl-object-p
                                                  "Object whose symbolic value will be preserved by the transform.")
                                               (transforms)
@@ -1682,7 +1800,8 @@
        ;; ((mv bitarr seen) (fgl-object-mark-bfrs x bitarr nil))
        (obj-lits (bfrlist->aignet-lits (fgl-object-bfrlist x) (logicman->bfrstate)))
        ;; (- (fast-alist-free seen))
-       (track-lits (bfrlist->aignet-lits (fgl-object-bfrlist tracked-obj) (logicman->bfrstate))))
+       ((mv ?was-alist tracked-alist) (fgl-simplify-tracked-obj-to-alist tracked-obj))
+       (track-litmap (fgl-object-alist-to-named-lit-list-map tracked-alist (logicman->bfrstate))))
     (stobj-let
      ((aignet (logicman->aignet logicman))
       (strash (logicman->strash logicman)))
@@ -1690,9 +1809,9 @@
      (new-obj strash aignet aignet::mark aignet::copy aignet::aignet2 state)
 
      (b* ((aignet::aignet2 (aignet::aignet-raw-copy-fanins-top aignet aignet::aignet2))
-          ((mv aignet::aignet2 ?new-assums new-obj-lits ?new-track-lits state)
+          ((mv aignet::aignet2 ?new-assums new-obj-lits ?new-track-litmap state)
            (aignet::aignet-simplify-with-tracking
-            aignet::aignet2 assum-lits obj-lits track-lits transforms state))
+            aignet::aignet2 assum-lits obj-lits track-litmap transforms state))
           (aignet::copy (resize-lits (aignet::num-fanins aignet::aignet2) aignet::copy))
           (aignet::mark (resize-bits 0 aignet::mark))
           (aignet::mark (resize-bits (aignet::num-fanins aignet::aignet2) aignet::mark))
@@ -2181,12 +2300,6 @@
                                          non-preserving transforms, for heuristic
                                          use by the transforms")
                                        'nil)
-                                      ((tracked-bits
-                                        fgl-object-p
-                                        "Object providing an ordered list of Boolean
-                                         conditions that are passed to the transforms
-                                         for heuristic use")
-                                       'nil)
                                       ((assum-lits aignet::lit-listp) 'nil)
                                       ;; (use-pathcond 't)
                                       ;; (use-constraint 'nil)
@@ -2197,7 +2310,6 @@
   :guard (and (lbfr-mode-is :aignet)
               (lbfr-listp (fgl-object-bfrlist x))
               (lbfr-listp (fgl-object-bfrlist tracked-obj))
-              (lbfr-listp (fgl-object-bfrlist tracked-bits))
               (lbfr-listp assum-lits)
               (no-duplicatesp-equal (aignet::lit-list-vars assum-lits))
               ;; (ec-call (bfr-pathcond-p-fn pathcond (logicman->bfrstate)))
@@ -2224,17 +2336,14 @@
                                                         bfr-p aignet::aignet-idp))))))
   ;; :guard-debug t
   :hooks nil ;; bozo
-  (b* (((acl2::local-stobjs bitarr  aignet::mark aignet::copy aignet::aignet2)
+  (b* (((acl2::local-stobjs bitarr aignet::mark aignet::copy aignet::aignet2)
         (mv litarr litarr2 logicman bitarr aignet::mark aignet::copy aignet::aignet2 state))
        (size (+ 1 (bfrstate->bound (logicman->bfrstate))))
        (bitarr (resize-bits size bitarr))
        ((mv bitarr seen) (fgl-object-mark-bfrs x bitarr nil))
        (- (fast-alist-free seen))
-       (aignet::mark (resize-bits size aignet::mark))
-       ((mv aignet::mark seen) (fgl-object-mark-bfrs tracked-obj aignet::mark nil))
-       (- (fast-alist-free seen))
-       (tracked-lits (bfrlist->aignet-lits (fgl-object-bfrlist tracked-bits)
-                                           (logicman->bfrstate)))
+       ((mv ?was-alist tracked-alist) (fgl-simplify-tracked-obj-to-alist tracked-obj))
+       (track-litmap (fgl-object-alist-to-named-lit-list-map tracked-alist (logicman->bfrstate)))
        (litarr (resize-lits 0 litarr))
        (litarr (resize-lits size litarr))
        (litarr2 (resize-lits 0 litarr2))
@@ -2246,9 +2355,9 @@
      (strash aignet aignet::mark aignet::copy aignet::aignet2 litarr litarr2 state)
 
      (b* ((aignet::aignet2 (aignet::aignet-raw-copy-fanins-top aignet aignet::aignet2))
-          ((mv aignet::aignet2 litarr litarr2 state)
+          ((mv aignet::aignet2 litarr litarr2 & state)
            (aignet::aignet-simplify-marked-with-tracking
-            aignet::aignet2 bitarr aignet::mark assum-lits tracked-lits litarr litarr2 transforms state))
+            aignet::aignet2 bitarr assum-lits track-litmap litarr litarr2 transforms state))
           (aignet::copy (resize-lits (aignet::num-fanins aignet::aignet2) aignet::copy))
           (aignet::mark (resize-bits 0 aignet::mark))
           (aignet::mark (resize-bits (aignet::num-fanins aignet::aignet2) aignet::mark))
@@ -2815,12 +2924,6 @@
                                 are tracked through possibly non-preserving transforms,
                                 for heuristic use by the transforms")
                                    'nil)
-                                  ((tracked-bits
-                                    fgl-object-p
-                                    "Object providing an ordered list of Boolean conditions
-                                that are passed to the transforms for heuristic
-                                use")
-                                   'nil)
                                   (use-pathcond 't)
                                   (use-constraint 'nil)
                                   (logicman 'logicman)
@@ -2830,7 +2933,6 @@
   :guard (and (lbfr-mode-is :aignet)
               (lbfr-listp (fgl-object-bfrlist x))
               (lbfr-listp (fgl-object-bfrlist tracked-obj))
-              (lbfr-listp (fgl-object-bfrlist tracked-bits))
               (ec-call (bfr-pathcond-p-fn pathcond (logicman->bfrstate)))
               (ec-call (bfr-pathcond-p-fn constraint-pathcond (logicman->bfrstate))))
   :returns (mv contra
@@ -2852,7 +2954,6 @@
         (fgl-simplify-object-logicman
          x litarr litarr2 transforms
          :tracked-obj tracked-obj
-         :tracked-bits tracked-bits
          :assum-lits assum-lits))
        ((mv new-x memo) (fgl-object-map-bfrs-memo x litarr2 nil))
        (- (fast-alist-free memo))
@@ -3175,7 +3276,7 @@
   '((and stable-under-simplificationp
          '(:in-theory (enable bfr-listp-when-not-member-witness))))))
 
-(def-fgl-primitive fgl-simplify-object-fn (x transforms tracked-obj tracked-bits use-pathcond use-constraint)
+(def-fgl-primitive fgl-simplify-object-fn (x transforms tracked-obj use-pathcond use-constraint)
   (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
         (cw "Warning: skipping simplify transform because we're not in aignet mode~%")
         (mv nil nil interp-st state))
@@ -3189,7 +3290,7 @@
                 (constraint-pathcond (interp-st->constraint interp-st)))
                (contra new-x logicman pathcond constraint-pathcond state)
                (fgl-simplify-object-impl
-                x transforms :tracked-obj tracked-obj :tracked-bits tracked-bits :use-pathcond use-pathcond :use-constraint use-constraint)
+                x transforms :tracked-obj tracked-obj :use-pathcond use-pathcond :use-constraint use-constraint)
                (if contra
                    (b* ((interp-st (interp-st-set-error :unreachable interp-st)))
                      (mv t new-x interp-st state))
