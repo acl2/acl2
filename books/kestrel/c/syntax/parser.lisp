@@ -1780,20 +1780,13 @@
            (<= char (char-code #\7))) ; \ octdig
       (b* (((erp char2 pos2 pstate) (read-char pstate)))
         (cond
-         ((not char2)
-          (retok (escape-oct (oct-escape-one (code-char char)))
-                 pos
-                 pstate))
-         ((and (<= (char-code #\0) char2)
+         ((and char2
+               (<= (char-code #\0) char2)
                (<= char2 (char-code #\7))) ; \ octdig octdig
           (b* (((erp char3 pos3 pstate) (read-char pstate)))
             (cond
-             ((not char3)
-              (retok (escape-oct (oct-escape-two (code-char char)
-                                                 (code-char char2)))
-                     pos2
-                     pstate))
-             ((and (<= (char-code #\0) char3)
+             ((and char3
+                   (<= (char-code #\0) char3)
                    (<= char3 (char-code #\7))) ; \ octdig octdig octdig
               (retok (escape-oct (oct-escape-three (code-char char)
                                                    (code-char char2)
@@ -1801,13 +1794,14 @@
                      pos3
                      pstate))
              (t ; \ octdig \octdig other
-              (b* ((pstate (unread-char pstate))) ; \ octdig octdig
+              (b* ((pstate
+                    (if char3 (unread-char pstate) pstate))) ; \ octdig octdig
                 (retok (escape-oct (oct-escape-two (code-char char)
                                                    (code-char char2)))
                        pos2
                        pstate))))))
          (t ; \ octdig other
-          (b* ((pstate (unread-char pstate)))
+          (b* ((pstate (if char2 (unread-char pstate) pstate))) ; \octdig
             (retok (escape-oct (oct-escape-one (code-char char)))
                    pos
                    pstate))))))
