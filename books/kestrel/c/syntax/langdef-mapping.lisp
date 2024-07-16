@@ -655,11 +655,9 @@
       (retok (cons expr1 exprs1)))
     :measure (expr-list-count exprs))
 
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
 
   ///
-
-  (verify-guards ldm-expr)
 
   (fty::deffixequiv-mutual ldm-exprs))
 
@@ -1219,11 +1217,9 @@
       (retok (cons item1 items1)))
     :measure (block-item-list-count items))
 
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
 
   ///
-
-  (verify-guards ldm-stmt)
 
   (fty::deffixequiv-mutual ldm-stmts/blocks))
 

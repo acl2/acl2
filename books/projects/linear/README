@@ -1,0 +1,25 @@
+David M. Russinoff
+david@russinoff.com
+http://www.russinoff.com
+
+This directory contains an ACL2 formalization of elementary elementary linear algebra, a work in progress.  Only the first two books below have been completed; others will follow:
+
+* field
+  - Encapsulation of the field axioms
+  - Simple consequences of the axioms
+  - Properties of lists of field elemants
+
+* matrices
+  - Matrices of field elements
+  - Transpose of a matrix
+  - Matrix multiplication
+  - Row reduction
+  - Row reduction as matrix multiplication
+  - Invertibility
+  - Systems of linear equations
+  
+* vectors
+  
+* determinants
+
+* eigenvectors

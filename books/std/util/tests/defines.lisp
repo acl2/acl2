@@ -265,6 +265,27 @@
   ;; Prevent guard proof from succeeding without returns theorem
   :guard-hints (("Goal" :in-theory (disable acl2::natp-compound-recognizer))))
 
+(defines clique-name-different
+  (define count-vars3 ((term pseudo-termp) (i natp))
+    :returns (count natp :hyp (natp i))
+    (cond ((acl2::variablep term)
+           (+ 1 i))
+          ((acl2::fquotep term)
+           i)
+          ((acl2::flambda-applicationp term)
+           (count-vars3 (acl2::lambda-body (acl2::ffn-symb term))
+                        (count-vars-list (acl2::fargs term) i)))
+          (t
+            (count-vars-list3 (acl2::fargs term) i))))
+
+  (define count-vars-list3 ((terms pseudo-term-listp) (i natp))
+    :returns (count natp :hyp (natp i))
+    (if (endp terms)
+        i
+      (count-vars3 (first terms)
+                   (count-vars-list3 (rest terms) i))))
+  :verify-guards :after-returns)
+
 
 (defines doc-test
   :short "Test of local stuff."
