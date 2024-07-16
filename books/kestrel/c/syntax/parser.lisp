@@ -1710,7 +1710,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-escape ((pstate parstatep))
+(define lex-escape-sequence ((pstate parstatep))
   :returns (mv erp (escape escapep) (last-pos positionp) (new-pstate parstatep))
   :short "Lex an escape sequence."
   :long
@@ -1727,7 +1727,7 @@
      we return the simple escape.")
    (xdoc::p
     "If instead the next character is an octal digit,
-     we read another one and possibly yet another one,
+     we read possibly another one and possibly yet another one,
      to see whether the octal escape sequence consists of
      one, two, or three octal digits.")
    (xdoc::p
@@ -1847,12 +1847,12 @@
 
   ///
 
-  (defret parsize-of-lex-escape-uncond
+  (defret parsize-of-lex-escape-sequence-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-escape-cond
+  (defret parsize-of-lex-escape-sequence-cond
     (implies (not erp)
              (<= (parsize new-pstate)
                  (1- (parsize pstate))))
@@ -1906,7 +1906,7 @@
                     :found (char-to-msg char)))
        ((erp cchar & pstate)
         (if (= char (char-code #\\)) ; \
-            (b* (((erp escape pos pstate) (lex-escape pstate))
+            (b* (((erp escape pos pstate) (lex-escape-sequence pstate))
                  (cchar (c-char-escape escape)))
               (retok cchar pos pstate))
           (b* ((cchar (c-char-char char)))
@@ -1982,7 +1982,7 @@
                     :found (char-to-msg char)))
        ((erp schar & pstate)
         (if (= char (char-code #\\)) ; \
-            (b* (((erp escape pos pstate) (lex-escape pstate))
+            (b* (((erp escape pos pstate) (lex-escape-sequence pstate))
                  (schar (s-char-escape escape)))
               (retok schar pos pstate))
           (b* ((schar (s-char-char char)))
