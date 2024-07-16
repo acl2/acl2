@@ -194,18 +194,19 @@
   (equal (set::difference (set::difference s1 s0) s0)
          (set::difference s1 s0)))
 
-(defthm helper--
-  (implies (set::emptyp (set::difference s1 s3))
-           (set::subset (set::difference (set::difference s1 s2) s3)
-                        (set::emptyset)))
-  :hints (("Goal" :in-theory (disable set::emptyp-subset-2))))
+(local
+ (defthm difference-empty-lemma-forward
+   (implies (set::emptyp (set::difference s1 s3))
+            (set::subset (set::difference (set::difference s1 s2) s3)
+                         (set::emptyset)))
+   :hints (("Goal" :in-theory (disable set::emptyp-subset-2)))))
 
 (defthm difference-empty-lemma
   (implies (set::emptyp (set::difference s1 s3))
            (equal (set::difference (set::difference s1 s2) s3)
                   (set::emptyset)))
-  :hints (("Goal" :use (:instance helper--)
-           :in-theory (disable helper--))))
+  :hints (("Goal" :use (:instance difference-empty-lemma-forward)
+           :in-theory (disable difference-empty-lemma-forward))))
 
 (defthm difference-reorder
   (equal (set::difference (set::difference s1 s2) s3)
