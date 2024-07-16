@@ -35,17 +35,30 @@
       Given a grammar,
       one can define tree matching predicates
       that are specialized to the grammar,
-      i.e. that implicitly depend on the grammar;
-      one can also define operations on trees
-      that are specialized to certain constructs of the grammar.")
+      i.e. that implicitly depend on the grammar.")
+
+    (xdoc::p
+     "The ABNF @(see semantics) also includes generic operations on trees,
+      generated as part of the @(tsee tree) fixtype.
+      Given a grammar, trees that match
+      certain rule names and other ABNF syntactic entities
+      have a much more restricted structure than generic trees.
+      For instance, given a grammar rule of the form @('A = B C'),
+      a tree matching @('A') always has two subtrees,
+      one matching @('B') and one matching @('C').
+      Thus, given a grammar, one can define operations on trees
+      that are specialized to the specific rules and structure of the grammar.")
 
     (xdoc::p
      "This @('deftreeops') macro automates the generation
-      of these specialized tree matching predicates and operations,
+      of the aforementioned specialized tree matching predicates and operations,
       along with theorems about them.
-      We plan to extend this @('deftreeops') macro
+      Currently we only generate operations (and accompanying theorems)
+      for certain forms of the grammar rules,
+      but we plan to extend this @('deftreeops') macro
       to generate additional grammar-specific operations on trees,
-      and theorems accompanying them."))
+      and theorems accompanying them.
+      See the documentation below for details of the current support."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
