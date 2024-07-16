@@ -1,4 +1,4 @@
-; A tools to substitute lambda vars that are bound to constants
+; A tool to substitute lambda vars that are bound to constants
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2024 Kestrel Institute
