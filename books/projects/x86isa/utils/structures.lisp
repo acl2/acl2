@@ -645,18 +645,18 @@
    (smxe bitp)       ;; SMX Enable Bit
    (res1 bitp)       ;; 0 (Reserved)
    (fsgsbase bitp)   ;; FSGSBase-Enable Bit (Enables the
-   ;; instructions RDFSBASE, RDGSBASE,
-   ;; WRFSBASE, and WRGSBASE.)
-   (pcide bitp)   ;; PCID-Enable Bit
-   (osxsave bitp) ;; XSAVE and Processor Extended States
-   ;; Enable Bit
-   (res2 bitp) ;; 0 (Reserved)
-   (smep bitp)  ;; Supervisor Mode Execution Prevention
-   (smap bitp)
-   ;;     (:cr4-pke        22  1) ;; Protection Key Enable
-   ;; Bit
-   ;;  (0               22 42) ;; 0 (Reserved)
-
+                     ;; instructions RDFSBASE, RDGSBASE,
+                     ;; WRFSBASE, and WRGSBASE.)
+   (pcide bitp)      ;; PCID-Enable Bit
+   (osxsave bitp)    ;; XSAVE and Processor Extended States
+   (kl bitp)         ;; Key Locker Enable Bit
+   (smep bitp)       ;; Supervisor Mode Execution Prevention
+   (smap bitp)       ;; Supervisor Mode Access Prevention
+   (pke bitp)        ;; Protection keys for user-mode pages
+   (cet bitp)        ;; Control Flow Enforcement Technology
+   (pks bitp)        ;; Protection keys for supervisor-mode pages
+   (uintr bitp)      ;; User interrupts enable bit
+   ;; The remaining bits are reserved.
    )
   :msb-first nil
   :inline t)
@@ -666,7 +666,7 @@
    (iff (cr4Bits-p x)
         (unsigned-byte-p
          ;; 64 --- A smaller value here avoids bignum creation.
-         22 x))
+         26 x))
    :rule-classes nil))
 
 ; Intel manual, Mar'17, Vol. 3A, Section 10.8.6
