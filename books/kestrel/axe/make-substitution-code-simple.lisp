@@ -74,7 +74,7 @@
                                (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)
                                (if erp
                                    (progn$ ;; This failure can be due to a sub-function not being in the interpreted-function-alist
-                                     (cw "Can't eval ~x0 (or a subfunction).~%" fn) ;; Shows messages about ground calls that we cannot evaluate
+                                    ;; (cw "Can't eval ~x0 (or a subfunction).~%" fn) ;; Shows messages about ground calls that we cannot evaluate
                                     ;; (cw "sub: Failed to apply ~x0 to constant args (er:~x1,ifns:~x2).~%" fn erp (strip-cars interpreted-function-alist) ;(len interpreted-function-alist))
                                     (cons fn args))
                                  (enquote res)))

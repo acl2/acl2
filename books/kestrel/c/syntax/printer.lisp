@@ -1192,7 +1192,7 @@
   :short "Print a storage class specifier."
   (stoclaspec-case
    stoclaspec
-   :tydef (print-astring "typedef" pstate)
+   :typedef (print-astring "typedef" pstate)
    :extern (print-astring "extern" pstate)
    :static (print-astring "static" pstate)
    :threadloc (print-astring "_Thread_local" pstate)
@@ -2623,16 +2623,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
+
+  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ///
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (verify-guards print-expr
-    :hints (("Goal" :in-theory (disable (:e tau-system))))) ; for speed
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3140,15 +3137,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ///
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (verify-guards print-stmt)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
