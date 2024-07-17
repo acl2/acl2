@@ -669,9 +669,9 @@
          26 x))
    :rule-classes nil))
 
-; Intel manual, Mar'17, Vol. 3A, Section 10.8.6
+; Intel manual, Dec'23, Vol. 3A, Section 11.8.6
 (defbitstruct cr8Bits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5</p>"
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
   (
    ;; Task Priority Level (width = 4). This sets
    ;; the threshold value corresponding to the
@@ -680,10 +680,8 @@
    ;; are enabled. This field is available in 64-
    ;; bit mode. A value of 15 means all
    ;; interrupts will be disabled.
-
    (cr8-trpl 4bits) ;; Task Priority Level
-   ;;  (0                4 59) ;; 0 (Reserved)
-
+   ;; The remaining bits are reserved.
    )
   :msb-first nil
   :inline t)
@@ -699,13 +697,13 @@
    :rule-classes nil))
 
 (defbitstruct xcr0Bits
-  :long "<p>Source: Intel manual, May'18, Vol. 3A, Figure 2-8</p>"
+  :long "<p>Source: Intel manual, Dec'23, Vol. 3A, Figure 2-8</p>"
   ;; Software can access XCR0 only if CR4.OSXSAVE[bit 18] = 1. (This bit
   ;; is also readable as CPUID.01H:ECX.OSXSAVE[bit 27].)
 
   ((fpu/mmx-state bitp) ;; This bit must be 1.  An attempt
-   ;; to write 0 to this bit causes a
-   ;; #GP exception.
+                        ;; to write 0 to this bit causes a
+                        ;; #GP exception.
    (sse-state bitp)
    (avx-state bitp)
    (bndreg-state bitp)
@@ -715,7 +713,10 @@
    (hi16_zmm-state bitp)
    (res1 bitp) ;; 0 (Reserved)
    (pkru-state bitp)
-   (res2 54bits) ;; 0 (Reserved)
+   (res2 7bits) ;; 0 (Reserved)
+   (tileconfig-state bitp)
+   (tiledata-state bitp)
+   (res4 45bits)
    )
   :msb-first nil
   :inline t)
