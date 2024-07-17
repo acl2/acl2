@@ -1192,7 +1192,7 @@
   :short "Print a storage class specifier."
   (stoclaspec-case
    stoclaspec
-   :tydef (print-astring "typedef" pstate)
+   :typedef (print-astring "typedef" pstate)
    :extern (print-astring "extern" pstate)
    :static (print-astring "static" pstate)
    :threadloc (print-astring "_Thread_local" pstate)
