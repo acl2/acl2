@@ -378,21 +378,22 @@
      :rule-classes nil))
 
   (defbitstruct evex-byte1
-    ((mm 2bits
-         "Identical to low two bits of VEX.m-mmmm.")
-     (res 2bits "Reserved; must be zero." :default '0)
+    ((mmm 3bits
+          "Access to up to 8 decoding maps (currently only 1, 2, 3, 5, 6).
+           Compressed legacy escape -- low two bits identical to VEX.pp.")
+     (res bitp "Reserved; must be zero." :default '0)
      (r-prime bitp
               "High-16 register specifier modifier -- combine with EVEX.R and
-              ModR/M.reg.")
+               ModR/M.reg.")
 
      ;; R, X, B are the next-8 register specifier
      ;; modifiers --- combine with ModR/M.reg,
      ;; ModR/M.r/m (base, index/vidx).
      (b bitp)
      (x bitp "Must be set to @('1') in 32-bit mode, otherwise instruction is
-         BOUND.")
+              BOUND.")
      (r bitp "Must be set to @('1') in 32-bit mode. otherwise instruction is
-      BOUND."))
+              BOUND."))
     :inline t
     :msb-first nil
     :xvar byte1)
@@ -401,18 +402,18 @@
     ((pp 2bits "Compressed legacy escape -- identical to low two bits of VEX.pp.")
      (res bitp "Reserved; Must be one." :default '1)
      (vvvv 4bits "NDS register specifier --- same as VEX.vvvv.")
-     (w bitp "Osize promotion/opcode extension"))
+     (w bitp "Operand size promotion / opcode extension."))
     :inline t
     :msb-first nil)
 
   (defbitstruct evex-byte3
-    ((aaa 3bits "Embedded opmask register specifier")
+    ((aaa 3bits "Embedded opmask register specifier.")
      (v-prime bitp
               "High-16 NDS/VIDX register specifier -- combine with EVEX.vvvv or
-      when VSIB present")
-     (b bitp "Broadcast/RC/SAE Context")
-     (vl/rc 2bits "Vector length/RC (denoted as L'L in the Intel manuals")
-     (z bitp "Zeroing/Merging"))
+               when VSIB present.")
+     (b bitp "Broadcast/RC/SAE Context.")
+     (vl/rc 2bits "Vector length/RC (denoted as L'L in the Intel manuals).")
+     (z bitp "Zeroing/Merging."))
     :inline t
     :msb-first nil)
 
