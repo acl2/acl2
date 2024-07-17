@@ -731,19 +731,18 @@
 
 ;; Model-specific Registers:
 
-;; IA32_EFER (Intel Manual, Feb-14, Vol. 3A, Section 2.2.1):
 (defbitstruct ia32_eferBits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.2.1</p>"
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.2.1</p>"
   ((sce bitp)    ;; Syscall Enable (R/W) (enables SYSCALL/SYSRET)
-   (res1 7bits) ;; Reserved?
+   (res1 7bits)  ;; Reserved?
    (lme bitp)    ;; Long Mode Enabled (R/W)
    (res2 bitp)   ;; Reserved?
    (lma bitp)    ;; Long Mode Active (R)
    (nxe bitp)    ;; Execute Disable Bit Enable (R/W)
-   ;; (Enables page access restriction by
-   ;; preventing instruction fetches from
-   ;; PAE pages with the XD bit set)
-;   (0               12 52) ;; Reserved (must be zero)
+                 ;; (Enables page access restriction by
+                 ;; preventing instruction fetches from
+                 ;; PAE pages with the XD bit set)
+   ;; The remaining bits are reserved.
    )
   :msb-first nil
   :inline t)
