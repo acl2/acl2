@@ -34,7 +34,7 @@
 (include-book "arith-base")
 (include-book "config")
 (include-book "def-fgl-rewrite")
-(include-book "congruence-rules")
+(include-book "congruence")
 (include-book "syntax-bind")
 (include-book "fgl-object")
 (include-book "centaur/misc/starlogic" :dir :system)

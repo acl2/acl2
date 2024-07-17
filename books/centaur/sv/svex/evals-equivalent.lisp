@@ -31,6 +31,7 @@
 (include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
 (include-book "centaur/fgl/bfr" :dir :system)
 (include-book "centaur/fgl/simplify-defs" :dir :system)
+(include-book "centaur/fgl/congruence-rules" :dir :system)
 (include-book "centaur/fgl/checks" :dir :system)
 (include-book "centaur/fgl/make-isomorphic-def" :dir :system)
 (include-book "centaur/fgl/list-to-tree" :dir :system)
@@ -89,6 +90,37 @@ where O is the total number of outputs and N is the number of subexpression
 bits for each evaluation.  The FRAIG transformation then uses random simulation
 to further refine these equivalence classes and proceeds with the equivalence
 check.</p>
+
+<p>This requires some hand-tuning by the user.  The user must provide the list
+of AIGNET transforms, of type @(see
+aignet::m-assumption-n-output-comb-transform).  To use the special support for
+limited FRAIGING, one or more of these transforms should be a FRAIG transform
+with @(':output-types') specified as follows:</p>
+
+@({
+ (aignet::make-fraig-config ...
+      :output-types `((:evals-equivalent-equiv-classes
+                        . ,(aignet::fraig-output-type-initial-equiv-classes)))
+      ...)
+ })
+
+<p>Explanation: Our focused equivalence checking utilities add a set of outputs
+to the AIG to be simplified, and these outputs specify which nodes should
+initially be candidate equivalences. These outputs are tagged with the keyword
+@(':evals-equivalent-equiv-classes'). The fraig transform needs to be told to
+treat these outputs as initial equivalence classes, so we specify that mapping
+of @(':evals-equivalent-equiv-classes') to
+@('(aignet::fraig-output-type-initial-equiv-classes)') in the FRAIG
+configuration object's output-types field.  Subsequent FRAIG transforms may
+instead set @(':fraig-remaining-equiv-classes') as the initial
+equivalences as follows:</p>
+
+@({
+ (aignet::make-fraig-config ...
+        :output-types `((:fraig-remaining-equiv-classes
+                          . ,(aignet::fraig-output-type-initial-equiv-classes)))
+        ...)
+ })
 
 ")
 
@@ -917,7 +949,16 @@ in two symbolic SVEX environments."
   (svexlist-evals-equal x env1 env2)
   ///
 
+  (defcong fgl::unequiv equal (svexlist-evals-equal-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 4)
+  (defcong fgl::unequiv equal (svexlist-evals-equal-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 5)
+  (defcong fgl::unequiv equal (svexlist-evals-equal-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 6)
 
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-with-transforms-fn-4)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-with-transforms-fn-5)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-with-transforms-fn-6)
   
   (fgl::def-fgl-rewrite svexlist-evals-equal-with-transforms-fgl
     (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms
@@ -1233,7 +1274,16 @@ in two symbolic SVEX environments."
        (integer-listp (svexlist-eval x env1)))
   ///
 
+  (defcong fgl::unequiv equal (svexlist-evals-equal-and-integerp-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 4)
+  (defcong fgl::unequiv equal (svexlist-evals-equal-and-integerp-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 5)
+  (defcong fgl::unequiv equal (svexlist-evals-equal-and-integerp-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 6)
 
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-and-integerp-with-transforms-fn-4)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-and-integerp-with-transforms-fn-5)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-and-integerp-with-transforms-fn-6)
 
 
   (fgl::def-fgl-rewrite svexlist-evals-equal-and-integerp-with-transforms-fgl
@@ -1349,6 +1399,16 @@ in two symbolic SVEX environments."
   (declare (ignorable symbolic-params transforms tracked-alist))
   (integer-listp (svexlist-eval x env))
   ///
+  (defcong fgl::unequiv equal (svexlist-eval-integer-listp-with-transforms-fn
+                               x env symbolic-params transforms tracked-alist) 3)
+  (defcong fgl::unequiv equal (svexlist-eval-integer-listp-with-transforms-fn
+                               x env symbolic-params transforms tracked-alist) 4)
+  (defcong fgl::unequiv equal (svexlist-eval-integer-listp-with-transforms-fn
+                               x env symbolic-params transforms tracked-alist) 5)
+
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-eval-integer-listp-with-transforms-fn-3)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-eval-integer-listp-with-transforms-fn-4)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-eval-integer-listp-with-transforms-fn-5)
 
 
   

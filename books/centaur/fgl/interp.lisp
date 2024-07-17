@@ -53,7 +53,7 @@
 (include-book "trace")
 (include-book "fancy-ev")
 (include-book "binder-rules") ;; includes regular rules too
-(include-book "congruence-rules")
+(include-book "congruence")
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "centaur/meta/resolve-flag-cp" :dir :system))
 (local (include-book "centaur/meta/urewrite" :dir :system))
