@@ -120,27 +120,17 @@
      "The name of the @('<prefix>-<rulename>-conc-rep-matching')
       or @('<prefix>-<rulename>-conc<i>-rep-matching') theorem
       described in @(tsee deftreeops).
-      This is @('nil') if the theorem is not generated,
-      i.e. if the repetition does not have range 1
-      or the concatenation of which the repetition is part
-      is not a singleton.")
+      This is @('nil') if the theorem is not generated.")
     (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc-rep')
       or @('<prefix>-<rulename>-conc<i>-rep') function
       described in @(tsee deftreeops).
-      This is @('nil') if the function is not generated,
-      i.e. if the concatenation of which this repetition is part
-      consists of two or more repetitions,
-      or if this repetition has a range that is not 1.")
+      This is @('nil') if the function is not generated.")
     (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc-rep-elem')
       or @('<prefix>-<rulename>-conc<i>-rep-elem') function
       describes in @(tsee deftreeops).
-      This is @('nil') if the function is not generated,
-      i.e. if the concatanation of which this repetition is part
-      consists of two or more repetitions,
-      or if the single repetition does not have a range of 1,
-      or if the repetition element is not a rule name.")))
+      This is @('nil') if the function is not generated.")))
   ((matching-thm acl2::symbol)
    (get-tree-list-fn acl2::symbolp)
    (get-tree-fn acl2::symbolp))
@@ -179,23 +169,16 @@
      "The name of the @('<prefix>-<rulename>-conc-matching')
       or @('<prefix>-<rulename>-conc<i>-matching') theorem
       described in @(tsee deftreeops).
-      This is @('nil') if the theorem is not generated,
-      i.e. if the concatenation is not a singleton.")
+      This is @('nil') if the theorem is not generated.")
     (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc?-<i>-iff-match-conc') theorem
       described in @(tsee deftreeops).
-      This is @('nil') if the theorem is not generated,
-      i.e. if the rule name is defined by
-      an alternation of just one concatenation.")
+      This is @('nil') if the theorem is not generated.")
     (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc')
       or @('<prefix>-<rulename>-conc<i>') function
-      described in @(tsee deftreeops).")
-    (xdoc::li
-     "The information about the repetitions that form the concatenation.
-      This is @('nil') if the concatenation is not a singleton,
-      because in that case the matching theorems for the repetitions
-      are not generated (see @(tsee deftreeops-rep-info)).")))
+      described in @(tsee deftreeops).
+      This is @('nil') if the function is not generated.")))
   ((conc concatenationp)
    (discriminant-term "A term.")
    (matching-thm acl2::symbol)
@@ -241,16 +224,11 @@
     (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc-equivs') theorem
       described in @(tsee deftreeops).
-      This is @('nil') if the theorem is not generated,
-      i.e. if some concatenation in the alternation that defines the rule name
-      is not a singleton concatenation
-      consisting of a singleton repetition of a rulename element.")
+      This is @('nil') if the theorem is not generated.")
     (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc?') function
       described in @(tsee deftreeops).
-      This is @('nil') if the function is not generated,
-      i.e. if the rule name is defined by
-      an alternation of just one concatenation.")
+      This is @('nil') if the function is not generated.")
     (xdoc::li
      "The information about the concatenations that form
       the alternation that defines the rule name.")))
