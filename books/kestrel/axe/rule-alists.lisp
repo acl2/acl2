@@ -99,15 +99,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund count-rules-in-rule-alist-aux (rule-alist acc)
+(defund count-rules-in-rule-alist-aux (rule-alist sum)
   (declare (xargs :guard (and (rule-alistp rule-alist)
-                              (natp acc))
+                              (natp sum))
                   :guard-hints (("Goal" :in-theory (enable rule-alistp)))))
   (if (endp rule-alist)
-      acc
+      sum
     (let* ((entry (first rule-alist))
            (stored-rules (cdr entry)))
-      (count-rules-in-rule-alist-aux (rest rule-alist) (+ (len stored-rules) acc)))))
+      (count-rules-in-rule-alist-aux (rest rule-alist) (+ (len stored-rules) sum)))))
 
 (defund count-rules-in-rule-alist (rule-alist)
   (declare (xargs :guard (rule-alistp rule-alist)))
@@ -115,25 +115,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;todo: deprecate (use count-rules-in-rule-alist)
-(defund rule-count-in-rule-alist (rule-alist)
-  (declare (xargs :guard (rule-alistp rule-alist)
-                  :verify-guards nil ;done below
-                  ))
-  (if (endp rule-alist)
-      0
-    (let* ((entry (car rule-alist))
-           (stored-rules (cdr entry)))
-      (+ (len stored-rules)
-         (rule-count-in-rule-alist (cdr rule-alist))))))
+;; ;;todo: deprecate (use count-rules-in-rule-alist)
+;; (defund rule-count-in-rule-alist (rule-alist)
+;;   (declare (xargs :guard (rule-alistp rule-alist)
+;;                   :verify-guards nil ;done below
+;;                   ))
+;;   (if (endp rule-alist)
+;;       0
+;;     (let* ((entry (car rule-alist))
+;;            (stored-rules (cdr entry)))
+;;       (+ (len stored-rules)
+;;          (rule-count-in-rule-alist (cdr rule-alist))))))
 
-;drop?
-(defthm natp-of-rule-count-in-rule-alist
-  (natp (rule-count-in-rule-alist rule-alist))
-  :rule-classes (:rewrite :type-prescription))
+;; ;drop?
+;; (defthm natp-of-rule-count-in-rule-alist
+;;   (natp (rule-count-in-rule-alist rule-alist))
+;;   :rule-classes (:rewrite :type-prescription))
 
-(verify-guards rule-count-in-rule-alist
-  :hints (("Goal" :in-theory (enable rule-alistp))))
+;; (verify-guards rule-count-in-rule-alist
+;;   :hints (("Goal" :in-theory (enable rule-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -224,22 +224,24 @@
                                      (acons-fast ;-unique       ;;now we uniquify the alist at the end
                                       fn new-stored-rules-for-fn rule-alist)))))
 
-(defthm symbol-alistp-of-extend-unprioritized-rule-alist
-  (implies (and (symbol-alistp acc)
-                (axe-rule-listp axe-rules))
-           (symbol-alistp (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp acc)))
-  :hints (("Goal" :in-theory (enable extend-unprioritized-rule-alist axe-rulep ;yuck
-                                     ))))
+(local
+ (defthm symbol-alistp-of-extend-unprioritized-rule-alist
+   (implies (and (symbol-alistp acc)
+                 (axe-rule-listp axe-rules))
+            (symbol-alistp (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp acc)))
+   :hints (("Goal" :in-theory (enable extend-unprioritized-rule-alist axe-rulep ;yuck
+                                      )))))
 
-(defthm rule-alistp-of-extend-unprioritized-rule-alist
-  (implies (and (rule-alistp acc)
-                (axe-rule-listp axe-rules))
-           (rule-alistp (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp acc)))
-  :hints (("Goal"
-           :induct t
-           :expand ((axe-rulep (car axe-rules))
-                    (axe-rule-listp axe-rules))
-           :in-theory (enable rule-alistp extend-unprioritized-rule-alist))))
+(local
+ (defthm rule-alistp-of-extend-unprioritized-rule-alist
+   (implies (and (rule-alistp acc)
+                 (axe-rule-listp axe-rules))
+            (rule-alistp (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp acc)))
+   :hints (("Goal"
+            :induct t
+            :expand ((axe-rulep (car axe-rules))
+                     (axe-rule-listp axe-rules))
+            :in-theory (enable rule-alistp extend-unprioritized-rule-alist)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,19 +261,21 @@
              (merge-sort-by-rule-priority stored-rules priorities)
              (sort-rules-for-each-function-symbol-by-priority (rest rule-alist) priorities)))))
 
-(defthm alistp-of-sort-rules-for-each-function-symbol-by-priority
-  (implies (alistp rule-alist)
-           (alistp (sort-rules-for-each-function-symbol-by-priority rule-alist priorities)))
-  :hints (("Goal" :in-theory (enable  sort-rules-for-each-function-symbol-by-priority))))
+(local
+ (defthm alistp-of-sort-rules-for-each-function-symbol-by-priority
+   (implies (alistp rule-alist)
+            (alistp (sort-rules-for-each-function-symbol-by-priority rule-alist priorities)))
+   :hints (("Goal" :in-theory (enable  sort-rules-for-each-function-symbol-by-priority)))))
 
 (verify-guards sort-rules-for-each-function-symbol-by-priority
   :hints (("Goal" :in-theory (enable rule-alistp  rule-alistp-means-alistp))))
 
-(defthm rule-alistp-of-sort-rules-for-each-function-symbol-by-priority
-  (implies (rule-alistp rule-alist)
-           (rule-alistp (sort-rules-for-each-function-symbol-by-priority rule-alist priorities)))
-  :hints (("Goal" :in-theory (enable sort-rules-for-each-function-symbol-by-priority
-                                     rule-alistp))))
+(local
+ (defthm rule-alistp-of-sort-rules-for-each-function-symbol-by-priority
+   (implies (rule-alistp rule-alist)
+            (rule-alistp (sort-rules-for-each-function-symbol-by-priority rule-alist priorities)))
+   :hints (("Goal" :in-theory (enable sort-rules-for-each-function-symbol-by-priority
+                                      rule-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
