@@ -1238,9 +1238,9 @@
        and @('Pr') is a possibly empty rest of a postfix expression.
        All of this is now explained in detail.")
      (xdoc::p
-      "If @('X') is an ambiguous expression of type name
+      "If @('X') is an ambiguous expression or type name
        (i.e. something captured by @(tsee amb-expr/tyname)),
-       then a @('(X)') could either start a proper cast expression
+       then @('(X)') could either start a proper cast expression
        (if @('X') is a type name)
        or be or start an expression that is or starts with
        a parenthesized primary expression
@@ -1253,7 +1253,7 @@
        there are a number of other tokens that may follow:
        some would let us disambiguate @('X')
        to be either a type name or an expression;
-       but in other cases it is not possibly to disambiguate @('X'),
+       but in other cases it is not possible to disambiguate @('X'),
        and so, similarly to @(':sizeof-ambig'),
        we capture the ambiguous constructs explicitly in our abstract syntax.
        But for these ambiguous casts, the situation is more complex.")
@@ -1271,7 +1271,7 @@
        a function call @('(ab)') where @('ab') is the argument,
        and a postincrement operator @('++').
        In this situation, if @('X') is an expression
-       then @('(E)') is another function call that precedes the array access;
+       then @('(X)(E)') is a function call that precedes the array access;
        but if @('X') is a type name,
        then @('(E)') is the start of a postfix expression.
        Note that in general an expression @('E')
@@ -2252,6 +2252,14 @@
   :true-listp t
   :elementp-of-nil nil
   :pred tyspec-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum expr/tyname
+  :short "Fixtype of expressions or type names."
+  (:expr ((unwrap expr)))
+  (:tyname ((unwrap tyname)))
+  :pred expr/tyname-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
