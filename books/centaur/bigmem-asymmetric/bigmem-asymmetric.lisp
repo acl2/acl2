@@ -813,7 +813,7 @@
   corresponding concrete STOBJ for @('mem') is @('bm'), which is a STOBJ
   containing STOBJs that provides an array for the first part (0...) of
   the natural-number-addressed memory and for essentially allocates chunks of
-  bytes on demand; see @(see bigmem-concrete-stobj) for implementation
+  bytes on demand; see @(see bigmem-concrete-asymmetric) for implementation
   details.</p>
 
   <p>An obvious application of @('bigmem-asymmetric') is to model memory;
