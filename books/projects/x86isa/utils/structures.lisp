@@ -515,7 +515,7 @@
 ;; Rflags:
 
 (defbitstruct rflagsBits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 1, Section 3.4.3</p>"
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 1, Section 3.4.3</p>"
   ((cf bitp)      ; carry flag
    (res1 bitp :default '1)    ; 1 (reserved)
    (pf bitp)      ; parity flag
@@ -581,18 +581,18 @@
 ;; Control Registers:
 
 (defbitstruct cr0Bits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5</p>"
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
   ((pe bitp        "Protection Enable")
    (mp bitp        "Monitor coProcessor")
    (em bitp        "Emulation Bit")
    (ts bitp        "Task Switched")
    (et bitp        "Extension Type")
    (ne bitp        "Numeric Error")
-   (res1 10bits "0 (Reserved)")
+   (res1 10bits    "0 (Reserved)")
    (wp bitp        "Write Protect")
-   (res2 bitp     "0 (Reserved)")
+   (res2 bitp      "0 (Reserved)")
    (am bitp        "Alignment Mask")
-   (res3 10bits  "0 (Reserved)")
+   (res3 10bits    "0 (Reserved)")
    (nw bitp        "Not Write-through")
    (cd bitp        "Cache Disable")
    (pg bitp        "Paging Bit"))
@@ -606,13 +606,16 @@
    :rule-classes nil))
 
 (defbitstruct cr3Bits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5</p>"
-  ((res1 3bits)  ;; 0
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
+  ((res1 3bits)    ;; 0
    (pwt bitp)      ;; Page-Level Writes Tranparent
    (pcd bitp)      ;; Page-Level Cache Disable
-   (res2 7bits)  ;; 0
-   (pdb 40bits)   ;; Page Directory Base
-   (res3 12bits) ;; Reserved (must be zero)
+   (res2 7bits)    ;; 0
+   (pdb 40bits)    ;; Page Directory Base
+   (res3 12bits)   ;; Reserved (must be zero)
+   ;; The reason why res3 are 12 reserved bits is that
+   ;; CR3[63:MAXPHYADDR] must be 0 (see Intel Manual Vol. 3A Section 2.5),
+   ;; and in our model we have 52-bit physical addresses.
    )
   :msb-first nil
   :inline t)
@@ -624,7 +627,7 @@
    :rule-classes nil))
 
 (defbitstruct cr4Bits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5</p>"
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
   ((vme bitp)        ;; Virtual-8086 Mode Extensions
    (pvi bitp)        ;; Protected-Mode Virtual Interrupts
    (tsd bitp)        ;; Time-Stamp Disable
@@ -640,7 +643,7 @@
    (la57 bitp)       ;; enables 5-level paging
    (vmxe bitp)       ;; VMX Enable Bit
    (smxe bitp)       ;; SMX Enable Bit
-   (res1 bitp)      ;; 0 (Reserved)
+   (res1 bitp)       ;; 0 (Reserved)
    (fsgsbase bitp)   ;; FSGSBase-Enable Bit (Enables the
    ;; instructions RDFSBASE, RDGSBASE,
    ;; WRFSBASE, and WRGSBASE.)
