@@ -397,8 +397,7 @@
       "For each rule name defined in the grammar by
        an alternation of one concatenation,
        such that the concatenation consists of one repetition,
-       such that the repetition has a range of 1,
-       and such that the element of the repetition is a rule name:
+       such that the repetition has a range of 1:
        a function that, given a tree matching the rule name,
        returns the tree corresponding to the element of the repetition.
        The generated function is accompanied by the following theorems:")

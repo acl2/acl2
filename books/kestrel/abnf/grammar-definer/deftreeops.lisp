@@ -757,7 +757,8 @@
                                prefix)))))
        (get-tree-fn
         (and get-tree-list-fn
-             (element-case (repetition->element rep) :rulename)
+             (or alt-singletonp
+                 (element-case (repetition->element rep) :rulename))
              (packn-pos (list get-tree-list-fn '-elem) get-tree-list-fn))))
     (make-deftreeops-rep-info :matching-thm matching-thm
                               :get-tree-list-fn get-tree-list-fn
@@ -1156,10 +1157,6 @@
        (get-tree-fn-event?
         (and
          info.get-tree-fn
-         (or (element-case elem :rulename)
-             (raise "Internal error:
-                     repetition element ~x0 is not a rule name."
-                    elem))
          `((define ,info.get-tree-fn ((cst treep))
              :guard ,(if check-conc-fn
                          `(and (,matchp cst ,rulename-string)
@@ -1187,8 +1184,7 @@
                                 (csts (,info.get-tree-list-fn cst))))))
              ///
              (more-returns
-              (cst1 (,matchp cst1
-                             ,(rulename->get (element-rulename->get elem)))
+              (cst1 (,matchp cst1 ,(pretty-print-element elem))
                     :hyp ,(if check-conc-fn
                               `(and (,matchp cst ,rulename-string)
                                     (equal (,check-conc-fn cst) ,i))
