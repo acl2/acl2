@@ -103,6 +103,10 @@ for @('0 <= j < i').  This is useful in cases where we know what nodes are likel
    (ipasir-recycle-count acl2::maybe-natp "Number of callbacks after which to recycle the solver" :default 1000)
    (ctrex-queue-limit acl2::maybe-natp "Limit to number of counterexamples that may be queued before resimulation" :default 16)
    (ctrex-force-resim booleanp "Force resimulation of a counterexample before checking another node in the same equivalence class" :default t)
+   (final-force-resim booleanp
+                      "Force resimulation of any pending counterexamples at the end of the sweep. Useful when
+a subsequent FRAIG transform will use this transform's resulting equivalence classes (see @(see fraig))."
+                      :default nil)
    (random-seed-name symbolp "Name to use for seed-random, or NIL to not reseed the random number generator")
    (outs-only booleanp "Only check the combinational outputs of the network" :default nil)
    (miters-only booleanp

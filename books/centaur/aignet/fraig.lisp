@@ -2538,6 +2538,11 @@
        (- (print-fraig-stats-initial fraig-stats))
        ((mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state)
         (fraig-sweep-aux 0 aignet aignet2 copy strash fraig-ctrexes classes mark aignet-refcounts sat-lits ipasir fraig-stats config state))
+       ((mv classes fraig-ctrexes fraig-stats state)
+        (if (and config.final-force-resim
+                 (not (eql 0 (fraig-ctrex-nbits fraig-ctrexes))))
+            (fraig-ctrexes-resim aignet fraig-ctrexes classes fraig-stats state)
+          (mv classes fraig-ctrexes fraig-stats state)))
        (- (print-aignet-stats "Tmp" aignet2))
        (- (print-fraig-stats-noninitial classes ipasir fraig-stats mark)))
     (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))
@@ -3541,7 +3546,30 @@
 ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>
 
 <p>Settings for the transform can be tweaked using the @('config') input, which
-is a @(see fraig-config) object.</p>"
+is a @(see fraig-config) object.</p>
+
+<p>When used as a @(see n-output-comb-transform) or @(see
+m-assumption-n-output-comb-transform) (i.e. when we don't need to keep strict
+combinational equivalence), the FRAIG transform tracks, as an <see topic='@(url aignet-output-ranges)'>output-range</see>
+tagged @(':fraig-remaining-equiv-classes'),
+the remaining candidate equivalences that were neither proved nor
+disproved. These can be used in a subsequent FRAIG transform by configuring it as follows:</p>
+
+@({
+ (aignet::make-fraig-config ...
+        :output-types `((:fraig-remaining-equiv-classes
+                          . ,(aignet::fraig-output-type-initial-equiv-classes)))
+        ...)
+ })
+
+<p>Configured this way, the subsequent FRAIG transform doesn't need to
+re-disprove candidate equivalences that are difficult to contradict through
+random simulation; if the previous FRAIG transform already found a
+counterexample to the equivalence and that equivalence was then resimulated,
+then it will no longer be present in the equivalence classes. The resimulation
+can be forced by setting the @(':final-force-resim') config option.</p>
+
+"
   :guard-debug t
   :guard (or (not strict-count)
              (<= strict-count (num-outs aignet)))
