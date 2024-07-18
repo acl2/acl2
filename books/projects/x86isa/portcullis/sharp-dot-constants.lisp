@@ -127,6 +127,7 @@
 
 ;; Group 1:
 (defconst *lock*                  #xF0)
+(defconst *rep*                  #xF3)
 (defconst *repe*                  #xF3)
 (defconst *repne*                 #xF2)
 

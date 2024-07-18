@@ -115,12 +115,8 @@
           ;; register equals 0 or the ZF is set to 1.
 
           ;; ==================================================
-          ;; TODO Double check this
-          ;; It seems only the REP prefix is valid for MOVs
-          ;; REPE was implemented instead of REP, and REPNE
-          ;; worked too. I changed this behavior to only
-          ;; allow REP.
-          ;; (see also STOS)
+
+          ;; Only the REP prefix is valid for MOVs
 
           :parents (one-byte-opcodes)
 
@@ -176,8 +172,8 @@
 
                (counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
 
-               ;; If REPE is used and *cx is 0, continue to the next instruction
-               ((when (and (equal group-1-prefix #.*repe*)
+               ;; If REP is used and *cx is 0, continue to the next instruction
+               ((when (and (equal group-1-prefix #.*rep*)
                            (equal counter 0))) (write-*ip proc-mode temp-rip x86))
 
                (select-byte-operand (equal #xA4 opcode))
@@ -281,7 +277,7 @@
 
                ;; REP prefix: Updating rCX and RIP:
 
-               (x86 (if (equal group-1-prefix #.*repe*)
+               (x86 (if (equal group-1-prefix #.*rep*)
                       (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
                       (write-*ip proc-mode temp-rip x86)))
 
@@ -354,6 +350,8 @@
   ;; REPNE/REPNZ (F2): Repeats a string operation until the rCX
   ;; register equals 0 or the ZF is set to 1.
 
+  ;; Only the REP prefix is valid for CMPS
+
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p
@@ -406,6 +404,12 @@
 
        ((the (integer 2 8) counter/addr-size)
         (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
+
+       (counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
+
+       ;; If REP is used and *cx is 0, continue to the next instruction
+       ((when (and (equal group-1-prefix #.*rep*)
+                   (equal counter 0))) (write-*ip proc-mode temp-rip x86))
 
        (select-byte-operand (equal #xA6 opcode))
        ((the (integer 1 8) operand-size)
@@ -507,33 +511,9 @@
 
        ;; REP prefix: Updating rCX and RIP:
 
-       (x86 (case group-1-prefix
-              (#.*repe*
-               (let* ((counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
-                      (counter (trunc counter/addr-size (1- counter))))
-                 (if (or (equal counter 0)
-                         (equal (the (unsigned-byte 1) (flgi :zf x86)) 0))
-                     (let* ((x86 (!rgfi-size
-                                  counter/addr-size #.*rcx* counter rex-byte x86)))
-                       x86)
-                   (let* ((x86 (!rgfi-size
-                                counter/addr-size #.*rcx* counter rex-byte x86))
-                          (x86 (write-*ip proc-mode temp-rip x86)))
-                     x86))))
-              (#.*repne*
-               (let* ((counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
-                      (counter (trunc counter/addr-size (1- counter))))
-                 (if (or (equal counter 0)
-                         (equal (the (unsigned-byte 1) (flgi :zf x86)) 1))
-                     (let* ((x86 (!rgfi-size
-                                  counter/addr-size #.*rcx* counter rex-byte x86))
-                            (x86 (write-*ip proc-mode temp-rip x86)))
-                       x86)
-                   (let* ((x86 (!rgfi-size
-                                counter/addr-size #.*rcx* counter rex-byte x86)))
-                     x86))))
-              (otherwise ;; no rep prefix present
-               (write-*ip proc-mode temp-rip x86))))
+       (x86 (if (equal group-1-prefix #.*rep*)
+                      (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
+                      (write-*ip proc-mode temp-rip x86)))
 
        ;; Updating rSI and rDI:
 
@@ -588,12 +568,7 @@
   ;; AA STOSB:             Store AL         at address DI or EDI or RDI
   ;; AB STOSW/STOSD/STOSQ: Store AX/EAX/RDX at address DI or EDI or RDI
 
-  ;; TODO Double check this
-  ;; It seems only the REP prefix is valid for STOS
-  ;; REPE was implemented instead of REP, and REPNE
-  ;; worked too. I changed this behavior to only
-  ;; allow REP.
-  ;; (see also MOVS)
+  ;; Only the REP prefix is valid for STOS
 
   :parents (one-byte-opcodes)
 
