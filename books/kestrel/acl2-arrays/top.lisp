@@ -31,3 +31,4 @@
 (include-book "make-into-array-with-len")
 (include-book "make-into-array")
 (include-book "acl2-arrays")
+(include-book "aset1-safe")
