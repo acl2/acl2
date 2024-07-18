@@ -2643,11 +2643,14 @@
   (attrib-case
    attr
    :name (print-ident attr.name pstate)
-   :name-param (b* ((pstate (print-ident attr.name pstate))
-                    (pstate (if attr.param
-                                (print-expr-list attr.param pstate)
-                              pstate)))
-                 pstate))
+   :name-param
+   (b* ((pstate (print-ident attr.name pstate))
+        (pstate (print-astring "(" pstate))
+        (pstate (if attr.param
+                    (print-expr-list attr.param pstate)
+                  pstate))
+        (pstate (print-astring ")" pstate)))
+     pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
