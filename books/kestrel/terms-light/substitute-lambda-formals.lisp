@@ -458,7 +458,6 @@
                                       pairlis$-of-empty-eval-list
                                       no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                       intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
-                                      PAIRLIS$-of-empty-eval-list
                                       ))
            :cases ((member-equal (bad-guy-for-alists-equiv-on
                                    (free-vars-in-term (lookup-equal formal-to-subst
@@ -498,7 +497,6 @@
                                            pairlis$-of-empty-eval-list
                                            no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                            intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
-                                           PAIRLIS$-of-empty-eval-list
                                            )))
           ("[1]Subgoal 2" :in-theory (e/d (;make-lambda-application-simple
                                            ;; make-lambda-term-simple
@@ -519,7 +517,6 @@
                                            pairlis$-of-empty-eval-list
                                            no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                            intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
-                                           PAIRLIS$-of-empty-eval-list
                                            )))
           ("Goal" :do-not '(generalize eliminate-destructors)
 ;           :cases ((member-eq formal-to-subst (free-vars-in-term (lookup-equal formal-to-subst (pairlis$ formals args)))))
@@ -542,7 +539,6 @@
                             pairlis$-of-empty-eval-list
                             no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                             intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
-                            PAIRLIS$-of-empty-eval-list
                             pairlis$-of-append-and-append
                             empty-eval-list-of-append
                             empty-eval-list-when-symbol-listp
@@ -724,7 +720,6 @@
                                       pairlis$-of-empty-eval-list
                                       no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                       intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
-                                      PAIRLIS$-of-empty-eval-list
                                       ;bad-guy-helper
                                       ))
            ;; :use (:instance bad-guy-helper
@@ -858,7 +853,6 @@
                                            pairlis$-of-empty-eval-list
                                            no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                            intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
-                                           PAIRLIS$-of-empty-eval-list
                                            )))
           ("[1]Subgoal 2" :in-theory (e/d (;make-lambda-application-simple
                                            ;; make-lambda-term-simple
@@ -879,7 +873,6 @@
                                            pairlis$-of-empty-eval-list
                                            no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                            intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
-                                           PAIRLIS$-of-empty-eval-list
                                            )))
           ("Goal" :do-not '(generalize eliminate-destructors)
 ;           :cases ((member-eq formal-to-subst (free-vars-in-term (lookup-equal formal-to-subst (pairlis$ formals args)))))
@@ -903,7 +896,6 @@
                             pairlis$-of-empty-eval-list
                             no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                             intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
-                            PAIRLIS$-of-empty-eval-list
                             pairlis$-of-append-and-append
                             empty-eval-list-of-append
                             empty-eval-list-when-symbol-listp
