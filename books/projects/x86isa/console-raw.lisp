@@ -4,16 +4,21 @@
 
 (let* ((socket (ccl::make-socket :connect :passive ;; Listen
                                  :local-host "localhost"
-                                 :local-port 7444))
+                                 :local-port 6444))
        (stream (ccl::accept-connection socket)))
   (setf *console-stream* stream))
 
-(defun write-console (c x86)
-  (write-char c *console-stream*)
-  (force-output *console-stream*))
+(defun write-tty (c x86)
+  (write-char (code-char c) *console-stream*)
+  (force-output *console-stream*)
+  x86)
 
-(defun read-console (x86)
-  (read-char-no-hang *console-stream*))
+(defun read-tty (x86)
+  (b* ((c (read-char-no-hang *console-stream*)))
+      (mv (if (null c)
+            nil
+            (char-code c))
+          x86)))
 
 
 #|

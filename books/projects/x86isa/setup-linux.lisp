@@ -3,4 +3,6 @@
 (include-book "tools/include-raw" :dir :system)
 (include-raw "console-raw.lisp")
 (init-sys-view #x10000000 x86)
+(!enable-peripherals t x86)
+(!handle-exceptions t x86)
 (linux-load "../../../../bzImage" "../../../../alpine-root.img" "rootfstype=ramfs console=ttyprintk ignore_loglevel root=/dev/ram0" x86 state)
