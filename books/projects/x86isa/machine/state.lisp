@@ -52,10 +52,10 @@
 ; above the linear memory limit.
 
 ; The orginal three-level memory model.
-(include-book "centaur/bigmem/bigmem" :dir :system)
+; (include-book "centaur/bigmem/bigmem" :dir :system)
 
 ; Asymmetric memory model; faster for "small" addresses, and otherwise slower.
-; (include-book "centaur/bigmem-asymmetric/bigmem-asymmetric" :dir :system)
+(include-book "centaur/bigmem-asymmetric/bigmem-asymmetric" :dir :system)
 
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
@@ -587,13 +587,13 @@
     (mem   :type (array (unsigned-byte 8) (,*mem-size-in-bytes*)) ;; 2^52
            :initially 0
            :fix (acl2::loghead 8 (ifix x))
-           :child-stobj bigmem::mem
-           :child-accessor bigmem::read-mem
-           :child-updater  bigmem::write-mem
+           :child-stobj bigmem-asymmetric::mem
+           :child-accessor bigmem-asymmetric::read-mem
+           :child-updater  bigmem-asymmetric::write-mem
            :accessor memi
            :updater !memi)
-    ;; (mem   :type bigmem::mem
-    ;;        :recognizer bigmem::memp
+    ;; (mem   :type bigmem-asymmetric::mem
+    ;;        :recognizer bigmem-asymmetric::memp
     ;;        :accessor mem
     ;;        :updater !mem)
     (:doc "</li>")
@@ -604,8 +604,6 @@
     (set-interrupt-flag-next   :type (satisfies booleanp)
                                :initially nil
                                :fix (acl2::bool-fix x))
-    (:doc "</li>")
-
     (:doc "</li>")
 
     (:doc "<li>@('Time Stamp Counter'): This keeps track of how many instructions have been executed for the RDTSC instruction.<br/>")
@@ -623,7 +621,7 @@
                         :fix (nfix x))
     (:doc "</li>")
 
-    (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping lists of virtual page number, a boolean for whether we're in supervisor mode, and access type to either the physical page number (if such an entry with the given access type is allowed) or (cons :pagefault <error code>) if the access does not have a valid mapping.<br/>")
+    (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping 4K virtual page numbers to a tlb-entry bitstruct that summarizes the information in the page tables about the given 4K page.<br/>")
     (tlb   :type (satisfies tlb-p)
            :initially :tlb
            :fix (tlb-fix x))
@@ -742,9 +740,9 @@
                   (list fld)))
       :inline t
       :non-memoizable t
-      :enable '(bigmem::read-mem-over-write-mem
-                bigmem::read-mem-from-nil
-                bigmem::loghead-identity-alt)
+      :enable '(bigmem-asymmetric::read-mem-over-write-mem
+                bigmem-asymmetric::read-mem-from-nil
+                bigmem-asymmetric::loghead-identity-alt)
       :accessor xr
       :updater  xw
       :accessor-template ( x)

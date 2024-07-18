@@ -247,7 +247,7 @@
           bytes (an 8-byte base and a 2-byte limit).</p>
 
           <p>\[OP  M\]<br/>
-          0F 01/0: SGDT m16@('&')32<br/>
+          0F 01/0: SGDT m16@('&')32</p>
 
           <p><b>TO-DO:</b> Handle this outside of 64-bit-mode.</p>"
 
