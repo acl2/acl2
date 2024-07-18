@@ -19,9 +19,9 @@
 ;; TODO: Consider allowing the supplied pred to be a symbol that names a unary
 ;; predicate to be applied to the value.
 
-(include-book "acl2-arrays")
 (include-book "expandable-arrays")
-(include-book "kestrel/utilities/pack" :dir :system)
+(include-book "make-empty-array")
+(include-book "kestrel/utilities/pack" :dir :system) ; reduce?
 
 (defthm not-<-of-if-of-<-same
   (not (< x (if (< x y) x y))))
@@ -31,6 +31,8 @@
                               (symbol-listp extra-vars)
                               (true-listp extra-guards))))
   `(encapsulate ()
+
+     (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ;reduce?
 
      (local (in-theory (disable assoc-keyword))) ;prevent inductions
 
@@ -180,6 +182,8 @@
                               )))
   (let ((aux-fn (pack$ fn '-aux)))
     `(encapsulate ()
+
+       (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ;reduce?
 
        ;; The -aux function
        (def-array-checker ,aux-fn ,pred :extra-vars ,extra-vars :extra-guards ,extra-guards)
@@ -364,6 +368,8 @@
                               (symbol-listp extra-vars))))
   (let ((aux-fn (pack$ fn '-aux)))
     `(encapsulate ()
+
+       (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ;reduce?
 
        ;; The -aux function
        (def-array-checker ,aux-fn ,pred :extra-vars ,extra-vars :extra-guards ,extra-guards)
