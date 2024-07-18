@@ -22,6 +22,7 @@
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 
 (defthm no-nils-in-termp-of-lookup-equal
   (implies (no-nils-in-termsp (strip-cdrs alist))
@@ -233,3 +234,27 @@
            (subsetp-equal (free-vars-in-terms (map-lookup-equal keys1 (pairlis$ keys2 terms)))
                           (free-vars-in-terms terms)))
   :hints (("Goal" :in-theory (enable map-lookup-equal subsetp-equal))))
+
+; strong
+;todo: nested induction
+(defthmd alists-equiv-on-redef
+  (equal (alists-equiv-on keys a1 a2)
+         (equal (map-lookup-equal keys a1)
+                (map-lookup-equal keys a2)))
+  :hints (("Goal" :in-theory (enable alists-equiv-on map-lookup-equal))))
+
+(defthm map-lookup-equal-of-cons-of-cons-irrel
+  (implies (not (member-equal key keys))
+           (equal (map-lookup-equal keys (cons (cons key val) alist))
+                  (map-lookup-equal keys alist)))
+  :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
+(defthm mv-nth-1-of-FILTER-FORMALS-AND-ACTUALS
+  (implies (no-duplicatesp-equal formals)
+           (equal (mv-nth 1 (filter-formals-and-actuals formals actuals vars))
+                  (map-lookup-equal (intersection-equal formals vars)
+                                    (pairlis$ formals actuals))))
+  :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS
+                                     INTERSECTION-EQUAL
+                                     map-lookup-equal
+                                     PAIRLIS$) )))

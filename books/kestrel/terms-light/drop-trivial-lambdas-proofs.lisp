@@ -20,6 +20,7 @@
 (include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system) ; make local?
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
+(local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
@@ -34,16 +35,6 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
-
-;move
-; strong
-;todo: nested induction
-(defthmd alists-equiv-on-redef
-  (equal (alists-equiv-on keys a1 a2)
-         (equal (map-lookup-equal keys a1)
-                (map-lookup-equal keys a2)))
-  :hints (("Goal" :in-theory (enable alists-equiv-on map-lookup-equal))))
-
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 
 ;; (local (make-flag drop-trivial-lambdas))

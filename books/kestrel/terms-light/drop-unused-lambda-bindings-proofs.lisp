@@ -85,8 +85,7 @@
                                       drop-unused-lambda-bindings-induct-lst)))))
 
 ;;todo: reduce these!
-(local (include-book "make-lambda-application-simple-proof"))
-(local (include-book "drop-trivial-lambdas-proofs")) ; for alists-equiv-on-redef
+;(local (include-book "make-lambda-application-simple-proof"))
 (local (include-book "substitute-constants-in-lambdas-proofs"))
 
 (defthm-flag-drop-unused-lambda-bindings
