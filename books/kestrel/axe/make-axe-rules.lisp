@@ -1200,6 +1200,8 @@
                               (plist-worldp wrld))))
   (b* (((mv erp lhs rhs) (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))
        ((when erp) acc) ;don't extend acc
+       ;; Applies various simplifications:
+       (rhs (pre-simplify-term rhs nil))
        ((mv erp rule) (make-axe-rule lhs rhs
                                      (if counter
                                          ;; todo: make a pack-string and pass to add-suffix:
@@ -1448,11 +1450,11 @@
                 ((when (not (symbol-alistp rule-classes)))
                  (er hard? 'make-add-axe-rules-for-rule "Bad rule-classes: ~x0" rule-classes)
                  (mv :bad-rule-classes nil))
-                ;;otherwise, unrolling rules of functions using mbe can loop):
+                ;;otherwise, unrolling rules of functions using mbe can loop:
                 (theorem-body ;(strip-return-last theorem-body)
-                 (remove-guard-holders-and-clean-up-lambdas theorem-body))
-                (theorem-body (drop-unused-lambda-bindings theorem-body))
-                ;(theorem-body (pre-simplify-term theorem-body nil)) ; todo
+                  (remove-guard-holders-and-clean-up-lambdas theorem-body))
+                ;; we simplify the rhs elsewhere.  we should not call pre-simplify-term here, because it might affect the LHS as well (e.g., turning (equal (= x y) (equal x y))
+                ;; into (equal (equal x y) (equal x y)), which would loop.
                 ((mv erp rules)
                  (make-axe-rules-from-theorem theorem-body rule-name rule-classes known-boolean-fns print wrld))
                 ((when erp) (mv erp acc)))
