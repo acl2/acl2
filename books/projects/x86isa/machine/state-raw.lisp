@@ -33,8 +33,6 @@
                   :guard (good-mem$cp mem$c)))
   (deserialize-level1s obj mem$c))
 
-
-
 (defun serialize-mem (x86)
   (stobj-let ((bigmem::mem (mem$c x86)))
              (obj)

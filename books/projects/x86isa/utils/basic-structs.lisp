@@ -63,5 +63,6 @@
 (defbitstruct 31bits 31)
 (defbitstruct 32bits 32)
 (defbitstruct 40bits 40)
+(defbitstruct 49bits 49)
 (defbitstruct 54bits 54)
 (defbitstruct 64bits 64)
