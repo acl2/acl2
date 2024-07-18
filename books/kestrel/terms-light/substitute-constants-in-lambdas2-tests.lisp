@@ -22,9 +22,10 @@
     result))
 
 (assert-equal (test-substitute-constants-in-lambdas2 '(let ((x 2)) (+ x y)) (w state))
-              '(let nil (+ 2 y)) ; todo: improve!
+              '(+ 2 y)
               )
 
+;; the substitution goes through the binding of z
 (assert-equal (test-substitute-constants-in-lambdas2 '(let ((x 2)) (let ((z w)) (+ x y z))) (w state))
-              '(let nil (let ((z w)) (+ 2 y z))) ; todo: improve!
+              '(let ((z w)) (+ 2 y z))
               )
