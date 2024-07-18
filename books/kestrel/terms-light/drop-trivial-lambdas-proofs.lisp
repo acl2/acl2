@@ -10,19 +10,13 @@
 
 (in-package "ACL2")
 
-;; STATUS: Working. Need to reduce dependencies?
-
 (include-book "drop-trivial-lambdas")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
-(include-book "substitute-constants-in-lambdas")
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "no-nils-in-termp")
-(include-book "kestrel/alists-light/alists-equiv-on" :dir :system) ; make local?
-(include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
 (local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))
-(local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -90,8 +84,6 @@
                                       drop-trivial-lambdas-induct
                                       drop-trivial-lambdas-induct-lst)))))
 
-(local (include-book "substitute-constants-in-lambdas-proofs")) ; fixme reduce, for map-lookup-equal-of-pairlis$-of-map-lookup-equal-when-subsetp-equal
-
 ;!!do we even know whether there are nils among the lambda formals?
 
 ;; (thm
@@ -125,7 +117,7 @@
                                    drop-trivial-lambdas-lst
                                    empty-eval-of-fncall-args
                                    true-listp-when-symbol-alistp
-                                   make-lambda-term-simple
+                                   ;make-lambda-term-simple
                                    lambdas-closed-in-termp
                                    ;map-lookup-equal-of-pairlis$-of-empty-eval-list
                                    )
@@ -159,7 +151,7 @@
                             drop-trivial-lambdas-lst
                             empty-eval-of-fncall-args
                             true-listp-when-symbol-alistp
-                            make-lambda-term-simple
+                            ;make-lambda-term-simple
                             lambdas-closed-in-termp
                             free-vars-in-terms-when-symbol-listp)
                            (empty-eval-of-fncall-args-back)))))
@@ -191,7 +183,7 @@
                                    drop-trivial-lambdas-lst
                                    empty-eval-of-fncall-args
                                    true-listp-when-symbol-alistp
-                                   make-lambda-term-simple
+                                   ;make-lambda-term-simple
                                    lambdas-closed-in-termp
                                    ;map-lookup-equal-of-pairlis$-of-empty-eval-list
                                    )
@@ -215,7 +207,7 @@
                                    drop-trivial-lambdas-lst
                                    empty-eval-of-fncall-args
                                    true-listp-when-symbol-alistp
-                                   make-lambda-term-simple
+                                   ;make-lambda-term-simple
                                    lambdas-closed-in-termp
                                    ;map-lookup-equal-of-pairlis$-of-empty-eval-list
                                    no-duplicate-lambda-formals-in-termp ; todo
@@ -248,7 +240,7 @@
                             drop-trivial-lambdas-lst
                             empty-eval-of-fncall-args
                             true-listp-when-symbol-alistp
-                            make-lambda-term-simple
+                            ;make-lambda-term-simple
                             lambdas-closed-in-termp
                             ;; no-duplicate-lambda-formals-in-termp
                             ;; map-lookup-equal-of-pairlis$-of-empty-eval-list
