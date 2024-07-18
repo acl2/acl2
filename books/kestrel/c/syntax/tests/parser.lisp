@@ -690,6 +690,142 @@
             (equal pos/span (position 10 10))
             (equal pos/span2 (position 10 11))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-escape-sequence
+
+(test-lex
+ lex-escape-sequence
+ "'"
+ :cond (equal ast (escape-simple (simple-escape-squote))))
+
+(test-lex
+ lex-escape-sequence
+ "\""
+ :cond (equal ast (escape-simple (simple-escape-dquote))))
+
+(test-lex
+ lex-escape-sequence
+ "?"
+ :cond (equal ast (escape-simple (simple-escape-qmark))))
+
+(test-lex
+ lex-escape-sequence
+ "\\"
+ :cond (equal ast (escape-simple (simple-escape-bslash))))
+
+(test-lex
+ lex-escape-sequence
+ "a"
+ :cond (equal ast (escape-simple (simple-escape-a))))
+
+(test-lex
+ lex-escape-sequence
+ "b"
+ :cond (equal ast (escape-simple (simple-escape-b))))
+
+(test-lex
+ lex-escape-sequence
+ "f"
+ :cond (equal ast (escape-simple (simple-escape-f))))
+
+(test-lex
+ lex-escape-sequence
+ "n"
+ :cond (equal ast (escape-simple (simple-escape-n))))
+
+(test-lex
+ lex-escape-sequence
+ "r"
+ :cond (equal ast (escape-simple (simple-escape-r))))
+
+(test-lex
+ lex-escape-sequence
+ "t"
+ :cond (equal ast (escape-simple (simple-escape-t))))
+
+(test-lex
+ lex-escape-sequence
+ "v"
+ :cond (equal ast (escape-simple (simple-escape-v))))
+
+(test-lex
+ lex-escape-sequence
+ "vv"
+ :cond (equal ast (escape-simple (simple-escape-v))))
+
+(test-lex-fail
+ lex-escape-sequence
+ "w")
+
+(test-lex
+ lex-escape-sequence
+ "6"
+ :cond (equal ast (escape-oct (oct-escape-one #\6))))
+
+(test-lex
+ lex-escape-sequence
+ "68"
+ :cond (equal ast (escape-oct (oct-escape-one #\6))))
+
+(test-lex
+ lex-escape-sequence
+ "60"
+ :cond (equal ast (escape-oct (oct-escape-two #\6 #\0))))
+
+(test-lex
+ lex-escape-sequence
+ "601"
+ :cond (equal ast (escape-oct (oct-escape-three #\6 #\0 #\1))))
+
+(test-lex
+ lex-escape-sequence
+ "6011"
+ :cond (equal ast (escape-oct (oct-escape-three #\6 #\0 #\1))))
+
+(test-lex-fail
+ lex-escape-sequence
+ "8")
+
+(test-lex
+ lex-escape-sequence
+ "xf8"
+ :cond (equal ast (escape-hex (list #\f #\8))))
+
+(test-lex
+ lex-escape-sequence
+ "x829s"
+ :cond (equal ast (escape-hex (list #\8 #\2 #\9))))
+
+(test-lex-fail
+ lex-escape-sequence
+ "x")
+
+(test-lex-fail
+ lex-escape-sequence
+ "x+")
+
+(test-lex
+ lex-escape-sequence
+ "uabBA"
+ :cond (equal ast (escape-univ
+                   (univ-char-name-locase-u (hex-quad #\a #\b #\B #\A)))))
+
+(test-lex
+ lex-escape-sequence
+ "U744dD900"
+ :cond (equal ast (escape-univ
+                   (univ-char-name-upcase-u (hex-quad #\7 #\4 #\4 #\d)
+                                            (hex-quad #\D #\9 #\0 #\0)))))
+
+(test-lex-fail
+ lex-escape-sequence
+ "u123")
+
+(test-lex-fail
+ lex-escape-sequence
+ "U0000123")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test parsing functions.

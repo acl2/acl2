@@ -1710,7 +1710,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-escape ((pstate parstatep))
+(define lex-escape-sequence ((pstate parstatep))
   :returns (mv erp (escape escapep) (last-pos positionp) (new-pstate parstatep))
   :short "Lex an escape sequence."
   :long
@@ -1727,7 +1727,7 @@
      we return the simple escape.")
    (xdoc::p
     "If instead the next character is an octal digit,
-     we read another one and possibly yet another one,
+     we read possibly another one and possibly yet another one,
      to see whether the octal escape sequence consists of
      one, two, or three octal digits.")
    (xdoc::p
@@ -1780,20 +1780,13 @@
            (<= char (char-code #\7))) ; \ octdig
       (b* (((erp char2 pos2 pstate) (read-char pstate)))
         (cond
-         ((not char2)
-          (retok (escape-oct (oct-escape-one (code-char char)))
-                 pos
-                 pstate))
-         ((and (<= (char-code #\0) char2)
+         ((and char2
+               (<= (char-code #\0) char2)
                (<= char2 (char-code #\7))) ; \ octdig octdig
           (b* (((erp char3 pos3 pstate) (read-char pstate)))
             (cond
-             ((not char3)
-              (retok (escape-oct (oct-escape-two (code-char char)
-                                                 (code-char char2)))
-                     pos2
-                     pstate))
-             ((and (<= (char-code #\0) char3)
+             ((and char3
+                   (<= (char-code #\0) char3)
                    (<= char3 (char-code #\7))) ; \ octdig octdig octdig
               (retok (escape-oct (oct-escape-three (code-char char)
                                                    (code-char char2)
@@ -1801,13 +1794,14 @@
                      pos3
                      pstate))
              (t ; \ octdig \octdig other
-              (b* ((pstate (unread-char pstate))) ; \ octdig octdig
+              (b* ((pstate
+                    (if char3 (unread-char pstate) pstate))) ; \ octdig octdig
                 (retok (escape-oct (oct-escape-two (code-char char)
                                                    (code-char char2)))
                        pos2
                        pstate))))))
          (t ; \ octdig other
-          (b* ((pstate (unread-char pstate)))
+          (b* ((pstate (if char2 (unread-char pstate) pstate))) ; \octdig
             (retok (escape-oct (oct-escape-one (code-char char)))
                    pos
                    pstate))))))
@@ -1847,12 +1841,12 @@
 
   ///
 
-  (defret parsize-of-lex-escape-uncond
+  (defret parsize-of-lex-escape-sequence-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-escape-cond
+  (defret parsize-of-lex-escape-sequence-cond
     (implies (not erp)
              (<= (parsize new-pstate)
                  (1- (parsize pstate))))
@@ -1906,7 +1900,7 @@
                     :found (char-to-msg char)))
        ((erp cchar & pstate)
         (if (= char (char-code #\\)) ; \
-            (b* (((erp escape pos pstate) (lex-escape pstate))
+            (b* (((erp escape pos pstate) (lex-escape-sequence pstate))
                  (cchar (c-char-escape escape)))
               (retok cchar pos pstate))
           (b* ((cchar (c-char-char char)))
@@ -1982,7 +1976,7 @@
                     :found (char-to-msg char)))
        ((erp schar & pstate)
         (if (= char (char-code #\\)) ; \
-            (b* (((erp escape pos pstate) (lex-escape pstate))
+            (b* (((erp escape pos pstate) (lex-escape-sequence pstate))
                  (schar (s-char-escape escape)))
               (retok schar pos pstate))
           (b* ((schar (s-char-char char)))
@@ -5170,7 +5164,7 @@
   :returns (stoclaspec stoclaspecp)
   :short "Map a token that is a storage class specifier
           to the correspoding storage class specifier."
-  (cond ((equal token (token-keyword "typedef")) (stoclaspec-tydef))
+  (cond ((equal token (token-keyword "typedef")) (stoclaspec-typedef))
         ((equal token (token-keyword "extern")) (stoclaspec-extern))
         ((equal token (token-keyword "static")) (stoclaspec-static))
         ((equal token (token-keyword "_Thread_local")) (stoclaspec-threadloc))

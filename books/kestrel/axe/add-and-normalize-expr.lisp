@@ -1,7 +1,7 @@
 ; A utility for adding a node but normalizing its xors first.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -69,7 +69,8 @@
                                   (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
                                 (revappend nodenum-leaves-decreasing
                                            (list (enquote accumulated-constant)))))
-           (- (cw "(BVXOR nest with ~x0 leaves.)~%" (len leaves-increasing))))
+           ;; (- (cw "(BVXOR nest with ~x0 leaves.)~%" (len leaves-increasing)))
+           )
         ;; Build the new nest: ;; TODO: handle the constant separately
         (add-bvxor-nest-to-dag-array leaves-increasing ; reverse of the order we want them in
                                      bvxor-width
@@ -93,7 +94,8 @@
                                     (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
                                   (revappend nodenum-leaves-decreasing
                                              (list (enquote accumulated-constant)))))
-             (- (cw "(BITXOR nest with ~x0 leaves.)~%" (len leaves-increasing))))
+             ;; (- (cw "(BITXOR nest with ~x0 leaves.)~%" (len leaves-increasing)))
+             )
           ;; Build the new nest: ;; TODO: handle the constant separately
           (add-bitxor-nest-to-dag-array leaves-increasing ; reverse of the order we want them in
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))

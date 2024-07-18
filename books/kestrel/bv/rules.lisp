@@ -2251,11 +2251,9 @@
 ;how does logtail even get introduced?
 ;bbozo
 ;drop or gen
-(defthm get-rid-of-logtail
-  (equal (logtail 7 (bvcat 8 x 24 y))
-         (bvcat 8 x 17 (slice 23 7 y))))
-
-
+;; (defthm get-rid-of-logtail
+;;   (equal (logtail 7 (bvcat 8 x 24 y))
+;;          (bvcat 8 x 17 (slice 23 7 y))))
 
 ;gen!
 (defthm bvand-128-hack

@@ -330,6 +330,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund x86isa::!prefixes->rep-unguarded (rep x)
+  (declare (xargs :guard t))
+  (x86isa::!prefixes->rep (x86isa::8bits-fix-unguarded rep)
+                          (x86isa::prefixes-fix$inline-unguarded x)))
+
+(defthm x86isa::!prefixes->rep-unguarded-correct
+  (equal (x86isa::!prefixes->rep-unguarded rep x)
+         (x86isa::!prefixes->rep rep x))
+  :hints (("Goal" :in-theory (enable x86isa::!prefixes->rep x86isa::!prefixes->rep-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund bitops::part-select-width-low$inline-unguarded (x width low)
   (declare (xargs :guard t))
   (loghead$inline-unguarded width (logtail$inline-unguarded low x)))
@@ -1111,6 +1123,7 @@
             (x86isa::!prefixes->num$inline x86isa::!prefixes->num-unguarded)
             (x86isa::!prefixes->nxt$inline x86isa::!prefixes->nxt-unguarded)
             (x86isa::!prefixes->opr$inline x86isa::!prefixes->opr-unguarded)
+            (x86isa::!prefixes->rep$inline x86isa::!prefixes->rep-unguarded)
             (x86isa::get-one-byte-prefix-array-code x86isa::get-one-byte-prefix-array-code-unguarded)
             power-of-2p
             logmaskp

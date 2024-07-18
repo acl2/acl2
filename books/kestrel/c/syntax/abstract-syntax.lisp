@@ -1002,7 +1002,7 @@
      @('_Thread_local'),
      @('auto'), and
      @('register')."))
-  (:tydef ())
+  (:typedef ())
   (:extern ())
   (:static ())
   (:threadloc ())

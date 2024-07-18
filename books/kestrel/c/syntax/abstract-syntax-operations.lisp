@@ -113,7 +113,7 @@
 (defirrelevant irr-stoclaspec
   :short "An irrelevant storage class specifier."
   :type stoclaspecp
-  :body (stoclaspec-tydef))
+  :body (stoclaspec-typedef))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

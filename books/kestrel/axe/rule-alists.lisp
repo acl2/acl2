@@ -37,17 +37,6 @@
                   (stored-axe-rule-listp stored-rules)))
            (rule-alistp (cdr alist))))))
 
-;disable outside of axe?
-(defthm true-listp-of-lookup-equal-when-rule-alistp
-  (implies (rule-alistp alist)
-           (true-listp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable lookup-equal assoc-equal rule-alistp))))
-
-(defthm stored-axe-rule-listp-of-lookup-equal-when-rule-alistp
-  (implies (rule-alistp alist)
-           (stored-axe-rule-listp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable lookup-equal assoc-equal rule-alistp))))
-
 ;really of acons?
 (defthm rule-alistp-of-cons-of-cons
   (equal (rule-alistp (cons (cons key val) alist))
@@ -93,9 +82,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: use defun-inline?  do we use this consistently?
-(defmacro get-rules-for-fn (fn rule-alist)
-  `(lookup-eq ,fn ,rule-alist))
+(defund-inline get-rules-for-fn (fn rule-alist)
+  (declare (xargs :guard (and (symbolp fn)
+                              (rule-alistp rule-alist))))
+  (lookup-eq fn rule-alist))
+
+(defthmd true-listp-of-get-rules-for-fn-when-rule-alistp
+  (implies (rule-alistp alist)
+           (true-listp (get-rules-for-fn key alist)))
+  :hints (("Goal" :in-theory (enable get-rules-for-fn lookup-equal assoc-equal rule-alistp))))
+
+(defthm stored-axe-rule-listp-of-get-rules-for-fn-when-rule-alistp
+  (implies (rule-alistp alist)
+           (stored-axe-rule-listp (get-rules-for-fn key alist)))
+  :hints (("Goal" :in-theory (enable get-rules-for-fn lookup-equal assoc-equal rule-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,6 +236,7 @@
                 (axe-rule-listp axe-rules))
            (rule-alistp (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp acc)))
   :hints (("Goal"
+           :induct t
            :expand ((axe-rulep (car axe-rules))
                     (axe-rule-listp axe-rules))
            :in-theory (enable rule-alistp extend-unprioritized-rule-alist))))
