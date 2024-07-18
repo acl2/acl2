@@ -38,7 +38,6 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "drop-unused-lambda-bindings-proofs")) ; todo: for subsetp-equal-of-free-vars-in-terms-of-map-lookup-equal-of-pairlis$
 (local (include-book "subst-var-alt-proofs")) ; todo, for pairlis$-of-empty-eval-list, which introduces empty-eval-cdrs -- why?
 
 (local (in-theory (enable sublis-var-simple-correct-3)))

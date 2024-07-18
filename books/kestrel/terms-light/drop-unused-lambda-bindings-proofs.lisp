@@ -29,20 +29,6 @@
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
-(defthm member-equal-of-lookup-equal-of-pairlis$-same
-  (implies (and (member-equal key keys)
-                (equal (len keys) (len terms)))
-           (member-equal (lookup-equal key (pairlis$ keys terms)) terms)))
-
-(defthm subsetp-equal-of-free-vars-in-terms-of-map-lookup-equal-of-pairlis$
-  (implies (and (subsetp-equal keys1 keys2)
-                (equal (len keys2) (len terms)))
-           (subsetp-equal (free-vars-in-terms (map-lookup-equal keys1 (pairlis$ keys2 terms)))
-                          (free-vars-in-terms terms)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal subsetp-equal))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; The point of this is to change the alist:
 (mutual-recursion
  (defun drop-unused-lambda-bindings-induct (term alist)

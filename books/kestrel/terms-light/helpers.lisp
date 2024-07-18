@@ -221,3 +221,15 @@
            (iff (bad-guy-for-alists-equiv-on keys a1 a2)
                 (consp keys)))
   :hints (("Goal" :in-theory (enable bad-guy-for-alists-equiv-on member-equal))))
+
+(defthm member-equal-of-lookup-equal-of-pairlis$-same
+  (implies (and (member-equal key keys)
+                (equal (len keys) (len terms)))
+           (member-equal (lookup-equal key (pairlis$ keys terms)) terms)))
+
+(defthm subsetp-equal-of-free-vars-in-terms-of-map-lookup-equal-of-pairlis$
+  (implies (and (subsetp-equal keys1 keys2)
+                (equal (len keys2) (len terms)))
+           (subsetp-equal (free-vars-in-terms (map-lookup-equal keys1 (pairlis$ keys2 terms)))
+                          (free-vars-in-terms terms)))
+  :hints (("Goal" :in-theory (enable map-lookup-equal subsetp-equal))))
