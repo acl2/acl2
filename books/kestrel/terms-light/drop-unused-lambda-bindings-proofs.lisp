@@ -156,9 +156,7 @@
                   (no-duplicate-lambda-formals-in-termsp terms))
              (lambdas-closed-in-termsp (drop-unused-lambda-bindings-lst terms)))
     :flag drop-unused-lambda-bindings-lst)
-  :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp-when-symbol-listp
-                                     lambdas-closed-in-termp ; todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp-when-symbol-listp))))
 
 (defthm-flag-drop-unused-lambda-bindings
   (defthm no-duplicate-lambda-formals-in-termp-of-drop-unused-lambda-bindings
@@ -171,6 +169,4 @@
                   (no-duplicate-lambda-formals-in-termsp terms))
              (no-duplicate-lambda-formals-in-termsp (drop-unused-lambda-bindings-lst terms)))
     :flag drop-unused-lambda-bindings-lst)
-  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp-when-symbol-listp
-                                     no-duplicate-lambda-formals-in-termp ; todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp-when-symbol-listp))))

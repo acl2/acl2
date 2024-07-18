@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; todo: split proofs into separate book
+
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "no-nils-in-termp")

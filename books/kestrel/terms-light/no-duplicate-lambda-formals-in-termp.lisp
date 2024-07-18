@@ -33,6 +33,17 @@
      (and (no-duplicate-lambda-formals-in-termp (first terms))
           (no-duplicate-lambda-formals-in-termsp (rest terms))))))
 
+(defthm no-duplicate-lambda-formals-in-termp-of-cons
+  (equal (no-duplicate-lambda-formals-in-termp (cons fn args))
+         (if (equal 'quote fn)
+             t
+           (and (no-duplicate-lambda-formals-in-termsp args)
+                (if (consp fn)
+                    (and (no-duplicatesp-eq (lambda-formals fn))
+                       (no-duplicate-lambda-formals-in-termp (lambda-body fn)))
+                  t))))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp))))
+
 (defthm no-duplicate-lambda-formals-in-termsp-of-cdr
   (implies (no-duplicate-lambda-formals-in-termsp terms)
            (no-duplicate-lambda-formals-in-termsp (cdr terms)))

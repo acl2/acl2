@@ -117,8 +117,6 @@
                                    drop-trivial-lambdas-lst
                                    empty-eval-of-fncall-args
                                    true-listp-when-symbol-alistp
-                                   ;make-lambda-term-simple
-                                   lambdas-closed-in-termp
                                    ;map-lookup-equal-of-pairlis$-of-empty-eval-list
                                    )
                                   (empty-eval-of-fncall-args-back
@@ -151,8 +149,7 @@
                             drop-trivial-lambdas-lst
                             empty-eval-of-fncall-args
                             true-listp-when-symbol-alistp
-                            ;make-lambda-term-simple
-                            lambdas-closed-in-termp
+;                            lambdas-closed-in-termp
                             free-vars-in-terms-when-symbol-listp)
                            (empty-eval-of-fncall-args-back)))))
 
@@ -183,8 +180,7 @@
                                    drop-trivial-lambdas-lst
                                    empty-eval-of-fncall-args
                                    true-listp-when-symbol-alistp
-                                   ;make-lambda-term-simple
-                                   lambdas-closed-in-termp
+;                                   lambdas-closed-in-termp
                                    ;map-lookup-equal-of-pairlis$-of-empty-eval-list
                                    )
                                   (empty-eval-of-fncall-args-back
@@ -207,10 +203,7 @@
                                    drop-trivial-lambdas-lst
                                    empty-eval-of-fncall-args
                                    true-listp-when-symbol-alistp
-                                   ;make-lambda-term-simple
-                                   lambdas-closed-in-termp
                                    ;map-lookup-equal-of-pairlis$-of-empty-eval-list
-                                   no-duplicate-lambda-formals-in-termp ; todo
                                    )
                                   (empty-eval-of-fncall-args-back
                                    ;empty-eval-list-of-map-lookup-equal-of-pairlis$
@@ -240,8 +233,7 @@
                             drop-trivial-lambdas-lst
                             empty-eval-of-fncall-args
                             true-listp-when-symbol-alistp
-                            ;make-lambda-term-simple
-                            lambdas-closed-in-termp
+                            lambdas-closed-in-termp ; todo
                             ;; no-duplicate-lambda-formals-in-termp
                             ;; map-lookup-equal-of-pairlis$-of-empty-eval-list
                             alists-equiv-on-redef
@@ -275,7 +267,6 @@
 ;;                                    drop-trivial-lambdas-lst
 ;;                                    empty-eval-of-fncall-args
 ;;                                    true-listp-when-symbol-alistp
-;;                                    make-lambda-term-simple
 ;;                                    lambdas-closed-in-termp
 ;; ;                                   no-duplicate-lambda-formals-in-termp
 ;;  ;                                  no-duplicate-lambda-formals-in-termsp
