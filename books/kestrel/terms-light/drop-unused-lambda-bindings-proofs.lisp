@@ -17,7 +17,6 @@
 
 (include-book "drop-unused-lambda-bindings")
 (include-book "no-duplicate-lambda-formals-in-termp")
-;(include-book "make-lambda-term-simple")
 (include-book "no-nils-in-termp")
 (include-book "lambdas-closed-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
@@ -83,10 +82,6 @@
                                       drop-unused-lambda-bindings-lst
                                       drop-unused-lambda-bindings-induct
                                       drop-unused-lambda-bindings-induct-lst)))))
-
-;;todo: reduce these!
-;(local (include-book "make-lambda-application-simple-proof"))
-(local (include-book "substitute-constants-in-lambdas-proofs"))
 
 (defthm-flag-drop-unused-lambda-bindings
   (defthm subsetp-equal-of-free-vars-in-term-of-drop-unused-lambda-bindings

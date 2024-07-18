@@ -117,18 +117,6 @@
 ;;          (alists-equiv-on keys a1 a2))
 ;;   :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
-(defthm lookup-equal-of-pairlis$-of-map-lookup-equal-when-memberp-equal
-  (implies (member-equal key all-keys)
-           (equal (lookup-equal key (pairlis$ all-keys (map-lookup-equal all-keys alist)))
-                  (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable  pairlis$ subsetp-equal))))
-
-(defthm map-lookup-equal-of-pairlis$-of-map-lookup-equal-when-subsetp-equal
-  (implies (subsetp-equal keys all-keys)
-           (equal (map-lookup-equal keys (pairlis$ all-keys (map-lookup-equal all-keys alist)))
-                  (map-lookup-equal keys alist)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal pairlis$ subsetp-equal))))
-
 ;; ;; an opener rule, since empty-eval-list doesn't have a definition
 ;; (defthmd empty-eval-list-when-consp
 ;;   (implies (consp l)
