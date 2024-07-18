@@ -299,6 +299,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-declor/absdeclor
+  :short "An irrelevant declarator or abstract declarator."
+  :type declor/absdeclor-p
+  :body (declor/absdeclor-declor (irr-declor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-amb?-expr/tyname
   :short "An irrelevant possibly ambiguous expression or type name."
   :type amb?-expr/tyname-p
