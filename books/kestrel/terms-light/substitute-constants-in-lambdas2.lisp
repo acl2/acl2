@@ -13,7 +13,7 @@
 
 (include-book "make-lambda-with-hint")
 (include-book "tools/flag" :dir :system)
-(include-book "kestrel/utilities/quote" :dir :system) ; todo: reduce
+(include-book "kestrel/utilities/myquotep" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
