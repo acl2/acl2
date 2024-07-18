@@ -148,16 +148,7 @@
                       (alignment-checking-enabled-p x86)
                       x86
                       :mem-ptr? nil))
-       ((when flg) ;; Would also handle bad rsp values.
-        (cond
-         ;; FIXME? The non-canonical-address error won't come up here
-         ;; because we already check for that in add-to-*sp above.
-         ((and (consp flg) (eql (car flg) :non-canonical-address))
-          (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
-         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
-          (!!fault-fresh :ac 0 :memory-access-unaligned flg)) ;; #AC(0)
-         (t ;; Unclassified error!
-          (!!fault-fresh flg))))
+       ((when flg) (!!ms-fresh :wme-size-opt flg))
 
        (x86 (write-*sp proc-mode new-rsp x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
