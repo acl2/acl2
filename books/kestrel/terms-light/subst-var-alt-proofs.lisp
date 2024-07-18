@@ -333,54 +333,56 @@
                                       induct-subst-var-alt
                                       induct-subst-var-alt-lst)))))
 
-;; can we get rid of this, like we did in subst-var-deep-proofs.lisp
-(defun EMPTY-EVAL-cdrs (alist a)
-  (if (endp alist)
-      nil
-    (let ((pair (first alist)))
-      (acons (car pair) (empty-eval (cdr pair) a)
-             (EMPTY-EVAL-cdrs (rest alist) a)))))
+;; ;; can we get rid of this, like we did in subst-var-deep-proofs.lisp
+;; (defun empty-eval-cdrs (alist a)
+;;   (if (endp alist)
+;;       nil
+;;     (let ((pair (first alist)))
+;;       (acons (car pair) (empty-eval (cdr pair) a)
+;;              (empty-eval-cdrs (rest alist) a)))))
 
-(defthm PAIRLIS$-of-empty-eval-list
- (equal (PAIRLIS$ keys (EMPTY-EVAL-LIST vals a))
-        (EMPTY-EVAL-cdrs (pairlis$ keys vals) a))
- :hints (("Goal" :in-theory (enable pairlis$))))
+;; ;;introduces  empty-eval-cdrs
+;; (defthmd pairlis$-of-empty-eval-list
+;;  (equal (pairlis$ keys (empty-eval-list vals a))
+;;         (empty-eval-cdrs (pairlis$ keys vals) a))
+;;  :hints (("Goal" :in-theory (enable pairlis$))))
 
-(defthm alistp-of-empty-eval-cdrs
-  (implies (alistp alist)
-           (alistp (EMPTY-EVAL-cdrs alist a)))
-  :hints (("Goal" :in-theory (enable EMPTY-EVAL-cdrs))))
+;; (defthm alistp-of-empty-eval-cdrs
+;;   (implies (alistp alist)
+;;            (alistp (empty-eval-cdrs alist a)))
+;;   :hints (("Goal" :in-theory (enable empty-eval-cdrs))))
 
-(defthm strip-cars-of-empty-eval-cdrs
-  (equal (strip-cars (EMPTY-EVAL-cdrs alist a))
-         (strip-cars alist))
- :hints (("Goal" :in-theory (enable EMPTY-EVAL-cdrs))))
+;; (defthm strip-cars-of-empty-eval-cdrs
+;;   (equal (strip-cars (empty-eval-cdrs alist a))
+;;          (strip-cars alist))
+;;  :hints (("Goal" :in-theory (enable empty-eval-cdrs))))
 
-(defthm cdr-of-assoc-equal-of-empty-eval-cdrs
-  (equal (cdr (assoc-equal key (empty-eval-cdrs alist a)))
-         (empty-eval (cdr (assoc-equal key alist)) a))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
+;; (defthm cdr-of-assoc-equal-of-empty-eval-cdrs
+;;   (equal (cdr (assoc-equal key (empty-eval-cdrs alist a)))
+;;          (empty-eval (cdr (assoc-equal key alist)) a))
+;;   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-(defthmd lookup-equal-of-empty-eval-cdrs
-  (equal (lookup-equal key (empty-eval-cdrs alist a))
-         (empty-eval (lookup-equal key alist) a))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
+;; (defthmd lookup-equal-of-empty-eval-cdrs
+;;   (equal (lookup-equal key (empty-eval-cdrs alist a))
+;;          (empty-eval (lookup-equal key alist) a))
+;;   :hints (("Goal" :in-theory (enable lookup-equal))))
 
-(local (in-theory (enable lookup-equal-of-empty-eval-cdrs)))
+;; (local (in-theory (enable lookup-equal-of-empty-eval-cdrs)))
 
-(defthmd empty-eval-cdrs-of-pairlis$
-  (implies (equal (len keys) (len vals))
-           (equal (empty-eval-cdrs (pairlis$ keys vals) a)
-                  (pairlis$ keys (empty-eval-list vals a)))))
+;; (defthmd empty-eval-cdrs-of-pairlis$
+;;   (implies (equal (len keys) (len vals))
+;;            (equal (empty-eval-cdrs (pairlis$ keys vals) a)
+;;                   (pairlis$ keys (empty-eval-list vals a))))
+;;   :hints (("Goal" :in-theory (enable pairlis$-of-empty-eval-list))))
 
-(theory-invariant (incompatible (:rewrite PAIRLIS$-OF-EMPTY-EVAL-LIST) (:rewrite empty-eval-cdrs-of-pairlis$)))
+;; (theory-invariant (incompatible (:rewrite PAIRLIS$-OF-EMPTY-EVAL-LIST) (:rewrite empty-eval-cdrs-of-pairlis$)))
 
-(defthm ASSOC-EQUAL-of-EMPTY-EVAL-CDRS-iff
- (implies (alistp alist)
-          (iff (ASSOC-EQUAL SOMEVAR (EMPTY-EVAL-CDRS alist a))
-               (ASSOC-EQUAL SOMEVAR alist)))
+;; (defthm ASSOC-EQUAL-of-EMPTY-EVAL-CDRS-iff
+;;  (implies (alistp alist)
+;;           (iff (ASSOC-EQUAL SOMEVAR (EMPTY-EVAL-CDRS alist a))
+;;                (ASSOC-EQUAL SOMEVAR alist)))
 
- :hints (("Goal" :in-theory (enable empty-eval-cdrs assoc-equal))))
+;;  :hints (("Goal" :in-theory (enable empty-eval-cdrs assoc-equal))))
 
 (defthm main.help.help
   (implies (and (member-eq somevar (free-vars-in-term body))
@@ -408,7 +410,8 @@
                                           (empty-eval-list args
                                                            (cons (cons var (empty-eval replacement a))
                                                                  a))))))
-  :hints (("Goal" :in-theory (e/d (LOOKUP-EQUAL-OF-APPEND cdr-of-assoc-equal-becomes-lookup-equal)
+  :hints (("Goal" :in-theory (e/d (LOOKUP-EQUAL-OF-APPEND cdr-of-assoc-equal-becomes-lookup-equal
+                                                          lookup-equal-of-pairlis$-of-empty-eval-list)
                                   (EMPTY-EVAL-OF-LOOKUP-EQUAL-OF-PAIRLIS$)) ; todo:looped
            :do-not '(preprocess generalize eliminate-destructors))))
 
@@ -485,7 +488,7 @@
                             ) ( ;STRIP-CARS-OF-PAIRLIS$
                             EMPTY-EVAL-OF-LOOKUP-EQUAL-OF-PAIRLIS$ ;bad
                             member-equal
-                            LOOKUP-EQUAL-OF-EMPTY-EVAL-CDRS
+;                            LOOKUP-EQUAL-OF-EMPTY-EVAL-CDRS
                             ALISTS-EQUIV-ON-OF-APPEND-ARG1
                             ALISTS-EQUIV-ON-OF-CONS-ARG2
                             main.help.help
@@ -524,7 +527,7 @@
            :in-theory (disable main.help))))
 ;)
 
-(theory-invariant (incompatible (:rewrite CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS ) (:rewrite EMPTY-EVAL-OF-CDR-OF-ASSOC-EQUAL)))
+;(theory-invariant (incompatible (:rewrite CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS ) (:rewrite EMPTY-EVAL-OF-CDR-OF-ASSOC-EQUAL)))
 
 ;; subst-var-alt preserves the meaning of terms
 (defthm-flag-induct-subst-var-alt
@@ -568,10 +571,11 @@
                             )
                            (pseudo-termp
                             pairlis$
-                            PAIRLIS$-OF-EMPTY-EVAL-LIST
+                            ;PAIRLIS$-OF-EMPTY-EVAL-LIST
                             set-difference-equal
                             empty-eval-of-fncall-args-back
-                            CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS)))
+;                            CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS
+                            )))
           ("Goal" :expand (PSEUDO-TERMP TERM)
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (subst-var-alt
@@ -586,10 +590,11 @@
                             )
                            (pseudo-termp
                             pairlis$
-                            PAIRLIS$-OF-EMPTY-EVAL-LIST
+                            ;PAIRLIS$-OF-EMPTY-EVAL-LIST
                             set-difference-equal
                             empty-eval-of-fncall-args-back
-                            CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS)))))
+                            ;CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS
+                            )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -38,14 +38,14 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "subst-var-alt-proofs")) ; todo, for pairlis$-of-empty-eval-list, which introduces empty-eval-cdrs -- why?
+;(local (include-book "subst-var-alt-proofs")) ; todo, for pairlis$-of-empty-eval-list, which introduces empty-eval-cdrs -- why?
 
 (local (in-theory (enable sublis-var-simple-correct-3)))
 
 (local (in-theory (disable ;get-args-for-formals
                            intersection-equal set-difference-equal member-equal subsetp-equal true-listp)))
 
-(local (in-theory (disable lookup-equal-of-empty-eval-cdrs)))
+;(local (in-theory (disable lookup-equal-of-empty-eval-cdrs)))
 
 (theory-invariant (incompatible (:rewrite empty-eval-of-lookup-equal-of-pairlis$)
                                 (:rewrite lookup-equal-of-empty-eval-cdrs)))
@@ -387,10 +387,10 @@
 ;;   (implies (no-nils-in-termp term)
 ;;            (not (member-equal 'nil (free-vars-in-term term)))))
 
-(local
-  (defthm empty-eval-cdrs-of-append
-    (equal (empty-eval-cdrs (append x y) a)
-           (append (empty-eval-cdrs x a) (empty-eval-cdrs y a)))))
+;; (local
+;;   (defthm empty-eval-cdrs-of-append
+;;     (equal (empty-eval-cdrs (append x y) a)
+;;            (append (empty-eval-cdrs x a) (empty-eval-cdrs y a)))))
 
 (defthm member-equal-of-trivial-formals-helper
   (implies (and (member-equal x formals)
@@ -447,7 +447,7 @@
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                       alists-equiv-on-when-agree-on-bad-guy
                                       lookup-equal-of-append
-                                      empty-eval-cdrs-of-pairlis$
+;                                      empty-eval-cdrs-of-pairlis$
                                       symbolp-when-member-equal-and-symbol-listp
                                       not-member-equal-of-nil-when-no-nils-in-termsp)
                                      (len
@@ -455,7 +455,7 @@
                                       nthcdr-of-append-gen
                                       strip-cdrs-of-pairlis$
                                       pairlis$-of-append-arg1
-                                      pairlis$-of-empty-eval-list
+                                      ;pairlis$-of-empty-eval-list
                                       no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                       intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
                                       ))
@@ -486,7 +486,7 @@
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                            alists-equiv-on-when-agree-on-bad-guy
                                            lookup-equal-of-append
-                                           empty-eval-cdrs-of-pairlis$
+;                                           empty-eval-cdrs-of-pairlis$
                                            symbolp-when-member-equal-and-symbol-listp
                                            not-member-equal-of-nil-when-no-nils-in-termsp)
                                           (len
@@ -494,7 +494,7 @@
                                            nthcdr-of-append-gen
                                            strip-cdrs-of-pairlis$
                                            pairlis$-of-append-arg1
-                                           pairlis$-of-empty-eval-list
+                                           ;pairlis$-of-empty-eval-list
                                            no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                            intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
                                            )))
@@ -504,7 +504,7 @@
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                            alists-equiv-on-when-agree-on-bad-guy
                                            lookup-equal-of-append
-                                           empty-eval-cdrs-of-pairlis$
+;                                           empty-eval-cdrs-of-pairlis$
                                            symbolp-when-member-equal-and-symbol-listp
                                            not-member-equal-of-nil-when-no-nils-in-termsp
                                            equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special-forced
@@ -514,7 +514,7 @@
                                            nthcdr-of-append-gen
                                            strip-cdrs-of-pairlis$
                                            pairlis$-of-append-arg1
-                                           pairlis$-of-empty-eval-list
+                                           ;pairlis$-of-empty-eval-list
                                            no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                            intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
                                            )))
@@ -527,7 +527,7 @@
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                             alists-equiv-on-when-agree-on-bad-guy
                             lookup-equal-of-append
-                            empty-eval-cdrs-of-pairlis$
+;                            empty-eval-cdrs-of-pairlis$
                             symbolp-when-member-equal-and-symbol-listp
                             equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special-forced
                             )
@@ -536,7 +536,7 @@
                             nthcdr-of-append-gen
                             strip-cdrs-of-pairlis$
                             pairlis$-of-append-arg1
-                            pairlis$-of-empty-eval-list
+                            ;pairlis$-of-empty-eval-list
                             no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                             intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
                             pairlis$-of-append-and-append
@@ -708,7 +708,7 @@
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                       alists-equiv-on-when-agree-on-bad-guy
                                       lookup-equal-of-append
-                                      empty-eval-cdrs-of-pairlis$
+;                                      empty-eval-cdrs-of-pairlis$
                                       symbolp-when-member-equal-and-symbol-listp
                                       not-member-equal-of-nil-when-no-nils-in-termsp
                                       )
@@ -717,7 +717,7 @@
                                       nthcdr-of-append-gen
                                       strip-cdrs-of-pairlis$
                                       pairlis$-of-append-arg1
-                                      pairlis$-of-empty-eval-list
+                                      ;pairlis$-of-empty-eval-list
                                       no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                       intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
                                       ;bad-guy-helper
@@ -841,7 +841,7 @@
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                            alists-equiv-on-when-agree-on-bad-guy
                                            lookup-equal-of-append
-                                           empty-eval-cdrs-of-pairlis$
+;                                           empty-eval-cdrs-of-pairlis$
                                            symbolp-when-member-equal-and-symbol-listp
                                            not-member-equal-of-nil-when-no-nils-in-termsp
                                            )
@@ -850,7 +850,7 @@
                                            nthcdr-of-append-gen
                                            strip-cdrs-of-pairlis$
                                            pairlis$-of-append-arg1
-                                           pairlis$-of-empty-eval-list
+                                           ;pairlis$-of-empty-eval-list
                                            no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                            intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
                                            )))
@@ -860,7 +860,7 @@
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                                            alists-equiv-on-when-agree-on-bad-guy
                                            lookup-equal-of-append
-                                           empty-eval-cdrs-of-pairlis$
+;                                           empty-eval-cdrs-of-pairlis$
                                            symbolp-when-member-equal-and-symbol-listp
                                            not-member-equal-of-nil-when-no-nils-in-termsp
                                            equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special-forced
@@ -870,7 +870,7 @@
                                            nthcdr-of-append-gen
                                            strip-cdrs-of-pairlis$
                                            pairlis$-of-append-arg1
-                                           pairlis$-of-empty-eval-list
+                                           ;pairlis$-of-empty-eval-list
                                            no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                                            intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
                                            )))
@@ -883,7 +883,7 @@
                               ;intersection-equal-of-set-difference-equal-when-subsetp-equal
                             alists-equiv-on-when-agree-on-bad-guy
                             lookup-equal-of-append
-                            empty-eval-cdrs-of-pairlis$
+;                            empty-eval-cdrs-of-pairlis$
                             symbolp-when-member-equal-and-symbol-listp
                             equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special-forced
                             true-listp-when-symbol-listp-rewrite-unlimited
@@ -893,7 +893,7 @@
                             nthcdr-of-append-gen
                             strip-cdrs-of-pairlis$
                             pairlis$-of-append-arg1
-                            pairlis$-of-empty-eval-list
+                            ;pairlis$-of-empty-eval-list
                             no-duplicatesp-equal-when-no-duplicatesp-equal-of-cdr ; looped with trivial ancestors check mod
                             intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
                             pairlis$-of-append-and-append
