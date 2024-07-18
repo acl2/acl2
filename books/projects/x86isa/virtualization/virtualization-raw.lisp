@@ -33,12 +33,17 @@
     (read-sequence response sock)
     (close sock)
     (b* ((real-rip (get-nth-uint64 response 16))
-         ((mv success? & x86) (run-until-rip-or-n-outside-holes real-rip 30 x86))
+	 (- (format t "real-rip: ~X~&" real-rip))
+         ((mv success? x86) (run-until-rip-or-n real-rip 30 x86))
          (- (loop for i from 0 to 15
                   do (format t "~X " (n64 (rgfi i x86)))))
          ((when (not success?)) (mv nil x86))
          (- (format t "~&"))
-         (- (format t "rip: ~X~&" (rip x86))))
+         (- (format t "rip: ~X~&" (rip x86)))
+	 (- (format t "diffs: "))
+	 (- (loop for i from 0 to 15
+                  do (format t "~X " (- (get-nth-uint64 response i) (n64 (rgfi i x86))))))
+	 (- (format t "~&")))
         (mv (loop for i from 0 to 15
                   always (= (get-nth-uint64 response i) (n64 (rgfi i x86))))
             x86))))
