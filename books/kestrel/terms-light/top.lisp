@@ -58,6 +58,7 @@
 (include-book "substitute-lambda-formals")
 (include-book "classify-lambda-formals")
 (include-book "count-vars")
+(include-book "make-lambda-with-hint")
 
 (include-book "helpers")
 (include-book "empty-eval-helpers")

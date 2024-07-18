@@ -19,6 +19,7 @@
 
 (include-book "sublis-var-simple")
 (include-book "no-nils-in-termp")
+(include-book "make-lambda-with-hint")
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -113,17 +114,6 @@
       nil
     (or (quotep (first items))
         (any-quotep (rest items)))))
-
-(defun make-lambda-with-hint (formals body
-                                      hint ; (lambda <formals> <body>)
-                                      )
-  (declare (xargs :guard (and (true-listp hint)
-                              (= 3 (len hint))
-                              (eq 'lambda (car hint)))))
-  (if (and (equal formals (cadr hint))
-           (equal body (caddr hint)))
-      hint
-    `(lambda ,formals ,body)))
 
 (mutual-recursion
  (defund substitute-constants-in-lambdas (term)
