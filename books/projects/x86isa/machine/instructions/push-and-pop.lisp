@@ -227,16 +227,7 @@
                       (alignment-checking-enabled-p x86)
                       x86
                       :mem-ptr? nil))
-       ((when flg) ;; Would also handle bad rsp values.
-        (cond
-         ;; FIXME? The non-canonical-address error won't come up here
-         ;; because we already check for that in add-to-*sp above.
-         ((and (consp flg) (eql (car flg) :non-canonical-address))
-          (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
-         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
-          (!!fault-fresh :ac 0 :memory-access-unaligned new-rsp)) ;; #AC(0)
-         (t ;; Unclassified error!
-          (!!fault-fresh flg))))
+       ((when flg) (!!ms-fresh :wme-size-opt flg))
 
        (x86 (write-*sp proc-mode new-rsp x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
@@ -317,16 +308,7 @@
                       (alignment-checking-enabled-p x86)
                       x86
                       :mem-ptr? nil))
-       ((when flg1) ;; Would also handle "bad" rsp values.
-        (cond
-         ;; FIXME? The non-canonical-address error won't come up here
-         ;; because we already check for that in add-to-*sp above.
-         ((and (consp flg1) (eql (car flg1) :non-canonical-address))
-          (!!fault-fresh :ss 0 :new-rsp-not-canonical flg1)) ;; #SS(0)
-         ((and (consp flg1) (eql (car flg1) :unaligned-linear-address))
-          (!!fault-fresh :ac 0 :new-rsp-unaligned flg1)) ;; #AC(0)
-         (t                                              ;; Unclassified error!
-          (!!fault-fresh flg1))))
+       ((when flg1) (!!ms-fresh :wme-size-opt flg))
 
        (x86 (write-*sp proc-mode new-rsp x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
@@ -407,16 +389,7 @@
                       (alignment-checking-enabled-p x86)
                       x86
                       :mem-ptr? nil))
-       ((when flg) ;; Would also handle bad rsp values.
-        (cond
-         ;; FIXME? The non-canonical-address error won't come up here
-         ;; because we already check for that above.
-         ((and (consp flg) (eql (car flg) :non-canonical-address))
-          (!!fault-fresh :ss 0 :SS-error-wme-size-error flg)) ;; #SS(0)
-         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
-          (!!fault-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
-         (t ;; Unclassified error!
-          (!!fault-fresh flg))))
+       ((when flg) (!!ms-fresh :wme-size-opt flg))
 
        (x86 (write-*sp proc-mode new-rsp x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
@@ -464,17 +437,7 @@
          proc-mode operand-size rsp #.*ss* :r (alignment-checking-enabled-p x86) x86
          :mem-ptr? nil
          :check-canonicity t))
-       ((when flg0)
-        (cond
-         ;; FIXME? The non-canonical-address error won't come
-         ;; up here because we already check for that in add-to-*sp
-         ;; above.
-         ((and (consp flg0) (eql (car flg0) :non-canonical-address))
-          (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
-         ((and (consp flg0) (eql (car flg0) :unaligned-linear-address))
-          (!!fault-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
-         (t ;; Unclassified error!
-          (!!fault-fresh flg0))))
+       ((when flg0) (!!ms-fresh :rme-size-opt flg))
 
        ;; See "Z" in http://ref.x86asm.net/geek.html#x58.
        (reg (logand opcode #x07))
@@ -545,16 +508,7 @@
         (rme-size-opt proc-mode operand-size rsp #.*ss* :r check-alignment? x86
                   :mem-ptr? nil
                   :check-canonicity t))
-       ((when flg0)
-        (cond
-         ;; FIXME? The non-canonical-address error won't come up here
-         ;; because we already check for that in add-to-*sp above.
-         ((and (consp flg0) (eql (car flg0) :non-canonical-address))
-          (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
-         ((and (consp flg0) (eql (car flg0) :unaligned-linear-address))
-          (!!fault-fresh :ac 0 :memory-access-unaligned flg0)) ;; #AC(0)
-         (t ;; Unclassified error!
-          (!!fault-fresh flg0))))
+       ((when flg0) (!!ms-fresh :rme-size-opt flg))
 
        ((mv flg1
             (the (signed-byte 64) addr)
@@ -796,16 +750,7 @@
                   (alignment-checking-enabled-p x86)
                   x86
                   :mem-ptr? nil))
-       ((when flg)
-        (cond
-         ;; FIXME? The non-canonical-address error won't come
-         ;; up here because we already check for that in above.
-         ((and (consp flg) (eql (car flg) :non-canonical-address))
-          (!!fault-fresh :ss 0 :wme-size-error flg)) ;; #SS(0)
-         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
-          (!!fault-fresh :ac 0 :memory-access-unaligned flg)) ;; #AC(0)
-         (t ;; Unclassified error!
-          (!!fault-fresh flg))))
+       ((when flg) (!!ms-fresh :wme-size-opt flg))
        (x86 (write-*sp proc-mode new-rsp x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
@@ -898,16 +843,7 @@
          proc-mode operand-size rsp #.*ss* :r (alignment-checking-enabled-p x86) x86
          :mem-ptr? nil
          :check-canonicity t))
-       ((when flg0)
-        (cond
-         ;; FIXME? The non-canonical-address error won't come up here
-         ;; because we already check for that above.
-         ((and (consp flg0) (eql (car flg0) :non-canonical-address))
-          (!!fault-fresh :ss 0 :riml64-error flg0)) ;; #SS(0)
-         ((and (consp flg0) (eql (car flg0) :unaligned-linear-address))
-          (!!fault-fresh :ac 0 :memory-access-unaligned flg0)) ;; #AC(0)
-         (t ;; Unclassified error!
-          (!!fault-fresh flg0))))
+       ((when flg0) (!!ms-fresh :rme-size-opt flg))
 
        ((the (unsigned-byte 32) val)
         ;; All reserved bits should be unaffected.  This ensures that the bit 1
@@ -1012,16 +948,7 @@
        ((mv flg rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
        ((mv flg x86) (wme-size-opt proc-mode operand-size rsp #.*ss* eax/ax check-alignment? x86 :mem-ptr? nil))
-       ((when flg)
-        (cond
-         ;; FIXME? The non-canonical-address error won't come up here
-         ;; because we already check for that in add-to-*sp above.
-         ((and (consp flg) (eql (car flg) :non-canonical-address))
-          (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
-         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
-          (!!fault-fresh :ac 0 :push flg)) ;; #AC(0)
-         (t                                ;; Unclassified error!
-          (!!fault-fresh flg))))
+       ((when flg) (!!ms-fresh :wme-size-opt flg))
 
        (check-alignment? nil)
 
