@@ -16,6 +16,7 @@
 ;; See also make-term-into-dag-simple.lisp.
 
 (include-book "make-term-into-dag-array-basic")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; Turns TERM into a dag.
 ;; Returns (mv erp dag-or-quotep).  The result is dagp (a list), but arrays are used to do the work.

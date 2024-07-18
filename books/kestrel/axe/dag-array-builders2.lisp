@@ -24,6 +24,7 @@
 (include-book "make-dag-variable-alist")
 (include-book "dag-parent-array-with-name")
 (include-book "kestrel/utilities/erp" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 (local (in-theory (disable alistp)))
 

@@ -35,6 +35,7 @@
 (include-book "dag-arrays")
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;;;
 ;;; term-skeleton-matches-dagp

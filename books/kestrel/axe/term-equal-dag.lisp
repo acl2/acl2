@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "dag-arrays")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 (local (in-theory (enable integerp-when-dargp)))
 

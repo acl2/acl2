@@ -78,6 +78,7 @@
 (include-book "kestrel/file-io-light/write-strings-to-file-bang" :dir :system) ;; todo reduce, just used to clear a file
 (include-book "kestrel/file-io-light/read-file-into-character-list" :dir :system)
 ;(in-theory (disable revappend-removal)) ;caused problems (though this may be a better approach to adopt someday)
+(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system) ; for print-array2
 (local (include-book "kestrel/bv/bvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvmod" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system)) ;for character-listp-of-take

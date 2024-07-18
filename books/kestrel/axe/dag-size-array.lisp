@@ -1,7 +1,7 @@
 ; More tools to compute DAG sizes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,6 +15,7 @@
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "darg-listp")
 (include-book "largest-non-quotep")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 

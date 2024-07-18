@@ -18,6 +18,8 @@
 (include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
 (include-book "kestrel/bv/bvif" :dir :system) ; do not remove
+(include-book "kestrel/acl2-arrays/aset1-safe" :dir :system) ; todo: drop once we no longer call aset1-safe below
+(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system) ; for print-array2 (todo: split that out)
 (local (include-book "numeric-lists"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

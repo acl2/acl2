@@ -21,6 +21,8 @@
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (include-book "merge-sort-less-than")
 (include-book "find-probable-facts-common") ; for all-all-<
+(include-book "kestrel/acl2-arrays/aset1-safe" :dir :system) ; todo drop after removing aset1-safe below
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/rules2" :dir :system))

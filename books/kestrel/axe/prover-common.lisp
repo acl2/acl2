@@ -44,6 +44,7 @@
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
 (include-book "kestrel/booleans/boolxor" :dir :system) ;since this book knows about boolxor
 (include-book "dag-size-sparse")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))

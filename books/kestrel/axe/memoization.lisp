@@ -1,7 +1,7 @@
 ; Memoizing the DAG nodes that Axe trees rewrote to.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,6 +25,7 @@
 (include-book "darg-listp")
 (include-book "bounded-darg-listp")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)) ;todo
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))

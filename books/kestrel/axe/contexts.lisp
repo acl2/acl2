@@ -20,6 +20,7 @@
 (include-book "kestrel/booleans/boolif" :dir :system) ;since this book deals with boolif specially (do not remove)
 (include-book "kestrel/utilities/myif" :dir :system) ;since this book deals with myif specially (do not remove)
 (include-book "refine-assumptions") ; todo.  for all-dag-function-call-exprp
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "numeric-lists"))

@@ -448,6 +448,7 @@
        (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)) ;reduce?
        (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
        (local (include-book "kestrel/axe/rewriter-support" :dir :system))
+       (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; reduce?
 
        (local (in-theory (disable mv-nth
                                   wf-dagp wf-dagp-expander
