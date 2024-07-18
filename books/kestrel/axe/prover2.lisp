@@ -91,7 +91,7 @@
                              t
                              (table-alist 'axe-rule-priorities-table (w state))
                              rule-alist-passed-in))
-         (- (cw "~x0 total rules~%" (rule-count-in-rule-alist rule-alist)))
+         (- (cw "~x0 total rules~%" (count-rules-in-rule-alist rule-alist)))
          ;;  merge all literals into one big dag:
          ((mv erp literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
           (make-terms-into-dag-array clause

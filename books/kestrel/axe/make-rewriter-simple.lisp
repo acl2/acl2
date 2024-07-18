@@ -470,7 +470,10 @@
                                   nat-listp ; !
                                   weak-dagp-aux
                                   myquotep
-                                  dargp-less-than)))
+                                  dargp-less-than
+                                  all-<-when-not-consp
+                                  consp-of-car-when-pseudo-dagp
+                                  default-<-1)))
 
        (local (in-theory (enable ;;consp-of-assoc-equal-when-node-replacement-alistp
                           ;;dargp-of-cdr-of-assoc-equal-when-node-replacement-alistp
