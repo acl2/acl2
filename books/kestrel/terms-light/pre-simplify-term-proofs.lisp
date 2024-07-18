@@ -18,9 +18,9 @@
 (include-book "lambdas-closed-in-termp")
 (include-book "simplify-ors-proofs")
 (include-book "drop-unused-lambda-bindings-proofs")
-(include-book "substitute-constants-in-lambdas-proofs")
 (include-book "drop-trivial-lambdas-proofs")
 (local (include-book "substitute-unnecessary-lambda-vars2-proofs"))
+(local (include-book "substitute-constants-in-lambdas2-proofs"))
 
 ;; switches the evaluator
 (defthm drop-unused-lambda-bindings-correct-for-if-and-not-eval
@@ -35,15 +35,15 @@
                         (empty-eval-list if-and-not-eval-list)))))
 
 ;; switches the evaluator
-(defthm substitute-constants-in-lambdas-correct-for-if-and-not-eval
+(defthm substitute-constants-in-lambdas2-correct-for-if-and-not-eval
   (implies (and (pseudo-termp term)
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (equal (if-and-not-eval (substitute-constants-in-lambdas term) alist)
+           (equal (if-and-not-eval (substitute-constants-in-lambdas2 term) alist)
                   (if-and-not-eval term alist)))
   :hints (("Goal" :use (:functional-instance
-                        substitute-constants-in-lambdas-correct
+                        substitute-constants-in-lambdas2-correct
                         (empty-eval if-and-not-eval)
                         (empty-eval-list if-and-not-eval-list)))))
 
@@ -72,7 +72,7 @@
   :hints (("Goal" :use (:functional-instance
                         drop-trivial-lambdas-correct
                         (empty-eval if-and-not-eval)
-                        (empty-eval-list if-and-not-eval-list)))))
+                         (empty-eval-list if-and-not-eval-list)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
