@@ -10,12 +10,9 @@
 
 (in-package "ACL2")
 
-;; STATUS: Working. Need to reduce dependencies.
+;; STATUS: Working. Need to reduce dependencies?
 
 (include-book "drop-trivial-lambdas")
-
-(local (include-book "make-lambda-application-simple-proof")) ;; fixme reduce, for equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special
-
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "substitute-constants-in-lambdas")
 (include-book "lambdas-closed-in-termp")
