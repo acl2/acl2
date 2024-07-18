@@ -139,7 +139,7 @@
     :flag substitute-constants-in-lambdas-lst)
   :hints (("Goal" ;:expand (PSEUDO-TERMP TERM)
            :do-not '(generalize eliminate-destructors)
-           :expand   (no-nils-in-termp (cons (car term) (substitute-constants-in-lambdas-lst (cdr term))))
+           :expand  (no-nils-in-termp (cons (car term) (substitute-constants-in-lambdas-lst (cdr term))))
            :in-theory (e/d (substitute-constants-in-lambdas
                             substitute-constants-in-lambdas-lst
                             ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF

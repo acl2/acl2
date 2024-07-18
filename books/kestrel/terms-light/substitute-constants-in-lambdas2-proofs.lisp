@@ -113,7 +113,7 @@
                               ;; make-lambda-terms-simple
                               ;; ;;make-lambda-term-simple
 ;                            true-listp-when-symbol-alistp
-                              )
+                              no-nils-in-termp)
                              (;; pairlis$
                               ;; set-difference-equal
                               ))))))
@@ -795,6 +795,7 @@
                               lookup-equal-of-pairlis$-of-empty-eval-list
                               lambdas-closed-in-termp
                               cdr-of-assoc-equal-becomes-lookup-equal ;lookup-equal
+                              no-nils-in-termp
                               )
                              (empty-eval-of-fncall-args-back
                               empty-eval-list-of-map-lookup-equal-of-pairlis$
