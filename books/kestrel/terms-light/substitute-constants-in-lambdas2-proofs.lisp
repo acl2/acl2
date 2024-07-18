@@ -30,7 +30,10 @@
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/list-sets" :dir :system))
 
-(local (in-theory (enable handle-constant-lambda-formals)))
+(local (in-theory (e/d (;handle-constant-lambda-formals
+                        )
+                       (quote-listp
+                        myquotep))))
 
 ;clash
 (local
@@ -50,30 +53,35 @@
 (local
   (defthm not-member-equal-of-mv-nth-0-of-handle-constant-lambda-formals
     (implies (not (member-equal formal formals))
-             (not (member-equal formal (mv-nth 0 (handle-constant-lambda-formals formals args)))))))
+             (not (member-equal formal (mv-nth 0 (handle-constant-lambda-formals formals args)))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (local
   (defthm no-duplicatesp-equal-of-mv-nth-0-of-handle-constant-lambda-formals
     (implies (no-duplicatesp-equal formals)
-             (no-duplicatesp-equal (mv-nth 0 (handle-constant-lambda-formals formals args))))))
+             (no-duplicatesp-equal (mv-nth 0 (handle-constant-lambda-formals formals args))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (local
   (defthm no-nils-in-termsp-of-mv-nth-1-of-handle-constant-lambda-formals
     (implies (and (no-nils-in-termsp args)
                   (equal (len formals) (len args)))
-             (no-nils-in-termsp (mv-nth 1 (handle-constant-lambda-formals formals args))))))
+             (no-nils-in-termsp (mv-nth 1 (handle-constant-lambda-formals formals args))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (local
   (defthm lambdas-closed-in-termsp-of-mv-nth-1-of-handle-constant-lambda-formals
     (implies (and (lambdas-closed-in-termsp args)
                   (equal (len formals) (len args)))
-             (lambdas-closed-in-termsp (mv-nth 1 (handle-constant-lambda-formals formals args))))))
+             (lambdas-closed-in-termsp (mv-nth 1 (handle-constant-lambda-formals formals args))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (local
   (defthm no-duplicate-lambda-formals-in-termsp-of-mv-nth-1-of-handle-constant-lambda-formals
     (implies (and (no-duplicate-lambda-formals-in-termsp args)
                   (equal (len formals) (len args)))
-             (no-duplicate-lambda-formals-in-termsp (mv-nth 1 (handle-constant-lambda-formals formals args))))))
+             (no-duplicate-lambda-formals-in-termsp (mv-nth 1 (handle-constant-lambda-formals formals args))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 ;; (local
 ;;   (defthm subsetp-equal-of-free-vars-in-terms-of-mv-nth-1-of-handle-constant-lambda-formals
@@ -204,7 +212,8 @@
 (defthm len-of-mv-nth-0-of-handle-constant-lambda-formals-linear
   (<= (len (mv-nth 0 (handle-constant-lambda-formals formals args)))
       (len formals))
-  :rule-classes :linear)
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable handle-constant-lambda-formals))))
 
 ;(local (include-book "kestrel/lists-light/cdr" :dir :system)) ; looped
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -254,7 +263,8 @@
                   (pseudo-term-listp args)
                   (equal (len formals) (len args)))
              (subsetp-equal (mv-nth 1 (handle-constant-lambda-formals formals args))
-                            args))))
+                            args))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (defthm subsetp-equal-of-free-vars-in-terms-and-free-vars-in-terms
   (implies (subsetp-equal x y)
@@ -265,11 +275,13 @@
   (defthm free-vars-in-terms-of-mv-nth-1-of-handle-constant-lambda-formals
     (implies (equal (len formals) (len args))
              (equal (free-vars-in-terms (mv-nth 1 (handle-constant-lambda-formals formals args)))
-                    (free-vars-in-terms args)))))
+                    (free-vars-in-terms args)))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (local
   (defthm alistp-of-mv-nth-2-of-handle-constant-lambda-formals
-    (alistp (mv-nth 2 (handle-constant-lambda-formals formals args)))))
+    (alistp (mv-nth 2 (handle-constant-lambda-formals formals args)))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 
@@ -279,7 +291,7 @@
              (equal (strip-cars (mv-nth 2 (handle-constant-lambda-formals formals args)))
                     (set-difference-equal formals
                                           (mv-nth 0 (handle-constant-lambda-formals formals args)))))
-    :hints (("Goal" :in-theory (enable set-difference-equal)))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals set-difference-equal)))))
 
 
 ;; (defthm-flag-substitute-constants-in-lambdas2-aux
@@ -362,7 +374,7 @@
                   )
              (subsetp-equal (set-difference-equal formals (strip-cars (mv-nth 2 (handle-constant-lambda-formals formals args))))
                             (free-vars-in-terms args)))
-    :hints (("Goal" :in-theory (enable set-difference-equal free-vars-in-terms)))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals set-difference-equal free-vars-in-terms)))))
 
 (local
   (defthm subsetp-equal-helper-when-all-formals-are-constants-or-trivial-2-gen
@@ -509,7 +521,8 @@
 (local
   (defthm not-member-equal-of-mv-nth-2-of-handle-constant-lambda-formals
     (implies (not (member-equal formal formals))
-             (not (member-equal formal (strip-cars (mv-nth 2 (handle-constant-lambda-formals formals args))))))))
+             (not (member-equal formal (strip-cars (mv-nth 2 (handle-constant-lambda-formals formals args))))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (local
   (defthm lookup-equal-of-pairlis$-of-mv-nth-0-of-handle-constant-lambda-formals-and-mv-nth-1-of-handle-constant-lambda-formals
@@ -519,7 +532,8 @@
                                                 (mv-nth 1 (handle-constant-lambda-formals formals args))))
                     (if (member-equal var (mv-nth 0 (handle-constant-lambda-formals formals args)))
                         (lookup-equal var (pairlis$ formals args))
-                      nil)))))
+                      nil)))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (defthm lookup-equal-of-pairlis$-of-unquote-list
   (equal (lookup-equal b (pairlis$ formals (unquote-list args)))
@@ -531,7 +545,8 @@
     (implies (and (member-equal formal (strip-cars (mv-nth 2 (handle-constant-lambda-formals formals args))))
                   (no-duplicatesp-equal formals))
              (equal (lookup-equal formal (pairlis$ formals args))
-                    (lookup-equal formal (mv-nth 2 (handle-constant-lambda-formals formals args)))))))
+                    (lookup-equal formal (mv-nth 2 (handle-constant-lambda-formals formals args)))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (local
   (defthm myquotep-of-lookup-equal-of-mv-nth-2-of-handle-constant-lambda-formals
@@ -541,16 +556,15 @@
                     (if (member-equal key (strip-cars (mv-nth 2 (handle-constant-lambda-formals formals args))))
                         t
                       nil)))
-    :hints (("Goal" :in-theory (disable ;myquotep
-                                 )))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (local
   (defthm helper3
     (implies (and (member-equal formal formals)
-                  (no-duplicatesp-equal formals)
-                  )
+                  (no-duplicatesp-equal formals))
              (iff (member-equal formal (strip-cars (mv-nth 2 (handle-constant-lambda-formals formals args))))
-                  (not (member-equal formal (mv-nth 0 (handle-constant-lambda-formals formals args))))))))
+                  (not (member-equal formal (mv-nth 0 (handle-constant-lambda-formals formals args))))))
+    :hints (("Goal" :in-theory (enable handle-constant-lambda-formals)))))
 
 (local
   (defthm helper4
@@ -664,7 +678,7 @@
              (equal (lookup-equal formal (pairlis$ formals args))
                     formal))
     :hints (("Goal" :use subsetp-equal-helper-when-all-formals-are-constants-or-trivial
-             :in-theory (disable subsetp-equal-helper-when-all-formals-are-constants-or-trivial)))))
+             :in-theory (e/d (handle-constant-lambda-formals) (subsetp-equal-helper-when-all-formals-are-constants-or-trivial))))))
 
 
 ;; Correctness theorem helper
@@ -786,8 +800,8 @@
                               substitute-constants-in-lambdas2-aux-lst
                               empty-eval-of-fncall-args
 ;true-listp-when-symbol-alistp
-                              no-duplicate-lambda-formals-in-termp
-                              no-duplicate-lambda-formals-in-termsp
+;                              no-duplicate-lambda-formals-in-termp
+;                              no-duplicate-lambda-formals-in-termsp
                               map-lookup-equal-of-pairlis$-of-empty-eval-list
                               alistp-when-symbol-alistp
                               alists-equiv-on-when-agree-on-bad-guy
