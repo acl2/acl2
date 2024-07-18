@@ -36,7 +36,9 @@
                                                x86)))
                                   (logand selector #xFFF8)))
               ((unless (canonical-address-p descriptor-addr)) x86)
-              ((mv & descriptor x86) (rml128 descriptor-addr :r x86))
+              ((mv & descriptor x86) (;; regular segment descriptors are 64-bits long but system segment descriptors are 128-bits long
+				      ,(if regular-segment? 'rml64 'rml128)
+				       descriptor-addr :r x86))
               (x86 (,!reg-visiblei *cs* cs x86))
               (x86 (,!reg-visiblei seg-reg selector x86))
               (limit (logior (logand descriptor #xFFFF)
