@@ -2263,6 +2263,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum declor/absdeclor
+  :short "Fixtype of declarators or abstract declarators."
+  (:declor ((unwrap declor)))
+  (:absdeclor ((unwrap absdeclor)))
+  :pred declor/absdeclor-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum amb?-expr/tyname
   :short "Fixtype of possibly ambiguous expressions or type names."
   :long
