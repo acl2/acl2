@@ -14,7 +14,7 @@
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
-(include-book "kestrel/evaluators/empty-eval" :dir :system) ; todo: split out into a proofs book
+(include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "non-trivial-formals")
 (include-book "trivial-formals")
 (include-book "sublis-var-simple")
@@ -39,8 +39,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "drop-unused-lambda-bindings-proofs")) ; todo: for subsetp-equal-of-free-vars-in-terms-of-map-lookup-equal-of-pairlis$
-(local (include-book "make-lambda-application-simple-proof")) ;todo, for empty-eval-of-lookup-equal-of-pairlis$
-(local (include-book "subst-var-alt-proofs")) ; for the bad guy rule
+(local (include-book "subst-var-alt-proofs")) ; todo, for pairlis$-of-empty-eval-list, which introduces empty-eval-cdrs -- why?
 
 (local (in-theory (enable sublis-var-simple-correct-3)))
 
