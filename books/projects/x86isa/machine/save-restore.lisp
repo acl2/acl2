@@ -1,5 +1,9 @@
 (in-package "X86ISA")
 
+;; I apologize to anyone who has to read this code. I returned to this code
+;; well after writing it to fix some bugs in it, and while I did manage to fix
+;; the bugs, I have realized I have no idea how this works.
+
 (include-book "state")
 
 (defun without-docs (data)
@@ -27,20 +31,17 @@
 (defmacro serialize-arr (accessor len)
   (serialize-arr-fn accessor len 0))
 
-(defun deserialize-arr-fn (fld-name updater len idx)
-  (declare (xargs :mode :program))
-  (if (equal len idx)
-    'x86
-    `(b* (((unless (consp val)) x86)
-          ((list* ?el ?val) val)
-          (x86 (,updater ,idx ,fld-name x86)))
-         ,(deserialize-arr-fn fld-name updater len (1+ idx)))))
-
 (defun deserializer-name (fld-name)
   (acl2::packn (list 'deserialize- fld-name)))
 
+(defun rev-if-list (x)
+  (declare (xargs :guard t))
+  (if (true-listp x)
+    (reverse x)
+    x))
+
 (defmacro deserialize-arr (fld-name len)
-  `(,(deserializer-name fld-name) ,len obj x86))
+  `(,(deserializer-name fld-name) ,len (rev-if-list val) x86))
 
 (defun field-array-length (field)
   (declare (xargs :mode :program))
@@ -227,7 +228,9 @@
     (b* (((when (equal size 0)) (mv x86 state))
         ((mv byt state) (read-byte$ channel state))
         ((unless byt) (mv x86 state))
-        (x86 (!memi (1- size) byt x86)))
+        (x86 (if (not (= byt 0))
+               (!memi (1- size) byt x86)
+               x86)))
        (read-mem-from-channel (1- size) channel x86 state))
     (mv x86 state))
   ///
