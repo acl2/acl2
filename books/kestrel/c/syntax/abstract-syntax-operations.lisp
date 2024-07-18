@@ -236,6 +236,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-paramdeclor
+  :short "An irrelevant parameter declarator."
+  :type paramdeclorp
+  :body (paramdeclor-none))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-tyname
   :short "An irrelevant type name."
   :type tynamep
