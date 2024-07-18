@@ -1098,17 +1098,9 @@
 (define print-stringlit ((stringlit stringlitp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a string literal."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We ensure that there is at least one character or escape sequence."))
   (b* (((stringlit stringlit) stringlit)
        (pstate (print-eprefix-option stringlit.prefix? pstate))
        (pstate (print-astring "\"" pstate))
-       ((unless stringlit.schars)
-        (raise "Misusage error: ~
-                the character constant has no characters or escape sequences.")
-        pstate)
        (pstate (print-s-char-list stringlit.schars pstate))
        (pstate (print-astring "\"" pstate)))
     pstate)
@@ -2643,11 +2635,14 @@
   (attrib-case
    attr
    :name (print-ident attr.name pstate)
-   :name-param (b* ((pstate (print-ident attr.name pstate))
-                    (pstate (if attr.param
-                                (print-expr-list attr.param pstate)
-                              pstate)))
-                 pstate))
+   :name-param
+   (b* ((pstate (print-ident attr.name pstate))
+        (pstate (print-astring "(" pstate))
+        (pstate (if attr.param
+                    (print-expr-list attr.param pstate)
+                  pstate))
+        (pstate (print-astring ")" pstate)))
+     pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
