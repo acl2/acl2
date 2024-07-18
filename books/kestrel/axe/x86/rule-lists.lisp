@@ -756,7 +756,7 @@
     x86isa::evex-prefixes->byte3$inline-constant-opener
     x86isa::!evex-prefixes->byte0$inline-constant-opener
 
-    x86isa::evex-byte1->mm$inline-constant-opener
+    x86isa::evex-byte1->mmm$inline-constant-opener
     x86isa::evex-byte1->res$inline-constant-opener
     x86isa::evex-byte1->r-prime$inline-constant-opener
     x86isa::evex-byte1->b$inline-constant-opener

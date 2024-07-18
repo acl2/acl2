@@ -248,7 +248,7 @@
 (def-constant-opener x86isa::vex-opcode-modr/m-p$inline)
 (def-constant-opener x86isa::vex-prefixes-map-p$inline)
 
-(def-constant-opener x86isa::evex-byte1->mm$inline)
+(def-constant-opener x86isa::evex-byte1->mmm$inline)
 (def-constant-opener x86isa::evex-byte1->res$inline)
 (def-constant-opener x86isa::evex-byte1->r-prime$inline)
 (def-constant-opener x86isa::evex-byte1->b$inline)

@@ -378,21 +378,22 @@
      :rule-classes nil))
 
   (defbitstruct evex-byte1
-    ((mm 2bits
-         "Identical to low two bits of VEX.m-mmmm.")
-     (res 2bits "Reserved; must be zero." :default '0)
+    ((mmm 3bits
+          "Access to up to 8 decoding maps (currently only 1, 2, 3, 5, 6).
+           Compressed legacy escape -- low two bits identical to VEX.pp.")
+     (res bitp "Reserved; must be zero." :default '0)
      (r-prime bitp
               "High-16 register specifier modifier -- combine with EVEX.R and
-              ModR/M.reg.")
+               ModR/M.reg.")
 
      ;; R, X, B are the next-8 register specifier
      ;; modifiers --- combine with ModR/M.reg,
      ;; ModR/M.r/m (base, index/vidx).
      (b bitp)
      (x bitp "Must be set to @('1') in 32-bit mode, otherwise instruction is
-         BOUND.")
+              BOUND.")
      (r bitp "Must be set to @('1') in 32-bit mode. otherwise instruction is
-      BOUND."))
+              BOUND."))
     :inline t
     :msb-first nil
     :xvar byte1)
@@ -401,18 +402,18 @@
     ((pp 2bits "Compressed legacy escape -- identical to low two bits of VEX.pp.")
      (res bitp "Reserved; Must be one." :default '1)
      (vvvv 4bits "NDS register specifier --- same as VEX.vvvv.")
-     (w bitp "Osize promotion/opcode extension"))
+     (w bitp "Operand size promotion / opcode extension."))
     :inline t
     :msb-first nil)
 
   (defbitstruct evex-byte3
-    ((aaa 3bits "Embedded opmask register specifier")
+    ((aaa 3bits "Embedded opmask register specifier.")
      (v-prime bitp
               "High-16 NDS/VIDX register specifier -- combine with EVEX.vvvv or
-      when VSIB present")
-     (b bitp "Broadcast/RC/SAE Context")
-     (vl/rc 2bits "Vector length/RC (denoted as L'L in the Intel manuals")
-     (z bitp "Zeroing/Merging"))
+               when VSIB present.")
+     (b bitp "Broadcast/RC/SAE Context.")
+     (vl/rc 2bits "Vector length/RC (denoted as L'L in the Intel manuals).")
+     (z bitp "Zeroing/Merging."))
     :inline t
     :msb-first nil)
 
@@ -514,7 +515,7 @@
 ;; Rflags:
 
 (defbitstruct rflagsBits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 1, Section 3.4.3</p>"
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 1, Section 3.4.3</p>"
   ((cf bitp)      ; carry flag
    (res1 bitp :default '1)    ; 1 (reserved)
    (pf bitp)      ; parity flag
@@ -580,18 +581,18 @@
 ;; Control Registers:
 
 (defbitstruct cr0Bits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5</p>"
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
   ((pe bitp        "Protection Enable")
    (mp bitp        "Monitor coProcessor")
    (em bitp        "Emulation Bit")
    (ts bitp        "Task Switched")
    (et bitp        "Extension Type")
    (ne bitp        "Numeric Error")
-   (res1 10bits "0 (Reserved)")
+   (res1 10bits    "0 (Reserved)")
    (wp bitp        "Write Protect")
-   (res2 bitp     "0 (Reserved)")
+   (res2 bitp      "0 (Reserved)")
    (am bitp        "Alignment Mask")
-   (res3 10bits  "0 (Reserved)")
+   (res3 10bits    "0 (Reserved)")
    (nw bitp        "Not Write-through")
    (cd bitp        "Cache Disable")
    (pg bitp        "Paging Bit"))
@@ -605,13 +606,16 @@
    :rule-classes nil))
 
 (defbitstruct cr3Bits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5</p>"
-  ((res1 3bits)  ;; 0
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
+  ((res1 3bits)    ;; 0
    (pwt bitp)      ;; Page-Level Writes Tranparent
    (pcd bitp)      ;; Page-Level Cache Disable
-   (res2 7bits)  ;; 0
-   (pdb 40bits)   ;; Page Directory Base
-   (res3 12bits) ;; Reserved (must be zero)
+   (res2 7bits)    ;; 0
+   (pdb 40bits)    ;; Page Directory Base
+   (res3 12bits)   ;; Reserved (must be zero)
+   ;; The reason why res3 are 12 reserved bits is that
+   ;; CR3[63:MAXPHYADDR] must be 0 (see Intel Manual Vol. 3A Section 2.5),
+   ;; and in our model we have 52-bit physical addresses.
    )
   :msb-first nil
   :inline t)
@@ -623,7 +627,7 @@
    :rule-classes nil))
 
 (defbitstruct cr4Bits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5</p>"
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
   ((vme bitp)        ;; Virtual-8086 Mode Extensions
    (pvi bitp)        ;; Protected-Mode Virtual Interrupts
    (tsd bitp)        ;; Time-Stamp Disable
@@ -639,20 +643,20 @@
    (la57 bitp)       ;; enables 5-level paging
    (vmxe bitp)       ;; VMX Enable Bit
    (smxe bitp)       ;; SMX Enable Bit
-   (res1 bitp)      ;; 0 (Reserved)
+   (res1 bitp)       ;; 0 (Reserved)
    (fsgsbase bitp)   ;; FSGSBase-Enable Bit (Enables the
-   ;; instructions RDFSBASE, RDGSBASE,
-   ;; WRFSBASE, and WRGSBASE.)
-   (pcide bitp)   ;; PCID-Enable Bit
-   (osxsave bitp) ;; XSAVE and Processor Extended States
-   ;; Enable Bit
-   (res2 bitp) ;; 0 (Reserved)
-   (smep bitp)  ;; Supervisor Mode Execution Prevention
-   (smap bitp)
-   ;;     (:cr4-pke        22  1) ;; Protection Key Enable
-   ;; Bit
-   ;;  (0               22 42) ;; 0 (Reserved)
-
+                     ;; instructions RDFSBASE, RDGSBASE,
+                     ;; WRFSBASE, and WRGSBASE.)
+   (pcide bitp)      ;; PCID-Enable Bit
+   (osxsave bitp)    ;; XSAVE and Processor Extended States
+   (kl bitp)         ;; Key Locker Enable Bit
+   (smep bitp)       ;; Supervisor Mode Execution Prevention
+   (smap bitp)       ;; Supervisor Mode Access Prevention
+   (pke bitp)        ;; Protection keys for user-mode pages
+   (cet bitp)        ;; Control Flow Enforcement Technology
+   (pks bitp)        ;; Protection keys for supervisor-mode pages
+   (uintr bitp)      ;; User interrupts enable bit
+   ;; The remaining bits are reserved.
    )
   :msb-first nil
   :inline t)
@@ -662,12 +666,12 @@
    (iff (cr4Bits-p x)
         (unsigned-byte-p
          ;; 64 --- A smaller value here avoids bignum creation.
-         22 x))
+         26 x))
    :rule-classes nil))
 
-; Intel manual, Mar'17, Vol. 3A, Section 10.8.6
+; Intel manual, Dec'23, Vol. 3A, Section 11.8.6
 (defbitstruct cr8Bits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5</p>"
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
   (
    ;; Task Priority Level (width = 4). This sets
    ;; the threshold value corresponding to the
@@ -676,10 +680,8 @@
    ;; are enabled. This field is available in 64-
    ;; bit mode. A value of 15 means all
    ;; interrupts will be disabled.
-
    (cr8-trpl 4bits) ;; Task Priority Level
-   ;;  (0                4 59) ;; 0 (Reserved)
-
+   ;; The remaining bits are reserved.
    )
   :msb-first nil
   :inline t)
@@ -695,13 +697,13 @@
    :rule-classes nil))
 
 (defbitstruct xcr0Bits
-  :long "<p>Source: Intel manual, May'18, Vol. 3A, Figure 2-8</p>"
+  :long "<p>Source: Intel manual, Dec'23, Vol. 3A, Figure 2-8</p>"
   ;; Software can access XCR0 only if CR4.OSXSAVE[bit 18] = 1. (This bit
   ;; is also readable as CPUID.01H:ECX.OSXSAVE[bit 27].)
 
   ((fpu/mmx-state bitp) ;; This bit must be 1.  An attempt
-   ;; to write 0 to this bit causes a
-   ;; #GP exception.
+                        ;; to write 0 to this bit causes a
+                        ;; #GP exception.
    (sse-state bitp)
    (avx-state bitp)
    (bndreg-state bitp)
@@ -711,7 +713,10 @@
    (hi16_zmm-state bitp)
    (res1 bitp) ;; 0 (Reserved)
    (pkru-state bitp)
-   (res2 54bits) ;; 0 (Reserved)
+   (res2 7bits) ;; 0 (Reserved)
+   (tileconfig-state bitp)
+   (tiledata-state bitp)
+   (res4 45bits)
    )
   :msb-first nil
   :inline t)
@@ -726,19 +731,18 @@
 
 ;; Model-specific Registers:
 
-;; IA32_EFER (Intel Manual, Feb-14, Vol. 3A, Section 2.2.1):
 (defbitstruct ia32_eferBits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.2.1</p>"
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.2.1</p>"
   ((sce bitp)    ;; Syscall Enable (R/W) (enables SYSCALL/SYSRET)
-   (res1 7bits) ;; Reserved?
+   (res1 7bits)  ;; Reserved?
    (lme bitp)    ;; Long Mode Enabled (R/W)
    (res2 bitp)   ;; Reserved?
    (lma bitp)    ;; Long Mode Active (R)
    (nxe bitp)    ;; Execute Disable Bit Enable (R/W)
-   ;; (Enables page access restriction by
-   ;; preventing instruction fetches from
-   ;; PAE pages with the XD bit set)
-;   (0               12 52) ;; Reserved (must be zero)
+                 ;; (Enables page access restriction by
+                 ;; preventing instruction fetches from
+                 ;; PAE pages with the XD bit set)
+   ;; The remaining bits are reserved.
    )
   :msb-first nil
   :inline t)
