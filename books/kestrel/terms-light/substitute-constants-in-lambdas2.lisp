@@ -11,13 +11,16 @@
 
 (in-package "ACL2")
 
-(include-book "substitute-constants-in-lambdas") ; todo
+(include-book "make-lambda-with-hint")
+(include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system) ; todo: reduce
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/list-sets" :dir :system))
+
+(local (in-theory (disable mv-nth)))
 
 ;move
 (defun strong-quote-listp (items)

@@ -14,6 +14,7 @@
 
 (include-book "substitute-constants-in-lambdas2")
 (include-book "lambdas-closed-in-termp")
+(include-book "no-nils-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (local (include-book "empty-eval-helpers"))
