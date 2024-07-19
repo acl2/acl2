@@ -2526,7 +2526,7 @@
     (b* (((unless (mbt (consp structdeclors))) (pristate-fix pstate))
          (pstate (print-structdeclor (car structdeclors) pstate))
          ((when (endp (cdr structdeclors))) pstate)
-         (pstate (print-astring " " pstate)))
+         (pstate (print-astring ", " pstate)))
       (print-structdeclor-list (cdr structdeclors) pstate))
     :measure (structdeclor-list-count structdeclors))
 
