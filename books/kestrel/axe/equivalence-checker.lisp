@@ -9413,7 +9413,7 @@
        ;;         (strengthen-to-equality terms term-to-use fn formals prover-rule-alist invariant-call invariant-name state)
        ;;         (mv-let (new-terms2 defthm-names-for-new-terms2 state)
        ;;                 (strengthen-to-equality-signed-version terms term-to-use fn formals prover-rule-alist invariant-call invariant-name state)
-       ;;                 ;;fffixme add more strenghtenings here! what about rewriting the terms assuming the others and the negated exit test?  might make stuff worse?
+       ;;                 ;;fffixme add more strengthenings here! what about rewriting the terms assuming the others and the negated exit test?  might make stuff worse?
        ;;                 ;;could do all the strengthenings and then call prove-final-claims on both the user-supplied and axe-supplied strengthenings?
        ;;                 (let ((stronger-invars (append extra-terms new-terms1 new-terms2)))
        ((when erp) (mv erp nil nil state))
