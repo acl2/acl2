@@ -359,6 +359,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-label
+  :short "An irrelevant label."
+  :type labelp
+  :body (label-default))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-stmt
   :short "An irrelevant statement."
   :type stmtp
