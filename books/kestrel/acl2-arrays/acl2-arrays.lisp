@@ -367,7 +367,7 @@
 ;fixme whitespace before and/or after isn't quite right
 ;does this do the right thing for very small arrays?
 ;prints the low elems-to-print elements
-(defun print-array2 (array-name array elem-count-to-print)
+(defun print-array (array-name array elem-count-to-print)
   (declare (type (integer 0 *) elem-count-to-print)
            (xargs :guard (implies (not (eql 0 elem-count-to-print))
                                   (and (symbolp array-name)

@@ -1581,7 +1581,7 @@
  ;;       (progn$ (cw "Clause miter literals: ~x0~%" literal-nodenums)
  ;;               (cw "Clause miter case: ~x0~%" (expressions-for-this-case literal-nodenums dag-array dag-len)) ;fixme just print this instead of consing it up?
  ;;               (cw "Clause miter literals:~%")
- ;;               ;; (print-array2 'dag-array dag-array dag-len)
+ ;;               ;; (print-array 'dag-array dag-array dag-len)
  ;;               (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
  ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
  ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
@@ -1803,7 +1803,7 @@
                                  (progn$ (cw "Literals:~%")
                                          (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
 ;(cw "parent array:~%")
-;(print-array2 'dag-parent-array dag-parent-array dag-len)
+;(print-array 'dag-parent-array dag-parent-array dag-len)
                                          ))
                             ;;splitting on nodenum (which is not a call of NOT):
                             ;;instead of proving the clause C, we will prove both (or (not nodenum) C) and (or nodenum C)

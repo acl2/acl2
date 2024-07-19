@@ -219,7 +219,7 @@
                             (progn$ (cw "(Failed to relieve axe-syntaxp hyp: ~x0 for ~x1.)~%" hyp rule-symbol)
                                     ;; (cw "(Alist: ~x0)~%" alist)
                                     ;; (cw "(DAG:~%")
-                                    ;; (print-array2 'dag-array dag-array dag-len)
+                                    ;; (print-array 'dag-array dag-array dag-len)
                                     ;; (cw ")~%")
                                     ))
                        (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))
@@ -420,7 +420,7 @@
                                                ;;print these better?:
                                                ;; (cw "(node equality assumptions: ~x0)~%" node-replacement-alist)
                                                ;; (cw "(DAG:~%")
-                                               ;; (print-array2 'dag-array dag-array dag-len)
+                                               ;; (print-array 'dag-array dag-array dag-len)
                                                ;; (cw ")")
                                                (cw ")~%")))
                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))))))))))))))

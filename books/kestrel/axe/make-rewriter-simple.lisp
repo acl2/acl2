@@ -650,7 +650,7 @@
                                      (progn$ (cw "(Failed to relieve axe-syntaxp hyp: ~x0 for ~x1.)~%" hyp rule-symbol)
                                              ;; (cw "(Alist: ~x0)~%" alist)
                                              ;; (cw "(DAG:~%")
-                                             ;; (print-array2 'dag-array dag-array dag-len)
+                                             ;; (print-array 'dag-array dag-array dag-len)
                                              ;; (cw ")~%")
                                              ))
                                 (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits node-replacement-array))))
@@ -800,7 +800,7 @@
                                                        (if (consp relevant-nodes)
                                                            (print-dag-array-nodes-and-supporters 'dag-array dag-array dag-len relevant-nodes)
                                                          (cw "elided"))
-                                                       ;; (print-array2 'dag-array dag-array dag-len)
+                                                       ;; (print-array 'dag-array dag-array dag-len)
                                                        (cw "))~%"))))
                                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits node-replacement-array))))))))))))))
 

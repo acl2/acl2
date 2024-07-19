@@ -786,7 +786,7 @@
 ;;             (prog2$ (if (and print-interval
 ;;                              (equal 0 (mod dag-len print-interval)))
 ;; ;                          nil
-;;                         (print-array2 'dag-array dag-array (+ -1 dag-len) ) ;
+;;                         (print-array 'dag-array dag-array (+ -1 dag-len) ) ;
 ;; ;                          (cw "Adding node ~x0 to dag: ~x1.~%" dag-len (array-to-alist 'dag-array dag-array dag-len))
 
 ;;                       (if (and (not dont-add-permanently)

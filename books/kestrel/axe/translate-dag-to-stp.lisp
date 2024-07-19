@@ -78,7 +78,7 @@
 (include-book "kestrel/file-io-light/write-strings-to-file-bang" :dir :system) ;; todo reduce, just used to clear a file
 (include-book "kestrel/file-io-light/read-file-into-character-list" :dir :system)
 ;(in-theory (disable revappend-removal)) ;caused problems (though this may be a better approach to adopt someday)
-(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system) ; for print-array2
+(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system) ; for print-array
 (local (include-book "kestrel/bv/bvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvmod" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system)) ;for character-listp-of-take
@@ -1016,7 +1016,7 @@
                   ;; meaningless:
                   (mv nil constant-array-info)))
               (mv translated-equality constant-array-info))
-          (prog2$ (print-array2 dag-array-name dag-array (max (if (natp lhs) (+ 1 lhs) 0) (if (natp rhs) (+ 1 rhs) 0)))
+          (prog2$ (print-array dag-array-name dag-array (max (if (natp lhs) (+ 1 lhs) 0) (if (natp rhs) (+ 1 rhs) 0)))
                   ;;fixme print the assumptions? or the literals? or cut-nodenum-type-alist ?
                   ;;fixme be more flexible.  btw, nil is considered to be of type boolean, but what if it's being compared to a list of 0 size?
                   ;;fixme if the types are guaranteed to have disjoint value sets, we could just generate FALSE here, but watch out for things like nil (both a boolean and the empty list?)

@@ -1215,7 +1215,7 @@
 ;;                  (dag-array (make-into-array 'dag-array dag-lst))
 ;;                  (context-array (make-full-context-array 'dag-array dag-array dag-len)))
 ;;             (prog2$ (cw ")~%")
-;;                     (print-array2 'context-array context-array dag-len)))))
+;;                     (print-array 'context-array context-array dag-len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
