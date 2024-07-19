@@ -2682,7 +2682,8 @@
           separated by single spaces."
   (b* (((unless (mbt (consp attrspecs))) (pristate-fix pstate))
        (pstate (print-attrib-spec (car attrspecs) pstate))
-       ((when (endp (cdr attrspecs))) pstate))
+       ((when (endp (cdr attrspecs))) pstate)
+       (pstate (print-astring " " pstate)))
     (print-attrib-spec-list (cdr attrspecs) pstate))
   :hooks (:fix))
 

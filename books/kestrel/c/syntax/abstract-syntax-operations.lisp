@@ -359,6 +359,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-label
+  :short "An irrelevant label."
+  :type labelp
+  :body (label-default))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-stmt
   :short "An irrelevant statement."
   :type stmtp
@@ -370,6 +377,13 @@
   :short "An irrelevant possibly ambiguous declaration or statement."
   :type amb?-decl/stmt-p
   :body (amb?-decl/stmt-stmt (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-decl/stmt
+  :short "An irrelevant declaration or statement."
+  :type decl/stmt-p
+  :body (decl/stmt-decl (irr-decl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
