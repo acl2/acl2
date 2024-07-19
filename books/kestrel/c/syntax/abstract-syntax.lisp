@@ -2607,6 +2607,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum decl/stmt
+  :short "Fixtype of declarations or (expression) statements."
+  (:decl ((unwrap decl)))
+  (:stmt ((unwrap expr)))
+  :pred decl/stmt-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes stmts/blocks
   :short "Fixtypes of statements, blocks, and related entities
           [C:6.8] [C:A.2.3]."
