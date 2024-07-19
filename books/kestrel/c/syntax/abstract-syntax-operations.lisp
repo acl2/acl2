@@ -380,6 +380,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-decl/stmt
+  :short "An irrelevant declaration or statement."
+  :type decl/stmt-p
+  :body (decl/stmt-decl (irr-decl)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-block-item
   :short "An irrelevant block item."
   :type block-itemp
