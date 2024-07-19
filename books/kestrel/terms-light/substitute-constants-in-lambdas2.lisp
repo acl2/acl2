@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; Crucially, this pushes constants through intervening lambdas.
+
 (include-book "make-lambda-with-hint")
 (include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/myquotep" :dir :system)
@@ -92,7 +94,7 @@
                    ;; Since the lambda is closed, we completely replace the
                    ;; alist passed in when processing the lambda-body:
                    (let ((new-body (substitute-constants-in-lambdas2-aux body var-constant-alist)))
-                     (if (equal remaining-formals remaining-args) ; todo: put back? but this affects the free vars in the result, about which we have a theorem
+                     (if (equal remaining-formals remaining-args)
                          ;; avoid trivial lambda:
                          new-body
                        (cons-with-hint (make-lambda-with-hint remaining-formals new-body fn) remaining-args term)))))

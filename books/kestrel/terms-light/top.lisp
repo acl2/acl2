@@ -100,8 +100,6 @@
 (include-book "drop-unused-lambda-bindings") ; todo rename file
 (include-book "drop-unused-lambda-bindings-proofs") ; todo rename file
 ;; Handle lambda vars bound to constants:
-(include-book "substitute-constants-in-lambdas")
-(include-book "substitute-constants-in-lambdas-proofs")
 (include-book "substitute-constants-in-lambdas2")
 (include-book "substitute-constants-in-lambdas2-proofs")
 ;; For lambdas whose formals are the same as their args:
