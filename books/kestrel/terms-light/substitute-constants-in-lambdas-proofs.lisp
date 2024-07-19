@@ -38,14 +38,14 @@
 ;clash
 (local
   (defthm myquotep-of-cdr-of-assoc-equal
-    (implies (and (strong-quote-listp (strip-cdrs alist))
+    (implies (and (myquote-listp (strip-cdrs alist))
                   (assoc-equal key alist))
              (myquotep (cdr (assoc-equal key alist))))
     :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs)))))
 
 (local
-  (defthm myquotep-of-lookup-equal-when-strong-quote-listp-of-strip-cdrs
-    (implies (and (strong-quote-listp (strip-cdrs alist))
+  (defthm myquotep-of-lookup-equal-when-myquote-listp-of-strip-cdrs
+    (implies (and (myquote-listp (strip-cdrs alist))
                   (assoc-equal key alist))
              (myquotep (lookup-equal key alist)))
     :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs)))))
@@ -102,13 +102,13 @@
   (defthm-flag-substitute-constants-in-lambdas-aux
     (defthm no-nils-in-termp-of-substitute-constants-in-lambdas-aux
       (implies (and (no-nils-in-termp term)
-                    (strong-quote-listp (strip-cdrs alist))
+                    (myquote-listp (strip-cdrs alist))
                     (pseudo-termp term))
                (no-nils-in-termp (substitute-constants-in-lambdas-aux term alist)))
       :flag substitute-constants-in-lambdas-aux)
     (defthm no-nils-in-termsp-of-substitute-constants-in-lambdas-aux-lst
       (implies (and (no-nils-in-termsp terms)
-                    (strong-quote-listp (strip-cdrs alist))
+                    (myquote-listp (strip-cdrs alist))
                     (pseudo-term-listp terms))
                (no-nils-in-termsp (substitute-constants-in-lambdas-aux-lst terms alist)))
       :flag substitute-constants-in-lambdas-aux-lst)
@@ -297,7 +297,7 @@
 ;; (defthm-flag-substitute-constants-in-lambdas-aux
 ;;   (defthm free-vars-in-term-of-substitute-constants-in-lambdas-aux
 ;;     (implies (and (pseudo-termp term)
-;;                   (strong-quote-listp (strip-cdrs alist))
+;;                   (myquote-listp (strip-cdrs alist))
 ;;                   (no-duplicate-lambda-formals-in-termp term)
 ;;                   (alistp alist))
 ;;              (equal (free-vars-in-term (substitute-constants-in-lambdas-aux term alist))
@@ -306,7 +306,7 @@
 ;;     :flag substitute-constants-in-lambdas-aux)
 ;;   (defthm free-vars-in-terms-of-substitute-constants-in-lambdas-aux-lst
 ;;     (implies (and (pseudo-term-listp terms)
-;;                   (strong-quote-listp (strip-cdrs alist))
+;;                   (myquote-listp (strip-cdrs alist))
 ;;                   (no-duplicate-lambda-formals-in-termsp terms)
 ;;                   (alistp alist))
 ;;              (equal (free-vars-in-terms (substitute-constants-in-lambdas-aux-lst terms alist))
@@ -333,14 +333,14 @@
 ;; (defthm-flag-substitute-constants-in-lambdas-aux
 ;;   (defthm free-vars-in-term-of-substitute-constants-in-lambdas-aux
 ;;     (implies (and (pseudo-termp term)
-;;                   (strong-quote-listp (strip-cdrs alist))
+;;                   (myquote-listp (strip-cdrs alist))
 ;;                   (no-duplicate-lambda-formals-in-termp term))
 ;;              (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas-aux term alist))
 ;;                             (free-vars-in-term term)))
 ;;     :flag substitute-constants-in-lambdas-aux)
 ;;   (defthm free-vars-in-terms-of-substitute-constants-in-lambdas-aux-lst
 ;;     (implies (and (pseudo-term-listp terms)
-;;                   (strong-quote-listp (strip-cdrs alist))
+;;                   (myquote-listp (strip-cdrs alist))
 ;;                   (no-duplicate-lambda-formals-in-termsp terms))
 ;;              (subsetp-equal (free-vars-in-terms (substitute-constants-in-lambdas-aux-lst terms alist))
 ;;                             (free-vars-in-terms terms)))
@@ -394,7 +394,7 @@
     (defthm free-vars-in-term-of-substitute-constants-in-lambdas-aux
       (implies (and (pseudo-termp term)
                     (lambdas-closed-in-termp term)
-                    (strong-quote-listp (strip-cdrs alist))
+                    (myquote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termp term)
                     (alistp alist))
                (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas-aux term alist))
@@ -404,7 +404,7 @@
     (defthm free-vars-in-terms-of-substitute-constants-in-lambdas-aux-lst
       (implies (and (pseudo-term-listp terms)
                     (lambdas-closed-in-termsp terms)
-                    (strong-quote-listp (strip-cdrs alist))
+                    (myquote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termsp terms)
                     (alistp alist))
                (subsetp-equal (free-vars-in-terms (substitute-constants-in-lambdas-aux-lst terms alist))
@@ -438,7 +438,7 @@
 ;; (defthm free-vars-in-term-of-substitute-constants-in-lambdas-aux-gen
 ;;   (implies (and (subsetp-equal (free-vars-in-term term) x)
 ;;                 (pseudo-termp term)
-;;                 (strong-quote-listp (strip-cdrs alist))
+;;                 (myquote-listp (strip-cdrs alist))
 ;;                 (no-duplicate-lambda-formals-in-termp term)
 ;;                 (alistp alist) ; could drop
 ;;                 )
@@ -454,7 +454,7 @@
                                  x)
                   (pseudo-termp term)
                   (lambdas-closed-in-termp term)
-                  (strong-quote-listp (strip-cdrs alist))
+                  (myquote-listp (strip-cdrs alist))
                   (no-duplicate-lambda-formals-in-termp term)
                   (alistp alist) ; could drop
                   )
@@ -468,7 +468,7 @@
     (implies (and (not (consp (free-vars-in-term term)))
                   (pseudo-termp term)
                   (lambdas-closed-in-termp term)
-                  (strong-quote-listp (strip-cdrs alist))
+                  (myquote-listp (strip-cdrs alist))
                   (no-duplicate-lambda-formals-in-termp term)
                   (alistp alist) ; could drop
                   )
@@ -574,8 +574,8 @@
                             (mv-nth '0 (handle-constant-lambda-formals formals args))))
     :hints (("Goal" :in-theory (enable subsetp-equal handle-constant-lambda-formals set-difference-equal)))))
 
-(defthm lambdas-closed-in-termsp-when-strong-quote-listp
-  (implies (strong-quote-listp terms)
+(defthm lambdas-closed-in-termsp-when-myquote-listp
+  (implies (myquote-listp terms)
            (lambdas-closed-in-termsp terms)))
 
 (local
@@ -598,14 +598,14 @@
   (defthm-flag-substitute-constants-in-lambdas-aux
     (defthm lambdas-closed-in-termp-of-substitute-constants-in-lambdas-aux
       (implies (and (lambdas-closed-in-termp term)
-                    (strong-quote-listp (strip-cdrs alist))
+                    (myquote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termp term)
                     (pseudo-termp term))
                (lambdas-closed-in-termp (substitute-constants-in-lambdas-aux term alist)))
       :flag substitute-constants-in-lambdas-aux)
     (defthm lambdas-closed-in-termsp-of-substitute-constants-in-lambdas-aux-lst
       (implies (and (lambdas-closed-in-termsp terms)
-                    (strong-quote-listp (strip-cdrs alist))
+                    (myquote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termsp terms)
                     (pseudo-term-listp terms))
                (lambdas-closed-in-termsp (substitute-constants-in-lambdas-aux-lst terms alist)))
@@ -625,8 +625,8 @@
                               ;; set-difference-equal
                               ))))))
 
-(defthm no-duplicate-lambda-formals-in-termsp-when-strong-quote-listp
-  (implies (strong-quote-listp terms)
+(defthm no-duplicate-lambda-formals-in-termsp-when-myquote-listp
+  (implies (myquote-listp terms)
            (no-duplicate-lambda-formals-in-termsp terms))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp no-duplicate-lambda-formals-in-termp))))
 
@@ -640,14 +640,14 @@
   (defthm-flag-substitute-constants-in-lambdas-aux
     (defthm no-duplicate-lambda-formals-in-termp-of-substitute-constants-in-lambdas-aux
       (implies (and (no-duplicate-lambda-formals-in-termp term)
-                    (strong-quote-listp (strip-cdrs alist))
+                    (myquote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termp term)
                     (pseudo-termp term))
                (no-duplicate-lambda-formals-in-termp (substitute-constants-in-lambdas-aux term alist)))
       :flag substitute-constants-in-lambdas-aux)
     (defthm no-duplicate-lambda-formals-in-termsp-of-substitute-constants-in-lambdas-aux-lst
       (implies (and (no-duplicate-lambda-formals-in-termsp terms)
-                    (strong-quote-listp (strip-cdrs alist))
+                    (myquote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termsp terms)
                     (pseudo-term-listp terms))
                (no-duplicate-lambda-formals-in-termsp (substitute-constants-in-lambdas-aux-lst terms alist)))
@@ -689,7 +689,7 @@
                     (no-nils-in-termp term)
                     (no-duplicate-lambda-formals-in-termp term)
                     (lambdas-closed-in-termp term)
-                    (strong-quote-listp (strip-cdrs alist))
+                    (myquote-listp (strip-cdrs alist))
                     (alistp alist))
                (equal (empty-eval (substitute-constants-in-lambdas-aux term alist) a)
                       (empty-eval term (append (pairlis$ (strip-cars alist) (unquote-list (strip-cdrs alist)))
@@ -700,7 +700,7 @@
                     (no-nils-in-termsp terms)
                     (no-duplicate-lambda-formals-in-termsp terms)
                     (lambdas-closed-in-termsp terms)
-                    (strong-quote-listp (strip-cdrs alist))
+                    (myquote-listp (strip-cdrs alist))
                     (alistp alist))
                (equal (empty-eval-list (substitute-constants-in-lambdas-aux-lst terms alist) a)
                       (empty-eval-list terms (append (pairlis$ (strip-cars alist) (unquote-list (strip-cdrs alist)))

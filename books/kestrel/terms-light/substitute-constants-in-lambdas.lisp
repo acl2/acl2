@@ -25,12 +25,12 @@
 (local (in-theory (disable mv-nth)))
 
 ;move
-(defun strong-quote-listp (items)
+(defun myquote-listp (items)
   (declare (xargs :guard t))
   (if (atom items)
       (null items)
     (and (myquotep (first items))
-         (strong-quote-listp (rest items)))))
+         (myquote-listp (rest items)))))
 
 (local
   (defthm pseudo-termp-when-myquotep
@@ -63,7 +63,7 @@
            (and (symbol-listp (mv-nth 0 (handle-constant-lambda-formals formals args)))
                 (pseudo-term-listp (mv-nth 1 (handle-constant-lambda-formals formals args)))
                 (symbol-alistp (mv-nth 2 (handle-constant-lambda-formals formals args)))
-                (strong-quote-listp (strip-cdrs (mv-nth 2 (handle-constant-lambda-formals formals args))))
+                (myquote-listp (strip-cdrs (mv-nth 2 (handle-constant-lambda-formals formals args))))
                 (equal (len (mv-nth 1 (handle-constant-lambda-formals formals args)))
                        (len (mv-nth 0 (handle-constant-lambda-formals formals args))))))
   :hints (("Goal" :in-theory (enable handle-constant-lambda-formals))))
@@ -72,7 +72,7 @@
  (defund substitute-constants-in-lambdas-aux (term alist)
    (declare (xargs :guard (and (pseudo-termp term)
                                (symbol-alistp alist)
-                               (strong-quote-listp (strip-cdrs alist)))
+                               (myquote-listp (strip-cdrs alist)))
                    :verify-guards nil ;done below
                    ))
    (if (variablep term)
@@ -103,7 +103,7 @@
  (defund substitute-constants-in-lambdas-aux-lst (terms alist)
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (symbol-alistp alist)
-                               (strong-quote-listp (strip-cdrs alist)))))
+                               (myquote-listp (strip-cdrs alist)))))
    (if (endp terms)
        nil
      (cons-with-hint (substitute-constants-in-lambdas-aux (first terms) alist)
@@ -121,12 +121,12 @@
 (defthm-flag-substitute-constants-in-lambdas-aux
   (defthm pseudo-termp-of-substitute-constants-in-lambdas-aux
     (implies (and (pseudo-termp term)
-                  (strong-quote-listp (strip-cdrs alist)))
+                  (myquote-listp (strip-cdrs alist)))
              (pseudo-termp (substitute-constants-in-lambdas-aux term alist)))
     :flag substitute-constants-in-lambdas-aux)
   (defthm pseudo-termp-of-substitute-constants-in-lambdas-aux-lst
     (implies (and (pseudo-term-listp terms)
-                  (strong-quote-listp (strip-cdrs alist)))
+                  (myquote-listp (strip-cdrs alist)))
              (pseudo-term-listp (substitute-constants-in-lambdas-aux-lst terms alist)))
     :flag substitute-constants-in-lambdas-aux-lst)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
