@@ -80,6 +80,7 @@
 ;(include-book "coi/lists/nth-and-update-nth" :dir :system) ;drop?
 ;; (in-theory (disable LIST::UPDATE-NTH-EQUAL-REWRITE
 ;;                     LIST::FIX-OF-NTHCDR))
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))

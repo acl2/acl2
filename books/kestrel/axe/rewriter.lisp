@@ -39,6 +39,8 @@
 (include-book "kestrel/utilities/defconst-computed" :dir :system) ;not strictly needed
 (include-book "jvm/axe-syntaxp-evaluator-jvm") ; JVM-specific
 (include-book "jvm/axe-bind-free-evaluator-jvm") ; JVM-specific
+(include-book "kestrel/acl2-arrays/copy-array-vals" :dir :system)
+(local  (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; Axe contains a sophisticated rewriter capable of efficiently transforming
 ;; large terms by repeatedly applying local ``rewrite rules.''  The rewrite

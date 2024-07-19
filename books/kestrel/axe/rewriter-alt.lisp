@@ -33,6 +33,7 @@
 (include-book "rule-lists") ;todo: just for lookup-rules (can we do without that? - try to avoid using make-var-lookup-terms -- instead require the nested DAG alist to have a certain form and just do the lookup).
 (include-book "jvm/axe-syntaxp-evaluator-jvm")
 (include-book "jvm/axe-bind-free-evaluator-jvm")
+(include-book "kestrel/acl2-arrays/print-array" :dir :system)
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

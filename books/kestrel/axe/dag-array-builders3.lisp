@@ -25,7 +25,8 @@
 (include-book "make-dag-variable-alist")
 (include-book "memoization")
 (include-book "kestrel/utilities/erp" :dir :system)
-(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system) ; for print-array -- remove?
+(include-book "kestrel/acl2-arrays/print-array" :dir :system) ; could remove the call of print-array below?
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 (defund print-intervalp (print-interval)
   (declare (xargs :guard t))

@@ -25,6 +25,7 @@
 (include-book "worklists")
 (include-book "supporting-nodes") ;for tag-nodenums-with-name
 (include-book "merge-sort-less-than")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
