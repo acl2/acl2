@@ -35,7 +35,7 @@
              (no-nils-in-termsp (simplify-ors-lst terms)))
     :flag simplify-ors-lst)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable simplify-ors simplify-ors-lst))))
+           :in-theory (enable no-nils-in-termp no-nils-in-termsp simplify-ors simplify-ors-lst))))
 
 (defthm-flag-simplify-ors
   (defthm no-duplicate-lambda-formals-in-termp-of-simplify-ors

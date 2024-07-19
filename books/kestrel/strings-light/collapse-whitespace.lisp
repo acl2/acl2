@@ -1,4 +1,4 @@
-; Collapsing whitespace in strings
+; Collapsing/removing whitespace in strings
 ;
 ; Copyright (C) 2024 Kestrel Institute
 ;
@@ -78,6 +78,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Collapses all whitespace down to a single space.
 (defund collapse-whitespace-in-char-list (chars)
   (declare (xargs :guard (character-listp chars)))
   (replace-runs chars '(#\Space #\Tab #\Newline #\Return) '(#\Space)))
@@ -90,6 +91,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Collapses all whitespace down to a single space.
 (defund collapse-whitespace-in-string (string)
   (declare (xargs :guard (stringp string)
                   :type-prescription (stringp (collapse-whitespace-in-string string))))
@@ -100,3 +102,22 @@
 
 ;;                                        d")
 ;;        "a b c d")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Removes all whitespace.
+(defund remove-whitespace-in-char-list (chars)
+  (declare (xargs :guard (character-listp chars)))
+  (replace-runs chars '(#\Space #\Tab #\Newline #\Return) nil))
+
+(local
+  (defthm character-listp-of-remove-whitespace-in-char-list
+    (implies (character-listp chars)
+             (character-listp (remove-whitespace-in-char-list chars)))
+    :hints (("Goal" :in-theory (enable remove-whitespace-in-char-list)))))
+
+;; Removes all whitespace.
+(defund remove-whitespace-in-string (string)
+  (declare (xargs :guard (stringp string)
+                  :type-prescription (stringp (remove-whitespace-in-string string))))
+  (coerce (remove-whitespace-in-char-list (coerce string 'list)) 'string))
