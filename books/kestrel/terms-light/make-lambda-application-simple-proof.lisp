@@ -13,6 +13,7 @@
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "make-lambda-application-simple")
 (include-book "no-nils-in-termp")
+(include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
@@ -120,16 +121,6 @@
 ;;                             (INTERSECTION-EQUAL y z))
 ;;         nil))
 
-(defthm mv-nth-1-of-FILTER-FORMALS-AND-ACTUALS
-  (implies (no-duplicatesp-equal formals)
-           (equal (mv-nth 1 (filter-formals-and-actuals formals actuals vars))
-                  (map-lookup-equal (intersection-equal formals vars)
-                                    (pairlis$ formals actuals))))
-  :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS
-                                     INTERSECTION-EQUAL
-                                     map-lookup-equal
-                                     PAIRLIS$) )))
-
 ;; Correctness theorem for make-lambda-application-simple
 (defthm empty-eval-of-make-lambda-application-simple-correct-1
   (implies (and (pseudo-termp body)
@@ -189,8 +180,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "lambdas-closed-in-termp")
-
 (defthm lambdas-closed-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)
                 (symbol-listp formals)
@@ -199,9 +188,7 @@
                   (and (lambdas-closed-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals (free-vars-in-term body))))
                        (lambdas-closed-in-termp body))))
   :hints (("Goal" :do-not-induct t
-           :in-theory (enable make-lambda-application-simple
-                              lambdas-closed-in-termp ;todo
-                              ))))
+           :in-theory (enable make-lambda-application-simple))))
 
 (defthm no-nils-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)
@@ -211,9 +198,7 @@
                   (and (no-nils-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals (free-vars-in-term body))))
                        (no-nils-in-termp body))))
   :hints (("Goal" :do-not-induct t
-           :in-theory (enable make-lambda-application-simple
-                              no-nils-in-termp ;todo
-                              ))))
+           :in-theory (enable make-lambda-application-simple))))
 
 (defthm no-duplicate-lambda-formals-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)

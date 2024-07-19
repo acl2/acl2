@@ -589,7 +589,7 @@
                             empty-eval-of-cdr-of-assoc-equal
                             lookup-equal ; todo
                             pseudo-termp-when-symbolp
-                            )
+                            no-nils-in-termp)
                            (pseudo-termp
                             pairlis$
                             ;PAIRLIS$-OF-EMPTY-EVAL-LIST
@@ -608,7 +608,7 @@
                             empty-eval-of-cdr-of-assoc-equal
                             lookup-equal ; todo
                             pseudo-termp-when-symbolp
-                            )
+                            no-nils-in-termp)
                            (pseudo-termp
                             pairlis$
                             ;PAIRLIS$-OF-EMPTY-EVAL-LIST

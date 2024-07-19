@@ -99,9 +99,7 @@
     (implies (and (pseudo-term-listp terms)
                   (lambdas-closed-in-termsp terms))
              (lambdas-closed-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns)))
-    :flag substitute-unnecessary-lambda-vars-in-terms2)
-  :hints (("Goal" :in-theory (enable lambdas-closed-in-termp ;todo
-                                     ))))
+    :flag substitute-unnecessary-lambda-vars-in-terms2))
 
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm no-duplicate-lambda-formals-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
@@ -113,9 +111,7 @@
     (implies (and (pseudo-term-listp terms)
                   (no-duplicate-lambda-formals-in-termsp terms))
              (no-duplicate-lambda-formals-in-termsp (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns)))
-    :flag substitute-unnecessary-lambda-vars-in-terms2)
-  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp ;todo
-                                     ))))
+    :flag substitute-unnecessary-lambda-vars-in-terms2))
 
 ;; the point of this is to change the alist used for the lambda case (standard trick):
 (mutual-recursion

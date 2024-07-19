@@ -36,6 +36,18 @@
      (and (lambdas-closed-in-termp (first terms))
           (lambdas-closed-in-termsp (rest terms))))))
 
+(defthm lambdas-closed-in-termp-of-cons
+  (equal (lambdas-closed-in-termp (cons fn args))
+         (if (equal 'quote fn)
+             t
+           (and (lambdas-closed-in-termsp args)
+                (if (consp fn)
+                    (and (lambdas-closed-in-termp (lambda-body fn))
+                         (subsetp-equal (free-vars-in-term (lambda-body fn))
+                                        (lambda-formals fn)))
+                  t))))
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termp))))
+
 (defthm lambdas-closed-in-termsp-of-cdr
   (implies (lambdas-closed-in-termsp terms)
            (lambdas-closed-in-termsp (cdr terms)))

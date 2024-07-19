@@ -85,9 +85,6 @@
 (include-book "reconstruct-lets-in-term")
 (include-book "simplify-ors")
 (include-book "simplify-ors-proofs")
-(include-book "substitute-unnecessary-lambda-vars")
-(include-book "substitute-unnecessary-lambda-vars2")
-(include-book "substitute-unnecessary-lambda-vars2-proofs")
 (include-book "replace-term-with-term")
 
 ;; Transformations about lambdas (and their proofs):
@@ -95,6 +92,10 @@
 (include-book "serialize-lambdas-in-term-proofs") ; incomplete
 (include-book "expand-lambdas-in-term")
 (include-book "expand-lambdas-in-term-proofs")
+;; Deal with lambda vars that are only used once:
+(include-book "substitute-unnecessary-lambda-vars")
+(include-book "substitute-unnecessary-lambda-vars2")
+(include-book "substitute-unnecessary-lambda-vars2-proofs")
 ;; Drop unused lambda bindings:
 (include-book "drop-unused-lambda-bindings") ; todo rename file
 (include-book "drop-unused-lambda-bindings-proofs") ; todo rename file
@@ -103,7 +104,7 @@
 (include-book "substitute-constants-in-lambdas-proofs")
 (include-book "substitute-constants-in-lambdas2")
 (include-book "substitute-constants-in-lambdas2-proofs")
-;; For lambda whose formals are the same as its args:
+;; For lambdas whose formals are the same as their args:
 (include-book "drop-trivial-lambdas")
 (include-book "drop-trivial-lambdas-proofs")
 ;; Combines several transformations on lambdas:
