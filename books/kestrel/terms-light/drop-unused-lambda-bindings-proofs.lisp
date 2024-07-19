@@ -17,7 +17,6 @@
 
 (include-book "drop-unused-lambda-bindings")
 (include-book "no-duplicate-lambda-formals-in-termp")
-;(include-book "make-lambda-term-simple")
 (include-book "no-nils-in-termp")
 (include-book "lambdas-closed-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
@@ -83,11 +82,6 @@
                                       drop-unused-lambda-bindings-lst
                                       drop-unused-lambda-bindings-induct
                                       drop-unused-lambda-bindings-induct-lst)))))
-
-;;todo: reduce these!
-(local (include-book "make-lambda-application-simple-proof"))
-(local (include-book "drop-trivial-lambdas-proofs")) ; for alists-equiv-on-redef
-(local (include-book "substitute-constants-in-lambdas-proofs"))
 
 (defthm-flag-drop-unused-lambda-bindings
   (defthm subsetp-equal-of-free-vars-in-term-of-drop-unused-lambda-bindings
@@ -162,9 +156,7 @@
                   (no-duplicate-lambda-formals-in-termsp terms))
              (lambdas-closed-in-termsp (drop-unused-lambda-bindings-lst terms)))
     :flag drop-unused-lambda-bindings-lst)
-  :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp-when-symbol-listp
-                                     lambdas-closed-in-termp ; todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp-when-symbol-listp))))
 
 (defthm-flag-drop-unused-lambda-bindings
   (defthm no-duplicate-lambda-formals-in-termp-of-drop-unused-lambda-bindings
@@ -177,6 +169,4 @@
                   (no-duplicate-lambda-formals-in-termsp terms))
              (no-duplicate-lambda-formals-in-termsp (drop-unused-lambda-bindings-lst terms)))
     :flag drop-unused-lambda-bindings-lst)
-  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp-when-symbol-listp
-                                     no-duplicate-lambda-formals-in-termp ; todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp-when-symbol-listp))))

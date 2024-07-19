@@ -54,8 +54,6 @@
               (cons-with-hint arg cdr-remaining-args args)
               cdr-var-constant-alist))))))
 
-(local (in-theory (enable handle-constant-lambda-formals)))
-
 (defthm handle-constant-lambda-formals-return-type
   (implies (and (symbol-listp formals)
                 (pseudo-term-listp args)
@@ -65,8 +63,8 @@
                 (symbol-alistp (mv-nth 2 (handle-constant-lambda-formals formals args)))
                 (strong-quote-listp (strip-cdrs (mv-nth 2 (handle-constant-lambda-formals formals args))))
                 (equal (len (mv-nth 1 (handle-constant-lambda-formals formals args)))
-                       (len (mv-nth 0 (handle-constant-lambda-formals formals args)))))))
-
+                       (len (mv-nth 0 (handle-constant-lambda-formals formals args))))))
+  :hints (("Goal" :in-theory (enable handle-constant-lambda-formals))))
 
 (mutual-recursion
  (defund substitute-constants-in-lambdas2-aux (term alist)

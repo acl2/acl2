@@ -109,7 +109,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund any-quotep (items)
-  (declare (xargs :guard (true-listp items))) ; strenghten to requite pseudo-terms?
+  (declare (xargs :guard (true-listp items))) ; strenghten to require pseudo-terms?
   (if (atom items)
       nil
     (or (quotep (first items))

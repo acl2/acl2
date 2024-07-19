@@ -12,13 +12,13 @@
 
 ;; The proofs in this book use the if-and-not-eval because simplify-ors requires it.
 
-(include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "pre-simplify-term")
-(include-book "no-duplicate-lambda-formals-in-termp")
-(include-book "lambdas-closed-in-termp")
-(include-book "simplify-ors-proofs")
-(include-book "drop-unused-lambda-bindings-proofs")
-(include-book "drop-trivial-lambdas-proofs")
+(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
+;(include-book "no-duplicate-lambda-formals-in-termp")
+;(include-book "lambdas-closed-in-termp")
+(local (include-book "simplify-ors-proofs"))
+(local (include-book "drop-unused-lambda-bindings-proofs"))
+(local (include-book "drop-trivial-lambdas-proofs"))
 (local (include-book "substitute-unnecessary-lambda-vars2-proofs"))
 (local (include-book "substitute-constants-in-lambdas2-proofs"))
 

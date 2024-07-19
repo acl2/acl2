@@ -8,18 +8,28 @@
 
 <b><font>[<a href="installation.html">Back to main page of Installation Guide.</a>]</font></b>
 
+<p/>
+
+<b><font color="red">NOTES</font></b>
+
+<ul>
+
+<li>You may want to skip this page and simply use
+the <a href="installation.html#easy-install">instructions for "Easy
+Install for Unix-like Systems"</a>.</li>
+
+<li>For information about getting started with ACL2, see
+the <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____START-HERE">"Start
+Here" documentation page</a>.</li>
+
+</ul>
+
 <p>
 
-<B>Table of Contents</B><BR>
+<B>TABLE OF CONTENTS</B><BR>
 
 <UL>
   <LI><A HREF="#Shortcuts">Pre-built Binary Distributions</A>
-  <UL>
-    <LI><A HREF="#Shortcut-acl2s">Linux/Mac/Windows Binaries in ACL2s</A>
-    <LI><A HREF="#Shortcut-windows">Windows</A>
-    <LI><A HREF="#Shortcut-MacPorts">MacPorts for Mac OS X</A>
-    <LI><A HREF="#Shortcut-debian">Debian GNU Linux</A>
-  </UL>
   <LI><A HREF="#Sources">Obtaining the Sources and Community Books</A>
   <LI><A HREF="#Create-Image">Creating or Obtaining an Executable Image</A>
   <UL>
@@ -65,85 +75,12 @@ Otherwise, continue reading here.</H3>
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Shortcuts">Pre-built Binary Distributions</A></H2>
 
-Visit the "Recent changes to this page" link on the <A
-HREF="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page</A> to see if
-there are other shortcuts available.
-
 <p>
 
-<font color="red"><b>WARNING</b></font>: Some of these packages might
-be for old versions of ACL2.  We recommend that you use the latest
-version of ACL2 (Version 8.5).
-
-<UL>
-
-<LI><B><A NAME="Shortcut-acl2s">Linux/Mac/Windows Binaries in ACL2s</A></B>
-
-<p>
-
-The <a href="http://acl2s.ccs.neu.edu/acl2s/doc/">ACL2 Sedan</a>
-(ACL2s) is an Eclipse-based IDE for ACL2 that is distributed with pre-certified
-books and pre-built binaries, though it is not always based on the
-latest ACL2 version.  If you
-  use an alternative development environment (such as Emacs), you
-can still <a href="http://acl2s.ccs.neu.edu/acl2s/src/acl2/">fetch a
-tarball</a> for your x86-based Linux/Mac/Windows system that contains a
-pre-built binary of (pure) ACL2, using the following instructions
-based on information kindly provided by Harsh Raju Chamarthi.
-Just extract the
-appropriate tarball (using <code>tar xfz</code> on Linux or Mac
-and <code>unzip</code> on Windows)
-under a path with <i>no</i> spaces.
-Then run the script you will
-find, <code>run_acl2</code> on Linux or Mac
-and <code>run_acl2.exe</code> on Windows, to start an ACL2 session.
-(Note that The first time you execute that command,
-the certificate (<code>.cert</code>) files are automatically
-fixed, according to the full pathname of your <code>books/</code> directory.)
-Also see
-the <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-5/combined-manual/index.html?topic=ACL2____ACL2-SEDAN">ACL2
-documentation topic on the ACL2 Sedan</a>.
-
-
-<LI><B><A NAME="Shortcut-windows">Windows</A></B>
-
-<p>
-
-In the past, a Windows Installer for ACL2 has included a Unix
-environment, pre-certified standard and workshop books, and a copy of
-Gnu Emacs.  This capability has largely been superseded
-by <a href="#Build-Particular">the section on Building an Executable
-Image on Some Particular Systems</a> and
-the Shortcut using the ACL2 Sedan, <a href="#Shortcut-acl2s">above</a>.
-See also <a href="../../distrib/windows/">information about ACL2 on
-Windows</a>.
-
-<LI><B><A NAME="Shortcut-MacPorts">MacPorts for Mac OS X</A></B>
-
-<p>
-
-ACL2 versions are sometimes been made available under MacPorts.  We
-have been informed that ACL2 Version 8.5 can be installed on MacOS via
-MacPorts.
-
-<LI><B><A NAME="Shortcut-debian">Debian GNU Linux</A></B>
-
-<p>
-
-A Debian Gnu Linux package is available, which is likely to work on
-other Linux systems as well.  Thanks to Camm Maguire for maintaining
-this package, and for pointing out that as Debian packages are simply
-ar and tar archives, they can be unpacked on any linux system, and who
-has said: "If someone is running Debian, all they want to do is
-'apt-get install acl2', doing likewise for any optional add-on package
-they wish as well, e.g. emacs, infix, etc."  Alternatively, Debian GNU
-Linux users may wish
-to <A HREF="http://packages.qa.debian.org/a/acl2.html">download the
-ACL2 Debian package for Linux</A>.  An alternate location you might
-want to check
-is <code><a href="http://backports.debian.org">backports.debian.org</a></code>.
-
-</UL>
+See <a href='http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____PRE-BUILT-BINARY-DISTRIBUTIONS'>the
+    ACL2 documentation page on pre-built binary distributions</a>,
+    which includes discussion of ACL2s binaries, Windows, MacPorts for
+    Mac OS X, and Debian GNU Linux.</h3>
 
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Sources">Obtaining the Sources and Community Books</A></H2>
