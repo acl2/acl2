@@ -1,4 +1,4 @@
-; Proofs about substitute-constants-in-lambdas2.lisp
+; Proofs about substitute-constants-in-lambdas.lisp
 ;
 ; Copyright (C) 2024 Kestrel Institute
 ;
@@ -12,7 +12,7 @@
 
 ;; TODO: Clean up this file
 
-(include-book "substitute-constants-in-lambdas2")
+(include-book "substitute-constants-in-lambdas")
 (include-book "lambdas-closed-in-termp")
 (include-book "no-nils-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
@@ -99,24 +99,24 @@
     :hints (("Goal" :in-theory (enable no-nils-in-termp)))))
 
 (local
-  (defthm-flag-substitute-constants-in-lambdas2-aux
-    (defthm no-nils-in-termp-of-substitute-constants-in-lambdas2-aux
+  (defthm-flag-substitute-constants-in-lambdas-aux
+    (defthm no-nils-in-termp-of-substitute-constants-in-lambdas-aux
       (implies (and (no-nils-in-termp term)
                     (strong-quote-listp (strip-cdrs alist))
                     (pseudo-termp term))
-               (no-nils-in-termp (substitute-constants-in-lambdas2-aux term alist)))
-      :flag substitute-constants-in-lambdas2-aux)
-    (defthm no-nils-in-termsp-of-substitute-constants-in-lambdas2-aux-lst
+               (no-nils-in-termp (substitute-constants-in-lambdas-aux term alist)))
+      :flag substitute-constants-in-lambdas-aux)
+    (defthm no-nils-in-termsp-of-substitute-constants-in-lambdas-aux-lst
       (implies (and (no-nils-in-termsp terms)
                     (strong-quote-listp (strip-cdrs alist))
                     (pseudo-term-listp terms))
-               (no-nils-in-termsp (substitute-constants-in-lambdas2-aux-lst terms alist)))
-      :flag substitute-constants-in-lambdas2-aux-lst)
+               (no-nils-in-termsp (substitute-constants-in-lambdas-aux-lst terms alist)))
+      :flag substitute-constants-in-lambdas-aux-lst)
     :hints (("Goal" ;:expand (PSEUDO-TERMP TERM)
              :do-not '(generalize eliminate-destructors)
-             :expand   (no-nils-in-termp (cons (car term) (substitute-constants-in-lambdas2-aux-lst (cdr term) alist)))
-             :in-theory (e/d (substitute-constants-in-lambdas2-aux
-                              substitute-constants-in-lambdas2-aux-lst
+             :expand   (no-nils-in-termp (cons (car term) (substitute-constants-in-lambdas-aux-lst (cdr term) alist)))
+             :in-theory (e/d (substitute-constants-in-lambdas-aux
+                              substitute-constants-in-lambdas-aux-lst
                               ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
                               ;; make-lambda-terms-simple
                               ;; ;;make-lambda-term-simple
@@ -129,7 +129,7 @@
 ;;adds the A argument
 (local
   (mutual-recursion
-    (defund induct-substitute-constants-in-lambdas2-aux (term alist a)
+    (defund induct-substitute-constants-in-lambdas-aux (term alist a)
       (declare (irrelevant a))
       (if (variablep term)
           (let ((res (assoc-eq term alist)))
@@ -140,7 +140,7 @@
           (if (eq 'quote fn)
               term
             ;; function call or lambda:
-            (let ((new-args (induct-substitute-constants-in-lambdas2-aux-lst (fargs term) alist a)))
+            (let ((new-args (induct-substitute-constants-in-lambdas-aux-lst (fargs term) alist a)))
               (if (consp fn)
                   ;; it's a lambda:
                   (let ((formals (lambda-formals fn))
@@ -149,38 +149,38 @@
                       (handle-constant-lambda-formals formals new-args)
                       ;; Since the lambda is closed, we completely replace the
                       ;; alist passed in when processing the lambda-body:
-                      (let ((new-body (induct-substitute-constants-in-lambdas2-aux body var-constant-alist (pairlis$ (lambda-formals fn) (empty-eval-list new-args a)))))
+                      (let ((new-body (induct-substitute-constants-in-lambdas-aux body var-constant-alist (pairlis$ (lambda-formals fn) (empty-eval-list new-args a)))))
                         (if (equal remaining-formals remaining-args)
                             ;; avoid trivial lambda:
                             new-body
                           (cons-with-hint (make-lambda-with-hint remaining-formals new-body fn) remaining-args term)))))
                 ;; not a lambda:
                 (cons-with-hint fn new-args term)))))))
-    (defund induct-substitute-constants-in-lambdas2-aux-lst (terms alist a)
+    (defund induct-substitute-constants-in-lambdas-aux-lst (terms alist a)
       (declare (irrelevant a))
       (if (endp terms)
           nil
-        (cons-with-hint (induct-substitute-constants-in-lambdas2-aux (first terms) alist a)
-                        (induct-substitute-constants-in-lambdas2-aux-lst (rest terms) alist a)
+        (cons-with-hint (induct-substitute-constants-in-lambdas-aux (first terms) alist a)
+                        (induct-substitute-constants-in-lambdas-aux-lst (rest terms) alist a)
                         terms)))))
 
-(local (make-flag induct-substitute-constants-in-lambdas2-aux))
+(local (make-flag induct-substitute-constants-in-lambdas-aux))
 
 ;; The -induct functions are equal to the regular functions
 (local
- (defthm-flag-induct-substitute-constants-in-lambdas2-aux
-   (defthm substitute-constants-in-lambdas2-aux-induct-removal
-     (equal (induct-substitute-constants-in-lambdas2-aux term alist a)
-            (substitute-constants-in-lambdas2-aux term alist))
-     :flag induct-substitute-constants-in-lambdas2-aux)
-   (defthm substitute-constants-in-lambdas2-aux-induct-lst-removal
-     (equal (induct-substitute-constants-in-lambdas2-aux-lst terms alist a)
-            (substitute-constants-in-lambdas2-aux-lst terms alist))
-     :flag induct-substitute-constants-in-lambdas2-aux-lst)
-   :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas2-aux
-                                      substitute-constants-in-lambdas2-aux-lst
-                                      induct-substitute-constants-in-lambdas2-aux
-                                      induct-substitute-constants-in-lambdas2-aux-lst)))))
+ (defthm-flag-induct-substitute-constants-in-lambdas-aux
+   (defthm substitute-constants-in-lambdas-aux-induct-removal
+     (equal (induct-substitute-constants-in-lambdas-aux term alist a)
+            (substitute-constants-in-lambdas-aux term alist))
+     :flag induct-substitute-constants-in-lambdas-aux)
+   (defthm substitute-constants-in-lambdas-aux-induct-lst-removal
+     (equal (induct-substitute-constants-in-lambdas-aux-lst terms alist a)
+            (substitute-constants-in-lambdas-aux-lst terms alist))
+     :flag induct-substitute-constants-in-lambdas-aux-lst)
+   :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas-aux
+                                      substitute-constants-in-lambdas-aux-lst
+                                      induct-substitute-constants-in-lambdas-aux
+                                      induct-substitute-constants-in-lambdas-aux-lst)))))
 
 
 
@@ -294,30 +294,30 @@
     :hints (("Goal" :in-theory (enable handle-constant-lambda-formals set-difference-equal)))))
 
 
-;; (defthm-flag-substitute-constants-in-lambdas2-aux
-;;   (defthm free-vars-in-term-of-substitute-constants-in-lambdas2-aux
+;; (defthm-flag-substitute-constants-in-lambdas-aux
+;;   (defthm free-vars-in-term-of-substitute-constants-in-lambdas-aux
 ;;     (implies (and (pseudo-termp term)
 ;;                   (strong-quote-listp (strip-cdrs alist))
 ;;                   (no-duplicate-lambda-formals-in-termp term)
 ;;                   (alistp alist))
-;;              (equal (free-vars-in-term (substitute-constants-in-lambdas2-aux term alist))
+;;              (equal (free-vars-in-term (substitute-constants-in-lambdas-aux term alist))
 ;;                     (set-difference-equal (free-vars-in-term term)
 ;;                                           (strip-cars alist))))
-;;     :flag substitute-constants-in-lambdas2-aux)
-;;   (defthm free-vars-in-terms-of-substitute-constants-in-lambdas2-aux-lst
+;;     :flag substitute-constants-in-lambdas-aux)
+;;   (defthm free-vars-in-terms-of-substitute-constants-in-lambdas-aux-lst
 ;;     (implies (and (pseudo-term-listp terms)
 ;;                   (strong-quote-listp (strip-cdrs alist))
 ;;                   (no-duplicate-lambda-formals-in-termsp terms)
 ;;                   (alistp alist))
-;;              (equal (free-vars-in-terms (substitute-constants-in-lambdas2-aux-lst terms alist))
+;;              (equal (free-vars-in-terms (substitute-constants-in-lambdas-aux-lst terms alist))
 ;;                     (set-difference-equal (free-vars-in-terms terms)
 ;;                                           (strip-cars alist))))
-;;     :flag substitute-constants-in-lambdas2-aux-lst)
+;;     :flag substitute-constants-in-lambdas-aux-lst)
 ;;   :hints (("Goal"
 ;;            :expand (free-vars-in-term term)
 ;;            :do-not '(generalize eliminate-destructors)
-;;            :in-theory (e/d (substitute-constants-in-lambdas2-aux
-;;                             substitute-constants-in-lambdas2-aux-lst
+;;            :in-theory (e/d (substitute-constants-in-lambdas-aux
+;;                             substitute-constants-in-lambdas-aux-lst
 ;;                             ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
 ;;                             ;; make-lambda-terms-simple
 ;;                             ;; ;;make-lambda-term-simple
@@ -330,26 +330,26 @@
 ;;                             )))))
 
 
-;; (defthm-flag-substitute-constants-in-lambdas2-aux
-;;   (defthm free-vars-in-term-of-substitute-constants-in-lambdas2-aux
+;; (defthm-flag-substitute-constants-in-lambdas-aux
+;;   (defthm free-vars-in-term-of-substitute-constants-in-lambdas-aux
 ;;     (implies (and (pseudo-termp term)
 ;;                   (strong-quote-listp (strip-cdrs alist))
 ;;                   (no-duplicate-lambda-formals-in-termp term))
-;;              (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas2-aux term alist))
+;;              (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas-aux term alist))
 ;;                             (free-vars-in-term term)))
-;;     :flag substitute-constants-in-lambdas2-aux)
-;;   (defthm free-vars-in-terms-of-substitute-constants-in-lambdas2-aux-lst
+;;     :flag substitute-constants-in-lambdas-aux)
+;;   (defthm free-vars-in-terms-of-substitute-constants-in-lambdas-aux-lst
 ;;     (implies (and (pseudo-term-listp terms)
 ;;                   (strong-quote-listp (strip-cdrs alist))
 ;;                   (no-duplicate-lambda-formals-in-termsp terms))
-;;              (subsetp-equal (free-vars-in-terms (substitute-constants-in-lambdas2-aux-lst terms alist))
+;;              (subsetp-equal (free-vars-in-terms (substitute-constants-in-lambdas-aux-lst terms alist))
 ;;                             (free-vars-in-terms terms)))
-;;     :flag substitute-constants-in-lambdas2-aux-lst)
+;;     :flag substitute-constants-in-lambdas-aux-lst)
 ;;   :hints (("Goal"
 ;;            :expand (free-vars-in-term term)
 ;;            :do-not '(generalize eliminate-destructors)
-;;            :in-theory (e/d (substitute-constants-in-lambdas2-aux
-;;                             substitute-constants-in-lambdas2-aux-lst
+;;            :in-theory (e/d (substitute-constants-in-lambdas-aux
+;;                             substitute-constants-in-lambdas-aux-lst
 ;;                             ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
 ;;                             ;; make-lambda-terms-simple
 ;;                             ;; ;;make-lambda-term-simple
@@ -390,39 +390,39 @@
              :in-theory (disable subsetp-equal-helper-when-all-formals-are-constants-or-trivial)))))
 
 (local
-  (defthm-flag-substitute-constants-in-lambdas2-aux
-    (defthm free-vars-in-term-of-substitute-constants-in-lambdas2-aux
+  (defthm-flag-substitute-constants-in-lambdas-aux
+    (defthm free-vars-in-term-of-substitute-constants-in-lambdas-aux
       (implies (and (pseudo-termp term)
                     (lambdas-closed-in-termp term)
                     (strong-quote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termp term)
                     (alistp alist))
-               (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas2-aux term alist))
+               (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas-aux term alist))
                               (set-difference-equal (free-vars-in-term term)
                                                     (strip-cars alist))))
-      :flag substitute-constants-in-lambdas2-aux)
-    (defthm free-vars-in-terms-of-substitute-constants-in-lambdas2-aux-lst
+      :flag substitute-constants-in-lambdas-aux)
+    (defthm free-vars-in-terms-of-substitute-constants-in-lambdas-aux-lst
       (implies (and (pseudo-term-listp terms)
                     (lambdas-closed-in-termsp terms)
                     (strong-quote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termsp terms)
                     (alistp alist))
-               (subsetp-equal (free-vars-in-terms (substitute-constants-in-lambdas2-aux-lst terms alist))
+               (subsetp-equal (free-vars-in-terms (substitute-constants-in-lambdas-aux-lst terms alist))
                               (set-difference-equal (free-vars-in-terms terms)
                                                     (strip-cars alist))))
-      :flag substitute-constants-in-lambdas2-aux-lst)
+      :flag substitute-constants-in-lambdas-aux-lst)
     :hints (("subgoal *1/2" :cases ((subsetp-equal (set-difference-equal (free-vars-in-term (caddr (car term)))
                                                                          (strip-cars (mv-nth 2
                                                                                              (handle-constant-lambda-formals (cadr (car term))
-                                                                                                                             (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                                                                                             (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                                                                        alist)))))
-                                                   (free-vars-in-terms (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                   (free-vars-in-terms (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                  alist)))))
             ("Goal"
              :expand (free-vars-in-term term)
              :do-not '(generalize eliminate-destructors)
-             :in-theory (e/d (substitute-constants-in-lambdas2-aux
-                              substitute-constants-in-lambdas2-aux-lst
+             :in-theory (e/d (substitute-constants-in-lambdas-aux
+                              substitute-constants-in-lambdas-aux-lst
                               ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
                               ;; make-lambda-terms-simple
                               ;; ;;make-lambda-term-simple
@@ -435,20 +435,20 @@
                               ;; set-difference-equal
                               ))))))
 
-;; (defthm free-vars-in-term-of-substitute-constants-in-lambdas2-aux-gen
+;; (defthm free-vars-in-term-of-substitute-constants-in-lambdas-aux-gen
 ;;   (implies (and (subsetp-equal (free-vars-in-term term) x)
 ;;                 (pseudo-termp term)
 ;;                 (strong-quote-listp (strip-cdrs alist))
 ;;                 (no-duplicate-lambda-formals-in-termp term)
 ;;                 (alistp alist) ; could drop
 ;;                 )
-;;            (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas2-aux term alist))
+;;            (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas-aux term alist))
 ;;                           x))
-;;   :hints (("Goal" :use free-vars-in-term-of-substitute-constants-in-lambdas2-aux
-;;            :in-theory (disable free-vars-in-term-of-substitute-constants-in-lambdas2-aux))))
+;;   :hints (("Goal" :use free-vars-in-term-of-substitute-constants-in-lambdas-aux
+;;            :in-theory (disable free-vars-in-term-of-substitute-constants-in-lambdas-aux))))
 
 (local
-  (defthm free-vars-in-term-of-substitute-constants-in-lambdas2-aux-gen
+  (defthm free-vars-in-term-of-substitute-constants-in-lambdas-aux-gen
     (implies (and (subsetp-equal (set-difference-equal (free-vars-in-term term)
                                                        (strip-cars alist))
                                  x)
@@ -458,13 +458,13 @@
                   (no-duplicate-lambda-formals-in-termp term)
                   (alistp alist) ; could drop
                   )
-             (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas2-aux term alist))
+             (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas-aux term alist))
                             x))
-    :hints (("Goal" :use free-vars-in-term-of-substitute-constants-in-lambdas2-aux
-             :in-theory (disable free-vars-in-term-of-substitute-constants-in-lambdas2-aux)))))
+    :hints (("Goal" :use free-vars-in-term-of-substitute-constants-in-lambdas-aux
+             :in-theory (disable free-vars-in-term-of-substitute-constants-in-lambdas-aux)))))
 
 (local
-  (defthm not-consp-of-free-vars-in-term-of-substitute-constants-in-lambdas2-aux
+  (defthm not-consp-of-free-vars-in-term-of-substitute-constants-in-lambdas-aux
     (implies (and (not (consp (free-vars-in-term term)))
                   (pseudo-termp term)
                   (lambdas-closed-in-termp term)
@@ -472,10 +472,10 @@
                   (no-duplicate-lambda-formals-in-termp term)
                   (alistp alist) ; could drop
                   )
-             (not (consp (free-vars-in-term (substitute-constants-in-lambdas2-aux term alist)))))
-    :hints (("Goal" :use free-vars-in-term-of-substitute-constants-in-lambdas2-aux
-             :in-theory (disable free-vars-in-term-of-substitute-constants-in-lambdas2-aux
-                                 free-vars-in-term-of-substitute-constants-in-lambdas2-aux-gen)))))
+             (not (consp (free-vars-in-term (substitute-constants-in-lambdas-aux term alist)))))
+    :hints (("Goal" :use free-vars-in-term-of-substitute-constants-in-lambdas-aux
+             :in-theory (disable free-vars-in-term-of-substitute-constants-in-lambdas-aux
+                                 free-vars-in-term-of-substitute-constants-in-lambdas-aux-gen)))))
 
 ;; (thm
 ;;   (implies (not (consp (free-vars-in-term term)))
@@ -579,7 +579,7 @@
            (lambdas-closed-in-termsp terms)))
 
 (local
-  (defthm lambdas-closed-in-termp-of-substitute-constants-in-lambdas2-aux-helper
+  (defthm lambdas-closed-in-termp-of-substitute-constants-in-lambdas-aux-helper
     (implies (and (subsetp-equal (free-vars-in-term body) formals)
                   (no-duplicatesp formals)
                   (lambdas-closed-in-termp body)
@@ -588,33 +588,33 @@
                   (pseudo-term-listp args)
                   (equal (len formals) (len args))
                   (no-duplicate-lambda-formals-in-termp body))
-             (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas2-aux body (mv-nth 2 (handle-constant-lambda-formals formals args))))
+             (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas-aux body (mv-nth 2 (handle-constant-lambda-formals formals args))))
                             (mv-nth 0 (handle-constant-lambda-formals formals args))))
-    :hints (("Goal" :use (:instance free-vars-in-term-of-substitute-constants-in-lambdas2-aux (term body)
+    :hints (("Goal" :use (:instance free-vars-in-term-of-substitute-constants-in-lambdas-aux (term body)
                                     (alist (mv-nth 2 (handle-constant-lambda-formals formals args))))))))
 
 ;move up
 (local
-  (defthm-flag-substitute-constants-in-lambdas2-aux
-    (defthm lambdas-closed-in-termp-of-substitute-constants-in-lambdas2-aux
+  (defthm-flag-substitute-constants-in-lambdas-aux
+    (defthm lambdas-closed-in-termp-of-substitute-constants-in-lambdas-aux
       (implies (and (lambdas-closed-in-termp term)
                     (strong-quote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termp term)
                     (pseudo-termp term))
-               (lambdas-closed-in-termp (substitute-constants-in-lambdas2-aux term alist)))
-      :flag substitute-constants-in-lambdas2-aux)
-    (defthm lambdas-closed-in-termsp-of-substitute-constants-in-lambdas2-aux-lst
+               (lambdas-closed-in-termp (substitute-constants-in-lambdas-aux term alist)))
+      :flag substitute-constants-in-lambdas-aux)
+    (defthm lambdas-closed-in-termsp-of-substitute-constants-in-lambdas-aux-lst
       (implies (and (lambdas-closed-in-termsp terms)
                     (strong-quote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termsp terms)
                     (pseudo-term-listp terms))
-               (lambdas-closed-in-termsp (substitute-constants-in-lambdas2-aux-lst terms alist)))
-      :flag substitute-constants-in-lambdas2-aux-lst)
+               (lambdas-closed-in-termsp (substitute-constants-in-lambdas-aux-lst terms alist)))
+      :flag substitute-constants-in-lambdas-aux-lst)
     :hints (("Goal" ;:expand (PSEUDO-TERMP TERM)
              :do-not '(generalize eliminate-destructors)
-             :expand   (lambdas-closed-in-termp (cons (car term) (substitute-constants-in-lambdas2-aux-lst (cdr term) alist)))
-             :in-theory (e/d (substitute-constants-in-lambdas2-aux
-                              substitute-constants-in-lambdas2-aux-lst
+             :expand   (lambdas-closed-in-termp (cons (car term) (substitute-constants-in-lambdas-aux-lst (cdr term) alist)))
+             :in-theory (e/d (substitute-constants-in-lambdas-aux
+                              substitute-constants-in-lambdas-aux-lst
                               ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
                               ;; make-lambda-terms-simple
                               ;; ;;make-lambda-term-simple
@@ -637,26 +637,26 @@
 
 ;move up
 (local
-  (defthm-flag-substitute-constants-in-lambdas2-aux
-    (defthm no-duplicate-lambda-formals-in-termp-of-substitute-constants-in-lambdas2-aux
+  (defthm-flag-substitute-constants-in-lambdas-aux
+    (defthm no-duplicate-lambda-formals-in-termp-of-substitute-constants-in-lambdas-aux
       (implies (and (no-duplicate-lambda-formals-in-termp term)
                     (strong-quote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termp term)
                     (pseudo-termp term))
-               (no-duplicate-lambda-formals-in-termp (substitute-constants-in-lambdas2-aux term alist)))
-      :flag substitute-constants-in-lambdas2-aux)
-    (defthm no-duplicate-lambda-formals-in-termsp-of-substitute-constants-in-lambdas2-aux-lst
+               (no-duplicate-lambda-formals-in-termp (substitute-constants-in-lambdas-aux term alist)))
+      :flag substitute-constants-in-lambdas-aux)
+    (defthm no-duplicate-lambda-formals-in-termsp-of-substitute-constants-in-lambdas-aux-lst
       (implies (and (no-duplicate-lambda-formals-in-termsp terms)
                     (strong-quote-listp (strip-cdrs alist))
                     (no-duplicate-lambda-formals-in-termsp terms)
                     (pseudo-term-listp terms))
-               (no-duplicate-lambda-formals-in-termsp (substitute-constants-in-lambdas2-aux-lst terms alist)))
-      :flag substitute-constants-in-lambdas2-aux-lst)
+               (no-duplicate-lambda-formals-in-termsp (substitute-constants-in-lambdas-aux-lst terms alist)))
+      :flag substitute-constants-in-lambdas-aux-lst)
     :hints (("Goal" ;:expand (PSEUDO-TERMP TERM)
              :do-not '(generalize eliminate-destructors)
-             :expand   (no-duplicate-lambda-formals-in-termp (cons (car term) (substitute-constants-in-lambdas2-aux-lst (cdr term) alist)))
-             :in-theory (e/d (substitute-constants-in-lambdas2-aux
-                              substitute-constants-in-lambdas2-aux-lst
+             :expand   (no-duplicate-lambda-formals-in-termp (cons (car term) (substitute-constants-in-lambdas-aux-lst (cdr term) alist)))
+             :in-theory (e/d (substitute-constants-in-lambdas-aux
+                              substitute-constants-in-lambdas-aux-lst
                               ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
                               ;; make-lambda-terms-simple
                               ;; ;;make-lambda-term-simple
@@ -683,121 +683,121 @@
 
 ;; Correctness theorem helper
 (local
-  (defthm-flag-induct-substitute-constants-in-lambdas2-aux
-    (defthm substitute-constants-in-lambdas2-aux-correct
+  (defthm-flag-induct-substitute-constants-in-lambdas-aux
+    (defthm substitute-constants-in-lambdas-aux-correct
       (implies (and (pseudo-termp term)
                     (no-nils-in-termp term)
                     (no-duplicate-lambda-formals-in-termp term)
                     (lambdas-closed-in-termp term)
                     (strong-quote-listp (strip-cdrs alist))
                     (alistp alist))
-               (equal (empty-eval (substitute-constants-in-lambdas2-aux term alist) a)
+               (equal (empty-eval (substitute-constants-in-lambdas-aux term alist) a)
                       (empty-eval term (append (pairlis$ (strip-cars alist) (unquote-list (strip-cdrs alist)))
                                                a))))
-      :flag induct-substitute-constants-in-lambdas2-aux)
-    (defthm substitute-constants-in-lambdas2-aux-lst-correct
+      :flag induct-substitute-constants-in-lambdas-aux)
+    (defthm substitute-constants-in-lambdas-aux-lst-correct
       (implies (and (pseudo-term-listp terms)
                     (no-nils-in-termsp terms)
                     (no-duplicate-lambda-formals-in-termsp terms)
                     (lambdas-closed-in-termsp terms)
                     (strong-quote-listp (strip-cdrs alist))
                     (alistp alist))
-               (equal (empty-eval-list (substitute-constants-in-lambdas2-aux-lst terms alist) a)
+               (equal (empty-eval-list (substitute-constants-in-lambdas-aux-lst terms alist) a)
                       (empty-eval-list terms (append (pairlis$ (strip-cars alist) (unquote-list (strip-cdrs alist)))
                                                      a))))
-      :flag induct-substitute-constants-in-lambdas2-aux-lst)
+      :flag induct-substitute-constants-in-lambdas-aux-lst)
     :hints (;; ("subgoal *1/3"
             ;;  :use (:instance equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special
             ;;                  (term  (caddr (car term)))
             ;;                  (alist1 (pairlis$ (cadr (car term))
-            ;;                                    (empty-eval-list (substitute-constants-in-lambdas2-aux-lst (cdr term)
+            ;;                                    (empty-eval-list (substitute-constants-in-lambdas-aux-lst (cdr term)
             ;;                                                                                               alist)
             ;;                                                     a)))
             ;;                  (alist2 (append (pairlis$ (strip-cars (mv-nth 2
             ;;                                                                (handle-constant-lambda-formals (cadr (car term))
-            ;;                                                                                                (substitute-constants-in-lambdas2-aux-lst (cdr term)
+            ;;                                                                                                (substitute-constants-in-lambdas-aux-lst (cdr term)
             ;;                                                                                                                                          alist))))
             ;;                                            (unquote-list (strip-cdrs (mv-nth 2
             ;;                                                                              (handle-constant-lambda-formals (cadr (car term))
-            ;;                                                                                                              (substitute-constants-in-lambdas2-aux-lst (cdr term)
+            ;;                                                                                                              (substitute-constants-in-lambdas-aux-lst (cdr term)
             ;;                                                                                                                                                        alist))))))
             ;;                                  (pairlis$ (cadr (car term))
-            ;;                                            (empty-eval-list (substitute-constants-in-lambdas2-aux-lst (cdr term)
+            ;;                                            (empty-eval-list (substitute-constants-in-lambdas-aux-lst (cdr term)
             ;;                                                                                                       alist)
             ;;                                                             a))))))
             ("subgoal *1/3"
              :use ((:instance equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special
-                              (term (substitute-constants-in-lambdas2-aux (caddr (car term))
+                              (term (substitute-constants-in-lambdas-aux (caddr (car term))
                                                                           (mv-nth 2
                                                                                   (handle-constant-lambda-formals (cadr (car term))
-                                                                                                                  (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                                                                                  (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                                                             alist)))))
                               (alist1 (pairlis$ (cadr (car term))
-                                                (empty-eval-list (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                (empty-eval-list (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                            alist)
                                                                  a)))
                               (alist2 (pairlis$ (mv-nth 0
                                                         (handle-constant-lambda-formals (cadr (car term))
-                                                                                        (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                                                        (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                                   alist)))
                                                 (empty-eval-list (mv-nth 1
                                                                          (handle-constant-lambda-formals (cadr (car term))
-                                                                                                         (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                                                                         (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                                                    alist)))
                                                                  a))))
                    (:instance equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special
                               (term  (caddr (car term)))
                               (alist1 (pairlis$ (cadr (car term))
-                                                (empty-eval-list (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                (empty-eval-list (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                            alist)
                                                                  a)))
                               (alist2 (append (pairlis$ (strip-cars (mv-nth 2
                                                                             (handle-constant-lambda-formals (cadr (car term))
-                                                                                                            (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                                                                            (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                                                       alist))))
                                                         (unquote-list (strip-cdrs (mv-nth 2
                                                                                           (handle-constant-lambda-formals (cadr (car term))
-                                                                                                                          (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                                                                                          (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                                                                     alist))))))
                                               (pairlis$ (cadr (car term))
-                                                        (empty-eval-list (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                        (empty-eval-list (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                    alist)
                                                                          a)))))))
             ("subgoal *1/2"
              :use ((:instance equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special
                               (term  (caddr (car term)))
                               (alist1 (pairlis$ (cadr (car term))
-                                                (empty-eval-list (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                (empty-eval-list (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                            alist)
                                                                  a)))
                               (alist2 (append (pairlis$ (strip-cars (mv-nth 2
                                                                             (handle-constant-lambda-formals (cadr (car term))
-                                                                                                            (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                                                                            (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                                                       alist))))
                                                         (unquote-list (strip-cdrs (mv-nth 2
                                                                                           (handle-constant-lambda-formals (cadr (car term))
-                                                                                                                          (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                                                                                          (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                                                                     alist))))))
                                               (pairlis$ (cadr (car term))
-                                                        (empty-eval-list (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                        (empty-eval-list (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                    alist)
                                                                          a)))))
                    (:instance equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special
-                              (term (substitute-constants-in-lambdas2-aux (caddr (car term))
+                              (term (substitute-constants-in-lambdas-aux (caddr (car term))
                                                                           (mv-nth 2
                                                                                   (handle-constant-lambda-formals (cadr (car term))
-                                                                                                                  (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                                                                                  (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                                                                             alist)))))
                               (alist1 a)
                               (alist2 (pairlis$ (cadr (car term))
-                                                (empty-eval-list (substitute-constants-in-lambdas2-aux-lst (cdr term)
+                                                (empty-eval-list (substitute-constants-in-lambdas-aux-lst (cdr term)
                                                                                                            alist)
                                                                  a)))))
              )
             ("Goal" :do-not '(generalize eliminate-destructors)
-;           :expand (substitute-constants-in-lambdas2-aux term alist)
-             :in-theory (e/d (substitute-constants-in-lambdas2-aux
-                              substitute-constants-in-lambdas2-aux-lst
+;           :expand (substitute-constants-in-lambdas-aux term alist)
+             :in-theory (e/d (substitute-constants-in-lambdas-aux
+                              substitute-constants-in-lambdas-aux-lst
                               empty-eval-of-fncall-args
 ;true-listp-when-symbol-alistp
 ;                              no-duplicate-lambda-formals-in-termp
@@ -817,36 +817,36 @@
                               empty-eval-of-lookup-equal-of-pairlis$))))))
 
 
-;; Correctness theorem for substitute-constants-in-lambdas2
-(defthm substitute-constants-in-lambdas2-correct
+;; Correctness theorem for substitute-constants-in-lambdas
+(defthm substitute-constants-in-lambdas-correct
   (implies (and (pseudo-termp term)
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (equal (empty-eval (substitute-constants-in-lambdas2 term) alist)
+           (equal (empty-eval (substitute-constants-in-lambdas term) alist)
                   (empty-eval term alist)))
-  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas2))))
+  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas))))
 
-(defthm pseudo-termp-of-substitute-constants-in-lambdas2
+(defthm pseudo-termp-of-substitute-constants-in-lambdas
   (implies (pseudo-termp term)
-           (pseudo-termp (substitute-constants-in-lambdas2 term)))
-  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas2))))
+           (pseudo-termp (substitute-constants-in-lambdas term)))
+  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas))))
 
-(defthm no-nils-in-termp-of-substitute-constants-in-lambdas2
+(defthm no-nils-in-termp-of-substitute-constants-in-lambdas
   (implies (and (no-nils-in-termp term)
                 (pseudo-termp term))
-           (no-nils-in-termp (substitute-constants-in-lambdas2 term)))
-  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas2))))
+           (no-nils-in-termp (substitute-constants-in-lambdas term)))
+  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas))))
 
-(defthm no-duplicate-lambda-formals-in-termp-of-substitute-constants-in-lambdas2
+(defthm no-duplicate-lambda-formals-in-termp-of-substitute-constants-in-lambdas
   (implies (and (no-duplicate-lambda-formals-in-termp term)
                 (pseudo-termp term))
-           (no-duplicate-lambda-formals-in-termp (substitute-constants-in-lambdas2 term)))
-  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas2))))
+           (no-duplicate-lambda-formals-in-termp (substitute-constants-in-lambdas term)))
+  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas))))
 
-(defthm lambdas-closed-in-termp-of-substitute-constants-in-lambdas2
+(defthm lambdas-closed-in-termp-of-substitute-constants-in-lambdas
   (implies (and (lambdas-closed-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (pseudo-termp term))
-           (lambdas-closed-in-termp (substitute-constants-in-lambdas2 term)))
-  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas2))))
+           (lambdas-closed-in-termp (substitute-constants-in-lambdas term)))
+  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas))))

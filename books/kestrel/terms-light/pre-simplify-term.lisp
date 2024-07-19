@@ -16,17 +16,17 @@
 
 ;; See correctness proof in pre-simplify-term-proofs.lisp.
 
-(include-book "substitute-constants-in-lambdas2")
+(include-book "substitute-constants-in-lambdas")
 (include-book "drop-unused-lambda-bindings")
 (include-book "drop-trivial-lambdas")
 (include-book "substitute-unnecessary-lambda-vars2")
 (include-book "simplify-ors")
-(local (include-book "substitute-constants-in-lambdas2-proofs"))
+(local (include-book "substitute-constants-in-lambdas-proofs"))
 
 ;; todo: think about the order of these steps (but note that we repeat the whole sequence)
 (defund pre-simplify-term-one-step (term)
   (declare (xargs :guard (pseudo-termp term)))
-  (let* ((term (substitute-constants-in-lambdas2 term))
+  (let* ((term (substitute-constants-in-lambdas term))
          (term (drop-unused-lambda-bindings term))
          (term (substitute-unnecessary-lambda-vars-in-term2 term nil nil))
          ;; todo: this is not really about lambdas.  rename this book?

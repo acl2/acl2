@@ -69,7 +69,7 @@
   :hints (("Goal" :in-theory (enable handle-constant-lambda-formals))))
 
 (mutual-recursion
- (defund substitute-constants-in-lambdas2-aux (term alist)
+ (defund substitute-constants-in-lambdas-aux (term alist)
    (declare (xargs :guard (and (pseudo-termp term)
                                (symbol-alistp alist)
                                (strong-quote-listp (strip-cdrs alist)))
@@ -84,7 +84,7 @@
        (if (eq 'quote fn)
            term
          ;; function call or lambda:
-         (let ((new-args (substitute-constants-in-lambdas2-aux-lst (fargs term) alist)))
+         (let ((new-args (substitute-constants-in-lambdas-aux-lst (fargs term) alist)))
            (if (consp fn)
                ;; it's a lambda:
                (let ((formals (lambda-formals fn))
@@ -93,55 +93,55 @@
                    (handle-constant-lambda-formals formals new-args)
                    ;; Since the lambda is closed, we completely replace the
                    ;; alist passed in when processing the lambda-body:
-                   (let ((new-body (substitute-constants-in-lambdas2-aux body var-constant-alist)))
+                   (let ((new-body (substitute-constants-in-lambdas-aux body var-constant-alist)))
                      (if (equal remaining-formals remaining-args)
                          ;; avoid trivial lambda:
                          new-body
                        (cons-with-hint (make-lambda-with-hint remaining-formals new-body fn) remaining-args term)))))
              ;; not a lambda:
              (cons-with-hint fn new-args term)))))))
- (defund substitute-constants-in-lambdas2-aux-lst (terms alist)
+ (defund substitute-constants-in-lambdas-aux-lst (terms alist)
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (symbol-alistp alist)
                                (strong-quote-listp (strip-cdrs alist)))))
    (if (endp terms)
        nil
-     (cons-with-hint (substitute-constants-in-lambdas2-aux (first terms) alist)
-                     (substitute-constants-in-lambdas2-aux-lst (rest terms) alist)
+     (cons-with-hint (substitute-constants-in-lambdas-aux (first terms) alist)
+                     (substitute-constants-in-lambdas-aux-lst (rest terms) alist)
                      terms))))
 
-(defthm len-of-substitute-constants-in-lambdas2-aux-lst
-  (equal (len (substitute-constants-in-lambdas2-aux-lst terms alist))
+(defthm len-of-substitute-constants-in-lambdas-aux-lst
+  (equal (len (substitute-constants-in-lambdas-aux-lst terms alist))
          (len terms))
   :hints (("Goal" :induct (len terms)
-           :in-theory (enable substitute-constants-in-lambdas2-aux-lst))))
+           :in-theory (enable substitute-constants-in-lambdas-aux-lst))))
 
-(make-flag substitute-constants-in-lambdas2-aux)
+(make-flag substitute-constants-in-lambdas-aux)
 
-(defthm-flag-substitute-constants-in-lambdas2-aux
-  (defthm pseudo-termp-of-substitute-constants-in-lambdas2-aux
+(defthm-flag-substitute-constants-in-lambdas-aux
+  (defthm pseudo-termp-of-substitute-constants-in-lambdas-aux
     (implies (and (pseudo-termp term)
                   (strong-quote-listp (strip-cdrs alist)))
-             (pseudo-termp (substitute-constants-in-lambdas2-aux term alist)))
-    :flag substitute-constants-in-lambdas2-aux)
-  (defthm pseudo-termp-of-substitute-constants-in-lambdas2-aux-lst
+             (pseudo-termp (substitute-constants-in-lambdas-aux term alist)))
+    :flag substitute-constants-in-lambdas-aux)
+  (defthm pseudo-termp-of-substitute-constants-in-lambdas-aux-lst
     (implies (and (pseudo-term-listp terms)
                   (strong-quote-listp (strip-cdrs alist)))
-             (pseudo-term-listp (substitute-constants-in-lambdas2-aux-lst terms alist)))
-    :flag substitute-constants-in-lambdas2-aux-lst)
+             (pseudo-term-listp (substitute-constants-in-lambdas-aux-lst terms alist)))
+    :flag substitute-constants-in-lambdas-aux-lst)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :expand (pseudo-termp (cons (car term)
-                        (substitute-constants-in-lambdas2-aux-lst (cdr term) alist)))
+                        (substitute-constants-in-lambdas-aux-lst (cdr term) alist)))
            :in-theory (enable pseudo-termp
                               pseudo-term-listp
-                              substitute-constants-in-lambdas2-aux
-                              substitute-constants-in-lambdas2-aux-lst
+                              substitute-constants-in-lambdas-aux
+                              substitute-constants-in-lambdas-aux-lst
                               pseudo-term-listp-when-symbol-listp
                               intersection-equal-of-set-difference-equal-arg2
                               true-listp-when-symbol-listp-rewrite-unlimited))))
 
-(verify-guards substitute-constants-in-lambdas2-aux-lst :hints (("Goal" :expand (pseudo-termp term) :in-theory (enable pseudo-termp))))
+(verify-guards substitute-constants-in-lambdas-aux-lst :hints (("Goal" :expand (pseudo-termp term) :in-theory (enable pseudo-termp))))
 
-(defund substitute-constants-in-lambdas2 (term)
+(defund substitute-constants-in-lambdas (term)
   (declare (xargs :guard (pseudo-termp term)))
-  (substitute-constants-in-lambdas2-aux term nil))
+  (substitute-constants-in-lambdas-aux term nil))
