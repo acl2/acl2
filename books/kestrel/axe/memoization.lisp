@@ -334,32 +334,31 @@
 (defthmd not-memoizationp-of-nil
   (not (memoizationp nil)))
 
-;;;
-;;; empty-memoization
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund empty-memoization ()
   (declare (xargs :guard t))
   (make-empty-array 'memoization *memoization-size*))
 
+;; Avoid expensive computation during proofs:
 (in-theory (disable (:e empty-memoization)))
 
-(defthm array1p-of-empty-memoization
-  (array1p 'memoization (empty-memoization))
-  :hints (("Goal" :in-theory (enable empty-memoization))))
+(local
+ (defthm array1p-of-empty-memoization
+   (array1p 'memoization (empty-memoization))
+   :hints (("Goal" :in-theory (enable empty-memoization)))))
 
-(defthm alen1-of-empty-memoization
-  (equal (alen1 'memoization (empty-memoization))
-         *memoization-size*)
-  :hints (("Goal" :in-theory (enable empty-memoization))))
+(local
+ (defthm alen1-of-empty-memoization
+   (equal (alen1 'memoization (empty-memoization))
+          *memoization-size*)
+   :hints (("Goal" :in-theory (enable empty-memoization)))))
 
 (defthm memoizationp-of-empty-memoization
   (memoizationp (empty-memoization))
   :hints (("Goal" :in-theory (enable empty-memoization memoizationp))))
 
-;;;
-;;; add-pair-to-memoization
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Record the fact that the TREE rewrote to RESULT.
 ;; RESULT should be a nodenum/quotep.
@@ -393,9 +392,7 @@
                                    memoizationp)
                                   (dargp natp)))))
 
-;;;
-;;; add-pairs-to-memoization
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Record the fact that all of the TREES rewrote to RESULT.
 ;; RESULT should be a nodenum/quotep.
@@ -423,9 +420,7 @@
                                                             )
                                   (dargp natp)))))
 
-;;;
-;;; lookup-in-memoization
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a nodenum/quotep (to which the memozation equates TREE), or nil
 ;; (meaning TREE is not equated to anything in the memoization).
@@ -450,44 +445,82 @@
   :hints (("Goal" :in-theory (e/d (lookup-in-memoization memoizationp)
                                   (dargp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recognizes an object that is a memoization or nil (meaning no memoization).
+(defund maybe-memoizationp (memoization)
+  (declare (xargs :guard t))
+  (or (eq nil memoization)
+      (memoizationp memoization)))
+
+(defthm maybe-memoizationp-forward-to-memoizationp
+  (implies (and (maybe-memoizationp memoization)
+                memoization)
+           (memoizationp memoization))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
+
+(defthm maybe-memoizationp-of-add-pairs-to-memoization
+  (implies (and (maybe-memoizationp memoization)
+                memoization
+                (dargp tree)
+                (trees-to-memoizep trees-equal-to-tree))
+           (maybe-memoizationp (add-pairs-to-memoization trees-equal-to-tree tree memoization)))
+  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
+
+(defthmd memoizationp-when-maybe-memoizationp
+  (implies (and (maybe-memoizationp memoization)
+                memoization)
+           (memoizationp memoization))
+  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;
 ;;; bounded memoizations
 ;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bounded-memo-alistp (alist bound)
   (declare (xargs :guard (natp bound)))
   (and (memo-alistp alist)
        (bounded-darg-listp (strip-cdrs alist) bound)))
 
-(defthm bounded-memo-alistp-mono
-  (implies (and (bounded-memo-alistp alist bound2)
-                (<= bound2 bound))
-           (bounded-memo-alistp alist bound))
-  :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
+(local
+ (defthm bounded-memo-alistp-mono
+   (implies (and (bounded-memo-alistp alist bound2)
+                 (<= bound2 bound))
+            (bounded-memo-alistp alist bound))
+   :hints (("Goal" :in-theory (enable bounded-memo-alistp)))))
 
-(defthm bounded-memo-alistp-implies-memo-alistp
-  (implies (bounded-memo-alistp alist bound)
-           (memo-alistp alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
+(local
+ (defthm bounded-memo-alistp-implies-memo-alistp
+   (implies (bounded-memo-alistp alist bound)
+            (memo-alistp alist))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable bounded-memo-alistp)))))
 
-(defthm bounded-memo-alistp-of-cons-of-cons
-  (equal (bounded-memo-alistp (cons (cons tree result) memo-alist) bound)
-         (and (tree-to-memoizep tree)
-              (dargp-less-than result bound)
-              (bounded-memo-alistp memo-alist bound)))
-  :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
+(local
+ (defthm bounded-memo-alistp-of-cons-of-cons
+   (equal (bounded-memo-alistp (cons (cons tree result) memo-alist) bound)
+          (and (tree-to-memoizep tree)
+               (dargp-less-than result bound)
+               (bounded-memo-alistp memo-alist bound)))
+   :hints (("Goal" :in-theory (enable bounded-memo-alistp)))))
 
-(defthm dargp-less-than-of-lookup-equal-when-bounded-memo-alistp
-  (implies (and (bounded-memo-alistp alist bound)
-                (lookup-equal key alist))
-           (dargp-less-than (lookup-equal key alist)
-                            bound))
-  :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
+(local
+ (defthm dargp-less-than-of-lookup-equal-when-bounded-memo-alistp
+   (implies (and (bounded-memo-alistp alist bound)
+                 (lookup-equal key alist))
+            (dargp-less-than (lookup-equal key alist)
+                             bound))
+   :hints (("Goal" :in-theory (enable bounded-memo-alistp)))))
 
-(defthm bounded-memo-alistp-of-nil
-  (bounded-memo-alistp nil bound)
-  :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
+(local
+ (defthm bounded-memo-alistp-of-nil
+   (bounded-memo-alistp nil bound)
+   :hints (("Goal" :in-theory (enable bounded-memo-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -530,8 +563,7 @@
 (defthm dargp-less-than-of-lookup-in-memoization-when-bounded-memoizationp
   (implies (and (bounded-memoizationp memoization bound)
                 (lookup-in-memoization tree memoization) ;there is a match
-                (tree-to-memoizep tree)
-                )
+                (tree-to-memoizep tree))
            (dargp-less-than (lookup-in-memoization tree memoization) bound))
   :hints (("Goal" :in-theory (e/d (lookup-in-memoization bounded-memoizationp)
                                   (dargp-less-than)))))
@@ -542,9 +574,9 @@
                 (posp size)
                 (<= size 1152921504606846974))
            (array-of-bounded-memo-alistsp-aux array-name
-                                         (make-empty-array array-name size)
-                                         index
-                                         bound))
+                                              (make-empty-array array-name size)
+                                              index
+                                              bound))
   :hints (("Goal" :in-theory (enable array-of-bounded-memo-alistsp-aux))))
 
 (defthm bounded-memoizationp-of-empty-memoization
@@ -567,7 +599,7 @@
                 (trees-to-memoizep trees))
            (bounded-memoizationp (add-pairs-to-memoization trees result memoization) bound))
   :hints (("Goal" :in-theory (e/d (add-pairs-to-memoization
-;bounded-memoizationp trees-to-memoizep tree-to-memoizep
+                                   ;;bounded-memoizationp trees-to-memoizep tree-to-memoizep
                                    )
                                   (;dargp-less-than
                                    natp)))))
@@ -588,41 +620,7 @@
   :hints (("Goal" :in-theory (enable bounded-memoizationp
                                      array-of-bounded-memo-alistsp))))
 
-;;;
-;;; maybe-memoizationp
-;;;
-
-;; Recognizes an object that is a memoization or nil (meaning no memoization).
-(defund maybe-memoizationp (memoization)
-  (declare (xargs :guard t))
-  (or (eq nil memoization)
-      (memoizationp memoization)))
-
-(defthm maybe-memoizationp-forward-to-memoizationp
-  (implies (and (maybe-memoizationp memoization)
-                memoization)
-           (memoizationp memoization))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
-
-(defthm maybe-memoizationp-of-add-pairs-to-memoization
-  (implies (and (maybe-memoizationp memoization)
-                memoization
-                (dargp tree)
-                (trees-to-memoizep trees-equal-to-tree))
-           (maybe-memoizationp (add-pairs-to-memoization trees-equal-to-tree tree memoization)))
-  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
-
-(defthmd memoizationp-when-maybe-memoizationp
-  (implies (and (maybe-memoizationp memoization)
-                memoization)
-           (memoizationp memoization))
-  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
-
-
-;;;
-;;; maybe-bounded-memoizationp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognizes an object that is a bounded-memoization or nil (meaning no memoization).
 (defund maybe-bounded-memoizationp (memoization bound)
