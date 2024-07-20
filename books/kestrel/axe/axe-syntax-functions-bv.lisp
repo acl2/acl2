@@ -20,6 +20,7 @@
 (include-book "kestrel/bv/bv-syntax" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

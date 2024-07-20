@@ -26,6 +26,7 @@
 (include-book "kestrel/acl2-arrays/aref1-list" :dir :system)
 (include-book "kestrel/acl2-arrays/aset1-list" :dir :system)
 (include-book "kestrel/typed-lists-light/all-greater" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

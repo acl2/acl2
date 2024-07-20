@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "make-term-into-dag-array-simple")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; This utility does not evaluate ground terms.
 ;; See also make-term-into-dag-basic.lisp.

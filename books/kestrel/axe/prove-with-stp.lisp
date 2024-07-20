@@ -25,6 +25,7 @@
 (include-book "worklists")
 (include-book "supporting-nodes") ;for tag-nodenums-with-name
 (include-book "merge-sort-less-than")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -1458,7 +1459,7 @@
                       (mv (erp-t) type))
             (if (empty-typep type) ;can this happen?
                 (let ((parent-nodenums (aref1 'dag-parent-array dag-parent-array nodenum)))
-                  (progn$ ;; (print-array2 'dag-array dag-array (+ 1 (maxelem parent-nodenums))) ;; todo: put back but consider guards
+                  (progn$ ;; (print-array 'dag-array dag-array (+ 1 (maxelem parent-nodenums))) ;; todo: put back but consider guards
                    (cw "parent-nodenums: ~x0~%" parent-nodenums)
                    (er hard? 'type-for-cut-nodenum "expected an induced type from a choppable use for node ~x0" nodenum) ;is this message still right?
                    (mv (erp-t)
@@ -1473,7 +1474,7 @@
             (prog2$ (er hard? 'type-for-cut-nodenum "No good induced type for node ~x0" nodenum)
                     (mv (erp-t) type))
           (if (empty-typep type)
-              (progn$ ;; (print-array2 'dag-array dag-array (+ 1 (maxelem parent-nodenums))) ;; todo: put back but consider guards
+              (progn$ ;; (print-array 'dag-array dag-array (+ 1 (maxelem parent-nodenums))) ;; todo: put back but consider guards
                (cw "parent-nodenums: ~x0~%" parent-nodenums)
                (er hard? 'type-for-cut-nodenum "expected an induced type from a choppable use for node ~x0, which is ~x1" nodenum (aref1 'dag-array dag-array nodenum)) ;is this message still right?
                (mv (erp-t)

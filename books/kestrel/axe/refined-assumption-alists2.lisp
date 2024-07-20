@@ -1,6 +1,6 @@
 ; Extending a refined-assumption-alist
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "refined-assumption-alists")
 (include-book "conjunctions-and-disjunctions")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 (local (in-theory (disable natp REFINED-ASSUMPTION-ALISTP)))

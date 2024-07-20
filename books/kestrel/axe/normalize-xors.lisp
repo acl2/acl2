@@ -39,6 +39,7 @@
 (include-book "translation-array")
 (include-book "merge-sort-less-than")
 (include-book "kestrel/bv/bitxor" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

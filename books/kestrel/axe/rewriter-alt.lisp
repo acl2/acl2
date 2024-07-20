@@ -1,7 +1,7 @@
 ; Another Axe Rewriter (not used much yet)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -33,6 +33,7 @@
 (include-book "rule-lists") ;todo: just for lookup-rules (can we do without that? - try to avoid using make-var-lookup-terms -- instead require the nested DAG alist to have a certain form and just do the lookup).
 (include-book "jvm/axe-syntaxp-evaluator-jvm")
 (include-book "jvm/axe-bind-free-evaluator-jvm")
+(include-book "kestrel/acl2-arrays/print-array" :dir :system)
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -312,7 +313,7 @@
                               ;;is it worth printing in this case?
                               (progn$ (cw "(Failed to relieve axe-syntaxp hyp: ~x0 for ~x1.)~%" hyp rule-symbol)
                                       ;; (cw "(DAG:~%")
-                                      ;; (print-array2 'dag-array dag-array dag-len)
+                                      ;; (print-array 'dag-array dag-array dag-len)
                                       ;; (cw ")~%")
                                       ))
                          (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))))

@@ -1,6 +1,6 @@
 ; An array to track information from assumptions
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "dags")
 (include-book "bounded-darg-listp")
 (include-book "equivs")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; Currently, an assumption always indicates that a node is equal to a
 ;; particular constant, or indicates that it is non-nil.

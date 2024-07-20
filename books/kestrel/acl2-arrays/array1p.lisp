@@ -79,7 +79,8 @@
                        (array1p :fake-name l))))
   :hints (("Goal" :in-theory (enable array1p))))
 
-(defthm array1p-of-cons-header
+; caused problems
+(defthmd array1p-of-cons-header
   (equal (ARRAY1P NAME2 (CONS (LIST :HEADER
                                     :DIMENSIONS (LIST dim)
                                     :MAXIMUM-LENGTH max

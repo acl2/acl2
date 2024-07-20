@@ -20,6 +20,7 @@
 (include-book "bounded-dag-exprs")
 (include-book "axe-trees")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; The result array maps nodes to either nil (no result) or a darg (nodenum or quotep) less than the bound.
 ;; TODO: Compare to bounded-node-replacement-array?

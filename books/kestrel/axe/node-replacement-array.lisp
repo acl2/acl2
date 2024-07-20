@@ -18,6 +18,7 @@
 (include-book "node-replacement-alist")
 (include-book "dargp-less-than")
 (include-book "merge-term-into-dag-array-basic")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/min" :dir :system))
@@ -283,6 +284,7 @@
                                      make-into-array-with-len ;todo
                                      dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
                                      acons
+                                     array1p-of-cons-header
                                      )
                                   ;; for speed:
                                   (bounded-node-replacement-arrayp-aux-beyond-length)))))

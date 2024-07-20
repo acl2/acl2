@@ -44,6 +44,7 @@
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
 (include-book "kestrel/booleans/boolxor" :dir :system) ;since this book knows about boolxor
 (include-book "dag-size-sparse")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -785,7 +786,7 @@
 ;;             (prog2$ (if (and print-interval
 ;;                              (equal 0 (mod dag-len print-interval)))
 ;; ;                          nil
-;;                         (print-array2 'dag-array dag-array (+ -1 dag-len) ) ;
+;;                         (print-array 'dag-array dag-array (+ -1 dag-len) ) ;
 ;; ;                          (cw "Adding node ~x0 to dag: ~x1.~%" dag-len (array-to-alist 'dag-array dag-array dag-len))
 
 ;;                       (if (and (not dont-add-permanently)
