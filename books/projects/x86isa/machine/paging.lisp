@@ -2902,12 +2902,16 @@
        (segment-selectorBits->rpl
         (the (unsigned-byte 16) (seg-visiblei #.*cs* x86)))))
 
-(define ia32e-la-to-pa-without-tlb
-  ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
-             "Canonical linear address to be mapped to a physical address")
-   (r-w-x     :type (member  :r :w :x)
-              "Indicates whether this translation is on the behalf of a read, write, or instruction fetch")
-   (x86 "x86 state"))
+(define ia32e-la-to-pa-without-tlb-internal
+  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+   (wp        :type (unsigned-byte  1))
+   (smep      :type (unsigned-byte  1))
+   (smap      :type (unsigned-byte  1))
+   (ac        :type (unsigned-byte  1))
+   (nxe       :type (unsigned-byte  1))
+   (r-w-x     :type (member  :r :w :x))
+   (cpl       :type (unsigned-byte  2))
+   (x86))
 
   :parents (ia32e-paging)
 
@@ -2933,21 +2937,6 @@
                               r-w-x
                               :r)
                      :exec r-w-x))
-         (cr0
-           ;; CR0 is still a 32-bit register in 64-bit mode.
-           (n32 (ctri *cr0* x86)))
-         (cr4
-           ;; CR4 has all but the low 22 bits reserved.
-           (n22 (ctri *cr4* x86)))
-         ;; Current privilege level (0-3), obtained from the CS segment selector [1:0]
-         (cpl (the (unsigned-byte  2) (cpl x86)))
-         ;; ia32-efer has all but the low 12 bits reserved.
-         (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
-         (wp        (cr0Bits->wp cr0))
-         (smep      (cr4Bits->smep cr4))
-         (smap      (cr4Bits->smap cr4))
-         (ac        (rflagsBits->ac (rflags x86)))
-         (nxe       (ia32_eferBits->nxe ia32-efer))
          (cr3       (ctri *cr3* x86))
          (pml4-table-base-addr
            (mbe
@@ -2965,6 +2954,207 @@
 
   ///
 
+  (defthm ia32e-la-to-pa-without-tlb-internal-in-non-app-view
+          (implies (xr :app-view nil x86)
+                   (equal (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)
+                          (mv t 0 x86))))
+
+  (local (defthm unsigned-byte-p-logapp
+                 (implies (and (natp j)
+                               (unsigned-byte-p i x)
+                               (integerp y))
+                          (unsigned-byte-p (+ i j) (logapp j y x)))))
+
+  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-without-tlb-internal
+                          :hyp t
+                          :bound *physical-address-size*
+                          :concl (mv-nth 1 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86))
+
+                          :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p))))
+                          :otf-flg t
+                          :gen-linear t
+                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) (force (force)))))
+                          :gen-type t
+                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p)
+                                                            (force (force) not)))))
+
+  (defthm x86p-mv-nth-2-ia32e-la-to-pa-without-tlb-internal
+          (implies (x86p x86)
+                   (x86p (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (e/d () (x86p)))))
+
+  (defthm xr-ia32e-la-to-pa-without-tlb-internal
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm xr-fault-ia32e-la-to-pa-without-tlb-internal
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))
+                   (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))
+                          (xr :fault index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (force
+                                             (force)
+                                             (:definition not)
+                                             (:meta acl2::mv-nth-cons-meta))))))
+
+  (defthm xr-and-ia32e-la-to-pa-without-tlb-internal-in-non-marking-view
+          (implies (and (not (marking-view x86))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-xw-values
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl
+                                                                   (xw fld index value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl
+                                                       (xw fld index value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-xw-rflags-not-ac
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags x86)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl
+                                                       (xw :rflags nil value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl
+                                                       (xw :rflags nil value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))))
+          :hints (("Goal" :in-theory (e/d (rflagsbits->ac rflagsbits-fix) ()))))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-xw-state
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :fault))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view))
+                        (not (equal fld :marking-view)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl
+                                                  (xw fld index value x86)))
+                          (xw fld index value
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl
+                                                      x86)))))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-xw-rflags-state-not-ac
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags x86)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl
+                                                  (xw :rflags nil value x86)))
+                          (xw :rflags nil value
+                              (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))))
+          :hints (("Goal" :in-theory (e/d* (rflagsBits->ac rflagsbits-fix) (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86))
+                          (mv-nth 0 (ia32e-la-to-pa-without-tlb-internal lin-addr-2 wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                   :use ((:instance logexting-maintains-same-page
+                                    (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86))
+                              (mv-nth 1 (ia32e-la-to-pa-without-tlb-internal lin-addr-2 wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm mv-nth-2-ia32e-la-to-pa-without-tlb-internal-system-level-non-marking-view
+    (implies (and (not (marking-view x86))
+                  (not (mv-nth 0 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86))))
+             (equal (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86))
+                    x86))
+    :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-without-tlb-internal) (force (force))))))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-without-tlb-internal
+           (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))
+                  (64-bit-modep x86))
+           :enable (64-bit-modep)
+           :disable (force (force)))
+
+  (defrule x86-operation-mode-of-ia32e-la-to-pa-without-tlb-internal
+           (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode
+           :disable ia32e-la-to-pa-without-tlb-internal)
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-fixes-address
+          (equal (ia32e-la-to-pa-without-tlb-internal (logext 48 lin-addr) wp smep smap ac nxe r-w-x cpl x86)
+                 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-fixes-perm
+          (implies (not (member-p r-w-x '(:r :w :x)))
+                   (equal (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)
+                          (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe :r cpl x86)))))
+
+;; This isn't used in execution, but it's useful for reasoning
+(define ia32e-la-to-pa-without-tlb
+  ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
+             "Canonical linear address to be mapped to a physical address")
+   (r-w-x     :type (member  :r :w :x)
+              "Indicates whether this translation is on the behalf of a read, write, or instruction fetch")
+   (x86 "x86 state"))
+  :parents (ia32e-paging)
+
+  :guard (and (not (app-view x86))
+              (canonical-address-p lin-addr))
+  (if (mbt (not (app-view x86)))
+
+    (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                        :exec lin-addr))
+         (r-w-x (mbe :logic (if (member r-w-x '(:r :w :x)) r-w-x :r)
+                     :exec r-w-x))
+         (cr0
+           ;; CR0 is still a 32-bit register in 64-bit mode.
+           (n32 (ctri *cr0* x86)))
+         (cr4
+           ;; CR4 has all but the low 22 bits reserved.
+           (n22 (ctri *cr4* x86)))
+         ;; Current privilege level (0-3), obtained from the CS segment selector [1:0]
+         (cpl (the (unsigned-byte  2) (cpl x86)))
+         ;; ia32-efer has all but the low 12 bits reserved.
+         (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
+         (wp        (cr0Bits->wp cr0))
+         (smep      (cr4Bits->smep cr4))
+         (smap      (cr4Bits->smap cr4))
+         (ac        (rflagsBits->ac (rflags x86)))
+         (nxe       (ia32_eferBits->nxe ia32-efer)))
+        (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86))
+
+    (mv t 0 x86))
+  ///
   (defthm ia32e-la-to-pa-without-tlb-in-non-app-view
           (implies (xr :app-view nil x86)
                    (equal (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)
@@ -3142,77 +3332,12 @@
   :guard (and (not (app-view x86))
               (canonical-address-p lin-addr))
 
-  :guard-hints (("Goal" :in-theory (e/d (acl2::bool->bit bitops::logsquash segment-selectorbits->rpl)
+  :guard-hints (("Goal" :in-theory (e/d (acl2::bool->bit bitops::logsquash segment-selectorbits->rpl ia32e-la-to-pa-without-tlb)
                                         (unsigned-byte-p
                                           signed-byte-p
                                           bitops::logand-with-negated-bitmask
                                           member-equal
                                           not))))
-
-  :prepwork
-  ((make-event
-     `(define tlb-key ((vpn :type (unsigned-byte ,(- *max-linear-address-size* 12)))
-                       (r-w-x :type (member :r :w :x))
-                       (cpl :type (unsigned-byte 2)))
-        :returns (key tlb-keyp)
-        :prepwork ((local (in-theory (disable unsigned-byte-p))))
-        (b* ((vpn (mbe :logic (loghead ,(- *max-linear-address-size* 12) vpn)
-                       :exec vpn))
-             (r-w-x (mbe :logic (if (member r-w-x '(:r :w :x))
-                                  r-w-x
-                                  :r)
-                         :exec r-w-x))
-             (cpl (mbe :logic (loghead 2 cpl) :exec cpl)))
-            (logapp 2 
-                    (case r-w-x
-                      (:r 0)
-                      (:w 1)
-                      (:x 2))
-                    (logapp 2 cpl vpn)))
-        ///
-        (defthm equal-ash-implies-equal
-                (implies (and (natp n)
-                              (integerp a)
-                              (integerp b))
-                         (equal (equal (ash a n)
-                                       (ash b n))
-                                (equal a b)))
-                :hints (("Goal" :in-theory (enable ash** bitops::ash**-induct))))
-
-        (defthm natp-integer-length-0
-                (implies (natp x)
-                         (equal (equal (integer-length x) 0)
-                                (equal x 0))))
-
-        (defthm equal-logapp-equal-components
-                (implies (and (natp n)
-                              (natp a)
-                              (<= (integer-length a) n)
-                              (integerp b)
-                              (natp c)
-                              (<= (integer-length c) n)
-                              (integerp d))
-                         (equal (equal (logapp n a b)
-                                       (logapp n c d))
-                                (and (equal a c)
-                                     (equal b d))))
-                :hints (("Goal" :in-theory (enable logapp** bitops::logapp-induct))))
-
-        (defthm tlb-key-injective
-                (equal (equal (tlb-key a b c)
-                              (tlb-key d e f))
-                       (and (equal (loghead ,(- *max-linear-address-size* 12) a)
-                                   (loghead ,(- *max-linear-address-size* 12) d))
-                            (equal (if (member b '(:r :w :x))
-                                     b
-                                     :r)
-                                   (if (member e '(:r :w :x))
-                                     e
-                                     :r))
-                            (equal (loghead 2 c) (loghead 2 f))))
-                :rule-classes :rewrite
-                :hints (("Goal" :in-theory (disable bitops::logapp-of-loghead
-                                                    bitops::logapp-of-i-0)))))))
 
   ;; If lin-addr is not canonical, we should throw a general
   ;; protection exception (#GP(0)).  (Or a stack fault (#SS) as
@@ -3224,22 +3349,45 @@
                         :exec lin-addr))
          (r-w-x (mbe :logic (if (member r-w-x '(:r :w :x)) r-w-x :r)
                      :exec r-w-x))
+         (cr0
+           ;; CR0 is still a 32-bit register in 64-bit mode.
+           (n32 (ctri *cr0* x86)))
+         (cr4
+           ;; CR4 has all but the low 22 bits reserved.
+           (n22 (ctri *cr4* x86)))
+         ;; Current privilege level (0-3), obtained from the CS segment selector [1:0]
+         (cpl (the (unsigned-byte  2) (cpl x86)))
+         ;; ia32-efer has all but the low 12 bits reserved.
+         (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
+         (wp        (cr0Bits->wp cr0))
+         (smep      (cr4Bits->smep cr4))
+         (smap      (cr4Bits->smap cr4))
+         (ac        (rflagsBits->ac (rflags x86)))
+         (nxe       (ia32_eferBits->nxe ia32-efer))
          (vpn (logtail 12 (loghead #.*max-linear-address-size* lin-addr)))
          (tlb (tlb x86))
 
-         (tlb-key (tlb-key vpn r-w-x (cpl x86)))
-         ;; The useless looking and is necessary to coerce the return value of member
-         ;; to boolean, which is necessary cause mbt requires t, not just a truthy value
+         (tlb-key (make-tlb-key :vpn vpn
+                                :r-w-x (case r-w-x
+                                         (:r 0)
+                                         (:w 1)
+                                         (:x 2))
+                                :wp wp
+                                :smep smep
+                                :smap smap
+                                :ac ac
+                                :nxe nxe
+                                :cpl cpl))
          (tlb-entry (cdr (hons-get tlb-key tlb)))
          ((when tlb-entry) (mv nil 
                                (logapp 12 lin-addr tlb-entry)
                                x86))
 
          ;; We didn't find a valid tlb entry
-         ((mv flg phys-addr x86) (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+         ((mv flg phys-addr x86) (mbe :exec (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe r-w-x cpl x86)
+                                      :logic (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
          ((when flg) (mv flg phys-addr x86))
          (ppn (logtail 12 phys-addr))
-         ;; The use of and is for the same reason as the one documented above
          (x86 (!tlb (hons-acons tlb-key ppn tlb) x86)))
         (mv flg phys-addr x86))
 
@@ -3400,6 +3548,8 @@
           (implies (not (member-p r-w-x '(:r :w :x)))
             (equal (ia32e-la-to-pa lin-addr r-w-x x86)
                    (ia32e-la-to-pa lin-addr :r x86)))))
+
+(in-theory (enable ia32e-la-to-pa-without-tlb-internal))
 
 ;; ======================================================================
 
@@ -3654,8 +3804,12 @@
               (ia32e-la-to-pa-pml4-table
                lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
             (loghead n lin-addr)))
-  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-pml4-table)
-                                  (unsigned-byte-p)))))
+  :hints (("Goal" :do-not '(preprocess) ;; Preprocessing seems to make this theorem weirdly slow for some reason
+           :in-theory (e/d (ia32e-la-to-pa-pml4-table)
+                           (unsigned-byte-p
+                             acl2::loghead-identity
+                             unsigned-byte-p-when-ia32_eferbits-p
+                             unsigned-byte-p-when-12bits-p)))))
 
 (defthm pml4-lower-12-bits-error
   (implies (and (natp n)
@@ -3672,8 +3826,12 @@
             0
             (ia32e-la-to-pa-pml4-table
              lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
-  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-pml4-table)
-                                  (unsigned-byte-p)))))
+  :hints (("Goal" :do-not '(preprocess) ;; Preprocessing seems to make this theorem weirdly slow for some reason
+           :in-theory (e/d (ia32e-la-to-pa-pml4-table)
+                           (unsigned-byte-p
+                             acl2::loghead-identity
+                             unsigned-byte-p-when-ia32_eferbits-p
+                             unsigned-byte-p-when-12bits-p)))))
 
 (defthm pml4-lower-12-bits-value-of-address-when-error
   (implies (and (natp n)
@@ -3690,8 +3848,12 @@
               (ia32e-la-to-pa-pml4-table
                lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
             0))
-  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-pml4-table)
-                                  (unsigned-byte-p)))))
+  :hints (("Goal" :do-not '(preprocess) ;; Preprocessing seems to make this theorem weirdly slow for some reason
+           :in-theory (e/d (ia32e-la-to-pa-pml4-table)
+                           (unsigned-byte-p
+                             acl2::loghead-identity
+                             unsigned-byte-p-when-ia32_eferbits-p
+                             unsigned-byte-p-when-12bits-p)))))
 
 (defthm ia32e-la-to-pa-lower-12-bits
   (implies (and (natp n)

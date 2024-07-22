@@ -297,6 +297,20 @@
                                              loghead** bitops::loghead-induct
                                              logtail** bitops::logtail-induct))))
 
+  (defthm equal-tlb-key-implies-equiv-components
+          (equal (equal (tlb-key wp smep smap ac nxe r-w-x cpl vpn)
+                        (tlb-key wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2 vpn2))
+                 (and 
+                   (bit-equiv wp wp2)
+                   (bit-equiv smep smep2)
+                   (bit-equiv smap smap2)
+                   (bit-equiv ac ac2)
+                   (bit-equiv nxe nxe2)
+                   (2bits-equiv r-w-x r-w-x2)
+                   (2bits-equiv cpl cpl2)
+                   (36bits-equiv vpn vpn2)))
+          :hints (("Goal" :in-theory (enable tlb-key))))
+
   (defthm ia32e-la-to-pa-invariant-under-ia32e-la-to-pa
           (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x
                                                 (mv-nth 2 (ia32e-la-to-pa lin-addr2 r-w-x-2 x86))))
@@ -306,10 +320,14 @@
                       (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))))
           :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa)
                                           (ia32e-la-to-pa-without-tlb-fixes-address
-                                            acl2::ifix-under-int-equiv))
-                   :cases ((equal (tlb-key (logtail 12 lin-addr) r-w-x (cpl x86))
-                                  (tlb-key (logtail 12 lin-addr2) r-w-x (cpl x86))))
-                   :use ((:instance logext-n-same-page-if-loghead-logtail-equal
+                                            acl2::ifix-under-int-equiv
+                                            same-page-offset-implies-same-logheads))
+                   :use ((:instance ia32e-la-to-pa-without-tlb-fixes-address)
+                         (:instance same-page-offset-implies-same-logheads
+                                    (x lin-addr)
+                                    (y (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                                    (n 12))
+                         (:instance logext-n-same-page-if-loghead-logtail-equal
                                     (n 48) (k 36) (a lin-addr) (b lin-addr2)))))))
 
 (define paging-equiv-int ((lin-addr :type (signed-byte   #.*max-linear-address-size*))

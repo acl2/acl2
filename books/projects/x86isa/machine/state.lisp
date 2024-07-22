@@ -648,18 +648,51 @@
              collect
              (intern$ (symbol-name i) "KEYWORD"))))
 
-(define tlb-keyp (key)
+(defbitstruct tlb-key
+              ((wp bitp)
+               (smep bitp)
+               (smap bitp)
+               (ac bitp)
+               (nxe bitp)
+               (r-w-x 2bits)
+               (cpl 2bits)
+               (vpn 36bits)))
+
+(define good-tlb-key-p (key)
   :enabled t
   :guard t
-  (and (unsigned-byte-p (+ (- #.*max-linear-address-size* 12) 4) key)
-           (< (loghead 2 key) 3)))
+  (and (tlb-key-p key)
+       (<= (tlb-key->r-w-x key) 2)))
+
+(define good-tlb-key-fix (key)
+  :guard (good-tlb-key-p key)
+  :inline t
+  (mbe :logic (if (good-tlb-key-p key)
+                key
+                0)
+       :exec key)
+  ///
+  (defthm good-tlb-key-fix-is-identity-on-good-tlb-key-p
+          (implies (good-tlb-key-p x)
+                   (equal (good-tlb-key-fix x)
+                          x)))
+
+  (defthm good-tlb-key-fix-is-good-tlb-key
+          (good-tlb-key-p (good-tlb-key-fix x))))
+
+(fty::deffixtype good-tlb-key
+                 :pred good-tlb-key-p
+                 :fix good-tlb-key-fix
+                 :equiv good-tlb-key-equiv
+                 :define t
+                 :forward t)
 
 (define tlb-entryp (x)
   :guard t
   :enabled t
   (b* (((unless (consp x)) nil)
        ((cons key val) x))
-      (and  (tlb-keyp key)
+      (and  (good-tlb-key-p key)
             (unsigned-byte-p (- #.*physical-address-size* 12) val))))
 
 (define tlbp (tlb)
@@ -701,7 +734,6 @@
   (defthm tlb-fix-of-tlb
           (implies (tlbp x)
                    (equal (tlb-fix x) x))))
-
 
 (defun xdoc-x86-state (xs) ;; xs: *x86isa-state*
   (if (atom xs)
