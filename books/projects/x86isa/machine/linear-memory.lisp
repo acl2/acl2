@@ -1890,6 +1890,7 @@
                                           (:rewrite acl2::ash-0)
                                           (:rewrite acl2::zip-open)
                                           (:linear bitops::logior-<-0-linear-2)
+                                          (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                                           (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -2097,6 +2098,7 @@
                                         ((:rewrite acl2::ash-0)
                                          (:rewrite acl2::zip-open)
                                          (:linear bitops::logior-<-0-linear-2)
+                                         (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                                          (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -2229,6 +2231,7 @@
                                    (:rewrite acl2::ash-0)
                                    (:rewrite acl2::zip-open)
                                    (:linear bitops::logior-<-0-linear-2)
+                                   (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                                    (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -2589,6 +2592,7 @@
                       (:rewrite acl2::ash-0)
                       (:rewrite acl2::zip-open)
                       (:linear bitops::logior-<-0-linear-2)
+                      (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                       (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -2889,6 +2893,7 @@
                     ((:rewrite acl2::ash-0)
                      (:rewrite acl2::zip-open)
                      (:linear bitops::logior-<-0-linear-2)
+                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                      (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -3050,6 +3055,7 @@
                       (:rewrite acl2::ash-0)
                       (:rewrite acl2::zip-open)
                       (:linear bitops::logior-<-0-linear-2)
+                      (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                       (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -3298,6 +3304,7 @@
                     ((:rewrite acl2::ash-0)
                      (:rewrite acl2::zip-open)
                      (:linear bitops::logior-<-0-linear-2)
+                     (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                      (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -3456,6 +3463,7 @@
                                    (:rewrite acl2::ash-0)
                                    (:rewrite acl2::zip-open)
                                    (:linear bitops::logior-<-0-linear-2)
+                                   (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                                    (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -3770,6 +3778,7 @@
                              (:rewrite acl2::ash-0)
                              (:rewrite acl2::zip-open)
                              (:linear bitops::logior-<-0-linear-2)
+                             (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                              (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -3975,6 +3984,7 @@
                                   (:rewrite acl2::ash-0)
                                   (:rewrite acl2::zip-open)
                                   (:linear bitops::logior-<-0-linear-2)
+                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                                   (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -4407,6 +4417,7 @@
                             (:rewrite acl2::ash-0)
                             (:rewrite acl2::zip-open)
                             (:linear bitops::logior-<-0-linear-2)
+                            (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                             (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -4765,6 +4776,7 @@
                                   (:rewrite acl2::ash-0)
                                   (:rewrite acl2::zip-open)
                                   (:linear bitops::logior-<-0-linear-2)
+                                  (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                                   (:rewrite bitops::logior-equal-0)))))
 
   :prepwork
@@ -5441,6 +5453,7 @@
                             (:rewrite acl2::ash-0)
                             (:rewrite acl2::zip-open)
                             (:linear bitops::logior-<-0-linear-2)
+                            (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                             (:rewrite bitops::logior-equal-0)))))
 
   :prepwork

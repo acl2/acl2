@@ -621,8 +621,8 @@
                         :fix (nfix x))
     (:doc "</li>")
 
-    (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping 4K virtual page numbers to a tlb-entry bitstruct that summarizes the information in the page tables about the given 4K page.<br/>")
-    (tlb   :type (satisfies tlb-p)
+    (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping lists of virtual page number, a boolean for whether we're in supervisor mode, and access type to either the physical page number (if such an entry with the given access type is allowed) or (cons :pagefault <error code>) if the access does not have a valid mapping.<br/>")
+    (tlb   :type (satisfies tlbp)
            :initially :tlb
            :fix (tlb-fix x))
     (:doc "</li>")
@@ -648,71 +648,58 @@
              collect
              (intern$ (symbol-name i) "KEYWORD"))))
 
-(defbitstruct tlb-entry
-              ((r/w bitp)
-               (u/s bitp)
-               (xd bitp)
-               (d bitp)
-               ;; The TLB is modeled as only caching 4K pages, which is
-               ;; explicitly allowed by the ISA
-               (ppn 40bits)
-               ;; We cache the lowest level paging entry's address to allow for
-               ;; quickly updating the dirty bit.
-               ;; A physical address is 52 bits, but since this must be 8 byte
-               ;; aligned, we ommit the bottom 3
-               (lowest-level-paging-entry-addr 49bits)))
-
-(define vpnp (key)
+(define tlb-keyp (key)
   :enabled t
   :guard t
-  (signed-byte-p (+ (- #.*max-linear-address-size* 12) 4) key))
+  (and (unsigned-byte-p (+ (- #.*max-linear-address-size* 12) 4) key)
+           (< (loghead 2 key) 3)))
 
-(define tlb-record-p (x)
+(define tlb-entryp (x)
   :guard t
   :enabled t
   (b* (((unless (consp x)) nil)
        ((cons key val) x))
-      (and  (vpnp key)
-            (tlb-entry-p val))))
+      (and  (tlb-keyp key)
+            (unsigned-byte-p (- #.*physical-address-size* 12) val))))
 
-(define tlb-p (tlb)
+(define tlbp (tlb)
   :guard t
   (b* (((unless (consp tlb)) (equal tlb :tlb))
        ((list* el tail) tlb)
-       ((unless (tlb-record-p el)) nil))
-      (tlb-p tail))
+       ((unless (tlb-entryp el)) nil))
+      (tlbp tail))
   ///
-  (defthm |:tlb-is-tlb-p|
-          (tlb-p :tlb))
+  (defthm |:tlb-is-tlbp|
+          (tlbp :tlb))
 
-  (defthm consing-tlb-record-onto-tlb-p-is-tlb-p
-          (implies (and (tlb-record-p entry)
-                        (tlb-p tlb))
-                   (tlb-p (cons entry tlb))))
+  (defthm consing-tlb-entry-onto-tlbp-is-tlbp
+          (implies (and (tlb-entryp entry)
+                        (tlbp tlb))
+                   (tlbp (cons entry tlb))))
 
   (defthm integerp-cdr-hons-assoc-equal-tlb
-          (implies (tlb-p tlb)
+          (implies (tlbp tlb)
                    (b* ((result (hons-assoc-equal key tlb)))
                        (implies result
                                 (integerp (cdr result)))))
           :hints (("Goal" :in-theory (enable (hons-assoc-equal)))))
 
-  (defthm tlb-entry-p-cdr-hons-assoc-equal-tlb
-          (implies (tlb-p tlb)
+  (defthm unsigned-byte-p-40-cdr-hons-assoc-equal-tlb
+          (implies (tlbp tlb)
                    (b* ((result (hons-assoc-equal key tlb)))
                        (implies result
-                                (tlb-entry-p (cdr result)))))
+                                (unsigned-byte-p (- #.*physical-address-size* 12) (cdr result)))))
           :hints (("Goal" :in-theory (enable (hons-assoc-equal))))))
 
 (define tlb-fix (x)
   :guard t
-  :returns (tlb tlb-p)
-  (if (tlb-p x)
+  :returns (tlb tlbp)
+  (if (tlbp x)
     x
     :tlb)
   ///
   (defthm tlb-fix-of-tlb
-          (implies (tlb-p x)
+          (implies (tlbp x)
                    (equal (tlb-fix x) x))))
 
 
