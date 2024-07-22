@@ -1,7 +1,7 @@
 ; More tools to compute DAG sizes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,6 +20,7 @@
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "dags")
 (include-book "dag-size-array")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "consecutivep2"))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

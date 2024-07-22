@@ -1,7 +1,7 @@
 ; Boolean-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "dag-arrays")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; This machinery should only be used heuristically, so soundness should not
 ;; depend on it.  Thus, we can list functions as syntactically boolean without

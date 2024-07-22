@@ -16,6 +16,7 @@
 (include-book "dag-arrays")
 (include-book "contexts")
 (include-book "kestrel/utilities/forms" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))

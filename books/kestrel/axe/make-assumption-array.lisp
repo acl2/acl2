@@ -1,6 +1,6 @@
 ; Populating the assumption-array
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 (include-book "assumption-array")
 (include-book "dag-arrays")
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))

@@ -15,6 +15,7 @@
 (include-book "dag-arrays")
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/acl2-arrays/aref1-list" :dir :system) ; for some rules below
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))

@@ -1,7 +1,7 @@
 ; More general variant of parent-arrray.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,6 +16,7 @@
 (include-book "bounded-dag-parent-arrayp")
 (include-book "shorter-list")
 (include-book "dag-parent-array") ;todo drop, but need to factor out first-atom, etc.
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;;;
 ;;; find-shortest-parent-lst-with-name

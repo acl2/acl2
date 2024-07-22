@@ -1,6 +1,7 @@
 ; Rules (theorems) relied upon by the Formal Unit Tester
 ;
 ; Copyright (C) 2016-2023 Kestrel Technology, LLC
+; Copyright (C) 2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,6 +27,7 @@
 (include-book "kestrel/bv/bvcat2" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 ;(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 ;(include-book "kestrel/x86/read-and-write" :dir :system)
