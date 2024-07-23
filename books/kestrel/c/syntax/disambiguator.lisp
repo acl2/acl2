@@ -2532,46 +2532,79 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-transunit ((tunit transunitp))
+(define dimb-transunit ((tunit transunitp) (gcc booleanp))
   :returns (mv erp (new-tunit transunitp))
   :short "Disambiguate a translation unit."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We initialize the disambiguation table (to empty),
+    "We initialize the disambiguation table,
      we disambiguate all the external declarations in order,
-     and we discard the final disambiguation table."))
+     and we discard the final disambiguation table.")
+   (xdoc::p
+    "If the GCC flag is @('nil') (i.e. no GCC extensions),
+     the initial disambiguation table is empty.
+     If the flag is @('t'), for now the only difference is that
+     we initialize the disambiguation table with some GCC built-ins.
+     For now the only add some built-ins
+     that we have observed in a preprocessed file.
+     We should revisit this, adding all the GCC built-ins,
+     with clear and accurate references."))
   (b* (((reterr) (irr-transunit))
        (edecls (transunit->decls tunit))
-       ((erp new-edecls &) (dimb-extdecl-list edecls (dimb-init-table))))
+       (table (dimb-init-table))
+       (table
+         (if gcc
+             (b* ((table (dimb-add-ident (ident "__builtin_va_list")
+                                         (dimb-kind-typedef)
+                                         table))
+                  (table (dimb-add-ident (ident "__builtin_bswap16")
+                                         (dimb-kind-objfun)
+                                         table))
+                  (table (dimb-add-ident (ident "__builtin_bswap32")
+                                         (dimb-kind-objfun)
+                                         table))
+                  (table (dimb-add-ident (ident "__builtin_bswap64")
+                                         (dimb-kind-objfun)
+                                         table)))
+               table)
+           table))
+       ((erp new-edecls &) (dimb-extdecl-list edecls table)))
     (retok (transunit new-edecls)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-transunit-ensemble ((tuens transunit-ensemblep))
+(define dimb-transunit-ensemble ((tuens transunit-ensemblep) (gcc booleanp))
   :returns (mv erp (new-tuens transunit-ensemblep))
   :short "Disambiguate a translation unit ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
+    "We also pass a flag saying whether GCC extensions should be accepted.")
+   (xdoc::p
     "We disambiguate all the translation units, independently.
      We leave the file path mapping unchanged."))
   (b* (((reterr) (irr-transunit-ensemble))
        (tumap (transunit-ensemble->unwrap tuens))
-       ((erp new-tumap) (dimb-transunit-ensemble-loop tumap)))
+       ((erp new-tumap) (dimb-transunit-ensemble-loop tumap gcc)))
     (retok (transunit-ensemble new-tumap)))
   :hooks (:fix)
 
   :prepwork
-  ((define dimb-transunit-ensemble-loop ((tumap filepath-transunit-mapp))
+  ((define dimb-transunit-ensemble-loop ((tumap filepath-transunit-mapp)
+                                         (gcc booleanp))
      :returns (mv erp (new-tumap filepath-transunit-mapp
                                  :hyp (filepath-transunit-mapp tumap)))
      :parents nil
      (b* (((reterr) nil)
           ((when (omap::emptyp tumap)) (retok nil))
           ((mv path tunit) (omap::head tumap))
-          ((erp new-tunit) (dimb-transunit tunit))
-          ((erp new-tumap) (dimb-transunit-ensemble-loop (omap::tail tumap))))
+          ((erp new-tunit) (dimb-transunit tunit gcc))
+          ((erp new-tumap)
+           (dimb-transunit-ensemble-loop (omap::tail tumap) gcc)))
        (retok (omap::update path new-tunit new-tumap)))
-     :verify-guards :after-returns)))
+     :verify-guards :after-returns
+     ///
+     (fty::deffixequiv dimb-transunit-ensemble-loop
+       :args ((gcc booleanp))))))
