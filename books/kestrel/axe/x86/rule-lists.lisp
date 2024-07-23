@@ -4638,7 +4638,7 @@
             acl2::bvlt-tighten-bind-and-bind-dag
             ;;acl2::unsigned-byte-p-of-0-arg1 ; move to a more fundamental rule list
             ;; acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
-            boolor-becomes-boolif
+            acl2::boolor-becomes-boolif
             ;; bvlt-hack-1-gen
             acl2::bvchop-subst-constant
             acl2::bvchop-subst-constant-alt
@@ -4684,7 +4684,7 @@
             acl2::logext-identity
             acl2::signed-byte-p-when-unsigned-byte-p-one-less
             ;acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
-            boolor-becomes-boolif
+            acl2::boolor-becomes-boolif
             ;bvlt-hack-1-gen
             acl2::bvchop-subst-constant
             acl2::bvchop-subst-constant-alt
