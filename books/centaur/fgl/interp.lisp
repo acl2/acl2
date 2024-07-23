@@ -167,13 +167,17 @@
 (define fncall-try-concrete-eval ((fn pseudo-fnsym-p)
                                   (args fgl-objectlist-p)
                                   (dont-concrete-exec)
+                                  unequiv
                                   state)
   :returns (mv ok (ans fgl-object-p))
   (b* (((when (or dont-concrete-exec
                   (not (g-concretelist-p args))))
         (mv nil nil))
        ((mv err ans)
-        (acl2::magic-ev-fncall-logic (pseudo-fnsym-fix fn) (g-concretelist-vals args) state)))
+        (if unequiv
+            ;; allow attachments and program mode when unequiv
+            (acl2::magic-ev-fncall (pseudo-fnsym-fix fn) (g-concretelist-vals args) state t t)
+          (acl2::magic-ev-fncall-logic (pseudo-fnsym-fix fn) (g-concretelist-vals args) state))))
     (mv (not err) (g-concrete ans)))
   ///
   (defret fgl-object-bfrlist-of-<fn>
@@ -189,10 +193,23 @@
   (defret eval-of-<fn>
     (implies (and ok
                   (fgl-ev-meta-extract-global-facts :state st)
-                  (equal (w st) (w state)))
+                  (equal (w st) (w state))
+                  (not unequiv))
              (equal (fgl-object-eval ans env)
                     (fgl-ev (cons (pseudo-fnsym-fix fn) (kwote-lst (fgl-objectlist-eval args env)))
-                            nil)))))
+                            nil))))
+
+  (defret fgl-ev-context-fix-of-eval-<fn>
+    :pre-bind ((unequiv (member-equal 'unequiv contexts)))
+    (implies (and ok
+                  (fgl-ev-meta-extract-global-facts :state st)
+                  (equal (w st) (w state))
+                  (equiv-contextsp contexts))
+             (equal (fgl-ev-context-fix contexts
+                                        (fgl-object-eval ans env))
+                    (fgl-ev-context-fix contexts
+                                        (fgl-ev (cons (pseudo-fnsym-fix fn) (kwote-lst (fgl-objectlist-eval args env)))
+                                                nil))))))
 
 
 (define interp-st-restore-reclimit ((reclimit natp)
@@ -3164,7 +3181,9 @@
               (fgl-function-mode-lookup fn (fgl-config->function-modes
                                            (interp-st->config interp-st))))
              ((mv successp ans)
-              (fncall-try-concrete-eval fn args fn-mode.dont-concrete-exec state))
+              (fncall-try-concrete-eval fn args fn-mode.dont-concrete-exec
+                                        (member-eq 'unequiv (interp-st->equiv-contexts interp-st))
+                                        state))
              ((when successp)
               (b* ((interp-st (interp-st-prof-simple-increment-exec fn interp-st)))
                 (fgl-interp-value ans)))

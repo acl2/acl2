@@ -353,6 +353,28 @@ the hypotheses of a conjecture aren't contradictory.</p>"
   (declare (ignore params))
   (if x t nil))
 
+(define fgl-prove ((params "Parameters for the SAT check -- depending on the
+                                attachment for the pluggable checker.")
+                   (msg "String or message identifying the particular SAT check")
+                   (x "Object to check for validity")
+                   &key
+                   stop-on-ctrex
+                   stop-on-fail)
+  :parents (fgl-solving)
+  :short "Check that the given object is never NIL and report an error if not."
+  :long "
+
+<p>Logically, @('(fgl-prove params x)') just returns @('x') fixed to a Boolean
+value.  But when FGL symbolic execution encounters an @('fgl-prove') term, it
+checks Boolean satisfiability of @('(not x)').  If the SAT check returns UNSAT,
+then @('x') is never NIL and the proof has succeeded. If the SAT check returns
+SAT, then a counterexample is extracted and run on the current top-level goal;
+we also cause an error if the @(':stop-on-ctrex') keyword argument is
+nonnil. If the SAT check fails, then the @(':stop-on-fail') keyword argument
+similarly determines whether we cause an error.</p>"
+  (declare (ignore params msg stop-on-ctrex stop-on-fail))
+  (if x t nil))
+
 
 (defun show-counterexample (params msg)
   (declare (ignore params msg))

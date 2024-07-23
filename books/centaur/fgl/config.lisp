@@ -75,7 +75,7 @@
     (prof-enabledp booleanp :default 't)
     (sat-config)
     (sat-config-vacuity)
-    (skip-toplevel-sat-check booleanp :default 'nil)
+    (skip-toplevel-sat-check booleanp :default 't)
     (skip-vacuity-check booleanp :default 'nil)
     ))
 

@@ -3156,3 +3156,41 @@ compute a value for @('x').</p>
     (implies (interp-st-bfrs-ok interp-st)
              (interp-st-bfrs-ok new-interp-st))
     :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
+
+(define interp-st-run-ctrex (sat-config
+                             (interp-st interp-st-bfrs-ok)
+                             state)
+  :returns (mv errmsg new-interp-st)
+  (b* ((goal (cdr (hons-get :goal-term (interp-st->user-scratch interp-st))))
+       ((unless (pseudo-termp goal))
+        (mv (msg "Goal term malformed: ~x0~%" goal) interp-st))
+       (bindings (variable-g-bindings (term-vars goal)))
+       ((mv sat-ctrex-err interp-st)
+        (interp-st-sat-counterexample sat-config interp-st state))
+       ((when sat-ctrex-err)
+        (mv (msg "Error retrieving SAT counterexample: ~@0~%" sat-ctrex-err) interp-st))
+       ((mv ctrex-errmsg ctrex-bindings ?var-vals interp-st)
+        (interp-st-counterex-bindings bindings interp-st state))
+       (- (and ctrex-errmsg
+               (cw "Warnings/errors from deriving counterexample: ~@0~%" ctrex-errmsg)))
+       ;; ((when ctrex-errmsg)
+       ;;  (mv (msg "Error extending counterexample: ~@0~%" ctrex-errmsg) interp-st state))
+       (- (cw "~%*** Counterexample assignment: ***~%~x0~%~%" ctrex-bindings))
+       (- (cw "Running counterexample on top-level goal:~%"))
+       ((mv err ans) (magitastic-ev goal ctrex-bindings 1000 state t t))
+       (- (cond (err (cw "Error running goal on counterexample: ~@0~%" err))
+                (ans (cw "False counterexample -- returned: ~x0.  See ~
+                          warnings/errors from counterexample derivation ~
+                          above.~%" ans))
+                (t   (cw "Counterexample verified!~%"))))
+       (interp-st (interp-st-check-bvar-db-ctrex-consistency interp-st state))
+       (scratch (interp-st->user-scratch interp-st))
+       ;; Collect counterexamples in the user scratch for later extraction
+       (interp-st (update-interp-st->user-scratch
+                   (hons-acons ':counterexamples
+                               (cons ctrex-bindings
+                                     (cdr (hons-get ':counterexamples scratch)))
+                               scratch)
+                   interp-st))
+       (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
+    (mv nil interp-st)))
