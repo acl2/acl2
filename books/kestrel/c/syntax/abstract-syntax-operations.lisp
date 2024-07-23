@@ -394,6 +394,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-fundef
+  :short "An irrelevant function definition."
+  :type fundefp
+  :body (make-fundef :extension nil
+                     :spec nil
+                     :declor (irr-declor)
+                     :decls nil
+                     :body (irr-stmt)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-extdecl
   :short "An irrelevant external declaration."
   :type extdeclp
