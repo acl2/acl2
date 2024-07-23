@@ -48,6 +48,7 @@
    (not a)
    (equal a b)
    (if* a b c)
+   (fgl-prove-fn params msg x stop-on-ctrex stop-on-fail)
    (fgl-sat-check params x)
    (fgl-vacuity-check params x)
    (fgl-pathcond-fix x)
@@ -209,15 +210,13 @@
 
 (define fgl-casesplit-solve ((params pseudo-termp)
                              msg
-                             (x pseudo-termp))
+                             (x pseudo-termp)
+                             stop-on-ctrex
+                             stop-on-fail)
   :returns (solve pseudo-termp)
   `((lambda (x msg params)
       ((lambda (x params msg ignore)
-         ((lambda (ans params msg)
-            (if ans 't (run-counterexample params msg)))
-          (not (fgl-sat-check params (not x)))
-          params
-          msg))
+         (fgl-prove-fn params msg x ',stop-on-ctrex ',stop-on-fail))
        x params msg
        (FMT-TO-COMMENT-WINDOW '"Checking case ~@0~%"
                        (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
@@ -229,31 +228,37 @@
     ',msg
     ,(pseudo-term-fix params))
   ///
-  (defthm fcs-ev-of-fgl-casesplit-solve
-    (iff (fcs-ev (fgl-casesplit-solve params msg x) a)
+  (defret fcs-ev-of-fgl-casesplit-solve
+    (iff (fcs-ev solve a)
          (fcs-ev x a))
-    :hints(("Goal" :in-theory (enable fgl-sat-check)))))
+    :hints(("Goal" :in-theory (enable fgl-prove-fn)))))
 
 
 (define fgl-casesplit-solve-cases ((params pseudo-termp)
                                    (messages true-listp)
                                    (cases pseudo-term-listp)
-                                   (result pseudo-termp))
+                                   (result pseudo-termp)
+                                   stop-on-ctrex
+                                   stop-on-fail)
   :returns (term pseudo-termp)
   (if (atom cases)
       ''t
     `(if* ,(fgl-casesplit-solve params (car messages)
-                                `(if ,(car cases) ,result 't))
-          ,(fgl-casesplit-solve-cases params (cdr messages) (cdr cases) result)
+                                `(if ,(car cases) ,result 't)
+                                stop-on-ctrex
+                                stop-on-fail)
+          ,(fgl-casesplit-solve-cases params (cdr messages) (cdr cases) result
+                                      stop-on-ctrex
+                                      stop-on-fail)
           'nil))
   ///
-  (local (defthm result-implies-fcs-ev-of-fgl-casesplit-solve-cases
+  (local (defret result-implies-fcs-ev-of-fgl-casesplit-solve-cases
            (implies (fcs-ev result a)
-                    (fcs-ev (fgl-casesplit-solve-cases params messages cases result) a))))
+                    (fcs-ev term a))))
 
-  (defthm fcs-ev-of-fgl-casesplit-solve-cases
+  (defret fcs-ev-of-fgl-casesplit-solve-cases
     (implies (fcs-ev (disjoin cases) a)
-             (iff (fcs-ev (fgl-casesplit-solve-cases params messages cases result) a)
+             (iff (fcs-ev term a)
                   (fcs-ev result a)))
     :hints(("Goal" :in-theory (enable fcs-ev-disjoin-when-consp)))))
           
@@ -375,6 +380,7 @@
                    (vars (term-vars x)) (tmp (acl2::new-symbol 'tmp (term-vars x)))))))))
 
 
+
 (define wrap-vacuity-check ((x pseudo-termp) (config fgl-config-p))
   :returns (new-x pseudo-termp)
   (b* (((fgl-config config))
@@ -401,7 +407,9 @@
    (repeat-concl)
    (allow-irrel-casesplit-vars)
    (cases casesplit-alist-p)
-   (fgl-config fgl-config-p)))
+   (fgl-config fgl-config-p)
+   (stop-on-ctrex)
+   (stop-on-fail)))
 
 ;; (define wrap-fgl-pathcond-fix-vars ((vars pseudo-var-list-p)
 ;;                                     (x pseudo-termp))
@@ -440,8 +448,9 @@
        (cases-vars (acl2::make-n-vars (len cases) 'fgl-case 0 '(result))))
     `(if ,(wrap-vacuity-check hyp config.fgl-config)
          ((lambda (result solve-params . ,cases-vars)
-            (if* ,(fgl-casesplit-solve (kwote config.split-params) "Case split completeness" (disjoin* cases-vars))
-                 ,(fgl-casesplit-solve-cases 'solve-params case-msgs cases-vars 'result)
+            (if* ,(fgl-casesplit-solve (kwote config.split-params) "Case split completeness" (disjoin* cases-vars)
+                                        config.stop-on-ctrex config.stop-on-fail)
+                 ,(fgl-casesplit-solve-cases 'solve-params case-msgs cases-vars 'result config.stop-on-ctrex config.stop-on-fail)
                  'nil))
           ,(wrap-fgl-pathcond-fix concl)
           ',config.solve-params
@@ -467,8 +476,10 @@
        (cases (alist-vals cases)))
                  
     `(if ,(wrap-vacuity-check hyp config.fgl-config)
-         (if* ,(fgl-casesplit-solve (list 'quote config.split-params) "Case split completeness" (disjoin* cases))
-              ,(fgl-casesplit-solve-cases (kwote config.solve-params) case-msgs cases (wrap-fgl-pathcond-fix concl))
+         (if* ,(fgl-casesplit-solve (list 'quote config.split-params) "Case split completeness" (disjoin* cases)
+                                    config.stop-on-ctrex config.stop-on-fail)
+              ,(fgl-casesplit-solve-cases (kwote config.solve-params) case-msgs cases (wrap-fgl-pathcond-fix concl)
+                                          config.stop-on-ctrex config.stop-on-fail)
               'nil)
        't))
   ///
@@ -601,6 +612,8 @@ Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress
   
 (define fgl-casesplit-hint-fn (cases split-params solve-params split-concl repeat-concl
                                 allow-irrel-casesplit-vars
+                                stop-on-ctrex
+                                stop-on-fail
                                 (fgl-config fgl-config-p)
                                 state)
   :mode :program
@@ -613,12 +626,18 @@ Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress
                                           :repeat-concl repeat-concl
                                           :allow-irrel-casesplit-vars allow-irrel-casesplit-vars
                                           :cases cases-trans
-                                          :fgl-config fgl-config)))
+                                          :fgl-config fgl-config
+                                          :stop-on-ctrex stop-on-ctrex
+                                          :stop-on-fail stop-on-fail)))
     (value `(:clause-processor (fgl-casesplit-clause-proc clause ',config)))))
 
-(defmacro fgl-casesplit (&key cases split-params solve-params split-concl repeat-concl allow-irrel-casesplit-vars fgl-config)
-  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl ,repeat-concl ,allow-irrel-casesplit-vars ,fgl-config
-                          state))
+(defmacro fgl-casesplit (&key cases split-params solve-params split-concl repeat-concl allow-irrel-casesplit-vars
+                              stop-on-ctrex
+                              stop-on-fail
+                              fgl-config)
+  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl ,repeat-concl ,allow-irrel-casesplit-vars
+                          ,stop-on-ctrex ,stop-on-fail ,fgl-config state))
+
 
 
 
@@ -627,23 +646,33 @@ Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress
   :returns (new-x pseudo-termp)
   :measure (pseudo-term-count x)
   :verify-guards nil
-  (pseudo-term-case x
-    :const (pseudo-term-fix x)
-    :var (pseudo-term-fix x)
-    :fncall (if (and (eq x.fn 'implies)
-                     (eql (len x.args) 2))
-                (pseudo-term-fncall 'if
-                                    (list (wrap-vacuity-check (car x.args) config)
-                                          (wrap-fgl-pathcond-fix
-                                           (cadr x.args))
-                                          ''t))
-              (pseudo-term-fix x))
-    :lambda (pseudo-term-lambda
-             x.formals
-             (expand-an-implies x.body config)
-             x.args))
+  (flet ((wrap-fgl-prove (x config)
+                         (pseudo-term-fncall 'fgl-prove-fn
+                                             (list (pseudo-term-quote
+                                                    (fgl-toplevel-sat-check-config-wrapper
+                                                     (fgl-config->sat-config config)))
+                                                   ''"final sat check"
+                                                   x
+                                                   ;; stop on ctrex/fail
+                                                   ''t ''t))))
+        (pseudo-term-case x
+          :const (wrap-fgl-prove x config)
+          :var (wrap-fgl-prove x config)
+          :fncall (if (and (eq x.fn 'implies)
+                           (eql (len x.args) 2))
+                      (pseudo-term-fncall 'if
+                                          (list (wrap-vacuity-check (car x.args) config)
+                                                (wrap-fgl-pathcond-fix
+                                                 (wrap-fgl-prove x config))
+                                                ''t))
+                    (wrap-fgl-prove x config))
+          :lambda (pseudo-term-lambda
+                   x.formals
+                   (expand-an-implies x.body config)
+                   x.args)))
   ///
-  (verify-guards expand-an-implies)
+  (verify-guards expand-an-implies
+    :guard-debug t)
 
   (local (defun-sk fcs-ev-of-expand-an-implies-cond (x config)
            (forall a
@@ -654,7 +683,8 @@ Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress
 
   (local (defthm fcs-ev-of-expand-an-implies-lemma
            (fcs-ev-of-expand-an-implies-cond x config)
-           :hints (("goal" :induct (expand-an-implies x config))
+           :hints (("goal" :induct (expand-an-implies x config)
+                    :in-theory (enable fgl-prove-fn))
                    (and stable-under-simplificationp
                         `(:expand (,(car (last clause))))))))
 

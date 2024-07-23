@@ -622,10 +622,11 @@
                                  (interp-state state))))
        (- (and (interp-st-prof-enabledp interp-st)
                (interp-st-prof-print-report interp-st)))
+       ((when (interp-st->errmsg interp-st))
+        (mv (msg "Interpreter error: ~@0" (interp-st->errmsg interp-st)) interp-st state))
        ((acl2::hintcontext-bind ((early-interp-st interp-st)
                                  (early-state state))))
-       ((when (and (equal ans-interp t)
-                   (not (interp-st->errmsg interp-st))))
+       ((when (equal ans-interp t))
         ;; Proved!
         (acl2::hintcontext :interp-early
                            (mv nil interp-st state)))
@@ -642,35 +643,16 @@
        ((acl2::hintcontext-bind ((sat-interp-st interp-st)
                                  (sat-state state))))
 
-       ((when (and (eq ans :unsat)
-                   (not (interp-st->errmsg interp-st))))
+       ((when (eq ans :unsat))
         ;; Proved!
         (acl2::hintcontext :interp-test
                            (mv nil interp-st state)))
-       ((when (interp-st->errmsg interp-st))
-        (mv (msg "Interpreter error: ~@0" (interp-st->errmsg interp-st)) interp-st state))
        ((unless (eq ans :sat))
         (mv (msg "Final SAT check failed!") interp-st state))
-       ((mv sat-ctrex-err interp-st)
-        (interp-st-sat-counterexample sat-config interp-st state))
-       ((when sat-ctrex-err)
-        (mv (msg "Error retrieving SAT counterexample: ~@0~%" sat-ctrex-err) interp-st state))
-       ((mv ctrex-errmsg ctrex-bindings ?var-vals interp-st)
-        (interp-st-counterex-bindings (interp-st-bindings interp-st) interp-st state))
-       (- (and ctrex-errmsg
-               (cw "Warnings/errors from deriving counterexample: ~@0~%" ctrex-errmsg)))
-       ;; ((when ctrex-errmsg)
-       ;;  (mv (msg "Error extending counterexample: ~@0~%" ctrex-errmsg) interp-st state))
-       (- (cw "~%*** Counterexample assignment: ***~%~x0~%~%" ctrex-bindings))
-       (- (cw "Running counterexample on top-level goal:~%"))
-       ((mv err ans) (magitastic-ev goal ctrex-bindings 1000 state t t))
-       (- (cond (err (cw "Error running goal on counterexample: ~@0~%" err))
-                (ans (cw "False counterexample -- returned: ~x0.  See ~
-                          warnings/errors from counterexample derivation ~
-                          above.~%" ans))
-                (t   (cw "Counterexample verified!~%"))))
-       (interp-st (interp-st-check-bvar-db-ctrex-consistency interp-st state))
-       (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
+       ((mv ctrex-err interp-st)
+        (interp-st-run-ctrex sat-config interp-st state))
+       ((when ctrex-err)
+        (mv ctrex-err interp-st state)))
     (mv "Counterexample." interp-st state))
   ///
 
