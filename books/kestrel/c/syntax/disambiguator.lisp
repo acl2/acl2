@@ -336,7 +336,7 @@
      this is done by this function,
      for the case in which @('X') is a type name.
      The case in which @('X') is an expression
-     is handled in @(tsee dimb-cast/call-to-call.")
+     is handled in @(tsee dimb-cast/call-to-call).")
    (xdoc::p
     "In this function,
      @('tyname') is @('X'),
@@ -371,7 +371,7 @@
      this is done by this function,
      for the case in which @('X') is an expression.
      The case in which @('X') is a type name
-     is handled in @(tsee dimb-cast/call-to-call.")
+     is handled in @(tsee dimb-cast/call-to-call).")
    (xdoc::p
     "In this function,
      @('fun') is @('X'),
