@@ -989,7 +989,13 @@
                    reg))
 
                ;; Clear the tlb on loads to cr3
-               (x86 (if (equal ctr-index #.*cr3*)
+               (x86 (if (or (equal ctr-index #.*cr3*)
+                            (equal ctr-index #.*cr0*)
+                            ;; Loading cr4 doesn't always require invalidation
+                            ;; (see Vol 3, Chapter 4.10.4.1 of the Intel SDM),
+                            ;; but this is valid too, since we're always
+                            ;; allowed to invalidate
+                            (equal ctr-index #.*cr4*))
                       (b* ((tlb (tlb x86))
                            (- (fast-alist-free tlb))
                            (x86 (!tlb :tlb x86)))
