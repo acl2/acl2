@@ -240,7 +240,8 @@
      intended for use by tools like code generators and transformers.
      This sub-library also includes
      a parser from the concrete to the abstract syntax,
-     as well as an ACL2 tool to invoke an external C preprocessor.")
+     a printer from the abstract syntax to the concrete syntax,
+     and other tools to operate on this syntax.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
