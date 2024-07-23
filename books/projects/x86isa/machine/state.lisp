@@ -621,7 +621,7 @@
                         :fix (nfix x))
     (:doc "</li>")
 
-    (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping lists of virtual page number, a boolean for whether we're in supervisor mode, and access type to either the physical page number (if such an entry with the given access type is allowed) or (cons :pagefault <error code>) if the access does not have a valid mapping.<br/>")
+    (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping @('tlb-key') bit structs to physical page numbers. An entry in the TLB implies the corresponding translation is valid. Invalid translations are not cached.<br/>")
     (tlb   :type (satisfies tlbp)
            :initially :tlb
            :fix (tlb-fix x))
