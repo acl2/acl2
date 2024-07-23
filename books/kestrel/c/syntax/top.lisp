@@ -15,6 +15,7 @@
 (include-book "concrete-syntax")
 (include-book "preprocess-file")
 (include-book "parser")
+(include-book "disambiguator")
 (include-book "read-files")
 (include-book "parse-files")
 (include-book "print-files")
@@ -76,13 +77,15 @@
      with preprocessing being a distinguished translation phase
      [C:5.1.1.2].")
    (xdoc::p
-    "We also provide a parser from the concrete syntax to the abstract syntax.
-     The parser is an initial version;
-     it covers all of the C constructs after preprocessing,
-     but has limitations in the handling of
-     certain inherently ambiguous constructs
-     that are notoriously complex in C;
-     we will improve our parser in this respect soon.")
+    "We also provide a parser from the concrete syntax to the abstract syntax,
+     which covers all of the C constructs after preprocessing.
+     The syntax of C is notoriously ambiguous,
+     requiring some semantic analysis to disambiguate it.
+     Instead of performing this semantic analysis during parsing,
+     our parser captures ambiguous constructs as such,
+     and we provide a separate disambiguator
+     that transforms the abstract syntax, after parsing,
+     by disambiguating it via the necessary semantic analysis.")
    (xdoc::p
     "In order to process typical C code,
      we also provide an ACL2 tool to invoke a C preprocessor.
@@ -128,6 +131,7 @@
                     concrete-syntax
                     preprocessing
                     parser
+                    disambiguator
                     printer
                     read-files
                     parse-files
