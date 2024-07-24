@@ -889,11 +889,12 @@
                                                        '-invariant-under-aligned-access-bit-write))
                                    (implies (and (not (app-view x86))
                                                  (integerp entry-addr)
-                                                 (equal (loghead 3 entry-addr) 0))
+                                                 (equal (loghead 3 entry-addr) 0)
+                                                 (equal entry (rm-low-64 entry-addr x86)))
                                             (equal (,xlation-governing-entries-fn
                                                      lin-addr2 addr
                                                      (wm-low-64 entry-addr
-                                                                (set-accessed-bit (rm-low-64 entry-addr x86))
+                                                                (set-accessed-bit entry)
                                                                 x86))
                                                    (,xlation-governing-entries-fn lin-addr2 addr x86)))
                                    :hints (("Goal" :in-theory (enable ,xlation-governing-entries-fn)
@@ -906,11 +907,12 @@
                                                        '-invariant-under-aligned-dirty-bit-write))
                                    (implies (and (not (app-view x86))
                                                  (integerp entry-addr)
-                                                 (equal (loghead 3 entry-addr) 0))
+                                                 (equal (loghead 3 entry-addr) 0)
+                                                 (equal entry (rm-low-64 entry-addr x86)))
                                             (equal (,xlation-governing-entries-fn
                                                      lin-addr2 addr
                                                      (wm-low-64 entry-addr
-                                                                (set-dirty-bit (rm-low-64 entry-addr x86))
+                                                                (set-dirty-bit entry)
                                                                 x86))
                                                    (,xlation-governing-entries-fn lin-addr2 addr x86)))
                                    :hints (("Goal" :in-theory (enable ,xlation-governing-entries-fn)
@@ -923,11 +925,12 @@
                                                        '-invariant-under-aligned-access-bit-and-dirty-bit-write))
                                    (implies (and (not (app-view x86))
                                                  (integerp entry-addr)
-                                                 (equal (loghead 3 entry-addr) 0))
+                                                 (equal (loghead 3 entry-addr) 0)
+                                                 (equal entry (rm-low-64 entry-addr x86)))
                                             (equal (,xlation-governing-entries-fn
                                                      lin-addr2 addr
                                                      (wm-low-64 entry-addr
-                                                                (set-dirty-bit (set-accessed-bit (rm-low-64 entry-addr x86)))
+                                                                (set-dirty-bit (set-accessed-bit entry))
                                                                 x86))
                                                    (,xlation-governing-entries-fn lin-addr2 addr x86)))
                                    :hints (("Goal" :in-theory (enable ,xlation-governing-entries-fn)

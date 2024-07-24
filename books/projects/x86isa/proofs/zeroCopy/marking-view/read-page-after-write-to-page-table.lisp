@@ -1447,8 +1447,17 @@
                                (ash (loghead 22 (logtail 30 value)) 30)))))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (enable ia32e-la-to-pa-page-dir-ptr-table
-                              ia32e-pdpte-1gb-pagebits->page))))
+           :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table
+                             ia32e-pdpte-1gb-pagebits->page) 
+                           (mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries))
+           :use (:instance mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
+                           (structure-type 2)
+                           (entry-1 page-dir-ptr-table-entry)
+                           (entry-2 value)
+                           (u/s-acc (logand u/s-acc (page-user-supervisor value)))
+                           (r/w-acc (logand r/w-acc (page-read-write value)))
+                           (x/d-acc (logand x/d-acc (page-execute-disable value)))
+                           (ignored 0)))))
 
 (defthmd ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
   ;; Given a 1G page, ia32e-la-to-pa-pml4-table returns the physical

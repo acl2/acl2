@@ -270,7 +270,8 @@
 
 (defthm xr-mv-nth-2-ia32e-la-to-pa-without-tlb-when-error
   (implies (and (mv-nth 0 (ia32e-la-to-pa-without-tlb addr r-w-x (double-rewrite x86)))
-                (not (eql fld :fault)))
+                (not (eql fld :fault))
+                (not (eql fld :mem)))
            (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-without-tlb addr r-w-x x86)))
                   (xr fld index x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-without-tlb
@@ -283,7 +284,8 @@
 
 (defthm xr-mv-nth-2-ia32e-la-to-pa-when-error
   (implies (and (mv-nth 0 (ia32e-la-to-pa addr r-w-x (double-rewrite x86)))
-                (not (eql fld :fault)))
+                (not (eql fld :fault))
+                (not (eql fld :mem)))
            (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa addr r-w-x x86)))
                   (xr fld index x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
@@ -303,6 +305,7 @@
           (xr :mem index x86)))
   :hints (("Goal"
            :induct (las-to-pas n addr r-w-x x86)
+           :do-not '(generalize)
            :in-theory (e/d* (las-to-pas
                              all-xlation-governing-entries-paddrs
                              disjoint-p

@@ -1611,40 +1611,49 @@
             lin-addr entry
             u/s-acc r/w-acc x/d-acc
             wp smep smap ac nxe r-w-x cpl x86))
+
+         ;; Regardless of whether the above page faulted, if the entry was present,
+         ;; we must set the accessed bit
+         (marking-view? (marking-view x86))
+         ((mv updated? updated-entry)
+          (if (and marking-view?
+                   (equal (mbe :logic (page-present entry)
+                               :exec (ia32e-page-tablesBits->p entry))
+                          1))
+            (b* ((accessed (mbe :logic (accessed-bit entry)
+                                :exec (ia32e-page-tablesBits->a entry))))
+                (if (equal accessed 0)
+                  (mv t
+                      (mbe :logic (set-accessed-bit entry)
+                           :exec (!ia32e-page-tablesBits->a 1 entry)))
+                  (mv nil entry)))
+            (mv nil entry)))
+
          ((when fault-flg)
-          (mv 'Page-Fault val x86))
+          ;; If we updated the entry, we must write it before returning
+          (b* ((x86 (if updated?
+                      (wm-low-64 p-entry-addr updated-entry x86)
+                      x86)))
+              (mv 'Page-Fault val x86)))
 
          ;; No errors, so we proceed with the address translation.
 
-         (x86
-           (if (marking-view x86)
-             ;; Mark A and D bits, as the x86 machine does.
-             (b* (
-                  ;; Get accessed and dirty bits:
-                  (accessed        (mbe :logic (accessed-bit entry)
-                                        :exec (ia32e-page-tablesBits->a entry)))
-                  (dirty           (mbe :logic (dirty-bit entry)
-                                        :exec (ia32e-page-tablesBits->d entry)))
-                  ;; Compute accessed and dirty bits:
-                  ((mv updated? entry)
-                   (if (equal accessed 0)
-                     (mv t
-                         (mbe :logic (set-accessed-bit entry)
-                              :exec (!ia32e-page-tablesBits->a 1 entry)))
-                     (mv nil entry)))
-                  ((mv updated? entry)
-                   (if (and (equal dirty 0)
-                            (equal r-w-x :w))
-                     (mv t (mbe :logic (set-dirty-bit entry)
-                                :exec (!ia32e-page-tablesBits->d 1 entry)))
-                     (mv updated? entry)))
-                  ;; Update x86 (to reflect accessed and dirty bits change), if needed:
-                  (x86 (if updated?
-                         (wm-low-64 p-entry-addr entry x86)
-                         x86)))
-                 x86)
-             ;; Do not mark A/D bits.
-             x86)))
+         ((mv updated? updated-entry)
+          (if marking-view?
+            ;; Mark D bit
+            (b* ((dirty (mbe :logic (dirty-bit entry)
+                             :exec (ia32e-page-tablesBits->d entry))))
+                (if (and (equal dirty 0)
+                         (equal r-w-x :w))
+                  (mv t (mbe :logic (set-dirty-bit updated-entry)
+                             :exec (!ia32e-page-tablesBits->d 1 updated-entry)))
+                  (mv updated? updated-entry)))
+            (mv nil updated-entry)))
+
+        ;; If we set one or both of the accessed and dirty bits, update the state
+        (x86 (if updated?
+               (wm-low-64 p-entry-addr updated-entry x86)
+               x86)))
 
         ;; Return physical address and the modified x86 state.  Note that the
         ;; base address of the 4K frame would be just
@@ -1935,8 +1944,30 @@
             lin-addr entry
             u/s-all r/w-all x/d-all
             wp smep smap ac nxe r-w-x cpl x86))
+
+         ;; Regardless of whether the above page faulted, if the entry was present,
+         ;; we must set the accessed bit
+         (marking-view? (marking-view x86))
+         ((mv updated? updated-entry)
+          (if (and marking-view?
+                   (equal (mbe :logic (page-present entry)
+                               :exec (ia32e-page-tablesBits->p entry))
+                          1))
+            (b* ((accessed (mbe :logic (accessed-bit entry)
+                                :exec (ia32e-page-tablesBits->a entry))))
+                (if (equal accessed 0)
+                  (mv t
+                      (mbe :logic (set-accessed-bit entry)
+                           :exec (!ia32e-page-tablesBits->a 1 entry)))
+                  (mv nil entry)))
+            (mv nil entry)))
+
          ((when fault-flg)
-          (mv 'Page-Fault val x86)))
+          ;; If we updated the entry, we must write it before returning
+          (b* ((x86 (if updated?
+                      (wm-low-64 p-entry-addr updated-entry x86)
+                      x86)))
+              (mv 'Page-Fault val x86))))
 
         ;; No errors at this level, so we proceed with the translation:
 
@@ -1944,37 +1975,22 @@
                  :exec (equal (ia32e-page-tablesBits->ps entry) 1))
           ;; 2MB page
 
-          (let ((x86
-                  (if (marking-view x86)
-                    ;; Mark A and D bits.
-                    (b* (
-                         ;; Get accessed and dirty bits:
-                         (accessed        (mbe :logic (accessed-bit entry)
-                                               :exec (ia32e-pde-2MB-pageBits->a entry)))
-                         (dirty           (mbe :logic (dirty-bit entry)
-                                               :exec (ia32e-pde-2MB-pageBits->d entry)))
+          (b* (((mv updated? updated-entry)
+                (if marking-view?
+                  ;; Mark D bit
+                  (b* ((dirty (mbe :logic (dirty-bit entry)
+                                   :exec (ia32e-page-tablesBits->d entry))))
+                      (if (and (equal dirty 0)
+                               (equal r-w-x :w))
+                        (mv t (mbe :logic (set-dirty-bit updated-entry)
+                                   :exec (!ia32e-page-tablesBits->d 1 updated-entry)))
+                        (mv updated? updated-entry)))
+                  (mv nil entry)))
 
-                         ;; Compute accessed and dirty bits:
-                         ((mv updated? entry)
-                          (if (equal accessed 0)
-                            (mv t
-                                (mbe :logic (set-accessed-bit entry)
-                                     :exec (!ia32e-pde-2MB-pageBits->a 1 entry)))
-                            (mv nil entry)))
-                         ((mv updated? entry)
-                          (if (and (equal dirty 0)
-                                   (equal r-w-x :w))
-                            (mv t
-                                (mbe :logic (set-dirty-bit entry)
-                                     :exec (!ia32e-pde-2MB-pageBits->d 1 entry)))
-                            (mv updated? entry)))
-                         ;; Update x86 (to reflect accessed and dirty bits change):
-                         (x86 (if updated?
-                                (wm-low-64 p-entry-addr entry x86)
-                                x86)))
-                        x86)
-                    ;; Don't mark A and D bits.
-                    x86)))
+               ;; If we set one or both of the accessed and dirty bits, update the state
+               (x86 (if updated?
+                      (wm-low-64 p-entry-addr updated-entry x86)
+                      x86)))
             ;; Return address of 2MB page frame and the modified x86 state.
             (mv nil
                 (mbe
@@ -2011,35 +2027,17 @@
                   u/s-all r/w-all x/d-all
                   wp smep smap ac nxe r-w-x cpl
                   x86))
-               ((when flag)
-                ;; Error, so do not update accessed bit.
-                (mv flag 0 x86))
-
-               (x86
-                 (if (marking-view x86)
-                   ;; Mark A bit.
-                   (b* (
-                        ;; Get possibly updated entry --- note that
-                        ;; if PDE and PTE are the same entries, entry
-                        ;; would have its A and/or D flags set
-                        ;; because of the walk done in
-                        ;; ia32e-la-to-pa-page-table.
-                        (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
-                        ;; Get accessed bit.  Dirty bit is ignored when PDE
-                        ;; references the PT.
-                        (accessed        (mbe :logic (accessed-bit entry)
-                                              :exec (ia32e-page-tablesBits->a entry)))
-                        ;; Update accessed bit, if needed.
-                        (entry (if (equal accessed 0)
-                                 (mbe :logic (set-accessed-bit entry)
-                                      :exec (!ia32e-page-tablesBits->a 1 entry))
-                                 entry))
-                        (x86 (if (equal accessed 0)
-                               (wm-low-64 p-entry-addr entry x86)
-                               x86)))
-                       x86)
-                   ;; Don't mark A and D bits.
-                   x86)))
+               ;; If we updated the entry, we must write it before returning
+               ;; We reread the entry because it is possible a lower level set the dirty bit on it
+               ;; This requires us to set the accessed bit again
+               (entry (rm-low-64 p-entry-addr x86))
+               (x86 (if marking-view?
+                      (b* ((accessed (mbe :logic (accessed-bit entry)
+                                          :exec (ia32e-page-tablesBits->a entry)))
+                           ((unless (equal accessed 0)) x86))
+                          (wm-low-64 p-entry-addr (set-accessed-bit entry) x86))
+                      x86))
+               ((when flag) (mv flag 0 x86)))
               (mv nil p-addr x86))))
 
     (mv t 0 x86))
@@ -2319,45 +2317,52 @@
             lin-addr entry
             u/s-all r/w-all x/d-all
             wp smep smap ac nxe r-w-x cpl x86))
+
+         ;; Regardless of whether the above page faulted, if the entry was present,
+         ;; we must set the accessed bit
+         (marking-view? (marking-view x86))
+         ((mv updated? updated-entry)
+          (if (and marking-view?
+                   (equal (mbe :logic (page-present entry)
+                               :exec (ia32e-page-tablesBits->p entry))
+                          1))
+            (b* ((accessed (mbe :logic (accessed-bit entry)
+                                :exec (ia32e-page-tablesBits->a entry))))
+                (if (equal accessed 0)
+                  (mv t
+                      (mbe :logic (set-accessed-bit entry)
+                           :exec (!ia32e-page-tablesBits->a 1 entry)))
+                  (mv nil entry)))
+            (mv nil entry)))
+
          ((when fault-flg)
-          (mv 'Page-Fault val x86)))
+          ;; If we updated the entry, we must write it before returning
+          (b* ((x86 (if updated?
+                      (wm-low-64 p-entry-addr updated-entry x86)
+                      x86)))
+              (mv 'Page-Fault val x86))))
 
         ;; No errors at this level, so we proceed with the translation.
 
         (if (mbe :logic (equal (page-size entry) 1)
                  :exec (equal (ia32e-page-tablesBits->ps entry) 1))
 
-          (let ((x86
-                  (if (marking-view x86)
-                    ;; Mark A and D bits.
-                    ;; 1GB page
-                    (b* (
-                         ;; Get accessed and dirty bits:
-                         (accessed        (mbe :logic (accessed-bit entry)
-                                               :exec (ia32e-pdpte-1GB-pageBits->a entry)))
-                         (dirty           (mbe :logic (dirty-bit entry)
-                                               :exec (ia32e-pdpte-1GB-pageBits->d entry)))
-                         ;; Compute accessed and dirty bits:
-                         ((mv updated? entry)
-                          (if (equal accessed 0)
-                            (mv t
-                                (mbe :logic (set-accessed-bit entry)
-                                     :exec (!ia32e-pdpte-1GB-pageBits->a 1 entry)))
-                            (mv nil entry)))
-                         ((mv updated? entry)
-                          (if (and (equal dirty 0)
-                                   (equal r-w-x :w))
-                            (mv t
-                                (mbe :logic (set-dirty-bit entry)
-                                     :exec (!ia32e-pdpte-1GB-pageBits->d 1 entry)))
-                            (mv updated? entry)))
-                         ;; Update x86 (to reflect accessed and dirty bits change), if needed:
-                         (x86 (if updated?
-                                (wm-low-64 p-entry-addr entry x86)
-                                x86)))
-                        x86)
-                    ;; Don't mark A and D bits.
-                    x86)))
+          (b* (((mv updated? updated-entry)
+                (if marking-view?
+                  ;; Mark D bit
+                  (b* ((dirty (mbe :logic (dirty-bit entry)
+                                   :exec (ia32e-page-tablesBits->d entry))))
+                      (if (and (equal dirty 0)
+                               (equal r-w-x :w))
+                        (mv t (mbe :logic (set-dirty-bit updated-entry)
+                                   :exec (!ia32e-page-tablesBits->d 1 updated-entry)))
+                        (mv updated? updated-entry)))
+                  (mv nil entry)))
+
+               ;; If we set one or both of the accessed and dirty bits, update the state
+               (x86 (if updated?
+                      (wm-low-64 p-entry-addr updated-entry x86)
+                      x86)))
             ;;  Return address of 1GB page frame and the modified x86 state.
             (mv nil
                 (mbe
@@ -2393,36 +2398,17 @@
                 (ia32e-la-to-pa-page-directory
                   lin-addr page-directory-base-addr u/s-all r/w-all x/d-all
                   wp smep smap ac nxe r-w-x cpl x86))
-               ((when flag)
-                ;; Error, so do not update accessed bit
-                (mv flag 0 x86))
-
-               (x86
-                 (if (marking-view x86)
-                   ;; Mark A bit.
-                   (b* (
-                        ;; Get possibly updated entry --- note that
-                        ;; if PDPTE and PDE are the same entries,
-                        ;; entry would have its A and/or D flags set
-                        ;; because of the walk done in
-                        ;; ia32e-la-to-pa-page-directory.
-                        (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
-                        ;; Get accessed bit. Dirty bit is ignored when PDPTE
-                        ;; references the PD.
-                        (accessed        (mbe :logic (accessed-bit entry)
-                                              :exec (ia32e-page-tablesBits->a entry)))
-                        ;; Update accessed bit, if needed.
-                        (entry (if (equal accessed 0)
-                                 (mbe :logic (set-accessed-bit entry)
-                                      :exec (!ia32e-page-tablesBits->a 1 entry))
-                                 entry))
-                        ;; Update x86, if needed.
-                        (x86 (if (equal accessed 0)
-                               (wm-low-64 p-entry-addr entry x86)
-                               x86)))
-                       x86)
-                   ;; Don't mark A and D bits.
-                   x86)))
+               ;; If we updated the entry, we must write it before returning
+               ;; We reread the entry because it is possible a lower level set the dirty bit on it
+               ;; This requires us to set the accessed bit again
+               (entry (rm-low-64 p-entry-addr x86))
+               (x86 (if marking-view?
+                      (b* ((accessed (mbe :logic (accessed-bit entry)
+                                          :exec (ia32e-page-tablesBits->a entry)))
+                           ((unless (equal accessed 0)) x86))
+                          (wm-low-64 p-entry-addr (set-accessed-bit entry) x86))
+                      x86))
+               ((when flag) (mv flag 0 x86)))
               (mv nil p-addr x86))))
 
     (mv t 0 x86))
@@ -2672,6 +2658,8 @@
          (x/d-all (mbe :logic (page-execute-disable entry)
                        :exec (ia32e-page-tablesBits->xd entry)))
 
+         (marking-view? (marking-view x86))
+
          ((mv fault-flg val x86)
           (paging-entry-no-page-fault-p
             3 ;; structure-type
@@ -2679,7 +2667,18 @@
             u/s-all r/w-all x/d-all
             wp smep smap ac nxe r-w-x cpl x86))
          ((when fault-flg)
-          (mv 'Page-Fault val x86))
+          ;; Even if this entry page faulted, if the entry was present,
+          ;; we must set the accessed bit
+          (b* ((x86 (if (and marking-view?
+                             (equal (mbe :logic (page-present entry)
+                                         :exec (ia32e-page-tablesBits->p entry))
+                                    1))
+                      (b* ((accessed (mbe :logic (accessed-bit entry)
+                                          :exec (ia32e-page-tablesBits->a entry)))
+                           ((unless (equal accessed 0)) x86))
+                          (wm-low-64 p-entry-addr (set-accessed-bit entry) x86))
+                      x86)))
+              (mv 'Page-Fault val x86)))
 
          ;; No errors at this level, so we proceed with the translation.
          ;; We go to the next level of page table structure, i.e., PDPT.
@@ -2693,36 +2692,16 @@
             lin-addr page-dir-ptr-table-base-addr u/s-all r/w-all x/d-all
             wp smep smap ac nxe r-w-x cpl
             x86))
-         ((when flag)
-          ;; Error, so do not update accessed bit.
-          (mv flag 0 x86))
-
-         (x86
-           (if (marking-view x86)
-             ;; Mark A bit.
-             (b* (
-                  ;; Get possibly updated entry --- note that if
-                  ;; PML4TE and PDPTE are the same entries, entry
-                  ;; would have its A and/or D flags set because of
-                  ;; the walk done in
-                  ;; ia32e-la-to-pa-page-dir-ptr-table.
-                  (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
-                  ;; Get accessed bit. Dirty bit is ignored when PDPTE
-                  ;; references the PDPT.
-                  (accessed        (mbe :logic (accessed-bit entry)
-                                        :exec (ia32e-page-tablesBits->a entry)))
-                  ;; Update accessed bit, if needed.
-                  (entry (if (equal accessed 0)
-                           (mbe :logic (set-accessed-bit entry)
-                                :exec (!ia32e-page-tablesBits->a 1 entry))
-                           entry))
-                  ;; Update x86, if needed.
-                  (x86 (if (equal accessed 0)
-                         (wm-low-64 p-entry-addr entry x86)
-                         x86)))
-                 x86)
-             ;; Don't mark A and D bits.
-             x86)))
+         ;; Whether or not the next level page faulted, we must set the accessed flag
+         ;; We reread the entry because it is possible a lower level set the dirty bit on it
+         (entry (rm-low-64 p-entry-addr x86))
+         (x86 (if marking-view?
+                (b* ((accessed (mbe :logic (accessed-bit entry)
+                                    :exec (ia32e-page-tablesBits->a entry)))
+                     ((unless (equal accessed 0)) x86))
+                    (wm-low-64 p-entry-addr (set-accessed-bit entry) x86))
+                x86))
+         ((when flag) (mv flag 0 x86)))
         (mv nil p-addr x86))
 
     (mv t 0 x86))
@@ -3553,26 +3532,6 @@
 
 ;; ======================================================================
 
-(local
- (defthm loghead-equality-monotone
-   (implies (and
-             ;; Here's a dumb bind-free, but hey, it works for my
-             ;; purpose!  I can make a nicer rule in the future or I
-             ;; can simply be lazy and add to the bind-free.
-             (bind-free (list (list (cons 'n ''12))
-                              (list (cons 'n ''21))
-                              (list (cons 'n ''30)))
-                        (n))
-             (equal (loghead n x) 0)
-             (natp n)
-             (natp m)
-             (natp x)
-             (<= m n))
-            (equal (loghead m x) 0))
-   :hints (("Goal" :in-theory
-            (e/d* (acl2::loghead** acl2::ihsext-inductions)
-                  ())))))
-
 (defthm page-table-lower-12-bits
   (implies (and (natp n)
                 (<= n 12)
@@ -3879,8 +3838,7 @@
                         (loghead n lin-addr))))
            (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa)
-                                  (loghead-equality-monotone
-                                   acl2::loghead-identity
+                                  (acl2::loghead-identity
                                    unsigned-byte-p
                                    signed-byte-p
                                    force (force))))))
@@ -3971,8 +3929,7 @@
   :hints
   (("Goal" :in-theory
     (e/d* (acl2::ihsext-inductions acl2::ihsext-recursive-redefs)
-          (loghead-equality-monotone
-           acl2::loghead-identity
+          (acl2::loghead-identity
            unsigned-byte-p**))))
   :rule-classes :forward-chaining)
 
@@ -3987,8 +3944,7 @@
            :in-theory
            (e/d*
             (acl2::ihsext-inductions acl2::ihsext-recursive-redefs)
-            (loghead-equality-monotone
-             acl2::loghead-identity
+            (acl2::loghead-identity
              unsigned-byte-p**))))
   :rule-classes nil)
 

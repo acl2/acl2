@@ -167,13 +167,14 @@
                                 `(defthm
                                    ,(acl2::packn (list la-to-pa-fn '-invariant-under-aligned-write- setter))
                                    (implies (and (integerp entry-addr)
-                                                 (equal (loghead 3 entry-addr) 0))
+                                                 (equal (loghead 3 entry-addr) 0)
+                                                 (equal entry (rm-low-64 entry-addr x86)))
                                             (and (equal (mv-nth 0 (,la-to-pa-fn
                                                                     lin-addr base-addr
                                                                     ,@(if (equal level 'pml4-table) nil '(us rw xd))
                                                                     wp smep smap ac nxe r-w-x cpl
                                                                     (wm-low-64 entry-addr
-                                                                               (,setter (rm-low-64 entry-addr x86))
+                                                                               (,setter entry)
                                                                                x86)))
                                                         (mv-nth 0 (,la-to-pa-fn
                                                                     lin-addr base-addr
@@ -185,7 +186,7 @@
                                                                     ,@(if (equal level 'pml4-table) nil '(us rw xd))
                                                                     wp smep smap ac nxe r-w-x cpl
                                                                     (wm-low-64 entry-addr
-                                                                               (,setter (rm-low-64 entry-addr x86))
+                                                                               (,setter entry)
                                                                                x86)))
                                                         (mv-nth 1 (,la-to-pa-fn
                                                                     lin-addr base-addr
