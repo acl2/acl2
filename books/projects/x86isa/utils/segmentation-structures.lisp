@@ -45,8 +45,6 @@
 (defsection segmentation-bitstructs
   :parents (structures)
   :short "<b>Bitstructs related to segmentation, protection, etc.</b>"
-
-  :long "<p>Source: AMD Manual, Apr'16, Vol. 2, Section 4.8</p>"
   )
 
 (local (xdoc::set-default-parents segmentation-bitstructs))
@@ -54,7 +52,7 @@
 ;; ----------------------------------------------------------------------
 
 (defbitstruct hidden-segment-registerBits
-  :long "<p>Source: Intel manual, Mar'17, Vol. 3A, Figure 3-7</p>"
+  :short "Intel manual, Dec'23, Vol. 3A, Figure 3-7."
   ((base-addr 64bits) ;; Segment Base Address
    (limit 32bits)     ;; Segment Limit
    (attr  16bits)     ;; Attributes
@@ -63,14 +61,14 @@
   :msb-first nil)
 ; These fields are "cached" from the segment descriptor (Figure 3-8):
 ; - The Segment Base is 32 bits in the segment descriptor,
-;   so the 64 bits in :BASE-ADDR above can hold it.
+;   so the 64 bits in BASE-ADDR above can hold it.
 ; - The Segment Limit is 20 bits in the segment descriptor,
 ;   and based on the G (granularity) flag it covers up to 4 GiB,
-;   so the 32 bits in :LIMIT above can hold it.
+;   so the 32 bits in LIMIT above can hold it.
 ;   IMPORTANT: this means that the cached limit field must be
 ;   populated only after G flag is taken into account.
 ; - There are 12 remaining bits in the segment descriptor,
-;   so the 16 bits in :ATTR above can hold them.
+;   so the 16 bits in ATTR above can hold them.
 
 (local
  (defthm hidden-segment-register-layout-ok
@@ -78,11 +76,11 @@
         (unsigned-byte-p 112 x))
    :rule-classes nil))
 
-; Intel manual, Mar'17, Vol. 3A, Figure 3-6
 (defbitstruct segment-selectorBits
-  ((rpl 2bits)    ;; Requestor Privilege Level (RPL)
+  :short "Intel manual, Mar'23, Vol. 3A, Figure 3-6."
+  ((rpl 2bits)     ;; Requestor Privilege Level (RPL)
    (ti bitp)       ;; Table Indicator (0 = GDT, 1 = LDT)
-   (index 13bits) ;; Index of descriptor in GDT or LDT
+   (index 13bits)  ;; Index of descriptor in GDT or LDT
    )
   :inline t
   :msb-first nil)
@@ -94,6 +92,7 @@
    :rule-classes nil))
 
 (defbitstruct interrupt/trap-gate-descriptorBits
+  :short "AMD manual, Jun'23, Vol. 2, Figures 4-24 and 4-18."
   ((offset15-0 16bits)
    (selector 16bits)
    (ist 3bits)
@@ -118,7 +117,7 @@
    :rule-classes nil))
 
 (defbitstruct interrupt/trap-gate-descriptor-attributesBits
-  :parents (segmentation-bitstructs)
+  :short "Subset of @(tsee interrupt/trap-gate-descriptorBits) above."
   ((ist 3bits)
    (type 4bits)
    (s bitp)
@@ -135,8 +134,7 @@
    :rule-classes nil))
 
 (defbitstruct gdtr/idtrBits
-  :parents (segmentation-bitstructs)
-  :long "<p>Source: AMD manual, Apr'16, Vol. 2, Figure 4-8</p>"
+  :short "AMD manual, Jun'23, Vol. 2, Figure 4-8."
   ((base-addr 64bits) ;; Segment Base Address
    (limit 16bits))    ;; Segment Limit
   :msb-first nil
@@ -149,31 +147,31 @@
    :rule-classes nil))
 
 (defbitstruct code-segment-descriptorBits
-  :parents (segmentation-bitstructs)
-  ((limit15-0 16bits) ;; Ignored in 64-bit mode
-   (base15-0 16bits)  ;; Ignored in 64-bit mode
-   (base23-16 8bits)  ;; Ignored in 64-bit mode
+  :short "AMD manual, Jun'23, Vol. 2, Figures 4-20 and 4-14."
+  ((limit15-0 16bits)  ;; Ignored in 64-bit mode
+   (base15-0 16bits)   ;; Ignored in 64-bit mode
+   (base23-16 8bits)   ;; Ignored in 64-bit mode
    (a bitp)            ;; Ignored in 64-bit mode
    (r bitp)            ;; Ignored in 64-bit mode
    (c bitp)
-   (msb-of-type bitp) ;; must be 1
-   (s bitp)           ;; S = 1 in 64-bit mode (code/data segment)
+   (msb-of-type bitp)  ;; must be 1
+   (s bitp)            ;; S = 1 in 64-bit mode (code/data segment)
    (dpl 2bits)
    (p bitp)
-   (limit19-16 4bits) ;; Ignored in 64-bit mode
+   (limit19-16 4bits)  ;; Ignored in 64-bit mode
    (avl bitp)          ;; Ignored in 64-bit mode
-   ;; As per AMD manuals, this is ignored
-   ;; in 64-bit mode but the Intel manuals
-   ;; say it's not.  We're following the
-   ;; Intel manuals.
+                       ;; As per AMD manuals, this is ignored
+                       ;; in 64-bit mode but the Intel manuals
+                       ;; say it's not.  We're following the
+                       ;; Intel manuals.
    (l bitp)
    (d bitp)
    (g bitp)            ;; Ignored in 64-bit mode
-   ;; As per AMD manuals, this is ignored
-   ;; in 64-bit mode but the Intel manuals
-   ;; say it's not.  We're following the
-   ;; Intel manuals.
-   (base31-24 8bits)) ;; Ignored in 64-bit mode
+                       ;; As per AMD manuals, this is ignored
+                       ;; in 64-bit mode but the Intel manuals
+                       ;; say it's not.  We're following the
+                       ;; Intel manuals.
+   (base31-24 8bits))  ;; Ignored in 64-bit mode
   :msb-first nil
   :inline t)
 
@@ -184,7 +182,7 @@
    :rule-classes nil))
 
 (defbitstruct code-segment-descriptor-attributesBits
-  :parents (segmentation-bitstructs)
+  :short "Subset of @(tsee code-segment-descriptorBits)."
   ((a bitp)
    (r bitp)
    (c bitp)
@@ -207,23 +205,23 @@
    :rule-classes nil))
 
 (defbitstruct data-segment-descriptorBits
-  :parents (segmentation-bitstructs)
-  ((limit15-0 16bits) ;; Ignored in 64-bit mode
-   (base15-0 16bits)  ;; Ignored in 64-bit mode
-   (base23-16 8bits)  ;; Ignored in 64-bit mode
+  :short "AMD manual, Jun'23, Vol. 2, Figures 4-21 and 4-15."
+  ((limit15-0 16bits)  ;; Ignored in 64-bit mode
+   (base15-0 16bits)   ;; Ignored in 64-bit mode
+   (base23-16 8bits)   ;; Ignored in 64-bit mode
    (a bitp)            ;; Ignored in 64-bit mode
    (w bitp)            ;; Ignored in 64-bit mode
    (e bitp)            ;; Ignored in 64-bit mode
    (msb-of-type bitp)  ;; must be 0
    (s bitp)            ;; S = 1 in 64-bit mode (code/data segment)
-   (dpl 2bits)        ;; Ignored in 64-bit mode
+   (dpl 2bits)         ;; Ignored in 64-bit mode
    (p bitp)            ;; !! NOT IGNORED: Segment present bit !!
-   (limit19-16 4bits) ;; Ignored in 64-bit mode
+   (limit19-16 4bits)  ;; Ignored in 64-bit mode
    (avl bitp)
    (l bitp)            ;; L = 1 in 64-bit mode
    (d/b bitp)          ;; Ignored in 64-bit mode
    (g bitp)            ;; Ignored in 64-bit mode
-   (base31-24 8bits)) ;; Ignored in 64-bit mode
+   (base31-24 8bits))  ;; Ignored in 64-bit mode
   :msb-first nil
   :inline t)
 
@@ -234,7 +232,7 @@
    :rule-classes nil))
 
 (defbitstruct data-segment-descriptor-attributesBits
-  :parents (segmentation-bitstructs)
+  :short "Subset of @(tsee data-segment-descriptorBits)."
   ((a bitp)
    (w bitp)
    (e bitp)
@@ -257,11 +255,10 @@
    :rule-classes nil))
 
 ;; System-Segment descriptors (64-bit mode): Note that the following
-;; layout constants are different in the 32-bit mode, or even the
-;; compatibility mode.
+;; layouts are different in 32-bit mode, or even in compatibility mode.
 
 (defbitstruct system-segment-descriptorBits
-  :parents (segmentation-bitstructs)
+  :short "AMD manual, Jun'23, Vol. 2, Figure 4-22."
   ((limit15-0 16bits)
    (base15-0 16bits)
    (base23-16 8bits)
@@ -288,7 +285,7 @@
    :rule-classes nil))
 
 (defbitstruct system-segment-descriptor-attributesBits
-  :parents (segmentation-bitstructs)
+  :short "Subset of @(tsee system-segment-descriptorBits)."
   ((type 4bits)
    (s bitp) ;; S = 0 in 64-bit mode
    (dpl 2bits)
@@ -306,7 +303,7 @@
    :rule-classes nil))
 
 (defbitstruct call-gate-descriptorBits
-  :parents (segmentation-bitstructs)
+  :short "AMD manual, Jun'23, Vol. 2, Figure 4-23."
   ((offset15-0 16bits)
    (selector 16bits)
    (res1 8bits)
@@ -329,7 +326,7 @@
    :rule-classes nil))
 
 (defbitstruct call-gate-descriptor-attributesBits
-  :parents (segmentation-bitstructs)
+  :short "Subset of @(tsee call-gate-descriptorBits)."
   ((type 4bits)
    (s bitp)
    (dpl 2bits)
