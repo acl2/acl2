@@ -91,31 +91,6 @@
         (unsigned-byte-p 16 x))
    :rule-classes nil))
 
-(defbitstruct interrupt/trap-gate-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figures 4-24 and 4-18."
-  ((offset15-0 16bits)
-   (selector 16bits)
-   (ist 3bits)
-   (res1 5bits)
-   (type 4bits)
-   (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bits)
-   (p bitp)
-   (offset31-16 16bits)
-   (offset63-32 32bits)
-   (res2 8bits)
-   (all-zeros? 5bits) ;; Check whether these are all zeroes or not.
-   (res3 19bits)
-   )
-  :msb-first nil
-  :inline t)
-
-(local
- (defthm interrupt/trap-gate-descriptor-layout-ok
-   (iff (interrupt/trap-gate-descriptorBits-p x)
-        (unsigned-byte-p 128 x))
-   :rule-classes nil))
-
 (defbitstruct interrupt/trap-gate-descriptor-attributesBits
   :short "Subset of @(tsee interrupt/trap-gate-descriptorBits) above."
   ((ist 3bits)
@@ -339,6 +314,31 @@
  (defthm call-gate-descriptor-attributes-layout-ok
    (iff (call-gate-descriptor-attributesBits-p x)
         (unsigned-byte-p 16 x))
+   :rule-classes nil))
+
+(defbitstruct interrupt/trap-gate-descriptorBits
+  :short "AMD manual, Jun'23, Vol. 2, Figures 4-24 and 4-18."
+  ((offset15-0 16bits)
+   (selector 16bits)
+   (ist 3bits)
+   (res1 5bits)
+   (type 4bits)
+   (s bitp) ;; S = 0 in 64-bit mode
+   (dpl 2bits)
+   (p bitp)
+   (offset31-16 16bits)
+   (offset63-32 32bits)
+   (res2 8bits)
+   (all-zeros? 5bits) ;; Check whether these are all zeroes or not.
+   (res3 19bits)
+   )
+  :msb-first nil
+  :inline t)
+
+(local
+ (defthm interrupt/trap-gate-descriptor-layout-ok
+   (iff (interrupt/trap-gate-descriptorBits-p x)
+        (unsigned-byte-p 128 x))
    :rule-classes nil))
 
 ;; ----------------------------------------------------------------------
