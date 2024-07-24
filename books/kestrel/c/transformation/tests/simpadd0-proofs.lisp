@@ -10,14 +10,15 @@
 
 (in-package "C2C")
 
-(include-book "../../syntax/read-and-parse-files")
+(include-book "../../syntax/input-files")
 (include-book "../../syntax/print-and-write-files")
 (include-book "../simpadd0-proofs")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::read-and-parse-files :const *old-code*
-                          :files ("file.c"))
+(c$::input-files :files ("file.c")
+                 :process :parse
+                 :const *old-code*)
 
 (simpadd0 *old-code* *new-code* :proofs t)
 
