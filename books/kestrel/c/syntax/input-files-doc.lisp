@@ -180,7 +180,7 @@
        obtained by disambiguating the one resulting from the parser.")
      (xdoc::p
       "In the rest of this documentation page,
-       let @('*const') be the name of this constant."))
+       let @('*const*') be the name of this constant."))
 
     (xdoc::desc
      "@(':const-files') &mdash; default @('nil')"
