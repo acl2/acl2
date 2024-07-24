@@ -15,12 +15,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-dimb (input)
+(defmacro test-dimb (input &key gcc)
   `(assert-event
     (b* ((pstate (init-parstate (acl2::string=>nats ,input) nil))
          ((mv erp1 ast &) (parse-translation-unit pstate))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ast) (dimb-transunit ast))
+         ((mv erp2 ast) (dimb-transunit ast ,gcc))
          (- ))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
