@@ -41,6 +41,21 @@
 (include-book "xdoc/top" :dir :system)
 (local (include-book "system/f-put-global" :dir :system))
 
+;; This speeds up the proofs (from about 50 seconds to about 1/2 second):
+(local (in-theory (disable default-car
+                           default-cdr
+                           nth
+                           update-nth
+                           array1p
+                           aref1
+                           add-pair
+                           assoc-equal
+                           assoc-keyword
+                           true-list-fix
+                           natp
+                           nfix
+                           mv-nth)))
+
 (defsection file-measure
   :parents (std/io)
   :short "A measure for admitting functions that read from files."
