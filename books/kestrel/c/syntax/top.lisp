@@ -16,6 +16,8 @@
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")
+(include-book "printer")
+(include-book "input-files")
 (include-book "read-files")
 (include-book "parse-files")
 (include-book "print-files")
@@ -102,7 +104,8 @@
      in particular by supporting printing options
      (e.g. for right margin).")
    (xdoc::p
-    "We also provide event macros to read, parse, print, and write files.")
+    "We also provide event macros to
+     read, preprocess, parse, disambiguate, print, and write files.")
    (xdoc::p
     "We also plan to add a checker on the abstract syntax
      for the static constraints on C code (i.e. type checker etc.),
@@ -133,6 +136,7 @@
                     parser
                     disambiguator
                     printer
+                    input-files
                     read-files
                     parse-files
                     print-files
