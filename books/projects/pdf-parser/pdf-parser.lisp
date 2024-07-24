@@ -1020,6 +1020,7 @@
 
 (defund parse-objects (prefix contents )
         (declare (xargs :guard (character-listp contents)
+                        ; Updated 7/24/2024 by Drew Walter to speed up CCG analysis
                         :consider-only-ccms ((len contents))))
   (let ((res1 (parse-object-entry contents) ))
     (if (ast-obj-p prefix)
@@ -1142,8 +1143,9 @@
 
 
 (defund parse-trailer-entry-repetition (prefix contents )
-    (declare (xargs :guard (character-listp contents)
-                    :consider-only-ccms ((len contents))))
+  (declare (xargs :guard (character-listp contents)
+                   ; Updated 7/24/2024 by Drew Walter to speed up CCG analysis
+                   :consider-only-ccms ((len contents))))
   (let ((res1 (parse-trailer-entry contents) ))
     (if (ast-obj-p prefix)
       (if (character-listp contents)
