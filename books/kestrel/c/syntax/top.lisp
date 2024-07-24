@@ -18,7 +18,6 @@
 (include-book "disambiguator")
 (include-book "printer")
 (include-book "input-files")
-(include-book "read-files")
 (include-book "print-files")
 (include-book "write-files")
 (include-book "print-and-write-files")
@@ -135,7 +134,6 @@
                     disambiguator
                     printer
                     input-files
-                    read-files
                     print-files
                     write-files
                     print-and-write-files
