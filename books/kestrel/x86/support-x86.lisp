@@ -1180,3 +1180,20 @@
                   (if (canonical-address-p eff-addr)
                       (x86isa::wml-size nbytes eff-addr x86isa::val x86)
                     (list (list :non-canonical-address eff-addr) x86)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm feature-flags-opener
+  (implies (consp features)
+           (equal (feature-flags features)
+                  (if (equal 0 (feature-flag (first features)))
+                      0
+                    (feature-flags (rest features)))))
+  :hints (("Goal" :in-theory (enable feature-flags))))
+
+;; maybe not needed since we have the constant-opener for the call on nil
+(defthm feature-flags-base
+  (implies (not (consp features))
+           (equal (feature-flags features)
+                  1))
+  :hints (("Goal" :in-theory (enable feature-flags))))

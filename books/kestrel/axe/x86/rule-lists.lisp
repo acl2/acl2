@@ -4583,7 +4583,7 @@
             of-spec64-of-logext-64
             acl2::sbvlt-of-bvsx-arg2
 
-            integerp-of-part-install-width-low$inline
+            acl2::integerp-of-part-install-width-low$inline ; needed?
             x86isa::sp-sse-cmp
             ;;x86isa::sse-cmp ;todo: limit?
             ;x86isa::!mxcsr

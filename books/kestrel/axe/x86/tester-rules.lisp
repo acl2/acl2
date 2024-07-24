@@ -297,24 +297,6 @@
          0)
   :hints (("Goal" :in-theory (enable of-spec64))))
 
-(defthm X86ISA::FEATURE-FLAGS-opener
-  (implies (consp features)
-           (equal (X86ISA::FEATURE-FLAGS features)
-                  (if (equal 0 (X86ISA::FEATURE-FLAG (FIRST FEATURES)))
-                      0
-                    (X86ISA::FEATURE-FLAGS (rest features)))))
-  :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
-
-(defthm X86ISA::FEATURE-FLAGS-base
-  (implies (not (consp features))
-           (equal (X86ISA::FEATURE-FLAGS features)
-                  1))
-  :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
-
-; Only needed for Axe.
-(defthmd integerp-of-part-install-width-low$inline
-  (integerp (bitops::part-install-width-low$inline val x width low)))
-
 ;; ;todo!
 ;; ;or use a defun-sk to state that all states have the same cpuid
 ;; (skip-proofs
