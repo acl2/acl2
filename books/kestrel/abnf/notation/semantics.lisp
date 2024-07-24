@@ -966,7 +966,31 @@
              (tree-list-list-match-alternation-p
               (tree-nonleaf->branches tree) alt rules))
     :expand (tree-match-element-p tree element rules)
-    :use tree-nonleaf-when-match-rulename/group/option))
+    :use tree-nonleaf-when-match-rulename/group/option)
+
+  (defruled tree-nats-match-sensitive-when-match-char-val-sensitive
+    (implies (and (tree-match-element-p tree element rules)
+                  (element-case element :char-val)
+                  (char-val-case (element-char-val->get element) :sensitive)
+                  (equal chars
+                         (str::explode
+                          (char-val-sensitive->get
+                           (element-char-val->get element)))))
+             (nats-match-sensitive-chars-p (tree-leafterm->get tree) chars))
+    :enable (tree-match-element-p
+             tree-match-char-val-p))
+
+  (defruled tree-nats-match-insensitive-when-match-char-val-insensitive
+    (implies (and (tree-match-element-p tree element rules)
+                  (element-case element :char-val)
+                  (char-val-case (element-char-val->get element) :insensitive)
+                  (equal chars
+                         (str::explode
+                          (char-val-insensitive->get
+                           (element-char-val->get element)))))
+             (nats-match-insensitive-chars-p (tree-leafterm->get tree) chars))
+    :enable (tree-match-element-p
+             tree-match-char-val-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
