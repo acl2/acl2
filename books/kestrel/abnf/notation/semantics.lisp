@@ -947,6 +947,15 @@
     :expand (tree-match-element-p tree element rules)
     :enable tree-terminatedp)
 
+  (defruled tree-leafterm-when-match-numval/charval
+    (implies (and (tree-match-element-p tree element rules)
+                  (member-eq (element-kind element)
+                             '(:num-val :char-val)))
+             (equal (tree-kind tree) :leafterm))
+    :enable (tree-match-element-p
+             tree-match-num-val-p
+             tree-match-char-val-p))
+
   (defruled tree-rulename-when-match-rulename
     (implies (and (tree-match-element-p tree element rules)
                   (element-case element :rulename)
