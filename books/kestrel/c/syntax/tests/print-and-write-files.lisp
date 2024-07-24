@@ -12,7 +12,7 @@
 
 (include-book "../print-and-write-files")
 
-(include-book "parse-files") ; to obtain translation unit ensembles
+(include-book "input-files") ; to obtain translation unit ensembles
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,7 +21,7 @@
   (transunit-ensemble
    (omap::update (filepath "stdbool-printed.c")
                  (omap::lookup (filepath "stdbool.c")
-                               (transunit-ensemble->unwrap *stdbool-ast*))
+                               (transunit-ensemble->unwrap *parsed-simple/stdbool*))
                  nil)))
 
 (print-and-write-files :const *stdbool-ast-diff-path*)

@@ -19,7 +19,6 @@
 (include-book "printer")
 (include-book "input-files")
 (include-book "read-files")
-(include-book "parse-files")
 (include-book "print-files")
 (include-book "write-files")
 (include-book "print-and-write-files")
@@ -137,7 +136,6 @@
                     printer
                     input-files
                     read-files
-                    parse-files
                     print-files
                     write-files
                     print-and-write-files

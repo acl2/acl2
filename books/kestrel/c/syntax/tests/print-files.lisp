@@ -12,12 +12,12 @@
 
 (include-book "../print-files")
 
-(include-book "parse-files") ; to obtain translation unit ensembles
+(include-book "input-files") ; to obtain translation unit ensembles
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (print-files :const-fileset *stdbool-printed*
-             :const-transunits *stdbool-ast*)
+             :const-transunits *parsed-simple/stdbool*)
 
 (acl2::assert-equal
  (acl2::nats=>string
