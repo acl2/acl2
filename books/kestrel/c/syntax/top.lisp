@@ -18,7 +18,9 @@
 (include-book "disambiguator")
 (include-book "printer")
 (include-book "input-files")
+(include-book "input-files-doc")
 (include-book "output-files")
+(include-book "output-files-doc")
 (include-book "langdef-mapping")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
