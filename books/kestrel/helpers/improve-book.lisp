@@ -31,7 +31,7 @@
 ;; TODO: Handle with-output
 ;; TODO: Perhaps try turning off tau, to see if that saves a lot of time.
 
-(include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
+(include-book "kestrel/file-io-light/read-book-contents" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
@@ -50,26 +50,6 @@
 (include-book "speed-up")
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
-;; Returns (mv erp forms full-book-path state).
-;move
-(defund read-book-contents (bookname
-                            dir ; todo: allow keyword dirs
-                            state)
-  (declare (xargs :guard (and (stringp bookname)
-                              (or (eq :cbd dir)
-                                  (stringp dir)))
-                  :mode :program ; todo
-                  :stobjs state))
-  (let* ((file-name (maybe-add-dot-lisp-extension bookname))
-         (full-book-path (extend-pathname$ (if (eq dir :cbd) "." dir) file-name state)))
-    (mv-let (existsp state)
-      (file-write-date$ full-book-path state)
-      (if (not existsp)
-          (prog2$ (er hard? 'read-book-contents "~s0 does not exist." full-book-path)
-                  (mv :file-does-not-exist nil full-book-path state))
-        (mv-let (erp events state)
-          (read-objects-from-book full-book-path state)
-          (mv erp events full-book-path state))))))
 
 ;move
 (defund duplicate-items-aux (lst acc)
