@@ -112,6 +112,17 @@
                (const-parsed symbolp)
                (gcc booleanp))
   :short "Process the inputs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('paths') result of this function
+     is calculated from the @(':files') input.")
+   (xdoc::p
+    "The @('preprocessor') result of this function
+     is calculated from the @(':preprocess') input.
+     The use of `preprocessor' vs. `preprocess' is intentional.")
+   (xdoc::p
+    "The other results of this function are the homonymous inputs."))
   (b* (((reterr) nil nil nil nil nil nil nil nil)
        ;; Check and obtain options.
        ((mv erp extra options)
@@ -351,12 +362,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-fn ((args true-listp) (ctx ctxp) state)
-  :returns (mv erp events state)
+  :returns (mv erp (event pseudo-event-formp) state)
   :short "Event expansion of @(tsee input-files) from the inputs."
-  (b* (((mv erp events state)
+  (b* (((mv erp event state)
         (input-files-process-inputs-and-gen-events args state))
-       ((when erp) (er-soft+ ctx t nil "~@0" erp)))
-    (value events)))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+    (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
