@@ -572,11 +572,11 @@
               (cw ")~%" event)
               (submit-event-expect-no-error event nil state)))))))))
 
-(defun improve-local-event (event rest-events print initial-included-books state)
+(defun improve-local-event (event rest-events initial-included-books print state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state)
-           (ignore print initial-included-books))
+           (ignore initial-included-books print))
   ;; For a local event, try skipping it and see if the rest of the events
   ;; work.  If so, deleting the event should be safe, since the event is local.
   (prog2$
@@ -631,7 +631,7 @@
     ((in-package) (improve-in-package-event event rest-events print state))
     ((in-theory) (submit-event event nil nil state) ; todo: check if redundant, consider dropping (check the time difference)
      )
-    (local (improve-local-event event rest-events print initial-included-books state))
+    (local (improve-local-event event rest-events initial-included-books print state))
     ((theory-invariant) (submit-event event nil nil state) ; todo: handle!  could warn about a name that is not defined.
      )
     ((verify-guards) (submit-event event nil nil state) ; todo: check if redundant, improve hints
