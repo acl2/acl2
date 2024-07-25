@@ -536,7 +536,7 @@
 
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
-(defun improve-include-book-event (event rest-events print initial-included-books state)
+(defun improve-include-book-event (event rest-events initial-included-books print state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state)
@@ -596,7 +596,7 @@
 
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
-(defun improve-event (event rest-events print initial-included-books state)
+(defun improve-event (event rest-events initial-included-books print state)
   (declare (xargs :guard (and (true-listp rest-events)
                               (member-eq print '(nil :brief :verbose))
                               (string-listp initial-included-books))
@@ -627,7 +627,7 @@
      )
     ((encapsulate) (submit-event event nil nil state) ; todo: handle! may be easy if no constrained functions and no local events
      )
-    (include-book (improve-include-book-event event rest-events initial-included-books print state) )
+    (include-book (improve-include-book-event event rest-events initial-included-books print state))
     ((in-package) (improve-in-package-event event rest-events print state))
     ((in-theory) (submit-event event nil nil state) ; todo: check if redundant, consider dropping (check the time difference)
      )
