@@ -35,17 +35,10 @@
 (include-book "interp-st-bfrs-ok")
 (include-book "sat-stub")
 (include-book "centaur/aignet/cube-sat" :dir :system)
+(include-book "satlink-sat-config")
 (local (std::add-default-post-define-hook :fix))
 (local (include-book "std/lists/resize-list" :dir :system))
 
-(defprod fgl-satlink-monolithic-sat-config
-  ((ignore-pathcond booleanp :default nil)
-   (ignore-constraint booleanp :default nil)
-   (satlink-config-override :default nil)
-   (transform booleanp :default nil)
-   (transform-config-override :default nil)
-   (conjoin :default t))
-  :tag :fgl-satlink-config)
 
 
 (define interp-st-sat-check-cube ((config fgl-satlink-monolithic-sat-config-p)
@@ -417,12 +410,6 @@
               (logicman->aignet (interp-st->logicman interp-st))))))
 
 
-;; the main monolithic SAT configs we tend to need:
-(define monolithic-sat-with-transforms ()
-  (make-fgl-satlink-monolithic-sat-config :transform t))
-
-(define monolithic-sat-without-transforms ()
-  (make-fgl-satlink-monolithic-sat-config :transform nil))
 
 
 

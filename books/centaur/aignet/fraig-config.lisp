@@ -78,7 +78,9 @@ in this range (which should be an even number count). That is, if this range of
 outputs starts at @('k') and has count @('2i'), then nodes will only be
 considered perhaps equivalent if there is a path from one to the other in the
 undirected graph whose edges are given by pairs of outputs @('(j+k, j+i+k)')
-for @('0 <= j < i').  This is useful in cases where we know what nodes are likely to be equivalent to each other, and we don't want to waste time trying to prove equivalences that aren't among these candidates.</li>
+for @('0 <= j < i').  This is useful in cases where we know what nodes are
+likely to be equivalent to each other, and we don't want to waste time trying
+to prove equivalences that aren't among these candidates.</li>
 
 </ul>
 
@@ -104,8 +106,10 @@ for @('0 <= j < i').  This is useful in cases where we know what nodes are likel
    (ctrex-queue-limit acl2::maybe-natp "Limit to number of counterexamples that may be queued before resimulation" :default 16)
    (ctrex-force-resim booleanp "Force resimulation of a counterexample before checking another node in the same equivalence class" :default t)
    (final-force-resim booleanp
-                      "Force resimulation of any pending counterexamples at the end of the sweep. Useful when
-a subsequent FRAIG transform will use this transform's resulting equivalence classes (see @(see fraig))."
+                      "Force resimulation of any pending counterexamples at the
+end of the sweep. Useful when a subsequent FRAIG transform will use (with the
+output-types option) this transform's resulting equivalence classes (stored
+with the save-candidate-equivs-as option) (see @(see fraig))."
                       :default nil)
    (random-seed-name symbolp "Name to use for seed-random, or NIL to not reseed the random number generator")
    (outs-only booleanp "Only check the combinational outputs of the network" :default nil)
@@ -144,14 +148,36 @@ less than or equal to the level limit.")
 ;; compatible with @(':miters-only') or @('output-map').")
 ;;    (initial-equiv-classes-last booleanp :default nil
 ;;                                "See the n-outputs-are-initial-equiv-classes option.")
-   (output-types fraig-output-type-map :default nil
+   (output-types fraig-output-type-map :default nil ;;`((:fraig-remaining-equiv-classes . ,(fraig-output-type-initial-equiv-classes)))
                "If this is empty, then all outputs are treated as nodes to
 simplify.  Otherwise, it gives a mapping from output range names (see @(see
 aignet-output-ranges)) to @(see fraig-output-type) objects, determining how to
 treat the named ranges of objects. (This depends on the output-types argument
 to the transform, which determines which range of outputs corresponds to each
 output range name.) The default output type is
-@('(fraig-output-type-simplify)')."))
+@('(fraig-output-type-simplify)').")
+
+   (save-candidate-equivs-as symbolp :default nil ;; :fraig-remaining-equiv-classes
+                          "If this is a nonnil symbol and this transform is
+called with strict-count nonnil (i.e. only preserving a fixed number of primary
+outputs, not full combinational equivalence), then at the end of the SAT sweep,
+a new output range (see @(see aignet-output-ranges)) of the given name is added
+to the resulting AIG, encoding the remaining equivalence classes that were
+neither proved nor disproved. If an output range of that name already exists,
+then it is replaced.  This can be consumed in a subsequent FRAIG transform by
+mapping this symbol to @('(fraig-output-type-initial-equiv-classes)') in the
+output-types map. This can speed up that subsequent FRAIG transform since it
+doesn't need to re-disprove candidate equivalences for which we have already
+found counterexamples.")
+
+   (remove-candidate-equivs symbolp :default nil
+                            "If this is a nonnil symbol and this transform is
+called with strict-count nonnil (i.e. only preserving a fixed number of primary
+outputs, not full combinational equivalence), then at the end of the SAT sweep,
+the given output range will be deleted. This is intended to be used to remove a
+set of candidate equivalences that is no longer useful (e.g. because this is
+the last FRAIG transform in the sequence), but it will in fact remove any
+output range."))
 
   :parents (fraig comb-transform)
   :short "Configuration object for the @(see fraig) aignet transform."

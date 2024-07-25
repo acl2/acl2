@@ -640,36 +640,44 @@ Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress
 
 
 
-
+(define expand-implies-wrap-fgl-prove ((x pseudo-termp)
+                                       (config fgl-config-p))
+  :returns (new-x pseudo-termp)
+  (if (eq (fgl-config->toplevel-sat-check config) :insert)
+      (pseudo-term-fncall 'fgl-prove-fn
+                          (list (pseudo-term-quote
+                                 (fgl-toplevel-sat-check-config-wrapper
+                                  (fgl-config->sat-config config)))
+                                ''"final sat check"
+                                x
+                                ;; stop on ctrex/fail
+                                ''t ''t))
+    (pseudo-term-fix x))
+  ///
+  (defret fcs-ev-of-<fn>
+    (iff (fcs-ev new-x a)
+         (fcs-ev x a))
+    :hints(("Goal" :in-theory (enable fgl-prove)))))
 
 (define expand-an-implies ((x pseudo-termp) (config fgl-config-p))
   :returns (new-x pseudo-termp)
   :measure (pseudo-term-count x)
   :verify-guards nil
-  (flet ((wrap-fgl-prove (x config)
-                         (pseudo-term-fncall 'fgl-prove-fn
-                                             (list (pseudo-term-quote
-                                                    (fgl-toplevel-sat-check-config-wrapper
-                                                     (fgl-config->sat-config config)))
-                                                   ''"final sat check"
-                                                   x
-                                                   ;; stop on ctrex/fail
-                                                   ''t ''t))))
-        (pseudo-term-case x
-          :const (wrap-fgl-prove x config)
-          :var (wrap-fgl-prove x config)
-          :fncall (if (and (eq x.fn 'implies)
-                           (eql (len x.args) 2))
-                      (pseudo-term-fncall 'if
-                                          (list (wrap-vacuity-check (car x.args) config)
-                                                (wrap-fgl-pathcond-fix
-                                                 (wrap-fgl-prove x config))
-                                                ''t))
-                    (wrap-fgl-prove x config))
-          :lambda (pseudo-term-lambda
-                   x.formals
-                   (expand-an-implies x.body config)
-                   x.args)))
+  (pseudo-term-case x
+    :const (expand-implies-wrap-fgl-prove x config)
+    :var (expand-implies-wrap-fgl-prove x config)
+    :fncall (if (and (eq x.fn 'implies)
+                     (eql (len x.args) 2))
+                (pseudo-term-fncall 'if
+                                    (list (wrap-vacuity-check (car x.args) config)
+                                          (wrap-fgl-pathcond-fix
+                                           (expand-implies-wrap-fgl-prove x config))
+                                          ''t))
+              (expand-implies-wrap-fgl-prove x config))
+    :lambda (pseudo-term-lambda
+             x.formals
+             (expand-an-implies x.body config)
+             x.args))
   ///
   (verify-guards expand-an-implies
     :guard-debug t)
@@ -693,10 +701,13 @@ Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress
          (fcs-ev x a))))
 
 (define expand-an-implies-cp ((x pseudo-term-listp) config)
-  (b* (((unless (and (consp x) (not (cdr x)))) (list x))
+  (b* (((unless (consp x)) (list x))
        ((unless (fgl-config-p config))
         (cw "Expand-an-implies: bad config object: ~x0~%" config)
-        (list x)))
+        (list x))
+       ((when (consp (cdr x)))
+        (list (append (take (- (len x) 1) x)
+                      (list (expand-implies-wrap-fgl-prove (nth (- (len x) 1) x) config))))))
     (list (list (expand-an-implies (car x) config))))
   ///
   (defthm expand-an-implies-cp-correct

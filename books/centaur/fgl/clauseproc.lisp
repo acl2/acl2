@@ -630,7 +630,7 @@
         ;; Proved!
         (acl2::hintcontext :interp-early
                            (mv nil interp-st state)))
-       ((when (fgl-config->skip-toplevel-sat-check config))
+       ((unless (eq (fgl-config->toplevel-sat-check config) t))
         (mv (msg "FGL interpreter result was not syntactically T and skipping toplevel SAT check.")
             interp-st state))
        (sat-config (fgl-toplevel-sat-check-config-wrapper
