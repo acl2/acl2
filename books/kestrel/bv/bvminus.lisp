@@ -260,3 +260,11 @@
   (equal (bvplus size x (bvminus size y x))
          (bvchop size y))
   :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+;; (y1+x)-(y2+x) = y1-y2
+;; todo: other variants of this
+(defthm acl2::bvminus-of-bvplus-and-bvplus-same-2-2
+  (equal (bvminus size (bvplus size y1 x) (bvplus size y2 x))
+         (bvminus size y1 y2))
+  :hints (("Goal" :in-theory (enable bvplus bvminus)))  ;todo: better proof?
+  )

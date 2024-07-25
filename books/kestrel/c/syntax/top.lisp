@@ -16,12 +16,11 @@
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")
-(include-book "read-files")
-(include-book "parse-files")
-(include-book "print-files")
-(include-book "write-files")
-(include-book "read-and-parse-files")
-(include-book "print-and-write-files")
+(include-book "printer")
+(include-book "input-files")
+(include-book "input-files-doc")
+(include-book "output-files")
+(include-book "output-files-doc")
 (include-book "langdef-mapping")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,7 +101,8 @@
      in particular by supporting printing options
      (e.g. for right margin).")
    (xdoc::p
-    "We also provide event macros to read, parse, print, and write files.")
+    "We also provide event macros to
+     read, preprocess, parse, disambiguate, print, and write files.")
    (xdoc::p
     "We also plan to add a checker on the abstract syntax
      for the static constraints on C code (i.e. type checker etc.),
@@ -133,10 +133,6 @@
                     parser
                     disambiguator
                     printer
-                    read-files
-                    parse-files
-                    print-files
-                    write-files
-                    read-and-parse-files
-                    print-and-write-files
+                    input-files
+                    output-files
                     mapping-to-language-definition))

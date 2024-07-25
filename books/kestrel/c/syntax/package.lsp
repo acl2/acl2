@@ -44,8 +44,10 @@
                 nats=>string
                 pos
                 pseudo-event-formp
+                pseudo-event-form-listp
                 reterr
                 retok
+                string-optionp
                 unsigned-byte-listp
                 std::defret-mutual
                 str::dec-digit-char

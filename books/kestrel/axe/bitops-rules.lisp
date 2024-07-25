@@ -47,3 +47,7 @@
                   (slice (+ -1 xsize) (- n) x)))
   :hints (("Goal"; :in-theory (enable unsigned-byte-p)
            :use ash-negative-becomes-slice)))
+
+; Only needed for Axe.
+(defthmd integerp-of-part-install-width-low$inline
+  (integerp (bitops::part-install-width-low$inline val x width low)))
