@@ -69,6 +69,13 @@
     :val-type decl
     :pred ident-decl-mapp))
 
+(defrulel ident-listp-of-strip-cars-when-ident-decl-mapp
+  (implies (ident-decl-mapp map)
+           (ident-listp (strip-cars map)))
+  :induct t
+  :enable (strip-cars
+           ident-decl-mapp))
+
 (defrulel decl-listp-of-strip-cdrs-when-ident-decl-mapp
   (implies (ident-decl-mapp map)
            (decl-listp (strip-cdrs map)))
@@ -158,6 +165,7 @@
   (b* (((reterr) nil (c$::irr-fundef))
        (idents (free-vars-block-item-list items nil))
        (decls (ident-decls-map-filter decls idents))
+       (idents (strip-cars decls))
        (params (decl-list-to-paramdecl-list (strip-cdrs decls))))
     (retok
       idents
