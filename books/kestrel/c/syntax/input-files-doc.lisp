@@ -186,7 +186,7 @@
      "@(':const-files') &mdash; default @('nil')"
      (xdoc::p
       "Name of the generated ACL2 constant whose value is
-       the file set (i.e. a value of type @(tsee filset))
+       the file set (i.e. a value of type @(tsee fileset))
        that represents the files specified by the @(':files') input,
        as read from the file system, without preprocessing.")
      (xdoc::p
