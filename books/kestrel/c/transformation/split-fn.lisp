@@ -32,7 +32,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ split-fn
-  :parents (utilities)
+  :parents (transformation-tools)
   :short "A C-to-C transformation to split a function in two."
   :long
   (xdoc::topstring

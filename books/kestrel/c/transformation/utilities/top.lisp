@@ -19,4 +19,4 @@
 
 (defxdoc+ utilities
   :parents (transformation-tools)
-  :short "Utilities for C transformations")
+  :short "Utilities for C transformations.")
