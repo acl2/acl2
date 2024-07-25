@@ -3042,9 +3042,10 @@
 
 (define fraig-add-equiv-class-outputs-aux-1 ((n natp)
                                              (max natp)
-                                             classes copy aignet2)
+                                             classes copy mark aignet2)
   :guard (and (<= n (classes-size classes))
               (<= (classes-size classes) (lits-length copy))
+              (<= (num-fanins aignet2) (bits-length mark))
               (aignet-copies-in-bounds copy aignet2)
               (classes-wellformed classes)
               (eql max (classes-size classes)))
@@ -3055,15 +3056,17 @@
         aignet2)
        (head (node-head n classes))
        ((unless (< head (lnfix n)))
-        (fraig-add-equiv-class-outputs-aux-1 (1+ (lnfix n)) max classes copy aignet2))
+        (fraig-add-equiv-class-outputs-aux-1 (1+ (lnfix n)) max classes copy mark aignet2))
        (head-copy (get-lit head copy))
        (n-copy (get-lit n copy))
-       ((when (eql (lit-id head-copy) (lit-id n-copy)))
-        (fraig-add-equiv-class-outputs-aux-1 (1+ (lnfix n)) max classes copy aignet2))
+       ((when (or (eql (lit-id head-copy) (lit-id n-copy))
+                  (eql 0 (get-bit (lit-id head-copy) mark))
+                  (eql 0 (get-bit (lit-id n-copy) mark))))
+        (fraig-add-equiv-class-outputs-aux-1 (1+ (lnfix n)) max classes copy mark aignet2))
        ;; (- (cw "~x0~%" (lit-id head-copy)))
        (aignet2
         (aignet-add-out head-copy aignet2)))
-    (fraig-add-equiv-class-outputs-aux-1 (1+ (lnfix n)) max classes copy aignet2))
+    (fraig-add-equiv-class-outputs-aux-1 (1+ (lnfix n)) max classes copy mark aignet2))
   ///
   (defret aignet-extension-p-of-<fn>
     (aignet-extension-p new-aignet2 aignet2))
@@ -3071,13 +3074,18 @@
   (defret stype-count-of-<fn>
     (implies (not (equal (stype-fix stype) :po))
              (equal (stype-count stype new-aignet2)
-                    (stype-count stype aignet2)))))
+                    (stype-count stype aignet2))))
+
+  (defret fanin-count-of-<fn>
+    (equal (fanin-count new-aignet2)
+           (fanin-count aignet2))))
 
 (define fraig-add-equiv-class-outputs-aux-2 ((n natp)
                                              (max natp)
-                                             classes copy aignet2)
+                                             classes copy mark aignet2)
   :guard (and (<= n (classes-size classes))
               (<= (classes-size classes) (lits-length copy))
+              (<= (num-fanins aignet2) (bits-length mark))
               (aignet-copies-in-bounds copy aignet2)
               (classes-wellformed classes)
               (eql max (classes-size classes)))
@@ -3088,15 +3096,17 @@
         aignet2)
        (head (node-head n classes))
        ((unless (< head (lnfix n)))
-        (fraig-add-equiv-class-outputs-aux-2 (1+ (lnfix n)) max classes copy aignet2))
+        (fraig-add-equiv-class-outputs-aux-2 (1+ (lnfix n)) max classes copy mark aignet2))
        (head-copy (get-lit head copy))
        (n-copy (get-lit n copy))
-       ((when (eql (lit-id head-copy) (lit-id n-copy)))
-        (fraig-add-equiv-class-outputs-aux-2 (1+ (lnfix n)) max classes copy aignet2))
+       ((when (or (eql (lit-id head-copy) (lit-id n-copy))
+                  (eql 0 (get-bit (lit-id head-copy) mark))
+                  (eql 0 (get-bit (lit-id n-copy) mark))))
+        (fraig-add-equiv-class-outputs-aux-2 (1+ (lnfix n)) max classes copy mark aignet2))
        ;; (- (cw "~x0~%" (lit-id n-copy)))
        (aignet2
         (aignet-add-out n-copy aignet2)))
-    (fraig-add-equiv-class-outputs-aux-2 (1+ (lnfix n)) max classes copy aignet2))
+    (fraig-add-equiv-class-outputs-aux-2 (1+ (lnfix n)) max classes copy mark aignet2))
   ///
   (defret aignet-extension-p-of-<fn>
     (aignet-extension-p new-aignet2 aignet2))
@@ -3104,7 +3114,11 @@
   (defret stype-count-of-<fn>
     (implies (not (equal (stype-fix stype) :po))
              (equal (stype-count stype new-aignet2)
-                    (stype-count stype aignet2)))))
+                    (stype-count stype aignet2))))
+
+  (defret fanin-count-of-<fn>
+    (equal (fanin-count new-aignet2)
+           (fanin-count aignet2))))
 
 
 (define fraig-add-equiv-class-outputs (classes copy aignet2)
@@ -3114,14 +3128,19 @@
   :returns (mv (num-outs natp)
                new-aignet2)
   (b* ((orig-outs (num-outs aignet2))
+       ((acl2::local-stobjs mark)
+        (mv outs aignet2 mark))
+       (mark (resize-bits (num-fanins aignet2) mark))
+       (mark (set-bit 0 1 mark)) ;; set the constant node's mark
+       (mark (aignet-mark-dfs-outs mark aignet2))
        (size (classes-size classes))
        ;; (- (cw "heads: (~%"))
-       (aignet2 (fraig-add-equiv-class-outputs-aux-1 0 size classes copy aignet2))
+       (aignet2 (fraig-add-equiv-class-outputs-aux-1 0 size classes copy mark aignet2))
        ;; (- (cw ")~%")
        ;;    (cw "nodes: (~%"))
-       (aignet2 (fraig-add-equiv-class-outputs-aux-2 0 size classes copy aignet2)))
+       (aignet2 (fraig-add-equiv-class-outputs-aux-2 0 size classes copy mark aignet2)))
     ;; (cw ")~%")
-    (mv (- (num-outs aignet2) orig-outs) aignet2))
+    (mv (- (num-outs aignet2) orig-outs) aignet2 mark))
   ///
   (defret aignet-extension-p-of-<fn>
     (aignet-extension-p new-aignet2 aignet2))
@@ -3140,6 +3159,8 @@
 
 (define fraig-finish-copy-outs ((offset natp)
                                 (output-ranges aignet-output-range-map-p)
+                                (equivs-name symbolp)
+                                (remove-equivs symbolp)
                                 classes aignet copy aignet2)
   :guard (and (<= (num-fanins aignet)
                   (lits-length copy))
@@ -3151,25 +3172,34 @@
   :guard-hints (("goal" :in-theory (enable aignet-output-range-map-length)))
   :returns (mv (new-output-ranges aignet-output-range-map-p)
                new-aignet2)
-  (b* (((when (atom output-ranges))
-        (b* (((mv count aignet2) (fraig-add-equiv-class-outputs classes copy aignet2)))
-          (mv (list (cons :fraig-remaining-equiv-classes count)) aignet2)))
+  (b* ((equivs-name (mbe :logic (acl2::symbol-fix equivs-name)
+                         :exec equivs-name))
+       (remove-equivs (mbe :logic (acl2::symbol-fix remove-equivs)
+                           :exec remove-equivs))
+       ((when (atom output-ranges))
+        (if equivs-name
+            (b* (((mv count aignet2) (fraig-add-equiv-class-outputs classes copy aignet2)))
+              (mv (list (cons equivs-name count)) aignet2))
+          (mv nil aignet2)))
        ((unless (mbt (consp (car output-ranges))))
-        (fraig-finish-copy-outs offset (cdr output-ranges) classes aignet copy aignet2))
+        (fraig-finish-copy-outs offset (cdr output-ranges) equivs-name remove-equivs classes aignet copy aignet2))
        (name (mbe :logic (acl2::symbol-fix (caar output-ranges))
                   :exec (caar output-ranges)))
        (len (lnfix (cdar output-ranges)))
-       ((when (eq name :fraig-remaining-equiv-classes))
+       ((when (and equivs-name (eq name equivs-name)))
         (b* (((mv count aignet2) (fraig-add-equiv-class-outputs classes copy aignet2))
              (aignet2 (aignet-copy-outs-range (+ (lnfix offset) len)
                                               (aignet-output-range-map-length (cdr output-ranges))
                                               aignet copy aignet2)))
-          (mv (cons (cons :fraig-remaining-equiv-classes count)
+          (mv (cons (cons equivs-name count)
                     (aignet-output-range-map-fix (cdr output-ranges)))
               aignet2)))
+       ((when (and remove-equivs (eq name remove-equivs)))
+        ;; skip this range
+        (fraig-finish-copy-outs (+ (lnfix offset) len) (cdr output-ranges) equivs-name remove-equivs classes aignet copy aignet2))
        (aignet2 (aignet-copy-outs-range offset len aignet copy aignet2))
        ((mv rest-output-ranges aignet2)
-        (fraig-finish-copy-outs (+ (lnfix offset) len) (cdr output-ranges) classes aignet copy aignet2)))
+        (fraig-finish-copy-outs (+ (lnfix offset) len) (cdr output-ranges) equivs-name remove-equivs classes aignet copy aignet2)))
     (mv (cons (mbe :logic (cons name len)
                    :exec (car output-ranges))
               rest-output-ranges)
@@ -3199,6 +3229,8 @@
 
 (define fraig-finish-copy-nonstrict ((strict-count acl2::maybe-natp)
                                      (output-ranges aignet-output-range-map-p)
+                                     (save-candidate-equivs-as symbolp)
+                                     (remove-candidate-equivs symbolp)
                                      classes
                                      aignet copy aignet2)
   :guard (and (<= (num-fanins aignet)
@@ -3213,7 +3245,11 @@
               (equal (classes-size classes) (num-fanins aignet)))
   :returns (mv (new-output-ranges aignet-output-range-map-p)
                new-aignet2)
-  (b* ((output-ranges (aignet-output-range-map-fix output-ranges))
+  (b* ((save-candidate-equivs-as (mbe :logic (acl2::symbol-fix save-candidate-equivs-as)
+                                      :exec save-candidate-equivs-as))
+       (remove-candidate-equivs (mbe :logic (acl2::symbol-fix remove-candidate-equivs)
+                                      :exec remove-candidate-equivs))
+       (output-ranges (aignet-output-range-map-fix output-ranges))
        ((when (not strict-count))
         (b* ((aignet2 (finish-copy-comb aignet copy aignet2)))
           (mv output-ranges aignet2)))
@@ -3225,7 +3261,9 @@
        (aignet2 (aignet-copy-outs-range 0 initial-segment
                                         aignet copy aignet2))
        ((mv new-rest-ranges aignet2)
-        (fraig-finish-copy-outs initial-segment rest-ranges classes aignet copy aignet2))
+        (fraig-finish-copy-outs initial-segment rest-ranges
+                                save-candidate-equivs-as remove-candidate-equivs
+                                classes aignet copy aignet2))
        (aignet2 (aignet-copy-nxsts aignet copy aignet2)))
     (mv (append first-ranges new-rest-ranges)
         aignet2))
@@ -3405,7 +3443,10 @@
         (fraig-sweep aignet aignet2 copy strash classes mark config state))
        ((mv output-ranges aignet2)
         (fraig-finish-copy-nonstrict
-         strict-count output-ranges classes aignet copy aignet2)))
+         strict-count output-ranges
+         config.save-candidate-equivs-as
+         config.remove-candidate-equivs
+         classes aignet copy aignet2)))
     (mv aignet2 copy strash classes s32v mark output-ranges state))
   ///
   (defret num-ins-of-fraig-core-aux
@@ -3550,13 +3591,20 @@ is a @(see fraig-config) object.</p>
 
 <p>When used as a @(see n-output-comb-transform) or @(see
 m-assumption-n-output-comb-transform) (i.e. when we don't need to keep strict
-combinational equivalence), the FRAIG transform tracks, as an <see topic='@(url aignet-output-ranges)'>output-range</see>
-tagged @(':fraig-remaining-equiv-classes'),
+combinational equivalence), the FRAIG transform can track, as an <see topic='@(url aignet-output-ranges)'>output-range</see>,
 the remaining candidate equivalences that were neither proved nor
-disproved. These can be used in a subsequent FRAIG transform by configuring it as follows:</p>
+disproved. This list of transformations demonstrates the use of this option:</p>
 
 @({
  (aignet::make-fraig-config ...
+        ;; Save the remaining equivalences resulting from this transform
+        :save-candidate-equivs-as :fraig-remaining-equiv-classes
+        ;; Do a final simulation if there are any pending counterexamples at the end of the SAT sweep,
+        ;; to ensure we've broken all the equivalence classes we've gotten counterexamples for:
+        :final-force-resim t
+        ...)
+ (aignet::make-fraig-config ...
+        ;; Read the recorded candidate equivalences as our starting equivalence classes
         :output-types `((:fraig-remaining-equiv-classes
                           . ,(aignet::fraig-output-type-initial-equiv-classes)))
         ...)

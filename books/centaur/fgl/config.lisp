@@ -34,6 +34,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "centaur/fty/bitstruct" :dir :system)
+(include-book "std/util/defenum" :dir :system)
 
 (fty::defbitstruct fgl-function-mode
   :parents (fgl)
@@ -65,19 +66,55 @@
   :returns (mode fgl-function-mode-p)
   (or (cdr (hons-get fn (make-fast-alist (fgl-function-mode-alist-fix alist)))) 0))
 
+
+(defenum fgl-toplevel-sat-check-mode-p
+  (t nil :insert))
+
+
 (defconst *fgl-config-fields*
-  '((trace-rewrites booleanp :default 'nil)
-    (reclimit posp :rule-classes (:rewrite :type-prescription) :default '1000000)
-    (make-ites booleanp :default 'nil)
-    (rewrite-rule-table :default (table-alist 'fgl-rewrite-rules (w state)))
-    (branch-merge-rules :default (cdr (hons-assoc-equal 'fgl::fgl-branch-merge-rules (table-alist 'fgl-branch-merge-rules (w state)))))
-    (function-modes fgl-function-mode-alist :default (table-alist 'fgl-fn-modes (w state)))
-    (prof-enabledp booleanp :default 't)
-    (sat-config)
-    (sat-config-vacuity)
-    (skip-toplevel-sat-check booleanp :default 't)
-    (skip-vacuity-check booleanp :default 'nil)
-    ))
+  '((trace-rewrites booleanp :default 'nil
+                    "If T, Turn on tracing of rewrite rules -- see @(see fgl-rewrite-tracing).")
+    (reclimit posp :rule-classes (:rewrite :type-prescription) :default '1000000
+              "Recursion limit for the FGL interpreter/rewriter. Defaults to 1
+million; set smaller to catch rewrite loops faster.")
+    (make-ites booleanp :default 'nil
+               "If NIL (the default), then if the two branches of an IF term
+rewrite to objects that cannot be merged, FGL produces an error.  If T, then it
+creates an if-then-else object, which allows simplification to proceed but
+perhaps not in a useful direction.")
+    (rewrite-rule-table :default (table-alist 'fgl-rewrite-rules (w state))
+                        "The rewrite rule table. Probably shouldn't be changed
+by the user; instead use the utilities described in @(see fgl-rewrite-rules).")
+    (branch-merge-rules :default (cdr (hons-assoc-equal 'fgl::fgl-branch-merge-rules (table-alist 'fgl-branch-merge-rules (w state))))
+                        "The branch-merge rewrite rule table. Probably
+shouldn't be changed by the user; instead use the utilities described in @(see
+fgl-rewrite-rules).")
+    (function-modes fgl-function-mode-alist :default (table-alist 'fgl-fn-modes (w state))
+                        "The function mode table (see @(see fgl-function-mode)). Probably
+shouldn't be changed by the user; instead use the utilities described in @(see
+fgl-rewrite-rules).")
+    (prof-enabledp booleanp :default 't
+                   "If T (the default), then the interpreter collects rule
+profiling information (like ACL2's @(see acl2::accumulated-persistence)) and
+displays it when the interpreter finishes.")
+    (sat-config "SAT config object for the final toplevel SAT check. If
+NIL (the default), then instead uses the attachment for
+@('(fgl-toplevel-sat-check-config)').  If nonnil, should be a @(see
+fgl-sat-config) object. See @(see fgl-solving).")
+    (sat-config-vacuity "SAT config object for the vacuity check, if not
+skipped. If NIL (the default), then instead uses the attachment for
+@('(fgl-toplevel-vacuity-check-config)').  If nonnil, should be a @(see
+fgl-sat-config) object. See @(see fgl-solving).")
+    (toplevel-sat-check fgl-toplevel-sat-check-mode-p :default 't
+                        "If T (the default), then the FGL clause processor runs
+the interpreter on the given goal and then tries to prove the validity of the
+resulting Boolean expression using SAT. If @(':insert'), a preprocessing step
+inserts an @(see fgl-prove) wrapper around the conclusion of the conjecture so
+that the SAT check will be attempted when the interpreter gets there.. If
+@(':nil'), then we do neither of these.")
+    (skip-vacuity-check booleanp :default 'nil
+                        "If NIL, we use SAT to check vacuity of the
+hypotheses. Set to T to disable this vacuity check.")))
 
 (local
  (defun fgl-config-process-field (field)
@@ -100,7 +137,21 @@
  `(defprod fgl-config
     :parents (def-fgl-thm)
     :short "Config object for the FGL clause processor"
-    ,(fgl-config-process-fields *fgl-config-fields*)
+    :long "<p>Typically, instead of constructing an fgl-config object directly,
+the user provides arguments to @(see def-fgl-thm) or @(see def-fgl-param-thm).
+In these macros, each field of the fgl-config object is assigned as follows:</p>
+
+<ul>
+<li>The explicit value given as a keyword argument to the macro, if there is one</li>
+<li>Else if the table @('fgl::fgl-config-table') has an entry for the keyword field name, the value to which it is bound</li>
+<li>Else if the keyword field name prefixed by \"FGL-\" is bound as a state
+global, its global value (e.g., keyword @(':fgl-trace-rewrites') for the
+@('trace-rewrites') config field).</li>
+<li>Else the default value defined by @(see make-fgl-config).</li>
+</ul>"
+
+    ,(fgl-config-process-fields
+*fgl-config-fields*)
     :layout :tree))
 
 
