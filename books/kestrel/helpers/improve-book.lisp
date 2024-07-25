@@ -50,6 +50,27 @@
 (include-book "speed-up")
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
+;; Returns (mv erp forms full-book-path state).
+;move
+(defund read-book-contents (bookname
+                            dir ; todo: allow keyword dirs
+                            state)
+  (declare (xargs :guard (and (stringp bookname)
+                              (or (eq :cbd dir)
+                                  (stringp dir)))
+                  :mode :program ; todo
+                  :stobjs state))
+  (let* ((file-name (maybe-add-dot-lisp-extension bookname))
+         (full-book-path (extend-pathname$ (if (eq dir :cbd) "." dir) file-name state)))
+    (mv-let (existsp state)
+      (file-write-date$ full-book-path state)
+      (if (not existsp)
+          (prog2$ (er hard? 'read-book-contents "~s0 does not exist." full-book-path)
+                  (mv :file-does-not-exist nil full-book-path state))
+        (mv-let (erp events state)
+          (read-objects-from-book full-book-path state)
+          (mv erp events full-book-path state))))))
+
 ;move
 (defund duplicate-items-aux (lst acc)
   (declare (xargs :guard (and (true-listp lst)
@@ -646,29 +667,6 @@
           ;; todo: do local incompat checking without include-books (or making them local) here?
           (improve-events-aux events initial-included-books print state)))
 
-
-
-;; Returns (mv erp forms full-book-path state).
-;move
-(defund read-book-contents (bookname
-                            dir ; todo: allow keyword dirs
-                            state)
-  (declare (xargs :guard (and (stringp bookname)
-                              (or (eq :cbd dir)
-                                  (stringp dir)))
-                  :mode :program ; todo
-                  :stobjs state))
-  (let* ((file-name (maybe-add-dot-lisp-extension bookname))
-         (full-book-path (extend-pathname$ (if (eq dir :cbd) "." dir) file-name state)))
-    (mv-let (existsp state)
-      (file-write-date$ full-book-path state)
-      (if (not existsp)
-          (prog2$ (er hard? 'read-book-contents "~s0 does not exist." full-book-path)
-                  (mv :file-does-not-exist nil full-book-path state))
-        (mv-let (erp events state)
-          (read-objects-from-book full-book-path state)
-          (mv erp events full-book-path state))))))
-
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
 (defun improve-book-fn-aux (bookname ; may include .lisp extension
@@ -686,7 +684,8 @@
     (if erp
         (mv erp state)
       (let* ((state (widen-margins state))
-             (fake (TIME-TRACKER-FN 'NIL 'NIL 'NIL 'NIL 'NIL 'NIL 'NIL)) ; from :trans (time-tracker nil)
+             ;; Suppress annoying time tracker messages.
+             (fake (time-tracker-fn nil nil nil nil nil nil nil)) ; from :trans (time-tracker nil)
              )
         (declare (ignore fake))
         (prog2$
