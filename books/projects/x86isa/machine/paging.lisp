@@ -3367,17 +3367,17 @@
          (vpn (logtail 12 (loghead #.*max-linear-address-size* lin-addr)))
          (tlb (tlb x86))
 
-         (tlb-key (make-tlb-key :vpn vpn
-                                :r-w-x (case r-w-x
-                                         (:r 0)
-                                         (:w 1)
-                                         (:x 2))
-                                :wp wp
-                                :smep smep
-                                :smap smap
-                                :ac ac
-                                :nxe nxe
-                                :cpl cpl))
+         (tlb-key (make-tlb-key-fast :vpn vpn
+                                     :r-w-x (case r-w-x
+                                              (:r 0)
+                                              (:w 1)
+                                              (:x 2))
+                                     :wp wp
+                                     :smep smep
+                                     :smap smap
+                                     :ac ac
+                                     :nxe nxe
+                                     :cpl cpl))
          (tlb-entry (cdr (hons-get tlb-key tlb)))
          ((when tlb-entry) (mv nil 
                                (logapp 12 lin-addr tlb-entry)
