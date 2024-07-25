@@ -19,7 +19,6 @@
 (include-book "printer")
 (include-book "input-files")
 (include-book "output-files")
-(include-book "print-files")
 (include-book "write-files")
 (include-book "langdef-mapping")
 
@@ -135,6 +134,5 @@
                     printer
                     input-files
                     output-files
-                    print-files
                     write-files
                     mapping-to-language-definition))
