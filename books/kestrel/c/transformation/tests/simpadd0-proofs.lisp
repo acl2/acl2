@@ -11,7 +11,7 @@
 (in-package "C2C")
 
 (include-book "../../syntax/input-files")
-(include-book "../../syntax/print-and-write-files")
+(include-book "../../syntax/output-files")
 (include-book "../simpadd0-proofs")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -22,4 +22,5 @@
 
 (simpadd0 *old-code* *new-code* :proofs t)
 
-(c$::print-and-write-files :const *new-code*)
+(c$::output-files :const *new-code*
+                  :process :print)

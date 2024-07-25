@@ -21,7 +21,6 @@
 (include-book "output-files")
 (include-book "print-files")
 (include-book "write-files")
-(include-book "print-and-write-files")
 (include-book "langdef-mapping")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -138,5 +137,4 @@
                     output-files
                     print-files
                     write-files
-                    print-and-write-files
                     mapping-to-language-definition))
