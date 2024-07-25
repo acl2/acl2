@@ -42,22 +42,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defset ident-set
-  :short "Fixtype of sets of identifiers."
-  :elt-type ident
-  :elementp-of-nil nil
-  :pred ident-setp)
-
-(defruled ident-listp-when-ident-setp-cheap
-  (implies (ident-setp set)
-           (ident-listp set))
-  :induct t
-  :enable ident-setp)
-
-(local (in-theory (enable ident-listp-when-ident-setp-cheap)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines declor/dirdeclor-get-ident
   (define declor-get-ident
     ((declor declorp))

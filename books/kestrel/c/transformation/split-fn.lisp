@@ -41,9 +41,23 @@
        the name of the new function to be generated, and the location of the
        split, represented as a natural number corresponding to the number of
        statements in the function body before the split.")
-    )
+    (xdoc::p
+      "This transformation is a work in progress, and may fail in certain
+       cases. For one, it does not currently recognize multiple variables
+       declared at once (e.g. @('int x, y;')). It may also fail on variables
+       which have been declared but not yet initialized at the split point."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled ident-listp-when-ident-setp
+  (implies (ident-setp set)
+           (ident-listp set))
+  :induct t
+  :enable ident-setp)
+
+(local (in-theory (enable ident-listp-when-ident-setp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,14 +75,6 @@
   :induct t
   :enable (strip-cdrs
            ident-decl-mapp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; MOVE
-(fty::defoption fundef-option
-  fundef
-  :short "Fixtype of optional function definitions."
-  :pred fundef-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -106,7 +112,6 @@
                  ((initdeclor initdeclor) (first decl.init)))
               (retok
                 (make-paramdecl
-                  ;; TODO: spec vs specs
                   :spec decl.specs
                   :decl (paramdeclor-declor initdeclor.declor))))
       :statassert (reterr t))))

@@ -26,6 +26,9 @@
 
     ident-listp
 
+    ident-setp
+    ident-set-fix
+
     dec/oct/hex-const-case
     dec/oct/hex-const-oct
 
@@ -340,6 +343,9 @@
     fundef-fix
     make-fundef
     fundef->declor
+
+    fundef-optionp
+    fundef-option-case
 
     extdeclp
     extdecl-fix
