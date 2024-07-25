@@ -44,7 +44,7 @@
 
 (fty::defset ident-set
   :short "Fixtype of sets of identifiers."
-  :elt-type c$::ident
+  :elt-type ident
   :elementp-of-nil nil
   :pred ident-setp)
 
@@ -83,11 +83,13 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp))))
 
-(defrule identp-of-declor-get-ident-under-iff
+(defruled identp-of-declor-get-ident-under-iff
   (iff (identp (declor-get-ident declor))
        (declor-get-ident declor))
   :use return-type-of-declor-get-ident.ident
   :disable return-type-of-declor-get-ident.ident)
+
+(local (in-theory (enable identp-of-declor-get-ident-under-iff)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

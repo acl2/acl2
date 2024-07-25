@@ -20,6 +20,7 @@
   '(
 
     identp
+    ident
     ident-fix
     ident->unwrap
 
@@ -34,6 +35,8 @@
     const-fix
     const-case
     const-int->unwrap
+
+    tyqual-list-listp
 
     exprp
     expr-fix
@@ -292,6 +295,8 @@
     initdeclor-list-fix
 
     declp
+    decl
+    decl-fix
     decl-case
     make-decl-decl
     decl-statassert
@@ -327,20 +332,24 @@
     block-item-stmt
 
     block-item-listp
+    block-item-list-fix
     block-item-list-count
 
     fundefp
     fundef
+    fundef-fix
     make-fundef
     fundef->declor
 
     extdeclp
+    extdecl-fix
     extdecl-case
     extdecl-fundef
     extdecl-fundef->unwrap
     extdecl-decl
 
     extdecl-listp
+    extdecl-list-fix
 
     transunitp
     transunit

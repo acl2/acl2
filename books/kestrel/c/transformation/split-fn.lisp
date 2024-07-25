@@ -29,8 +29,6 @@
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
 
-(local (include-book "kestrel/alists-light/remove-assoc-equal" :dir :system))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ split-fn
@@ -53,8 +51,8 @@
   (set-induction-depth-limit 1)
 
   (fty::defomap ident-decl-map
-    :key-type C$::ident
-    :val-type C$::decl
+    :key-type ident
+    :val-type decl
     :pred ident-decl-mapp))
 
 (defrulel decl-listp-of-strip-cdrs-when-ident-decl-mapp
@@ -71,19 +69,6 @@
   fundef
   :short "Fixtype of optional function definitions."
   :pred fundef-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; MOVE
-(acl2::defirrelevant irr-fundef
-  :short "An irrelevant function definition."
-  :type c$::fundefp
-  :body (make-fundef
-          :extension nil
-          :spec nil
-          :declor (c$::irr-declor)
-          :decls nil
-          :body (c$::irr-stmt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -169,13 +154,13 @@
 (define abstract-fn
   ((new-fn-name identp)
    (spec declspec-listp)
-   (pointers c$::tyqual-list-listp)
+   (pointers tyqual-list-listp)
    (items block-item-listp)
    (decls ident-decl-mapp))
   :returns (mv er
                (idents ident-listp)
                (new-fn fundefp))
-  (b* (((reterr) nil (irr-fundef))
+  (b* (((reterr) nil (c$::irr-fundef))
        (idents (free-vars-block-item-list items nil))
        (decls (ident-decls-map-filter decls idents))
        (params (decl-list-to-paramdecl-list (strip-cdrs decls))))
@@ -194,7 +179,8 @@
 
 (define initdeclor-get-idents
   ((initdeclor initdeclorp))
-  :returns (idents ident-setp)
+  :returns (idents ident-setp
+                   :hints (("Goal" :in-theory (enable identp-of-declor-get-ident-under-iff))))
   (b* (((initdeclor initdeclor) initdeclor)
        (ident? (declor-get-ident initdeclor.declor)))
     (if ident?
@@ -230,7 +216,7 @@
         (retok map)
       ;; TODO: either reterr on more than one ident, or else add all to the alist
       (retok (omap::update (head idents)
-                           (c$::decl-fix decl)
+                           (decl-fix decl)
                            map)))))
 
 (define split-fn-decl-list
@@ -260,14 +246,14 @@
   ((new-fn-name identp)
    (items block-item-listp)
    (spec declspec-listp)
-   (pointers c$::tyqual-list-listp)
+   (pointers tyqual-list-listp)
    (decls ident-decl-mapp)
    (split-point natp))
   :returns (mv er
                (new-fn fundefp)
                (truncated-items block-item-listp))
-  (b* ((items (c$::block-item-list-fix items))
-       ((reterr) (irr-fundef) items)
+  (b* ((items (block-item-list-fix items))
+       ((reterr) (c$::irr-fundef) items)
        ((when (zp split-point))
         (b* (((erp idents new-fn)
               (abstract-fn new-fn-name spec pointers items decls)))
@@ -299,7 +285,7 @@
   :measure (block-item-list-count items)
   :hints (("Goal" :in-theory (enable o<
                                      o-finp
-                                     c$::block-item-list-fix))))
+                                     block-item-list-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,7 +297,7 @@
   :returns (mv er
                (fundef1 fundefp)
                (fundef2 fundef-optionp))
-  (b* (((reterr) (irr-fundef) nil)
+  (b* (((reterr) (c$::irr-fundef) nil)
        ((fundef fundef) fundef)
        ((declor fundef.declor) fundef.declor))
     (stmt-case
@@ -321,7 +307,7 @@
         fundef.declor.decl
         :function-params
         (b* (((unless (equal target-fn (dirdeclor-get-ident fundef.declor.decl.decl)))
-              (retok (c$::fundef-fix fundef) nil))
+              (retok (fundef-fix fundef) nil))
              ((erp new-fn truncated-items)
               (split-fn-block-item-list
                 new-fn-name
@@ -339,8 +325,8 @@
                    :declor fundef.declor
                    :decls fundef.decls
                    :body (stmt-compound truncated-items))))
-        :otherwise (retok (c$::fundef-fix fundef) nil))
-      :otherwise (retok (c$::fundef-fix fundef) nil))))
+        :otherwise (retok (fundef-fix fundef) nil))
+      :otherwise (retok (fundef-fix fundef) nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -366,7 +352,7 @@
                   :some (retok t (list (extdecl-fundef fundef1)
                                        (extdecl-fundef fundef2.val)))
                   :none (retok nil (list (extdecl-fundef fundef1)))))
-      :decl (retok nil (list (c$::extdecl-fix extdecl))))))
+      :decl (retok nil (list (extdecl-fix extdecl))))))
 
 (define split-fn-extdecl-list
   ((target-fn identp)
@@ -381,7 +367,7 @@
        ((erp target-found extdecls1)
         (split-fn-extdecl target-fn new-fn-name (first extdecls) split-point))
        ((when target-found)
-        (retok (append extdecls1 (c$::extdecl-list-fix (rest extdecls)))))
+        (retok (append extdecls1 (extdecl-list-fix (rest extdecls)))))
        ((erp extdecls2)
         (split-fn-extdecl-list target-fn new-fn-name (rest extdecls) split-point)))
     (retok (append extdecls1 extdecls2))))
