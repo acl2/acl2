@@ -76,27 +76,15 @@
   :enable (strip-cdrs
            ident-decl-mapp))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ident-decls-map-filter
-  ((map ident-decl-mapp)
-   (idents ident-setp))
-  :returns (new-map ident-decl-mapp)
-  (b* ((map (ident-decl-map-fix map))
-       ((when (omap::emptyp map))
-        nil)
-       ((mv key val)
-        (omap::head map)))
-    (if (in key idents)
-        (omap::update key
-                      val
-                      (ident-decls-map-filter (omap::tail map) idents))
-      (ident-decls-map-filter
-        (omap::tail map)
-        idents)))
-  :measure (acl2-count (ident-decl-map-fix map))
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns)
+(define expr-ident-list
+  ((idents ident-listp))
+  :returns (exprs expr-listp)
+  (if (endp idents)
+      nil
+    (cons (expr-ident (first idents))
+          (expr-ident-list (rest idents)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,6 +116,8 @@
       (cons paramdecl
             (decl-list-to-paramdecl-list (rest decls))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define paramdecl-to-decl
   ((paramdecl paramdeclp))
   :returns (mv erp
@@ -154,7 +144,7 @@
       (cons decl
             (paramdecl-list-to-decl-list (rest paramdecls))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-fn
   ((new-fn-name identp)
@@ -178,7 +168,27 @@
                   :decl (make-dirdeclor-function-params
                           :decl (dirdeclor-ident new-fn-name)
                           :params params))
-        :body (stmt-compound items)))))
+        :body (stmt-compound items))))
+  :prepwork
+  ((define ident-decls-map-filter
+     ((map ident-decl-mapp)
+      (idents ident-setp))
+     :returns (new-map ident-decl-mapp)
+     (b* ((map (ident-decl-map-fix map))
+          ((when (omap::emptyp map))
+           nil)
+          ((mv key val)
+           (omap::head map)))
+       (if (in key idents)
+           (omap::update key
+                         val
+                         (ident-decls-map-filter (omap::tail map) idents))
+         (ident-decls-map-filter
+           (omap::tail map)
+           idents)))
+     :measure (acl2-count (ident-decl-map-fix map))
+     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -209,6 +219,8 @@
    :decl (initdeclor-list-get-idents decl.init)
    :statassert nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define split-fn-decl
   ((decl declp)
    (map ident-decl-mapp))
@@ -238,14 +250,6 @@
                           split-map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expr-ident-list
-  ((idents ident-listp))
-  :returns (exprs expr-listp)
-  (if (endp idents)
-      nil
-    (cons (expr-ident (first idents))
-          (expr-ident-list (rest idents)))))
 
 (define split-fn-block-item-list
   ((new-fn-name identp)
@@ -391,7 +395,7 @@
         (split-fn-extdecl-list target-fn new-fn-name tunit.decls split-point)))
     (mv er (transunit extdecls))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-fn-filepath-transunit-map
   ((target-fn identp)
