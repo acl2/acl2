@@ -1,6 +1,6 @@
 ; A utility that suggests ways to speed up a theorem
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,8 @@
 ;; See also improve-book.lisp, for a tool that applies this tool to an entire
 ;; book or set of books (along with suggesting other improvements).
 
+;; TODO: Add support for speeding up defuns and defines.
+
 (include-book "kestrel/utilities/prove-dollar-nice" :dir :system)
 (include-book "kestrel/utilities/theory-hints" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
@@ -40,6 +42,19 @@
   (declare (xargs :stobjs state
                   :mode :program))
   (get-event-data-1 'rules (cadr (hons-get name (f-get-global 'event-data-fal state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tests whether any of the RUNES is an induction rune.
+;; TODO: Generalize.
+(defund exists-induction-runep (runes)
+  (declare (xargs :guard (true-listp runes)))
+  (if (endp runes)
+      nil
+    (let ((rune (first runes)))
+      (or (and (consp rune)
+               (eq :induction (car rune)))
+          (exists-induction-runep (rest runes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,19 +145,12 @@
           (progn$ (maybe-print-speedup-message provedp time time-to-beat (concatenate 'string "Disable " (print-to-string rune-to-drop)) print)
                   (try-to-drop-runes-from-defthm (rest runes) body hints otf-flg time-to-beat print state)))))))
 
-(defund exists-induction-runep (runes)
-  (declare (xargs :guard (true-listp runes)))
-  (if (endp runes)
-      nil
-    (let ((rune (first runes)))
-      (or (and (consp rune)
-               (eq :induction (car rune)))
-          (exists-induction-runep (rest runes))))))
-
-
-;; Prints suggested ways to speed up a theorem.  EVENT should be a defthm (or a variant, like defthmd).
+;; Prints suggested ways to speed up EVENT, which should be a defthm (or a variant, like defthmd, that supports :hints).
 ;; Returns (mv erp state).
-;; TODO: Should we combine this with speed-up-defrule?
+;; Currently, this does the following:
+;; - tries disabling each rune that was used in the original proof.
+;; - tries :induct t if the proof used induction, in case time was wasted before reverting to induction
+;; TODO: Compare to speed-up-defrule.  Keep in sync, or merge them.
 (defun speed-up-defthm (event print state)
   (declare (xargs :guard (print-levelp print) ; todo: caller doesn't allow t?
                   :mode :program
@@ -162,6 +170,7 @@
          (mv nil state))
       ;; Do the proof and time it:
       (mv-let (erp provedp original-time state)
+        ;; This seems to save the event-data, at least the rules used:
         (prove$-twice-with-time body
                                 hints
                                 nil
@@ -321,7 +330,7 @@
         (otherwise (prog2$ (er hard? 'speed-up-event-fn "Unsupported event: ~X01." form nil)
                            (mv :unsupported-event state)))))))
 
-(defmacro speed-up-event (form)
-  `(speed-up-event-fn ',form :brief state))
+(defmacro speed-up-event (form &key (print ':brief))
+  `(speed-up-event-fn ',form ',print state))
 
 ;; TODO: Add a way to apply to all events in a book.
