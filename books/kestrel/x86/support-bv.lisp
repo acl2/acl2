@@ -52,15 +52,15 @@
 ;;            (equal (slice high low (logapp lowsize lowval highval))
 ;;                   (slice high low (bvcat (+ 1 high (- lowsize)) highval lowsize lowval))))
 ;;   :otf-flg t
-;;   :hints (("Goal" :use (:instance ACL2::BVCAT-RECOMBINE
-;;                                   (acl2::lowsize lowsize)
-;;                                   (acl2::lowval lowval)
-;;                                   (acl2::highval highval)
-;;                                   (acl2::highsize (+ 1 high (- lowsize)))))))
+;;   :hints (("Goal" :use (:instance BVCAT-RECOMBINE
+;;                                   (lowsize lowsize)
+;;                                   (lowval lowval)
+;;                                   (highval highval)
+;;                                   (highsize (+ 1 high (- lowsize)))))))
 
 
 ;;   :hints (("Goal" :in-theory (e/d (;bvcat logapp
-;;                                          ;acl2::slice-of-sum-cases
+;;                                          ;slice-of-sum-cases
 ;;                                          )
 ;;                                   ()))))
 
@@ -72,15 +72,15 @@
                 (<= lowsize low) ; this case
                 (unsigned-byte-p lowsize lowval)
                 (integerp highval))
-           (equal (acl2::slice high low (logapp lowsize lowval highval))
-                  (acl2::slice (+ (- lowsize) high) (+ (- lowsize) low) highval)))
-  :hints (("Goal" :in-theory (e/d (acl2::slice logapp) (acl2::logtail-of-plus
-                                                  acl2::unsigned-byte-p-of-logapp-large-case))
-           :use (:instance acl2::unsigned-byte-p-of-logapp-large-case
+           (equal (slice high low (logapp lowsize lowval highval))
+                  (slice (+ (- lowsize) high) (+ (- lowsize) low) highval)))
+  :hints (("Goal" :in-theory (e/d (slice logapp) (logtail-of-plus
+                                                  unsigned-byte-p-of-logapp-large-case))
+           :use (:instance unsigned-byte-p-of-logapp-large-case
                            (size1 low)
                            (size lowsize)
                            (i lowval)
-                           (j (acl2::BVCHOP (+ LOW (- LOWSIZE)) HIGHVAL))))))
+                           (j (BVCHOP (+ LOW (- LOWSIZE)) HIGHVAL))))))
 
 
 (defthm plus-of-minus1-and-bvcat-of-0
@@ -91,9 +91,9 @@
                   (if (equal (bvchop highsize highval) 0)
                       -1
                     (bvcat highsize (+ -1 highval) lowsize (+ -1 (expt 2 lowsize))))))
-  :hints (("Goal" :in-theory (e/d (bvcat bvplus acl2::bvchop-of-sum-cases)
+  :hints (("Goal" :in-theory (e/d (bvcat bvplus bvchop-of-sum-cases)
                                   (
-                                   ;acl2::equal-of-+-when-negative-constant
+                                   ;equal-of-+-when-negative-constant
                                    )))))
 
 
@@ -107,54 +107,54 @@
 (defthm bvshr-of-logand-becomes-bvshr-of-bvand
   (implies (and (natp amt)
                 (< amt 32))
-           (equal (acl2::bvshr 32 (logand x y) amt)
-                  (acl2::bvshr 32 (bvand (+ 32 amt) x y) amt)))
-  :hints (("Goal" :in-theory (e/d (acl2::bvshr bvand slice acl2::logtail-of-bvchop)
-                                  (acl2::slice-of-logand
-                                   ;acl2::logand-of-bvchop-becomes-bvand-alt
-                                   ;acl2::logand-of-bvchop-becomes-bvand
-                                   acl2::bvchop-of-logtail-becomes-slice
-                                   acl2::anti-slice
-                                   ACL2::BVAND-LOGTAIL-ARG2 ;looped
-                                   ACL2::BVAND-LOGTAIL-ARG1 ;looped
+           (equal (bvshr 32 (logand x y) amt)
+                  (bvshr 32 (bvand (+ 32 amt) x y) amt)))
+  :hints (("Goal" :in-theory (e/d (bvshr bvand slice logtail-of-bvchop)
+                                  (slice-of-logand
+                                   ;logand-of-bvchop-becomes-bvand-alt
+                                   ;logand-of-bvchop-becomes-bvand
+                                   bvchop-of-logtail-becomes-slice
+                                   anti-slice
+                                   BVAND-LOGTAIL-ARG2 ;looped
+                                   BVAND-LOGTAIL-ARG1 ;looped
                                    )))))
 
 (defthm bvchop-of-+-of-*-of-256
   (implies (and (integerp x)
                 (integerp y))
-           (equal (acl2::bvchop 8 (+ x (* 256 y)))
-                  (acl2::bvchop 8 x))))
+           (equal (bvchop 8 (+ x (* 256 y)))
+                  (bvchop 8 x))))
 
 (defthmd mod-becomes-bvchop-8
   (implies (integerp x)
            (equal (mod x 256)
-                  (acl2::bvchop 8 x)))
-  :hints (("Goal" :in-theory (enable acl2::bvchop ifix))))
+                  (bvchop 8 x)))
+  :hints (("Goal" :in-theory (enable bvchop ifix))))
 
 ;move
 (defthm bvchop-upper-bound-strong
   (implies (natp n)
-           (<= (acl2::bvchop n x) (+ -1 (expt 2 n))))
+           (<= (bvchop n x) (+ -1 (expt 2 n))))
   :rule-classes (:rewrite)
-  :hints (("Goal" :in-theory (enable acl2::bvchop))))
+  :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm bvplus-of-*-of-256
   (implies (and (natp size)
                 (<= 8 size)
                 (unsigned-byte-p 8 byte)
                 (integerp val))
-           (equal (acl2::bvplus size byte (* 256 val))
-                  (acl2::bvcat (- size 8) val 8 byte)))
+           (equal (bvplus size byte (* 256 val))
+                  (bvcat (- size 8) val 8 byte)))
   :hints (("Goal"
            :use (:instance bvchop-upper-bound-strong (n (+ -8 SIZE))
                            (x val))
-           :in-theory (e/d (acl2::bvcat acl2::bvplus
-                                        acl2::bvchop-of-sum-cases
+           :in-theory (e/d (bvcat bvplus
+                                        bvchop-of-sum-cases
                                         logtail
-                                        ACL2::EXPT-OF-+)
-                           (acl2::bvchop-upper-bound
+                                        EXPT-OF-+)
+                           (bvchop-upper-bound
                             bvchop-upper-bound-strong
-                            ACL2::BVCHOP-BOUND-2)))))
+                            BVCHOP-BOUND-2)))))
 
 
 (defthm fix-when-integerp
@@ -173,26 +173,26 @@
 
 ;gen
 (defthm strengthen-upper-bound-when-top-bit-0
-  (implies (and (syntaxp (acl2::want-to-strengthen (< x 9223372036854775808)))
-                (equal (acl2::getbit 63 x) 1)
+  (implies (and (syntaxp (want-to-strengthen (< x 9223372036854775808)))
+                (equal (getbit 63 x) 1)
                 (integerp x))
            (equal (< x 9223372036854775808)
                   (<= x 0)))
-  :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::logtail)
-                                  (acl2::slice-becomes-getbit
-                                   acl2::bvchop-1-becomes-getbit
-                                   acl2::bvchop-of-logtail-becomes-slice)))))
+  :hints (("Goal" :in-theory (e/d (getbit slice logtail)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice)))))
 
 ;; Since 0 and 1 are the only BVs less than 2
 (defthmd <-of-bvchop-and-2
-  (equal (< (ACL2::BVCHOP size x) 2)
-         (or (equal (ACL2::BVCHOP size x) 0)
-             (equal (ACL2::BVCHOP size x) 1))))
+  (equal (< (BVCHOP size x) 2)
+         (or (equal (BVCHOP size x) 0)
+             (equal (BVCHOP size x) 1))))
 
 ;;gen
 (defthm bvplus-subst-smaller-term
   (implies (and (equal (bvchop 32 x) (bvchop 32 x2))
-                (syntaxp (acl2::smaller-termp x2 x)))
+                (syntaxp (smaller-termp x2 x)))
            (equal (bvplus 32 x y)
                   (bvplus 32 x2 y))))
 
@@ -205,8 +205,8 @@
            (equal (EQUAL (BVCHOP size K) (BVPLUS size n K))
                   (equal (bvchop size n) 0)))
   :hints (("Goal"
-           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus)
-                           ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    ;; acl2::bvcat-of-+-high
-   ;                                                    ACL2::NTH-OF-CDR
+           :in-theory (e/d (bvplus bvchop-of-sum-cases bvuminus bvminus)
+                           ( bvminus-becomes-bvplus-of-bvuminus
+                                                    ;; bvcat-of-+-high
+   ;                                                    NTH-OF-CDR
                                                     )) )))

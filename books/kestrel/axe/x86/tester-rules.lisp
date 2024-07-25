@@ -269,51 +269,33 @@
   :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm of-spec-of-logext-32
-  (equal (of-spec32$inline (logext 32 x))
+  (equal (of-spec32 (logext 32 x))
          0)
   :hints (("Goal" :in-theory (enable of-spec32))))
 
 (defthm bvchop-of-zf-spec
   (implies (posp size)
-           (equal (BVCHOP size (ZF-SPEC$INLINE result))
-                  (ZF-SPEC$INLINE result))))
+           (equal (bvchop size (zf-spec result))
+                  (zf-spec result))))
 
 (defthm logext-of-zf-spec
   (implies (and (< 1 size)
                 (integerp size))
-           (equal (logext size (ZF-SPEC$INLINE result))
-                  (ZF-SPEC$INLINE result))))
+           (equal (logext size (zf-spec result))
+                  (zf-spec result))))
 
 (defthm integerp-of-zf-spec
-  (integerp (ZF-SPEC$INLINE result)))
+  (integerp (zf-spec result)))
 
-(defthm SF-SPEC64-of-bvchop-64
-  (equal (SF-SPEC64$INLINE (BVCHOP 64 x))
-         (SF-SPEC64$INLINE x))
-  :hints (("Goal" :in-theory (enable SF-SPEC64))))
+(defthm sf-spec64-of-bvchop-64
+  (equal (sf-spec64 (bvchop 64 x))
+         (sf-spec64 x))
+  :hints (("Goal" :in-theory (enable sf-spec64))))
 
 (defthm of-spec64-of-logext-64
   (equal (of-spec64 (logext 64 x))
          0)
   :hints (("Goal" :in-theory (enable of-spec64))))
-
-(defthm X86ISA::FEATURE-FLAGS-opener
-  (implies (consp features)
-           (equal (X86ISA::FEATURE-FLAGS features)
-                  (if (equal 0 (X86ISA::FEATURE-FLAG (FIRST FEATURES)))
-                      0
-                    (X86ISA::FEATURE-FLAGS (rest features)))))
-  :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
-
-(defthm X86ISA::FEATURE-FLAGS-base
-  (implies (not (consp features))
-           (equal (X86ISA::FEATURE-FLAGS features)
-                  1))
-  :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
-
-; Only needed for Axe.
-(defthmd integerp-of-part-install-width-low$inline
-  (integerp (bitops::part-install-width-low$inline val x width low)))
 
 ;; ;todo!
 ;; ;or use a defun-sk to state that all states have the same cpuid
@@ -558,14 +540,6 @@
 ;; (defthm x86isa::rflagsbits->zf-of-if
 ;;   (equal (x86isa::rflagsbits->zf (if test x1 x2))
 ;;          (if test (x86isa::rflagsbits->zf x1) (x86isa::rflagsbits->zf x2))))
-
-;; since we can get better context info from boolif than from boolor?
-(defthmd boolor-becomes-boolif
-  (equal (boolor x y)
-         (boolif x t y))
-  :hints (("Goal" :in-theory (enable boolif))))
-
-(theory-invariant (incompatible (:rewrite ACL2::BOOLIF-WHEN-QUOTEP-ARG2) (:rewrite boolor-becomes-boolif)))
 
 (defthm acl2::bvchop-subst-constant-alt
   (implies (and (syntaxp (not (quotep x)))
@@ -965,11 +939,6 @@
 ;;                            (:e expt) ; prevent out of memory error
 ;;                            distributivity
 ;;                            )))))
-
-;move
-(defthm acl2::bvminus-of-bvplus-and-bvplus-same-2-2
-  (equal (bvminus size (bvplus size y1 x) (bvplus size y2 x))
-         (bvminus size y1 y2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

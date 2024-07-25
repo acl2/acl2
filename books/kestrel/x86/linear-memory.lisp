@@ -18,7 +18,7 @@
 (include-book "projects/x86isa/machine/top-level-memory" :dir :system) ; for rme-size
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; todo: use byte-listp instead below?
 (include-book "kestrel/bv/bvcat" :dir :system)
-(include-book "support-bv")
+(local (include-book "support-bv"))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for slice-too-high-is-0-new (todo: move it)
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
