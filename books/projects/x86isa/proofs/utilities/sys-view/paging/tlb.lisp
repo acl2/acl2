@@ -77,7 +77,8 @@
                         (not (equal fld :msr))
                         (not (equal fld :seg-visible))
                         (not (equal fld :app-view))
-                        (not (equal fld :tlb)))
+                        (not (equal fld :tlb))
+                        (not (equal fld :implicit-supervisor-access)))
                    (equal (tlb-consistent lin-addr r-w-x
                                           (xw fld idx val x86))
                           (tlb-consistent lin-addr r-w-x x86))))
@@ -240,7 +241,8 @@
                         (not (equal fld :msr))
                         (not (equal fld :seg-visible))
                         (not (equal fld :app-view))
-                        (not (equal fld :tlb)))
+                        (not (equal fld :tlb))
+                        (not (equal fld :implicit-supervisor-access)))
                    (equal (tlb-consistent-n n lin-addr r-w-x
                                             (xw fld idx val x86))
                           (tlb-consistent-n n lin-addr r-w-x x86))))

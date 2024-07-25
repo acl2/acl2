@@ -191,7 +191,7 @@
            (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-page-table
                                             lin-addr
                                             base-addr u/s-acc r/w-acc x/d-acc
-                                            wp smep smap ac nxe r-w-x cpl x86)))
+                                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
                   (xr :mem index x86)))
   :hints (("Goal" :in-theory (e/d* (disjoint-p
                                     ia32e-la-to-pa-page-table
@@ -208,7 +208,7 @@
            (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-page-directory
                                             lin-addr
                                             base-addr u/s-acc r/w-acc x/d-acc
-                                            wp smep smap ac nxe r-w-x cpl x86)))
+                                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
                   (xr :mem index x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-directory
                                     xlation-governing-entries-paddrs-for-page-directory)
@@ -224,7 +224,7 @@
            (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                                             lin-addr
                                             base-addr u/s-acc r/w-acc x/d-acc
-                                            wp smep smap ac nxe r-w-x cpl x86)))
+                                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
                   (xr :mem index x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
                                     xlation-governing-entries-paddrs-for-page-dir-ptr-table)
@@ -239,7 +239,7 @@
                 (equal (loghead 12 base-addr) 0))
            (equal (xr :mem index (mv-nth 2 (ia32e-la-to-pa-pml4-table
                                             lin-addr base-addr
-                                            wp smep smap ac nxe r-w-x cpl x86)))
+                                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
                   (xr :mem index x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-pml4-table
                                     xlation-governing-entries-paddrs-for-pml4-table)
@@ -1407,11 +1407,11 @@
              (equal (xw :mem index value (mv-nth 2 (ia32e-la-to-pa-page-table
                                                     lin-addr
                                                     base-addr u/s-acc r/w-acc x/d-acc
-                                                    wp smep smap ac nxe r-w-x cpl x86)))
+                                                    wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
                     (mv-nth 2 (ia32e-la-to-pa-page-table
                                lin-addr
                                base-addr u/s-acc r/w-acc x/d-acc
-                               wp smep smap ac nxe r-w-x cpl
+                               wp smep smap ac nxe implict-supervisor-access r-w-x cpl
                                (xw :mem index value x86)))))
     :hints (("Goal" :in-theory (e/d* ()
                                      (bitops::logand-with-negated-bitmask)))))
@@ -1430,11 +1430,11 @@
                         (mv-nth 2 (ia32e-la-to-pa-page-directory
                                    lin-addr
                                    base-addr u/s-acc r/w-acc x/d-acc
-                                   wp smep smap ac nxe r-w-x cpl x86)))
+                                   wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
                     (mv-nth 2 (ia32e-la-to-pa-page-directory
                                lin-addr
                                base-addr u/s-acc r/w-acc x/d-acc
-                               wp smep smap ac nxe r-w-x cpl
+                               wp smep smap ac nxe implict-supervisor-access r-w-x cpl
                                (xw :mem index value x86)))))
     :hints (("Goal"
              :in-theory (e/d* ()
@@ -1453,11 +1453,11 @@
              (equal (xw :mem index value (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                                                     lin-addr
                                                     base-addr u/s-acc r/w-acc x/d-acc
-                                                    wp smep smap ac nxe r-w-x cpl x86)))
+                                                    wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
                     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                                lin-addr
                                base-addr u/s-acc r/w-acc x/d-acc
-                               wp smep smap ac nxe r-w-x cpl
+                               wp smep smap ac nxe implict-supervisor-access r-w-x cpl
                                (xw :mem index value x86)))))
     :hints (("Goal" :in-theory (e/d* ()
                                      (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
@@ -1474,10 +1474,10 @@
               (x86p x86) (integerp index) (unsigned-byte-p 8 value))
              (equal (xw :mem index value (mv-nth 2 (ia32e-la-to-pa-pml4-table
                                                     lin-addr base-addr
-                                                    wp smep smap ac nxe r-w-x cpl x86)))
+                                                    wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
                     (mv-nth 2 (ia32e-la-to-pa-pml4-table
                                lin-addr base-addr
-                               wp smep smap ac nxe r-w-x cpl
+                               wp smep smap ac nxe implict-supervisor-access r-w-x cpl
                                (xw :mem index value x86)))))
     :hints (("Goal" :in-theory (e/d* ()
                                      (|(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|

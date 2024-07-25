@@ -22,30 +22,30 @@
                              (mv-nth 0 (,la-to-pa-fn
                                          lin-addr base-addr
                                          ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                         wp smep smap ac nxe r-w-x cpl
+                                         wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                          (mv-nth 2 (,la-to-pa-fn
                                                      lin-addr2 base-addr2
                                                      ,@(if (equal level 'pml4-table) nil '(us2 rw2 xd2))
-                                                     wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2
+                                                     wp2 smep2 smap2 ac2 nxe2  implict-supervisor-access2 r-w-x2 cpl2
                                                      x86))))
                              (mv-nth 0 (,la-to-pa-fn
                                          lin-addr base-addr
                                          ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                         wp smep smap ac nxe r-w-x cpl x86)))
+                                         wp smep smap ac nxe  implict-supervisor-access r-w-x cpl x86)))
                            (equal
                              (mv-nth 1 (,la-to-pa-fn
                                          lin-addr base-addr
                                          ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                         wp smep smap ac nxe r-w-x cpl
+                                         wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                          (mv-nth 2 (,la-to-pa-fn
                                                      lin-addr2 base-addr2
                                                      ,@(if (equal level 'pml4-table) nil '(us2 rw2 xd2))
-                                                     wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2
+                                                     wp2 smep2 smap2 ac2 nxe2  implict-supervisor-access2 r-w-x2 cpl2
                                                      x86))))
                              (mv-nth 1 (,la-to-pa-fn
                                          lin-addr base-addr
                                          ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                         wp smep smap ac nxe r-w-x cpl x86))))
+                                         wp smep smap ac nxe  implict-supervisor-access r-w-x cpl x86))))
                          :hints (("Goal" :in-theory (e/d (,la-to-pa-fn
                                                            paging-entry-no-page-fault-p-invariant-under-paging-entry-no-page-fault-p
                                                            page-user-supervisor
@@ -83,7 +83,7 @@
                                                                                (mv-nth 2 (,la-to-pa-fn
                                                                                            lin-addr2 base-addr2
                                                                                            ,@(if (equal level 'pml4-table) nil '(us2 rw2 xd2))
-                                                                                           wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2
+                                                                                           wp2 smep2 smap2 ac2 nxe2  implict-supervisor-access2 r-w-x2 cpl2
                                                                                            x86))))
                                                          (,accessor (rm-low-64 addr x86))))
                                          :hints (("Goal" :in-theory (enable ,la-to-pa-fn)
@@ -100,29 +100,29 @@
                                (and (equal (mv-nth 0 (paging-entry-no-page-fault-p
                                                        structure-type lin-addr entry
                                                        u/s-acc r/w-acc x/d-acc
-                                                       wp smep smap ac nxe r-w-x cpl 
+                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl 
                                                        (mv-nth 2 (,la-to-pa-fn
                                                                    lin-addr2 base-addr2
                                                                    ,@(if (equal level 'pml4-table) nil '(us2 rw2 xd2))
-                                                                   wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2
+                                                                   wp2 smep2 smap2 ac2 nxe2  implict-supervisor-access2 r-w-x2 cpl2
                                                                    x86))))
                                            (mv-nth 0 (paging-entry-no-page-fault-p
                                                        structure-type lin-addr entry
                                                        u/s-acc r/w-acc x/d-acc
-                                                       wp smep smap ac nxe r-w-x cpl x86)))
+                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl x86)))
                                     (equal (mv-nth 1 (paging-entry-no-page-fault-p
                                                        structure-type lin-addr entry
                                                        u/s-acc r/w-acc x/d-acc
-                                                       wp smep smap ac nxe r-w-x cpl 
+                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl 
                                                        (mv-nth 2 (,la-to-pa-fn
                                                                    lin-addr2 base-addr2
                                                                    ,@(if (equal level 'pml4-table) nil '(us2 rw2 xd2))
-                                                                   wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2
+                                                                   wp2 smep2 smap2 ac2 nxe2  implict-supervisor-access2 r-w-x2 cpl2
                                                                    x86))))
                                            (mv-nth 1 (paging-entry-no-page-fault-p
                                                        structure-type lin-addr entry
                                                        u/s-acc r/w-acc x/d-acc
-                                                       wp smep smap ac nxe r-w-x cpl x86))))
+                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl x86))))
                                :hints (("Goal" :in-theory (enable paging-entry-no-page-fault-p page-fault-exception))))
 
                        (defthm ,(acl2::packn (list 'paging-entry-no-page-fault-p-invariant-under-reading-entry-after- la-to-pa-fn))
@@ -134,28 +134,28 @@
                                                                            (mv-nth 2 (,la-to-pa-fn
                                                                                        lin-addr2 base-addr2
                                                                                        ,@(if (equal level 'pml4-table) nil '(us2 rw2 xd2))
-                                                                                       wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2
+                                                                                       wp2 smep2 smap2 ac2 nxe2  implict-supervisor-access2 r-w-x2 cpl2
                                                                                        x86)))
                                                                 u/s-acc r/w-acc x/d-acc
-                                                                wp smep smap ac nxe r-w-x cpl x86))
+                                                                wp smep smap ac nxe  implict-supervisor-access r-w-x cpl x86))
                                                     (mv-nth 0 (paging-entry-no-page-fault-p
                                                                 structure-type lin-addr (rm-low-64 entry-addr x86)
                                                                 u/s-acc r/w-acc x/d-acc
-                                                                wp smep smap ac nxe r-w-x cpl x86)))
+                                                                wp smep smap ac nxe  implict-supervisor-access r-w-x cpl x86)))
                                              (equal (mv-nth 1 (paging-entry-no-page-fault-p
                                                                 structure-type lin-addr
                                                                 (rm-low-64 entry-addr
                                                                            (mv-nth 2 (,la-to-pa-fn
                                                                                        lin-addr2 base-addr2
                                                                                        ,@(if (equal level 'pml4-table) nil '(us2 rw2 xd2))
-                                                                                       wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2
+                                                                                       wp2 smep2 smap2 ac2 nxe2  implict-supervisor-access2 r-w-x2 cpl2
                                                                                        x86)))
                                                                 u/s-acc r/w-acc x/d-acc
-                                                                wp smep smap ac nxe r-w-x cpl x86))
+                                                                wp smep smap ac nxe  implict-supervisor-access r-w-x cpl x86))
                                                     (mv-nth 1 (paging-entry-no-page-fault-p
                                                                 structure-type lin-addr (rm-low-64 entry-addr x86)
                                                                 u/s-acc r/w-acc x/d-acc
-                                                                wp smep smap ac nxe r-w-x cpl x86)))))
+                                                                wp smep smap ac nxe  implict-supervisor-access r-w-x cpl x86)))))
                                :hints (("Goal" :in-theory (e/d (paging-entry-no-page-fault-p)
                                                                (,(acl2::packn (list level '-entry-addr)))))))
 
@@ -172,26 +172,26 @@
                                             (and (equal (mv-nth 0 (,la-to-pa-fn
                                                                     lin-addr base-addr
                                                                     ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                                                    wp smep smap ac nxe r-w-x cpl
+                                                                    wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                                                     (wm-low-64 entry-addr
                                                                                (,setter entry)
                                                                                x86)))
                                                         (mv-nth 0 (,la-to-pa-fn
                                                                     lin-addr base-addr
                                                                     ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                                                    wp smep smap ac nxe r-w-x cpl
+                                                                    wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                                                     x86)))
                                                  (equal (mv-nth 1 (,la-to-pa-fn
                                                                     lin-addr base-addr
                                                                     ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                                                    wp smep smap ac nxe r-w-x cpl
+                                                                    wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                                                     (wm-low-64 entry-addr
                                                                                (,setter entry)
                                                                                x86)))
                                                         (mv-nth 1 (,la-to-pa-fn
                                                                     lin-addr base-addr
                                                                     ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                                                    wp smep smap ac nxe r-w-x cpl
+                                                                    wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                                                     x86)))))
                                    :hints (("Goal" :in-theory (e/d (,la-to-pa-fn) ())
                                             :use (:instance
@@ -207,28 +207,28 @@
                                (and (equal (mv-nth 0 (,la-to-pa-fn
                                                        lin-addr base-addr
                                                        ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                                       wp smep smap ac nxe r-w-x cpl
+                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                                        (mv-nth 2 (paging-entry-no-page-fault-p
                                                                    structure-type2 lin-addr2 entry2
                                                                    u/s-acc2 r/w-acc2 x/d-acc2
-                                                                   wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2 x86))))
+                                                                   wp2 smep2 smap2 ac2 nxe2  implict-supervisor-access2 r-w-x2 cpl2 x86))))
                                            (mv-nth 0 (,la-to-pa-fn
                                                        lin-addr base-addr
                                                        ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                                       wp smep smap ac nxe r-w-x cpl
+                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                                        x86)))
                                     (equal (mv-nth 1 (,la-to-pa-fn
                                                        lin-addr base-addr
                                                        ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                                       wp smep smap ac nxe r-w-x cpl
+                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                                        (mv-nth 2 (paging-entry-no-page-fault-p
                                                                    structure-type2 lin-addr2 entry2
                                                                    u/s-acc2 r/w-acc2 x/d-acc2
-                                                                   wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2 x86))))
+                                                                   wp2 smep2 smap2 ac2 nxe2  implict-supervisor-access2 r-w-x2 cpl2 x86))))
                                            (mv-nth 1 (,la-to-pa-fn
                                                        lin-addr base-addr
                                                        ,@(if (equal level 'pml4-table) nil '(us rw xd))
-                                                       wp smep smap ac nxe r-w-x cpl
+                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                                        x86))))
                                :hints (("Goal" :in-theory (e/d (,la-to-pa-fn paging-entry-no-page-fault-p page-fault-exception)
                                                                (paging-entry-no-page-fault-p-did-fault?))))))))))
@@ -299,14 +299,15 @@
                                              logtail** bitops::logtail-induct))))
 
   (defthm equal-tlb-key-implies-equiv-components
-          (equal (equal (tlb-key wp smep smap ac nxe r-w-x cpl vpn)
-                        (tlb-key wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2 vpn2))
+          (equal (equal (tlb-key wp smep smap ac nxe implicit-supervisor-access r-w-x cpl vpn)
+                        (tlb-key wp2 smep2 smap2 ac2 nxe2 implicit-supervisor-access2 r-w-x2 cpl2 vpn2))
                  (and 
                    (bit-equiv wp wp2)
                    (bit-equiv smep smep2)
                    (bit-equiv smap smap2)
                    (bit-equiv ac ac2)
                    (bit-equiv nxe nxe2)
+                   (bit-equiv implicit-supervisor-access implicit-supervisor-access2)
                    (2bits-equiv r-w-x r-w-x2)
                    (2bits-equiv cpl cpl2)
                    (36bits-equiv vpn vpn2)))

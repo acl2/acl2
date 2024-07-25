@@ -188,6 +188,13 @@
                                    ())))
   :rule-classes :congruence)
 
+(defthm xlate-equiv-structures-and-implicit-supervisor-access
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (xr :implicit-supervisor-access nil x86-1)
+                  (xr :implicit-supervisor-access nil x86-2)))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures) ())))
+  :rule-classes :congruence)
+
 (defthm xlate-equiv-memory-in-app-view-implies-equal-states
   (implies (and (xlate-equiv-memory x86-1 x86-2)
                 (app-view x86-1))

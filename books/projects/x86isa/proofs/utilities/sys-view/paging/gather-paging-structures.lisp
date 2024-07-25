@@ -2104,6 +2104,8 @@
              (equal (xr :marking-view nil x86-1)
                     (xr :marking-view nil x86-2))
              (equal paging-qword-addresses-1 paging-qword-addresses-2)
+             (equal (implicit-supervisor-access x86-1)
+                    (implicit-supervisor-access x86-2))
              (xlate-equiv-entries-at-qword-addresses
               paging-qword-addresses-1 paging-qword-addresses-2 x86-1 x86-2)))
 
@@ -2161,7 +2163,8 @@
                   (not (equal fld :ctr))
                   (not (equal fld :rflags))
                   (not (equal fld :app-view))
-                  (not (equal fld :marking-view)))
+                  (not (equal fld :marking-view))
+                  (not (equal fld :implicit-supervisor-access)))
              (xlate-equiv-structures (xw fld index val x86)
                                      (double-rewrite x86)))
     :hints (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)

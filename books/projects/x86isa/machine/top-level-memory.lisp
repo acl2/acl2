@@ -310,6 +310,7 @@
                        (not (equal fld :app-view))
                        (not (equal fld :tlb))
                        (not (equal fld :marking-view))
+                       (not (equal fld :implicit-supervisor-access))
                        ,@(if (< size 10)
                            nil
                            `((member-equal fld *x86-field-names-as-keywords*))))

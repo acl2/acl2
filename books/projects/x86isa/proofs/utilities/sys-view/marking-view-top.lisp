@@ -400,7 +400,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'program-at-alt
     (acl2::formals 'program-at (w state))
@@ -519,7 +519,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'rb-alt
     (acl2::formals 'rb-alt (w state))
@@ -531,7 +531,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'rb-alt
     (acl2::formals 'rb-alt (w state))
@@ -564,7 +564,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'rb-alt
     (acl2::formals 'rb-alt (w state))
@@ -1475,7 +1475,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'get-prefixes-alt
     (acl2::formals 'get-prefixes-alt (w state))
@@ -1488,7 +1488,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'get-prefixes-alt
     (acl2::formals 'get-prefixes-alt (w state))
@@ -1501,7 +1501,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'get-prefixes-alt
     (acl2::formals 'get-prefixes-alt (w state))
@@ -1514,7 +1514,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'get-prefixes-alt
     (acl2::formals 'get-prefixes-alt (w state))

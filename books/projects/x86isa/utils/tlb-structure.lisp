@@ -10,6 +10,7 @@
                (smap bitp)
                (ac bitp)
                (nxe bitp)
+               (implicit-supervisor-access bitp)
                (r-w-x 2bits)
                (cpl 2bits)
                (vpn 36bits))

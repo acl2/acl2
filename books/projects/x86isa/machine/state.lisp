@@ -622,6 +622,15 @@
                         :fix (nfix x))
     (:doc "</li>")
 
+    (:doc "<li>@('Implicit Supervisor Access'): This field is a boolean
+          flag that, when t, tells the address translation system that all
+          translations should be treated as implicit supervisor accesses,
+          regardless of current privilege level.<br/>")
+    (implicit-supervisor-access   :type (satisfies booleanp)
+                                  :initially nil
+                                  :fix (acl2::bool-fix x))
+    (:doc "</li>")
+
     (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping @('tlb-key') bit structs to physical page numbers. An entry in the TLB implies the corresponding translation is valid. Invalid translations are not cached.<br/>")
     (tlb   :type (satisfies tlbp)
            :initially :tlb

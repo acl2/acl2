@@ -580,7 +580,7 @@
     (make-event
       (generate-read-fn-over-xw-thms
         (remove-elements-from-list
-          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb)
+          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb :implicit-supervisor-access)
           *x86-field-names-as-keywords*)
         'las-to-pas
         (acl2::formals 'las-to-pas (w state))
@@ -589,7 +589,7 @@
     (make-event
       (generate-read-fn-over-xw-thms
         (remove-elements-from-list
-          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb)
+          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb :implicit-supervisor-access)
           *x86-field-names-as-keywords*)
         'las-to-pas
         (acl2::formals 'las-to-pas (w state))
@@ -613,7 +613,7 @@
     (make-event
       (generate-write-fn-over-xw-thms
         (remove-elements-from-list
-          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb)
+          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb :implicit-supervisor-access)
           *x86-field-names-as-keywords*)
         'las-to-pas
         (acl2::formals 'las-to-pas (w state))
@@ -998,7 +998,7 @@
     (generate-read-fn-over-xw-thms
       (remove-elements-from-list
         '(:mem :rflags :ctr :seg-visible :msr :fault
-               :app-view :marking-view :tlb)
+               :app-view :marking-view :tlb :implicit-supervisor-access)
         *x86-field-names-as-keywords*)
       'rb
       (acl2::formals 'rb (w state))
@@ -1008,7 +1008,7 @@
     (generate-read-fn-over-xw-thms
       (remove-elements-from-list
         '(:mem :rflags :ctr :seg-visible :msr :fault
-               :app-view :marking-view :tlb)
+               :app-view :marking-view :tlb :implicit-supervisor-access)
         *x86-field-names-as-keywords*)
       'rb
       (acl2::formals 'rb (w state))
@@ -1054,7 +1054,7 @@
     (generate-write-fn-over-xw-thms
       (remove-elements-from-list
         '(:mem :rflags :ctr :seg-visible :msr :fault
-               :app-view :marking-view :tlb)
+               :app-view :marking-view :tlb :implicit-supervisor-access)
         *x86-field-names-as-keywords*)
       'rb
       (acl2::formals 'rb (w state))
@@ -1158,7 +1158,7 @@
     (generate-read-fn-over-xw-thms
       (remove-elements-from-list
         '(:mem :rflags :ctr :seg-visible :msr :fault
-               :app-view :marking-view :tlb)
+               :app-view :marking-view :tlb :implicit-supervisor-access)
         *x86-field-names-as-keywords*)
       'wb
       (acl2::formals 'wb (w state))
@@ -1168,7 +1168,7 @@
     (generate-write-fn-over-xw-thms
       (remove-elements-from-list
         '(:mem :rflags :ctr :seg-visible :msr :fault
-               :app-view :marking-view :tlb)
+               :app-view :marking-view :tlb :implicit-supervisor-access)
         *x86-field-names-as-keywords*)
       'wb
       (acl2::formals 'wb (w state))
@@ -1443,7 +1443,8 @@
                         (not (equal fld :msr))
                         (not (equal fld :rflags))
                         (not (equal fld :app-view))
-                        (not (equal fld :marking-view)))
+                        (not (equal fld :marking-view))
+                        (not (equal fld :implicit-supervisor-access)))
                    (and (equal (mv-nth 0 (rml08 addr r-x (xw fld index value x86)))
                                (mv-nth 0 (rml08 addr r-x x86)))
                         (equal (mv-nth 1 (rml08 addr r-x (xw fld index value x86)))
@@ -1572,7 +1573,8 @@
                         (not (equal fld :rflags))
                         (not (equal fld :msr))
                         (not (equal fld :app-view))
-                        (not (equal fld :marking-view)))
+                        (not (equal fld :marking-view))
+                        (not (equal fld :implicit-supervisor-access)))
                    (and (equal (mv-nth 0 (wml08 addr val (xw fld index value x86)))
                                (mv-nth 0 (wml08 addr val x86)))
                         (equal (mv-nth 1 (wml08 addr val (xw fld index value x86)))
@@ -1739,6 +1741,7 @@
                   (not (equal fld :app-view))
                   (not (equal fld :marking-view))
                   (not (equal fld :tlb))
+                  (not (equal fld :implicit-supervisor-access))
                   (member-equal fld *x86-field-names-as-keywords*))
              (and (equal (mv-nth 0 (rml16 lin-addr r-x (xw fld index value x86)))
                          (mv-nth 0 (rml16 lin-addr r-x x86)))
@@ -2036,6 +2039,7 @@
                   (not (equal fld :app-view))
                   (not (equal fld :marking-view))
                   (not (equal fld :tlb))
+                  (not (equal fld :implicit-supervisor-access))
                   (member-equal fld *x86-field-names-as-keywords*))
              (and (equal (mv-nth 0 (rml32 lin-addr r-x (xw fld index value x86)))
                          (mv-nth 0 (rml32 lin-addr r-x x86)))
@@ -2415,6 +2419,7 @@
                   (not (equal fld :app-view))
                   (not (equal fld :marking-view))
                   (not (equal fld :tlb))
+                  (not (equal fld :implicit-supervisor-access))
                   (member-equal fld *x86-field-names-as-keywords*))
              (and (equal (mv-nth 0 (rml48 lin-addr r-x (xw fld index value x86)))
                          (mv-nth 0 (rml48 lin-addr r-x x86)))
@@ -2819,6 +2824,7 @@
                   (not (equal fld :app-view))
                   (not (equal fld :marking-view))
                   (not (equal fld :tlb))
+                  (not (equal fld :implicit-supervisor-access))
                   (member-equal fld *x86-field-names-as-keywords*))
              (and (equal (mv-nth 0 (rml64 lin-addr r-x (xw fld index value x86)))
                          (mv-nth 0 (rml64 lin-addr r-x x86)))
@@ -3256,6 +3262,7 @@
                   (not (equal fld :app-view))
                   (not (equal fld :marking-view))
                   (not (equal fld :tlb))
+                  (not (equal fld :implicit-supervisor-access))
                   (member-equal fld *x86-field-names-as-keywords*))
              (and (equal (mv-nth 0 (rml80 lin-addr r-x (xw fld index value x86)))
                          (mv-nth 0 (rml80 lin-addr r-x x86)))
@@ -3738,6 +3745,7 @@
                   (not (equal fld :app-view))
                   (not (equal fld :marking-view))
                   (not (equal fld :tlb))
+                  (not (equal fld :implicit-supervisor-access))
                   (member-equal fld *x86-field-names-as-keywords*))
              (and (equal (mv-nth 0 (rml128 lin-addr r-x (xw fld index value x86)))
                          (mv-nth 0 (rml128 lin-addr r-x x86)))
@@ -4377,6 +4385,7 @@
           (not (equal fld :app-view))
           (not (equal fld :marking-view))
           (not (equal fld :tlb))
+          (not (equal fld :implicit-supervisor-access))
           (member-equal fld *x86-field-names-as-keywords*))
      (and (equal (mv-nth 0 (rml256 lin-addr r-x (xw fld index value x86)))
                  (mv-nth 0 (rml256 lin-addr r-x x86)))
@@ -5413,6 +5422,7 @@
           (not (equal fld :rflags))
           (not (equal fld :app-view))
           (not (equal fld :marking-view))
+          (not (equal fld :implicit-supervisor-access))
           (member-equal fld *x86-field-names-as-keywords*))
      (and (equal (mv-nth 0 (rml512 lin-addr r-x (xw fld index value x86)))
                  (mv-nth 0 (rml512 lin-addr r-x x86)))

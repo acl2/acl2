@@ -165,7 +165,7 @@
 (defthm ia32e-la-to-pa-page-dir-ptr-table-in-app-view
   (implies (app-view x86)
            (equal (ia32e-la-to-pa-page-dir-ptr-table
-                   lin-addr base-addr u/s-acc r/w-acc x/d-acc wp smep smap ac nxe r-w-x cpl x86)
+                   lin-addr base-addr u/s-acc r/w-acc x/d-acc wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)
                   (mv t 0 x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table) ()))))
 
@@ -221,22 +221,22 @@
                     0
                     (ia32e-la-to-pa-page-dir-ptr-table
                      lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl x86-1))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
                    (mv-nth
                     0
                     (ia32e-la-to-pa-page-dir-ptr-table
                      lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl x86-2)))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2)))
             (equal (mv-nth
                     1
                     (ia32e-la-to-pa-page-dir-ptr-table
                      lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl x86-1))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
                    (mv-nth
                     1
                     (ia32e-la-to-pa-page-dir-ptr-table
                      lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl x86-2)))))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2)))))
   :hints (("Goal"
            :use ((:instance xlate-equiv-entries-and-page-execute-disable
                             (e-1 (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
@@ -267,12 +267,12 @@
                    0
                    (ia32e-la-to-pa-page-dir-ptr-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86-1))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
                   (mv-nth
                    0
                    (ia32e-la-to-pa-page-dir-ptr-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86-2))))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2))))
   :hints (("Goal" :use ((:instance xlate-equiv-memory-and-ia32e-la-to-pa-page-dir-ptr-table))))
   :rule-classes :congruence)
 
@@ -282,12 +282,12 @@
                    1
                    (ia32e-la-to-pa-page-dir-ptr-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86-1))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
                   (mv-nth
                    1
                    (ia32e-la-to-pa-page-dir-ptr-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86-2))))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2))))
   :hints (("Goal" :use ((:instance xlate-equiv-memory-and-ia32e-la-to-pa-page-dir-ptr-table))))
   :rule-classes :congruence)
 
@@ -295,7 +295,7 @@
   (xlate-equiv-structures
    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-              wp smep smap ac nxe r-w-x cpl x86))
+              wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
    (double-rewrite x86))
   :hints (("Goal"
            :cases
@@ -330,10 +330,10 @@
    (xlate-equiv-structures
     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-1))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-2))))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2))))
   :rule-classes :congruence)
 
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
@@ -413,7 +413,7 @@
    (all-mem-except-paging-structures-equal
     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
     (double-rewrite x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
                                     ia32e-pdpte-pg-dirbits->pd)
@@ -572,10 +572,10 @@
    (all-mem-except-paging-structures-equal
     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-1))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-2)))))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2)))))
 
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
   (implies
@@ -656,7 +656,7 @@
    (xlate-equiv-memory
     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
     (double-rewrite x86)))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (xlate-equiv-memory)
@@ -813,10 +813,10 @@
    (xlate-equiv-memory
     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-1))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
     (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-2))))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2))))
   ;; add the following after adding 64-bit mode hyp to previous theorem:
   :hints (("Goal" :in-theory (e/d (xlate-equiv-memory)
                                   (xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
@@ -907,36 +907,36 @@
       0
       (ia32e-la-to-pa-page-dir-ptr-table
        lin-addr-1 base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-       wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
+       wp-1 smep-1 smap-1 ac-1 nxe-1  implicit-supervisor-access-1 r-w-x-1 cpl-1
        (mv-nth
         2
         (ia32e-la-to-pa-page-dir-ptr-table
          lin-addr-2 base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-         wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2
+         wp-2 smep-2 smap-2 ac-2 nxe-2  implicit-supervisor-access-2 r-w-x-2 cpl-2
          x86))))
      (mv-nth
       0
       (ia32e-la-to-pa-page-dir-ptr-table
        lin-addr-1 base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-       wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86)))
+       wp-1 smep-1 smap-1 ac-1 nxe-1  implicit-supervisor-access-1 r-w-x-1 cpl-1 x86)))
 
     (equal
      (mv-nth
       1
       (ia32e-la-to-pa-page-dir-ptr-table
        lin-addr-1 base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-       wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
+       wp-1 smep-1 smap-1 ac-1 nxe-1  implicit-supervisor-access-1 r-w-x-1 cpl-1
        (mv-nth
         2
         (ia32e-la-to-pa-page-dir-ptr-table
          lin-addr-2 base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-         wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2
+         wp-2 smep-2 smap-2 ac-2 nxe-2  implicit-supervisor-access-2 r-w-x-2 cpl-2
          x86))))
      (mv-nth
       1
       (ia32e-la-to-pa-page-dir-ptr-table
        lin-addr-1 base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-       wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86)))))
+       wp-1 smep-1 smap-1 ac-1 nxe-1  implicit-supervisor-access-1 r-w-x-1 cpl-1 x86)))))
 
   :hints (("Goal" :in-theory (e/d* () (ia32e-la-to-pa-page-dir-ptr-table)))))
 
@@ -951,14 +951,14 @@
   (equal (gather-all-paging-structure-qword-addresses
           (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                      lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl x86)))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
          (gather-all-paging-structure-qword-addresses x86))
   :hints (("Goal"
            :use ((:instance
                   gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
                   (x86-equiv (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                        wp smep smap ac nxe r-w-x cpl x86))))))))
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))))))
 
 
 (defthm xlate-equiv-entries-at-qword-addresses-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
@@ -968,7 +968,7 @@
                    x86
                    (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-w-x cpl x86)))
+                              wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
                   (xlate-equiv-entries-at-qword-addresses addrs addrs x86 x86)))
   :hints (("Goal" :in-theory (e/d* ()
                                    (xlate-equiv-structures-and-xlate-equiv-entries-at-qword-addresses
@@ -979,7 +979,7 @@
                             (x86-equiv
                              (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                        wp smep smap ac nxe r-w-x cpl x86))))
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
                  (:instance booleanp-of-xlate-equiv-entries-at-qword-addresses
                             (addrs (gather-all-paging-structure-qword-addresses x86))
                             (x x86)
@@ -989,6 +989,6 @@
                             (x x86)
                             (y (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
                                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                          wp smep smap ac nxe r-w-x cpl x86))))))))
+                                          wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))))))
 
 ;; ======================================================================

@@ -256,19 +256,19 @@
     (equal (mv-nth 0
                    (ia32e-la-to-pa-page-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n-w write-addr w value x86))))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl (mv-nth 1 (wb n-w write-addr w value x86))))
            (mv-nth 0
                    (ia32e-la-to-pa-page-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl (double-rewrite x86))))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl (double-rewrite x86))))
     (equal (mv-nth 1
                    (ia32e-la-to-pa-page-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n-w write-addr w value x86))))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl (mv-nth 1 (wb n-w write-addr w value x86))))
            (mv-nth 1
                    (ia32e-la-to-pa-page-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl (double-rewrite x86))))))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl (double-rewrite x86))))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -314,21 +314,21 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl
+                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                             (mv-nth 1 (wb n-w write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (double-rewrite x86))))
+                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl (double-rewrite x86))))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl
+                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                             (mv-nth 1 (wb n-w write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (double-rewrite x86))))))
+                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl (double-rewrite x86))))))
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance xlate-equiv-entries-and-page-size
@@ -397,21 +397,21 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl
+                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                             (mv-nth 1 (wb n-w write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (double-rewrite x86))))
+                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl (double-rewrite x86))))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl
+                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                             (mv-nth 1 (wb n-w write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (double-rewrite x86))))))
+                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl (double-rewrite x86))))))
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance xlate-equiv-entries-and-page-size
@@ -480,19 +480,19 @@
            (and
             (equal (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl
+                            lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                             (mv-nth 1 (wb n-w write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl
+                            lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                             (double-rewrite x86))))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl
+                            lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                             (mv-nth 1 (wb n-w write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl
+                            lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                             (double-rewrite x86))))))
   :hints (("Goal"
            :do-not-induct t
@@ -1338,7 +1338,8 @@
           (not (equal fld :fault))
           (not (equal fld :app-view))
           (not (equal fld :marking-view))
-          (not (equal fld :tlb)))
+          (not (equal fld :tlb))
+          (not (equal fld :implicit-supervisor-access)))
      (and
       (equal
        (mv-nth
@@ -1397,7 +1398,8 @@
           (not (equal fld :fault))
           (not (equal fld :app-view))
           (not (equal fld :marking-view))
-          (not (equal fld :tlb)))
+          (not (equal fld :tlb))
+          (not (equal fld :implicit-supervisor-access)))
      (equal
       (mv-nth 3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt
                               (xw fld index value x86)))
@@ -1430,7 +1432,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -1446,7 +1448,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible :seg-hidden-base
             :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -1462,7 +1464,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -1478,7 +1480,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view :tlb)
+            :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element

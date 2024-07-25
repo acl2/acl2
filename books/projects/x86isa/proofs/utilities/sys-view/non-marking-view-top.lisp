@@ -343,19 +343,19 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -380,19 +380,19 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -418,19 +418,19 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -455,18 +455,18 @@
            (and
             (equal (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl
+                            lin-addr base-addr wp smep smap ac nxe implict-supervisor-access r-w-x cpl
                             (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
+                            lin-addr base-addr wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl
+                            lin-addr base-addr wp smep smap ac nxe implict-supervisor-access r-w-x cpl
                             (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))))
+                            lin-addr base-addr wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p

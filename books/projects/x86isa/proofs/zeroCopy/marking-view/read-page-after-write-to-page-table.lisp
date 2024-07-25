@@ -264,7 +264,7 @@
       0
       (ia32e-la-to-pa-page-dir-ptr-table
        lin-addr base-addr u/s-acc r/w-acc x/d-acc
-       wp smep smap ac nxe r-w-x cpl x86)))
+       wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
 
     (equal (page-size page-dir-ptr-table-entry) 1)
     (canonical-address-p (+ 7 (page-dir-ptr-table-entry-addr lin-addr base-addr)))
@@ -279,12 +279,12 @@
     (equal (mv-nth 0
                    (ia32e-la-to-pa-page-dir-ptr-table
                     (+ n lin-addr) base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
            nil)
     (equal (mv-nth 1
                    (ia32e-la-to-pa-page-dir-ptr-table
                     (+ n lin-addr) base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
            (+ n
               (ash
                (loghead 22 (logtail
@@ -318,7 +318,7 @@
 
     (not (mv-nth 0
                  (ia32e-la-to-pa-pml4-table
-                  lin-addr pml4-table-base-addr wp smep smap ac nxe :r cpl x86)))
+                  lin-addr pml4-table-base-addr wp smep smap ac nxe implicit-supervisor-access :r cpl x86)))
 
     (canonical-address-p (+ 7 pml4-table-entry-addr))
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
@@ -332,11 +332,11 @@
    (and
     (equal (mv-nth 0
                    (ia32e-la-to-pa-pml4-table (+ n lin-addr) pml4-table-base-addr
-                                              wp smep smap ac nxe :r cpl x86))
+                                              wp smep smap ac nxe implicit-supervisor-access :r cpl x86))
            nil)
     (equal (mv-nth 1
                    (ia32e-la-to-pa-pml4-table (+ n lin-addr) pml4-table-base-addr
-                                              wp smep smap ac nxe :r cpl x86))
+                                              wp smep smap ac nxe implicit-supervisor-access :r cpl x86))
            (+ n (ash (loghead 22 (logtail 30 (rm-low-64 page-dir-ptr-table-entry-addr x86)))
                      30)))))
   :hints (("Goal"
@@ -543,7 +543,7 @@
     (make-event
       (generate-read-fn-over-xw-thms
         (remove-elements-from-list
-          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible)
+          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :implicit-supervisor-access)
           *x86-field-names-as-keywords*)
         'las-to-pas-without-tlb
         (acl2::formals 'las-to-pas-without-tlb (w state))
@@ -552,7 +552,7 @@
     (make-event
       (generate-read-fn-over-xw-thms
         (remove-elements-from-list
-          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible)
+          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :implicit-supervisor-access)
           *x86-field-names-as-keywords*)
         'las-to-pas-without-tlb
         (acl2::formals 'las-to-pas-without-tlb (w state))
@@ -571,7 +571,7 @@
     (make-event
       (generate-write-fn-over-xw-thms
         (remove-elements-from-list
-          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible)
+          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :implicit-supervisor-access)
           *x86-field-names-as-keywords*)
         'las-to-pas-without-tlb
         (acl2::formals 'las-to-pas-without-tlb (w state))
@@ -1411,7 +1411,7 @@
               0
               (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86)))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
 
             (equal (page-present page-dir-ptr-table-entry)
                    (page-present value))
@@ -1436,12 +1436,12 @@
            (and (equal
                  (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl
+                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                             (wm-low-64 pdpt-entry-addr value x86)))
                  nil)
                 (equal (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
                                   lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                                   (wm-low-64 pdpt-entry-addr value x86)))
                        (logior (loghead 30 lin-addr)
                                (ash (loghead 22 (logtail 30 value)) 30)))))
@@ -1456,8 +1456,7 @@
                            (entry-2 value)
                            (u/s-acc (logand u/s-acc (page-user-supervisor value)))
                            (r/w-acc (logand r/w-acc (page-read-write value)))
-                           (x/d-acc (logand x/d-acc (page-execute-disable value)))
-                           (ignored 0)))))
+                           (x/d-acc (logand x/d-acc (page-execute-disable value)))))))
 
 (defthmd ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
   ;; Given a 1G page, ia32e-la-to-pa-pml4-table returns the physical
@@ -1478,7 +1477,7 @@
                 (addr-range 8 pml4-table-entry-addr))
 
     (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
-                     lin-addr pml4-table-base-addr wp smep smap ac nxe :r cpl x86)))
+                     lin-addr pml4-table-base-addr wp smep smap ac nxe implicit-supervisor-access :r cpl x86)))
 
     (equal (page-present page-dir-ptr-table-entry)
            (page-present value))
@@ -1504,13 +1503,13 @@
     (equal
      (mv-nth 0
              (ia32e-la-to-pa-pml4-table
-              lin-addr pml4-table-base-addr wp smep smap ac nxe :r cpl
+              lin-addr pml4-table-base-addr wp smep smap ac nxe implicit-supervisor-access :r cpl
               (wm-low-64 page-dir-ptr-table-entry-addr value x86)))
      nil)
     (equal
      (mv-nth 1
              (ia32e-la-to-pa-pml4-table
-              lin-addr pml4-table-base-addr wp smep smap ac nxe :r cpl
+              lin-addr pml4-table-base-addr wp smep smap ac nxe implicit-supervisor-access :r cpl
               (wm-low-64 page-dir-ptr-table-entry-addr value x86)))
      (logior (loghead 30 lin-addr)
              (ash (loghead 22 (logtail 30 value))
