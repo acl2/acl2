@@ -527,7 +527,7 @@
                 (app-view x86)
                 (x86p x86))
            (equal (rb n addr r-x x86)
-                  (list nil
+                  (mv nil
                         (read n addr x86)
                         x86)))
   :hints (("Goal" :use (len-of-rb
@@ -551,17 +551,46 @@
                             len-of-rb
                             acl2::len-of-cdr)))))
 
-;; todo: more like this for other sizes
+;; todo: more like this for other sizes (48,80,128,256)
 (defthm rml08-becomes-read
   (implies (and (canonical-address-p lin-addr) ; only one address to check in this case
                 (app-view x86)
                 (x86p x86) ; why?
                 )
            (equal (rml08 lin-addr r-x x86)
-                  (list nil
+                  (mv nil
                         (read 1 lin-addr x86)
                         x86)))
   :hints (("Goal" :in-theory (enable rml08 rb-becomes-read))))
+
+(defthm rml16-becomes-read
+  (implies (and (canonical-address-p lin-addr)
+                (canonical-address-p (+ 1 lin-addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (rml16 lin-addr r-x x86)
+                  (mv nil (read 2 lin-addr x86) x86)))
+  :hints (("Goal" :in-theory (enable rml16 rb-becomes-read))))
+
+(defthm rml32-becomes-read
+  (implies (and (canonical-address-p lin-addr)
+                (canonical-address-p (+ 3 lin-addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (rml32 lin-addr r-x x86)
+                  (mv nil (read 4 lin-addr x86) x86)))
+  :hints (("Goal" :in-theory (enable rml32 rb-becomes-read))))
+
+(defthm rml64-becomes-read
+  (implies (and (canonical-address-p lin-addr)
+                (canonical-address-p (+ 7 lin-addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (rml64 lin-addr r-x x86)
+                  (mv nil (read 8 lin-addr x86) x86)))
+  :hints (("Goal" :in-theory (enable rml64 rb-becomes-read))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm x86isa::rme08-of-0-when-not-fs/gs-becomes-read
   (implies (and (not (equal seg-reg 4))
@@ -571,7 +600,7 @@
                 (x86p x86) ; why?
                 )
            (equal (x86isa::rme08 0 eff-addr seg-reg r-x x86) ; 0 means 64-bit-mode
-                  (list nil
+                  (mv nil
                         (read 1 eff-addr x86)
                         x86))))
 
@@ -3594,3 +3623,149 @@
   :hints (("Goal" :in-theory (enable acl2::bvcat-equal-rewrite
                                      equal-of-read-and-read-helper
                                      acl2::bvchop-of-+-becomes-bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm riml08-becomes-read
+  (implies (and (canonical-address-p lin-addr)
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::riml08 lin-addr r-x x86)
+                  (mv nil (logext 8 (read 1 lin-addr x86)) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::riml08))))
+
+(defthm riml16-becomes-read
+  (implies (and (canonical-address-p lin-addr)
+                (canonical-address-p (+ 1 lin-addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::riml16 lin-addr r-x x86)
+                  (mv nil (logext 16 (read 2 lin-addr x86)) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::riml16))))
+
+(defthm riml32-becomes-read
+  (implies (and (canonical-address-p lin-addr)
+                (canonical-address-p (+ 3 lin-addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::riml32 lin-addr r-x x86)
+                  (mv nil (logext 32 (read 4 lin-addr x86)) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::riml32))))
+
+(defthm riml64-becomes-read
+  (implies (and (canonical-address-p lin-addr)
+                (canonical-address-p (+ 7 lin-addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::riml64 lin-addr r-x x86)
+                  (mv nil (logext 64 (read 8 lin-addr x86)) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::riml64))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Goes directly to read.
+(defthm riml-size-of-1-becomes-read
+  (implies (and (canonical-address-p addr)
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::riml-size 1 addr r-x x86)
+                  (mv nil (logext 8 (read 1 addr x86)) x86))))
+
+(defthm riml-size-of-2-becomes-read
+  (implies (and (canonical-address-p addr) ; drop?
+                (canonical-address-p (+ 1 addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::riml-size 2 addr r-x x86)
+                  (mv nil (logext 16 (read 2 addr x86)) x86))))
+
+(defthm riml-size-of-4-becomes-read
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ 3 addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::riml-size 4 addr r-x x86)
+                  (mv nil (logext 32 (read 4 addr x86)) x86))))
+
+(defthm riml-size-of-8-becomes-read
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ 7 addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::riml-size 8 addr r-x x86)
+                  (mv nil (logext 64 (read 8 addr x86)) x86))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;(local (in-theory (disable mv-nth)))
+
+(defthm rml-size-of-1-becomes-read
+  (implies (and (canonical-address-p addr)
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::rml-size 1 addr r-x x86)
+                  (mv nil (read 1 addr x86) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::rml-size rb-becomes-read))))
+
+(defthm rml-size-of-2-becomes-read
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ 1 addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::rml-size 2 addr r-x x86)
+                  (mv nil (read 2 addr x86) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::rml-size rb-becomes-read))))
+
+(defthm rml-size-of-4-becomes-read
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ 3 addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::rml-size 4 addr r-x x86)
+                  (mv nil (read 4 addr x86) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::rml-size rb-becomes-read))))
+
+(defthm rml-size-of-6-becomes-read
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ 5 addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::rml-size 6 addr r-x x86)
+                  (mv nil (read 6 addr x86) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::rml-size rb-becomes-read))))
+
+(defthm rml-size-of-8-becomes-read
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ 7 addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::rml-size 8 addr r-x x86)
+                  (mv nil (read 8 addr x86) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::rml-size rb-becomes-read))))
+
+(defthm rml-size-of-10-becomes-read
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ 9 addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::rml-size 10 addr r-x x86)
+                  (mv nil (read 10 addr x86) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::rml-size rb-becomes-read))))
+
+(defthm rml-size-of-16-becomes-read
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ 15 addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::rml-size 16 addr r-x x86)
+                  (mv nil (read 16 addr x86) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::rml-size rb-becomes-read))))
+
+(defthm rml-size-of-32-becomes-read
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ 31 addr))
+                (app-view x86)
+                (x86p x86))
+           (equal (x86isa::rml-size 32 addr r-x x86)
+                  (mv nil (read 32 addr x86) x86)))
+  :hints (("Goal" :in-theory (enable x86isa::rml-size rb-becomes-read))))
