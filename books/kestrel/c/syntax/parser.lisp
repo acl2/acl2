@@ -5198,16 +5198,16 @@
 
 (define token-to-storage-class-specifier ((token tokenp))
   :guard (token-storage-class-specifier-p token)
-  :returns (stoclaspec stoclaspecp)
+  :returns (stor-spec stor-specp)
   :short "Map a token that is a storage class specifier
           to the correspoding storage class specifier."
-  (cond ((equal token (token-keyword "typedef")) (stoclaspec-typedef))
-        ((equal token (token-keyword "extern")) (stoclaspec-extern))
-        ((equal token (token-keyword "static")) (stoclaspec-static))
-        ((equal token (token-keyword "_Thread_local")) (stoclaspec-threadloc))
-        ((equal token (token-keyword "auto")) (stoclaspec-auto))
-        ((equal token (token-keyword "register")) (stoclaspec-register))
-        (t (prog2$ (impossible) (irr-stoclaspec))))
+  (cond ((equal token (token-keyword "typedef")) (stor-spec-typedef))
+        ((equal token (token-keyword "extern")) (stor-spec-extern))
+        ((equal token (token-keyword "static")) (stor-spec-static))
+        ((equal token (token-keyword "_Thread_local")) (stor-spec-threadloc))
+        ((equal token (token-keyword "auto")) (stor-spec-auto))
+        ((equal token (token-keyword "register")) (stor-spec-register))
+        (t (prog2$ (impossible) (irr-stor-spec))))
   :prepwork ((local (in-theory (enable token-storage-class-specifier-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

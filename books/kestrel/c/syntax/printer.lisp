@@ -1179,11 +1179,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-stoclaspec ((stoclaspec stoclaspecp) (pstate pristatep))
+(define print-stor-spec ((stor-spec stor-specp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a storage class specifier."
-  (stoclaspec-case
-   stoclaspec
+  (stor-spec-case
+   stor-spec
    :typedef (print-astring "typedef" pstate)
    :extern (print-astring "extern" pstate)
    :static (print-astring "static" pstate)
@@ -1926,7 +1926,7 @@
     :short "Print a declaration specifier."
     (declspec-case
      declspec
-     :stocla (print-stoclaspec declspec.unwrap pstate)
+     :stocla (print-stor-spec declspec.unwrap pstate)
      :tyspec (print-tyspec declspec.unwrap pstate)
      :tyqual (print-tyqual declspec.unwrap pstate)
      :funspec (print-funspec declspec.unwrap pstate)

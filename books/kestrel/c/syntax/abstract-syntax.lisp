@@ -989,7 +989,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum stoclaspec
+(fty::deftagsum stor-spec
   :short "Fixtype of storage class specifiers [C:6.7.1] [C:A.2.2]."
   :long
   (xdoc::topstring
@@ -1008,20 +1008,20 @@
   (:threadloc ())
   (:auto ())
   (:register ())
-  :pred stoclaspecp)
+  :pred stor-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist stoclaspec-list
+(fty::deflist stor-spec-list
   :short "Fixtype of lists of storage class specifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Storage class specifiers are defined in @(tsee stoclaspec)."))
-  :elt-type stoclaspec
+    "Storage class specifiers are defined in @(tsee stor-spec)."))
+  :elt-type stor-spec
   :true-listp t
   :elementp-of-nil nil
-  :pred stoclaspec-listp)
+  :pred stor-spec-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1613,7 +1613,7 @@
        any nonterminal in the grammar in [C],
        but it is useful to define <i>declaration-specifiers</i>
        (see @(tsee declspec-list))."))
-    (:stocla ((unwrap stoclaspec)))
+    (:stocla ((unwrap stor-spec)))
     (:tyspec ((unwrap tyspec)))
     (:tyqual ((unwrap tyqual)))
     (:funspec ((unwrap funspec)))
