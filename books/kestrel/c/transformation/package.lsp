@@ -26,4 +26,7 @@
                                   '())
                c$::*abstract-syntax-symbols*
                '(defxdoc+
-                 index-of)))
+                 erp
+                 index-of
+                 reterr
+                 retok)))
