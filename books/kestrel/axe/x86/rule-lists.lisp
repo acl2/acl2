@@ -113,7 +113,7 @@
             x86isa::gpr-add-spec-2$inline
             x86isa::GPR-ADD-SPEC-4-better ; todo: put back
             ;;x86isa::gpr-add-spec-4$inline ; todo: make better rules for the rest
-            x86isa::gpr-add-spec-8$inline
+            x86isa::GPR-add-SPEC-8-alt-def ;; x86isa::gpr-add-spec-8$inline
 
             x86isa::div-spec$inline ; just a dispatch on the size
             ;; These recharacterize divide in terms of bvops:
