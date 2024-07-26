@@ -631,7 +631,10 @@
                                   :fix (acl2::bool-fix x))
     (:doc "</li>")
 
-    (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping @('tlb-key') bit structs to physical page numbers. An entry in the TLB implies the corresponding translation is valid. Invalid translations are not cached.<br/>")
+    (:doc "<li>@('TLB'): This field models a (number of) TLB(s). See @(tsee tlb)
+    for a detailed discussion about our address translation caching scheme and
+    its consistency with the x86 ISA. It is a fast alist that is @(tsee tlbp).
+    Invalid translations are not cached.<br/>")
     (tlb   :type (satisfies tlbp)
            :initially :tlb
            :fix (tlb-fix x))
