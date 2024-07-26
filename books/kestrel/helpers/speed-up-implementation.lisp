@@ -433,7 +433,17 @@
         ((defrule defruled) (speed-up-defrule form print t state))
         (local (speed-up-event-fn (cadr form) synonym-alist print throw-errorp state)) ; strip the local ; todo: this submits it as non-local (ok?)
         ;; Things we don't try to speed up (but improve-book could try to change in-theory events):
-        ((in-package include-book in-theory theory-invariant defconst deflabel defmacro defstub defxdoc deftheory defthy)
+        ;; TODO: Add to this list (see :doc events):
+        ((in-package defconst deflabel defmacro
+                     defstobj
+                     defstub
+                     deftheory
+                     defthy
+                     defttag
+                     defxdoc
+                     include-book in-theory theory-invariant
+                     set-ignore-ok set-state-ok set-irrelevant-formals-ok set-well-founded-relation
+                     table)
          (mv nil state))
         (otherwise (if throw-errorp
                        (prog2$ (er hard? 'speed-up-event-fn "Unsupported event: ~X01." form nil)
