@@ -1921,7 +1921,7 @@
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
-                               single quote or backslash"
+                               single quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((when (= char (char-code #\'))) ; '
         (retok nil pos pstate))
@@ -1929,7 +1929,7 @@
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
-                               single quote or backslash"
+                               single quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((erp cchar & pstate)
         (if (= char (char-code #\\)) ; \
