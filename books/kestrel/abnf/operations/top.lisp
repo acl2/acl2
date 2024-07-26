@@ -19,6 +19,7 @@
 (include-book "removal")
 (include-book "rule-utilities")
 (include-book "numeric-range-retrieval")
+(include-book "character-value-retrieval")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
