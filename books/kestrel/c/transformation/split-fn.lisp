@@ -86,7 +86,7 @@
 
 (define expr-ident-list
   ((idents ident-listp))
-  :short "Map @(tsee expr-list) over a list."
+  :short "Map @(tsee c$::expr-list) over a list."
   :returns (exprs expr-listp)
   (if (endp idents)
       nil
@@ -204,7 +204,7 @@
       declarations of the original function which appear free in the block
       items, which will constitute the body of the new function. (Note that
       arguments are not currently taken by reference, but this may be necessary
-      for general correctness. It may be sufficient to take an argument by
+      for general equivalence. It may be sufficient to take an argument by
       reference when its address is taken in an expression of the new function
       body.)"))
   :returns (mv er
