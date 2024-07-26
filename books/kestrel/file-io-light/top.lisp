@@ -81,6 +81,7 @@
 (include-book "read-objects-from-file")
 (include-book "read-objects-from-file-with-pkg")
 (include-book "read-objects-from-book") ; using the package of the book
+(include-book "read-book-contents")
 (include-book "write-objects-to-file")
 (include-book "write-objects-to-file-bang")
 

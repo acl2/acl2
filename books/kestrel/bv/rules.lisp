@@ -1142,7 +1142,8 @@
             :in-theory (e/d (logext logapp
                                     ;expt-hack
                                     EXPT-OF-+)
-                            (LOGBITP-IFF-GETBIT INTEGERP-OF-EXPT-when-natp)))))
+                            (LOGBITP ; for speed
+                             LOGBITP-IFF-GETBIT INTEGERP-OF-EXPT-when-natp)))))
 
 (defthm bvcat-of-logext-same
    (implies (and (natp size)
@@ -1365,8 +1366,7 @@
 (defthm signed-byte-p-of-logtail
   (implies (and (integerp x)
                 (posp n)
-                (posp m)
-                )
+                (posp m))
            (equal (signed-byte-p n (logtail m x))
                   (signed-byte-p (+ n m) x)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -1374,7 +1374,9 @@
                  (:instance FLOOR-WEAK-MONOTONE (i2 (- (EXPT 2 (+ -1 M N)))) (i1 x) (j (expt 2 m)))
                  (:instance FLOOR-WEAK-MONOTONE (i1 (EXPT 2 (+ -1 M N))) (i2 x) (j (expt 2 m)))
                  (:instance FLOOR-WEAK-MONOTONE (i2 (EXPT 2 (+ -1 M N))) (i1 x) (j (expt 2 m))))
-           :in-theory (e/d (signed-byte-p logtail expt-of-+) (FLOOR-WEAK-MONOTONE)))))
+           :in-theory (e/d (signed-byte-p logtail expt-of-+) (FLOOR-WEAK-MONOTONE
+                                                              EXPT-OF-+ ; for speed
+                                                              )))))
 
 ;fixme kill these??
 

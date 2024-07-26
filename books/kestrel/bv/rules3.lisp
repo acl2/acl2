@@ -207,7 +207,8 @@
                                    times-of-2-and-bvchop-of-sub-1)
                            (BVCHOP-SHIFT-GEN-CONSTANT-VERSION
                             BVCHOP-SHIFT
-                            anti-slice)))))
+                            anti-slice
+                            BVCHOP-IDENTITY)))))
 
 (defthmd blast-bvmult-into-bvplus-constant-version-arg2
   (implies (and (syntaxp (quotep y))
@@ -266,7 +267,6 @@
                        (logtail 1 y)))))
   :hints (("Goal" :in-theory (enable logtail floor-of-sum))))
 
-;todo: very slow
 (defthmd blast-bvplus
   (implies (posp n)
            (equal (bvplus n x y)
@@ -293,7 +293,13 @@
                             mod-of-expt-of-2-constant-version
                             anti-slice
                             ;hack-6
-                            BVCHOP-OF-LOGTAIL)))))
+                            BVCHOP-OF-LOGTAIL
+                            ;; for speed:
+                            logtail-1-of-+
+                            bvchop-identity
+                            bvchop-upper-bound-linear-strong
+                            bvchop-when-top-bit-1-linear-cheap
+                            bvchop-when-top-bit-0-linear-cheap)))))
 
 
 ;helps in blasting.  can we do this cheaper?!
@@ -1075,9 +1081,9 @@
   :hints (("Goal" :in-theory (e/d ( ;BVPLUS-BECOMES-RIPPLE-CARRY-ADDER  ;slow! why?
                                    slice
                                    bvplus
-                                   bvchop-of-sum-cases
-                                   ) (
-                                      anti-slice)))))
+                                   bvchop-of-sum-cases)
+                                  (BVCHOP-OF-SUM-CASES
+                                   anti-slice)))))
 
 (defthm bvplus-disjoint-ones-32-24-8-two-alt ;bbozo gen!
   (implies (equal 0 (bvchop 8 x))
@@ -1227,7 +1233,7 @@
                                                                (BVCHOP SIZE X)
                                                                (BVCHOP SIZE Y)))))
            :cases ((equal size 1))
-           :in-theory (e/d (bvplus bvchop-of-sum-cases
+           :in-theory (e/d (bvplus ;bvchop-of-sum-cases
                                    slice-of-sum-cases
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
                                    GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER

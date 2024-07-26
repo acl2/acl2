@@ -31,7 +31,7 @@
 ;; TODO: Handle with-output
 ;; TODO: Perhaps try turning off tau, to see if that saves a lot of time.
 
-(include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
+(include-book "kestrel/file-io-light/read-book-contents" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
@@ -49,6 +49,7 @@
 (include-book "linter")
 (include-book "speed-up")
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
+
 
 ;move
 (defund duplicate-items-aux (lst acc)
@@ -69,20 +70,6 @@
 (defund duplicate-items (lst)
   (declare (xargs :guard (true-listp lst)))
   (duplicate-items-aux lst nil))
-
-;; Returns state
-;move
-(defun set-cbd-simple (cbd state)
-  (declare (xargs :guard (stringp cbd)
-                  :stobjs state
-                  :mode :program))
-  (mv-let (erp val state)
-    (set-cbd-fn cbd state)
-    (declare (ignore val))
-    (if erp
-        (prog2$ (er hard? 'set-cbd-simple "Failed to set the cbd to ~x0." cbd)
-                state)
-      state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,41 +102,6 @@
           state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun abbreviate-event (event)
-  (declare (xargs :guard t
-                  :mode :program))
-  (if (not (and (consp event)
-                (symbolp (car event))))
-      ;; todo: can this happen?
-      "..."
-    (let ((fn (car event)))
-      (case fn
-        (local (if (= 1 (len (cdr event)))
-                   (concatenate 'string "(local "
-                                (abbreviate-event (cadr event))
-                                ")")
-                 "(local ...)" ; can this happen?
-                 ))
-        (include-book (print-to-string event))
-        (otherwise
-         (concatenate 'string
-                      "("
-                      (symbol-name (car event))
-                      (if (not (consp (rest event)))
-                          ")"
-                        (if (symbolp (cadr event))
-                            ;; example (defblah name ...)
-                            (concatenate 'string " " (symbol-name (cadr event))
-                                         (if (consp (rest (rest event)))
-                                             " ...)"
-                                           ")"))
-                          ;; todo: do better in this case?
-                          ;; example (progn (defun foo ...) ...)
-                          (concatenate 'string " ...)")))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;move
 ;; Returns (mv erp nil state).
@@ -489,7 +441,7 @@
   (prog2$
    (and print (cw " (For ~x0:" (first (rest event))))
    (mv-let (erp state)
-     (speed-up-defrule event state)
+     (speed-up-defrule event print state)
      (declare (ignore erp)) ; todo: why?
      (prog2$ (and print (cw ")~%"))
              (submit-event event nil nil state)))))
@@ -515,7 +467,7 @@
 
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
-(defun improve-include-book-event (event rest-events print initial-included-books state)
+(defun improve-include-book-event (event rest-events initial-included-books print state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state)
@@ -551,11 +503,11 @@
               (cw ")~%" event)
               (submit-event-expect-no-error event nil state)))))))))
 
-(defun improve-local-event (event rest-events print initial-included-books state)
+(defun improve-local-event (event rest-events initial-included-books print state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state)
-           (ignore print initial-included-books))
+           (ignore initial-included-books print))
   ;; For a local event, try skipping it and see if the rest of the events
   ;; work.  If so, deleting the event should be safe, since the event is local.
   (prog2$
@@ -575,7 +527,7 @@
 
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
-(defun improve-event (event rest-events print initial-included-books state)
+(defun improve-event (event rest-events initial-included-books print state)
   (declare (xargs :guard (and (true-listp rest-events)
                               (member-eq print '(nil :brief :verbose))
                               (string-listp initial-included-books))
@@ -606,11 +558,11 @@
      )
     ((encapsulate) (submit-event event nil nil state) ; todo: handle! may be easy if no constrained functions and no local events
      )
-    (include-book (improve-include-book-event event rest-events initial-included-books print state) )
+    (include-book (improve-include-book-event event rest-events initial-included-books print state))
     ((in-package) (improve-in-package-event event rest-events print state))
     ((in-theory) (submit-event event nil nil state) ; todo: check if redundant, consider dropping (check the time difference)
      )
-    (local (improve-local-event event rest-events print initial-included-books state))
+    (local (improve-local-event event rest-events initial-included-books print state))
     ((theory-invariant) (submit-event event nil nil state) ; todo: handle!  could warn about a name that is not defined.
      )
     ((verify-guards) (submit-event event nil nil state) ; todo: check if redundant, improve hints
@@ -646,29 +598,6 @@
           ;; todo: do local incompat checking without include-books (or making them local) here?
           (improve-events-aux events initial-included-books print state)))
 
-
-
-;; Returns (mv erp forms full-book-path state).
-;move
-(defund read-book-contents (bookname
-                            dir ; todo: allow keyword dirs
-                            state)
-  (declare (xargs :guard (and (stringp bookname)
-                              (or (eq :cbd dir)
-                                  (stringp dir)))
-                  :mode :program ; todo
-                  :stobjs state))
-  (let* ((file-name (maybe-add-dot-lisp-extension bookname))
-         (full-book-path (extend-pathname$ (if (eq dir :cbd) "." dir) file-name state)))
-    (mv-let (existsp state)
-      (file-write-date$ full-book-path state)
-      (if (not existsp)
-          (prog2$ (er hard? 'read-book-contents "~s0 does not exist." full-book-path)
-                  (mv :file-does-not-exist nil full-book-path state))
-        (mv-let (erp events state)
-          (read-objects-from-book full-book-path state)
-          (mv erp events full-book-path state))))))
-
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
 (defun improve-book-fn-aux (bookname ; may include .lisp extension
@@ -686,7 +615,8 @@
     (if erp
         (mv erp state)
       (let* ((state (widen-margins state))
-             (fake (TIME-TRACKER-FN 'NIL 'NIL 'NIL 'NIL 'NIL 'NIL 'NIL)) ; from :trans (time-tracker nil)
+             ;; Suppress annoying time tracker messages.
+             (fake (time-tracker-fn nil nil nil nil nil nil nil)) ; from :trans (time-tracker nil)
              )
         (declare (ignore fake))
         (prog2$

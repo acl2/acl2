@@ -62,4 +62,6 @@ Note that all suggestions made by @('improve-book') are independent.  There is n
   :parents (helpers improve-book)
   :short "Suggest ways to speed up an event."
   :description "Wrapping an event in a call of @('speed-up-event') causes attempts to be made to speed it up (e.g., by deleting hints).  Currently, only @(tsee defthm) and @(tsee defrule) events are supported."
-  :arg-descriptions ((form "The entire event to speed up (e.g., a @('defthm') form).")))
+  :arg-descriptions ((form "The entire event to speed up (e.g., a @('defthm') form).")
+                     (print "How much to print (should satisfy print-levelp).")
+                     (synonym-alist "A symbol-symbol-alist mapping from synonyms to known event types (e.g., you can declare foo to be treated like defthm by the speed-up tool).")))
