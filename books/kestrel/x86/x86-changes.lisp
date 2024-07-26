@@ -90,10 +90,21 @@
                  (natp size))
             (not (equal (acl2::bvchop size dst) (acl2::bvchop size src))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Note that this is also used to implement comparisons
+;; These put in some equivalent :logic expressions for the flags (search for "note this" below).
+
+;; We also change the output-rflags to use the :exec version, which calls
+;; things like !rflagsbits->cf, instead of the :logic version, because the
+;; change-rflagsbits in the :logic version expands to something large and
+;; unwieldly.
+
+;; Note that these sub-spec functions are also used to implement comparisons.
+
 ;; TODO: The :exec parts are not needed (here and elsewhere):
-;; This puts in some equivalent :logic expressions for the flags
+
+(local (in-theory (disable (:e tau-system))))
+
 (defthm GPR-SUB-SPEC-1-alt-def
   (equal (GPR-SUB-SPEC-1 dst src input-rflags)
          ;; proposed new body for GPR-SUB-SPEC-1:
@@ -137,18 +148,7 @@
                        ;; note this:
                        :logic (sub-of-spec8 dst src)))
               (output-rflags
-                (mbe
-                  :logic (change-rflagsbits input-rflags
-                                            :cf cf
-                                            :pf pf
-                                            :af af
-                                            :zf zf
-                                            :sf sf
-                                            :of of)
-                  :exec
-                  (the
-                      (unsigned-byte 32)
-                    (!rflagsbits->cf
+                (!rflagsbits->cf
                       cf
                       (!rflagsbits->pf
                         pf
@@ -159,18 +159,19 @@
                             (!rflagsbits->sf
                               sf
                               (!rflagsbits->of
-                                of input-rflags)))))))))
-              (output-rflags
-                (mbe :logic (n32 output-rflags)
-                     :exec output-rflags))
+                                of input-rflags)))))))
+              ;; (output-rflags
+              ;;   (mbe :logic (n32 output-rflags)
+              ;;        :exec output-rflags))
               (undefined-flags 0))
            (mv result output-rflags
                undefined-flags)))
-  :hints (("Goal" :in-theory (enable GPR-SUB-SPEC-1
-                                     sub-cf-spec8
-                                     sub-pf-spec8
-                                     ZF-SPEC
-                                     acl2::bvchop-of-sum-cases))))
+  :hints (("Goal" :in-theory (enable* GPR-SUB-SPEC-1
+                                      sub-cf-spec8
+                                      sub-pf-spec8
+                                      ZF-SPEC
+                                      acl2::bvchop-of-sum-cases
+                                      rflag-RoWs-enables))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,18 +216,7 @@
                     (of-spec16 signed-raw-result))
                :logic (sub-of-spec16 dst src)))
               (output-rflags
-               (mbe
-                :logic (change-rflagsbits input-rflags
-                                                  :cf cf
-                                                  :pf pf
-                                                  :af af
-                                                  :zf zf
-                                                  :sf sf
-                                                  :of of)
-                :exec
-                (the
-                 (unsigned-byte 32)
-                 (!rflagsbits->cf
+               (!rflagsbits->cf
                   cf
                   (!rflagsbits->pf
                    pf
@@ -237,18 +227,19 @@
                      (!rflagsbits->sf
                       sf
                       (!rflagsbits->of
-                       of input-rflags)))))))))
-              (output-rflags
-               (mbe :logic (n32 output-rflags)
-                    :exec output-rflags))
+                       of input-rflags)))))))
+              ;; (output-rflags
+              ;;  (mbe :logic (n32 output-rflags)
+              ;;       :exec output-rflags))
               (undefined-flags 0))
            (mv result output-rflags
                undefined-flags)))
-  :hints (("Goal" :in-theory (enable GPR-SUB-SPEC-2
+  :hints (("Goal" :in-theory (enable* GPR-SUB-SPEC-2
                                      sub-cf-spec16
                                      sub-pf-spec16
                                      ZF-SPEC
-                                     acl2::bvchop-of-sum-cases))))
+                                     acl2::bvchop-of-sum-cases
+                                     rflag-RoWs-enables))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -291,18 +282,7 @@
                                   (OF-SPEC32 SIGNED-RAW-RESULT))
                        :logic (sub-of-spec32 dst src)))
               (OUTPUT-RFLAGS
-               (MBE
-                :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                          :CF CF
-                                          :PF PF
-                                          :AF AF
-                                          :ZF ZF
-                                          :SF SF
-                                          :OF OF)
-                :EXEC
-                (THE
-                 (UNSIGNED-BYTE 32)
-                 (!RFLAGSBITS->CF
+               (!RFLAGSBITS->CF
                   CF
                   (!RFLAGSBITS->PF
                    PF
@@ -313,18 +293,19 @@
                      (!RFLAGSBITS->SF
                       SF
                       (!RFLAGSBITS->OF
-                       OF INPUT-RFLAGS)))))))))
-              (OUTPUT-RFLAGS
-               (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                    :EXEC OUTPUT-RFLAGS))
+                       OF INPUT-RFLAGS)))))))
+              ;; (OUTPUT-RFLAGS
+              ;;  (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+              ;;       :EXEC OUTPUT-RFLAGS))
               (UNDEFINED-FLAGS 0))
            (MV RESULT OUTPUT-RFLAGS
                UNDEFINED-FLAGS)))
-  :hints (("Goal" :in-theory (enable GPR-SUB-SPEC-4
+  :hints (("Goal" :in-theory (enable* GPR-SUB-SPEC-4
                                      sub-cf-spec32
                                      sub-pf-spec32
                                      ZF-SPEC
-                                     acl2::bvchop-of-sum-cases))))
+                                     acl2::bvchop-of-sum-cases
+                                     rflag-RoWs-enables))))
 
 ;; for rewriting
 (defthmd GPR-SUB-SPEC-4-alt-def-better
@@ -348,13 +329,13 @@
                      (acl2::bvchop 32 input-rflags) ; drop the bvchop?
                      ))))))
                0)))
-  :hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables
-                                    GPR-SUB-SPEC-4
-                                    sub-cf-spec32
-                                    sub-pf-spec32
-                                    ZF-SPEC
-                                    acl2::bvchop-of-sum-cases
-                                    acl2::bvminus) ((:e tau-system))))))
+  :hints (("Goal" :in-theory (enable* GPR-SUB-SPEC-4
+                                      sub-cf-spec32
+                                      sub-pf-spec32
+                                      ZF-SPEC
+                                      acl2::bvchop-of-sum-cases
+                                      acl2::bvminus
+                                      rflag-RoWs-enables))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -390,18 +371,7 @@
                                   (OF-SPEC64 SIGNED-RAW-RESULT))
                        :logic (sub-of-spec64 dst src)))
               (OUTPUT-RFLAGS
-               (MBE
-                :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                          :CF CF
-                                          :PF PF
-                                          :AF AF
-                                          :ZF ZF
-                                          :SF SF
-                                          :OF OF)
-                :EXEC
-                (THE
-                 (UNSIGNED-BYTE 32)
-                 (!RFLAGSBITS->CF
+               (!RFLAGSBITS->CF
                   CF
                   (!RFLAGSBITS->PF
                    PF
@@ -411,12 +381,12 @@
                      ZF
                      (!RFLAGSBITS->SF
                       SF
-                      (!RFLAGSBITS->OF OF INPUT-RFLAGS)))))))))
-              (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                  :EXEC OUTPUT-RFLAGS))
+                      (!RFLAGSBITS->OF OF INPUT-RFLAGS)))))))
+              ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+              ;;                     :EXEC OUTPUT-RFLAGS))
               (UNDEFINED-FLAGS 0))
            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-  :hints (("Goal" :in-theory (enable GPR-SUB-SPEC-8
+  :hints (("Goal" :in-theory (enable* GPR-SUB-SPEC-8
                                      sub-cf-spec64
                                      sub-pf-spec64
                                      sf-spec64
@@ -425,9 +395,14 @@
                                      ACL2::getbit-of-+
                                      acl2::bvchop-of-sum-cases
                                      ACL2::BVPLUS
-                                     ACL2::LOGEXT-CASES))))
+                                     ACL2::LOGEXT-CASES
+                                     rflag-RoWs-enables))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The put in bvshl and also improve the handling of rflags. Anything else?
+
+;; todo: make names consistent (alt-def vs redef)
 
 (defthm SAL/SHL-SPEC-8-redef
   (equal (sal/shl-spec-8 dst src input-rflags)
@@ -485,27 +460,17 @@
                                                                  7 ;,neg-size-1
                                                                  )))))))
 
-                       (output-rflags (mbe :logic
-                                           (change-rflagsBits
-                                            input-rflags
-                                            :cf cf
-                                            :pf pf
-                                            :zf zf
-                                            :sf sf
-                                            :of of)
-                                           :exec
-                                           (the (unsigned-byte 32)
-                                                (!rflagsBits->cf
-                                                 cf
-                                                 (!rflagsBits->pf
-                                                  pf
-                                                  (!rflagsBits->zf
-                                                   zf
-                                                   (!rflagsBits->sf
-                                                    sf
-                                                    (!rflagsBits->of
-                                                     of
-                                                     input-rflags))))))))
+                       (output-rflags (!rflagsBits->cf
+                                        cf
+                                        (!rflagsBits->pf
+                                          pf
+                                          (!rflagsBits->zf
+                                            zf
+                                            (!rflagsBits->sf
+                                              sf
+                                              (!rflagsBits->of
+                                                of
+                                                input-rflags))))))
 
                        (undefined-flags (!rflagsBits->af 1 0)))
 
@@ -524,35 +489,20 @@
                            (sf (general-sf-spec 8 result))
                            ;; OF is undefined.
 
-                           (output-rflags (mbe :logic
-                                               (change-rflagsBits
-                                                input-rflags
-                                                :pf pf
-                                                :zf zf
-                                                :sf sf)
-                                               :exec
-                                               (the (unsigned-byte 32)
-                                                    (!rflagsBits->pf
-                                                     pf
-                                                     (!rflagsBits->zf
-                                                      zf
-                                                      (!rflagsBits->sf
-                                                       sf
-                                                       input-rflags))))))
+                           (output-rflags (!rflagsBits->pf
+                                            pf
+                                            (!rflagsBits->zf
+                                              zf
+                                              (!rflagsBits->sf
+                                                sf
+                                                input-rflags))))
 
-                           (undefined-flags (mbe :logic
-                                                 (change-rflagsBits
-                                                  0
-                                                  :cf 1
-                                                  :af 1
-                                                  :of 1)
-                                                 :exec
-                                                 (!rflagsBits->cf
-                                                  1
-                                                  (!rflagsBits->af
-                                                   1
-                                                   (!rflagsBits->of
-                                                    1 0))))))
+                           (undefined-flags (!rflagsBits->cf
+                                              1
+                                              (!rflagsBits->af
+                                                1
+                                                (!rflagsBits->of
+                                                  1 0)))))
                         (mv output-rflags undefined-flags))
 
                     ;; OF and AF are undefined. Other flags are affected as
@@ -567,16 +517,7 @@
                          (sf (general-sf-spec 8 result))
                          ;; OF is undefined.
 
-                         (output-rflags (mbe :logic
-                                             (change-rflagsBits
-                                              input-rflags
-                                              :cf cf
-                                              :pf pf
-                                              :zf zf
-                                              :sf sf)
-                                             :exec
-                                             (the (unsigned-byte 32)
-                                                  (!rflagsBits->cf
+                         (output-rflags (!rflagsBits->cf
                                                    cf
                                                    (!rflagsBits->pf
                                                     pf
@@ -584,35 +525,29 @@
                                                      zf
                                                      (!rflagsBits->sf
                                                       sf
-                                                      input-rflags)))))))
+                                                      input-rflags)))))
 
-                         (undefined-flags (mbe :logic
-                                               (change-rflagsBits
-                                                0
-                                                :af 1
-                                                :of 1)
-                                               :exec
-                                               (!rflagsBits->af
+                         (undefined-flags (!rflagsBits->af
                                                 1
                                                 (!rflagsBits->of
                                                  1
-                                                 0)))))
+                                                 0))))
                       (mv output-rflags undefined-flags))))))
 
-              (output-rflags (mbe :logic (n32 output-rflags)
-                                  :exec output-rflags))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
 
               (undefined-flags (mbe :logic (n32 undefined-flags)
                                     :exec undefined-flags)))
 
            (mv result output-rflags undefined-flags)))
-  :hints (("Goal" :in-theory (e/d (ACL2::BVSHL
+  :hints (("Goal" :in-theory (e/d* (ACL2::BVSHL
                                    sal/shl-spec-8
                                    SF-SPEC8
                                    PF-SPEC8
                                    ash
                                    acl2::bvcat
-                                   )
+                                   rflag-RoWs-enables)
                                   (;x::BVCAT-OF-MINUS-BECOMES-BVSHL ;loop
                                    )))))
 
@@ -672,17 +607,7 @@
                                                                  15 ;,neg-size-1
                                                                  )))))))
 
-                       (output-rflags (mbe :logic
-                                           (change-rflagsBits
-                                            input-rflags
-                                            :cf cf
-                                            :pf pf
-                                            :zf zf
-                                            :sf sf
-                                            :of of)
-                                           :exec
-                                           (the (unsigned-byte 32)
-                                                (!rflagsBits->cf
+                       (output-rflags (!rflagsBits->cf
                                                  cf
                                                  (!rflagsBits->pf
                                                   pf
@@ -692,7 +617,7 @@
                                                     sf
                                                     (!rflagsBits->of
                                                      of
-                                                     input-rflags))))))))
+                                                     input-rflags))))))
 
                        (undefined-flags (!rflagsBits->af 1 0)))
 
@@ -711,35 +636,20 @@
                            (sf (general-sf-spec 16 result))
                            ;; OF is undefined.
 
-                           (output-rflags (mbe :logic
-                                               (change-rflagsBits
-                                                input-rflags
-                                                :pf pf
-                                                :zf zf
-                                                :sf sf)
-                                               :exec
-                                               (the (unsigned-byte 32)
-                                                    (!rflagsBits->pf
+                           (output-rflags (!rflagsBits->pf
                                                      pf
                                                      (!rflagsBits->zf
                                                       zf
                                                       (!rflagsBits->sf
                                                        sf
-                                                       input-rflags))))))
+                                                       input-rflags))))
 
-                           (undefined-flags (mbe :logic
-                                                 (change-rflagsBits
-                                                  0
-                                                  :cf 1
-                                                  :af 1
-                                                  :of 1)
-                                                 :exec
-                                                 (!rflagsBits->cf
+                           (undefined-flags (!rflagsBits->cf
                                                   1
                                                   (!rflagsBits->af
                                                    1
                                                    (!rflagsBits->of
-                                                    1 0))))))
+                                                    1 0)))))
                         (mv output-rflags undefined-flags))
 
                     ;; OF and AF are undefined. Other flags are affected as
@@ -754,16 +664,7 @@
                          (sf (general-sf-spec 16 result))
                          ;; OF is undefined.
 
-                         (output-rflags (mbe :logic
-                                             (change-rflagsBits
-                                              input-rflags
-                                              :cf cf
-                                              :pf pf
-                                              :zf zf
-                                              :sf sf)
-                                             :exec
-                                             (the (unsigned-byte 32)
-                                                  (!rflagsBits->cf
+                         (output-rflags (!rflagsBits->cf
                                                    cf
                                                    (!rflagsBits->pf
                                                     pf
@@ -771,34 +672,29 @@
                                                      zf
                                                      (!rflagsBits->sf
                                                       sf
-                                                      input-rflags)))))))
+                                                      input-rflags)))))
 
-                         (undefined-flags (mbe :logic
-                                               (change-rflagsBits
-                                                0
-                                                :af 1
-                                                :of 1)
-                                               :exec
-                                               (!rflagsBits->af
+                         (undefined-flags (!rflagsBits->af
                                                 1
                                                 (!rflagsBits->of
                                                  1
-                                                 0)))))
+                                                 0))))
                       (mv output-rflags undefined-flags))))))
 
-              (output-rflags (mbe :logic (n32 output-rflags)
-                                  :exec output-rflags))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
 
               (undefined-flags (mbe :logic (n32 undefined-flags)
                                     :exec undefined-flags)))
 
            (mv result output-rflags undefined-flags)))
-  :hints (("Goal" :in-theory (e/d (ACL2::BVSHL
+  :hints (("Goal" :in-theory (e/d* (ACL2::BVSHL
                                    sal/shl-spec-16
                                    SF-SPEC16
                                    PF-SPEC16
                                    ash
                                    acl2::bvcat
+                                   rflag-RoWs-enables
                                    )
                                   (;x::BVCAT-OF-MINUS-BECOMES-BVSHL ;loop
                                    )))))
@@ -859,27 +755,17 @@
                                                                  31 ;,neg-size-1
                                                                  )))))))
 
-                       (output-rflags (mbe :logic
-                                           (change-rflagsBits
-                                            input-rflags
-                                            :cf cf
-                                            :pf pf
-                                            :zf zf
-                                            :sf sf
-                                            :of of)
-                                           :exec
-                                           (the (unsigned-byte 32)
-                                                (!rflagsBits->cf
-                                                 cf
-                                                 (!rflagsBits->pf
-                                                  pf
-                                                  (!rflagsBits->zf
-                                                   zf
-                                                   (!rflagsBits->sf
-                                                    sf
-                                                    (!rflagsBits->of
-                                                     of
-                                                     input-rflags))))))))
+                       (output-rflags (!rflagsBits->cf
+                                        cf
+                                        (!rflagsBits->pf
+                                          pf
+                                          (!rflagsBits->zf
+                                            zf
+                                            (!rflagsBits->sf
+                                              sf
+                                              (!rflagsBits->of
+                                                of
+                                                input-rflags))))))
 
                        (undefined-flags (!rflagsBits->af 1 0)))
 
@@ -898,35 +784,20 @@
                            (sf (general-sf-spec 32 result))
                            ;; OF is undefined.
 
-                           (output-rflags (mbe :logic
-                                               (change-rflagsBits
-                                                input-rflags
-                                                :pf pf
-                                                :zf zf
-                                                :sf sf)
-                                               :exec
-                                               (the (unsigned-byte 32)
-                                                    (!rflagsBits->pf
+                           (output-rflags (!rflagsBits->pf
                                                      pf
                                                      (!rflagsBits->zf
                                                       zf
                                                       (!rflagsBits->sf
                                                        sf
-                                                       input-rflags))))))
+                                                       input-rflags))))
 
-                           (undefined-flags (mbe :logic
-                                                 (change-rflagsBits
-                                                  0
-                                                  :cf 1
-                                                  :af 1
-                                                  :of 1)
-                                                 :exec
-                                                 (!rflagsBits->cf
+                           (undefined-flags (!rflagsBits->cf
                                                   1
                                                   (!rflagsBits->af
                                                    1
                                                    (!rflagsBits->of
-                                                    1 0))))))
+                                                    1 0)))))
                         (mv output-rflags undefined-flags))
 
                     ;; OF and AF are undefined. Other flags are affected as
@@ -941,16 +812,7 @@
                          (sf (general-sf-spec 32 result))
                          ;; OF is undefined.
 
-                         (output-rflags (mbe :logic
-                                             (change-rflagsBits
-                                              input-rflags
-                                              :cf cf
-                                              :pf pf
-                                              :zf zf
-                                              :sf sf)
-                                             :exec
-                                             (the (unsigned-byte 32)
-                                                  (!rflagsBits->cf
+                         (output-rflags (!rflagsBits->cf
                                                    cf
                                                    (!rflagsBits->pf
                                                     pf
@@ -958,34 +820,29 @@
                                                      zf
                                                      (!rflagsBits->sf
                                                       sf
-                                                      input-rflags)))))))
+                                                      input-rflags)))))
 
-                         (undefined-flags (mbe :logic
-                                               (change-rflagsBits
-                                                0
-                                                :af 1
-                                                :of 1)
-                                               :exec
-                                               (!rflagsBits->af
+                         (undefined-flags (!rflagsBits->af
                                                 1
                                                 (!rflagsBits->of
                                                  1
-                                                 0)))))
+                                                 0))))
                       (mv output-rflags undefined-flags))))))
 
-              (output-rflags (mbe :logic (n32 output-rflags)
-                                  :exec output-rflags))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
 
               (undefined-flags (mbe :logic (n32 undefined-flags)
                                     :exec undefined-flags)))
 
            (mv result output-rflags undefined-flags)))
-  :hints (("Goal" :in-theory (e/d (ACL2::BVSHL
+  :hints (("Goal" :in-theory (e/d* (ACL2::BVSHL
                                    sal/shl-spec-32
                                    SF-SPEC32
                                    PF-SPEC32
                                    ash
                                    acl2::bvcat
+                                   rflag-RoWs-enables
                                    )
                                   (;x::BVCAT-OF-MINUS-BECOMES-BVSHL ;loop
                                    )))))
@@ -1033,17 +890,7 @@
                                          (ASH (THE (UNSIGNED-BYTE 64) RESULT)
                                               -63)))))))
                        (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                   :CF CF
-                                                   :PF PF
-                                                   :ZF ZF
-                                                   :SF SF
-                                                   :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
+                        (!RFLAGSBITS->CF
                            CF
                            (!RFLAGSBITS->PF
                             PF
@@ -1051,7 +898,7 @@
                                 ZF
                                 (!RFLAGSBITS->SF
                                      SF
-                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
+                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
                        (UNDEFINED-FLAGS (!RFLAGSBITS->AF 1 0)))
                       (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
                     (OTHERWISE
@@ -1062,26 +909,15 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 64 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                             (UNSIGNED-BYTE 32)
-                             (!RFLAGSBITS->PF
+                         (!RFLAGSBITS->PF
                                   PF
                                   (!RFLAGSBITS->ZF
                                        ZF
-                                       (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
+                                       (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                           :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
-                           :EXEC
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                                 1
-                                (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))))
+                                (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
                        (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
                       (B*
                        ((CF (PART-SELECT DST
@@ -1091,43 +927,35 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 64 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :CF CF
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             CF
                             (!RFLAGSBITS->PF
                                  PF
                                  (!RFLAGSBITS->ZF
                                       ZF
-                                      (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
+                                      (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                           :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
-                           :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
+                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
                        (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-                  (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                      :EXEC OUTPUT-RFLAGS))
+                  ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+                  ;;                     :EXEC OUTPUT-RFLAGS))
                   (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
                                         :EXEC UNDEFINED-FLAGS)))
            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-  :hints (("Goal" :in-theory (e/d (ACL2::BVSHL
+  :hints (("Goal" :in-theory (e/d* (ACL2::BVSHL
                                    sal/shl-spec-64
                                    SF-SPEC64
                                    PF-SPEC64
                                    ash
                                    acl2::bvcat
+                                   rflag-RoWs-enables
                                    )
                                   (;x::BVCAT-OF-MINUS-BECOMES-BVSHL ;loop
                                    )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These put in bvshr and change the handling of rflags.  Anything else?
 
 (defthm SHR-SPEC-8-redef
   (equal (SHR-SPEC-8 dst src input-rflags)
@@ -1164,17 +992,7 @@
                            :EXEC (THE (UNSIGNED-BYTE 1)
                                       (ASH (THE (UNSIGNED-BYTE 8) DST) -7))))
                        (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                   :CF CF
-                                                   :PF PF
-                                                   :ZF ZF
-                                                   :SF SF
-                                                   :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
+                        (!RFLAGSBITS->CF
                            CF
                            (!RFLAGSBITS->PF
                             PF
@@ -1182,7 +1000,7 @@
                                 ZF
                                 (!RFLAGSBITS->SF
                                      SF
-                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
+                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
                        (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
                                              (!RFLAGSBITS->AF 1 0))))
                       (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
@@ -1194,28 +1012,15 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 8 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                             (UNSIGNED-BYTE 32)
-                             (!RFLAGSBITS->PF
+                         (!RFLAGSBITS->PF
                                   PF
                                   (!RFLAGSBITS->ZF
                                        ZF
-                                       (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
+                                       (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                                1
-                               (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))))
+                               (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
                        (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
                       (B*
                        ((CF
@@ -1236,35 +1041,25 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 8 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :CF CF
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             CF
                             (!RFLAGSBITS->PF
                                  PF
                                  (!RFLAGSBITS->ZF
                                       ZF
-                                      (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
+                                      (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                           :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
-                           :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
+                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
                        (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-                  (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                      :EXEC OUTPUT-RFLAGS))
+                  ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+                  ;;                     :EXEC OUTPUT-RFLAGS))
                   (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
                                         :EXEC UNDEFINED-FLAGS)))
                  (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-  :hints (("Goal" :in-theory (enable SHR-SPEC-8
+  :hints (("Goal" :in-theory (enable* SHR-SPEC-8
                                      ACL2::BVSHR
-                                     acl2::slice))))
+                                     acl2::slice
+                                     rflag-RoWs-enables))))
 
 (defthm SHR-SPEC-16-redef
   (equal (SHR-SPEC-16 dst src input-rflags)
@@ -1300,17 +1095,7 @@
                                            (ASH (THE (UNSIGNED-BYTE 16) DST)
                                                 -15))))
                        (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                   :CF CF
-                                                   :PF PF
-                                                   :ZF ZF
-                                                   :SF SF
-                                                   :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
+                        (!RFLAGSBITS->CF
                            CF
                            (!RFLAGSBITS->PF
                             PF
@@ -1318,7 +1103,7 @@
                              ZF
                              (!RFLAGSBITS->SF
                               SF
-                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
+                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
                        (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
                                              (!RFLAGSBITS->AF 1 0))))
                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
@@ -1330,28 +1115,15 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 16 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->PF
+                         (!RFLAGSBITS->PF
                             PF
                             (!RFLAGSBITS->ZF
                              ZF
-                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
+                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             1
-                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))))
+                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
                    (B*
                        ((CF
@@ -1372,35 +1144,25 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 16 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :CF CF
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             CF
                             (!RFLAGSBITS->PF
                              PF
                              (!RFLAGSBITS->ZF
                               ZF
-                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
+                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
-                          :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
+                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-              (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                  :EXEC OUTPUT-RFLAGS))
+              ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+              ;;                     :EXEC OUTPUT-RFLAGS))
               (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
                                     :EXEC UNDEFINED-FLAGS)))
            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-  :hints (("Goal" :in-theory (enable SHR-SPEC-16
+  :hints (("Goal" :in-theory (enable* SHR-SPEC-16
                                      ACL2::BVSHR
-                                     acl2::slice))))
+                                     acl2::slice
+                                     rflag-RoWs-enables))))
 
 (defthm SHR-SPEC-32-redef
   (equal (SHR-SPEC-32 dst src input-rflags)
@@ -1454,18 +1216,7 @@
                                     (ASH (THE (UNSIGNED-BYTE 32) DST)
                                          -31))))
                        (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC
-                         (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :CF CF
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF
-                                                    :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
+                        (!RFLAGSBITS->CF
                            CF
                            (!RFLAGSBITS->PF
                             PF
@@ -1474,7 +1225,7 @@
                              (!RFLAGSBITS->SF
                               SF
                               (!RFLAGSBITS->OF
-                               OF INPUT-RFLAGS))))))))
+                               OF INPUT-RFLAGS))))))
                        (UNDEFINED-FLAGS
                         (THE (UNSIGNED-BYTE 32)
                              (!RFLAGSBITS->AF 1 0))))
@@ -1489,34 +1240,17 @@
                         (SF
                          (GENERAL-SF-SPEC 32 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC
-                          (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                     :PF PF
-                                                     :ZF ZF
-                                                     :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->PF
+                         (!RFLAGSBITS->PF
                             PF
                             (!RFLAGSBITS->ZF
                              ZF
                              (!RFLAGSBITS->SF
-                              SF INPUT-RFLAGS))))))
+                              SF INPUT-RFLAGS))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0
-                                                            :CF 1
-                                                            :AF 1
-                                                            :OF 1)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             1
                             (!RFLAGSBITS->AF
-                             1 (!RFLAGSBITS->OF 1 0)))))))
+                             1 (!RFLAGSBITS->OF 1 0)))))
                      (MV OUTPUT-RFLAGS
                          UNDEFINED-FLAGS))
                    (B*
@@ -1544,43 +1278,31 @@
                         (SF
                          (GENERAL-SF-SPEC 32 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC
-                          (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                     :CF CF
-                                                     :PF PF
-                                                     :ZF ZF
-                                                     :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             CF
                             (!RFLAGSBITS->PF
                              PF
                              (!RFLAGSBITS->ZF
                               ZF
                               (!RFLAGSBITS->SF
-                               SF INPUT-RFLAGS)))))))
+                               SF INPUT-RFLAGS)))))
                         (UNDEFINED-FLAGS
-                         (MBE :LOGIC (CHANGE-RFLAGSBITS 0
-                                                                :AF 1
-                                                                :OF 1)
-                              :EXEC (!RFLAGSBITS->AF
-                                     1 (!RFLAGSBITS->OF 1 0)))))
+                         (!RFLAGSBITS->AF
+                                     1 (!RFLAGSBITS->OF 1 0))))
                      (MV OUTPUT-RFLAGS
                          UNDEFINED-FLAGS))))))
-              (OUTPUT-RFLAGS
-               (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                    :EXEC OUTPUT-RFLAGS))
+              ;; (OUTPUT-RFLAGS
+              ;;  (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+              ;;       :EXEC OUTPUT-RFLAGS))
               (UNDEFINED-FLAGS
                (MBE :LOGIC (N32 UNDEFINED-FLAGS)
                     :EXEC UNDEFINED-FLAGS)))
            (MV RESULT OUTPUT-RFLAGS
                UNDEFINED-FLAGS)))
-  :hints (("Goal" :in-theory (enable SHR-SPEC-32
+  :hints (("Goal" :in-theory (enable* SHR-SPEC-32
                                      ACL2::BVSHR
-                                     acl2::slice))))
+                                     acl2::slice
+                                     rflag-RoWs-enables))))
 
 (defthm SHR-SPEC-64-redef
   (equal (SHR-SPEC-64 dst src input-rflags)
@@ -1616,17 +1338,7 @@
                                            (ASH (THE (UNSIGNED-BYTE 64) DST)
                                                 -63))))
                        (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                   :CF CF
-                                                   :PF PF
-                                                   :ZF ZF
-                                                   :SF SF
-                                                   :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
+                        (!RFLAGSBITS->CF
                            CF
                            (!RFLAGSBITS->PF
                             PF
@@ -1634,7 +1346,7 @@
                              ZF
                              (!RFLAGSBITS->SF
                               SF
-                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
+                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
                        (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
                                              (!RFLAGSBITS->AF 1 0))))
                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
@@ -1646,28 +1358,15 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 64 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->PF
+                         (!RFLAGSBITS->PF
                             PF
                             (!RFLAGSBITS->ZF
                              ZF
-                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
+                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             1
-                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))))
+                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
                    (B*
                        ((CF
@@ -1688,39 +1387,30 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 64 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :CF CF
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             CF
                             (!RFLAGSBITS->PF
                              PF
                              (!RFLAGSBITS->ZF
                               ZF
-                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
+                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
-                          :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
+                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-              (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                  :EXEC OUTPUT-RFLAGS))
+              ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+              ;;                     :EXEC OUTPUT-RFLAGS))
               (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
                                     :EXEC UNDEFINED-FLAGS)))
            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-  :hints (("Goal" :in-theory (enable SHR-SPEC-64
+  :hints (("Goal" :in-theory (enable* SHR-SPEC-64
                                      ACL2::BVSHR
-                                     acl2::slice))))
+                                     acl2::slice
+                                     rflag-RoWs-enables))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Uses bvor for the result
+;; These use bvor for the result and also change the handling of rflagsbits
+
 (defthm GPR-OR-SPEC-1-redef
   (equal (GPR-OR-SPEC-1 dst src input-rflags)
          (b*
@@ -1743,17 +1433,7 @@
                        (sf-spec8 result)))
               (of 0)
               (output-rflags
-               (mbe
-                :logic (change-rflagsbits input-rflags
-                                          :cf cf
-                                          :pf pf
-                                          :zf zf
-                                          :sf sf
-                                          :of of)
-                :exec
-                (the
-                 (unsigned-byte 32)
-                 (!rflagsbits->cf
+               (!rflagsbits->cf
                   cf
                   (!rflagsbits->pf
                    pf
@@ -1761,13 +1441,14 @@
                     zf
                     (!rflagsbits->sf
                      sf
-                     (!rflagsbits->of of input-rflags))))))))
-              (output-rflags (mbe :logic (n32 output-rflags)
-                                  :exec output-rflags))
+                     (!rflagsbits->of of input-rflags))))))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
               (undefined-flags (!rflagsbits->af 1 0)))
            (mv result output-rflags undefined-flags)))
-  :hints (("Goal" :in-theory (enable GPR-OR-SPEC-1
-                                     ACL2::BVOR))))
+  :hints (("Goal" :in-theory (enable* GPR-OR-SPEC-1
+                                     ACL2::BVOR
+                                     rflag-RoWs-enables))))
 
 ;; Uses bvor for the result
 (defthm GPR-OR-SPEC-2-redef
@@ -1792,17 +1473,7 @@
                        (SF-SPEC16 RESULT)))
               (OF 0)
               (OUTPUT-RFLAGS
-               (MBE
-                :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                          :CF CF
-                                          :PF PF
-                                          :ZF ZF
-                                          :SF SF
-                                          :OF OF)
-                :EXEC
-                (THE
-                 (UNSIGNED-BYTE 32)
-                 (!RFLAGSBITS->CF
+               (!RFLAGSBITS->CF
                   CF
                   (!RFLAGSBITS->PF
                    PF
@@ -1810,14 +1481,15 @@
                     ZF
                     (!RFLAGSBITS->SF
                      SF
-                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
-              (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                  :EXEC OUTPUT-RFLAGS))
+                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
+              ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+              ;;                     :EXEC OUTPUT-RFLAGS))
               (UNDEFINED-FLAGS (!RFLAGSBITS->AF 1 0)))
            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS))
          )
-  :hints (("Goal" :in-theory (enable GPR-OR-SPEC-2
-                                     ACL2::BVOR))))
+  :hints (("Goal" :in-theory (enable* GPR-OR-SPEC-2
+                                      ACL2::BVOR
+                                      rflag-RoWs-enables))))
 
 ;; Uses bvor for the result
 (defthm GPR-OR-SPEC-4-redef
@@ -1842,17 +1514,7 @@
                        (SF-SPEC32 RESULT)))
               (OF 0)
               (OUTPUT-RFLAGS
-               (MBE
-                :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                          :CF CF
-                                          :PF PF
-                                          :ZF ZF
-                                          :SF SF
-                                          :OF OF)
-                :EXEC
-                (THE
-                 (UNSIGNED-BYTE 32)
-                 (!RFLAGSBITS->CF
+               (!RFLAGSBITS->CF
                   CF
                   (!RFLAGSBITS->PF
                    PF
@@ -1860,13 +1522,14 @@
                     ZF
                     (!RFLAGSBITS->SF
                      SF
-                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
-              (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                  :EXEC OUTPUT-RFLAGS))
+                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
+              ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+              ;;                     :EXEC OUTPUT-RFLAGS))
               (UNDEFINED-FLAGS (!RFLAGSBITS->AF 1 0)))
            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-  :hints (("Goal" :in-theory (enable GPR-OR-SPEC-4
-                                     ACL2::BVOR))))
+  :hints (("Goal" :in-theory (enable* GPR-OR-SPEC-4
+                                      ACL2::BVOR
+                                      rflag-RoWs-enables))))
 
 ;; Uses bvor for the result
 (defthm GPR-OR-SPEC-8-redef
@@ -1891,17 +1554,7 @@
                            (SF-SPEC64 RESULT)))
                   (OF 0)
                   (OUTPUT-RFLAGS
-                   (MBE
-                    :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                              :CF CF
-                                              :PF PF
-                                              :ZF ZF
-                                              :SF SF
-                                              :OF OF)
-                    :EXEC
-                    (THE
-                     (UNSIGNED-BYTE 32)
-                     (!RFLAGSBITS->CF
+                   (!RFLAGSBITS->CF
                       CF
                       (!RFLAGSBITS->PF
                            PF
@@ -1909,14 +1562,15 @@
                                 ZF
                                 (!RFLAGSBITS->SF
                                      SF
-                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
-                  (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                      :EXEC OUTPUT-RFLAGS))
+                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
+                  ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+                  ;;                     :EXEC OUTPUT-RFLAGS))
                   (UNDEFINED-FLAGS (!RFLAGSBITS->AF 1 0)))
                  (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS))
          )
-  :hints (("Goal" :in-theory (enable GPR-OR-SPEC-8
-                                     ACL2::BVOR))))
+  :hints (("Goal" :in-theory (enable* GPR-OR-SPEC-8
+                                      ACL2::BVOR
+                                      rflag-RoWs-enables))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1977,17 +1631,7 @@
                        (SF (GENERAL-SF-SPEC 8 RESULT))
                        (OF 0)
                        (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                   :CF CF
-                                                   :PF PF
-                                                   :ZF ZF
-                                                   :SF SF
-                                                   :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
+                        (!RFLAGSBITS->CF
                            CF
                            (!RFLAGSBITS->PF
                             PF
@@ -1995,7 +1639,7 @@
                              ZF
                              (!RFLAGSBITS->SF
                               SF
-                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
+                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
                        (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
                                              (!RFLAGSBITS->AF 1 0))))
                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
@@ -2007,28 +1651,15 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 8 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->PF
+                         (!RFLAGSBITS->PF
                             PF
                             (!RFLAGSBITS->ZF
                              ZF
-                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
+                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             1
-                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))))
+                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
                    (B*
                        ((CF
@@ -2049,34 +1680,22 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 8 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :CF CF
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             CF
                             (!RFLAGSBITS->PF
                              PF
                              (!RFLAGSBITS->ZF
                               ZF
-                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
+                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
-                          :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
+                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-              (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                  :EXEC OUTPUT-RFLAGS))
+              ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+              ;;                     :EXEC OUTPUT-RFLAGS))
               (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
                                     :EXEC UNDEFINED-FLAGS)))
            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-  :otf-flg t
-  :hints (("Goal" :in-theory (e/d (SaR-SPEC-8
+  :hints (("Goal" :in-theory (e/d* (SaR-SPEC-8
                                    ACL2::BVaSHR
                                    ACL2::BVSX-REWRITE ;acl2::bvsx loops with ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
                                    ACL2::BVSHR
@@ -2086,12 +1705,13 @@
                                    acl2::slice ; loops with ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
 ;acl2::logext-cases ;bad
                                    ACL2::BVCHOP-OF-LOGTAIL
-                                   RFLAGSBITS
+                                   ;RFLAGSBITS
                                    zf-spec
 ;PF-SPEC8
 
 ;logapp ; slow
-                                   logext)
+                                   logext
+                                   rflag-RoWs-enables)
                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
 (defthm SaR-SPEC-16-redef
@@ -2143,17 +1763,7 @@
                        (SF (GENERAL-SF-SPEC 16 RESULT))
                        (OF 0)
                        (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                   :CF CF
-                                                   :PF PF
-                                                   :ZF ZF
-                                                   :SF SF
-                                                   :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
+                        (!RFLAGSBITS->CF
                            CF
                            (!RFLAGSBITS->PF
                             PF
@@ -2161,7 +1771,7 @@
                              ZF
                              (!RFLAGSBITS->SF
                               SF
-                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
+                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
                        (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
                                              (!RFLAGSBITS->AF 1 0))))
                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
@@ -2173,28 +1783,15 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 16 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->PF
+                         (!RFLAGSBITS->PF
                             PF
                             (!RFLAGSBITS->ZF
                              ZF
-                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
+                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             1
-                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))))
+                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
                    (B*
                        ((CF
@@ -2215,44 +1812,33 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 16 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :CF CF
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             CF
                             (!RFLAGSBITS->PF
                              PF
                              (!RFLAGSBITS->ZF
                               ZF
-                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
+                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
-                          :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
+                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-              (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                  :EXEC OUTPUT-RFLAGS))
+              ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+              ;;                     :EXEC OUTPUT-RFLAGS))
               (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
                                     :EXEC UNDEFINED-FLAGS)))
            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS))
          )
-  :otf-flg t
-  :hints (("Goal" :in-theory (e/d (SaR-SPEC-16
+  :hints (("Goal" :in-theory (e/d* (SaR-SPEC-16
                                    ACL2::BVaSHR
                                    ACL2::BVSX-REWRITE
                                    ACL2::BVSHR
                                    acl2::bvcat
                                    acl2::slice
                                    ACL2::BVCHOP-OF-LOGTAIL
-                                   RFLAGSBITS
+                                   ;;RFLAGSBITS
                                    zf-spec
-                                   logext)
+                                   logext
+                                   rflag-RoWs-enables)
                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
 (defthm SaR-SPEC-32-redef
@@ -2304,17 +1890,7 @@
                        (SF (GENERAL-SF-SPEC 32 RESULT))
                        (OF 0)
                        (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                   :CF CF
-                                                   :PF PF
-                                                   :ZF ZF
-                                                   :SF SF
-                                                   :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
+                        (!RFLAGSBITS->CF
                            CF
                            (!RFLAGSBITS->PF
                             PF
@@ -2322,7 +1898,7 @@
                                 ZF
                                 (!RFLAGSBITS->SF
                                      SF
-                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
+                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
                        (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
                                              (!RFLAGSBITS->AF 1 0))))
                       (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
@@ -2334,28 +1910,15 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 32 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                             (UNSIGNED-BYTE 32)
-                             (!RFLAGSBITS->PF
+                         (!RFLAGSBITS->PF
                                   PF
                                   (!RFLAGSBITS->ZF
                                        ZF
-                                       (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
+                                       (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                                1
-                               (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))))
+                               (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
                        (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
                       (B*
                        ((CF
@@ -2376,44 +1939,33 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 32 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :CF CF
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             CF
                             (!RFLAGSBITS->PF
                                  PF
                                  (!RFLAGSBITS->ZF
                                       ZF
-                                      (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
+                                      (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                           :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
-                           :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
+                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
                        (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-                  (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                      :EXEC OUTPUT-RFLAGS))
+                  ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+                  ;;                     :EXEC OUTPUT-RFLAGS))
                   (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
                                         :EXEC UNDEFINED-FLAGS)))
                  (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS))
        )
-  :otf-flg t
-  :hints (("Goal" :in-theory (e/d (SaR-SPEC-32
+  :hints (("Goal" :in-theory (e/d* (SaR-SPEC-32
                                    ACL2::BVaSHR
                                    ACL2::BVSX-REWRITE
                                    ACL2::BVSHR
                                    acl2::bvcat
                                    acl2::slice
                                    ACL2::BVCHOP-OF-LOGTAIL
-                                   RFLAGSBITS
+                                   ;;RFLAGSBITS
                                    zf-spec
-                                   logext)
+                                   logext
+                                   rflag-RoWs-enables)
                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
 (defthm SaR-SPEC-64-redef
@@ -2465,17 +2017,7 @@
                        (SF (GENERAL-SF-SPEC 64 RESULT))
                        (OF 0)
                        (OUTPUT-RFLAGS
-                        (MBE
-                         :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                   :CF CF
-                                                   :PF PF
-                                                   :ZF ZF
-                                                   :SF SF
-                                                   :OF OF)
-                         :EXEC
-                         (THE
-                          (UNSIGNED-BYTE 32)
-                          (!RFLAGSBITS->CF
+                        (!RFLAGSBITS->CF
                            CF
                            (!RFLAGSBITS->PF
                             PF
@@ -2483,7 +2025,7 @@
                                 ZF
                                 (!RFLAGSBITS->SF
                                      SF
-                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
+                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
                        (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
                                              (!RFLAGSBITS->AF 1 0))))
                       (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
@@ -2495,28 +2037,15 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 64 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                             (UNSIGNED-BYTE 32)
-                             (!RFLAGSBITS->PF
+                         (!RFLAGSBITS->PF
                                   PF
                                   (!RFLAGSBITS->ZF
                                        ZF
-                                       (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
+                                       (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                                1
-                               (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))))
+                               (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
                        (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
                       (B*
                        ((CF
@@ -2537,44 +2066,33 @@
                         (ZF (ZF-SPEC RESULT))
                         (SF (GENERAL-SF-SPEC 64 RESULT))
                         (OUTPUT-RFLAGS
-                         (MBE
-                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-                                                    :CF CF
-                                                    :PF PF
-                                                    :ZF ZF
-                                                    :SF SF)
-                          :EXEC
-                          (THE
-                           (UNSIGNED-BYTE 32)
-                           (!RFLAGSBITS->CF
+                         (!RFLAGSBITS->CF
                             CF
                             (!RFLAGSBITS->PF
                                  PF
                                  (!RFLAGSBITS->ZF
                                       ZF
-                                      (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
+                                      (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
                         (UNDEFINED-FLAGS
-                         (MBE
-                           :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
-                           :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
+                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
                        (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-                  (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                                      :EXEC OUTPUT-RFLAGS))
+                  ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
+                  ;;                     :EXEC OUTPUT-RFLAGS))
                   (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
                                         :EXEC UNDEFINED-FLAGS)))
                  (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-  :otf-flg t
-  :hints (("Goal" :in-theory (e/d (SaR-SPEC-64
+  :hints (("Goal" :in-theory (e/d* (SaR-SPEC-64
                                    ACL2::BVaSHR
                                    ACL2::BVSX-REWRITE
                                    ACL2::BVSHR
                                    ;acl2::bvcat
                                    acl2::slice
                                    ACL2::BVCHOP-OF-LOGTAIL
-                                   RFLAGSBITS
+                                   ;;RFLAGSBITS
                                    zf-spec
                                    logext
                                    ;ACL2::LOGAPP-BECOMES-BVCAT-WHEN-BV
+                                   rflag-RoWs-enables
                                    )
                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
@@ -2966,6 +2484,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm add-af-spec32-of-bvchop-32-arg1
+  (equal (add-af-spec32 (acl2::bvchop 32 dst) src)
+         (add-af-spec32 dst src))
+  :hints (("Goal" :in-theory (enable add-af-spec32))))
+
+(defthm add-af-spec32-of-bvchop-32-arg2
+  (equal (add-af-spec32 dst (acl2::bvchop 32 src))
+         (add-af-spec32 dst src))
+  :hints (("Goal" :in-theory (enable add-af-spec32))))
+
+
 ;; for rewriting
 (defthmd GPR-ADD-SPEC-4-better
   (equal (gpr-add-spec-4 dst src input-rflags)
@@ -2996,3 +2525,38 @@
                                     ;; ZF-SPEC
                                     acl2::bvchop-of-sum-cases
                                     acl2::bvplus) ((:e tau-system))))))
+
+;; todo: try this:
+;; for rewriting
+;; (defthmd GPR-ADD-SPEC-4-better
+;;   (equal (gpr-add-spec-4 dst src input-rflags)
+;;          (let (;(dst (acl2::bvchop 32 dst)) ; drop?
+;;                ;(src (acl2::bvchop 32 src)) ; drop?
+;;                (result ;; (acl2::bvplus 32 dst src) ;; todo: put back, but this broke some proofs (normal form change)
+;;                 (acl2::bvchop 32 (+ (acl2::bvchop 32 dst) (acl2::bvchop 32 src))) ; todo: simplify!
+;;                 ))
+;;            (MV result
+;;                (!RFLAGSBITS->CF
+;;                  ;; todo: make an add-cf-spec32:
+;;                 (cf-spec32 (+ (acl2::bvchop 32 dst) (acl2::bvchop 32 src)))
+;;                 (!RFLAGSBITS->PF
+;;                  (pf-spec32 result)
+;;                  (!RFLAGSBITS->AF
+;;                   (add-af-spec32 dst src)
+;;                   (!RFLAGSBITS->ZF
+;;                    (zf-spec result)
+;;                    (!RFLAGSBITS->SF
+;;                     (sf-spec32 result)
+;;                     (!RFLAGSBITS->OF
+;;                      (of-spec32 (+ (logext 32 dst)
+;;                                    (logext 32 src)))
+;;                      (acl2::bvchop 32 input-rflags) ; drop the bvchop?
+;;                      ))))))
+;;                0)))
+;;   :hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables
+;;                                     GPR-ADD-SPEC-4
+;;                                     ;; ZF-SPEC
+;;                                     acl2::bvchop-of-sum-cases
+;;                                     acl2::bvplus) ((:e tau-system))))))
+
+;; todo: add alt-def rules for GPR-ADD-SPEC-1, etc, that clean up the flags expressions
