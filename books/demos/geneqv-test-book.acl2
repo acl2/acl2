@@ -5,6 +5,7 @@
 #||
 (depends-on "geneqv-test-input.lsp")
 (depends-on "geneqv-test-log.txt")
+(include-book "sorting/isort" :dir :system)
 ||#
 
 ; cert-flags: ? t :ttags :all
