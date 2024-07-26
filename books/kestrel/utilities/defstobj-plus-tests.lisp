@@ -959,3 +959,6 @@
 ;; todo: add similar test for stobj-table field (if supported)
 (defstobj+ hash-table-test-1
   (hash-table-field-1 :type (hash-table equal *one-hundred*)))
+
+(defstobj+ hash-table-test-2
+  (hash-table2 :type (hash-table equal 100 integer) :initially 0))
