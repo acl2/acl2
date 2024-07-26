@@ -17,7 +17,7 @@
 ;; effect on the books being improved of including the improve-book tool
 ;; itself.
 
-(defttag code-only)
+(defttag improve-book) ; because books-in-subtree and books-in-dir call sys-call+
 
 (with-supporters
   (local (include-book "improve-book"))
