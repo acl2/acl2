@@ -47,7 +47,7 @@
 (include-book "kestrel/strings-light/strip-suffix-from-strings" :dir :system)
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
 (include-book "linter")
-(include-book "speed-up")
+(include-book "speed-up") ; or do (include-book "speed-up-implementation")
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 
@@ -396,7 +396,7 @@
               (state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) hints nil 100000 state)))
          ;; Try to speed up the proof:
          (mv-let (erp state)
-           (speed-up-defthm event print state)
+           (speed-up-defthm event print nil state)
            (if erp
                (mv erp state)
              (prog2$ (and print (cw ")~%"))
@@ -441,7 +441,7 @@
   (prog2$
    (and print (cw " (For ~x0:" (first (rest event))))
    (mv-let (erp state)
-     (speed-up-defrule event print state)
+     (speed-up-defrule event print nil state)
      (declare (ignore erp)) ; todo: why?
      (prog2$ (and print (cw ")~%"))
              (submit-event event nil nil state)))))

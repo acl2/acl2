@@ -298,12 +298,13 @@
 ;; - tries disabling each :linear rune that is currently enabled (in case they slow things down but don't show up in the summary)
 ;; - tries :induct t if the proof used induction, in case time was wasted before reverting to induction
 ;; TODO: Compare to speed-up-defrule.  Keep in sync, or merge them.
-(defun speed-up-defthm (event print state)
-  (declare (xargs :guard (print-levelp print) ; todo: caller doesn't allow t?
+(defun speed-up-defthm (event print print-headerp state)
+  (declare (xargs :guard (and (print-levelp print) ; todo: caller doesn't allow t?
+                              (booleanp print-headerp))
                   :mode :program
                   :stobjs state))
   (prog2$
-   (and print (cw "~%For ~s0:" (abbreviate-event event))) ; speedups are indented below this, and start with newlines
+   (and print print-headerp (cw "~%For ~s0:" (abbreviate-event event))) ; speedups are indented below this, and start with newlines
    (let* ( ;;(defthm-variant (first event))
           (defthm-args (rest event))
           (name (first defthm-args))
@@ -373,12 +374,13 @@
 ;; Returns (mv erp state).
 ;; Each line printed starts with a newline.
 ;; TODO: Try the :induct t speedup as we do with defthms just above
-(defun speed-up-defrule (event print state)
+(defun speed-up-defrule (event print print-headerp state)
   (declare (xargs :mode :program
-                  :guard (print-levelp print) ; todo: caller doesn't allow t?
+                  :guard (and (print-levelp print) ; todo: caller doesn't allow t?
+                              (booleanp print-headerp))
                   :stobjs state))
   (prog2$
-   (and print (cw "~%For ~s0:" (abbreviate-event event))) ; speedups are indented below this, and start with newlines
+   (and print print-headerp (cw "~%For ~s0:" (abbreviate-event event))) ; speedups are indented below this, and start with newlines
    (let ((name (cadr event)))
     ;; Record the start time:
      (mv-let (start-time state)
@@ -427,8 +429,8 @@
                      (cdr res)
                    fn))))
       (case fn
-        ((defthm defthmd) (speed-up-defthm form print state))
-        ((defrule defruled) (speed-up-defrule form print state))
+        ((defthm defthmd) (speed-up-defthm form print t state))
+        ((defrule defruled) (speed-up-defrule form print t state))
         (local (speed-up-event-fn (cadr form) synonym-alist print throw-errorp state)) ; strip the local ; todo: this submits it as non-local (ok?)
         ;; Things we don't try to speed up (but improve-book could try to change in-theory events):
         ((in-package include-book in-theory theory-invariant defconst deflabel defmacro defstub defxdoc deftheory defthy)
