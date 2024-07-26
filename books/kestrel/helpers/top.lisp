@@ -15,6 +15,7 @@
 (include-book "helper-old")
 (include-book "helper")
 (include-book "deps")
+(include-book "improve-book-implementation")
 (include-book "improve-book")
 (include-book "recommendations")
 (include-book "model-enable")

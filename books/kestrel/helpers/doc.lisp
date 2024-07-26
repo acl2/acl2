@@ -12,6 +12,7 @@
 
 (include-book "kestrel/utilities/defmacrodoc" :dir :system) ;todo: reduce
 (include-book "improve-book")
+(include-book "speed-up")
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 
 ;; TODO: Document the Linter (and move it to this dir)
