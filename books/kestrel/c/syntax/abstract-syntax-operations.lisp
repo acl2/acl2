@@ -706,13 +706,11 @@
    (xdoc::p
     "There are syntactically different expressions in C
      that evaluate to ``zero'' in a broad sense.
-     We encapsulate the exact notion of `zero expression',
-     for the purposes of our transformation,
-     in this predicate.")
-   (xdoc::p
-    "For now we only include
+     For now we only include
      the octal integer constant @('0') without suffixes
-     and with just one digit."))
+     and with just one digit.
+     So this operation is very limited in scope,
+     but sufficient for its current usage (elsewhere)."))
   (b* (((unless (expr-case expr :const)) nil)
        (const (expr-const->unwrap expr))
        ((unless (const-case const :int)) nil)
