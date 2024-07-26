@@ -71,20 +71,6 @@
   (declare (xargs :guard (true-listp lst)))
   (duplicate-items-aux lst nil))
 
-;; Returns state
-;move
-(defun set-cbd-simple (cbd state)
-  (declare (xargs :guard (stringp cbd)
-                  :stobjs state
-                  :mode :program))
-  (mv-let (erp val state)
-    (set-cbd-fn cbd state)
-    (declare (ignore val))
-    (if erp
-        (prog2$ (er hard? 'set-cbd-simple "Failed to set the cbd to ~x0." cbd)
-                state)
-      state)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defttag books-in-subtree) ; for sys-call+ below
@@ -116,41 +102,6 @@
           state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun abbreviate-event (event)
-  (declare (xargs :guard t
-                  :mode :program))
-  (if (not (and (consp event)
-                (symbolp (car event))))
-      ;; todo: can this happen?
-      "..."
-    (let ((fn (car event)))
-      (case fn
-        (local (if (= 1 (len (cdr event)))
-                   (concatenate 'string "(local "
-                                (abbreviate-event (cadr event))
-                                ")")
-                 "(local ...)" ; can this happen?
-                 ))
-        (include-book (print-to-string event))
-        (otherwise
-         (concatenate 'string
-                      "("
-                      (symbol-name (car event))
-                      (if (not (consp (rest event)))
-                          ")"
-                        (if (symbolp (cadr event))
-                            ;; example (defblah name ...)
-                            (concatenate 'string " " (symbol-name (cadr event))
-                                         (if (consp (rest (rest event)))
-                                             " ...)"
-                                           ")"))
-                          ;; todo: do better in this case?
-                          ;; example (progn (defun foo ...) ...)
-                          (concatenate 'string " ...)")))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;move
 ;; Returns (mv erp nil state).
@@ -490,7 +441,7 @@
   (prog2$
    (and print (cw " (For ~x0:" (first (rest event))))
    (mv-let (erp state)
-     (speed-up-defrule event state)
+     (speed-up-defrule event print state)
      (declare (ignore erp)) ; todo: why?
      (prog2$ (and print (cw ")~%"))
              (submit-event event nil nil state)))))
