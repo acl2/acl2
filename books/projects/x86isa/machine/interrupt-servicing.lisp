@@ -61,11 +61,10 @@
        ;; Only 64-bit mode is supported for now
        ((unless (equal proc-mode #.*64-bit-mode*)) (mv t x86))
 
-       ;; This hack sets the cpl to 0 while we try to find the gate descriptor. This is needed because when this is triggered by user space, we may not be able to find the gate descriptor
-       (cs (seg-visiblei *cs* x86))
-       (x86 (!seg-visiblei *cs* (!segment-selectorBits->rpl 0 cs) x86))
+       (prev-implicit-supervisor-access (implicit-supervisor-access x86))
+       (x86 (!implicit-supervisor-access t x86))
        ((mv err idt-gate-descriptor x86) (get-idt-gate-descriptor int-vec x86))
-       (x86 (!seg-visiblei *cs* cs x86))
+       (x86 (!implicit-supervisor-access prev-implicit-supervisor-access x86))
        ((when err) (mv t x86))
 
        ;; Found entry, but it isn't marked present
@@ -90,12 +89,13 @@
                                                           (* 8 new-privilege))))
                                     ;; TODO what to do if new-rsp-addr is not canonical?
                                     ((unless (canonical-address-p new-rsp-addr)) (mv t 0 x86))
-                                    ;; Use the same hack as above to perform a privileged memory read regardless of the cpl
-                                    (cs (seg-visiblei *cs* x86))
-                                    (x86 (!seg-visiblei *cs* (!segment-selectorBits->rpl 0 cs) x86))
+
+                                    (prev-implicit-supervisor-access (implicit-supervisor-access x86))
+                                    (x86 (!implicit-supervisor-access t x86))
                                     ((mv flg new-rsp x86) (rml64 new-rsp-addr :r x86))
                                     (new-rsp (i64 new-rsp))
-                                    (x86 (!seg-visiblei *cs* cs x86))
+                                    (x86 (!implicit-supervisor-access prev-implicit-supervisor-access x86))
+
                                     ((when flg) (mv t 0 x86))
                                     (x86 (load-segment-reg *ss* 0 x86))) ;; load the null selector
                                    (mv nil new-rsp x86))

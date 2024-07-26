@@ -26,20 +26,20 @@
           (selector :type (unsigned-byte 16))
           x86)
          :returns (x86 x86p :hyp (x86p x86))
-         ;; We set the CS here to perform a privileged memory read even if we're not in privilege level 0
-         (b* ((cs (seg-visiblei *cs* x86))
-              (x86 (!seg-visiblei *cs* (!segment-selectorBits->rpl 0 cs) x86))
-              (descriptor-addr (+ (i64 (gdtr/idtrBits->base-addr
+         (b* ((descriptor-addr (+ (i64 (gdtr/idtrBits->base-addr
                                          (stri (if (logtest selector #x4)
                                                  *ldtr*
                                                  *gdtr*)
                                                x86)))
                                   (logand selector #xFFF8)))
               ((unless (canonical-address-p descriptor-addr)) x86)
+              (prev-implicit-supervisor-access (implicit-supervisor-access x86))
+              (x86 (!implicit-supervisor-access t x86))
               ((mv & descriptor x86) (;; regular segment descriptors are 64-bits long but system segment descriptors are 128-bits long
 				      ,(if regular-segment? 'rml64 'rml128)
 				       descriptor-addr :r x86))
-              (x86 (,!reg-visiblei *cs* cs x86))
+              (x86 (!implicit-supervisor-access prev-implicit-supervisor-access x86))
+
               (x86 (,!reg-visiblei seg-reg selector x86))
               (limit (logior (logand descriptor #xFFFF)
                              (logand (ash descriptor (- 16 48)) #xF0000)))
