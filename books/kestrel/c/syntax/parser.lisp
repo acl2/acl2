@@ -612,7 +612,16 @@
     "We could look into turning the parser state into a stobj in the future,
      if efficiency is an issue.
      The code of the parser already treats the parser state
-     in a single-threaded way."))
+     in a single-threaded way.")
+   (xdoc::p
+    "For speed, we cache the value returned by
+     the function @(tsee parsize) defined later.
+     Some profiling revealed that significant time was spent there,
+     due to the need to save the parser state size
+     before certain @(tsee mbt) tests.
+     Ideally we should obtain this optimization using @(tsee apt::isodata),
+     but that transformation currently does not quite handle
+     all of the parser's functions."))
   ((bytes byte-list)
    (position position)
    (chars-read char+position-list)
@@ -620,7 +629,15 @@
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
    (checkpoints nat-list)
-   (gcc bool))
+   (gcc bool)
+   (size natp
+         :reqfix (+ (len bytes)
+                    (len chars-unread)
+                    (len tokens-unread))))
+  :require (equal size
+                  (+ (len bytes)
+                     (len chars-unread)
+                     (len tokens-unread)))
   :pred parstatep
   :prepwork ((local (in-theory (enable nfix)))))
 
@@ -663,7 +680,9 @@
                  :tokens-read nil
                  :tokens-unread nil
                  :checkpoints nil
-                 :gcc gcc))
+                 :gcc gcc
+                 :size (len data))
+  :guard-hints (("Goal" :in-theory (enable fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -675,10 +694,14 @@
    (xdoc::p
     "This is used as the measure for termination of the parsing functions.
      The size is measured as the sum of
-     the lists of bytes, characters, and tokens that can be read."))
-  (+ (len (parstate->bytes pstate))
-     (len (parstate->chars-unread pstate))
-     (len (parstate->tokens-unread pstate)))
+     the lists of bytes, characters, and tokens that can be read.")
+   (xdoc::p
+    "As explained in @(tsee parstate), this is cached for efficiency.
+     We use an @(tsee mbe) to just return the value in execution."))
+  (mbe :logic (+ (len (parstate->bytes pstate))
+                 (len (parstate->chars-unread pstate))
+                 (len (parstate->tokens-unread pstate)))
+       :exec (parstate->size pstate))
 
   ///
 
@@ -945,7 +968,8 @@
                  (change-parstate
                   pstate
                   :chars-unread (cdr pstate.chars-unread)
-                  :chars-read (cons char+pos pstate.chars-read)))))
+                  :chars-read (cons char+pos pstate.chars-read)
+                  :size (1- pstate.size)))))
        ((unless (consp pstate.bytes))
         (retok nil pstate.position (parstate-fix pstate)))
        (byte (car pstate.bytes))
@@ -964,7 +988,8 @@
                 :chars-read (cons (make-char+position
                                    :char byte
                                    :position pstate.position)
-                                  pstate.chars-read))))
+                                  pstate.chars-read)
+                :size (1- pstate.size))))
        ;; line feed:
        ((when (= byte 10))
         (retok 10
@@ -976,13 +1001,14 @@
                 :chars-read (cons (make-char+position
                                    :char 10
                                    :position pstate.position)
-                                  pstate.chars-read))))
+                                  pstate.chars-read)
+                :size (1- pstate.size))))
        ;; carriage return:
        ((when (= byte 13))
-        (b* ((bytes (if (and (consp bytes)
-                             (= (car bytes) 10))
-                        (cdr bytes)
-                      bytes)))
+        (b* (((mv bytes count) (if (and (consp bytes)
+                                        (= (car bytes) 10))
+                                   (mv (cdr bytes) 2)
+                                (mv bytes 1))))
           (retok 10
                  pstate.position
                  (change-parstate
@@ -992,7 +1018,8 @@
                   :chars-read (cons (make-char+position
                                      :char 10
                                      :position pstate.position)
-                                    pstate.chars-read)))))
+                                    pstate.chars-read)
+                  :size (- pstate.size count)))))
        ;; 2-byte UTF-8:
        ((when (= (logand byte #b11100000) #b11000000)) ; 110xxxyy
         (b* (((unless (consp bytes))
@@ -1034,7 +1061,8 @@
                   :chars-read (cons (make-char+position
                                      :char code
                                      :position pstate.position)
-                                    pstate.chars-read)))))
+                                    pstate.chars-read)
+                  :size (- pstate.size 2)))))
        ;; 3-byte UTF-8:
        ((when (= (logand byte #b11110000) #b11100000)) ; 1110xxxx
         (b* (((unless (consp bytes))
@@ -1114,7 +1142,8 @@
                   :chars-read (cons (make-char+position
                                      :char code
                                      :position pstate.position)
-                                    pstate.chars-read)))))
+                                    pstate.chars-read)
+                  :size (- pstate.size 3)))))
        ;; 4-byte UTF-8:
        ((when (= (logand #b11111000 byte) #b11110000)) ; 11110xyy
         (b* (((unless (consp bytes))
@@ -1219,11 +1248,13 @@
                   :chars-read (cons (make-char+position
                                      :char code
                                      :position pstate.position)
-                                    pstate.chars-read))))))
+                                    pstate.chars-read)
+                  :size (- pstate.size 4))))))
     (reterr-msg :where (position-to-msg pstate.position)
                 :expected "a byte in the range 9-13 or 32-126 or 192-223"
                 :found (msg "the byte ~x0" byte)))
-  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
+  :guard-hints (("Goal" :in-theory (e/d (len fix natp)
+                                        ((:e tau-system))))) ; for speed
   :prepwork ((local (in-theory (enable acl2-numberp-when-bytep
                                        rationalp-when-bytep
                                        integerp-when-natp
@@ -1272,11 +1303,13 @@
                          :chars-unread (cons (make-char+position
                                               :char 0
                                               :position (irr-position))
-                                             pstate.chars-unread)))
+                                             pstate.chars-unread)
+                         :size (1+ pstate.size)))
        (char+pos (car pstate.chars-read)))
     (change-parstate pstate
                      :chars-unread (cons char+pos pstate.chars-unread)
-                     :chars-read (cdr pstate.chars-read)))
+                     :chars-read (cdr pstate.chars-read)
+                     :size (1+ pstate.size)))
 
   ///
 
@@ -4356,8 +4389,10 @@
                   pstate
                   :tokens-unread (cdr pstate.tokens-unread)
                   :tokens-read (cons token+span pstate.tokens-read)
-                  :chars-read nil)))))
+                  :chars-read nil
+                  :size (1- pstate.size))))))
     (read-token-loop pstate))
+  :guard-hints (("Goal" :in-theory (enable natp fix len)))
 
   :prepwork
 
@@ -4452,11 +4487,13 @@
                          :tokens-unread (cons (make-token+span
                                                :token (irr-token)
                                                :span (irr-span))
-                                              pstate.tokens-unread)))
+                                              pstate.tokens-unread)
+                         :size (1+ pstate.size)))
        (token+span (car pstate.tokens-read)))
     (change-parstate pstate
                      :tokens-unread (cons token+span pstate.tokens-unread)
-                     :tokens-read (cdr pstate.tokens-read)))
+                     :tokens-read (cdr pstate.tokens-read)
+                     :size (1+ pstate.size)))
 
   ///
 
