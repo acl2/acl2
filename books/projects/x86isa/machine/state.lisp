@@ -45,7 +45,6 @@
 
 (include-book "utilities" :dir :utils)
 (include-book "structures" :dir :utils)
-(include-book "tlb-structure" :dir :utils)
 (include-book "centaur/defrstobj2/defrstobj" :dir :system)
 
 ; WAHJr. We lack a mechanism to decide what memory model we should use.  Note,
@@ -62,6 +61,8 @@
 (include-book "std/strings/pretty" :dir :system)
 (include-book "hacking/hacker" :dir :system)
 (include-book "tools/include-raw" :dir :system)
+
+(include-book "tlb")
 
 ; cert_param: (non-lispworks)
 

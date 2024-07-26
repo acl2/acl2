@@ -1,6 +1,6 @@
 (in-package "X86ISA")
 
-(include-book "basic-structs")
+(include-book "basic-structs" :dir :utils)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (include-book "centaur/fty/bitstruct" :dir :system)
 
