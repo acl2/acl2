@@ -336,7 +336,9 @@
                   (if (equal 0 y2)
                       (mod x y1) ;rare case
                     (mod x y2))))
-  :hints (("Goal" :in-theory (e/d (mod unicity-of-0) (integerp-of-*))
+  :hints (("Goal" :in-theory (e/d (mod unicity-of-0)
+                                  (|(* y x)| ; for speed
+                                   integerp-of-*))
            :use ((:instance integerp-of-* (x (* y1 (/ y2)))
                             (y (floor x y1)))
                  (:instance floor-of-+-when-mult-arg1
