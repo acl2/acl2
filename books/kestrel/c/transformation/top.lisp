@@ -13,6 +13,8 @@
 (include-book "deftrans")
 (include-book "rename")
 (include-book "simpadd0-proofs")
+(include-book "split-fn")
+(include-book "utilities/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

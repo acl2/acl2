@@ -20,10 +20,14 @@
   '(
 
     identp
+    ident
     ident-fix
     ident->unwrap
 
     ident-listp
+
+    ident-setp
+    ident-set-fix
 
     dec/oct/hex-const-case
     dec/oct/hex-const-oct
@@ -34,6 +38,8 @@
     const-fix
     const-case
     const-int->unwrap
+
+    tyqual-list-listp
 
     exprp
     expr-fix
@@ -292,6 +298,8 @@
     initdeclor-list-fix
 
     declp
+    decl
+    decl-fix
     decl-case
     make-decl-decl
     decl-statassert
@@ -327,20 +335,27 @@
     block-item-stmt
 
     block-item-listp
+    block-item-list-fix
     block-item-list-count
 
     fundefp
     fundef
+    fundef-fix
     make-fundef
     fundef->declor
 
+    fundef-optionp
+    fundef-option-case
+
     extdeclp
+    extdecl-fix
     extdecl-case
     extdecl-fundef
     extdecl-fundef->unwrap
     extdecl-decl
 
     extdecl-listp
+    extdecl-list-fix
 
     transunitp
     transunit
