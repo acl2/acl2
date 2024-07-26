@@ -2560,3 +2560,52 @@
 ;;                                     acl2::bvplus) ((:e tau-system))))))
 
 ;; todo: add alt-def rules for GPR-ADD-SPEC-1, etc, that clean up the flags expressions
+
+
+;; Gets rid of change-rflagsbits, and some fixing.
+;; todo: also put in bvplus
+;todo: more!  and see the better ones too
+(defthm GPR-add-SPEC-8-alt-def
+  (equal (GPR-add-SPEC-8 dst src input-rflags)
+         ;; proposed new body for GPR-SUB-SPEC-1:
+         (b* ((dst (mbe :logic (n-size 64 dst) :exec dst))
+              (src (mbe :logic (n-size 64 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (raw-result (the (unsigned-byte 65)
+                            (+ (the (unsigned-byte 64) dst)
+                               (the (unsigned-byte 64) src))))
+              (signed-raw-result (the (signed-byte 65)
+                                   (+ (the (signed-byte 64) (n64-to-i64 dst))
+                                      (the (signed-byte 64)
+                                        (n64-to-i64 src)))))
+              (result (the (unsigned-byte 64)
+                        (n-size 64 raw-result)))
+              (cf (the (unsigned-byte 1)
+                    (cf-spec64 raw-result)))
+              (pf (the (unsigned-byte 1)
+                    (pf-spec64 result)))
+              (af (the (unsigned-byte 1)
+                    (add-af-spec64 dst src)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec64 result)))
+              (of (the (unsigned-byte 1)
+                    (of-spec64 signed-raw-result)))
+              (output-rflags (!rflagsbits->cf cf
+                                              (!rflagsbits->pf pf
+                                                               (!rflagsbits->af af
+                                                                                (!rflagsbits->zf zf
+                                                                                                 (!rflagsbits->sf sf
+                                                                                                                  (!rflagsbits->of of input-rflags)))))))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags 0))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* GPR-add-SPEC-8
+                                      ;sub-cf-spec8
+                                      ;sub-pf-spec8
+                                      ;ZF-SPEC
+                                      ;acl2::bvchop-of-sum-cases
+                                      rflag-RoWs-enables))))
