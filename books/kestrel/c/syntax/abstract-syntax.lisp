@@ -159,6 +159,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defset ident-set
+  :short "Fixtype of sets of identifiers."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Identifiers are defined in @(tsee ident)."))
+  :elt-type ident
+  :elementp-of-nil nil
+  :pred ident-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption ident-option
   ident
   :short "Fixtype of optional identifiers."
@@ -2739,6 +2751,17 @@
    (decls decl-list)
    (body stmt))
   :pred fundefp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption fundef-option
+  fundef
+  :short "Fixtype of optional function definitions."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Function definitions are defined in @(tsee fundef)."))
+  :pred fundef-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
