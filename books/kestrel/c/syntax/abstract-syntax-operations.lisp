@@ -117,10 +117,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-tyqual
+(defirrelevant irr-type-qual
   :short "An irrelevant type qualifier."
-  :type tyqualp
-  :body (tyqual-const))
+  :type type-qualp
+  :body (type-qual-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

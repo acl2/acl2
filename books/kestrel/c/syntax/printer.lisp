@@ -1194,10 +1194,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-tyqual ((tyqual tyqualp) (pstate pristatep))
+(define print-type-qual ((tyqual type-qualp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a type qualifier."
-  (tyqual-case
+  (type-qual-case
    tyqual
    :const (print-astring "const" pstate)
    :restrict (print-astring "restrict" pstate)
@@ -1210,20 +1210,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-tyqual-list ((tyquals tyqual-listp) (pstate pristatep))
+(define print-type-qual-list ((tyquals type-qual-listp) (pstate pristatep))
   :guard (consp tyquals)
   :returns (new-pstate pristatep)
   :short "Print a list of one or more type qualifiers, separated by spaces."
   (b* (((unless (mbt (consp tyquals))) (pristate-fix pstate))
-       (pstate (print-tyqual (car tyquals) pstate))
+       (pstate (print-type-qual (car tyquals) pstate))
        ((when (endp (cdr tyquals))) pstate)
        (pstate (print-astring " " pstate)))
-    (print-tyqual-list (cdr tyquals) pstate))
+    (print-type-qual-list (cdr tyquals) pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-tyqual-list-list ((tyqualss tyqual-list-listp) (pstate pristatep))
+(define print-type-qual-list-list ((tyqualss type-qual-list-listp)
+                                   (pstate pristatep))
   :guard (consp tyqualss)
   :returns (new-pstate pristatep)
   :short "Print a list or one or more lists of type qualifiers,
@@ -1256,12 +1257,12 @@
        (tyquals (car tyqualss))
        (pstate (if (consp tyquals)
                    (b* ((pstate (print-astring " " pstate))
-                        (pstate (print-tyqual-list tyquals pstate))
+                        (pstate (print-type-qual-list tyquals pstate))
                         (pstate (print-astring " " pstate)))
                      pstate)
                  pstate))
        ((when (endp (cdr tyqualss))) pstate))
-    (print-tyqual-list-list (cdr tyqualss) pstate))
+    (print-type-qual-list-list (cdr tyqualss) pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1875,7 +1876,7 @@
     (specqual-case
      specqual
      :tyspec (print-tyspec specqual.unwrap pstate)
-     :tyqual (print-tyqual specqual.unwrap pstate)
+     :tyqual (print-type-qual specqual.unwrap pstate)
      :alignspec (print-alignspec specqual.unwrap pstate))
     :measure (specqual-count specqual))
 
@@ -1928,7 +1929,7 @@
      declspec
      :stocla (print-stor-spec declspec.unwrap pstate)
      :tyspec (print-tyspec declspec.unwrap pstate)
-     :tyqual (print-tyqual declspec.unwrap pstate)
+     :tyqual (print-type-qual declspec.unwrap pstate)
      :funspec (print-funspec declspec.unwrap pstate)
      :alignspec (print-alignspec declspec.unwrap pstate))
     :measure (declspec-count declspec))
@@ -2052,7 +2053,7 @@
     :short "Print a declarator."
     (b* (((declor declor) declor)
          (pstate (if (consp declor.pointers)
-                     (print-tyqual-list-list declor.pointers pstate)
+                     (print-type-qual-list-list declor.pointers pstate)
                    pstate))
          (pstate (print-dirdeclor declor.decl pstate)))
       pstate)
@@ -2085,7 +2086,7 @@
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirdeclor.tyquals
-                      (print-tyqual-list dirdeclor.tyquals pstate)
+                      (print-type-qual-list dirdeclor.tyquals pstate)
                     pstate))
           (pstate (if (and dirdeclor.tyquals
                            dirdeclor.expr?)
@@ -2102,7 +2103,8 @@
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
           (pstate (print-astring "static " pstate))
           (pstate (if dirdeclor.tyquals
-                      (b* ((pstate (print-tyqual-list dirdeclor.tyquals pstate))
+                      (b* ((pstate (print-type-qual-list dirdeclor.tyquals
+                                                         pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
@@ -2115,7 +2117,7 @@
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            pstate)
-          (pstate (print-tyqual-list dirdeclor.tyquals pstate))
+          (pstate (print-type-qual-list dirdeclor.tyquals pstate))
           (pstate (print-astring " static " pstate))
           (pstate (print-expr dirdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
@@ -2124,7 +2126,8 @@
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirdeclor.tyquals
-                      (b* ((pstate (print-tyqual-list dirdeclor.tyquals pstate))
+                      (b* ((pstate (print-type-qual-list dirdeclor.tyquals
+                                                         pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
@@ -2177,7 +2180,7 @@
                   empty abstract declarator.")
           (pristate-fix pstate))
          (pstate (if absdeclor.pointers
-                     (print-tyqual-list-list absdeclor.pointers pstate)
+                     (print-type-qual-list-list absdeclor.pointers pstate)
                    pstate))
          (pstate (if (dirabsdeclor-option-case absdeclor.decl? :some)
                      (print-dirabsdeclor (dirabsdeclor-option-some->val
@@ -2212,7 +2215,7 @@
                     pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirabsdeclor.tyquals
-                      (print-tyqual-list dirabsdeclor.tyquals pstate)
+                      (print-type-qual-list dirabsdeclor.tyquals pstate)
                     pstate))
           (pstate (if (and dirabsdeclor.tyquals
                            dirabsdeclor.expr?)
@@ -2233,8 +2236,8 @@
                     pstate))
           (pstate (print-astring "static " pstate))
           (pstate (if dirabsdeclor.tyquals
-                      (b* ((pstate (print-tyqual-list dirabsdeclor.tyquals
-                                                      pstate))
+                      (b* ((pstate (print-type-qual-list dirabsdeclor.tyquals
+                                                         pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
@@ -2251,7 +2254,7 @@
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            (pristate-fix pstate))
-          (pstate (print-tyqual-list dirabsdeclor.tyquals pstate))
+          (pstate (print-type-qual-list dirabsdeclor.tyquals pstate))
           (pstate (print-astring " static " pstate))
           (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
