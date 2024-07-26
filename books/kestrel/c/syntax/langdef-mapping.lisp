@@ -1169,17 +1169,17 @@
        :dowhile (b* (((erp body1) (ldm-stmt stmt.body))
                      ((erp test1) (ldm-expr stmt.test)))
                   (retok (c::make-stmt-dowhile :body body1 :test test1)))
-       :for (b* (((erp init1) (ldm-expr-option stmt.init))
-                 ((erp test1) (ldm-expr-option stmt.test))
-                 ((erp next1) (ldm-expr-option stmt.next))
-                 ((erp body1) (ldm-stmt stmt.body)))
-              (retok (c::make-stmt-for :init init1
-                                       :test test1
-                                       :next next1
-                                       :body body1)))
-       :fordecl (reterr (msg "Unsupported 'for' loop ~x0 ~
-                              with initializing declaration."
-                             (stmt-fix stmt)))
+       :for-expr (b* (((erp init1) (ldm-expr-option stmt.init))
+                      ((erp test1) (ldm-expr-option stmt.test))
+                      ((erp next1) (ldm-expr-option stmt.next))
+                      ((erp body1) (ldm-stmt stmt.body)))
+                   (retok (c::make-stmt-for :init init1
+                                            :test test1
+                                            :next next1
+                                            :body body1)))
+       :for-decl (reterr (msg "Unsupported 'for' loop ~x0 ~
+                               with initializing declaration."
+                              (stmt-fix stmt)))
        :goto (b* (((erp ident1) (ldm-ident stmt.label)))
                (retok (c::make-stmt-goto :target ident1)))
        :continue (retok (c::stmt-continue))

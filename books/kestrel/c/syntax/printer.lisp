@@ -2979,7 +2979,7 @@
           (pstate (print-astring ");" pstate))
           (pstate (print-new-line pstate)))
        pstate)
-     :for
+     :for-expr
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "for (" pstate))
           (pstate (expr-option-case
@@ -3007,7 +3007,7 @@
               (pstate (print-stmt stmt.body pstate))
               (pstate (dec-pristate-indent pstate)))
            pstate)))
-     :fordecl
+     :for-decl
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "for (" pstate))
           (pstate (print-decl-inline stmt.init pstate))

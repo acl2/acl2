@@ -2353,7 +2353,7 @@
             ((erp new-test table) (dimb-expr stmt.test table))
             (table (dimb-pop-scope table)))
          (retok (make-stmt-dowhile :body new-body :test new-test) table))
-       :for
+       :for-expr
        (b* ((table (dimb-push-scope table))
             ((erp new-init table) (dimb-expr-option stmt.init table))
             ((erp new-test table) (dimb-expr-option stmt.test table))
@@ -2361,12 +2361,12 @@
             (table (dimb-push-scope table))
             ((erp new-body table) (dimb-stmt stmt.body table))
             (table (dimb-push-scope table)))
-         (retok (make-stmt-for :init new-init
-                               :test new-test
-                               :next new-next
-                               :body new-body)
+         (retok (make-stmt-for-expr :init new-init
+                                    :test new-test
+                                    :next new-next
+                                    :body new-body)
                 table))
-       :fordecl
+       :for-decl
        (b* ((table (dimb-push-scope table))
             ((erp new-init table) (dimb-decl stmt.init table))
             ((erp new-test table) (dimb-expr-option stmt.test table))
@@ -2374,10 +2374,10 @@
             (table (dimb-push-scope table))
             ((erp new-body table) (dimb-stmt stmt.body table))
             (table (dimb-push-scope table)))
-         (retok (make-stmt-fordecl :init new-init
-                                   :test new-test
-                                   :next new-next
-                                   :body new-body)
+         (retok (make-stmt-for-decl :init new-init
+                                    :test new-test
+                                    :next new-next
+                                    :body new-body)
                 table))
        :goto
        (retok (stmt-fix stmt) (dimb-table-fix table))

@@ -2641,7 +2641,11 @@
        <i>jump-statement</i>.")
      (xdoc::p
       "For labeled statements,
-       we use @(tsee label) to factor the three kinds of labels."))
+       we use @(tsee label) to factor the three kinds of labels.")
+     (xdoc::p
+      "There are two forms of @('for') loops:
+       one where the initialization part is an (optional) expression,
+       and one where the initialization part is a declaration."))
     (:labeled ((label label)
                (stmt stmt)))
     (:compound ((items block-item-list)))
@@ -2657,14 +2661,14 @@
              (body stmt)))
     (:dowhile ((body stmt)
                (test expr)))
-    (:for ((init expr-option)
-           (test expr-option)
-           (next expr-option)
-           (body stmt)))
-    (:fordecl ((init decl)
-               (test expr-option)
-               (next expr-option)
-               (body stmt)))
+    (:for-expr ((init expr-option)
+                (test expr-option)
+                (next expr-option)
+                (body stmt)))
+    (:for-decl ((init decl)
+                (test expr-option)
+                (next expr-option)
+                (body stmt)))
     (:goto ((label ident)))
     (:continue ())
     (:break ())

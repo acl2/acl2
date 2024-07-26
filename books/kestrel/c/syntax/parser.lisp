@@ -12637,10 +12637,10 @@
                          ((erp stmt last-span pstate)
                           ;; for ( expr ; expr ; expr ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-for :init init-expr
-                                            :test test-expr
-                                            :next next-expr
-                                            :body stmt)
+                      (retok (make-stmt-for-expr :init init-expr
+                                                 :test test-expr
+                                                 :next next-expr
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is a closed parenthesis,
@@ -12649,10 +12649,10 @@
                     (b* (((erp stmt last-span pstate)
                           ;; for ( expr ; expr ; ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-for :init init-expr
-                                            :test test-expr
-                                            :next nil
-                                            :body stmt)
+                      (retok (make-stmt-for-expr :init init-expr
+                                                 :test test-expr
+                                                 :next nil
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is anything else, it is an error.
@@ -12676,10 +12676,10 @@
                          ((erp stmt last-span pstate)
                           ;; for ( expr ; ; expr ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-for :init init-expr
-                                            :test nil
-                                            :next next-expr
-                                            :body stmt)
+                      (retok (make-stmt-for-expr :init init-expr
+                                                 :test nil
+                                                 :next next-expr
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is a closed parenthesis,
@@ -12687,10 +12687,10 @@
                    ((equal token4 (token-punctuator ")")) ; for ( expr ; ; )
                     (b* (((erp stmt last-span pstate) ; for ( expr ; ; ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-for :init init-expr
-                                            :test nil
-                                            :next nil
-                                            :body stmt)
+                      (retok (make-stmt-for-expr :init init-expr
+                                                 :test nil
+                                                 :next nil
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is anything else, it is an error.
@@ -12730,10 +12730,10 @@
                          ((erp stmt last-span pstate)
                           ;; for ( ; expr ; expr ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-for :init nil
-                                            :test test-expr
-                                            :next next-expr
-                                            :body stmt)
+                      (retok (make-stmt-for-expr :init nil
+                                                 :test test-expr
+                                                 :next next-expr
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is a closed parenthesis,
@@ -12741,10 +12741,10 @@
                    ((equal token4 (token-punctuator ")")) ; for ( ; expr ; )
                     (b* (((erp stmt last-span pstate) ; for ( ; expr ; ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-for :init nil
-                                            :test test-expr
-                                            :next nil
-                                            :body stmt)
+                      (retok (make-stmt-for-expr :init nil
+                                                 :test test-expr
+                                                 :next nil
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is anything else, it is an error.
@@ -12767,10 +12767,10 @@
                           (read-punctuator ")" pstate))
                          ((erp stmt last-span pstate) ; for ( ; ; expr ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-for :init nil
-                                            :test nil
-                                            :next next-expr
-                                            :body stmt)
+                      (retok (make-stmt-for-expr :init nil
+                                                 :test nil
+                                                 :next next-expr
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is a closed parenthesis,
@@ -12778,10 +12778,10 @@
                    ((equal token4 (token-punctuator ")")) ; for ( ; ; )
                     (b* (((erp stmt last-span pstate) ; for ( ; ; ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-for :init nil
-                                            :test nil
-                                            :next nil
-                                            :body stmt)
+                      (retok (make-stmt-for-expr :init nil
+                                                 :test nil
+                                                 :next nil
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is anything else, it is an error.
@@ -12825,10 +12825,10 @@
                          ((erp stmt last-span pstate)
                           ;; for ( decl expr ; expr ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-fordecl :init decl
-                                                :test test-expr
-                                                :next next-expr
-                                                :body stmt)
+                      (retok (make-stmt-for-decl :init decl
+                                                 :test test-expr
+                                                 :next next-expr
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is a closed parenthesis,
@@ -12836,10 +12836,10 @@
                    ((equal token4 (token-punctuator ")")) ; for ( decl expr ; )
                     (b* (((erp stmt last-span pstate) ; for ( decl expr ; ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-fordecl :init decl
-                                                :test test-expr
-                                                :next nil
-                                                :body stmt)
+                      (retok (make-stmt-for-decl :init decl
+                                                 :test test-expr
+                                                 :next nil
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is anything else, it is an error.
@@ -12862,10 +12862,10 @@
                           (read-punctuator ")" pstate))
                          ((erp stmt last-span pstate) ; for ( decl ; expr ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-fordecl :init decl
-                                                :test nil
-                                                :next next-expr
-                                                :body stmt)
+                      (retok (make-stmt-for-decl :init decl
+                                                 :test nil
+                                                 :next next-expr
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is a closed parenthesis,
@@ -12873,10 +12873,10 @@
                    ((equal token4 (token-punctuator ")")) ; for ( decl ; )
                     (b* (((erp stmt last-span pstate) ; for ( decl ; ) stmt
                           (parse-statement pstate)))
-                      (retok (make-stmt-fordecl :init decl
-                                                :test nil
-                                                :next nil
-                                                :body stmt)
+                      (retok (make-stmt-for-decl :init decl
+                                                 :test nil
+                                                 :next nil
+                                                 :body stmt)
                              (span-join span last-span)
                              pstate)))
                    ;; If token4 is anything else, it is an error.
