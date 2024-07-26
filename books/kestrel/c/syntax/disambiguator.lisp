@@ -75,7 +75,13 @@
      "Some expressions may be cast expressions or binary expressions,
       represented by the @(':cast/...-ambig') cases of @(tsee expr).
       The disambiguator turns these into
-      unambiguous case or binary expressions."))
+      unambiguous case or binary expressions.")
+    (xdoc::li
+     "The initializing part of a @('for') loop may be ambiguously
+      a declaration or an expression followed by a semicolon,
+      represented by the @(':for-ambig') case of @(tsee stmt).
+      The disambiguator turns these ambiguous @('for') loops
+      into unambiguous ones."))
    (xdoc::p
     "The disambiguator does not perform a full (static) semantic analysis,
      but only a light-weight one, enough for disambiguation.
@@ -2360,7 +2366,7 @@
             ((erp new-next table) (dimb-expr-option stmt.next table))
             (table (dimb-push-scope table))
             ((erp new-body table) (dimb-stmt stmt.body table))
-            (table (dimb-push-scope table)))
+            (table (dimb-pop-scope table)))
          (retok (make-stmt-for-expr :init new-init
                                     :test new-test
                                     :next new-next
@@ -2373,14 +2379,32 @@
             ((erp new-next table) (dimb-expr-option stmt.next table))
             (table (dimb-push-scope table))
             ((erp new-body table) (dimb-stmt stmt.body table))
-            (table (dimb-push-scope table)))
+            (table (dimb-pop-scope table)))
          (retok (make-stmt-for-decl :init new-init
                                     :test new-test
                                     :next new-next
                                     :body new-body)
                 table))
        :for-ambig
-       (reterr :todo)
+       (b* ((table (dimb-push-scope table))
+            ((erp decl/expr table) (dimb-amb-decl/stmt stmt.init table))
+            ((erp new-test table) (dimb-expr-option stmt.test table))
+            ((erp new-next table) (dimb-expr-option stmt.next table))
+            (table (dimb-push-scope table))
+            ((erp new-body table) (dimb-stmt stmt.body table))
+            (table (dimb-pop-scope table)))
+         (decl/stmt-case
+          decl/expr
+          :decl (retok (make-stmt-for-decl :init decl/expr.unwrap
+                                           :test new-test
+                                           :next new-next
+                                           :body new-body)
+                       table)
+          :stmt (retok (make-stmt-for-expr :init decl/expr.unwrap
+                                           :test new-test
+                                           :next new-next
+                                           :body new-body)
+                       table)))
        :goto
        (retok (stmt-fix stmt) (dimb-table-fix table))
        :continue
