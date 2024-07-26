@@ -110,10 +110,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-stoclaspec
+(defirrelevant irr-stor-spec
   :short "An irrelevant storage class specifier."
-  :type stoclaspecp
-  :body (stoclaspec-typedef))
+  :type stor-specp
+  :body (stor-spec-typedef))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -706,13 +706,11 @@
    (xdoc::p
     "There are syntactically different expressions in C
      that evaluate to ``zero'' in a broad sense.
-     We encapsulate the exact notion of `zero expression',
-     for the purposes of our transformation,
-     in this predicate.")
-   (xdoc::p
-    "For now we only include
+     For now we only include
      the octal integer constant @('0') without suffixes
-     and with just one digit."))
+     and with just one digit.
+     So this operation is very limited in scope,
+     but sufficient for its current usage (elsewhere)."))
   (b* (((unless (expr-case expr :const)) nil)
        (const (expr-const->unwrap expr))
        ((unless (const-case const :int)) nil)
@@ -962,10 +960,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-declspec-list-all-tyspec/stoclaspec ((declspecs declspec-listp))
+(define check-declspec-list-all-tyspec/storspec ((declspecs declspec-listp))
   :returns (mv (yes/no booleanp)
                (tyspecs tyspec-listp)
-               (stoclaspecs stoclaspec-listp))
+               (stor-specs stor-spec-listp))
   :short "Check if all the declaration specifiers in a list
           are type specifiers or storage class specifiers."
   :long
@@ -977,20 +975,20 @@
   (b* (((when (endp declspecs)) (mv t nil nil))
        (declspec (car declspecs))
        ((when (declspec-case declspec :tyspec))
-        (b* (((mv yes/no tyspecs stoclaspecs)
-              (check-declspec-list-all-tyspec/stoclaspec (cdr declspecs))))
+        (b* (((mv yes/no tyspecs stor-specs)
+              (check-declspec-list-all-tyspec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
                   (cons (declspec-tyspec->unwrap declspec) tyspecs)
-                  stoclaspecs)
+                  stor-specs)
             (mv nil nil nil))))
        ((when (declspec-case declspec :stocla))
-        (b* (((mv yes/no tyspecs stoclaspecs)
-              (check-declspec-list-all-tyspec/stoclaspec (cdr declspecs))))
+        (b* (((mv yes/no tyspecs stor-specs)
+              (check-declspec-list-all-tyspec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
                   tyspecs
-                  (cons (declspec-stocla->unwrap declspec) stoclaspecs))
+                  (cons (declspec-stocla->unwrap declspec) stor-specs))
             (mv nil nil nil)))))
     (mv nil nil nil))
   :hooks (:fix))
@@ -1032,8 +1030,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declspec-list-to-stoclaspec-list ((declspecs declspec-listp))
-  :returns (stoclaspecs stoclaspec-listp)
+(define declspec-list-to-stor-spec-list ((declspecs declspec-listp))
+  :returns (stor-specs stor-spec-listp)
   :short "Extract the list of storage class specifiers
           from a list of declaration specifiers,
           preserving the order."
@@ -1041,8 +1039,8 @@
        (declspec (car declspecs)))
     (if (declspec-case declspec :stocla)
         (cons (declspec-stocla->unwrap declspec)
-              (declspec-list-to-stoclaspec-list (cdr declspecs)))
-      (declspec-list-to-stoclaspec-list (cdr declspecs))))
+              (declspec-list-to-stor-spec-list (cdr declspecs)))
+      (declspec-list-to-stor-spec-list (cdr declspecs))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

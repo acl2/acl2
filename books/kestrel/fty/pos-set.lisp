@@ -34,6 +34,7 @@
 
 (define pos-set->=-pos ((set pos-setp) (x posp))
   :returns (yes/no booleanp)
+  :parents (pos-set)
   :short "Check if all the positive integers in a given set
           are greater than or equal to a given positive integer."
   (or (set::emptyp set)
@@ -71,6 +72,7 @@
 
 (define pos-set-max ((set pos-setp))
   :returns (max posp)
+  :parents (pos-set)
   :short "Maximum of a set of positive integers."
   :long
   (xdoc::topstring

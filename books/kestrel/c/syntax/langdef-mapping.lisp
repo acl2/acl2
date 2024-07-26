@@ -289,7 +289,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-stoclaspec-list ((stoclaspecs stoclaspec-listp))
+(define ldm-stor-spec-list ((stor-specs stor-spec-listp))
   :returns (mv erp (scspecseq c::scspecseqp))
   :short "Map a list of storage class specifiers to
           a storage class specifier sequence in the language definition."
@@ -299,15 +299,15 @@
     "The list must be empty,
      or a singleton with the @('extern') specifier."))
   (b* (((reterr) (c::scspecseq-none))
-       (stoclaspecs (stoclaspec-list-fix stoclaspecs)))
+       (stor-specs (stor-spec-list-fix stor-specs)))
     (cond
-     ((equal stoclaspecs nil)
+     ((equal stor-specs nil)
       (retok (c::scspecseq-none)))
-     ((equal stoclaspecs (list (stoclaspec-extern)))
+     ((equal stor-specs (list (stor-spec-extern)))
       (retok (c::scspecseq-extern)))
      (t
       (reterr (msg "Unsupported storage class specifier sequence ~x0."
-                   stoclaspecs)))))
+                   stor-specs)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1086,14 +1086,14 @@
                      (decl-fix decl))))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
-       ((mv okp tyspecs stoclaspecs)
-        (check-declspec-list-all-tyspec/stoclaspec declspecs))
+       ((mv okp tyspecs stor-specs)
+        (check-declspec-list-all-tyspec/storspec declspecs))
        ((unless okp)
         (reterr (msg "Unsupported declaration specifiers ~x0 ~
                       for object declaration."
                      declspecs)))
        ((erp tyspecseq) (ldm-tyspec-list tyspecs))
-       ((erp scspecseq) (ldm-stoclaspec-list stoclaspecs))
+       ((erp scspecseq) (ldm-stor-spec-list stor-specs))
        ((unless (and (consp initdeclors)
                      (endp (cdr initdeclors))))
         (reterr (msg "Unsupported number of initializer declarators ~x0 ~
@@ -1169,17 +1169,21 @@
        :dowhile (b* (((erp body1) (ldm-stmt stmt.body))
                      ((erp test1) (ldm-expr stmt.test)))
                   (retok (c::make-stmt-dowhile :body body1 :test test1)))
-       :for (b* (((erp init1) (ldm-expr-option stmt.init))
-                 ((erp test1) (ldm-expr-option stmt.test))
-                 ((erp next1) (ldm-expr-option stmt.next))
-                 ((erp body1) (ldm-stmt stmt.body)))
-              (retok (c::make-stmt-for :init init1
-                                       :test test1
-                                       :next next1
-                                       :body body1)))
-       :fordecl (reterr (msg "Unsupported 'for' loop ~x0 ~
-                              with initializing declaration."
-                             (stmt-fix stmt)))
+       :for-expr (b* (((erp init1) (ldm-expr-option stmt.init))
+                      ((erp test1) (ldm-expr-option stmt.test))
+                      ((erp next1) (ldm-expr-option stmt.next))
+                      ((erp body1) (ldm-stmt stmt.body)))
+                   (retok (c::make-stmt-for :init init1
+                                            :test test1
+                                            :next next1
+                                            :body body1)))
+       :for-decl (reterr (msg "Unsupported 'for' loop ~x0 ~
+                               with initializing declaration."
+                              (stmt-fix stmt)))
+       :for-ambig (prog2$
+                   (raise "Misusage error: ambiguous statement ~x0."
+                          (stmt-fix stmt))
+                   (reterr t))
        :goto (b* (((erp ident1) (ldm-ident stmt.label)))
                (retok (c::make-stmt-goto :target ident1)))
        :continue (retok (c::stmt-continue))

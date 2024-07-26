@@ -760,16 +760,19 @@
      :dowhile (make-stmt-dowhile
                :body (simpadd0-stmt stmt.body)
                :test (simpadd0-expr stmt.test))
-     :for (make-stmt-for
-           :init (simpadd0-expr-option stmt.init)
-           :test (simpadd0-expr-option stmt.test)
-           :next (simpadd0-expr-option stmt.next)
-           :body (simpadd0-stmt stmt.body))
-     :fordecl (make-stmt-fordecl
-               :init (simpadd0-decl stmt.init)
-               :test (simpadd0-expr-option stmt.test)
-               :next (simpadd0-expr-option stmt.next)
-               :body (simpadd0-stmt stmt.body))
+     :for-expr (make-stmt-for-expr
+                :init (simpadd0-expr-option stmt.init)
+                :test (simpadd0-expr-option stmt.test)
+                :next (simpadd0-expr-option stmt.next)
+                :body (simpadd0-stmt stmt.body))
+     :for-decl (make-stmt-for-decl
+                :init (simpadd0-decl stmt.init)
+                :test (simpadd0-expr-option stmt.test)
+                :next (simpadd0-expr-option stmt.next)
+                :body (simpadd0-stmt stmt.body))
+     :for-ambig (prog2$
+                 (raise "Misusage error: ~x0." (stmt-fix stmt))
+                 (stmt-fix stmt))
      :goto (stmt-fix stmt)
      :continue (stmt-fix stmt)
      :break (stmt-fix stmt)

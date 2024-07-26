@@ -1179,11 +1179,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-stoclaspec ((stoclaspec stoclaspecp) (pstate pristatep))
+(define print-stor-spec ((stor-spec stor-specp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a storage class specifier."
-  (stoclaspec-case
-   stoclaspec
+  (stor-spec-case
+   stor-spec
    :typedef (print-astring "typedef" pstate)
    :extern (print-astring "extern" pstate)
    :static (print-astring "static" pstate)
@@ -1926,7 +1926,7 @@
     :short "Print a declaration specifier."
     (declspec-case
      declspec
-     :stocla (print-stoclaspec declspec.unwrap pstate)
+     :stocla (print-stor-spec declspec.unwrap pstate)
      :tyspec (print-tyspec declspec.unwrap pstate)
      :tyqual (print-tyqual declspec.unwrap pstate)
      :funspec (print-funspec declspec.unwrap pstate)
@@ -2979,7 +2979,7 @@
           (pstate (print-astring ");" pstate))
           (pstate (print-new-line pstate)))
        pstate)
-     :for
+     :for-expr
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "for (" pstate))
           (pstate (expr-option-case
@@ -3007,7 +3007,7 @@
               (pstate (print-stmt stmt.body pstate))
               (pstate (dec-pristate-indent pstate)))
            pstate)))
-     :fordecl
+     :for-decl
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "for (" pstate))
           (pstate (print-decl-inline stmt.init pstate))
@@ -3032,6 +3032,12 @@
               (pstate (print-stmt stmt.body pstate))
               (pstate (dec-pristate-indent pstate)))
            pstate)))
+     :for-ambig
+     (prog2$
+      (raise "Misusage error: ~
+              the statement ~x0 is ambiguous."
+             (stmt-fix stmt))
+      (pristate-fix pstate))
      :goto
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "goto " pstate))

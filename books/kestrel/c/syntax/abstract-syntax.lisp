@@ -989,7 +989,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum stoclaspec
+(fty::deftagsum stor-spec
   :short "Fixtype of storage class specifiers [C:6.7.1] [C:A.2.2]."
   :long
   (xdoc::topstring
@@ -1008,20 +1008,20 @@
   (:threadloc ())
   (:auto ())
   (:register ())
-  :pred stoclaspecp)
+  :pred stor-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist stoclaspec-list
+(fty::deflist stor-spec-list
   :short "Fixtype of lists of storage class specifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Storage class specifiers are defined in @(tsee stoclaspec)."))
-  :elt-type stoclaspec
+    "Storage class specifiers are defined in @(tsee stor-spec)."))
+  :elt-type stor-spec
   :true-listp t
   :elementp-of-nil nil
-  :pred stoclaspec-listp)
+  :pred stor-spec-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1613,7 +1613,7 @@
        any nonterminal in the grammar in [C],
        but it is useful to define <i>declaration-specifiers</i>
        (see @(tsee declspec-list))."))
-    (:stocla ((unwrap stoclaspec)))
+    (:stocla ((unwrap stor-spec)))
     (:tyspec ((unwrap tyspec)))
     (:tyqual ((unwrap tyqual)))
     (:funspec ((unwrap funspec)))
@@ -2641,7 +2641,20 @@
        <i>jump-statement</i>.")
      (xdoc::p
       "For labeled statements,
-       we use @(tsee label) to factor the three kinds of labels."))
+       we use @(tsee label) to factor the three kinds of labels.")
+     (xdoc::p
+      "There are two forms of @('for') loops:
+       one where the initialization part is an (optional) expression,
+       and one where the initialization part is a declaration.
+       There is also a third ambiguous form,
+       which applies when the initialization part could be
+       either an expression or a declaration, syntactically:
+       this is captured exactly by @(tsee amb-decl/stmt),
+       because the statement in an ambiguous declaration or statement
+       is a statement expression,
+       which is exactly what
+       the initialization part of a @('for') looks like,
+       when it is an expression."))
     (:labeled ((label label)
                (stmt stmt)))
     (:compound ((items block-item-list)))
@@ -2657,14 +2670,18 @@
              (body stmt)))
     (:dowhile ((body stmt)
                (test expr)))
-    (:for ((init expr-option)
-           (test expr-option)
-           (next expr-option)
-           (body stmt)))
-    (:fordecl ((init decl)
-               (test expr-option)
-               (next expr-option)
-               (body stmt)))
+    (:for-expr ((init expr-option)
+                (test expr-option)
+                (next expr-option)
+                (body stmt)))
+    (:for-decl ((init decl)
+                (test expr-option)
+                (next expr-option)
+                (body stmt)))
+    (:for-ambig ((init amb-decl/stmt)
+                 (test expr-option)
+                 (next expr-option)
+                 (body stmt)))
     (:goto ((label ident)))
     (:continue ())
     (:break ())
