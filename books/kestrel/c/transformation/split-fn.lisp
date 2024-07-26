@@ -40,7 +40,7 @@
       "This transformation takes the identifier of the function it is to split,
        the name of the new function to be generated, and the location of the
        split, represented as a natural number corresponding to the number of
-       statement block items in the function body before the split.")
+       block items in the function body before the split.")
     (xdoc::p
       "This transformation is a work in progress, and may fail in certain
        cases. For instance, it may fail given variables which have been
@@ -116,7 +116,7 @@
 
 (define paramdecl-list-to-ident-paramdecl-map
   ((paramdecls paramdecl-listp))
-  :short "Fold @(tsee decl-to-ident-paramdecl-map) over a list."
+  :short "Fold @(tsee paramdecl-to-ident-paramdecl-map) over a list."
   :returns (map ident-paramdecl-mapp)
   (if (endp paramdecls)
         nil
