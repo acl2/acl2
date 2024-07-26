@@ -37,8 +37,8 @@
   (xdoc::topstring
    (xdoc::p
      "This transformation will rename all identifiers according to a provided
-     alist. Note, it does nothing to ensure substitutions preserve semantic
-     equivalence. For instance, a substitution might introduce variable names
+      alist. Note, it does nothing to ensure substitutions preserve semantic
+      equivalence. For instance, a substitution might introduce variable names
       which conflict with existing variables.")
    (xdoc::p
      "Eventually we may wish for a renaming transformation with options to
