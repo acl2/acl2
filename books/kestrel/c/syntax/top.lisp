@@ -13,6 +13,7 @@
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
 (include-book "concrete-syntax")
+(include-book "abstraction-mapping")
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")

@@ -315,8 +315,8 @@
     make-stmt-switch
     make-stmt-while
     make-stmt-dowhile
-    make-stmt-for
-    make-stmt-fordecl
+    make-stmt-for-expr
+    make-stmt-for-decl
     stmt-return
 
     block-itemp
