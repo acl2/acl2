@@ -12603,109 +12603,8 @@
         (b* (((erp & pstate) (read-punctuator "(" pstate)) ; for (
              ((erp token2 & pstate) (read-token pstate)))
           (cond
-           ;; If token2 may start an expression,
-           ;; we commit to parsing an expression,
-           ;; i.e. to the kind of 'for' loop with the expression.
-           ;; See th discussion in the documentation of this function above.
-           ((token-expression-start-p token2) ; for ( expr...
-            (b* ((pstate (unread-token pstate)) ; for (
-                 ((erp init-expr & pstate) ; for ( expr
-                  (parse-expression pstate))
-                 ((erp & pstate) ; for ( expr ;
-                  (read-punctuator ";" pstate))
-                 ((erp token3 span3 pstate) (read-token pstate)))
-              (cond
-               ;; If token3 may start an expression,
-               ;; there must be a test expression.
-               ((token-expression-start-p token3) ; for ( expr ; expr...
-                (b* ((pstate (unread-token pstate)) ; for ( expr ;
-                     ((erp test-expr & pstate) ; for ( expr ; expr
-                      (parse-expression pstate))
-                     ((erp & pstate) ; for ( expr ; expr ;
-                      (read-punctuator ";" pstate))
-                     ((erp token4 span4 pstate) (read-token pstate)))
-                  (cond
-                   ;; If token4 may start an expression,
-                   ;; we must have an update expression.
-                   ((token-expression-start-p
-                     token4) ; for ( expr ; expr ; expr...
-                    (b* ((pstate (unread-token pstate)) ; for ( expr ; expr ;
-                         ((erp next-expr & pstate) ; for ( expr ; expr ; expr
-                          (parse-expression pstate))
-                         ((erp & pstate) ; for ( expr ; expr ; expr )
-                          (read-punctuator ")" pstate))
-                         ((erp stmt last-span pstate)
-                          ;; for ( expr ; expr ; expr ) stmt
-                          (parse-statement pstate)))
-                      (retok (make-stmt-for-expr :init init-expr
-                                                 :test test-expr
-                                                 :next next-expr
-                                                 :body stmt)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 is a closed parenthesis,
-                   ;; we have no update expression.
-                   ((equal token4 (token-punctuator ")"))
-                    (b* (((erp stmt last-span pstate)
-                          ;; for ( expr ; expr ; ) stmt
-                          (parse-statement pstate)))
-                      (retok (make-stmt-for-expr :init init-expr
-                                                 :test test-expr
-                                                 :next nil
-                                                 :body stmt)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 is anything else, it is an error.
-                   (t ; for ( expr ; expr ; other
-                    (reterr-msg :where (position-to-msg (span->start span4))
-                                :expected "an expression ~
-                                           or a closed parenthesis"
-                                :found (token-to-msg token4))))))
-               ;; If token3 is a semicolon, there is no test expression.
-               ((equal token3 (token-punctuator ";")) ; for ( expr ; ;
-                (b* (((erp token4 & pstate) (read-token pstate)))
-                  (cond
-                   ;; If token4 may start an expression,
-                   ;; we must have an update expression.
-                   ((token-expression-start-p token4) ; for ( expr ; ; expr...
-                    (b* ((pstate (unread-token pstate)) ; for ( expr ; ;
-                         ((erp next-expr & pstate) ; for ( expr ; ; expr
-                          (parse-expression pstate))
-                         ((erp & pstate) ; for ( expr ; ; expr )
-                          (read-punctuator ")" pstate))
-                         ((erp stmt last-span pstate)
-                          ;; for ( expr ; ; expr ) stmt
-                          (parse-statement pstate)))
-                      (retok (make-stmt-for-expr :init init-expr
-                                                 :test nil
-                                                 :next next-expr
-                                                 :body stmt)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 is a closed parenthesis,
-                   ;; we have no update expression.
-                   ((equal token4 (token-punctuator ")")) ; for ( expr ; ; )
-                    (b* (((erp stmt last-span pstate) ; for ( expr ; ; ) stmt
-                          (parse-statement pstate)))
-                      (retok (make-stmt-for-expr :init init-expr
-                                                 :test nil
-                                                 :next nil
-                                                 :body stmt)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 is anything else, it is an error.
-                   (t ; for ( expr ; ; other
-                    (reterr-msg :where (position-to-msg (span->start span3))
-                                :expected "an expression ~
-                                           or a closed parenthesis"
-                                :found (token-to-msg token4))))))
-               ;; If token3 is anything else, is is an error.
-               (t ; for ( expr ; other
-                (reterr-msg :where (position-to-msg (span->start span3))
-                            :expected "an expression ~
-                                       or a semicolon"
-                            :found (token-to-msg token3))))))
-           ;; If token2 is a semicolon, we have no initializing expression.
+           ;; If token2 is a semicolon,
+           ;; we have no initializing expression or declaration.
            ((equal token2 (token-punctuator ";")) ; for ( ;
             (b* (((erp token3 span3 pstate) (read-token pstate)))
               (cond
@@ -12796,101 +12695,297 @@
                             :expected "an expression ~
                                        or a semicolon"
                             :found (token-to-msg token3))))))
-           ;; If token2 is anything else, we commit to parsing a declaration.
-           ;; See the documentation of this function above for an explanation.
+           ;; If token2 is not a semicolon,
+           ;; we may have an initializing expression or declaration.
+           ;; Since the initializing expression must be followed by semicolon,
+           ;; we are in the same situation as when parsing
+           ;; a declaration or an expression statement,
+           ;; so we use the parsing function for that.
            (t ; for ( other
             (b* ((pstate (if token2 (unread-token pstate) pstate)) ; for (
-                 ((erp decl & pstate) (parse-declaration pstate)) ; for ( decl
-                 ((erp token3 span3 pstate) (read-token pstate)))
-              (cond
-               ;; If token3 may start an expression,
-               ;; we must have a test expression.
-               ((token-expression-start-p token3) ; for ( decl expr...
-                (b* ((pstate (unread-token pstate)) ; for ( decl
-                     ((erp test-expr & pstate) ; for ( decl expr
-                      (parse-expression pstate))
-                     ((erp & pstate) ; for ( decl expr ;
-                      (read-punctuator ";" pstate))
-                     ((erp token4 span4 pstate) (read-token pstate)))
-                  (cond
-                   ;; If token4 may start an expression,
-                   ;; we must have an update expression.
-                   ((token-expression-start-p
-                     token4) ; for ( decl expr ; expr...
-                    (b* ((pstate (unread-token pstate))
-                         ((erp next-expr & pstate) ; for ( decl expr ; expr
-                          (parse-expression pstate))
-                         ((erp & pstate) ; for ( decl expr ; expr )
-                          (read-punctuator ")" pstate))
-                         ((erp stmt last-span pstate)
-                          ;; for ( decl expr ; expr ) stmt
-                          (parse-statement pstate)))
-                      (retok (make-stmt-for-decl :init decl
-                                                 :test test-expr
-                                                 :next next-expr
-                                                 :body stmt)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 is a closed parenthesis,
-                   ;; we have no update expression.
-                   ((equal token4 (token-punctuator ")")) ; for ( decl expr ; )
-                    (b* (((erp stmt last-span pstate) ; for ( decl expr ; ) stmt
-                          (parse-statement pstate)))
-                      (retok (make-stmt-for-decl :init decl
-                                                 :test test-expr
-                                                 :next nil
-                                                 :body stmt)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 is anything else, it is an error.
-                   (t ; for ( decl expr ; other
-                    (reterr-msg :where (position-to-msg (span->start span4))
-                                :expected "an expression ~
+                 ((erp decl/stmt & pstate) ; for ( decl/stmt
+                  (parse-declaration-or-statement pstate)))
+              (amb?-decl/stmt-case
+               decl/stmt
+               ;; If the initialization part is a declaration,
+               ;; the 'for' is not ambiguous, and we parse the rest.
+               :decl
+               (b* ((decl (amb?-decl/stmt-decl->unwrap decl/stmt))
+                    ((erp token3 span3 pstate) (read-token pstate)))
+                 (cond
+                  ;; If token3 may start an expression,
+                  ;; we must have a test expression.
+                  ((token-expression-start-p token3) ; for ( ; expr...
+                   (b* ((pstate (unread-token pstate)) ; for ( ;
+                        ((erp test-expr & pstate) ; for ( ; expr
+                         (parse-expression pstate))
+                        ((erp & pstate) ; for ( ; expr ;
+                         (read-punctuator ";" pstate))
+                        ((erp token4 span4 pstate) (read-token pstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4) ; for ( ; expr ; expr...
+                       (b* ((pstate (unread-token pstate)) ; for ( ; expr ;
+                            ((erp next-expr & pstate) ; for ( ; expr ; expr
+                             (parse-expression pstate))
+                            ((erp & pstate) ; for ( ; expr ; expr )
+                             (read-punctuator ")" pstate))
+                            ((erp stmt last-span pstate)
+                             ;; for ( ; expr ; expr ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-decl :init decl
+                                                    :test test-expr
+                                                    :next next-expr
+                                                    :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no update expression.
+                      ((equal token4 (token-punctuator ")")) ; for ( ; expr ; )
+                       (b* (((erp stmt last-span pstate) ; for ( ; expr ; ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-decl :init decl
+                                                    :test test-expr
+                                                    :next nil
+                                                    :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; expr ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
                                            or a closed parenthesis"
-                                :found (token-to-msg token4))))))
-               ;; If token3 is a semicolon, we have no test expression.
-               ((equal token3 (token-punctuator ";")) ; for ( decl ;
-                (b* (((erp token4 span4 pstate) (read-token pstate)))
-                  (cond
-                   ;; If token4 may start an expression,
-                   ;; we have an update expression.
-                   ((token-expression-start-p token4) ; for ( decl ; expr...
-                    (b* ((pstate (unread-token pstate)) ; for ( decl ;
-                         ((erp next-expr & pstate) ; for ( decl ; expr
-                          (parse-expression pstate))
-                         ((erp & pstate) ; for ( decl ; expr )
-                          (read-punctuator ")" pstate))
-                         ((erp stmt last-span pstate) ; for ( decl ; expr ) stmt
-                          (parse-statement pstate)))
-                      (retok (make-stmt-for-decl :init decl
-                                                 :test nil
-                                                 :next next-expr
-                                                 :body stmt)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 is a closed parenthesis,
-                   ;; we have no update expression.
-                   ((equal token4 (token-punctuator ")")) ; for ( decl ; )
-                    (b* (((erp stmt last-span pstate) ; for ( decl ; ) stmt
-                          (parse-statement pstate)))
-                      (retok (make-stmt-for-decl :init decl
-                                                 :test nil
-                                                 :next nil
-                                                 :body stmt)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 is anything else, it is an error.
-                   (t ; for ( decl ; other
-                    (reterr-msg :where (position-to-msg (span->start span4))
-                                :expected "an expression ~
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is a semicolon, we have no test expression.
+                  ((equal token3 (token-punctuator ";")) ; for ( ; ;
+                   (b* (((erp token4 span4 pstate) (read-token pstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4) ; for ( ; ; expr...
+                       (b* ((pstate (unread-token pstate)) ; for ( ; ;
+                            ((erp next-expr & pstate) ; for ( ; ; expr
+                             (parse-expression pstate))
+                            ((erp & pstate) ; for ( ; ; expr )
+                             (read-punctuator ")" pstate))
+                            ((erp stmt last-span pstate) ; for ( ; ; expr ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-decl :init decl
+                                                    :test nil
+                                                    :next next-expr
+                                                    :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no udpate expression.
+                      ((equal token4 (token-punctuator ")")) ; for ( ; ; )
+                       (b* (((erp stmt last-span pstate) ; for ( ; ; ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-decl :init decl
+                                                    :test nil
+                                                    :next nil
+                                                    :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
                                            or a closed parenthesis"
-                                :found (token-to-msg token4))))))
-               ;; If token3 is anything else, it is an error.
-               (t ; for ( decl other
-                (reterr-msg :where (position-to-msg (span->start span3))
-                            :expected "an expression ~
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is anything else, it is an error.
+                  (t ; for ( ; other
+                   (reterr-msg :where (position-to-msg (span->start span3))
+                               :expected "an expression ~
                                        or a semicolon"
-                            :found (token-to-msg token3)))))))))
+                               :found (token-to-msg token3)))))
+               ;; If the initialization part is an expression,
+               ;; the 'for' is not ambiguous, and we parse the rest.
+               :stmt
+               (b* ((expr (amb?-decl/stmt-stmt->unwrap decl/stmt))
+                    ((erp token3 span3 pstate) (read-token pstate)))
+                 (cond
+                  ;; If token3 may start an expression,
+                  ;; we must have a test expression.
+                  ((token-expression-start-p token3) ; for ( ; expr...
+                   (b* ((pstate (unread-token pstate)) ; for ( ;
+                        ((erp test-expr & pstate) ; for ( ; expr
+                         (parse-expression pstate))
+                        ((erp & pstate) ; for ( ; expr ;
+                         (read-punctuator ";" pstate))
+                        ((erp token4 span4 pstate) (read-token pstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4) ; for ( ; expr ; expr...
+                       (b* ((pstate (unread-token pstate)) ; for ( ; expr ;
+                            ((erp next-expr & pstate) ; for ( ; expr ; expr
+                             (parse-expression pstate))
+                            ((erp & pstate) ; for ( ; expr ; expr )
+                             (read-punctuator ")" pstate))
+                            ((erp stmt last-span pstate)
+                             ;; for ( ; expr ; expr ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-expr :init expr
+                                                    :test test-expr
+                                                    :next next-expr
+                                                    :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no update expression.
+                      ((equal token4 (token-punctuator ")")) ; for ( ; expr ; )
+                       (b* (((erp stmt last-span pstate) ; for ( ; expr ; ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-expr :init expr
+                                                    :test test-expr
+                                                    :next nil
+                                                    :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; expr ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
+                                           or a closed parenthesis"
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is a semicolon, we have no test expression.
+                  ((equal token3 (token-punctuator ";")) ; for ( ; ;
+                   (b* (((erp token4 span4 pstate) (read-token pstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4) ; for ( ; ; expr...
+                       (b* ((pstate (unread-token pstate)) ; for ( ; ;
+                            ((erp next-expr & pstate) ; for ( ; ; expr
+                             (parse-expression pstate))
+                            ((erp & pstate) ; for ( ; ; expr )
+                             (read-punctuator ")" pstate))
+                            ((erp stmt last-span pstate) ; for ( ; ; expr ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-expr :init expr
+                                                    :test nil
+                                                    :next next-expr
+                                                    :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no udpate expression.
+                      ((equal token4 (token-punctuator ")")) ; for ( ; ; )
+                       (b* (((erp stmt last-span pstate) ; for ( ; ; ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-expr :init expr
+                                                    :test nil
+                                                    :next nil
+                                                    :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
+                                           or a closed parenthesis"
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is anything else, it is an error.
+                  (t ; for ( ; other
+                   (reterr-msg :where (position-to-msg (span->start span3))
+                               :expected "an expression ~
+                                       or a semicolon"
+                               :found (token-to-msg token3)))))
+               ;; If the initialization part is ambiguous,
+               ;; we have an ambiguous 'for', and we parse the rest.
+               :ambig
+               (b* ((decl/expr (amb?-decl/stmt-ambig->unwrap decl/stmt))
+                    ((erp token3 span3 pstate) (read-token pstate)))
+                 (cond
+                  ;; If token3 may start an expression,
+                  ;; we must have a test expression.
+                  ((token-expression-start-p token3) ; for ( ; expr...
+                   (b* ((pstate (unread-token pstate)) ; for ( ;
+                        ((erp test-expr & pstate) ; for ( ; expr
+                         (parse-expression pstate))
+                        ((erp & pstate) ; for ( ; expr ;
+                         (read-punctuator ";" pstate))
+                        ((erp token4 span4 pstate) (read-token pstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4) ; for ( ; expr ; expr...
+                       (b* ((pstate (unread-token pstate)) ; for ( ; expr ;
+                            ((erp next-expr & pstate) ; for ( ; expr ; expr
+                             (parse-expression pstate))
+                            ((erp & pstate) ; for ( ; expr ; expr )
+                             (read-punctuator ")" pstate))
+                            ((erp stmt last-span pstate)
+                             ;; for ( ; expr ; expr ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-ambig :init decl/expr
+                                                     :test test-expr
+                                                     :next next-expr
+                                                     :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no update expression.
+                      ((equal token4 (token-punctuator ")")) ; for ( ; expr ; )
+                       (b* (((erp stmt last-span pstate) ; for ( ; expr ; ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-ambig :init decl/expr
+                                                     :test test-expr
+                                                     :next nil
+                                                     :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; expr ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
+                                           or a closed parenthesis"
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is a semicolon, we have no test expression.
+                  ((equal token3 (token-punctuator ";")) ; for ( ; ;
+                   (b* (((erp token4 span4 pstate) (read-token pstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4) ; for ( ; ; expr...
+                       (b* ((pstate (unread-token pstate)) ; for ( ; ;
+                            ((erp next-expr & pstate) ; for ( ; ; expr
+                             (parse-expression pstate))
+                            ((erp & pstate) ; for ( ; ; expr )
+                             (read-punctuator ")" pstate))
+                            ((erp stmt last-span pstate) ; for ( ; ; expr ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-ambig :init decl/expr
+                                                     :test nil
+                                                     :next next-expr
+                                                     :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no udpate expression.
+                      ((equal token4 (token-punctuator ")")) ; for ( ; ; )
+                       (b* (((erp stmt last-span pstate) ; for ( ; ; ) stmt
+                             (parse-statement pstate)))
+                         (retok (make-stmt-for-ambig :init decl/expr
+                                                     :test nil
+                                                     :next nil
+                                                     :body stmt)
+                                (span-join span last-span)
+                                pstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
+                                           or a closed parenthesis"
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is anything else, it is an error.
+                  (t ; for ( ; other
+                   (reterr-msg :where (position-to-msg (span->start span3))
+                               :expected "an expression ~
+                                       or a semicolon"
+                               :found (token-to-msg token3)))))))))))
        ;; If token may start an expression,
        ;; we must have an expression statement.
        ((token-expression-start-p token) ; expr...
