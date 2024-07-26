@@ -147,11 +147,11 @@ unsigned long add_and_sub_all(long arr[], unsigned int len) {
   (filedata
    (acl2::string=>nats
      "
-int z = 42;
+int w = 42;
 
-int foo(int y) {
-  int x = 5;
-  x = bar(x);
+int foo(int x) {
+  long y = 0, z = 5;
+  y = bar(x);
   return x + y + z;
 }
 ")))
@@ -189,13 +189,13 @@ int foo(int y) {
  (equal
    (acl2::nats=>string
      (filedata->unwrap *filedata-split-fn3*))
-  "int z = 42;
-int baz(int x, int y) {
-  x = bar(x);
+  "int w = 42;
+int baz(int x, long y, long z) {
+  y = bar(x);
   return x + y + z;
 }
-int foo(int y) {
-  int x = 5;
-  return baz(x, y);
+int foo(int x) {
+  long y = 0, z = 5;
+  return baz(x, y, z);
 }
 "))

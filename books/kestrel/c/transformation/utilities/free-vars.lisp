@@ -45,12 +45,14 @@
 (defines declor/dirdeclor-get-ident
   (define declor-get-ident
     ((declor declorp))
+    :short "Get the identifier described by a declarator."
     :returns (ident (or (not ident) (identp ident)))
     (b* (((declor declor) declor))
       (dirdeclor-get-ident declor.decl))
     :measure (declor-count declor))
 
   (define dirdeclor-get-ident
+    :short "Get the identifier described by a direct declarator."
     ((dirdeclor dirdeclorp))
     :returns (ident (or (not ident) (identp ident)))
     (dirdeclor-case
@@ -81,6 +83,7 @@
   (define free-vars-expr
     ((expr exprp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in an expression."
     :returns (free-vars ident-setp)
     (expr-case
      expr
@@ -110,6 +113,7 @@
   (define free-vars-expr-list
     ((exprs expr-listp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in an expression list."
     :returns (free-vars ident-setp)
     (if (endp exprs)
         nil
@@ -120,6 +124,7 @@
   (define free-vars-expr-option
     ((expr? expr-optionp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in an optional expression."
     :returns (free-vars ident-setp)
     (expr-option-case
      expr?
@@ -130,6 +135,7 @@
   (define free-vars-genassoc
     ((genassoc genassocp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in a generic association."
     :returns (free-vars ident-setp)
     (genassoc-case
      genassoc
@@ -140,6 +146,7 @@
   (define free-vars-genassoc-list
     ((genassocs genassoc-listp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in a generic association list."
     :returns (free-vars ident-setp)
     (if (endp genassocs)
         nil
@@ -150,6 +157,7 @@
   (define free-vars-initer
     ((initer initerp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in an initializer."
     :returns (free-vars ident-setp)
     (initer-case
      initer
@@ -160,6 +168,7 @@
   (define free-vars-initer-option
     ((initer? initer-optionp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in an optional initializer."
     :returns (free-vars ident-setp)
     (initer-option-case
      initer?
@@ -170,6 +179,8 @@
   (define free-vars-desiniter
     ((desiniter desiniterp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in an initializer with optional
+            designations."
     :returns (free-vars ident-setp)
     (b* (((desiniter desiniter) desiniter))
       (free-vars-initer desiniter.init bound-vars))
@@ -178,6 +189,8 @@
   (define free-vars-desiniter-list
     ((desiniters desiniter-listp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in a list of initializers with
+            optional designations."
     :returns (free-vars ident-setp)
     (if (endp desiniters)
         nil
@@ -193,6 +206,7 @@
 (define free-vars-initdeclor
   ((initdeclor initdeclorp)
    (bound-vars ident-setp))
+  :short "Collect free variables appearing in an initializer declarator."
   :returns (mv (free-vars ident-setp)
                (bound-vars ident-setp))
   (b* ((bound-vars (ident-set-fix bound-vars))
@@ -206,6 +220,8 @@
 (define free-vars-initdeclor-list
   ((initdeclors initdeclor-listp)
    (bound-vars ident-setp))
+  :short "Collect free variables appearing in a list of initializer
+          declarators."
   :returns (mv (free-vars ident-setp)
                (bound-vars ident-setp))
   (b* ((bound-vars (ident-set-fix bound-vars))
@@ -222,6 +238,7 @@
 (define free-vars-decl
   ((decl declp)
    (bound-vars ident-setp))
+  :short "Collect free variables appearing in a declaration."
   :returns (mv (free-vars ident-setp)
                (bound-vars ident-setp))
   (b* ((bound-vars (ident-set-fix bound-vars)))
@@ -233,6 +250,7 @@
 (define free-vars-decl-list
   ((decls decl-listp)
    (bound-vars ident-setp))
+  :short "Collect free variables appearing in a list of declarations."
   :returns (mv (free-vars ident-setp)
                (bound-vars ident-setp))
   (b* ((bound-vars (ident-set-fix bound-vars))
@@ -252,6 +270,7 @@
   (define free-vars-stmt
     ((stmt stmtp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in a statement."
     :returns (free-vars ident-setp)
     (stmt-case
      stmt
@@ -286,6 +305,7 @@
   (define free-vars-block-item
     ((item block-itemp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in a block item."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* ((bound-vars (ident-set-fix bound-vars)))
@@ -300,6 +320,7 @@
   (define free-vars-block-item-list
     ((items block-item-listp)
      (bound-vars ident-setp))
+    :short "Collect free variables appearing in a list of block item."
     :returns (free-vars ident-setp)
     (b* (((when (endp items))
           nil)
@@ -317,6 +338,7 @@
 (define free-vars-fundef
   ((fundef fundefp)
    (bound-vars ident-setp))
+  :short "Collect free variables appearing in a function function definition."
   :returns (free-vars ident-setp)
   (b* (((fundef fundef) fundef)
        ((mv free-vars bound-vars)

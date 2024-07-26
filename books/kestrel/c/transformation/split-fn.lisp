@@ -40,12 +40,12 @@
       "This transformation takes the identifier of the function it is to split,
        the name of the new function to be generated, and the location of the
        split, represented as a natural number corresponding to the number of
-       statements in the function body before the split.")
+       statement block items in the function body before the split.")
     (xdoc::p
       "This transformation is a work in progress, and may fail in certain
-       cases. For one, it does not currently recognize multiple variables
-       declared at once (e.g. @('int x, y;')). It may also fail on variables
-       which have been declared but not yet initialized at the split point."))
+       cases. For instance, it may fail given variables which have been
+       declared but not yet initialized at the split point, or variables which
+       are passed by reference after the split point."))
   :order-subtopics t
   :default-parent t)
 
@@ -64,92 +64,126 @@
 (encapsulate ()
   (set-induction-depth-limit 1)
 
-  (fty::defomap ident-decl-map
+  (fty::defomap ident-paramdecl-map
     :key-type ident
-    :val-type decl
-    :pred ident-decl-mapp))
+    :val-type paramdecl
+    :pred ident-paramdecl-mapp))
 
-(defrulel ident-listp-of-strip-cars-when-ident-decl-mapp
-  (implies (ident-decl-mapp map)
-           (ident-listp (strip-cars map)))
+(defrulel ident-listp-of-keys-when-ident-paramdecl-mapp
+  (implies (ident-paramdecl-mapp map)
+           (ident-listp (omap::keys map)))
   :induct t
-  :enable (strip-cars
-           ident-decl-mapp))
+  :enable omap::keys)
 
-(defrulel decl-listp-of-strip-cdrs-when-ident-decl-mapp
-  (implies (ident-decl-mapp map)
-           (decl-listp (strip-cdrs map)))
+(defrulel paramdecl-listp-of-strip-cdrs-when-ident-paramdecl-mapp
+  (implies (ident-paramdecl-mapp map)
+           (paramdecl-listp (strip-cdrs map)))
   :induct t
   :enable (strip-cdrs
-           ident-decl-mapp))
+           ident-paramdecl-mapp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-ident-list
   ((idents ident-listp))
+  :short "Map @(tsee expr-list) over a list."
   :returns (exprs expr-listp)
   (if (endp idents)
       nil
     (cons (expr-ident (first idents))
           (expr-ident-list (rest idents)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-to-paramdecl
-  ((decl declp))
-  :returns (mv erp
-               (paramdecl paramdeclp))
-  (b* (((reterr) (c$::irr-paramdecl)))
-    (decl-case
-      decl
-      :decl (b* (((when (endp decl.init))
-                  (reterr t))
-                 ((initdeclor initdeclor) (first decl.init)))
-              (retok
-                (make-paramdecl
-                  :spec decl.specs
-                  :decl (paramdeclor-declor initdeclor.declor))))
-      :statassert (reterr t))))
-
-(define decl-list-to-paramdecl-list
-  ((decls decl-listp))
-  :returns (paramdecls paramdecl-listp)
-  (b* (((when (endp decls))
-        nil)
-       ((mv erp paramdecl)
-        (decl-to-paramdecl (first decls))))
-    (if erp
-        (decl-list-to-paramdecl-list (rest decls))
-      (cons paramdecl
-            (decl-list-to-paramdecl-list (rest decls))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define paramdecl-to-decl
+(define paramdecl-to-ident-paramdecl-map
   ((paramdecl paramdeclp))
-  :returns (mv erp
-               (decl declp))
-  (b* (((reterr) (c$::irr-decl))
-       ((paramdecl paramdecl) paramdecl))
+  :short "Convert a parameter declaration into a singleton omap associating the
+          declared identifier to the declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "If the parameter declaration is unnamed, or if it has not been
+      disambiguated, the empty map is returned instead."))
+  :returns (map ident-paramdecl-mapp
+                :hints (("Goal" :in-theory (enable identp-of-declor-get-ident-under-iff))))
+  (b* (((paramdecl paramdecl) paramdecl))
     (paramdeclor-case
       paramdecl.decl
-      :declor (retok (make-decl-decl
-                       :specs paramdecl.spec
-                       :init (list (make-initdeclor
-                                     :declor paramdecl.decl.unwrap))))
-      :otherwise (reterr t))))
+      :declor (omap::update (declor-get-ident paramdecl.decl.unwrap)
+                            (paramdecl-fix paramdecl)
+                            nil)
+      :otherwise nil)))
 
-(define paramdecl-list-to-decl-list
+(define paramdecl-list-to-ident-paramdecl-map
   ((paramdecls paramdecl-listp))
-  :returns (decls decl-listp)
-  (b* (((when (endp paramdecls))
-        nil)
-       ((mv erp decl)
-        (paramdecl-to-decl (first paramdecls))))
-    (if erp
-        (paramdecl-list-to-decl-list (rest paramdecls))
-      (cons decl
-            (paramdecl-list-to-decl-list (rest paramdecls))))))
+  :short "Fold @(tsee decl-to-ident-paramdecl-map) over a list."
+  :returns (map ident-paramdecl-mapp)
+  (if (endp paramdecls)
+        nil
+    (omap::update* (paramdecl-to-ident-paramdecl-map (first paramdecls))
+                   (paramdecl-list-to-ident-paramdecl-map (rest paramdecls))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define decl-to-ident-paramdecl-map
+  ((decl declp))
+  :short "Convert a regular declaration into an omap of identifiers to
+          parameter declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The resulting parameter declarations represent the same variables, with
+      the same types and qualifiers. The keys to the omap are the identifiers
+      bound by each parameter declaration.")
+   (xdoc::p
+     "A declaration which introduces multiple variables is converted to an omap
+      of equal length to the number of identifiers. For instance, the
+      declaration @('int x = 0, y = 0;') is converted to the omap associating
+      @('x') to parameter declaration @('int x'), and @('y') to @('int y').")
+   (xdoc::p
+     "Only variable declarations are converted. Static assertions result in
+     @('nil').")
+   (xdoc::p
+     "This is used by @(tsee split-fn) to track declared variables and to
+      create parameters for the newly generated function (with the subset of
+      declared variables which are used)."))
+  :returns (map ident-paramdecl-mapp)
+  (decl-case
+   decl
+   :decl (decl-to-ident-paramdecl-map0 decl.specs decl.init)
+   :statassert nil)
+  :prepwork
+  ((define decl-to-ident-paramdecl-map0
+     ((declspecs declspec-listp)
+      (initdeclors initdeclor-listp))
+     :returns
+     (map ident-paramdecl-mapp
+          :hints (("Goal" :in-theory (enable identp-of-declor-get-ident-under-iff)
+                          :induct t)))
+     (b* (((when (endp initdeclors))
+           nil)
+          ((initdeclor initdeclor) (first initdeclors))
+          (ident? (declor-get-ident initdeclor.declor)))
+       (if ident?
+           (omap::update
+             ident?
+             (make-paramdecl
+               :spec declspecs
+               :decl (paramdeclor-declor initdeclor.declor))
+             (decl-to-ident-paramdecl-map0 declspecs (rest initdeclors)))
+         (decl-to-ident-paramdecl-map0 declspecs (rest initdeclors))))
+     :verify-guards :after-returns)))
+
+(define decl-list-to-ident-paramdecl-map
+  ((decls decl-listp))
+  :short "Fold @(tsee decl-to-ident-paramdecl-map) over a list."
+  :returns (map ident-paramdecl-mapp)
+  (if (endp decls)
+        nil
+    (omap::update* (decl-to-ident-paramdecl-map (first decls))
+                   (decl-list-to-ident-paramdecl-map (rest decls))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -158,15 +192,35 @@
    (spec declspec-listp)
    (pointers tyqual-list-listp)
    (items block-item-listp)
-   (decls ident-decl-mapp))
+   (decls ident-paramdecl-mapp))
+  :short "Create a new function from the block items following the @(tsee
+          split-fn) split point."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The new function will be created with same return type as the original.")
+   (xdoc::p
+     "Arguments to the function are determined by taking the variable
+      declarations of the original function which appear free in the block
+      items, which will constitute the body of the new function. (Note that
+      arguments are not currently taken by reference, but this may be necessary
+      for general correctness. It may be sufficient to take an argument by
+      reference when its address is taken in an expression of the new function
+      body.)"))
   :returns (mv er
-               (idents ident-listp)
-               (new-fn fundefp))
+               (idents ident-listp
+                       "The identifiers appearing in argument @('decls')
+                        corresponding to the function parameters (in the same
+                        order).")
+               (new-fn fundefp
+                       "The new function definition."))
   (b* (((reterr) nil (c$::irr-fundef))
        (idents (free-vars-block-item-list items nil))
-       (decls (ident-decls-map-filter decls idents))
-       (idents (strip-cars decls))
-       (params (decl-list-to-paramdecl-list (strip-cdrs decls))))
+       (decls (ident-paramdecls-map-filter decls idents))
+       (idents (omap::keys decls))
+       ;; We use strip-cdrs instead of omap::values because we need these in
+       ;; the same order as idents.
+       (params (strip-cdrs decls)))
     (retok
       idents
       (make-fundef
@@ -178,11 +232,11 @@
                           :params params))
         :body (stmt-compound items))))
   :prepwork
-  ((define ident-decls-map-filter
-     ((map ident-decl-mapp)
+  ((define ident-paramdecls-map-filter
+     ((map ident-paramdecl-mapp)
       (idents ident-setp))
-     :returns (new-map ident-decl-mapp)
-     (b* ((map (ident-decl-map-fix map))
+     :returns (new-map ident-paramdecl-mapp)
+     (b* ((map (ident-paramdecl-map-fix map))
           ((when (omap::emptyp map))
            nil)
           ((mv key val)
@@ -190,72 +244,13 @@
        (if (in key idents)
            (omap::update key
                          val
-                         (ident-decls-map-filter (omap::tail map) idents))
-         (ident-decls-map-filter
+                         (ident-paramdecls-map-filter (omap::tail map) idents))
+         (ident-paramdecls-map-filter
            (omap::tail map)
            idents)))
-     :measure (acl2-count (ident-decl-map-fix map))
+     :measure (acl2-count (ident-paramdecl-map-fix map))
      :hints (("Goal" :in-theory (enable o< o-finp)))
      :verify-guards :after-returns)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define initdeclor-get-idents
-  ((initdeclor initdeclorp))
-  :returns (idents ident-setp
-                   :hints (("Goal" :in-theory (enable identp-of-declor-get-ident-under-iff))))
-  (b* (((initdeclor initdeclor) initdeclor)
-       (ident? (declor-get-ident initdeclor.declor)))
-    (if ident?
-        (insert ident? nil)
-      nil)))
-
-(define initdeclor-list-get-idents
-  ((initdeclors initdeclor-listp))
-  :returns (idents ident-setp)
-  (if (endp initdeclors)
-      nil
-    (union (initdeclor-get-idents (first initdeclors))
-           (initdeclor-list-get-idents (rest initdeclors))))
-  :verify-guards :after-returns)
-
-(define decl-get-idents
-  ((decl declp))
-  :returns (idents ident-setp)
-  (decl-case
-   decl
-   :decl (initdeclor-list-get-idents decl.init)
-   :statassert nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define split-fn-decl
-  ((decl declp)
-   (map ident-decl-mapp))
-  :returns (mv er
-               (new-map ident-decl-mapp))
-  (b* ((map (ident-decl-map-fix map))
-       ((reterr) map)
-       (idents (decl-get-idents decl)))
-    (if (emptyp idents)
-        (retok map)
-      ;; TODO: either reterr on more than one ident, or else add all to the alist
-      (retok (omap::update (head idents)
-                           (decl-fix decl)
-                           map)))))
-
-(define split-fn-decl-list
-  ((decls decl-listp)
-   (map ident-decl-mapp))
-  :returns (new-map ident-decl-mapp)
-  (b* (((when (endp decls))
-        (ident-decl-map-fix map))
-       ((mv er split-map)
-        (split-fn-decl (first decls) map)))
-    (split-fn-decl-list (rest decls)
-                        (if er
-                            map
-                          split-map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -264,8 +259,20 @@
    (items block-item-listp)
    (spec declspec-listp)
    (pointers tyqual-list-listp)
-   (decls ident-decl-mapp)
+   (decls ident-paramdecl-mapp)
    (split-point natp))
+  :short "Transform a list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "This function will walk over a list of block items until it reaches the
+      designated split point. Until then, it processes each declaration,
+      associating locally introduced identifers to parameter declarations
+      compatible with their original declaration. When the split point is
+      reached, @(tsee abstract-fn) is invoked to generate the new function with
+      parameters derived from this parameter declaration map. The previous
+      function is truncated at this point, and a return statement added calling
+      the newly split-out function."))
   :returns (mv er
                (new-fn fundefp)
                (truncated-items block-item-listp))
@@ -284,11 +291,12 @@
        ((when (endp items))
         (reterr (msg "Bad split point specifier")))
        (item (first items))
-       ((erp decls)
+       (decls
         (block-item-case
           item
-          :decl (split-fn-decl item.unwrap decls)
-          :otherwise (mv nil decls)))
+          :decl (omap::update* (decl-to-ident-paramdecl-map item.unwrap)
+                               (ident-paramdecl-map-fix decls))
+          :otherwise decls))
        ((erp new-fn truncated-items)
         (split-fn-block-item-list new-fn-name
                               (rest items)
@@ -311,6 +319,8 @@
    (new-fn-name identp)
    (fundef fundefp)
    (split-point natp))
+  :short "Transform a function definition, splitting it if matches the target
+          identifier, or else leaving it untouched."
   :returns (mv er
                (fundef1 fundefp)
                (fundef2 fundef-optionp))
@@ -331,9 +341,7 @@
                 fundef.body.items
                 fundef.spec
                 fundef.declor.pointers
-                (split-fn-decl-list
-                  (paramdecl-list-to-decl-list fundef.declor.decl.params)
-                  nil)
+                (paramdecl-list-to-ident-paramdecl-map fundef.declor.decl.params)
                 split-point)))
           (retok new-fn
                  (make-fundef
@@ -352,6 +360,7 @@
    (new-fn-name identp)
    (extdecl extdeclp)
    (split-point natp))
+  :short "Transform an external declaration."
   :returns (mv er
                (target-found booleanp)
                (extdecls extdecl-listp))
@@ -376,6 +385,7 @@
    (new-fn-name identp)
    (extdecls extdecl-listp)
    (split-point natp))
+  :short "Transform a list of external declarations."
   :returns (mv er
                (new-extdecls extdecl-listp))
   (b* (((reterr) nil)
@@ -396,6 +406,7 @@
    (new-fn-name identp)
    (tunit transunitp)
    (split-point natp))
+  :short "Transform a translation unit."
   :returns (mv er
                (new-tunit transunitp))
   (b* (((transunit tunit) tunit)
@@ -410,6 +421,7 @@
    (new-fn-name identp)
    (map filepath-transunit-mapp)
    (split-point natp))
+  :short "Transform a filepath."
   :returns (mv er
                (new-map filepath-transunit-mapp
                         :hyp (filepath-transunit-mapp map)))
@@ -433,6 +445,7 @@
    (new-fn-name identp)
    (tunits transunit-ensemblep)
    (split-point natp))
+  :short "Transform a translation unit ensumble."
   :returns (mv er
                (new-tunits transunit-ensemblep))
   (b* (((transunit-ensemble tunits) tunits)
