@@ -2645,7 +2645,16 @@
      (xdoc::p
       "There are two forms of @('for') loops:
        one where the initialization part is an (optional) expression,
-       and one where the initialization part is a declaration."))
+       and one where the initialization part is a declaration.
+       There is also a third ambiguous form,
+       which applies when the initialization part could be
+       either an expression or a declaration, syntactically:
+       this is captured exactly by @(tsee amb-decl/stmt),
+       because the statement in an ambiguous declaration or statement
+       is a statement expression,
+       which is exactly what
+       the initialization part of a @('for') looks like,
+       when it is an expression."))
     (:labeled ((label label)
                (stmt stmt)))
     (:compound ((items block-item-list)))
@@ -2669,6 +2678,10 @@
                 (test expr-option)
                 (next expr-option)
                 (body stmt)))
+    (:for-ambig ((init amb-decl/stmt)
+                 (test expr-option)
+                 (next expr-option)
+                 (body stmt)))
     (:goto ((label ident)))
     (:continue ())
     (:break ())

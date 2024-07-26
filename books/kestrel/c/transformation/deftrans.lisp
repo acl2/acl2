@@ -1554,6 +1554,9 @@
                   :test (,(cdr (assoc-eq 'expr-option names)) stmt.test ,@extra-args-names)
                   :next (,(cdr (assoc-eq 'expr-option names)) stmt.next ,@extra-args-names)
                   :body (,(cdr (assoc-eq 'stmt names)) stmt.body ,@extra-args-names))
+      :for-ambig (prog2$
+                  (raise "Misusage error: ~x0." (stmt-fix stmt))
+                  (stmt-fix stmt))
       :goto (stmt-fix stmt)
       :continue (stmt-fix stmt)
       :break (stmt-fix stmt)

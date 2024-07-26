@@ -3032,6 +3032,12 @@
               (pstate (print-stmt stmt.body pstate))
               (pstate (dec-pristate-indent pstate)))
            pstate)))
+     :for-ambig
+     (prog2$
+      (raise "Misusage error: ~
+              the statement ~x0 is ambiguous."
+             (stmt-fix stmt))
+      (pristate-fix pstate))
      :goto
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "goto " pstate))

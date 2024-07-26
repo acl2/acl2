@@ -2379,6 +2379,8 @@
                                     :next new-next
                                     :body new-body)
                 table))
+       :for-ambig
+       (reterr :todo)
        :goto
        (retok (stmt-fix stmt) (dimb-table-fix table))
        :continue

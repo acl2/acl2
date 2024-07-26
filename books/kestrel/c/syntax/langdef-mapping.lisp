@@ -1180,6 +1180,10 @@
        :for-decl (reterr (msg "Unsupported 'for' loop ~x0 ~
                                with initializing declaration."
                               (stmt-fix stmt)))
+       :for-ambig (prog2$
+                   (raise "Misusage error: ambiguous statement ~x0."
+                          (stmt-fix stmt))
+                   (reterr t))
        :goto (b* (((erp ident1) (ldm-ident stmt.label)))
                (retok (c::make-stmt-goto :target ident1)))
        :continue (retok (c::stmt-continue))
