@@ -226,3 +226,17 @@
   int amb = (a)&b+c;
   }
 ")
+
+(test-dimb
+ "unsigned int size_t;
+  void foo() {
+  for (size_t; ; ) {}
+  }
+")
+
+(test-dimb
+ "typedef unsigned int size_t;
+  void foo() {
+  for (size_t; ; ) {}
+  }
+")
