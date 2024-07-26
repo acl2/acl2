@@ -11,181 +11,137 @@
 
 (in-package "ACL2")
 
-;; STATUS: IN-PROGRESS
+;; Crucially, this pushes constants through intervening lambdas.
 
-;; This does the following to lambdas:
-;; 1. Substitute for lambda vars bound to constants
-;; TODO: 2. Avoid trivial lambdas (all formals bound to themselves).  Maybe.  Or just call drop-trivial-lambdas.
-
-(include-book "sublis-var-simple")
-(include-book "no-nils-in-termp")
 (include-book "make-lambda-with-hint")
-(local (include-book "sublis-var-simple-proofs"))
+(include-book "tools/flag" :dir :system)
+(include-book "kestrel/utilities/myquotep" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/list-sets" :dir :system))
 
-(in-theory (disable mv-nth))
+(local (in-theory (disable mv-nth)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;move
+(defun myquote-listp (items)
+  (declare (xargs :guard t))
+  (if (atom items)
+      (null items)
+    (and (myquotep (first items))
+         (myquote-listp (rest items)))))
 
-;; Returns (mv formals-for-constant-args constant-args).
-(defund formals-and-constant-args (formals args)
+(local
+  (defthm pseudo-termp-when-myquotep
+    (implies (myquotep term)
+             (pseudo-termp term))))
+
+;; Returns (mv remaining-formals remaining-args var-constant-alist)
+(defund handle-constant-lambda-formals (formals args)
   (declare (xargs :guard (and (symbol-listp formals)
+                              (pseudo-term-listp args)
                               (equal (len formals) (len args)))))
   (if (endp formals)
-      (mv nil nil)
-    (let ((formal (first formals))
-          (arg (first args)))
-      (mv-let (rest-formals rest-args)
-        (formals-and-constant-args (rest formals) (rest args))
+      (mv nil nil nil)
+    (mv-let (cdr-remaining-formals cdr-remaining-args cdr-var-constant-alist)
+      (handle-constant-lambda-formals (rest formals) (rest args))
+      (let ((formal (first formals))
+            (arg (first args)))
         (if (quotep arg)
-            (mv (cons formal rest-formals)
-                (cons arg rest-args))
-          (mv rest-formals rest-args))))))
+            (mv cdr-remaining-formals
+                cdr-remaining-args
+                (acons formal arg cdr-var-constant-alist))
+          (mv (cons-with-hint formal cdr-remaining-formals formals)
+              (cons-with-hint arg cdr-remaining-args args)
+              cdr-var-constant-alist))))))
 
-(defthm symbol-listp-of-mv-nth-0-of-formals-and-constant-args
-  (implies (symbol-listp formals)
-           (symbol-listp (mv-nth 0 (formals-and-constant-args formals args))))
-  :hints (("Goal" :in-theory (enable formals-and-constant-args))))
-
-(defthm pseudo-term-listp-of-mv-nth-1-of-formals-and-constant-args
-  (implies (pseudo-term-listp args)
-           (pseudo-term-listp (mv-nth 1 (formals-and-constant-args formals args))))
-  :hints (("Goal" :in-theory (enable formals-and-constant-args))))
-
-(defthm no-nils-in-termsp-of-mv-nth-1-of-formals-and-constant-args
-  (implies (pseudo-term-listp args)
-           (no-nils-in-termsp (mv-nth 1 (formals-and-constant-args formals args))))
-  :hints (("Goal" :in-theory (enable formals-and-constant-args))))
-
-(defthm len-of-mv-nth-1-of-formals-and-constant-args
-  (equal (len (mv-nth 1 (formals-and-constant-args formals args)))
-         (len (mv-nth 0 (formals-and-constant-args formals args))))
-  :hints (("Goal" :in-theory (enable formals-and-constant-args))))
-
-;; (thm
-;;  (equal (intersection-equal formals1 (formals-and-constant-args formals2 args))
-;;         (formals-and-constant-args (intersection-equal formals1 formals2) args))
-;;  :hints (("Goal" :in-theory (enable ;formals-and-constant-args
-;;                                     intersection-equal))))
-
-;; (thm
-;;  (equal (intersection-equal formals (formals-and-constant-args formals args))
-;;         (formals-and-constant-args formals args))
-;;  :hints (("Goal" :in-theory (enable formals-and-constant-args intersection-equal))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Walk through the args, keeping any that correspond to formals in target-formals.
-;see also get-args-for-formals!
-(defund filter-args-for-formals (formals args target-formals)
-  (declare (xargs :guard (and (symbol-listp formals)
-                              (true-listp args)
-                              (equal (len formals) (len args))
-                              (symbol-listp target-formals))
-                  :measure (len args)))
-  (if (endp args)
-      nil
-    (let ((arg (first args))
-          (formal (first formals)))
-      (if (member-eq formal target-formals)
-          (cons arg (filter-args-for-formals (rest formals) (rest args) target-formals))
-        (filter-args-for-formals (rest formals) (rest args) target-formals)))))
-
-(defthm pseudo-term-listp-of-filter-args-for-formals
-  (implies (pseudo-term-listp args)
-           (pseudo-term-listp (filter-args-for-formals formals args target-formals)))
-  :hints (("Goal" :in-theory (enable filter-args-for-formals))))
-
-(defthm len-of-filter-args-for-formals
-  (implies (equal (len formals) (len args))
-           (equal (len (filter-args-for-formals formals args target-formals))
-                  (len (intersection-equal formals target-formals))))
-  :hints (("Goal" :in-theory (enable filter-args-for-formals))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund any-quotep (items)
-  (declare (xargs :guard (true-listp items))) ; strenghten to require pseudo-terms?
-  (if (atom items)
-      nil
-    (or (quotep (first items))
-        (any-quotep (rest items)))))
+(defthm handle-constant-lambda-formals-return-type
+  (implies (and (symbol-listp formals)
+                (pseudo-term-listp args)
+                (equal (len formals) (len args)))
+           (and (symbol-listp (mv-nth 0 (handle-constant-lambda-formals formals args)))
+                (pseudo-term-listp (mv-nth 1 (handle-constant-lambda-formals formals args)))
+                (symbol-alistp (mv-nth 2 (handle-constant-lambda-formals formals args)))
+                (myquote-listp (strip-cdrs (mv-nth 2 (handle-constant-lambda-formals formals args))))
+                (equal (len (mv-nth 1 (handle-constant-lambda-formals formals args)))
+                       (len (mv-nth 0 (handle-constant-lambda-formals formals args))))))
+  :hints (("Goal" :in-theory (enable handle-constant-lambda-formals))))
 
 (mutual-recursion
- (defund substitute-constants-in-lambdas (term)
-   (declare (xargs :guard (pseudo-termp term)
+ (defund substitute-constants-in-lambdas-aux (term alist)
+   (declare (xargs :guard (and (pseudo-termp term)
+                               (symbol-alistp alist)
+                               (myquote-listp (strip-cdrs alist)))
                    :verify-guards nil ;done below
                    ))
    (if (variablep term)
-       term
+       (let ((res (assoc-eq term alist)))
+         (if res
+             (cdr res) ; put in the constant for this var
+           term))
      (let ((fn (ffn-symb term)))
        (if (eq 'quote fn)
            term
          ;; function call or lambda:
-         (let ((args (substitute-constants-in-lambdas-lst (fargs term))))
+         (let ((new-args (substitute-constants-in-lambdas-aux-lst (fargs term) alist)))
            (if (consp fn)
                ;; it's a lambda:
-               (let* ((formals (lambda-formals fn))
-                      (body (lambda-body fn))
-                      ;; always transform the body (todo: do this after we substitute!?):
-                      (body (substitute-constants-in-lambdas body)))
-                 (if (any-quotep args)
-                     ;; There is something to change:
-                     ;; could make a single pass to compute both formal lists and both arg lists
-                     (mv-let (formals-for-constant-args constant-args)
-                       (formals-and-constant-args formals args)
-                       (let* ((remaining-formals (set-difference-eq formals formals-for-constant-args))
-                              (remaining-args (filter-args-for-formals formals args remaining-formals))
-                              ;; todo: do a deeper subst here?
-                              (body (sublis-var-simple (pairlis$ formals-for-constant-args constant-args)
-                                                       body)))
-                         ;;(if (equal remaining-formals remaining-args) ; avoid trivial lambda application
-                         ;;  body
-                         `((lambda ,remaining-formals ,body) ,@remaining-args)
-                         ;;  )
-                         ))
-                   ;; There is nothing to change (but we may have a new lambda-body and args):
-                   (cons-with-hint (make-lambda-with-hint formals body fn)
-                                   args term)))
+               (let ((formals (lambda-formals fn))
+                     (body (lambda-body fn)))
+                 (mv-let (remaining-formals remaining-args var-constant-alist)
+                   (handle-constant-lambda-formals formals new-args)
+                   ;; Since the lambda is closed, we completely replace the
+                   ;; alist passed in when processing the lambda-body:
+                   (let ((new-body (substitute-constants-in-lambdas-aux body var-constant-alist)))
+                     (if (equal remaining-formals remaining-args)
+                         ;; avoid trivial lambda:
+                         new-body
+                       (cons-with-hint (make-lambda-with-hint remaining-formals new-body fn) remaining-args term)))))
              ;; not a lambda:
-             (cons-with-hint fn args term)))))))
- (defund substitute-constants-in-lambdas-lst (terms)
-   (declare (xargs :guard (pseudo-term-listp terms)))
+             (cons-with-hint fn new-args term)))))))
+ (defund substitute-constants-in-lambdas-aux-lst (terms alist)
+   (declare (xargs :guard (and (pseudo-term-listp terms)
+                               (symbol-alistp alist)
+                               (myquote-listp (strip-cdrs alist)))))
    (if (endp terms)
        nil
-     (cons-with-hint (substitute-constants-in-lambdas (first terms))
-                     (substitute-constants-in-lambdas-lst (rest terms))
+     (cons-with-hint (substitute-constants-in-lambdas-aux (first terms) alist)
+                     (substitute-constants-in-lambdas-aux-lst (rest terms) alist)
                      terms))))
 
-(make-flag substitute-constants-in-lambdas)
-
-(defthm len-of-substitute-constants-in-lambdas-lst
-  (equal (len (substitute-constants-in-lambdas-lst terms))
+(defthm len-of-substitute-constants-in-lambdas-aux-lst
+  (equal (len (substitute-constants-in-lambdas-aux-lst terms alist))
          (len terms))
   :hints (("Goal" :induct (len terms)
-           :in-theory (enable substitute-constants-in-lambdas-lst))))
+           :in-theory (enable substitute-constants-in-lambdas-aux-lst))))
 
-(defthm-flag-substitute-constants-in-lambdas
-  (defthm pseudo-termp-of-substitute-constants-in-lambdas
-    (implies (pseudo-termp term)
-             (pseudo-termp (substitute-constants-in-lambdas term)))
-    :flag substitute-constants-in-lambdas)
-  (defthm pseudo-termp-of-substitute-constants-in-lambdas-lst
-    (implies (pseudo-term-listp terms)
-             (pseudo-term-listp (substitute-constants-in-lambdas-lst terms)))
-    :flag substitute-constants-in-lambdas-lst)
+(make-flag substitute-constants-in-lambdas-aux)
+
+(defthm-flag-substitute-constants-in-lambdas-aux
+  (defthm pseudo-termp-of-substitute-constants-in-lambdas-aux
+    (implies (and (pseudo-termp term)
+                  (myquote-listp (strip-cdrs alist)))
+             (pseudo-termp (substitute-constants-in-lambdas-aux term alist)))
+    :flag substitute-constants-in-lambdas-aux)
+  (defthm pseudo-termp-of-substitute-constants-in-lambdas-aux-lst
+    (implies (and (pseudo-term-listp terms)
+                  (myquote-listp (strip-cdrs alist)))
+             (pseudo-term-listp (substitute-constants-in-lambdas-aux-lst terms alist)))
+    :flag substitute-constants-in-lambdas-aux-lst)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :expand (pseudo-termp (cons (car term)
-                        (substitute-constants-in-lambdas-lst (cdr term))))
+                        (substitute-constants-in-lambdas-aux-lst (cdr term) alist)))
            :in-theory (enable pseudo-termp
-                              substitute-constants-in-lambdas
-                              substitute-constants-in-lambdas-lst
+                              pseudo-term-listp
+                              substitute-constants-in-lambdas-aux
+                              substitute-constants-in-lambdas-aux-lst
                               pseudo-term-listp-when-symbol-listp
                               intersection-equal-of-set-difference-equal-arg2
                               true-listp-when-symbol-listp-rewrite-unlimited))))
 
-(verify-guards substitute-constants-in-lambdas :hints (("Goal" :expand ((PSEUDO-TERMP TERM)))))
+(verify-guards substitute-constants-in-lambdas-aux-lst :hints (("Goal" :expand (pseudo-termp term) :in-theory (enable pseudo-termp))))
+
+(defund substitute-constants-in-lambdas (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (substitute-constants-in-lambdas-aux term nil))

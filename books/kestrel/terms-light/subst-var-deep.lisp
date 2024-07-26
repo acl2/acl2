@@ -21,7 +21,10 @@
 
 ;; This books deals with replacement of single vars, but see the sublis-varXXX functions.
 
+;; See proofs in subst-var-deep-proofs.lisp.
 ;; See tests in subst-var-deep-tests.lisp.
+
+;; TODO: Generalize the support multiple vars?
 
 (local (in-theory (disable mv-nth)))
 
@@ -75,26 +78,12 @@
                      (subst-var-deep-lst var replacement (rest terms))
                      terms))))
 
-(make-flag subst-var-deep)
+(local (make-flag subst-var-deep))
 
 (defthm len-of-subst-var-deep-lst
   (equal (len (subst-var-deep-lst var replacement terms))
          (len terms))
   :hints (("Goal" :in-theory (enable subst-var-deep-lst))))
-
-(defthm car-of-subst-var-deep-lst
-  (equal (car (subst-var-deep-lst var replacement terms))
-         (if (consp terms)
-             (subst-var-deep var replacement (car terms))
-           nil))
-  :hints (("Goal" :expand (subst-var-deep-lst var replacement terms)
-           :in-theory (enable subst-var-deep-lst))))
-
-(defthm cdr-of-subst-var-deep-lst
-  (equal (cdr (subst-var-deep-lst var replacement terms))
-         (subst-var-deep-lst var replacement (cdr terms)))
-  :hints (("Goal" :expand (subst-var-deep-lst var replacement terms)
-           :in-theory (enable subst-var-deep-lst))))
 
 ;; subst-var-deep preserves pseudo-termp.
 (defthm-flag-subst-var-deep

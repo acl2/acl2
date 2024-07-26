@@ -270,3 +270,13 @@
            (equal (map-lookup-equal keys (pairlis$ all-keys (map-lookup-equal all-keys alist)))
                   (map-lookup-equal keys alist)))
   :hints (("Goal" :in-theory (enable map-lookup-equal pairlis$ subsetp-equal))))
+
+;todo: nested induction
+;todo: not used?
+(defthm alists-equiv-on-of-pairlis$-same
+  (implies (and (equal (len keys) (len vals))
+                (no-duplicatesp-equal keys) ; todo
+                (true-listp vals))
+           (equal (alists-equiv-on keys (pairlis$ keys vals) alist)
+                  (equal vals (map-lookup-equal keys alist))))
+  :hints (("Goal" :in-theory (enable alists-equiv-on pairlis$ lookup-equal map-lookup-equal))))

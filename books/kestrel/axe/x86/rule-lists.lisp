@@ -196,13 +196,27 @@
     x86isa::rml64           ;shilpi leaves this enabled
     x86isa::rml128-when-app-view
     x86isa::rml256-when-app-view
+
     x86isa::rml-size$inline ;shilpi leaves this enabled ;todo: consider rml-size-becomes-rb
+    ;; rml-size-of-1-becomes-read ;; todo: try these (for which proofs?)
+    ;; rml-size-of-2-becomes-read
+    ;; rml-size-of-4-becomes-read
+    ;; rml-size-of-6-becomes-read
+    ;; rml-size-of-8-becomes-read
+    ;; rml-size-of-10-becomes-read
+    ;; rml-size-of-16-becomes-read
+    ;; rml-size-of-32-becomes-read
 
     x86isa::riml08
     x86isa::riml16
     x86isa::riml32
     x86isa::riml64               ;shilpi leaves this enabled
+
     x86isa::riml-size$inline ;shilpi leaves this enabled -- could restrict to constant
+    ;; riml-size-of-1-becomes-read ; todo: try these (for which proofs?)
+    ;; riml-size-of-2-becomes-read
+    ;; riml-size-of-4-becomes-read
+    ;; riml-size-of-8-becomes-read
 
     x86isa::wml08
     x86isa::wml16
@@ -4927,3 +4941,21 @@
 (set-axe-rule-priority acl2::part-install-width-low-becomes-bvcat-128 3)
 (set-axe-rule-priority acl2::part-install-width-low-becomes-bvcat-256 4)
 (set-axe-rule-priority acl2::part-install-width-low-becomes-bvcat-512 5) ; try last
+
+(set-axe-rule-priority riml08-becomes-read -1)
+
+;; If these are present, we want them to be tried instead of opening the definition
+(set-axe-rule-priority rml-size-of-1-becomes-read -1)
+(set-axe-rule-priority rml-size-of-2-becomes-read -1)
+(set-axe-rule-priority rml-size-of-4-becomes-read -1)
+(set-axe-rule-priority rml-size-of-6-becomes-read -1)
+(set-axe-rule-priority rml-size-of-8-becomes-read -1)
+(set-axe-rule-priority rml-size-of-10-becomes-read -1)
+(set-axe-rule-priority rml-size-of-16-becomes-read -1)
+(set-axe-rule-priority rml-size-of-32-becomes-read -1)
+
+;; If these are present, we want them to be tried instead of opening the definition
+(set-axe-rule-priority riml-size-of-1-becomes-read -1)
+(set-axe-rule-priority riml-size-of-2-becomes-read -1)
+(set-axe-rule-priority riml-size-of-4-becomes-read -1)
+(set-axe-rule-priority riml-size-of-8-becomes-read -1)

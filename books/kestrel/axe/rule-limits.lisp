@@ -81,7 +81,7 @@
     (if (not res)
         nil ;limit not reached since there is no limit for this rule
       (let ((limit (cdr res)))
-        (if (<= limit 0)
+        (if (<= (the integer limit) 0) ; could even make it a fixnum...
             (prog2$ (and print (cw "(NOTE: Limit reached for rule ~x0.)~%" rule-symbol))
                     t)
           nil)))))

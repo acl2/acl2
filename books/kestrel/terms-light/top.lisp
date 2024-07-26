@@ -102,8 +102,6 @@
 ;; Handle lambda vars bound to constants:
 (include-book "substitute-constants-in-lambdas")
 (include-book "substitute-constants-in-lambdas-proofs")
-(include-book "substitute-constants-in-lambdas2")
-(include-book "substitute-constants-in-lambdas2-proofs")
 ;; For lambdas whose formals are the same as their args:
 (include-book "drop-trivial-lambdas")
 (include-book "drop-trivial-lambdas-proofs")
