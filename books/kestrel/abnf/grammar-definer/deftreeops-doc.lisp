@@ -452,4 +452,16 @@
         has @('<min>') as lower bound and @('<max>') as upper bound.
         This theorem is generated as a linear rule.")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function."))))))
+       "@(tsee fty::deffixequiv) theorems for the function.")))
+
+    (xdoc::desc
+     (list
+      "@('<prefix>-|\"<chars>\"|-leafterm')"
+      "@('<prefix>-%i|\"<chars>\"|-leafterm')"
+      "@('<prefix>-%s|\"<chars>\"|-leafterm')")
+     (xdoc::p
+      "For each character value notation that appears in the grammar,
+       of the form @('\"<chars\"') or @('%i\"<chars>\"') or @('%s\"<chars>\"')
+       where @('<chars>') is a sequence of one or more characters,
+       a theorem saying that a tree that matches the character values notation
+       is a terminal leaf tree.")))))
