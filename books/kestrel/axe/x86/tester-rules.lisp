@@ -458,24 +458,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(DEFthm x86isa::X86-CWD/CDQ/CQO-alt-def
-  (equal (x86isa::X86-CWD/CDQ/CQO PROC-MODE START-RIP TEMP-RIP PREFIXES REX-BYTE OPCODE MODR/M SIB x86)
-         (B* ((?CTX 'X86-CWD/CDQ/CQO))
-           (B* (((THE (INTEGER 1 8) SRC-SIZE)
-                 (x86isa::SELECT-OPERAND-SIZE
-                  PROC-MODE NIL
-                  REX-BYTE NIL PREFIXES NIL NIL NIL X86))
-                (SRC (x86isa::RGFI-SIZE SRC-SIZE *RAX* REX-BYTE X86))
-                ;; rdx gets the high part of the sign-extension
-                ;; avoids a case split and supports putting the parts back together (e.g., to do a divide):
-                (RDX (slice (+ -1 (* 16 src-size))
-                            (* 8 src-size)
-                            (bvsx (* 16 src-size) (* 8 src-size) src)))
-                (X86 (x86isa::!RGFI-SIZE SRC-SIZE *RDX* RDX REX-BYTE X86))
-                (X86 (x86isa::WRITE-*IP PROC-MODE TEMP-RIP X86)))
-             X86)))
-  :hints (("Goal" :in-theory (enable x86isa::X86-CWD/CDQ/CQO))))
-
 ;; Shows that the division can't be too negative
 ;todo: add sbvdiv to x pkg
 ;todo: gen the 2

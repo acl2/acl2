@@ -2487,6 +2487,24 @@
                                      rr16
                                      rr08))))
 
+;; avoids a cae split.  also avoids a call of THE and an unused let var
+(DEFthm X86-CWD/CDQ/CQO-alt-def
+  (equal (X86-CWD/CDQ/CQO PROC-MODE START-RIP TEMP-RIP PREFIXES REX-BYTE OPCODE MODR/M SIB x86)
+         (B* ((SRC-SIZE
+               (SELECT-OPERAND-SIZE
+                 PROC-MODE NIL
+                 REX-BYTE NIL PREFIXES NIL NIL NIL X86))
+              (SRC (RGFI-SIZE SRC-SIZE *RAX* REX-BYTE X86))
+              ;; rdx gets the high part of the sign-extension
+              ;; avoids a case split and supports putting the parts back together (e.g., to do a divide):
+              (RDX (acl2::slice (+ -1 (* 16 src-size))
+                                (* 8 src-size)
+                                (acl2::bvsx (* 16 src-size) (* 8 src-size) src)))
+              (X86 (!RGFI-SIZE SRC-SIZE *RDX* RDX REX-BYTE X86))
+              (X86 (WRITE-*IP PROC-MODE TEMP-RIP X86)))
+           X86))
+  :hints (("Goal" :in-theory (enable X86-CWD/CDQ/CQO))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm add-af-spec32-of-bvchop-32-arg1
