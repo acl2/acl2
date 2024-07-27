@@ -47,7 +47,7 @@
 (include-book "kestrel/strings-light/strip-suffix-from-strings" :dir :system)
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
 (include-book "linter")
-(include-book "speed-up") ; or do (include-book "speed-up-implementation")
+(include-book "speed-up-implementation") ; also gets us abbreviate-event
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 
@@ -634,7 +634,7 @@
                      (improve-events events initial-included-books print state)
                      (let* ((state (unwiden-margins state))
                             (state (set-cbd-simple old-cbd state)))
-                       (prog2$ (cw ")")
+                       (prog2$ (cw ")~%")
                                (mv erp state)))))))))))
 
 ;; Returns (mv erp nil state).  Does not change the world.
@@ -651,7 +651,7 @@
   (revert-world
    (mv-let (erp state)
      (improve-book-fn-aux bookname dir print state)
-     (mv erp nil state))))
+     (mv erp :invisible state))))
 
 ;; Example: (IMPROVE-BOOK "helper").  This makes no changes to the world, just
 ;; prints suggestions for improvement.

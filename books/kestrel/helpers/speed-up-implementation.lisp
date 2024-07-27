@@ -304,7 +304,7 @@
                   :mode :program
                   :stobjs state))
   (prog2$
-   (and print print-headerp (cw "~%For ~s0:" (abbreviate-event event))) ; speedups are indented below this, and start with newlines
+   (and print print-headerp (cw "~%For ~s0:" (first (rest event)))) ; speedups are indented below this, and start with newlines
    (let* ( ;;(defthm-variant (first event))
           (defthm-args (rest event))
           (name (first defthm-args))
@@ -380,7 +380,7 @@
                               (booleanp print-headerp))
                   :stobjs state))
   (prog2$
-   (and print print-headerp (cw "~%For ~s0:" (abbreviate-event event))) ; speedups are indented below this, and start with newlines
+   (and print print-headerp (cw "~%For ~s0:" (first (rest event)))) ; speedups are indented below this, and start with newlines
    (let ((name (cadr event)))
     ;; Record the start time:
      (mv-let (start-time state)
@@ -526,7 +526,7 @@
                       (speed-up-events events synonym-alist print state)
                       (let* ((state (unwiden-margins state))
                              (state (set-cbd-simple old-cbd state)))
-                        (prog2$ (cw ")")
+                        (prog2$ (cw ")~%")
                                 (mv erp state)))))))))))
 
 ;; Returns (mv erp nil state).  Does not change the world.
@@ -545,7 +545,7 @@
   (revert-world
    (mv-let (erp state)
      (speed-up-book-fn-aux bookname dir synonym-alist print state)
-     (mv erp nil state))))
+     (mv erp :invisible state))))
 
 ;; Example: (SPEED-UP-BOOK "helper").  This makes no changes to the world, just
 ;; prints suggestions for speeding up the book.
