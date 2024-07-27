@@ -42,12 +42,12 @@
             x86isa::GPR-OR-SPEC-4-alt-def
             x86isa::GPR-OR-SPEC-8-alt-def
 
-            x86isa::gpr-and-spec-1$inline
+            x86isa::gpr-and-spec-1$inline ; todo: make alt-defs with better rflags handling
             x86isa::gpr-and-spec-2$inline
             x86isa::gpr-and-spec-4$inline
             x86isa::gpr-and-spec-8$inline
 
-            x86isa::gpr-adc-spec-1$inline
+            x86isa::gpr-adc-spec-1$inline ; todo: make alt-defs with better rflags handling
             x86isa::gpr-adc-spec-2$inline
             x86isa::gpr-adc-spec-4$inline
             x86isa::gpr-adc-spec-8$inline
@@ -58,7 +58,7 @@
             ;; x86isa::gpr-sub-spec-8$inline
             x86isa::gpr-sub-spec-1-alt-def
             x86isa::gpr-sub-spec-2-alt-def
-            x86isa::GPR-SUB-SPEC-4-alt-def-better
+            x86isa::gpr-sub-spec-4-alt-def-better
             ;;x86isa::gpr-sub-spec-4-alt-def ;; todo: make better versions of all of these, and of more ops
             x86isa::gpr-sub-spec-8-alt-def
 
