@@ -50,31 +50,34 @@
                                     (rest items)
                                     dag-parent-array))))))
 
-(defthm nat-listp-of-find-shortest-parent-lst
-  (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                (nat-listp current-shortest-lst)
-                (darg-listp items))
-           (nat-listp (find-shortest-parent-lst current-shortest-lst items dag-parent-array)))
-  :hints (("Goal" :in-theory (enable find-shortest-parent-lst))))
+(local
+  (defthm nat-listp-of-find-shortest-parent-lst
+    (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
+                  (nat-listp current-shortest-lst)
+                  (darg-listp items))
+             (nat-listp (find-shortest-parent-lst current-shortest-lst items dag-parent-array)))
+    :hints (("Goal" :in-theory (enable find-shortest-parent-lst)))))
 
-(defthm true-listp-of-find-shortest-parent-lst
-  (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                (true-listp current-shortest-lst)
-                (darg-listp items))
-           (true-listp (find-shortest-parent-lst current-shortest-lst items dag-parent-array)))
-  :hints (("Goal" :in-theory (enable find-shortest-parent-lst))))
+(local
+  (defthm true-listp-of-find-shortest-parent-lst
+    (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
+                  (true-listp current-shortest-lst)
+                  (darg-listp items))
+             (true-listp (find-shortest-parent-lst current-shortest-lst items dag-parent-array)))
+    :hints (("Goal" :in-theory (enable find-shortest-parent-lst)))))
 
-(defthm all-<-of-find-shortest-parent-lst
-  (implies (and ;(dag-parent-arrayp 'dag-parent-array dag-parent-array top-nodenum-to-check)
-            ;; (true-listp items)
-            (bounded-dag-parent-entriesp n 'dag-parent-array dag-parent-array limit)
-            (all-< current-shortest-lst limit)
-            (bounded-darg-listp items (+ 1 n))
-            ;;(darg-listp items)
-            (integerp n))
-           (all-< (find-shortest-parent-lst current-shortest-lst items dag-parent-array)
-                  limit))
-  :hints (("Goal" :in-theory (enable find-shortest-parent-lst dag-parent-arrayp bound-lemma-for-car-when-bounded-darg-listp))))
+(local
+  (defthm all-<-of-find-shortest-parent-lst
+    (implies (and ;(dag-parent-arrayp 'dag-parent-array dag-parent-array top-nodenum-to-check)
+               ;; (true-listp items)
+               (bounded-dag-parent-entriesp n 'dag-parent-array dag-parent-array limit)
+               (all-< current-shortest-lst limit)
+               (bounded-darg-listp items (+ 1 n))
+               ;;(darg-listp items)
+               (integerp n))
+             (all-< (find-shortest-parent-lst current-shortest-lst items dag-parent-array)
+                    limit))
+    :hints (("Goal" :in-theory (enable find-shortest-parent-lst dag-parent-arrayp bound-lemma-for-car-when-bounded-darg-listp)))))
 
 ;;returns (mv first-atom rest)
 (defund first-atom (items)

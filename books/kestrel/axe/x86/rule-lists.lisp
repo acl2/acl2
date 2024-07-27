@@ -33,21 +33,28 @@
 
 ;            x86isa::jcc/cmovcc/setcc-spec ;case dispatch ;;disabling this to produce better results
 
-            ;x86isa::gpr-or-spec-1$inline
-            ;x86isa::gpr-or-spec-2$inline
-            ;x86isa::gpr-or-spec-4$inline
-            ;x86isa::gpr-or-spec-8$inline
-            x86isa::GPR-OR-SPEC-1-redef
-            x86isa::GPR-OR-SPEC-2-redef
-            x86isa::GPR-OR-SPEC-4-redef
-            x86isa::GPR-OR-SPEC-8-redef
+            x86isa::gpr-and-spec-1-alt-def
+            x86isa::gpr-and-spec-2-alt-def
+            x86isa::gpr-and-spec-4-alt-def
+            x86isa::gpr-and-spec-8-alt-def
 
-            x86isa::gpr-and-spec-1$inline
-            x86isa::gpr-and-spec-2$inline
-            x86isa::gpr-and-spec-4$inline
-            x86isa::gpr-and-spec-8$inline
+            x86isa::gpr-or-spec-1-alt-def
+            x86isa::gpr-or-spec-2-alt-def
+            x86isa::gpr-or-spec-4-alt-def
+            x86isa::gpr-or-spec-8-alt-def
 
-            x86isa::gpr-adc-spec-1$inline
+            x86isa::gpr-xor-spec-1-alt-def
+            x86isa::gpr-xor-spec-2-alt-def
+            x86isa::gpr-xor-spec-4-alt-def
+            x86isa::gpr-xor-spec-8-alt-def
+
+            x86isa::gpr-add-spec-1-alt-def
+            x86isa::gpr-add-spec-2-alt-def
+            x86isa::gpr-add-spec-4-better ; $inline ; todo: make better rules for the rest
+            ;;x86isa::gpr-add-spec-4-alt-def
+            x86isa::gpr-add-spec-8-alt-def
+
+            x86isa::gpr-adc-spec-1$inline ; todo: make alt-defs with better rflags handling
             x86isa::gpr-adc-spec-2$inline
             x86isa::gpr-adc-spec-4$inline
             x86isa::gpr-adc-spec-8$inline
@@ -58,46 +65,13 @@
             ;; x86isa::gpr-sub-spec-8$inline
             x86isa::gpr-sub-spec-1-alt-def
             x86isa::gpr-sub-spec-2-alt-def
-            x86isa::GPR-SUB-SPEC-4-alt-def-better
+            x86isa::gpr-sub-spec-4-alt-def-better
             ;;x86isa::gpr-sub-spec-4-alt-def ;; todo: make better versions of all of these, and of more ops
             x86isa::gpr-sub-spec-8-alt-def
 
-            x86isa::gpr-xor-spec-1$inline
-            x86isa::gpr-xor-spec-2$inline
-            x86isa::gpr-xor-spec-4$inline
-            x86isa::gpr-xor-spec-8$inline
-
-            x86isa::shr-spec$inline ;; dispatches based on size
-            ;; x86isa::shr-spec-8
-            ;; x86isa::shr-spec-16
-            ;; x86isa::shr-spec-32
-            ;; x86isa::shr-spec-64
-            x86isa::shr-spec-8-redef
-            x86isa::shr-spec-16-redef
-            x86isa::shr-spec-32-redef
-            x86isa::shr-spec-64-redef
-            acl2::bvshr-rewrite-for-constant-shift-amount ; puts in slice, since we don't translate bvshr to stp
-
-            x86isa::rol-spec$inline ;; dispatches based on size
-            x86isa::rol-spec-8
-            x86isa::rol-spec-16
-            x86isa::rol-spec-32
-            x86isa::rol-spec-64
-
-            x86isa::sal/shl-spec$inline ;; dispatches based on size
-            ;; x86isa::sal/shl-spec-8
-            ;; x86isa::sal/shl-spec-16
-            ;; x86isa::sal/shl-spec-32
-            ;; x86isa::sal/shl-spec-64
-            x86isa::sal/shl-spec-8-redef
-            x86isa::sal/shl-spec-16-redef
-            x86isa::sal/shl-spec-32-redef
-            x86isa::sal/shl-spec-64-redef
-            ;; ACL2::BVSHL-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT ; todo: consider this since we don't translate bvshl to stp
-
             ;; unsigned multiply
             x86isa::mul-spec$inline ;; dispatches based on size
-            x86isa::mul-spec-8
+            x86isa::mul-spec-8 ; todo: make alt-defs with better rflags handling?
             x86isa::mul-spec-16
             x86isa::mul-spec-32
             x86isa::mul-spec-64
@@ -108,12 +82,6 @@
             x86isa::imul-spec-16
             x86isa::imul-spec-32
             x86isa::imul-spec-64
-
-            x86isa::gpr-add-spec-1$inline
-            x86isa::gpr-add-spec-2$inline
-            x86isa::GPR-ADD-SPEC-4-better ; todo: put back
-            ;;x86isa::gpr-add-spec-4$inline ; todo: make better rules for the rest
-            x86isa::gpr-add-spec-8$inline
 
             x86isa::div-spec$inline ; just a dispatch on the size
             ;; These recharacterize divide in terms of bvops:
@@ -138,26 +106,59 @@
             x86isa::mv-nth-0-of-idiv-spec-64
             x86isa::mv-nth-1-of-idiv-spec-64
 
-            x86isa::shrx-spec$inline ; just a dispatch
-            x86isa::shlx-spec$inline ; just a dispatch
-            x86isa::sarx-spec$inline ; just a dispatch
-            x86isa::ror-spec$inline ; just a dispatch
-            x86isa::rol-spec$inline ; just a dispatch
+            x86isa::shr-spec$inline ;; dispatches based on size
+            ;; x86isa::shr-spec-8
+            ;; x86isa::shr-spec-16
+            ;; x86isa::shr-spec-32
+            ;; x86isa::shr-spec-64
+            x86isa::shr-spec-8-alt-def
+            x86isa::shr-spec-16-alt-def
+            x86isa::shr-spec-32-alt-def
+            x86isa::shr-spec-64-alt-def
+            acl2::bvshr-rewrite-for-constant-shift-amount ; puts in slice, since we don't translate bvshr to stp
 
-            x86isa::shlx-spec-32-redef
-            x86isa::shlx-spec-64-redef
-            x86isa::shrx-spec-32-redef
-            x86isa::shrx-spec-64-redef
-            x86isa::sarx-spec-32-redef
-            x86isa::sarx-spec-64-redef
+            x86isa::sal/shl-spec$inline ;; dispatches based on size
+            ;; x86isa::sal/shl-spec-8
+            ;; x86isa::sal/shl-spec-16
+            ;; x86isa::sal/shl-spec-32
+            ;; x86isa::sal/shl-spec-64
+            x86isa::sal/shl-spec-8-alt-def
+            x86isa::sal/shl-spec-16-alt-def
+            x86isa::sal/shl-spec-32-alt-def
+            x86isa::sal/shl-spec-64-alt-def
+            ;; ACL2::BVSHL-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT ; todo: consider this since we don't translate bvshl to stp
+
+            x86isa::shlx-spec$inline ; just a dispatch
+            x86isa::shlx-spec-32-alt-def
+            x86isa::shlx-spec-64-alt-def
+
+            x86isa::shrx-spec$inline ; just a dispatch
+            x86isa::shrx-spec-32-alt-def
+            x86isa::shrx-spec-64-alt-def
+
+            x86isa::sarx-spec$inline ; just a dispatch
+            x86isa::sarx-spec-32-alt-def
+            x86isa::sarx-spec-64-alt-def
 
             x86isa::sar-spec$inline
             ;x86isa::sar-spec-32-nice
             ;x86isa::sar-spec-64-nice
-            x86isa::sar-spec-8-redef
-            x86isa::sar-spec-16-redef
-            x86isa::sar-spec-32-redef
-            x86isa::sar-spec-64-redef
+            x86isa::sar-spec-8-alt-def
+            x86isa::sar-spec-16-alt-def
+            x86isa::sar-spec-32-alt-def
+            x86isa::sar-spec-64-alt-def
+
+            x86isa::rol-spec$inline ;; dispatches based on size
+            x86isa::rol-spec-8
+            x86isa::rol-spec-16
+            x86isa::rol-spec-32
+            x86isa::rol-spec-64
+
+            x86isa::ror-spec$inline ; just a dispatch
+            x86isa::ror-spec-8
+            x86isa::ror-spec-16
+            x86isa::ror-spec-32
+            x86isa::ror-spec-64
 
             x86isa::x86-operand-to-xmm/mem
 
@@ -165,10 +166,12 @@
             x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll
 
             ;; Improved versions of instruction semantic functions:
-            x86isa::x86-cbw/cwd/cdqe-redef)
+            x86isa::x86-cbw/cwd/cdqe-alt-def
+            x86isa::x86-cwd/cdq/cqo-alt-def)
           (set-difference-equal *instruction-decoding-and-spec-rules*
                                 ;; We remove these because we have better versions:
-                                '(x86isa::x86-cbw/cwd/cdqe))))
+                                '(x86isa::x86-cbw/cwd/cdqe
+                                  x86isa::x86-cwd/cdq/cqo))))
 
 (defun list-rules-x86 ()
   (declare (xargs :guard t))
@@ -4617,7 +4620,7 @@
             acl2::bvcat-of-if-arg4
             ;;acl2::bvif-of-0-arg1
             ;acl2::bvplus-when-size-is-not-positive ; todo: more like this, make a rule-list
-            x86isa::x86-cwd/cdq/cqo-alt-def
+
             acl2::bvcat-of-slice-of-bvsx-same
             not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
             not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
