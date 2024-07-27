@@ -3811,7 +3811,9 @@
                         (:instance rtz-squeeze (x (/ a b)) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))
                         (:instance rtz-squeeze (x (+ q (* (- a (* b q)) y))) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))
                         (:instance raz-squeeze (x (/ a b)) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))
-                        (:instance raz-squeeze (x (+ q (* (- a (* b q)) y))) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))))))
+                        (:instance raz-squeeze (x (+ q (* (- a (* b q)) y))) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p)))
+           :in-theory (disable abs acl2::|(* x (+ y z))|) ; for speed
+           )))
 
 (local-defthm not-midpoint-down-1
   (implies (and (rationalp a)
@@ -4345,7 +4347,9 @@
            (= (rne (+ q (* (- a (* b q)) y)) p)
               (rne (/ a b) p)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents))
+  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents
+                                                 abs ; for speed
+                                                 ))
                   :use (expo-q-10 r-neg-19 r-neg-rne-34 q-not-expo-q
                         (:instance fp--non-negative (x q) (n p))
                         (:instance exactp-fp- (x q) (n p))
@@ -4813,7 +4817,9 @@
            (= (rne (+ q (* (- a (* b q)) y)) p)
               (rne (/ a b) p)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents))
+  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents
+                                                 abs ; for speed
+                                                 ))
                   :use (expo-q-10 r-neg-19 r-neg-rne-up-34 q-not-expo-q
                         (:instance fp--non-negative (x q) (n p))
                         (:instance exactp-fp- (x q) (n p))

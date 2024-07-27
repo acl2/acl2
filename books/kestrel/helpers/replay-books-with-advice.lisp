@@ -1,6 +1,6 @@
 ; Replaying many books with proof advice
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,8 @@
 
 ;; NOTE: See eval-models for a similar but newer tool.
 
+(include-book "kestrel/utilities/defmergesort" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "replay-book-with-advice")
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/utilities/shuffle-list2" :dir :system)
