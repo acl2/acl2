@@ -683,23 +683,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;no accumulator
+;; no accumulator, easier to reason about
 ;; Returns (mv erp processed-hyps bound-vars).
-(defund make-axe-rule-hyps-simple (hyps bound-vars rule-symbol wrld)
-  (declare (xargs :guard (and (pseudo-term-listp hyps)
-                              (symbol-listp bound-vars)
-                              (symbolp rule-symbol)
-                              (plist-worldp wrld))))
-  (if (endp hyps)
-      (mv (erp-nil) nil bound-vars)
-    (b* ((hyp (first hyps))
-         ((mv erp axe-rule-hyps bound-vars) (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))
-         ((when erp) (mv erp *unrelievable-hyps* bound-vars))
-         ((mv erp axe-rule-hyps2 bound-vars) (make-axe-rule-hyps-simple (rest hyps) bound-vars rule-symbol wrld))
-         ((when erp) (mv erp *unrelievable-hyps* bound-vars)))
-      (mv (erp-nil)
-          (append axe-rule-hyps axe-rule-hyps2)
-          bound-vars))))
+(local
+  (defund make-axe-rule-hyps-simple (hyps bound-vars rule-symbol wrld)
+    (declare (xargs :guard (and (pseudo-term-listp hyps)
+                                (symbol-listp bound-vars)
+                                (symbolp rule-symbol)
+                                (plist-worldp wrld))))
+    (if (endp hyps)
+        (mv (erp-nil) nil bound-vars)
+      (b* ((hyp (first hyps))
+           ((mv erp axe-rule-hyps bound-vars) (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))
+           ((when erp) (mv erp *unrelievable-hyps* bound-vars))
+           ((mv erp axe-rule-hyps2 bound-vars) (make-axe-rule-hyps-simple (rest hyps) bound-vars rule-symbol wrld))
+           ((when erp) (mv erp *unrelievable-hyps* bound-vars)))
+        (mv (erp-nil)
+            (append axe-rule-hyps axe-rule-hyps2)
+            bound-vars)))))
 
 ;; redefine in terms of the simpler function
 (local
