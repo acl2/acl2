@@ -131,6 +131,13 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable axe-bind-free-function-applicationp))))
 
+(defthm axe-bind-free-function-applicationp-forward-to-not-equal-of-quote-and-car
+  (implies (axe-bind-free-function-applicationp expr)
+           (not (equal 'quote (car expr))))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable axe-bind-free-function-applicationp))))
+
+
 ;;;
 ;;; axe-rule-hypp
 ;;;
