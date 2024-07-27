@@ -386,7 +386,7 @@
 
   :prepwork
   ((define ldm-declor-obj-loop ((declor1 c::obj-declorp)
-                                (pointers tyqual-list-listp))
+                                (pointers type-qual-list-listp))
      :returns (mv erp (declor2 c::obj-declorp))
      :parents nil
      (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
@@ -394,7 +394,7 @@
           (tyquals (car pointers))
           ((unless (endp tyquals))
            (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (tyqual-list-fix tyquals))))
+                        (type-qual-list-fix tyquals))))
           ((erp declor2) (ldm-declor-obj-loop declor1 (cdr pointers))))
        (retok (c::obj-declor-pointer declor2)))
      :hooks (:fix))))
@@ -474,7 +474,7 @@
 
   :prepwork
   ((define ldm-absdeclor-obj-loop ((adeclor1 c::obj-adeclorp)
-                                   (pointers tyqual-list-listp))
+                                   (pointers type-qual-list-listp))
      :returns (mv erp (adeclor2 c::obj-adeclorp))
      :parents nil
      (b* (((reterr) (c::obj-adeclor-none))
@@ -482,7 +482,7 @@
           (tyquals (car pointers))
           ((unless (endp tyquals))
            (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (tyqual-list-fix tyquals))))
+                        (type-qual-list-fix tyquals))))
           ((erp adeclor2) (ldm-absdeclor-obj-loop adeclor1 (cdr pointers))))
        (retok (c::obj-adeclor-pointer adeclor2)))
      :hooks (:fix))))
@@ -951,7 +951,7 @@
 
   :prepwork
   ((define ldm-declor-fun-loop ((declor1 c::fun-declorp)
-                                (pointers tyqual-list-listp))
+                                (pointers type-qual-list-listp))
      :returns (mv erp (declor2 c::fun-declorp))
      :parents nil
      (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
@@ -959,7 +959,7 @@
           (tyquals (car pointers))
           ((unless (endp tyquals))
            (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (tyqual-list-fix tyquals))))
+                        (type-qual-list-fix tyquals))))
           ((erp declor2) (ldm-declor-fun-loop declor1 (cdr pointers))))
        (retok (c::fun-declor-pointer declor2)))
      :hooks (:fix))))

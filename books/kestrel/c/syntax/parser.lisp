@@ -1921,7 +1921,7 @@
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
-                               single quote or backslash"
+                               single quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((when (= char (char-code #\'))) ; '
         (retok nil pos pstate))
@@ -1929,7 +1929,7 @@
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
-                               single quote or backslash"
+                               single quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((erp cchar & pstate)
         (if (= char (char-code #\\)) ; \
@@ -5318,16 +5318,16 @@
 
 (define token-to-type-qualifier ((token tokenp))
   :guard (token-type-qualifier-p token)
-  :returns (tyqual tyqualp)
+  :returns (tyqual type-qualp)
   :short "Map a token that is a type qualifier
           to the correspoding type qualifier."
-  (cond ((equal token (token-keyword "const")) (tyqual-const))
-        ((equal token (token-keyword "restrict")) (tyqual-restrict))
-        ((equal token (token-keyword "volatile")) (tyqual-volatile))
-        ((equal token (token-keyword "_Atomic")) (tyqual-atomic))
-        ((equal token (token-keyword "__restrict")) (tyqual-__restrict))
-        ((equal token (token-keyword "__restrict__")) (tyqual-__restrict__))
-        (t (prog2$ (impossible) (irr-tyqual))))
+  (cond ((equal token (token-keyword "const")) (type-qual-const))
+        ((equal token (token-keyword "restrict")) (type-qual-restrict))
+        ((equal token (token-keyword "volatile")) (type-qual-volatile))
+        ((equal token (token-keyword "_Atomic")) (type-qual-atomic))
+        ((equal token (token-keyword "__restrict")) (type-qual-__restrict))
+        ((equal token (token-keyword "__restrict__")) (type-qual-__restrict__))
+        (t (prog2$ (impossible) (irr-type-qual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5873,7 +5873,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-type-qualifier-list ((pstate parstatep))
-  :returns (mv erp (tyquals tyqual-listp) (span spanp) (new-pstate parstatep))
+  :returns (mv erp (tyquals type-qual-listp) (span spanp) (new-pstate parstatep))
   :parents (parser parse-exprs/decls)
   :short "Parse a list of one or more type qualifiers."
   :long
@@ -5933,7 +5933,7 @@
 
 (define parse-pointer ((pstate parstatep))
   :returns (mv erp
-               (tyqualss tyqual-list-listp)
+               (tyqualss type-qual-list-listp)
                (span spanp)
                (new-pstate parstatep))
   :parents (parser parse-exprs/decls)
@@ -8411,7 +8411,7 @@
                 ;; If we have already seen a type specifier,
                 ;; this must be a type qualifier.
                 (b* ((pstate (unread-token pstate))) ; _Atomic
-                  (retok (specqual-tyqual (tyqual-atomic))
+                  (retok (specqual-tyqual (type-qual-atomic))
                          span
                          pstate))
               ;; If we have not already seen a type specifier,
@@ -8430,7 +8430,7 @@
            (t ; _Atomic other
             (b* ((pstate ; _Atomic
                   (if token2 (unread-token pstate) pstate)))
-              (retok (specqual-tyqual (tyqual-atomic))
+              (retok (specqual-tyqual (type-qual-atomic))
                      span
                      pstate))))))
        ;; If token is the keyword struct,
@@ -8657,7 +8657,7 @@
                 ;; If we have already seen a type specifier,
                 ;; this must be a type qualifier.
                 (b* ((pstate (unread-token pstate))) ; _Atomic
-                  (retok (declspec-tyqual (tyqual-atomic))
+                  (retok (declspec-tyqual (type-qual-atomic))
                          span
                          pstate))
               ;; If we have not already seen a type specifier,
@@ -8676,7 +8676,7 @@
            (t ; _Atomic other
             (b* ((pstate ; _Atomic
                   (if token2 (unread-token pstate) pstate)))
-              (retok (declspec-tyqual (tyqual-atomic))
+              (retok (declspec-tyqual (type-qual-atomic))
                      span
                      pstate))))))
        ;; If token is the keyword struct,
