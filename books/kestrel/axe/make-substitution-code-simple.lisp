@@ -30,6 +30,49 @@
        (local (include-book "kestrel/lists-light/len" :dir :system))
        (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 
+       ;; for speed:
+       (local (in-theory (disable pseudo-termp
+                                  member-equal
+                                  default-cdr
+                                  default-car
+                                  ;; quote-lemma-for-bounded-darg-listp-gen-alt ; not always defined
+                                  ;car-of-car-when-pseudo-termp
+                                  use-all-consp-for-car
+                                  all-consp-when-not-consp
+                                  consp-from-len-cheap
+                                  ;; len-of-cdr
+                                  pseudo-term-listp
+                                  ;; quotep
+                                  ;;car-cdr-elim
+                                  mv-nth
+                                  )))
+
+       (local (defthm myquotep-when-pseudo-termp
+                (implies (pseudo-termp term)
+                         (equal (myquotep term)
+                                (quotep term)))
+                :hints (("Goal" :in-theory (enable pseudo-termp quotep myquotep)))))
+
+       (local (defthm pseudo-termp-of-car-when-pseudo-term-listp
+                (implies (pseudo-term-listp terms)
+                         (pseudo-termp (car terms)))
+                :hints (("Goal" :in-theory (enable pseudo-termp pseudo-term-listp)))))
+
+       (local (defthm pseudo-termp-of-cadr-when-pseudo-term-listp
+                (implies (pseudo-term-listp terms)
+                         (pseudo-termp (cadr terms)))
+                :hints (("Goal" :in-theory (enable pseudo-termp pseudo-term-listp)))))
+
+       (local (defthm pseudo-termp-of-caddr-when-pseudo-term-listp
+                (implies (pseudo-term-listp terms)
+                         (pseudo-termp (caddr terms)))
+                :hints (("Goal" :in-theory (enable pseudo-termp pseudo-term-listp)))))
+
+       (local (defthm pseudo-termp-of-cdr-when-pseudo-term-listp
+                (implies (pseudo-term-listp terms)
+                         (pseudo-term-listp (cdr terms)))
+                :hints (("Goal" :in-theory (enable pseudo-term-listp)))))
+
        ;; This handles lambda applications correctly (by handling their args) but does not beta reduce.
        (mutual-recursion
          ;; Applies the substitution represented by ALIST to TERM.
@@ -100,11 +143,13 @@
        (defthm ,(pack$ 'len-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
          (equal (len (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)))
                 (len terms))
-         :hints (("Goal" :induct (len terms) :in-theory (enable ,sublis-var-and-eval-lst-name (:i len)))))
+         :hints (("Goal" :induct (len terms) :in-theory (enable ,sublis-var-and-eval-lst-name (:i len))
+                  :expand (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
 
        (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
          (true-listp (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)))
-         :hints (("Goal" :induct (len terms) :in-theory (enable ,sublis-var-and-eval-lst-name (:i len)))))
+         :hints (("Goal" :induct (len terms) :in-theory (enable ,sublis-var-and-eval-lst-name (:i len))
+                  :expand (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
 
        (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
          (defthm ,(pack$ 'myquotep-of- sublis-var-and-eval-name)
@@ -119,8 +164,11 @@
                          (pseudo-term-listp terms))
                     (all-myquotep (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
            :flag ,sublis-var-and-eval-lst-name)
-         :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name ,sublis-var-and-eval-lst-name
-                                                                       myquotep-when-dargp)
+         :hints (("Goal" :expand (pseudo-termp term) ; why?
+                  :in-theory (e/d (,sublis-var-and-eval-name
+                                          ,sublis-var-and-eval-lst-name
+                                          myquotep-when-dargp
+                                          pseudo-termp-when-not-consp-cheap)
                                          (myquotep)))))
 
        (verify-guards ,sublis-var-and-eval-name
@@ -140,7 +188,8 @@
                          (pseudo-term-listp terms))
                     (axe-tree-listp (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
            :flag ,sublis-var-and-eval-lst-name)
-         :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name ,sublis-var-and-eval-lst-name)
+         :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name ,sublis-var-and-eval-lst-name
+                                                                    pseudo-termp-when-not-consp-cheap)
                                          (myquotep ,(pack$ 'myquotep-of- sublis-var-and-eval-name) axe-treep)))))
 
        (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
@@ -159,6 +208,7 @@
                                           bounded-axe-treep-when-dargp-less-than
                                           ;;bounded-axe-treep-when-natp
                                           ;;bounded-axe-treep-when-not-consp
+                                          pseudo-termp-when-not-consp-cheap
                                           )
                                          (myquotep ,(pack$ 'myquotep-of- sublis-var-and-eval-name)
                                                    bounded-axe-treep
