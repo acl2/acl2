@@ -63,6 +63,7 @@
 (include-book "tools/include-raw" :dir :system)
 
 (include-book "tlb")
+(include-book "tty")
 
 ; cert_param: (non-lispworks)
 
@@ -184,48 +185,6 @@
 
 (defn os-info-fix (x)
   (if (keywordp x) x :linux))
-
-(define tty-bufferp (x)
-  (or (null x)
-      (and (consp x)
-           (unsigned-byte-p 8 (car x))
-           (tty-bufferp (cdr x))))
-  ///
-  (defthm tty-bufferp-cons-tty-bufferp
-          (implies (and (unsigned-byte-p 8 x)
-                        (tty-bufferp y))
-                   (tty-bufferp (cons x y))))
-
-  (defthm consp-non-nil-tty-bufferp
-          (implies (and (tty-bufferp x)
-                        x)
-                   (consp x)))
-
-  (defthm unsigned-byte-p-8-car-non-nil-tty-bufferp
-          (implies (and (tty-bufferp x)
-                        x)
-                   (unsigned-byte-p 8 (car x))))
-
-  (defthm consp-tty-bufferp-cdr-tty-bufferp
-          (implies (and (tty-bufferp x)
-                        (consp x))
-                   (tty-bufferp (cdr x))))
-
-  (defthm car-of-tty-bufferp-is-unsigned-bytep-8
-          (implies (and (tty-bufferp x)
-                        x)
-                   (unsigned-byte-p 8 (car x)))))
-
-(define tty-buffer-fix (x)
-  :returns (fixed tty-bufferp)
-  (if (tty-bufferp x)
-    x
-    nil)
-  ///
-  (defthm tty-buffer-fix-identity-on-tty-bufferp
-          (implies (tty-bufferp x)
-                   (equal (tty-buffer-fix x)
-                          x))))
 
 (defconst *x86isa-state*
   `(

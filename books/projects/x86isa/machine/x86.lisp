@@ -977,15 +977,30 @@
 
 ;; ----------------------------------------------------------------------
 
-;; Smashed in raw lisp
+;; Can be smashed by tty-raw.lsp
 (define write-tty ((c :type (unsigned-byte 8))
                        x86)
+  :parents (tty)
+  :short "Write a byte to the TTY."
+  :long "<p>This function writes a byte to the @('tty-out') field of the x86
+  state by consing the byte to the front of it. Including @('tty-raw.lsp') in
+  raw lisp smashes this function to write to a TCP port instead.</p>"
   :returns (x86 x86p :hyp (x86p x86))
   (!tty-out (cons c (tty-out x86)) x86))
 
 (define read-tty (x86)
+  :parents (tty)
+  :short "Read a byte from the TTY."
+  :long "<p>This function reads a byte from the @('tty-in') field of the x86
+  stobj by extracting and returning its @('car') and writing the @('cdr') to
+  the @('tty-in') field. If the @('tty-in') field is empty (i.e. it is
+  @('nil')), this function returns @('nil') and the @('x86') stobj is
+  unmodified. Including @('tty-raw.lsp') in raw lisp smashes this function to
+  read from a TCP port instead.</p>"
   :returns (mv byt
                (x86 x86p :hyp (x86p x86)))
+  :guard-hints (("Goal" :in-theory (disable ELEM-P-OF-XR-TTY-IN)
+                 :use (:instance ELEM-P-OF-XR-TTY-IN (i nil) (x86$a x86))))
   (b* ((buf (tty-in x86))
        ((when (null buf)) (mv nil x86))
        (byt (car buf))
@@ -995,7 +1010,9 @@
   (defthm unsigned-byte-p-8-non-nil-read-tty
           (implies (and (x86p x86)
                         (mv-nth 0 (read-tty x86)))
-                   (unsigned-byte-p 8 (mv-nth 0 (read-tty x86))))))
+                   (unsigned-byte-p 8 (mv-nth 0 (read-tty x86))))
+          :hints (("Goal" :in-theory (disable ELEM-P-OF-XR-TTY-IN)
+                   :use (:instance ELEM-P-OF-XR-TTY-IN (i nil) (x86$a x86))))))
 
 (define x86-exec-peripherals (x86)
   :guard-hints (("Goal" :use ((:instance ELEM-P-OF-XR-LAST-CLOCK-EVENT (i nil) (x86$a x86))
