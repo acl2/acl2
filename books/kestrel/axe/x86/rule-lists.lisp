@@ -37,10 +37,10 @@
             ;x86isa::gpr-or-spec-2$inline
             ;x86isa::gpr-or-spec-4$inline
             ;x86isa::gpr-or-spec-8$inline
-            x86isa::GPR-OR-SPEC-1-redef
-            x86isa::GPR-OR-SPEC-2-redef
-            x86isa::GPR-OR-SPEC-4-redef
-            x86isa::GPR-OR-SPEC-8-redef
+            x86isa::GPR-OR-SPEC-1-alt-def
+            x86isa::GPR-OR-SPEC-2-alt-def
+            x86isa::GPR-OR-SPEC-4-alt-def
+            x86isa::GPR-OR-SPEC-8-alt-def
 
             x86isa::gpr-and-spec-1$inline
             x86isa::gpr-and-spec-2$inline
@@ -72,10 +72,10 @@
             ;; x86isa::shr-spec-16
             ;; x86isa::shr-spec-32
             ;; x86isa::shr-spec-64
-            x86isa::shr-spec-8-redef
-            x86isa::shr-spec-16-redef
-            x86isa::shr-spec-32-redef
-            x86isa::shr-spec-64-redef
+            x86isa::shr-spec-8-alt-def
+            x86isa::shr-spec-16-alt-def
+            x86isa::shr-spec-32-alt-def
+            x86isa::shr-spec-64-alt-def
             acl2::bvshr-rewrite-for-constant-shift-amount ; puts in slice, since we don't translate bvshr to stp
 
             x86isa::rol-spec$inline ;; dispatches based on size
@@ -89,10 +89,10 @@
             ;; x86isa::sal/shl-spec-16
             ;; x86isa::sal/shl-spec-32
             ;; x86isa::sal/shl-spec-64
-            x86isa::sal/shl-spec-8-redef
-            x86isa::sal/shl-spec-16-redef
-            x86isa::sal/shl-spec-32-redef
-            x86isa::sal/shl-spec-64-redef
+            x86isa::sal/shl-spec-8-alt-def
+            x86isa::sal/shl-spec-16-alt-def
+            x86isa::sal/shl-spec-32-alt-def
+            x86isa::sal/shl-spec-64-alt-def
             ;; ACL2::BVSHL-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT ; todo: consider this since we don't translate bvshl to stp
 
             ;; unsigned multiply
@@ -144,20 +144,20 @@
             x86isa::ror-spec$inline ; just a dispatch
             x86isa::rol-spec$inline ; just a dispatch
 
-            x86isa::shlx-spec-32-redef
-            x86isa::shlx-spec-64-redef
-            x86isa::shrx-spec-32-redef
-            x86isa::shrx-spec-64-redef
-            x86isa::sarx-spec-32-redef
-            x86isa::sarx-spec-64-redef
+            x86isa::shlx-spec-32-alt-def
+            x86isa::shlx-spec-64-alt-def
+            x86isa::shrx-spec-32-alt-def
+            x86isa::shrx-spec-64-alt-def
+            x86isa::sarx-spec-32-alt-def
+            x86isa::sarx-spec-64-alt-def
 
             x86isa::sar-spec$inline
             ;x86isa::sar-spec-32-nice
             ;x86isa::sar-spec-64-nice
-            x86isa::sar-spec-8-redef
-            x86isa::sar-spec-16-redef
-            x86isa::sar-spec-32-redef
-            x86isa::sar-spec-64-redef
+            x86isa::sar-spec-8-alt-def
+            x86isa::sar-spec-16-alt-def
+            x86isa::sar-spec-32-alt-def
+            x86isa::sar-spec-64-alt-def
 
             x86isa::x86-operand-to-xmm/mem
 
@@ -165,7 +165,7 @@
             x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll
 
             ;; Improved versions of instruction semantic functions:
-            x86isa::x86-cbw/cwd/cdqe-redef)
+            x86isa::x86-cbw/cwd/cdqe-alt-def)
           (set-difference-equal *instruction-decoding-and-spec-rules*
                                 ;; We remove these because we have better versions:
                                 '(x86isa::x86-cbw/cwd/cdqe))))

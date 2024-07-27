@@ -402,9 +402,7 @@
 
 ;; The put in bvshl and also improve the handling of rflags. Anything else?
 
-;; todo: make names consistent (alt-def vs redef)
-
-(defthm SAL/SHL-SPEC-8-redef
+(defthm SAL/SHL-SPEC-8-alt-def
   (equal (sal/shl-spec-8 dst src input-rflags)
          (b* ((dst (mbe :logic (n-size 8 dst)
                         :exec dst))
@@ -551,7 +549,7 @@
                                   (;x::BVCAT-OF-MINUS-BECOMES-BVSHL ;loop
                                    )))))
 
-(defthm SAL/SHL-SPEC-16-redef
+(defthm SAL/SHL-SPEC-16-alt-def
   (equal (sal/shl-spec-16 dst src input-rflags)
          (b* ((dst (mbe :logic (n-size 16 dst)
                         :exec dst))
@@ -699,7 +697,7 @@
                                   (;x::BVCAT-OF-MINUS-BECOMES-BVSHL ;loop
                                    )))))
 
-(defthm SAL/SHL-SPEC-32-redef
+(defthm SAL/SHL-SPEC-32-alt-def
   (equal (sal/shl-spec-32 dst src input-rflags)
          (b* ((dst (mbe :logic (n-size 32 dst)
                         :exec dst))
@@ -847,7 +845,7 @@
                                   (;x::BVCAT-OF-MINUS-BECOMES-BVSHL ;loop
                                    )))))
 
-(defthm SAL/SHL-SPEC-64-redef
+(defthm SAL/SHL-SPEC-64-alt-def
   (equal (sal/shl-spec-64 dst src input-rflags)
          (B*
                  ((DST (MBE :LOGIC (N-SIZE 64 DST) :EXEC DST))
@@ -957,7 +955,7 @@
 
 ;; These put in bvshr and change the handling of rflags.  Anything else?
 
-(defthm SHR-SPEC-8-redef
+(defthm SHR-SPEC-8-alt-def
   (equal (SHR-SPEC-8 dst src input-rflags)
          (B*
                  ((DST (MBE :LOGIC (N-SIZE 8 DST) :EXEC DST))
@@ -1061,7 +1059,7 @@
                                      acl2::slice
                                      rflag-RoWs-enables))))
 
-(defthm SHR-SPEC-16-redef
+(defthm SHR-SPEC-16-alt-def
   (equal (SHR-SPEC-16 dst src input-rflags)
          (B*
              ((DST (MBE :LOGIC (N-SIZE 16 DST) :EXEC DST))
@@ -1164,7 +1162,7 @@
                                      acl2::slice
                                      rflag-RoWs-enables))))
 
-(defthm SHR-SPEC-32-redef
+(defthm SHR-SPEC-32-alt-def
   (equal (SHR-SPEC-32 dst src input-rflags)
          (B*
              ((DST (MBE :LOGIC (N-SIZE 32 DST)
@@ -1304,7 +1302,7 @@
                                      acl2::slice
                                      rflag-RoWs-enables))))
 
-(defthm SHR-SPEC-64-redef
+(defthm SHR-SPEC-64-alt-def
   (equal (SHR-SPEC-64 dst src input-rflags)
          (B*
              ((DST (MBE :LOGIC (N-SIZE 64 DST) :EXEC DST))
@@ -1411,7 +1409,7 @@
 
 ;; These use bvor for the result and also change the handling of rflagsbits
 
-(defthm GPR-OR-SPEC-1-redef
+(defthm GPR-OR-SPEC-1-alt-def
   (equal (GPR-OR-SPEC-1 dst src input-rflags)
          (b*
              ((dst (mbe :logic (n-size 8 dst) :exec dst))
@@ -1451,7 +1449,7 @@
                                      rflag-RoWs-enables))))
 
 ;; Uses bvor for the result
-(defthm GPR-OR-SPEC-2-redef
+(defthm GPR-OR-SPEC-2-alt-def
   (equal (GPR-OR-SPEC-2 dst src input-rflags)
          (B*
              ((DST (MBE :LOGIC (N-SIZE 16 DST) :EXEC DST))
@@ -1492,7 +1490,7 @@
                                       rflag-RoWs-enables))))
 
 ;; Uses bvor for the result
-(defthm GPR-OR-SPEC-4-redef
+(defthm GPR-OR-SPEC-4-alt-def
   (equal (GPR-OR-SPEC-4 dst src input-rflags)
          (B*
              ((DST (MBE :LOGIC (N-SIZE 32 DST) :EXEC DST))
@@ -1532,7 +1530,7 @@
                                       rflag-RoWs-enables))))
 
 ;; Uses bvor for the result
-(defthm GPR-OR-SPEC-8-redef
+(defthm GPR-OR-SPEC-8-alt-def
   (equal (GPR-OR-SPEC-8 dst src input-rflags)
          (B*
                  ((DST (MBE :LOGIC (N-SIZE 64 DST) :EXEC DST))
@@ -1582,7 +1580,7 @@
 ;todo: rule for (ACL2::BVCHOP 8 (LOGEXT 7 x)) when top bit is 1
 
 ;; todo: these have gross case splits for shift amounts that are too large
-(defthm SaR-SPEC-8-redef
+(defthm SaR-SPEC-8-alt-def
   (equal (SaR-SPEC-8 dst src input-rflags)
          (B*
              ((DST (MBE :LOGIC (N-SIZE 8 DST) :EXEC DST))
@@ -1714,7 +1712,7 @@
                                    rflag-RoWs-enables)
                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
-(defthm SaR-SPEC-16-redef
+(defthm SaR-SPEC-16-alt-def
   (equal (SaR-SPEC-16 dst src input-rflags)
          (B*
              ((DST (MBE :LOGIC (N-SIZE 16 DST) :EXEC DST))
@@ -1841,7 +1839,7 @@
                                    rflag-RoWs-enables)
                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
-(defthm SaR-SPEC-32-redef
+(defthm SaR-SPEC-32-alt-def
   (equal (SaR-SPEC-32 dst src input-rflags)
          (B*
                  ((DST (MBE :LOGIC (N-SIZE 32 DST) :EXEC DST))
@@ -1968,7 +1966,7 @@
                                    rflag-RoWs-enables)
                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
-(defthm SaR-SPEC-64-redef
+(defthm SaR-SPEC-64-alt-def
   (equal (SaR-SPEC-64 dst src input-rflags)
          (B*
                  ((DST (MBE :LOGIC (N-SIZE 64 DST) :EXEC DST))
@@ -2286,29 +2284,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm shlx-spec-32-redef
+(defthm shlx-spec-32-alt-def
   (equal (shlx-spec-32 src cnt)
          (acl2::bvshl 32 src (acl2::bvchop 6 cnt))) ; could change the model to chop to 5 bits
   :hints (("Goal" :in-theory (enable shlx-spec-32 acl2::bvshl))))
 
-(defthm shlx-spec-64-redef
+(defthm shlx-spec-64-alt-def
   (equal (shlx-spec-64 src cnt)
          (acl2::bvshl 64 src (acl2::bvchop 6 cnt)))
   :hints (("Goal" :in-theory (enable shlx-spec-64 acl2::bvshl))))
 
-(defthm shrx-spec-32-redef
+(defthm shrx-spec-32-alt-def
   (equal (shrx-spec-32 src cnt)
          (acl2::bvshr 32 src (acl2::bvchop 6 cnt))) ; could change the model to chop to 5 bits
   :hints (("Goal" :in-theory (enable shrx-spec-32 acl2::bvshr acl2::logtail-of-bvchop-becomes-slice))))
 
-(defthm shrx-spec-64-redef
+(defthm shrx-spec-64-alt-def
   (equal (shrx-spec-64 src cnt)
          (acl2::bvshr 64 src (acl2::bvchop 6 cnt)))
   :hints (("Goal" :in-theory (enable shrx-spec-64 acl2::bvshr acl2::logtail-of-bvchop-becomes-slice))))
 
 ;;todo: redefining bvashr could make this nicer
 ;; or could change the model to chop CNT to 5 bits, since the caller already does that
-(defthm sarx-spec-32-redef
+(defthm sarx-spec-32-alt-def
   (equal (sarx-spec-32 src cnt)
          (if (< (acl2::bvchop 6 cnt) 32) ; should always be true, since the caller chops it
              (acl2::bvashr 32 src (acl2::bvchop 6 cnt))
@@ -2319,7 +2317,7 @@
                                      acl2::logtail-of-bvchop-becomes-slice
                                      acl2::bvchop-of-logtail-becomes-slice))))
 
-(defthm sarx-spec-64-redef
+(defthm sarx-spec-64-alt-def
   (equal (sarx-spec-64 src cnt)
          (acl2::bvashr 64 src (acl2::bvchop 6 cnt)))
   :hints (("Goal" :in-theory (enable sarx-spec-64 acl2::bvashr acl2::bvshr acl2::bvsx
@@ -2435,7 +2433,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This avoids a case split when doing the sign extension.
-(defthm x86-cbw/cwd/cdqe-redef
+(defthm x86-cbw/cwd/cdqe-alt-def
   (equal (x86-cbw/cwd/cdqe
            proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m sib x86)
 
