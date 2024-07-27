@@ -2284,6 +2284,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; There are only 2 of these
 (defthm shlx-spec-32-alt-def
   (equal (shlx-spec-32 src cnt)
          (acl2::bvshl 32 src (acl2::bvchop 6 cnt))) ; could change the model to chop to 5 bits
@@ -2294,6 +2295,9 @@
          (acl2::bvshl 64 src (acl2::bvchop 6 cnt)))
   :hints (("Goal" :in-theory (enable shlx-spec-64 acl2::bvshl))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; There are only 2 of these
 (defthm shrx-spec-32-alt-def
   (equal (shrx-spec-32 src cnt)
          (acl2::bvshr 32 src (acl2::bvchop 6 cnt))) ; could change the model to chop to 5 bits
@@ -2304,6 +2308,9 @@
          (acl2::bvshr 64 src (acl2::bvchop 6 cnt)))
   :hints (("Goal" :in-theory (enable shrx-spec-64 acl2::bvshr acl2::logtail-of-bvchop-becomes-slice))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; There are only 2 of these
 ;;todo: redefining bvashr could make this nicer
 ;; or could change the model to chop CNT to 5 bits, since the caller already does that
 (defthm sarx-spec-32-alt-def
