@@ -190,7 +190,7 @@
 (define abstract-fn
   ((new-fn-name identp)
    (spec declspec-listp)
-   (pointers tyqual-list-listp)
+   (pointers type-qual-list-listp)
    (items block-item-listp)
    (decls ident-paramdecl-mapp))
   :short "Create a new function from the block items following the @(tsee
@@ -258,7 +258,7 @@
   ((new-fn-name identp)
    (items block-item-listp)
    (spec declspec-listp)
-   (pointers tyqual-list-listp)
+   (pointers type-qual-list-listp)
    (decls ident-paramdecl-mapp)
    (split-point natp))
   :short "Transform a list of block items."

@@ -16,6 +16,7 @@
 (include-book "../operations/closure")
 (include-book "../operations/well-formedness")
 (include-book "../operations/numeric-range-retrieval")
+(include-book "../operations/character-value-retrieval")
 
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/std/system/constant-namep" :dir :system)
@@ -57,8 +58,10 @@
   (xdoc::ol
    (xdoc::li
     "In the first pass, we go through all the rules of the grammar
-     and generate a @(tsee deftreeops-rulename-info-alist)
-     and a @(tsee deftreeops-numrange-info-alist),
+     and generate
+     a @(tsee deftreeops-rulename-info-alist),
+     a @(tsee deftreeops-numrange-info-alist), and
+     a @(tsee deftreeops-charval-info-alist),
      which mainly contain information about
      the names of the functions and theorems to be generated,
      along with some additional information.")
@@ -72,7 +75,7 @@
      The generated events are returned as separate sequences,
      in order to put analogous events next to each other."))
   (xdoc::p
-   "The alists of information about rule names and numeric ranges
+   "The alists of information created in the first pass
     are also stored in the @(tsee deftreeops) table,
     via an event generated along with the functions and theorems.
     This way, the information about the generated functions and theorems
@@ -269,12 +272,11 @@
     "This information consists of:")
    (xdoc::ul
     (xdoc::li
-     "The name of the function that maps
-      a tree matching the range
-      to the natural number at the leaf of the tree.")
+     "The name of the @('<prefix>-%<b><min>-<max>-nat') function
+      described in @(tsee deftreeops).")
     (xdoc::li
-     "The name of the theorem about the bounds of
-      the result of the just aforementioned function.")))
+     "The name of the @('<prefix>-%<b><min>-<max>-nat-bounds') theorem
+      described in @(tsee deftreeops).")))
   ((get-nat-fn acl2::symbol)
    (bounds-thm acl2::symbol))
   :pred deftreeops-numrange-infop)
@@ -289,6 +291,35 @@
   :keyp-of-nil nil
   :valp-of-nil nil
   :pred deftreeops-numrange-info-alistp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod deftreeops-charval-info
+  :short "Fixtype of @(tsee deftreeops) information about
+          character value notation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This information consists of:")
+   (xdoc::ul
+    (xdoc::li
+     "The name of the @('<prefix>-<...>|\"<chars>\"|-leafterm') theorem
+      described in @(tsee deftreeops),
+      where @('<...>') is @('%i') or @('%s') or nothing.")))
+  ((leafterm-thm acl2::symbolp))
+  :pred deftreeops-charval-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist deftreeops-charval-info-alist
+  :short "Fixtype of alists from character value notations
+          to information about them."
+  :key-type char-val
+  :val-type deftreeops-charval-info
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :pred deftreeops-charval-info-alistp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -317,7 +348,8 @@
     (xdoc::li
      "The alist from numeric ranges to numeric range information.")))
   ((rulename-info-alist deftreeops-rulename-info-alist)
-   (numrange-info-alist deftreeops-numrange-info-alist))
+   (numrange-info-alist deftreeops-numrange-info-alist)
+   (charval-info-alist deftreeops-charval-info-alist))
   :pred deftreeops-table-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1039,6 +1071,50 @@
           (infos (deftreeops-gen-numrange-info-alist-aux
                    (set::tail ranges) prefix)))
        (acons range info infos))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-charval-info ((charval char-val-p)
+                                     (prefix acl2::symbolp))
+  :returns (info deftreeops-charval-infop)
+  :short "Generate the information for a character value notation."
+  (b* ((leafterm-thm (packn-pos (list prefix
+                                      '-
+                                      (pretty-print-char-val charval)
+                                      '-leafterm)
+                                prefix)))
+    (make-deftreeops-charval-info
+     :leafterm-thm leafterm-thm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-charval-info-alist ((rules rulelistp)
+                                           (prefix acl2::symbolp))
+  :returns (infos deftreeops-charval-info-alistp)
+  :short "Generate the alist from character value notation
+          to character value notation information
+          from a list of rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We obtain the set of character value notations from the rules,
+     and then we generate an alist from the set."))
+  (deftreeops-gen-charval-info-alist-aux
+    (rulelist-char-vals rules) prefix)
+
+  :prepwork
+  ((define deftreeops-gen-charval-info-alist-aux ((charvals char-val-setp)
+                                                  (prefix acl2::symbolp))
+     :returns (info deftreeops-charval-info-alistp
+                    :hyp (char-val-setp charvals))
+     :parents nil
+     (b* (((when (set::emptyp charvals)) nil)
+          (charval (set::head charvals))
+          (info (deftreeops-gen-charval-info charval prefix))
+          (infos (deftreeops-gen-charval-info-alist-aux
+                   (set::tail charvals) prefix)))
+       (acons charval info infos))
      :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2023,6 +2099,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deftreeops-gen-charval-events ((charval char-val-p)
+                                       (info deftreeops-charval-infop)
+                                       (prefix acl2::symbolp))
+  :returns (leafterm-thm-event pseudo-event-formp
+                               "The theorem
+                                @('<prefix>-<...>|\"<chars>\"|-leafterm')
+                                described in @(tsee deftreeops).")
+  :short "Generate the theorem for a character value notation."
+  (b* (((deftreeops-charval-info info) info)
+       (matchp (deftreeops-match-pred prefix))
+       (matchp$ (packn-pos (list matchp "$") matchp))
+       (charval-desc (pretty-print-char-val charval))
+       (leafterm-thm-event
+        `(defruled ,info.leafterm-thm
+           (implies (,matchp cst ,charval-desc)
+                    (equal (tree-kind cst) :leafterm))
+           :hints (("Goal" :in-theory '(,matchp$
+                                        tree-leafterm-when-match-numval/charval
+                                        (:e element-kind)
+                                        (:e member-equal)))))))
+    leafterm-thm-event))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-charval-alist-events
+  ((charval-infos deftreeops-charval-info-alistp)
+   (prefix acl2::symbolp))
+  :returns (leafterm-thm-events pseudo-event-form-listp)
+  :short "Generate the events for all the character value notations
+          in the alist."
+  (b* (((when (endp charval-infos)) nil)
+       ((cons charval info) (car charval-infos))
+       (leafterm-thm-events
+        (deftreeops-gen-charval-events charval info prefix))
+       (leafterm-thm-more-events
+        (deftreeops-gen-charval-alist-events (cdr charval-infos) prefix)))
+    (cons leafterm-thm-events
+          leafterm-thm-more-events)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-all-charval-infos+events ((rules rulelistp)
+                                                 (prefix acl2::symbolp))
+  :returns (mv (charval-infos deftreeops-charval-info-alistp)
+               (charval-events pseudo-event-form-listp))
+  :short "Generate the information and events
+          for all the character value notations in a grammar."
+  (b* ((infos (deftreeops-gen-charval-info-alist rules prefix))
+       (leafterm-thm-events
+        (deftreeops-gen-charval-alist-events infos prefix))
+       (events leafterm-thm-events))
+    (mv infos events)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define deftreeops-gen-everything ((grammar acl2::symbolp)
                                    (rules rulelistp)
                                    (prefix acl2::symbolp)
@@ -2034,9 +2165,12 @@
         (deftreeops-gen-all-rulename-infos+events rules prefix))
        ((mv numrange-infos numrange-events)
         (deftreeops-gen-all-numrange-infos+events rules prefix))
+       ((mv charval-infos charval-events)
+        (deftreeops-gen-all-charval-infos+events rules prefix))
        (table-value (make-deftreeops-table-value
                      :rulename-info-alist rulename-infos
-                     :numrange-info-alist numrange-infos))
+                     :numrange-info-alist numrange-infos
+                     :charval-info-alist charval-infos))
        (event `(defsection ,(add-suffix grammar "-TREE-OPERATIONS")
                  :parents (,grammar)
                  :short ,(str::cat
@@ -2044,8 +2178,9 @@
                           (str::downcase-string (symbol-name grammar))
                           ").")
                  ,@matchers
-                 ,@rulename-events
                  ,@numrange-events
+                 ,@charval-events
+                 ,@rulename-events
                  ,(deftreeops-table-add call table-value))))
     event))
 

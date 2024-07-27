@@ -1037,7 +1037,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum tyqual
+(fty::deftagsum type-qual
   :short "Fixtype of type qualifiers [C:6.7.3] [C:A.2.2]."
   :long
   (xdoc::topstring
@@ -1061,33 +1061,33 @@
   ;; GCC extensions:
   (:__restrict ())
   (:__restrict__ ())
-  :pred tyqualp)
+  :pred type-qualp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist tyqual-list
+(fty::deflist type-qual-list
   :short "Fixtype of lists of type qualifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Type qualifiers are defined in @(tsee tyqual)."))
-  :elt-type tyqual
+    "Type qualifiers are defined in @(tsee type-qual)."))
+  :elt-type type-qual
   :true-listp t
   :elementp-of-nil nil
-  :pred tyqual-listp)
+  :pred type-qual-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist tyqual-list-list
+(fty::deflist type-qual-list-list
   :short "Fixtype of lists of lists of type qualifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Type qualifiers are defined in @(tsee tyqual)."))
-  :elt-type tyqual-list
+    "Type qualifiers are defined in @(tsee type-qual)."))
+  :elt-type type-qual-list
   :true-listp t
   :elementp-of-nil t
-  :pred tyqual-list-listp)
+  :pred type-qual-list-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1127,7 +1127,7 @@
     "A few fixtypes related to declarations
      are actually outside this mutual recursion,
      because they are not mutually recursive with others.
-     For instance, the fixtype @(tsee tyqual) for type qualifiers
+     For instance, the fixtype @(tsee type-qual) for type qualifiers
      is defined before these mutually recursive fixtypes,
      and the fixtype @(tsee decl) for (top-level) declarations
      is defined after these mutually recursive fixtypes.")
@@ -1564,7 +1564,7 @@
        but it is useful to define <i>specifier-qualifier-list</i>:
        see @(tsee specqual-list)."))
     (:tyspec ((unwrap tyspec)))
-    (:tyqual ((unwrap tyqual)))
+    (:tyqual ((unwrap type-qual)))
     (:alignspec ((unwrap alignspec)))
     :pred specqualp
     :measure (two-nats-measure (acl2-count x) 0))
@@ -1627,7 +1627,7 @@
        (see @(tsee declspec-list))."))
     (:stocla ((unwrap stor-spec)))
     (:tyspec ((unwrap tyspec)))
-    (:tyqual ((unwrap tyqual)))
+    (:tyqual ((unwrap type-qual)))
     (:funspec ((unwrap funspec)))
     (:alignspec ((unwrap alignspec)))
     :pred declspecp
@@ -1768,7 +1768,7 @@
        the outer list corresponds to each star,
        and each inner list corresponds to the type qualifiers
        that immediately follow the star."))
-    ((pointers tyqual-list-list)
+    ((pointers type-qual-list-list)
      (decl dirdeclor))
     :pred declorp
     :measure (two-nats-measure (acl2-count x) 1))
@@ -1826,16 +1826,16 @@
     (:ident ((unwrap ident)))
     (:paren ((unwrap declor)))
     (:array ((decl dirdeclor)
-             (tyquals tyqual-list)
+             (tyquals type-qual-list)
              (expr? expr-option)))
     (:array-static1 ((decl dirdeclor)
-                     (tyquals tyqual-list)
+                     (tyquals type-qual-list)
                      (expr expr)))
     (:array-static2 ((decl dirdeclor)
-                     (tyquals tyqual-list)
+                     (tyquals type-qual-list)
                      (expr expr)))
     (:array-star ((decl dirdeclor)
-                  (tyquals tyqual-list)))
+                  (tyquals type-qual-list)))
     (:function-params ((decl dirdeclor)
                        (params paramdecl-list)
                        (ellipsis bool)))
@@ -1857,7 +1857,7 @@
        (see that fixtype's documentation in particular
        for an explanation of the modeling of the <i>pointer</i> part),
        but the abstract direct declarator is optional."))
-    ((pointers tyqual-list-list)
+    ((pointers type-qual-list-list)
      (decl? dirabsdeclor-option))
     :pred absdeclorp
     :measure (two-nats-measure (acl2-count x) 2))
@@ -1895,13 +1895,13 @@
     (:dummy-base ())
     (:paren ((unwrap absdeclor)))
     (:array ((decl? dirabsdeclor-option)
-             (tyquals tyqual-list)
+             (tyquals type-qual-list)
              (expr? expr-option)))
     (:array-static1 ((decl? dirabsdeclor-option)
-                     (tyquals tyqual-list)
+                     (tyquals type-qual-list)
                      (expr expr)))
     (:array-static2 ((decl? dirabsdeclor-option)
-                     (tyquals tyqual-list)
+                     (tyquals type-qual-list)
                      (expr expr)))
     (:array-star ((decl? dirabsdeclor-option)))
     (:function ((decl? dirabsdeclor-option)

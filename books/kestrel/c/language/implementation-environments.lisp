@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,7 +68,7 @@
      and implies that an @('unsigned char') consists of one byte
      (as also implied by [C:6.5.3.4/2] and [C:6.5.3.4/4]).")
    (xdoc::p
-    "Thus, the format of @('unsigned char') object is determined
+    "Thus, the format of @('unsigned char') objects is determined
      by their number of bits, i.e. @('CHAR_BIT').
      This is required to be at least 8 [C:5.2.4.2.1/1]."))
   ((bits nat :reqfix (if (>= bits 8) bits 8)))
@@ -259,7 +259,7 @@
      is not a trap representation)
      or @($- 2^{\\mathtt{CHAR\\_BIT}-1} + 1$)
      (if the signed format is ones' complement or sign-and-magnitude,
-     or it if two's complement
+     or it is two's complement
      but the pattern with sign bit 1 and all value bits 0
      is a trap representation)."))
   (if (and (equal (signed-format-kind

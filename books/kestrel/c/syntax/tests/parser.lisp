@@ -854,6 +854,57 @@
  lex-escape-sequence
  "U0000123")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-c-chars
+
+(test-lex
+ lex-c-chars
+ "a'"
+ :cond (equal ast (list (c-char-char (char-code #\a)))))
+
+(test-lex
+ lex-c-chars
+ "\\a'"
+ :cond (equal ast (list (c-char-escape (escape-simple (simple-escape-a))))))
+
+(test-lex
+ lex-c-chars
+ "&\\xf7'"
+ :cond (equal ast (list (c-char-char (char-code #\&))
+                        (c-char-escape (escape-hex (list #\f #\7))))))
+
+(test-lex
+ lex-c-chars
+ "\\1111'"
+ :cond (equal ast (list (c-char-escape
+                         (escape-oct (oct-escape-three #\1 #\1 #\1)))
+                        (c-char-char (char-code #\1)))))
+
+(test-lex
+ lex-c-chars
+ "ABC'"
+ :cond (and (equal ast (list (c-char-char (char-code #\A))
+                             (c-char-char (char-code #\B))
+                             (c-char-char (char-code #\C))))
+            (equal pos/span (position 1 3))))
+
+(test-lex-fail
+ lex-c-chars
+ "")
+
+(test-lex-fail
+ lex-c-chars
+ "a")
+
+(test-lex-fail
+ lex-c-chars
+ "a\\'")
+
+(test-lex-fail
+ lex-c-chars
+ "a\\z'")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test parsing functions.
