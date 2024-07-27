@@ -4,7 +4,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/helpers/advice-code-only" :dir :system :ttags :all)
+(include-book "kestrel/helpers/advice" :dir :system :ttags :all)
 
 (program)
 (set-state-ok t)

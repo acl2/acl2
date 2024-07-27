@@ -12,7 +12,8 @@
 
 (include-book "replay-book-with-advice") ; todo: factor out common stuff
 (include-book "replay-books-with-advice") ; todo: factor out common stuff: clear-keys-with-matching-prefixes
-(include-book "advice")
+(include-book "advice-implementation") ; todo, switch to this:
+;;(include-book "advice") ; only the code
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move

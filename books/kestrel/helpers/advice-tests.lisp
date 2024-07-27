@@ -17,7 +17,7 @@
 
 ; cert_param: (non-allegro)
 
-(include-book "advice") ; todo: or advice-code-only?
+(include-book "advice")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 ;; A simple test, with extensive guard checking

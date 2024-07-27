@@ -22,6 +22,7 @@
 (include-book "recommendations")
 (include-book "model-enable")
 (include-book "model-history")
+(include-book "advice-implementation")
 (include-book "advice")
 (include-book "replay-book-helpers")
 (include-book "replay-book")
