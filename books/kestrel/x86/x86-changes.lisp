@@ -14,7 +14,9 @@
 (include-book "projects/x86isa/machine/instructions/sub-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/add-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/shifts-spec" :dir :system)
+(include-book "projects/x86isa/machine/instructions/and-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/or-spec" :dir :system)
+(include-book "projects/x86isa/machine/instructions/xor-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/signextend" :dir :system) ; brings in ttags
 (include-book "kestrel/bv/bvshl" :dir :system)
@@ -2517,6 +2519,127 @@
          (add-af-spec32 dst src))
   :hints (("Goal" :in-theory (enable add-af-spec32))))
 
+;; these clean up the flags expressions
+
+(defthm gpr-add-spec-1-alt-def
+  (equal (gpr-add-spec-1 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 8 dst) :exec dst))
+              (src (mbe :logic (n-size 8 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (raw-result (the (unsigned-byte 9)
+                            (+ (the (unsigned-byte 8) dst)
+                               (the (unsigned-byte 8) src))))
+              (signed-raw-result (the (signed-byte 9)
+                                   (+ (the (signed-byte 8) (n08-to-i08 dst))
+                                      (the (signed-byte 8)
+                                        (n08-to-i08 src)))))
+              (result (the (unsigned-byte 8)
+                        (n-size 8 raw-result)))
+              (cf (the (unsigned-byte 1)
+                    (cf-spec8 raw-result)))
+              (pf (the (unsigned-byte 1)
+                    (pf-spec8 result)))
+              (af (the (unsigned-byte 1)
+                    (add-af-spec8 dst src)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec8 result)))
+              (of (the (unsigned-byte 1)
+                    (of-spec8 signed-raw-result)))
+              (output-rflags (change-rflagsbits input-rflags
+                                                :cf cf
+                                                :pf pf
+                                                :af af
+                                                :zf zf
+                                                :sf sf
+                                                :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags 0))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-add-spec-1 rflag-rows-enables))))
+
+(defthm gpr-add-spec-2-alt-def
+  (equal (gpr-add-spec-2 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 16 dst) :exec dst))
+              (src (mbe :logic (n-size 16 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (raw-result (the (unsigned-byte 17)
+                            (+ (the (unsigned-byte 16) dst)
+                               (the (unsigned-byte 16) src))))
+              (signed-raw-result (the (signed-byte 17)
+                                   (+ (the (signed-byte 16) (n16-to-i16 dst))
+                                      (the (signed-byte 16)
+                                        (n16-to-i16 src)))))
+              (result (the (unsigned-byte 16)
+                        (n-size 16 raw-result)))
+              (cf (the (unsigned-byte 1)
+                    (cf-spec16 raw-result)))
+              (pf (the (unsigned-byte 1)
+                    (pf-spec16 result)))
+              (af (the (unsigned-byte 1)
+                    (add-af-spec16 dst src)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec16 result)))
+              (of (the (unsigned-byte 1)
+                    (of-spec16 signed-raw-result)))
+              (output-rflags (change-rflagsbits input-rflags
+                                                :cf cf
+                                                :pf pf
+                                                :af af
+                                                :zf zf
+                                                :sf sf
+                                                :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags 0))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-add-spec-2 rflag-rows-enables))))
+
+(defthm gpr-add-spec-4-alt-def
+  (equal (gpr-add-spec-4 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 32 dst) :exec dst))
+              (src (mbe :logic (n-size 32 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (raw-result (the (unsigned-byte 33)
+                            (+ (the (unsigned-byte 32) dst)
+                               (the (unsigned-byte 32) src))))
+              (signed-raw-result (the (signed-byte 33)
+                                   (+ (the (signed-byte 32) (n32-to-i32 dst))
+                                      (the (signed-byte 32)
+                                        (n32-to-i32 src)))))
+              (result (the (unsigned-byte 32)
+                        (n-size 32 raw-result)))
+              (cf (the (unsigned-byte 1)
+                    (cf-spec32 raw-result)))
+              (pf (the (unsigned-byte 1)
+                    (pf-spec32 result)))
+              (af (the (unsigned-byte 1)
+                    (add-af-spec32 dst src)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec32 result)))
+              (of (the (unsigned-byte 1)
+                    (of-spec32 signed-raw-result)))
+              (output-rflags (change-rflagsbits input-rflags
+                                                :cf cf
+                                                :pf pf
+                                                :af af
+                                                :zf zf
+                                                :sf sf
+                                                :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags 0))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-add-spec-4 rflag-rows-enables))))
 
 ;; for rewriting
 (defthmd GPR-ADD-SPEC-4-better
@@ -2582,7 +2705,6 @@
 ;;                                     acl2::bvchop-of-sum-cases
 ;;                                     acl2::bvplus) ((:e tau-system))))))
 
-;; todo: add alt-def rules for GPR-ADD-SPEC-1, etc, that clean up the flags expressions
 
 
 ;; Gets rid of change-rflagsbits, and some fixing.
@@ -2632,3 +2754,263 @@
                                       ;ZF-SPEC
                                       ;acl2::bvchop-of-sum-cases
                                       rflag-RoWs-enables))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Better rflags handling
+(defthm gpr-and-spec-1-alt-def
+  (equal (gpr-and-spec-1 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 8 dst) :exec dst))
+              (src (mbe :logic (n-size 8 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ((the (unsigned-byte 8) result)
+               (mbe :logic (part-select (logand dst src)
+                                        :low 0
+                                        :width 8)
+                    :exec (logand dst src)))
+              (cf 0)
+              (pf (the (unsigned-byte 1)
+                    (pf-spec8 result)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec8 result)))
+              (of 0)
+              (output-rflags (change-rflagsbits input-rflags
+                                                :cf cf
+                                                :pf pf
+                                                :zf zf
+                                                :sf sf
+                                                :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags (!rflagsbits->af 1 0)))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-and-spec-1 rflag-rows-enables))))
+
+;; Better rflags handling
+(defthm gpr-and-spec-2-alt-def
+  (equal (gpr-and-spec-2 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 16 dst) :exec dst))
+              (src (mbe :logic (n-size 16 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ((the (unsigned-byte 16) result)
+               (mbe :logic (part-select (logand dst src)
+                                        :low 0
+                                        :width 16)
+                    :exec (logand dst src)))
+              (cf 0)
+              (pf (the (unsigned-byte 1)
+                    (pf-spec16 result)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec16 result)))
+              (of 0)
+              (output-rflags (change-rflagsbits input-rflags
+                                                            :cf cf
+                                                            :pf pf
+                                                            :zf zf
+                                                            :sf sf
+                                                            :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags (!rflagsbits->af 1 0)))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-and-spec-2 rflag-rows-enables))))
+
+;; Better rflags handling
+(defthm gpr-and-spec-4-alt-def
+  (equal (gpr-and-spec-4 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 32 dst) :exec dst))
+              (src (mbe :logic (n-size 32 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ((the (unsigned-byte 32) result)
+               (mbe :logic (part-select (logand dst src)
+                                        :low 0
+                                        :width 32)
+                    :exec (logand dst src)))
+              (cf 0)
+              (pf (the (unsigned-byte 1)
+                    (pf-spec32 result)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec32 result)))
+              (of 0)
+              (output-rflags (change-rflagsbits input-rflags
+                                                            :cf cf
+                                                            :pf pf
+                                                            :zf zf
+                                                            :sf sf
+                                                            :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags (!rflagsbits->af 1 0)))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-and-spec-4 rflag-rows-enables))))
+
+;; Better rflags handling
+(defthm gpr-and-spec-8-alt-def
+  (equal (gpr-and-spec-8 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 64 dst) :exec dst))
+              (src (mbe :logic (n-size 64 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ((the (unsigned-byte 64) result)
+               (mbe :logic (part-select (logand dst src)
+                                        :low 0
+                                        :width 64)
+                    :exec (logand dst src)))
+              (cf 0)
+              (pf (the (unsigned-byte 1)
+                    (pf-spec64 result)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec64 result)))
+              (of 0)
+              (output-rflags (change-rflagsbits input-rflags
+                                                            :cf cf
+                                                            :pf pf
+                                                            :zf zf
+                                                            :sf sf
+                                                            :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags (!rflagsbits->af 1 0)))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-and-spec-8 rflag-rows-enables))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Better rflags handling
+(defthm gpr-xor-spec-1-alt-def
+  (equal (gpr-xor-spec-1 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 8 dst) :exec dst))
+              (src (mbe :logic (n-size 8 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ((the (unsigned-byte 8) result)
+               (mbe :logic (part-select (logxor dst src)
+                                        :low 0
+                                        :width 8)
+                    :exec (logxor dst src)))
+              (cf 0)
+              (pf (the (unsigned-byte 1)
+                    (pf-spec8 result)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec8 result)))
+              (of 0)
+              (output-rflags (change-rflagsbits input-rflags
+                                                            :cf cf
+                                                            :pf pf
+                                                            :zf zf
+                                                            :sf sf
+                                                            :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags (!rflagsbits->af 1 0)))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-xor-spec-1 rflag-rows-enables))))
+
+;; Better rflags handling
+(defthm gpr-xor-spec-2-alt-def
+  (equal (gpr-xor-spec-2 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 16 dst) :exec dst))
+              (src (mbe :logic (n-size 16 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ((the (unsigned-byte 16) result)
+               (mbe :logic (part-select (logxor dst src)
+                                        :low 0
+                                        :width 16)
+                    :exec (logxor dst src)))
+              (cf 0)
+              (pf (the (unsigned-byte 1)
+                    (pf-spec16 result)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec16 result)))
+              (of 0)
+              (output-rflags (change-rflagsbits input-rflags
+                                                            :cf cf
+                                                            :pf pf
+                                                            :zf zf
+                                                            :sf sf
+                                                            :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags (!rflagsbits->af 1 0)))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-xor-spec-2 rflag-rows-enables))))
+
+;; Better rflags handling
+(defthm gpr-xor-spec-4-alt-def
+  (equal (gpr-xor-spec-4 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 32 dst) :exec dst))
+              (src (mbe :logic (n-size 32 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ((the (unsigned-byte 32) result)
+               (mbe :logic (part-select (logxor dst src)
+                                        :low 0
+                                        :width 32)
+                    :exec (logxor dst src)))
+              (cf 0)
+              (pf (the (unsigned-byte 1)
+                    (pf-spec32 result)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec32 result)))
+              (of 0)
+              (output-rflags (change-rflagsbits input-rflags
+                                                            :cf cf
+                                                            :pf pf
+                                                            :zf zf
+                                                            :sf sf
+                                                            :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags (!rflagsbits->af 1 0)))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-xor-spec-4 rflag-rows-enables))))
+
+;; Better rflags handling
+(defthm gpr-xor-spec-8-alt-def
+  (equal (gpr-xor-spec-8 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 64 dst) :exec dst))
+              (src (mbe :logic (n-size 64 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ((the (unsigned-byte 64) result)
+               (mbe :logic (part-select (logxor dst src)
+                                        :low 0
+                                        :width 64)
+                    :exec (logxor dst src)))
+              (cf 0)
+              (pf (the (unsigned-byte 1)
+                    (pf-spec64 result)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec64 result)))
+              (of 0)
+              (output-rflags (change-rflagsbits input-rflags
+                                                            :cf cf
+                                                            :pf pf
+                                                            :zf zf
+                                                            :sf sf
+                                                            :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags (!rflagsbits->af 1 0)))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-xor-spec-8 rflag-rows-enables))))
