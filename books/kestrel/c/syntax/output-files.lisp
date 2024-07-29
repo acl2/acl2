@@ -69,7 +69,7 @@
 (define output-files-process-inputp (x)
   :returns (yes/no booleanp)
   :short "Recognize valid values of the @(':process') input."
-  (and (member-eq x '(nil :print)) t))
+  (and (member-eq x '(:write :print)) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,7 +92,7 @@
      is the value of the constant specified by the @(':const') input.")
    (xdoc::p
     "The other results of this function are the homonymous inputs."))
-  (b* (((reterr) (fileset nil) nil nil)
+  (b* (((reterr) (fileset nil) :write nil)
        ;; Check and obtain options.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -111,9 +111,9 @@
        (process-option (assoc-eq :process options))
        (process (if process-option
                     (cdr process-option)
-                  nil))
+                  :print))
        ((unless (output-files-process-inputp process))
-        (reterr (msg "The :PROCESS input must be NIL or :PRINT, ~
+        (reterr (msg "The :PROCESS input must be :WRITE or :PRINT, ~
                       but it ~x0 instead."
                      process)))
        ;; Process :CONST input.
@@ -127,9 +127,9 @@
                       but it is ~x0 instead."
                      const)))
        (tunits/files (acl2::constant-value const wrld))
-       ((when (and (eq process nil)
+       ((when (and (eq process :write)
                    (not (filesetp tunits/files))))
-        (reterr (msg "Since the :PROCESS input is NIL (perhaps by default), ~
+        (reterr (msg "Since the :PROCESS input is :WRITE, ~
                       the value of the ~x0 named constant ~
                       specified by the :CONST input ~
                       must be a file set, ~
@@ -170,7 +170,7 @@
     :hints (("Goal" :in-theory (enable tunitens/fileset-p))))
 
   (defret filesetp-of-output-files-process-inputs
-    (implies (equal process nil)
+    (implies (equal process :write)
              (filesetp tunits/files))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -179,7 +179,7 @@
                                        (process output-files-process-inputp)
                                        (const-files symbolp)
                                        state)
-  :guard (and (implies (equal process nil)
+  :guard (and (implies (equal process :write)
                        (filesetp tunits/files))
               (implies (equal process :print)
                        (transunit-ensemblep tunits/files)))
