@@ -621,12 +621,20 @@
      before certain @(tsee mbt) tests.
      Ideally we should obtain this optimization using @(tsee apt::isodata),
      but that transformation currently does not quite handle
-     all of the parser's functions."))
+     all of the parser's functions.")
+   (xdoc::p
+    "Also for speed, we cache the number of the tokens read so far.
+     The checkpointing and backtracking mechanism described above
+     calculates that length in order to record it as a checkpoint.
+     When there is a significant number of read token, that can take time,
+     as revealed by some profiling."))
   ((bytes byte-list)
    (position position)
    (chars-read char+position-list)
    (chars-unread char+position-list)
    (tokens-read token+span-list)
+   (tokens-read-len natp
+                    :reqfix (len tokens-read))
    (tokens-unread token+span-list)
    (checkpoints nat-list)
    (gcc bool)
@@ -634,10 +642,12 @@
          :reqfix (+ (len bytes)
                     (len chars-unread)
                     (len tokens-unread))))
-  :require (equal size
-                  (+ (len bytes)
-                     (len chars-unread)
-                     (len tokens-unread)))
+  :require (and (equal size
+                       (+ (len bytes)
+                          (len chars-unread)
+                          (len tokens-unread)))
+                (equal tokens-read-len
+                       (len tokens-read)))
   :pred parstatep
   :prepwork ((local (in-theory (enable nfix)))))
 
@@ -678,6 +688,7 @@
                  :chars-read nil
                  :chars-unread nil
                  :tokens-read nil
+                 :tokens-read-len 0
                  :tokens-unread nil
                  :checkpoints nil
                  :gcc gcc
@@ -4389,6 +4400,7 @@
                   pstate
                   :tokens-unread (cdr pstate.tokens-unread)
                   :tokens-read (cons token+span pstate.tokens-read)
+                  :tokens-read-len (1+ pstate.tokens-read-len)
                   :chars-read nil
                   :size (1- pstate.size))))))
     (read-token-loop pstate))
@@ -4413,7 +4425,9 @@
                          :tokens-read (cons (make-token+span
                                              :token token
                                              :span span)
-                                            (parstate->tokens-read pstate)))))
+                                            (parstate->tokens-read pstate))
+                         :tokens-read-len (1+ (parstate->tokens-read-len
+                                               pstate)))))
              (retok token span pstate))))
        (read-token-loop pstate))
      :measure (parsize pstate)
@@ -4493,7 +4507,9 @@
     (change-parstate pstate
                      :tokens-unread (cons token+span pstate.tokens-unread)
                      :tokens-read (cdr pstate.tokens-read)
+                     :tokens-read-len (1- pstate.tokens-read-len)
                      :size (1+ pstate.size)))
+  :guard-hints (("Goal" :in-theory (enable natp len fix)))
 
   ///
 
@@ -4672,9 +4688,9 @@
     "As explained in @(tsee parstate),
      we add (by @(tsee cons)ing) to the list of checkpoints
      the current length of the list of tokens read so far."))
-  (b* ((tokens-read (parstate->tokens-read pstate))
+  (b* ((tokens-read-len (parstate->tokens-read-len pstate))
        (checkpoints (parstate->checkpoints pstate))
-       (new-checkpoints (cons (len tokens-read) checkpoints))
+       (new-checkpoints (cons tokens-read-len checkpoints))
        (new-pstate (change-parstate pstate :checkpoints new-checkpoints)))
     new-pstate)
 
@@ -4740,7 +4756,7 @@
         (parstate-fix pstate))
        (checkpoint (car checkpoints))
        (new-chechpoints (cdr checkpoints))
-       (number-tokens-read (len (parstate->tokens-read pstate)))
+       (number-tokens-read (parstate->tokens-read-len pstate))
        (number-tokens-to-unread (- number-tokens-read checkpoint))
        ((unless (> number-tokens-to-unread 0))
         (raise "Internal error: ~
