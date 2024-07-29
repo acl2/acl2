@@ -93,7 +93,7 @@
 (define input-files-process-inputp (x)
   :returns (yes/no booleanp)
   :short "Recognize valid values of the @(':process') input."
-  (and (member-eq x '(nil :parse :disamb)) t))
+  (and (member-eq x '(:read :parse :disamb)) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,7 +123,7 @@
      The use of `preprocessor' vs. `preprocess' is intentional.")
    (xdoc::p
     "The other results of this function are the homonymous inputs."))
-  (b* (((reterr) nil nil nil nil nil nil nil nil)
+  (b* (((reterr) nil nil :read nil nil nil nil nil)
        ;; Check and obtain options.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -169,9 +169,9 @@
        (process-option (assoc-eq :process options))
        (process (if process-option
                     (cdr process-option)
-                  nil))
+                  :disamb))
        ((unless (input-files-process-inputp process))
-        (reterr (msg "The :PROCESS input must be NIL, :PARSE, or :DISAMB, ~
+        (reterr (msg "The :PROCESS input must be :READ, :PARSE, or :DISAMB, ~
                       but it is ~x0 instead."
                      process)))
        ;; Process :CONST input.
@@ -195,9 +195,10 @@
                      const-files)))
        ((when (and const-files
                    (not preprocess)
-                   (not process)))
+                   (eq process :read)))
         (reterr (msg "The :CONST-FILES input must be NIL ~
-                      if both the :PREPROCESS and the :PROCESS inputs are NIL, ~
+                      if the :PREPROCESS input is NIL ~
+                      and the :PROCESS input is :READ, ~
                       which is the case in this call of INPUT-FILES.")))
        ;; Process :CONST-PREPROC input.
        (const-preproc-option (assoc-eq :const-preproc options))
@@ -223,9 +224,9 @@
                       but it is ~x0 instead."
                      const-parsed)))
        ((when (and const-parsed
-                   (not process)))
+                   (eq process :read)))
         (reterr (msg "The :CONST-FILES input must be NIL ~
-                      if the :PROCESS input is NIL, ~
+                      if the :PROCESS input is :READ, ~
                       which is the case in this call of INPUT-FILES.")))
        ((when (and const-parsed
                    (eq process :parse)))
@@ -314,7 +315,7 @@
                  events))
        ;; If no processing is required, we are done;
        ;; generate :CONST constant with the files.
-       ((when (eq process nil))
+       ((when (eq process :read))
         (b* ((events (cons `(defconst ,const ',files) events)))
           (retok events state)))
        ;; At least parsing is required.
