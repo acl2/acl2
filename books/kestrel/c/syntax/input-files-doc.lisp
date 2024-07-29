@@ -117,7 +117,8 @@
      (xdoc::ul
       (xdoc::li
        "@(':read'),
-        to perform no processing.")
+        to perform no processing,
+        i.e. just reading the files.")
       (xdoc::li
        "@(':parse'),
         to "
