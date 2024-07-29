@@ -5405,14 +5405,14 @@
 
 (define token-to-function-specifier ((token tokenp))
   :guard (token-function-specifier-p token)
-  :returns (funspec funspecp)
+  :returns (funspec fun-specp)
   :short "Map a token that is a function specifier
           to the corresponding function specifier."
-  (cond ((equal token (token-keyword "inline")) (funspec-inline))
-        ((equal token (token-keyword "_Noreturn")) (funspec-noreturn))
-        ((equal token (token-keyword "__inline")) (funspec-__inline))
-        ((equal token (token-keyword "__inline__")) (funspec-__inline__))
-        (t (prog2$ (impossible) (irr-funspec))))
+  (cond ((equal token (token-keyword "inline")) (fun-spec-inline))
+        ((equal token (token-keyword "_Noreturn")) (fun-spec-noreturn))
+        ((equal token (token-keyword "__inline")) (fun-spec-__inline))
+        ((equal token (token-keyword "__inline__")) (fun-spec-__inline__))
+        (t (prog2$ (impossible) (irr-fun-spec))))
   :prepwork ((local (in-theory (enable token-function-specifier-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

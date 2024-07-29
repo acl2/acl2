@@ -1267,10 +1267,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-funspec ((funspec funspecp) (pstate pristatep))
+(define print-fun-spec ((funspec fun-specp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a function specifier."
-  (funspec-case
+  (fun-spec-case
    funspec
    :inline (print-astring "inline" pstate)
    :noreturn (print-astring "_Noreturn" pstate)
@@ -1930,7 +1930,7 @@
      :stocla (print-stor-spec declspec.unwrap pstate)
      :tyspec (print-tyspec declspec.unwrap pstate)
      :tyqual (print-type-qual declspec.unwrap pstate)
-     :funspec (print-funspec declspec.unwrap pstate)
+     :funspec (print-fun-spec declspec.unwrap pstate)
      :alignspec (print-alignspec declspec.unwrap pstate))
     :measure (declspec-count declspec))
 
