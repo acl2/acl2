@@ -26,6 +26,7 @@
 (include-book "kestrel/bv/bvmod" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/sbvlt" :dir :system)
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -89,6 +90,51 @@
                  (natp freesize)
                  (natp size))
             (not (equal (acl2::bvchop size dst) (acl2::bvchop size src))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A wrapper indicating that the CF functions should be opened when they are an
+;; argument of this function.  We want to open the cf-spec functions when they
+;; are used for something other than a conditional jump (see conditions.lisp).
+;; For example, we want to open the cf-spec functions when they are added to
+;; something, such as by ADC.
+
+;; could generalize to mean "open the argument function"
+(defund x::open-carry (x) x)
+
+(acl2::def-constant-opener x::open-carry)
+
+(defthm x::open-carry-of-cf-spec8
+  (implies (unsigned-byte-p 9 x)
+           (equal (x::open-carry (cf-spec8 x))
+                  (acl2::getbit 8 x)))
+  :hints (("Goal" :in-theory (enable cf-spec8 x::open-carry))))
+
+(defthm x::open-carry-of-cf-spec16
+  (implies (unsigned-byte-p 17 x)
+           (equal (x::open-carry (cf-spec16 x))
+                  (acl2::getbit 16 x)))
+  :hints (("Goal" :in-theory (enable cf-spec16 x::open-carry))))
+
+(defthm x::open-carry-of-cf-spec32
+  (implies (unsigned-byte-p 33 x)
+           (equal (x::open-carry (cf-spec32 x))
+                  (acl2::getbit 32 x)))
+  :hints (("Goal" :in-theory (enable cf-spec32 x::open-carry))))
+
+;; todo: just put the result of this into the alt-def?
+;see cf-spec64-becomes-getbit
+(defthm x::open-carry-of-cf-spec64
+  (implies (unsigned-byte-p 65 x)
+           (equal (x::open-carry (cf-spec64 x))
+                  (acl2::getbit 64 x)))
+  :hints (("Goal" :in-theory (enable cf-spec64 x::open-carry))))
+
+;; Only for Axe
+(defthmd x::integerp-of-open-carry
+  (equal (integerp (x::open-carry x))
+         (integerp x))
+  :hints (("Goal" :in-theory (enable x::open-carry))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2560,3 +2606,198 @@
 ;;                                     acl2::bvplus) ((:e tau-system))))))
 
 ;; todo: add alt-def rules for GPR-ADD-SPEC-1, etc, that clean up the flags expressions
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Improve rflags handling, insert open-carry
+(defthm gpr-adc-spec-1-alt-def
+  (equal (gpr-adc-spec-1 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 8 dst) :exec dst))
+              (src (mbe :logic (n-size 8 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (input-cf (the (unsigned-byte 1)
+                          (rflagsbits->cf input-rflags)))
+              (raw-result (the (unsigned-byte 9)
+                            (+ (the (unsigned-byte 8) dst)
+                               (the (unsigned-byte 8) src)
+                               (the (unsigned-byte 1) (x::open-carry input-cf)))))
+              (signed-raw-result
+                (the (signed-byte 9)
+                  (+ (the (signed-byte 8) (n08-to-i08 dst))
+                     (the (signed-byte 8) (n08-to-i08 src))
+                     (the (unsigned-byte 1) (x::open-carry input-cf)))))
+              (result (the (unsigned-byte 8)
+                        (n-size 8 raw-result)))
+              (cf (the (unsigned-byte 1)
+                    (cf-spec8 raw-result)))
+              (pf (the (unsigned-byte 1)
+                    (pf-spec8 result)))
+              (af (the (unsigned-byte 1)
+                    (adc-af-spec8 dst src input-cf)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec8 result)))
+              (of (the (unsigned-byte 1)
+                    (of-spec8 signed-raw-result)))
+              (output-rflags
+                (change-rflagsbits input-rflags
+                                            :cf cf
+                                            :pf pf
+                                            :af af
+                                            :zf zf
+                                            :sf sf
+                                            :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags 0))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-adc-spec-1
+                                      rflag-rows-enables
+                                      x::open-carry))))
+
+;; Improve rflags handling, insert open-carry
+(defthm gpr-adc-spec-2-alt-def
+  (equal (gpr-adc-spec-2 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 16 dst) :exec dst))
+              (src (mbe :logic (n-size 16 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (input-cf (the (unsigned-byte 1)
+                          (rflagsbits->cf input-rflags)))
+              (raw-result (the (unsigned-byte 17)
+                            (+ (the (unsigned-byte 16) dst)
+                               (the (unsigned-byte 16) src)
+                               (the (unsigned-byte 1) (x::open-carry input-cf)))))
+              (signed-raw-result
+                (the (signed-byte 17)
+                  (+ (the (signed-byte 16) (n16-to-i16 dst))
+                     (the (signed-byte 16) (n16-to-i16 src))
+                     (the (unsigned-byte 1) (x::open-carry input-cf)))))
+              (result (the (unsigned-byte 16)
+                        (n-size 16 raw-result)))
+              (cf (the (unsigned-byte 1)
+                    (cf-spec16 raw-result)))
+              (pf (the (unsigned-byte 1)
+                    (pf-spec16 result)))
+              (af (the (unsigned-byte 1)
+                    (adc-af-spec16 dst src input-cf)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec16 result)))
+              (of (the (unsigned-byte 1)
+                    (of-spec16 signed-raw-result)))
+              (output-rflags
+                (change-rflagsbits input-rflags
+                                            :cf cf
+                                            :pf pf
+                                            :af af
+                                            :zf zf
+                                            :sf sf
+                                            :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags 0))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-adc-spec-2
+                                      rflag-rows-enables
+                                      x::open-carry))))
+
+;; Improve rflags handling, insert open-carry
+(defthm gpr-adc-spec-4-alt-def
+  (equal (gpr-adc-spec-4 dst src input-rflags)
+         (b*
+             ((dst (mbe :logic (n-size 32 dst) :exec dst))
+              (src (mbe :logic (n-size 32 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (input-cf (the (unsigned-byte 1)
+                          (rflagsbits->cf input-rflags)))
+              (raw-result (the (unsigned-byte 33)
+                            (+ (the (unsigned-byte 32) dst)
+                               (the (unsigned-byte 32) src)
+                               (the (unsigned-byte 1) (x::open-carry input-cf)))))
+              (signed-raw-result
+                (the (signed-byte 33)
+                  (+ (the (signed-byte 32) (n32-to-i32 dst))
+                     (the (signed-byte 32) (n32-to-i32 src))
+                     (the (unsigned-byte 1) (x::open-carry input-cf)))))
+              (result (the (unsigned-byte 32)
+                        (n-size 32 raw-result)))
+              (cf (the (unsigned-byte 1)
+                    (cf-spec32 raw-result)))
+              (pf (the (unsigned-byte 1)
+                    (pf-spec32 result)))
+              (af (the (unsigned-byte 1)
+                    (adc-af-spec32 dst src input-cf)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec32 result)))
+              (of (the (unsigned-byte 1)
+                    (of-spec32 signed-raw-result)))
+              (output-rflags
+                (change-rflagsbits input-rflags
+                                            :cf cf
+                                            :pf pf
+                                            :af af
+                                            :zf zf
+                                            :sf sf
+                                            :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags 0))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-adc-spec-4
+                                      rflag-rows-enables
+                                      x::open-carry))))
+
+;; Improve rflags handling, insert open-carry
+(defthm gpr-adc-spec-8-alt-def
+  (equal (gpr-adc-spec-8 dst src input-rflags)
+         (b* ((dst (mbe :logic (n-size 64 dst) :exec dst))
+              (src (mbe :logic (n-size 64 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (input-cf (the (unsigned-byte 1)
+                          (rflagsbits->cf input-rflags)))
+              (raw-result (the (unsigned-byte 65)
+                            (+ (the (unsigned-byte 64) dst)
+                               (the (unsigned-byte 64) src)
+                               (the (unsigned-byte 1) (x::open-carry input-cf)))))
+              (signed-raw-result
+                (the (signed-byte 65)
+                  (+ (the (signed-byte 64) (n64-to-i64 dst))
+                     (the (signed-byte 64) (n64-to-i64 src))
+                      (the (unsigned-byte 1) (x::open-carry input-cf)))))
+              (result (the (unsigned-byte 64)
+                        (n-size 64 raw-result)))
+              (cf (the (unsigned-byte 1)
+                    (cf-spec64 raw-result)))
+              (pf (the (unsigned-byte 1)
+                    (pf-spec64 result)))
+              (af (the (unsigned-byte 1)
+                    (adc-af-spec64 dst src input-cf)))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec64 result)))
+              (of (the (unsigned-byte 1)
+                    (of-spec64 signed-raw-result)))
+              (output-rflags
+                   (change-rflagsbits input-rflags
+                                              :cf cf
+                                              :pf pf
+                                              :af af
+                                              :zf zf
+                                              :sf sf
+                                              :of of))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              (undefined-flags 0))
+           (mv result output-rflags undefined-flags)))
+  :hints (("Goal" :in-theory (enable* gpr-adc-spec-8
+                                      rflag-rows-enables
+                                      x::open-carry))))
