@@ -35,10 +35,10 @@
 ;; TODO: Consider not memoizing things that didn't take a lot of work to compute.
 ;; TODO: Consider whether to memoize rewrites of lambda applications (but not memoizing them slowed things down?)
 ;; TODO: Consider whether to memoize rewrites of ground terms
-;; TODO: Consider making a separate memoization for tree that are functions applied to simplified args (common).
-;; TODO: Consider using an info world for the memoization (to make it per head symbol)
+;; TODO: Consider making a separate memoization for trees that are functions applied to simplified args (common).
+;; TODO: Consider using a property list world for the memoization (to make it per head symbol)
 ;; TODO: Consider memoizing only destructor trees, not constructor trees
-;; NOTE: For anything we won't memoize, we should avoid consing it onto trees-equal-to-tree in the rewriter
+;; NOTE: For anything we won't memoize, we should avoid consing it onto trees-equal-to-tree in the rewriter.
 
 ;maybe we should think of the memoization as part of the dag (it is just a list of equalities which mention nodenums from the dag)
 
@@ -237,12 +237,14 @@
    (if (atom tree)
        (if (symbolp tree)
            acc ;it's a variable
-         ;;it's a nodenum:
+         ;; it's a nodenum:
          (combine-value-into-hash tree acc))
      (if (eq 'quote (ffn-symb tree))
          ;; it's a quoted constant, so we add it into the hash if convenient:
          (combine-value-into-hash (quick-val-to-hash (unquote tree)) acc)
-       ;;it's a term:
+       ;; it's a function-call:
+       ;; todo: hash the lambda-body if present
+       ;; todo: could get info from the fn (if it is a symbol) using something like (fgetprop fn 'acl2::absolute-event-number 0 world)
        (axe-tree-hash-aux-lst (fargs tree) acc))))
 
  (defun axe-tree-hash-aux-lst (trees acc)
@@ -307,23 +309,26 @@
                   :guard-hints (("Goal" :in-theory (enable tree-to-memoizep)))))
   (axe-tree-hash-aux tree 0))
 
-(defthm natp-of-axe-tree-hash
-  (implies (tree-to-memoizep tree)
-           (natp (axe-tree-hash tree)))
-  :hints (("Goal" :in-theory (enable axe-tree-hash))))
+(local
+  (defthm natp-of-axe-tree-hash
+    (implies (tree-to-memoizep tree)
+             (natp (axe-tree-hash tree)))
+    :hints (("Goal" :in-theory (enable axe-tree-hash)))))
 
-(defthm natp-of-axe-tree-hash-type
-  (implies (tree-to-memoizep tree)
-           (natp (axe-tree-hash tree)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable axe-tree-hash))))
+(local
+  (defthm natp-of-axe-tree-hash-type
+    (implies (tree-to-memoizep tree)
+             (natp (axe-tree-hash tree)))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable axe-tree-hash)))))
 
-(defthm axe-tree-hash-bound
-  (implies (tree-to-memoizep tree)
-           (<= (axe-tree-hash tree) 1048575))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable axe-tree-hash
-                                     tree-to-memoizep))))
+(local
+  (defthm axe-tree-hash-bound
+    (implies (tree-to-memoizep tree)
+             (<= (axe-tree-hash tree) 1048575))
+    :rule-classes (:rewrite :linear)
+    :hints (("Goal" :in-theory (enable axe-tree-hash
+                                       tree-to-memoizep)))))
 
 ;;fixme gross to have this hard-coded
 ;;fixme - use this?
@@ -735,6 +740,8 @@
   (symbol-listp (head-function-symbols terms))
   :hints (("Goal" :in-theory (enable head-function-symbols))))
 
+;; TODO: Print the average number of items in the occupied buckets
+;; todo: rename "slot" to "bucket"
 (defund print-memo-stats-aux (n memoization total-items longest-slot longest-slot-len last-filled-slot filled-slots memo-count-world)
   (declare (xargs :measure (nfix (- *memoization-size* n))
                   :hints (("Goal" :in-theory (enable natp)))
