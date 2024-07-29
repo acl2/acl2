@@ -814,7 +814,7 @@
                           (position-independent ':auto)
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                          (rewriter ':legacy)
+                          (rewriter ':x86)
                           )
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',function-name-strings
@@ -859,7 +859,7 @@
                      (position-independent ':auto)
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                     (rewriter ':legacy)
+                     (rewriter ':x86)
                      )
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',include ; todo: evaluate?
