@@ -65,12 +65,6 @@
             ;;x86isa::gpr-add-spec-4-alt-def
             x86isa::gpr-add-spec-8-alt-def
 
-            x86isa::gpr-adc-spec-1$inline ; todo: make alt-defs with better rflags handling
-            x86isa::gpr-adc-spec-2$inline
-            x86isa::gpr-adc-spec-4$inline
-            x86isa::gpr-adc-spec-8$inline
->>>>>>> refs/remotes/acl2/testing-kestrel
-
             ;; x86isa::gpr-sub-spec-1$inline
             ;; x86isa::gpr-sub-spec-2$inline
             ;; x86isa::gpr-sub-spec-4$inline
