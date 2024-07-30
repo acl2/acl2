@@ -517,13 +517,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro test-lex (fn input &key pos more-inputs cond)
-  ;; INPUT is an ACL2 string with the text to parse.
+  ;; INPUT is an ACL2 term with the text to parse,
+  ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
   ;; Optional COND may be over variables AST, POS/SPAN, PSTATE,
   ;; and also POS/SPAN2 for LEX-*-DIGIT.
   `(assert-event
-    (b* ((pstate (init-parstate (acl2::string=>nats ,input) nil))
+    (b* ((pstate (init-parstate (if (stringp ,input)
+                                    (acl2::string=>nats ,input)
+                                  ,input)
+                                nil))
          ,@(and pos
                 `((pstate (change-parstate pstate :position ,pos))))
          (,(if (member-eq fn '(lex-*-digit
@@ -542,7 +546,10 @@
     (b* ((,(if (eq fn 'lex-*-digit)
                '(mv erp & & & &)
              '(mv erp & & &))
-          (,fn ,@more-inputs (init-parstate (acl2::string=>nats ,input) nil))))
+          (,fn ,@more-inputs (init-parstate (if (stringp ,input)
+                                                (acl2::string=>nats ,input)
+                                              ,input)
+                                            nil))))
       erp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -905,6 +912,14 @@
 (test-lex-fail
  lex-c-chars
  "a\\z'")
+
+(test-lex-fail
+ lex-c-chars
+ (list (char-code #\a) 10 (char-code #\b) (char-code #\')))
+
+(test-lex-fail
+ lex-c-chars
+ (list (char-code #\a) 13 10 (char-code #\')))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
