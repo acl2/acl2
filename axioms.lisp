@@ -28086,10 +28086,6 @@ Lisp definition."
                   (value (cdr (assoc-equal name *wormhole-status-alist*)))))
    (read-acl2-oracle state))
 
-(defun get-wormhole-status (name state)
-  (declare (xargs :guard (state-p state)))
-  (get-persistent-whs name state))
-
 (defun file-write-date$ (file state)
 
 ; File is an ACL2 filename; see the Essay on Pathnames.
