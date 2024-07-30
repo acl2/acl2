@@ -73,6 +73,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod priopt
+  :short "Fixtype of printer options."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This fixtype collects options that control
+     various aspects of how the C code is printed.
+     We start with a single option for the size of each indentation level,
+     measured in number of spaces (a positive integer).
+     We plan to add more options in the future."))
+  ((indent-size pos))
+  :pred prioptp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod pristate
   :short "Fixtype of printer states."
   :long
@@ -89,13 +104,12 @@
      as a natural number starting from 0 (where 0 means left margin).
      This is used to print indented code, as typical.")
    (xdoc::p
-    "We also keep track of the size of each identation level,
-     as a positive integer that indicates the number of spaces
-     for a single indentation level.
-     This does not change in the course of the printing,
-     but it is convenient to keep it in the printing state,
-     to avoid passing it around as an extra parameter.
-     It is set when the printing state is initially created and never changes.")
+    "We also keep track of the printing options (see @(tsee priopt)).
+     These do not change in the course of the printing,
+     but they are convenient to keep in the printing state,
+     to avoid passing them around as an extra parameter.
+     They are set when the printing state is initially created,
+     and they never change.")
    (xdoc::p
     "In the future, we may make printer states richer,
      in order to support more elaborate printing strategies,
@@ -107,24 +121,23 @@
      if efficiency is an issue."))
   ((bytes-rev byte-list)
    (indent-level nat)
-   (indent-size pos))
+   (options priopt))
   :pred pristatep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-pristate ((indent-size posp))
+(define init-pristate ((options prioptp))
   :returns (pstate pristatep)
   :short "Initial printer state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pass the size of the indentation,
-     because that is an option that must be provided externally.")
+    "We pass the printing options, which must be provided externally.")
    (xdoc::p
     "Initially, no data has been printed, and the indentation level is 0."))
   (make-pristate :bytes-rev nil
                  :indent-level 0
-                 :indent-size indent-size))
+                 :options options))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,7 +272,7 @@
      This is zero spaces, at indent level 0."))
   (b* (((pristate pstate) pstate)
        (spaces-to-print (* pstate.indent-level
-                           pstate.indent-size)))
+                           (priopt->indent-size pstate.options))))
     (print-chars (repeat spaces-to-print 32) pstate))
   :hooks (:fix))
 
@@ -1267,10 +1280,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-funspec ((funspec funspecp) (pstate pristatep))
+(define print-fun-spec ((funspec fun-specp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a function specifier."
-  (funspec-case
+  (fun-spec-case
    funspec
    :inline (print-astring "inline" pstate)
    :noreturn (print-astring "_Noreturn" pstate)
@@ -1930,7 +1943,7 @@
      :stocla (print-stor-spec declspec.unwrap pstate)
      :tyspec (print-tyspec declspec.unwrap pstate)
      :tyqual (print-type-qual declspec.unwrap pstate)
-     :funspec (print-funspec declspec.unwrap pstate)
+     :funspec (print-fun-spec declspec.unwrap pstate)
      :alignspec (print-alignspec declspec.unwrap pstate))
     :measure (declspec-count declspec))
 
@@ -3256,8 +3269,8 @@
      In the future, we will make this a top-level parameter.
      We envision additional top-level parameters
      to customize various aspects of the printing (e.g. right margin)."))
-  (b* ((indent-size 2)
-       (pstate (init-pristate indent-size))
+  (b* ((options (make-priopt :indent-size 2))
+       (pstate (init-pristate options))
        (pstate (print-transunit tunit pstate))
        (bytes-rev (pristate->bytes-rev pstate)))
     (rev bytes-rev))

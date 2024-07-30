@@ -17,6 +17,7 @@
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")
+(include-book "validator")
 (include-book "printer")
 (include-book "input-files")
 (include-book "input-files-doc")
@@ -133,6 +134,7 @@
                     preprocessing
                     parser
                     disambiguator
+                    validator
                     printer
                     input-files
                     output-files

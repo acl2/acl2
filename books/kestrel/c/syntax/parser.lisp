@@ -621,12 +621,20 @@
      before certain @(tsee mbt) tests.
      Ideally we should obtain this optimization using @(tsee apt::isodata),
      but that transformation currently does not quite handle
-     all of the parser's functions."))
+     all of the parser's functions.")
+   (xdoc::p
+    "Also for speed, we cache the number of the tokens read so far.
+     The checkpointing and backtracking mechanism described above
+     calculates that length in order to record it as a checkpoint.
+     When there is a significant number of read token, that can take time,
+     as revealed by some profiling."))
   ((bytes byte-list)
    (position position)
    (chars-read char+position-list)
    (chars-unread char+position-list)
    (tokens-read token+span-list)
+   (tokens-read-len natp
+                    :reqfix (len tokens-read))
    (tokens-unread token+span-list)
    (checkpoints nat-list)
    (gcc bool)
@@ -634,10 +642,12 @@
          :reqfix (+ (len bytes)
                     (len chars-unread)
                     (len tokens-unread))))
-  :require (equal size
-                  (+ (len bytes)
-                     (len chars-unread)
-                     (len tokens-unread)))
+  :require (and (equal size
+                       (+ (len bytes)
+                          (len chars-unread)
+                          (len tokens-unread)))
+                (equal tokens-read-len
+                       (len tokens-read)))
   :pred parstatep
   :prepwork ((local (in-theory (enable nfix)))))
 
@@ -678,6 +688,7 @@
                  :chars-read nil
                  :chars-unread nil
                  :tokens-read nil
+                 :tokens-read-len 0
                  :tokens-unread nil
                  :checkpoints nil
                  :gcc gcc
@@ -1887,7 +1898,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-c-chars ((pstate parstatep))
+(define lex-*-c-char ((pstate parstatep))
   :returns (mv erp
                (cchars c-char-listp)
                (closing-squote-pos positionp)
@@ -1896,6 +1907,9 @@
           in a character constant."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "That is, parse a @('*c-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('c-char').")
    (xdoc::p
     "This is called when we expect a character constant,
      after reading the opening single quote of a character constant.
@@ -1938,7 +1952,7 @@
               (retok cchar pos pstate))
           (b* ((cchar (c-char-char char)))
             (retok cchar pos pstate))))
-       ((erp cchars closing-squote-pos pstate) (lex-c-chars pstate)))
+       ((erp cchars closing-squote-pos pstate) (lex-*-c-char pstate)))
     (retok (cons cchar cchars) closing-squote-pos pstate))
   :measure (parsize pstate)
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -1947,13 +1961,13 @@
 
   ///
 
-  (defret parsize-of-lex-c-chars-uncond
+  (defret parsize-of-lex-*-c-char-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear
     :hints (("Goal" :induct t)))
 
-  (defret parsize-of-lex-c-chars-cond
+  (defret parsize-of-lex-*-c-char-cond
     (implies (not erp)
              (<= (parsize new-pstate)
                  (1- (- (parsize pstate)
@@ -2054,11 +2068,11 @@
      So we read zero or more characters and escape sequences,
      and ensure that there is at least one (according to the grammar).
      In the process of reading those characters and escape sequences,
-     we read up to the closing single quote (see @(tsee lex-c-chars)),
+     we read up to the closing single quote (see @(tsee lex-*-c-char)),
      whose position we use as the ending one of the span we return.
      The starting position of the span is passed to this function as input."))
   (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
-       ((erp cchars closing-squote-pos pstate) (lex-c-chars pstate))
+       ((erp cchars closing-squote-pos pstate) (lex-*-c-char pstate))
        (span (make-span :start first-pos :end closing-squote-pos))
        ((unless cchars)
         (reterr-msg :where (position-to-msg closing-squote-pos)
@@ -4389,6 +4403,7 @@
                   pstate
                   :tokens-unread (cdr pstate.tokens-unread)
                   :tokens-read (cons token+span pstate.tokens-read)
+                  :tokens-read-len (1+ pstate.tokens-read-len)
                   :chars-read nil
                   :size (1- pstate.size))))))
     (read-token-loop pstate))
@@ -4413,7 +4428,9 @@
                          :tokens-read (cons (make-token+span
                                              :token token
                                              :span span)
-                                            (parstate->tokens-read pstate)))))
+                                            (parstate->tokens-read pstate))
+                         :tokens-read-len (1+ (parstate->tokens-read-len
+                                               pstate)))))
              (retok token span pstate))))
        (read-token-loop pstate))
      :measure (parsize pstate)
@@ -4493,7 +4510,9 @@
     (change-parstate pstate
                      :tokens-unread (cons token+span pstate.tokens-unread)
                      :tokens-read (cdr pstate.tokens-read)
+                     :tokens-read-len (1- pstate.tokens-read-len)
                      :size (1+ pstate.size)))
+  :guard-hints (("Goal" :in-theory (enable natp len fix)))
 
   ///
 
@@ -4672,9 +4691,9 @@
     "As explained in @(tsee parstate),
      we add (by @(tsee cons)ing) to the list of checkpoints
      the current length of the list of tokens read so far."))
-  (b* ((tokens-read (parstate->tokens-read pstate))
+  (b* ((tokens-read-len (parstate->tokens-read-len pstate))
        (checkpoints (parstate->checkpoints pstate))
-       (new-checkpoints (cons (len tokens-read) checkpoints))
+       (new-checkpoints (cons tokens-read-len checkpoints))
        (new-pstate (change-parstate pstate :checkpoints new-checkpoints)))
     new-pstate)
 
@@ -4740,7 +4759,7 @@
         (parstate-fix pstate))
        (checkpoint (car checkpoints))
        (new-chechpoints (cdr checkpoints))
-       (number-tokens-read (len (parstate->tokens-read pstate)))
+       (number-tokens-read (parstate->tokens-read-len pstate))
        (number-tokens-to-unread (- number-tokens-read checkpoint))
        ((unless (> number-tokens-to-unread 0))
         (raise "Internal error: ~
@@ -5389,14 +5408,14 @@
 
 (define token-to-function-specifier ((token tokenp))
   :guard (token-function-specifier-p token)
-  :returns (funspec funspecp)
+  :returns (funspec fun-specp)
   :short "Map a token that is a function specifier
           to the corresponding function specifier."
-  (cond ((equal token (token-keyword "inline")) (funspec-inline))
-        ((equal token (token-keyword "_Noreturn")) (funspec-noreturn))
-        ((equal token (token-keyword "__inline")) (funspec-__inline))
-        ((equal token (token-keyword "__inline__")) (funspec-__inline__))
-        (t (prog2$ (impossible) (irr-funspec))))
+  (cond ((equal token (token-keyword "inline")) (fun-spec-inline))
+        ((equal token (token-keyword "_Noreturn")) (fun-spec-noreturn))
+        ((equal token (token-keyword "__inline")) (fun-spec-__inline))
+        ((equal token (token-keyword "__inline__")) (fun-spec-__inline__))
+        (t (prog2$ (impossible) (irr-fun-spec))))
   :prepwork ((local (in-theory (enable token-function-specifier-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

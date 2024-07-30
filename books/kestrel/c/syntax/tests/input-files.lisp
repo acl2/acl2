@@ -25,7 +25,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (input-files :files ("simple.c")
-             :const *files-simple*)
+             :const *files-simple*
+             :process :read)
 
 (acl2::assert! (filesetp *files-simple*))
 
@@ -42,7 +43,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (input-files :files ("simple.c" "stdbool.c" "stdint.c")
-             :const *files-simple/stdbool/stdint*)
+             :const *files-simple/stdbool/stdint*
+             :process :read)
 
 (acl2::assert! (filesetp *files-simple/stdbool/stdint*))
 
@@ -83,6 +85,7 @@ int main(void) {
 
 (input-files :files ("simple.c" "stdbool.c" "stdint.c")
              :preprocess :auto
+             :process :read
              :const *preproc-simple/stdbool/stdint*)
 
 (acl2::assert! (filesetp *preproc-simple/stdbool/stdint*))
@@ -97,6 +100,7 @@ int main(void) {
 
 (input-files :files ("simple.c" "stdbool.c" "stdint.c")
              :preprocess :auto
+             :process :read
              :const *preproc-simple/stdbool/stdint-2*
              :const-files *files-simple/stdbool/stdint-2*)
 
