@@ -137,7 +137,8 @@
     "Initially, no data has been printed, and the indentation level is 0."))
   (make-pristate :bytes-rev nil
                  :indent-level 0
-                 :options options))
+                 :options options)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3253,7 +3254,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-file ((tunit transunitp))
+(define print-file ((tunit transunitp) (options prioptp))
   :returns (data byte-listp)
   :short "Print (the data bytes of) a file."
   :long
@@ -3261,16 +3262,11 @@
    (xdoc::p
     "The input is a translation unit in the abstract syntax.
      We initialize the printing state,
-     we print the translation unit,
+     with the printing options passed as input.
+     We print the translation unit,
      we extract the data bytes from the final printing state,
-     and we reverse them (see @(tsee pristate)).")
-   (xdoc::p
-    "We set the indentation size to two spaces for now.
-     In the future, we will make this a top-level parameter.
-     We envision additional top-level parameters
-     to customize various aspects of the printing (e.g. right margin)."))
-  (b* ((options (make-priopt :indent-size 2))
-       (pstate (init-pristate options))
+     and we reverse them (see @(tsee pristate))."))
+  (b* ((pstate (init-pristate options))
        (pstate (print-transunit tunit pstate))
        (bytes-rev (pristate->bytes-rev pstate)))
     (rev bytes-rev))
@@ -3290,18 +3286,26 @@
      We return a file set that corresponds to the translation unit ensemble.
      The file paths are the same
      for the translation unit ensemble and for the file set
-     (they are the keys of the maps)."))
-  (fileset (print-fileset-loop (transunit-ensemble->unwrap tunits)))
+     (they are the keys of the maps).")
+   (xdoc::p
+    "We set the printing options,
+     specifically the indentation size,
+     to two spaces for now.
+     In the future, we will make this a top-level parameter."))
+  (b* ((options (make-priopt :indent-size 2)))
+    (fileset (print-fileset-loop (transunit-ensemble->unwrap tunits)
+                                 options)))
   :hooks (:fix)
 
   :prepwork
-  ((define print-fileset-loop ((tunitmap filepath-transunit-mapp))
+  ((define print-fileset-loop ((tunitmap filepath-transunit-mapp)
+                               (options prioptp))
      :returns (filemap filepath-filedata-mapp)
      :parents nil
      (b* (((when (omap::emptyp tunitmap)) nil)
           ((mv filepath tunit) (omap::head tunitmap))
-          (data (print-file tunit))
-          (filemap (print-fileset-loop (omap::tail tunitmap))))
+          (data (print-file tunit options))
+          (filemap (print-fileset-loop (omap::tail tunitmap) options)))
        (omap::update (filepath-fix filepath) (filedata data) filemap))
      :verify-guards :after-returns
 
@@ -3311,8 +3315,7 @@
        (equal (omap::keys filemap)
               (omap::keys tunitmap))
        :hyp (filepath-transunit-mapp tunitmap)
-       :hints (("Goal" :induct t))
-     )))
+       :hints (("Goal" :induct t)))))
 
   ///
 
