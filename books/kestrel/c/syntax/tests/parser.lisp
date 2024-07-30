@@ -517,7 +517,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro test-lex (fn input &key pos more-inputs cond)
-  ;; INPUT is an ACL2 term with the text to parse,
+  ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
@@ -540,7 +540,7 @@
         ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
 
 (defmacro test-lex-fail (fn input &key more-inputs)
-  ;; INPUT is an ACL2 string with the text to parse.
+  ;; INPUT is an ACL2 string with the text to lex.
   ;; Optional MORE-INPUTS go just before parser state input.
   `(assert-event
     (b* ((,(if (eq fn 'lex-*-digit)
@@ -928,8 +928,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro test-parse (fn input &key cond gcc)
-  ;; optional COND may be over variables AST, SPAN, PSTATE
-  ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST
+  ;; Input is an ACL2 term with the text to parse,
+  ;; where the term evaluates to a string or a list of bytes.
+  ;; Optional COND may be over variables AST, SPAN, PSTATE
+  ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST.
   `(assert-event
     (b* ((,(if (eq fn 'parse-external-declaration-list)
                '(mv erp ?ast ?span ?eofpos ?pstate)
