@@ -43,6 +43,17 @@
             x86isa::gpr-or-spec-4-alt-def
             x86isa::gpr-or-spec-8-alt-def
 
+            x86isa::gpr-adc-spec-1-alt-def
+            x86isa::gpr-adc-spec-2-alt-def
+            x86isa::gpr-adc-spec-4-alt-def
+            x86isa::gpr-adc-spec-8-alt-def ;x86isa::gpr-adc-spec-8$inline
+            open-carry-of-cf-spec8 ; open the cf function when used in certain places, like gpr-adc-spec-8
+            open-carry-of-cf-spec16
+            open-carry-of-cf-spec32
+            open-carry-of-cf-spec64
+            open-carry-constant-opener ; also open when applied to a constant (or refrain from even this?)
+            integerp-of-open-carry
+
             x86isa::gpr-xor-spec-1-alt-def
             x86isa::gpr-xor-spec-2-alt-def
             x86isa::gpr-xor-spec-4-alt-def
@@ -53,11 +64,6 @@
             x86isa::gpr-add-spec-4-better ; $inline ; todo: make better rules for the rest
             ;;x86isa::gpr-add-spec-4-alt-def
             x86isa::gpr-add-spec-8-alt-def
-
-            x86isa::gpr-adc-spec-1$inline ; todo: make alt-defs with better rflags handling
-            x86isa::gpr-adc-spec-2$inline
-            x86isa::gpr-adc-spec-4$inline
-            x86isa::gpr-adc-spec-8$inline
 
             ;; x86isa::gpr-sub-spec-1$inline
             ;; x86isa::gpr-sub-spec-2$inline
@@ -942,9 +948,6 @@
     x86isa::n01p-cf-spec64 ; targets unsigned-byte-p-of-cf-spec64
 
     integerp-of-cf-spec64
-
-    cf-spec32-becomes-getbit
-    cf-spec64-becomes-getbit
 
     acl2::unsigned-byte-p-of-+ ; can work with cf-spec64-becomes-getbit
 
