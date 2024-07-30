@@ -296,6 +296,7 @@
 ;; Currently, this does the following:
 ;; - tries disabling each rune that was used in the original proof.
 ;; - tries disabling each :linear rune that is currently enabled (in case they slow things down but don't show up in the summary)
+;; - tries turning off TAU
 ;; - tries :induct t if the proof used induction, in case time was wasted before reverting to induction
 ;; TODO: Compare to speed-up-defrule.  Keep in sync, or merge them.
 (defun speed-up-defthm (event print print-headerp state)
