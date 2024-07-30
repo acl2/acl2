@@ -194,17 +194,15 @@
      and write the data of each value in the map
      to the path of the associated key in the map.")
    (xdoc::p
-    "We set the printing options,
-     specifically the indentation size,
-     to two spaces for now.
-     In the future, we will make this a parameter of @(tsee output-files)."))
+    "We use default printer options for now,
+     but in the future we will make that
+     a parameter of @(tsee output-files)."))
   (b* (((reterr) nil state)
        ;; Initialize list of generated events.
        (events nil)
        ;; Print the abstract syntax if required.
        (files (if (eq process :print)
-                  (print-fileset tunits/files
-                                 (make-priopt :indent-size 2))
+                  (print-fileset tunits/files (default-priopt))
                 tunits/files))
        ;; Generate :CONST-FILES if required.
        (events (if const-files

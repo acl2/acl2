@@ -86,6 +86,20 @@
   ((indent-size pos))
   :pred prioptp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define default-priopt ()
+  :short "Default printer options."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For convenience, we provide a choice of default printer options,
+     in the form of this nullary function,
+     which can be passed to @(tsee print-fileset).")
+   (xdoc::p
+    "We set the indentation size to two spaces."))
+  (make-priopt :indent-size 2))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pristate
