@@ -55,7 +55,7 @@
     (xdoc::codeblock
      "(input-files :files         ...  ; no default"
      "             :preprocess    ...  ; default nil"
-     "             :process       ...  ; default nil"
+     "             :process       ...  ; default :disamb"
      "             :const         ...  ; no default"
      "             :const-files   ...  ; default nil"
      "             :const-preproc ...  ; default nil"
@@ -105,7 +105,7 @@
        is performed via the @(tsee preprocess-file) tool."))
 
     (xdoc::desc
-     "@(':process') &mdash; default @('nil')"
+     "@(':process') &mdash; default @(':disamb')"
      (xdoc::p
       "Specifies the processing to perform
        on the files specified by the @(':files') input
@@ -116,8 +116,9 @@
       "This input must be one of the following:")
      (xdoc::ul
       (xdoc::li
-       "@('nil') (the default),
-        to perform no processing.")
+       "@(':read'),
+        to perform no processing,
+        i.e. just reading the files.")
       (xdoc::li
        "@(':parse'),
         to "
@@ -126,7 +127,7 @@
        (xdoc::seetopic "abstract-syntax" "abstract syntax")
        "representation, which may contain ambiguous constructs.")
       (xdoc::li
-       "@(':disamb'),
+       "@(':disamb') (the default),
         to parse the files as with @(':parse'),
         and then to "
        (xdoc::seetopic "disambiguator" "disambiguate")
@@ -136,7 +137,7 @@
      (xdoc::p
       "These levels of processing are ordered as")
      (xdoc::codeblock
-      "nil < :parse < :disamb")
+      ":read < :parse < :disamb")
      (xdoc::p
       "where a larger level includes and extends
        the processing of smaller levels.
@@ -154,7 +155,7 @@
      (xdoc::p
       "This must be a valid name for a new constant.")
      (xdoc::p
-      "If @(':process') is @('nil'),
+      "If @(':process') is @(':read'),
        the value of the constant named by @(':const') is
        a file set (i.e. a value of type @(tsee fileset)),
        containing a representation of
@@ -194,7 +195,7 @@
        this constant is not generated.")
      (xdoc::p
       "This input must be @('nil') if
-       both @(':preprocess') and @(':process') are @('nil'),
+       @(':preprocess') is @('nil') and @(':process') is @(':read'),
        because in this case the constant would contain
        the same value as the one specified by @(':const').")
      (xdoc::p
@@ -239,7 +240,7 @@
        this constant is not generated.")
      (xdoc::p
       "This input must be @('nil') if
-       the @(':process') input is @('nil'),
+       the @(':process') input is @(':read'),
        because in that case the files are not parsed.")
      (xdoc::p
       "This input must be @('nil') if

@@ -27,7 +27,8 @@
                (omap::lookup (filepath "simple.c")
                              (fileset->unwrap *files-simple*))))))
 
-(output-files :const *renamed-files-simple*)
+(output-files :const *renamed-files-simple*
+              :process :write)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,7 +43,8 @@
            (cons (filepath "stdint-renamed.c")
                  (omap::lookup (filepath "stdint.c") map))))))
 
-(output-files :const *renamed-files-simple/stdbool/stdint*)
+(output-files :const *renamed-files-simple/stdbool/stdint*
+              :process :write)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
