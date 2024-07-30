@@ -1,6 +1,7 @@
 ; Some changes to the open-source x86 model
 ;
 ; Copyright (C) 2022 Kestrel Technology, LLC
+; Copyright (C) 2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -141,11 +142,24 @@
                               (unsigned-byte-p 64 src))))
   (bool->bit (< dst src)))
 
+(defun sub-of-spec64 (dst src)
+  (declare (xargs :guard (and (unsigned-byte-p 64 dst)
+                              (unsigned-byte-p 64 src))
+                  :guard-hints (("Goal" :in-theory (enable SIGNED-BYTE-P)))))
+  (of-spec64 (- (n64-to-i64 dst)
+                (n64-to-i64 src))))
+
 ;; oddly, this only covers the least significant byte of the result.
 (defund sub-pf-spec64 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 64 dst)
                               (unsigned-byte-p 64 src))))
   (pf-spec64 (n-size 64 (- (n64-to-i64 dst)
+                           (n64-to-i64 src)))))
+
+(defund sub-sf-spec64 (dst src)
+  (declare (xargs :guard (and (unsigned-byte-p 64 dst)
+                              (unsigned-byte-p 64 src))))
+  (sf-spec64 (n-size 64 (- (n64-to-i64 dst)
                            (n64-to-i64 src)))))
 
 (defund sub-zf-spec64 (dst src)
@@ -155,19 +169,6 @@
   ;; (zf-spec (n-size 64 (- (n64-to-i64 dst)
   ;;                        (n64-to-i64 src))))
   )
-
-(defund sub-sf-spec64 (dst src)
-  (declare (xargs :guard (and (unsigned-byte-p 64 dst)
-                              (unsigned-byte-p 64 src))))
-  (sf-spec64 (n-size 64 (- (n64-to-i64 dst)
-                           (n64-to-i64 src)))))
-
-(defund sub-of-spec64 (dst src)
-  (declare (xargs :guard (and (unsigned-byte-p 64 dst)
-                              (unsigned-byte-p 64 src))
-                  :guard-hints (("Goal" :in-theory (enable SIGNED-BYTE-P)))))
-  (of-spec64 (- (n64-to-i64 dst)
-                (n64-to-i64 src))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

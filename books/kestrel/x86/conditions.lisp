@@ -1887,7 +1887,19 @@
 (defthm cf-spec32-when-unsigned-byte-p (implies (unsigned-byte-p 32 raw-result) (equal (cf-spec32 raw-result) 0)) :hints (("Goal" :in-theory (enable cf-spec32))))
 (defthm cf-spec64-when-unsigned-byte-p (implies (unsigned-byte-p 64 raw-result) (equal (cf-spec64 raw-result) 0)) :hints (("Goal" :in-theory (enable cf-spec64))))
 
-;; maybe ok because cf-spec32 is unary?
+(defthm cf-spec8-becomes-getbit
+  (implies (unsigned-byte-p 9 x) ; example; sum of two u8s
+           (equal (cf-spec8 x)
+                  (getbit 8 x)))
+  :hints (("Goal" :in-theory (enable cf-spec8))))
+
+(defthm cf-spec16-becomes-getbit
+  (implies (unsigned-byte-p 17 x) ; example; sum of two u16s
+           (equal (cf-spec16 x)
+                  (getbit 16 x)))
+  :hints (("Goal" :in-theory (enable cf-spec16))))
+
+;; maybe ok because cf-spec32 is unary?  no, we should make an add-cf-spec, etc that is binary
 (defthm cf-spec32-becomes-getbit
   (implies (unsigned-byte-p 33 x) ; example; sum of two u32s
            (equal (cf-spec32 x)
