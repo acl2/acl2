@@ -68,6 +68,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; in seconds
+(defconst *minimum-time-savings-to-report* 1/10)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Tests whether any of the RUNES is an induction rune.
 ;; TODO: Generalize.
 (defund exists-rune-of-classp (runes class)
@@ -159,22 +164,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; in seconds
-(defconst *minimum-time-savings-to-report* 1/10)
-
-(defun maybe-print-speedup-message (provedp time time-to-beat speedup-description print)
+(defun maybe-print-speedup-message (provedp time time-to-beat speedup-description min-time-savings print)
   (declare (xargs :guard (and (booleanp provedp)
                               (rationalp time)
                               (<= 0 time)
                               (rationalp time-to-beat)
                               (<= 0 time-to-beat)
                               (stringp speedup-description)
+                              (rationalp min-time-savings) ; in seconds
                               (print-levelp print))))
   (and provedp
        (if (< time time-to-beat)
            (let* ((savings (- time-to-beat time))
                   (percent-saved (floor (* 100 (/ savings time-to-beat)) 1)))
-             (if (<= *minimum-time-savings-to-report* savings)
+             (if (<= min-time-savings savings)
                  (progn$ (cw "~%  Speedup: ")
                          (print-to-hundredths savings)
                          (cw "s (~x0%): ~s1." percent-saved speedup-description))
@@ -194,7 +197,7 @@
 ;; Returns state.
 ;; Each line printed starts with a newline.
 ;rename?
-(defun try-to-drop-runes-from-defthm (runes body hints otf-flg time-to-beat print state)
+(defun try-to-drop-runes-from-defthm (runes body hints otf-flg time-to-beat min-time-savings print state)
   (declare (xargs :guard (and (true-listp runes)
                               (booleanp otf-flg)
                               (rationalp time-to-beat)
@@ -215,12 +218,12 @@
         (if erp
             (prog2$ (er hard? 'try-to-drop-runes-from-defthm "Error trying to disable ~x0." rune-to-drop)
                     state)
-          (progn$ (maybe-print-speedup-message provedp time time-to-beat (concatenate 'string "Disable " (print-to-string rune-to-drop)) print)
-                  (try-to-drop-runes-from-defthm (rest runes) body hints otf-flg time-to-beat print state)))))))
+          (progn$ (maybe-print-speedup-message provedp time time-to-beat (concatenate 'string "Disable " (print-to-string rune-to-drop)) min-time-savings print)
+                  (try-to-drop-runes-from-defthm (rest runes) body hints otf-flg time-to-beat min-time-savings print state)))))))
 
 ;; Returns state.  Prints a suggestion if disabling RUNE beforehand can significantly speed up EVENT.
 ;; Each line printed starts with a newline.
-(defun try-to-drop-rune-from-event (rune event time-to-beat state)
+(defun try-to-drop-rune-from-event (rune event time-to-beat min-time-savings state)
   (declare (xargs :guard (rationalp time-to-beat)
                   :mode :program
                   :stobjs state))
@@ -245,7 +248,7 @@
               (if (< elapsed-time time-to-beat)
                   (let* ((savings (- time-to-beat elapsed-time))
                          (percent-saved (floor (* 100 (/ savings time-to-beat)) 1)))
-                    (if (<= *minimum-time-savings-to-report* savings)
+                    (if (<= min-time-savings savings)
                         (progn$ (cw "~%  (Speedup: disable ~x0 to save " rune)
                                 (print-to-hundredths savings)
                                 (cw " of ")
@@ -267,15 +270,15 @@
                  state)))))))))
 
 ;; Returns state.  Prints suggestion for RUNES which, if disabled beforehand, lead to significant speed ups for EVENT.
-(defun try-to-drop-runes-from-event (runes event time-to-beat state)
+(defun try-to-drop-runes-from-event (runes event time-to-beat min-time-savings state)
   (declare (xargs :guard (and (true-listp runes)
                               (rationalp time-to-beat))
                   :mode :program
                   :stobjs state))
   (if (endp runes)
       state
-    (let ((state (try-to-drop-rune-from-event (first runes) event time-to-beat state)))
-      (try-to-drop-runes-from-event (rest runes) event time-to-beat state))))
+    (let ((state (try-to-drop-rune-from-event (first runes) event time-to-beat min-time-savings state)))
+      (try-to-drop-runes-from-event (rest runes) event time-to-beat min-time-savings state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -295,13 +298,13 @@
 ;; - tries turning off TAU
 ;; - tries :induct t if the proof used induction, in case time was wasted before reverting to induction
 ;; TODO: Compare to speed-up-defrule.  Keep in sync, or merge them.
-(defun speed-up-defthm (event print print-headerp state)
+(defun speed-up-defthm (event min-time-savings print print-headerp state)
   (declare (xargs :guard (and (print-levelp print) ; todo: caller doesn't allow t?
                               (booleanp print-headerp))
                   :mode :program
                   :stobjs state))
   (prog2$
-   (and print print-headerp (cw "~%For ~s0:" (first (rest event)))) ; speedups are indented below this, and start with newlines
+   (and print print-headerp (cw "~%For ~s0" (first (rest event)))) ; speedups are indented below this, and start with newlines
    (let* ( ;;(defthm-variant (first event))
           (defthm-args (rest event))
           (name (first defthm-args))
@@ -330,48 +333,54 @@
            (if (not provedp)
                (prog2$ (er hard? 'speed-up-defthm "~x0 was expected to prove, but it failed." name)
                        (mv :failed state))
-             (if (< original-time 1/100) ; todo: make this threshold customizable
+             (prog2$
+               (if print
+                   (progn$ (cw " (")
+                           (print-to-hundredths original-time)
+                           (cw "s):"))
+                 (cw ":"))
+               (if (< original-time 1/100) ; todo: make this threshold customizable
+                   (prog2$ (and (print-level-at-least-tp print)
+                                (progn$ (cw "~%  (Not trying to speed up: only takes " name)
+                                        (print-to-hundredths original-time)
+                                        (cw " seconds)")))
+                           (mv nil state))
+              ;; It's worth trying to speed up:
                  (prog2$ (and (print-level-at-least-tp print)
-                              (progn$ (cw "~%  (Not trying to speed up: only takes " name)
+                              (progn$ (cw "~%  (Original time: " name)
                                       (print-to-hundredths original-time)
                                       (cw " seconds)")))
-                         (mv nil state))
-              ;; It's worth trying to speed up:
-               (prog2$ (and (print-level-at-least-tp print)
-                            (progn$ (cw "~%  (Original time for: " name)
-                                    (print-to-hundredths original-time)
-                                    (cw " seconds)")))
                       ;; Get the list of runes used in the proof:
-                       (let* ((runes-used (get-event-data 'rules state))
-                              (rules-to-try-to-drop (runes-to-try-disabling runes-used (w state)))
+                         (let* ((runes-used (get-event-data 'rules state))
+                                (rules-to-try-to-drop (runes-to-try-disabling runes-used (w state)))
                               ;; Try dropping each rule that contributed to the proof
-                              (state (try-to-drop-runes-from-defthm rules-to-try-to-drop body hints otf-flg original-time print state))
+                                (state (try-to-drop-runes-from-defthm rules-to-try-to-drop body hints otf-flg original-time min-time-savings print state))
                              ;; If the proof used induction, try again with :induct t (maybe time was wasted before reverting to proof by induction)
-                              (state (if (exists-rune-of-classp runes-used :induction)
-                                         (mv-let (erp provedp time-with-induct-t state)
-                                           (prove$-nice-with-time body
-                                                                  (merge-hint-setting-into-hint :induct t "Goal" hints)
-                                                                  nil ; instructions
-                                                                  otf-flg
-                                                                  original-time
-                                                                  nil ; step-limit
-                                                                  state)
-                                           (if erp
-                                               (prog2$ (cw "~%   Error adding :induct t." name)
-                                                       state)
-                                             (if provedp
-                                                 (prog2$ (maybe-print-speedup-message provedp time-with-induct-t original-time "Add :induct t hint on Goal" print)
+                                (state (if (exists-rune-of-classp runes-used :induction)
+                                           (mv-let (erp provedp time-with-induct-t state)
+                                             (prove$-nice-with-time body
+                                                                    (merge-hint-setting-into-hint :induct t "Goal" hints)
+                                                                    nil ; instructions
+                                                                    otf-flg
+                                                                    original-time
+                                                                    nil ; step-limit
+                                                                    state)
+                                             (if erp
+                                                 (prog2$ (cw "~%   Error adding :induct t." name)
                                                          state)
-                                               (prog2$ (and (print-level-at-least-tp print) (cw "~%   Adding :induct t caused the proof to break."))
+                                               (if provedp
+                                                   (prog2$ (maybe-print-speedup-message provedp time-with-induct-t original-time "Add :induct t hint on Goal" min-time-savings print)
+                                                           state)
+                                                 (prog2$ (and (print-level-at-least-tp print) (cw "~%   Adding :induct t caused the proof to break."))
                                                       ;; todo: print something here in verbose mode
-                                                       state))))
-                                       state)))
-                         (mv nil state)))))))))))
+                                                         state))))
+                                         state)))
+                           (mv nil state))))))))))))
 
 ;; Returns (mv erp state).
 ;; Each line printed starts with a newline.
 ;; TODO: Try the :induct t speedup as we do with defthms just above
-(defun speed-up-defrule (event print print-headerp state)
+(defun speed-up-defrule (event min-time-savings print print-headerp state)
   (declare (xargs :mode :program
                   :guard (and (print-levelp print) ; todo: caller doesn't allow t?
                               (booleanp print-headerp))
@@ -403,14 +412,14 @@
                        (prog2$ (cw "~%WARNING: No runes reported as used by ~x0." name)
                                (mv nil state))
                      (let* ((rules-to-try-to-drop (runes-to-try-disabling runes-used (w state)))
-                            (state (try-to-drop-runes-from-event rules-to-try-to-drop event elapsed-time state)))
+                            (state (try-to-drop-runes-from-event rules-to-try-to-drop event elapsed-time min-time-savings state)))
                        (mv nil state)))))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp state).
 ;; TODO: Handle more kinds of events, like defun!
-(defun speed-up-event-fn (form synonym-alist print throw-errorp state)
+(defun speed-up-event-fn (form synonym-alist min-time-savings print throw-errorp state)
   (declare (xargs :guard (and (print-levelp print) ; todo: finish threading this through
                               (booleanp throw-errorp))
                   :mode :program
@@ -426,9 +435,9 @@
                      (cdr res)
                    fn))))
       (case fn
-        ((defthm defthmd) (speed-up-defthm form print t state))
-        ((defrule defruled) (speed-up-defrule form print t state))
-        (local (speed-up-event-fn (cadr form) synonym-alist print throw-errorp state)) ; strip the local ; todo: this submits it as non-local (ok?)
+        ((defthm defthmd) (speed-up-defthm form min-time-savings print t state))
+        ((defrule defruled) (speed-up-defrule form min-time-savings print t state))
+        (local (speed-up-event-fn (cadr form) synonym-alist min-time-savings print throw-errorp state)) ; strip the local ; todo: this submits it as non-local (ok?)
         ;; Things we don't try to speed up (but improve-book could try to change in-theory events):
         ;; TODO: Add to this list (see :doc events):
         ((in-package defconst deflabel defmacro
@@ -450,8 +459,9 @@
 
 (defmacro speed-up-event (form &key
                                (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
+                               (min-time-savings ':auto) ; in seconds
                                (print ':brief))
-  `(speed-up-event-fn ',form ',synonym-alist ',print
+  `(speed-up-event-fn ',form ',synonym-alist ,min-time-savings ',print
                       t ; throw error on unsupported event
                       state))
 
@@ -459,12 +469,12 @@
 
 ;; Submits the event, after printing suggestions for improving it.
 ;; Returns (mv erp state).
-(defun speed-up-events-aux (event synonym-alist print state)
+(defun speed-up-events-aux (event synonym-alist min-time-savings print state)
   (declare (xargs :guard (print-levelp print) ; todo: finish threading this through
                   :mode :program
                   :stobjs state))
   (mv-let (erp state)
-    (speed-up-event-fn event synonym-alist print
+    (speed-up-event-fn event synonym-alist min-time-savings print
                        nil ; no error on unhandled things
                        state)
     (if nil ; erp ; todo
@@ -473,7 +483,7 @@
 
 ;; Submits each event, after printing suggestions for improving it.
 ;; Returns (mv erp state).
-(defun speed-up-events (events synonym-alist print state)
+(defun speed-up-events (events synonym-alist min-time-savings print state)
   (declare (xargs :guard (and (true-listp events)
                               (symbol-alistp synonym-alist)
                               (print-levelp print))
@@ -482,22 +492,24 @@
   (if (endp events)
       (mv nil state)
     (mv-let (erp state)
-      (speed-up-events-aux (first events) synonym-alist print state)
+      (speed-up-events-aux (first events) synonym-alist min-time-savings print state)
       (if erp
           (mv erp state)
-        (speed-up-events (rest events) synonym-alist print state)))))
+        (speed-up-events (rest events) synonym-alist min-time-savings print state)))))
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
 (defun speed-up-book-fn-aux (bookname ; may include .lisp extension
                              dir      ; todo: allow a keyword?
                              synonym-alist
+                             min-time-savings
                              print
                              state)
   (declare (xargs :guard (and (stringp bookname)
                               (or (eq :cbd dir)
                                   (stringp dir))
                               (symbol-alistp synonym-alist)
+                              (or (rationalp min-time-savings) (eq :auto min-time-savings))
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
@@ -508,7 +520,7 @@
       (let* ((state (widen-margins state))
              ;; Suppress annoying time tracker messages.
              (fake (time-tracker-fn nil nil nil nil nil nil nil)) ; from :trans (time-tracker nil)
-             )
+             (min-time-savings (if (eq :auto min-time-savings) *minimum-time-savings-to-report* min-time-savings)))
         (declare (ignore fake))
         (prog2$
           (and print (cw "~%~%(SPEEDING UP ~x0.~%" full-book-path)) ; matches the close paren below
@@ -520,7 +532,7 @@
                  (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
             (progn$ (and (eq print :verbose) (cw "  (Book contains ~x0 forms.)~%" (len events)))
                     (mv-let (erp state)
-                      (speed-up-events events synonym-alist print state)
+                      (speed-up-events events synonym-alist min-time-savings print state)
                       (let* ((state (unwiden-margins state))
                              (state (set-cbd-simple old-cbd state)))
                         (prog2$ (cw ")~%")
@@ -530,18 +542,20 @@
 (defun speed-up-book-fn (bookname ; no extension
                          dir
                          synonym-alist
+                         min-time-savings ; in seconds
                          print
                          state)
   (declare (xargs :guard (and (stringp bookname)
                               (or (eq :cbd dir)
                                   (stringp dir))
                               (symbol-alistp synonym-alist)
+                              (or (rationalp min-time-savings) (eq :auto min-time-savings))
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
   (revert-world
    (mv-let (erp state)
-     (speed-up-book-fn-aux bookname dir synonym-alist print state)
+     (speed-up-book-fn-aux bookname dir synonym-alist min-time-savings print state)
      (mv erp :invisible state))))
 
 ;; Example: (SPEED-UP-BOOK "helper").  This makes no changes to the world, just
@@ -550,5 +564,6 @@
                         &key
                         (dir ':cbd)
                         (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
+                        (min-time-savings ':auto) ; in seconds
                         (print ':brief))
-  `(speed-up-book-fn ,bookname ,dir ,synonym-alist ,print state))
+  `(speed-up-book-fn ,bookname ,dir ,synonym-alist ,min-time-savings ,print state))
