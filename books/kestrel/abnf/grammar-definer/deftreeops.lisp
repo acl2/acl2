@@ -790,14 +790,14 @@
           (elem1 (repetition->element rep1))
           (elem2 (repetition->element rep2)))
        (cond ((and (element-case elem1 :rulename)
-                   (member-eq (element-kind elem2) '(:num-val :char-val)))
+                   (element-case elem2 :char-val))
               (list `(tree-case
                       (nth 0 (nth 0 (tree-nonleaf->branches cst)))
                       :nonleaf)
                     `(tree-case
                       (nth 0 (nth 0 (tree-nonleaf->branches cst)))
                       :leafterm)))
-             ((and (member-eq (element-kind elem1) '(:num-val :char-val))
+             ((and (element-case elem1 :char-val)
                    (element-case elem2 :rulename))
               (list `(tree-case
                       (nth 0 (nth 0 (tree-nonleaf->branches cst)))
