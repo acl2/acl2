@@ -124,10 +124,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-funspec
+(defirrelevant irr-fun-spec
   :short "An irrelevant function specifier."
-  :type funspecp
-  :body (funspec-inline))
+  :type fun-specp
+  :body (fun-spec-inline))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -52,7 +52,7 @@
 
     (xdoc::codeblock
      "(output-files :const ...       ; no default"
-     "              :process ...     ; default nil"
+     "              :process ...     ; default :print"
      "              :const-files ... ; default nil"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,7 +68,7 @@
       "This constant must contain
        a fileset
        (i.e. a value of type @(tsee fileset))
-       if the @(':process') input (see below) is @('nil'),
+       if the @(':process') input (see below) is @(':write'),
        or a translation unit ensemble
        (i.e. a value of type @(tsee transunit-ensemble))
        if the @(':process') input is @(':print').")
@@ -77,7 +77,7 @@
        let @('*const*') be the name of this constant."))
 
     (xdoc::desc
-     "@(':process') &mdash; default @('nil')"
+     "@(':process') &mdash; default @(':print')"
      (xdoc::p
       "Specifies the processing to perform
        on the ACL2 representation of the C code in @('*const*').")
@@ -85,11 +85,13 @@
       "This must be one of the following:")
      (xdoc::ul
       (xdoc::li
-       "@('nil'), for no processing.
+       "@(':write'),
+        for no processing (i.e. just writing the files).
         In this case, @('*const*') must contain a file set,
         which is written to the file system as is.")
       (xdoc::li
-       "@(':print'), to print the abstract syntax in @('*const*')
+       "@(':print') (the default),
+        to print the abstract syntax in @('*const*')
         to a file set that is then written to the file system.
         In this case, @('*const*') must contain a translation unit ensemble.")))
 
@@ -103,7 +105,7 @@
        this constant is not generated.")
      (xdoc::p
       "This input must be @('nil') if
-       @(':process') is @('nil'),
+       @(':process') is @(':write'),
        because in that case @('*const*') already contains a file set.")
      (xdoc::p
       "In the rest of this documentation page,

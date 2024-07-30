@@ -1091,7 +1091,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum funspec
+(fty::deftagsum fun-spec
   :short "Fixtype of function specifiers [C:6.7.4] [C:A.2.2]."
   :long
   (xdoc::topstring
@@ -1109,7 +1109,7 @@
   ;; GCC extensions:
   (:__inline ())
   (:__inline__ ())
-  :pred funspecp)
+  :pred fun-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1628,7 +1628,7 @@
     (:stocla ((unwrap stor-spec)))
     (:tyspec ((unwrap tyspec)))
     (:tyqual ((unwrap type-qual)))
-    (:funspec ((unwrap funspec)))
+    (:funspec ((unwrap fun-spec)))
     (:alignspec ((unwrap alignspec)))
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
