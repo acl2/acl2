@@ -45,7 +45,8 @@
   (simpadd0-transunit-ensemble *old-transunits*))
 
 (defconst *new-fileset*
-  (c$::print-fileset *new-transunits*))
+  (c$::print-fileset *new-transunits*
+                     (c$::make-priopt :indent-size 2)))
 
 (defconst *new-filepath*
   (filepath "file.simpadd0.c"))

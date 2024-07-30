@@ -3274,27 +3274,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-fileset ((tunits transunit-ensemblep))
+(define print-fileset ((tunits transunit-ensemblep) (options prioptp))
   :returns (fileset filesetp)
   :short "Print a file set."
   :long
   (xdoc::topstring
    (xdoc::p
     "The input is a translation unit ensemble in the abstract syntax.
+     We also pass the printer options as additional input.
      We go through each translation unit in the ensemble and print it,
      obtaining a file for each.
      We return a file set that corresponds to the translation unit ensemble.
      The file paths are the same
      for the translation unit ensemble and for the file set
-     (they are the keys of the maps).")
-   (xdoc::p
-    "We set the printing options,
-     specifically the indentation size,
-     to two spaces for now.
-     In the future, we will make this a top-level parameter."))
-  (b* ((options (make-priopt :indent-size 2)))
-    (fileset (print-fileset-loop (transunit-ensemble->unwrap tunits)
-                                 options)))
+     (they are the keys of the maps)."))
+  (fileset (print-fileset-loop (transunit-ensemble->unwrap tunits) options))
   :hooks (:fix)
 
   :prepwork
@@ -3315,7 +3309,10 @@
        (equal (omap::keys filemap)
               (omap::keys tunitmap))
        :hyp (filepath-transunit-mapp tunitmap)
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t)))
+
+     (fty::deffixequiv print-fileset-loop
+       :args ((options prioptp)))))
 
   ///
 

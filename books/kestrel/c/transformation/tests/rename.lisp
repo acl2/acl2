@@ -49,7 +49,8 @@
                                            nil))))
 
 (defconst *fileset-rename*
-  (c$::print-fileset *transunits-rename*))
+  (c$::print-fileset *transunits-rename*
+                     (c$::make-priopt :indent-size 2)))
 
 (defconst *filepath-rename*
   (filepath "file.RENAME.c"))

@@ -124,7 +124,8 @@
   (identity-trans-transunit-ensemble *old-transunits*))
 
 (defconst *fileset-identity-trans*
-  (c$::print-fileset *transunits-identity-trans*))
+  (c$::print-fileset *transunits-identity-trans*
+                     (c$::make-priopt :indent-size 2)))
 
 (defconst *filepath-identity-trans*
   (filepath "file.IDENTITY-TRANS.c"))
@@ -149,7 +150,8 @@
   (my-simpadd0-transunit-ensemble *old-transunits*))
 
 (defconst *fileset-my-simpadd0*
-  (c$::print-fileset *transunits-my-simpadd0*))
+  (c$::print-fileset *transunits-my-simpadd0*
+                     (c$::make-priopt :indent-size 2)))
 
 (defconst *filepath-my-simpadd0*
   (filepath "file.MY-SIMPADD0.c"))

@@ -57,7 +57,8 @@
       ensemble)))
 
 (defconst *fileset-split-fn1*
-  (c$::print-fileset *transunits-split-fn1*))
+  (c$::print-fileset *transunits-split-fn1*
+                     (c$::make-priopt :indent-size 2)))
 
 (defconst *filedata-split-fn1*
   (omap::lookup *filepath-split-fn*
@@ -116,7 +117,8 @@ int foo(int y) {
       ensemble)))
 
 (defconst *fileset-split-fn2*
-  (c$::print-fileset *transunits-split-fn2*))
+  (c$::print-fileset *transunits-split-fn2*
+                     (c$::make-priopt :indent-size 2)))
 
 (defconst *filedata-split-fn2*
   (omap::lookup *filepath-split-fn*
@@ -179,7 +181,8 @@ int foo(int x) {
       ensemble)))
 
 (defconst *fileset-split-fn3*
-  (c$::print-fileset *transunits-split-fn3*))
+  (c$::print-fileset *transunits-split-fn3*
+                     (c$::make-priopt :indent-size 2)))
 
 (defconst *filedata-split-fn3*
   (omap::lookup *filepath-split-fn*
