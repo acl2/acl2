@@ -335,8 +335,6 @@
 ;;          (x86isa::feature-flag :sse2 x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
-(in-theory (disable x86isa::sub-zf-spec32))
-
 (defthm bvchop-of-sub-zf-spec32
   (implies (and (<= 1 size)
                 (integerp size))
@@ -356,8 +354,6 @@
 (defthmd equal-of-1-and-sub-zf-spec32
   (equal (equal 1 (x86isa::sub-zf-spec32 dst src))
          (equal dst src)))
-
-
 
 ;slow: ACL2::UNSIGNED-BYTE-P-OF-+-OF-MINUS
 
@@ -396,21 +392,19 @@
 ;;   (equal (x86isa::feature-flag flag (if test x86 x86_2))
 ;;          (if test (x86isa::feature-flag flag x86) (x86isa::feature-flag flag x86_2))))
 
-
-
-;; should not be needed
+;; should not be needed?
 (defthm xr-of-!rflags-irrel
   (implies (not (equal fld :rflags))
-           (equal (XR fld index (!RFLAGS v x86))
-                  (XR fld index x86))))
+           (equal (xr fld index (!rflags v x86))
+                  (xr fld index x86))))
 
-(defthm !RFLAGS-of-if-arg1
-  (equal (X86ISA::!RFLAGS (if test v1 v2) x86)
-         (if test (X86ISA::!RFLAGS v1 x86) (X86ISA::!RFLAGS v2 x86))))
+(defthm !rflags-of-if-arg1
+  (equal (x86isa::!rflags (if test v1 v2) x86)
+         (if test (x86isa::!rflags v1 x86) (x86isa::!rflags v2 x86))))
 
-(defthm !RFLAGS-of-if-arg2
-  (equal (X86ISA::!RFLAGS v (if test x86_1 x86_2))
-         (if test (X86ISA::!RFLAGS v x86_1) (X86ISA::!RFLAGS v x86_2))))
+(defthm !rflags-of-if-arg2
+  (equal (x86isa::!rflags v (if test x86_1 x86_2))
+         (if test (x86isa::!rflags v x86_1) (x86isa::!rflags v x86_2))))
 
 ;; (thm
 ;;  (IMPLIES (AND (< J 0)

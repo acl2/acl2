@@ -1261,7 +1261,7 @@
            (equal (jbe-condition (x86isa::sub-cf-spec8 dst src)
                                  (x86isa::sub-zf-spec8 dst src))
                   (bvle 8 dst src)))
-  :hints (("Goal" :in-theory (enable jbe-condition bvlt x86isa::sub-zf-spec8 x86isa::sub-sf-spec8))))
+  :hints (("Goal" :in-theory (enable jbe-condition bvlt x86isa::sub-zf-spec8 x86isa::sub-cf-spec8))))
 
 ;nice
 (defthm jbe-condition-of-sub-cf-spec16-and-sub-zf-spec16
@@ -1270,7 +1270,7 @@
            (equal (jbe-condition (x86isa::sub-cf-spec16 dst src)
                                  (x86isa::sub-zf-spec16 dst src))
                   (bvle 16 dst src)))
-  :hints (("Goal" :in-theory (enable jbe-condition bvlt x86isa::sub-zf-spec16 x86isa::sub-sf-spec16))))
+  :hints (("Goal" :in-theory (enable jbe-condition bvlt x86isa::sub-zf-spec16 x86isa::sub-cf-spec16))))
 
 ;nice
 ;todo: clean up hints
@@ -1281,12 +1281,9 @@
                                  (x86isa::sub-zf-spec32 dst src))
                   (bvle 32 dst src)))
   :hints (("Goal" :in-theory (enable jbe-condition zf-spec
-                                     OF-SPEC32
-                                     sF-SPEC32
                                      bvlt
                                      x86isa::sub-zf-spec32
-                                     x86isa::sub-sf-spec32
-                                     x86isa::sub-of-spec32
+                                     x86isa::sub-cf-spec32
                                      ACL2::GETBIT-OF-+
                                      bvplus
                                      SIGNED-BYTE-P
@@ -1300,12 +1297,9 @@
                                  (x86isa::sub-zf-spec64 dst src))
                   (bvle 64 dst src)))
   :hints (("Goal" :in-theory (enable jbe-condition zf-spec
-                                     OF-SPEC64
-                                     sF-SPEC64
                                      bvlt
                                      x86isa::sub-zf-spec64
-                                     x86isa::sub-sf-spec64
-                                     x86isa::sub-of-spec64
+                                     x86isa::sub-cf-spec64
                                      ACL2::GETBIT-OF-+
                                      bvplus
                                      SIGNED-BYTE-P
@@ -1320,8 +1314,9 @@
            (equal (jnbe-condition (x86isa::sub-cf-spec8 dst src)
                                   (x86isa::sub-zf-spec8 dst src))
                   (bvlt 8 src dst)))
-  :hints (("Goal" :in-theory (enable jnbe-condition zf-spec bvlt
-                                     x86isa::sub-zf-spec8))))
+  :hints (("Goal" :in-theory (enable jnbe-condition bvlt
+                                     x86isa::sub-zf-spec8
+                                     x86isa::sub-cf-spec8))))
 
 ;nice
 (defthm jnbe-condition-of-sub-cf-spec16-and-sub-zf-spec16
@@ -1330,7 +1325,8 @@
            (equal (jnbe-condition (x86isa::sub-cf-spec16 dst src)
                                   (x86isa::sub-zf-spec16 dst src))
                   (bvlt 16 src dst)))
-  :hints (("Goal" :in-theory (enable jnbe-condition zf-spec bvlt
+  :hints (("Goal" :in-theory (enable jnbe-condition bvlt
+                                     x86isa::sub-cf-spec16
                                      x86isa::sub-zf-spec16))))
 
 ;nice
@@ -1340,7 +1336,8 @@
            (equal (jnbe-condition (x86isa::sub-cf-spec32 dst src)
                                   (x86isa::sub-zf-spec32 dst src))
                   (bvlt 32 src dst)))
-  :hints (("Goal" :in-theory (enable jnbe-condition zf-spec bvlt
+  :hints (("Goal" :in-theory (enable jnbe-condition bvlt
+                                     x86isa::sub-cf-spec32
                                      x86isa::sub-zf-spec32))))
 
 ;nice
@@ -1350,7 +1347,8 @@
            (equal (jnbe-condition (x86isa::sub-cf-spec64 dst src)
                                   (x86isa::sub-zf-spec64 dst src))
                   (bvlt 64 src dst)))
-  :hints (("Goal" :in-theory (enable jnbe-condition zf-spec bvlt
+  :hints (("Goal" :in-theory (enable jnbe-condition bvlt
+                                     x86isa::sub-cf-spec64
                                      x86isa::sub-zf-spec64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

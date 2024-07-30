@@ -171,6 +171,9 @@
   :hints (("Goal" :in-theory (enable* GPR-SUB-SPEC-1
                                       sub-cf-spec8
                                       sub-pf-spec8
+                                      sub-zf-spec8
+                                      sub-sf-spec8
+                                      sub-of-spec8
                                       ZF-SPEC
                                       acl2::bvchop-of-sum-cases
                                       rflag-RoWs-enables))))
@@ -239,6 +242,9 @@
   :hints (("Goal" :in-theory (enable* GPR-SUB-SPEC-2
                                      sub-cf-spec16
                                      sub-pf-spec16
+                                     sub-zf-spec16
+                                     sub-sf-spec16
+                                     sub-of-spec16
                                      ZF-SPEC
                                      acl2::bvchop-of-sum-cases
                                      rflag-RoWs-enables))))
@@ -303,9 +309,12 @@
            (MV RESULT OUTPUT-RFLAGS
                UNDEFINED-FLAGS)))
   :hints (("Goal" :in-theory (enable* GPR-SUB-SPEC-4
-                                     sub-cf-spec32
-                                     sub-pf-spec32
-                                     ZF-SPEC
+                                      sub-cf-spec32
+                                      sub-pf-spec32
+                                      sub-zf-spec32
+                                      sub-sf-spec32
+                                      sub-of-spec32
+                                      ZF-SPEC
                                      acl2::bvchop-of-sum-cases
                                      rflag-RoWs-enables))))
 
@@ -391,6 +400,9 @@
   :hints (("Goal" :in-theory (enable* GPR-SUB-SPEC-8
                                      sub-cf-spec64
                                      sub-pf-spec64
+                                     sub-zf-spec64
+                                     sub-sf-spec64
+                                     sub-of-spec64
                                      sf-spec64
                                      ZF-SPEC
                                      ;; ACL2::GETBIT-OF-+ ; rename
