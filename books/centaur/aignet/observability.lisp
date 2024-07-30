@@ -1445,7 +1445,7 @@ Then replace the occurrences of these inputs in @('B') with these muxes.
 Finally, conjoin this modified copy of @('B') with @('A').</p>
 
 <p>This provably produces a combinationally equivalent network, since @('B') is
-only changed in cases where @('A') des not hold:</p>
+only changed in cases where @('A') does not hold:</p>
 
 @(thm observability-fix-comb-equivalent)"
 
