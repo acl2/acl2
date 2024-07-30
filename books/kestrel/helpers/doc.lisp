@@ -64,6 +64,7 @@ Note that all suggestions made by @('improve-book') are independent.  There is n
   :short "Suggest ways to speed up an event."
   :description "Wrapping an event in a call of @('speed-up-event') causes attempts to be made to speed it up (e.g., by deleting hints).  Currently, only @(tsee defthm) and @(tsee defrule) events are supported."
   :arg-descriptions ((form "The entire event to speed up (e.g., a @('defthm') form).")
-                     (min-time-savings "The minimum savings to report for a given event (in seconds).")
+                     (min-time-savings "The minimum time savings to report for a given event (in seconds).  Time savings smaller than this will normally not be printed.  If :auto, use the value of the constant @('*minimum-time-savings-to-report*').")
+                     (min-event-time "The minimum time for events we should try to speed up (in seconds).  Events that take less time will not have speeding up attempted for them.  If :auto, use the value of the constant @('*minimum-event-time-to-speed-up*')")
                      (print "How much to print (should satisfy print-levelp).")
                      (synonym-alist "A symbol-symbol-alist mapping from synonyms to known event types (e.g., you can declare foo to be treated like defthm by the speed-up tool).")))

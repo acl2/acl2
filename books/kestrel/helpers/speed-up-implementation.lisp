@@ -68,8 +68,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; in seconds
+;; these are in seconds:
 (defconst *minimum-time-savings-to-report* 1/10)
+(defconst *minimum-event-time-to-speed-up* 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,7 +299,7 @@
 ;; - tries turning off TAU
 ;; - tries :induct t if the proof used induction, in case time was wasted before reverting to induction
 ;; TODO: Compare to speed-up-defrule.  Keep in sync, or merge them.
-(defun speed-up-defthm (event min-time-savings print print-headerp state)
+(defun speed-up-defthm (event min-time-savings min-event-time print print-headerp state)
   (declare (xargs :guard (and (print-levelp print) ; todo: caller doesn't allow t?
                               (booleanp print-headerp))
                   :mode :program
@@ -339,7 +340,7 @@
                            (print-to-hundredths original-time)
                            (cw "s):"))
                  (cw ":"))
-               (if (< original-time 1/100) ; todo: make this threshold customizable
+               (if (< original-time min-event-time)
                    (prog2$ (and (print-level-at-least-tp print)
                                 (progn$ (cw "~%  (Not trying to speed up: only takes " name)
                                         (print-to-hundredths original-time)
@@ -380,7 +381,7 @@
 ;; Returns (mv erp state).
 ;; Each line printed starts with a newline.
 ;; TODO: Try the :induct t speedup as we do with defthms just above
-(defun speed-up-defrule (event min-time-savings print print-headerp state)
+(defun speed-up-defrule (event min-time-savings min-event-time print print-headerp state)
   (declare (xargs :mode :program
                   :guard (and (print-levelp print) ; todo: caller doesn't allow t?
                               (booleanp print-headerp))
@@ -401,7 +402,7 @@
                (prog2$ (er hard? 'speed-up-defrule "~x0 was expected to prove, but it failed." name)
                        (mv erp state))
              (let* ((elapsed-time (- end-time start-time)))
-               (if (< elapsed-time 1/100)
+               (if (< elapsed-time min-event-time)
                    (progn$ ;; (cw "~%(Not trying to speed up ~x0 because it only takes " name)
                    ;; (print-to-hundredths elapsed-time)
                    ;; (cw " seconds)")
@@ -419,7 +420,7 @@
 
 ;; Returns (mv erp state).
 ;; TODO: Handle more kinds of events, like defun!
-(defun speed-up-event-fn (form synonym-alist min-time-savings print throw-errorp state)
+(defun speed-up-event-fn (form synonym-alist min-time-savings min-event-time print throw-errorp state)
   (declare (xargs :guard (and (print-levelp print) ; todo: finish threading this through
                               (booleanp throw-errorp))
                   :mode :program
@@ -435,9 +436,9 @@
                      (cdr res)
                    fn))))
       (case fn
-        ((defthm defthmd) (speed-up-defthm form min-time-savings print t state))
-        ((defrule defruled) (speed-up-defrule form min-time-savings print t state))
-        (local (speed-up-event-fn (cadr form) synonym-alist min-time-savings print throw-errorp state)) ; strip the local ; todo: this submits it as non-local (ok?)
+        ((defthm defthmd) (speed-up-defthm form min-time-savings min-event-time print t state))
+        ((defrule defruled) (speed-up-defrule form min-time-savings min-event-time print t state))
+        (local (speed-up-event-fn (cadr form) synonym-alist min-time-savings min-event-time print throw-errorp state)) ; strip the local ; todo: this submits it as non-local (ok?)
         ;; Things we don't try to speed up (but improve-book could try to change in-theory events):
         ;; TODO: Add to this list (see :doc events):
         ((in-package defconst deflabel defmacro
@@ -460,8 +461,9 @@
 (defmacro speed-up-event (form &key
                                (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
                                (min-time-savings ':auto) ; in seconds
+                               (min-event-time ':auto) ; in seconds
                                (print ':brief))
-  `(speed-up-event-fn ',form ',synonym-alist ,min-time-savings ',print
+  `(speed-up-event-fn ',form ',synonym-alist ,min-time-savings ,min-event-time ',print
                       t ; throw error on unsupported event
                       state))
 
@@ -469,12 +471,12 @@
 
 ;; Submits the event, after printing suggestions for improving it.
 ;; Returns (mv erp state).
-(defun speed-up-events-aux (event synonym-alist min-time-savings print state)
+(defun speed-up-events-aux (event synonym-alist min-time-savings min-event-time print state)
   (declare (xargs :guard (print-levelp print) ; todo: finish threading this through
                   :mode :program
                   :stobjs state))
   (mv-let (erp state)
-    (speed-up-event-fn event synonym-alist min-time-savings print
+    (speed-up-event-fn event synonym-alist min-time-savings min-event-time print
                        nil ; no error on unhandled things
                        state)
     (if nil ; erp ; todo
@@ -483,7 +485,7 @@
 
 ;; Submits each event, after printing suggestions for improving it.
 ;; Returns (mv erp state).
-(defun speed-up-events (events synonym-alist min-time-savings print state)
+(defun speed-up-events (events synonym-alist min-time-savings min-event-time print state)
   (declare (xargs :guard (and (true-listp events)
                               (symbol-alistp synonym-alist)
                               (print-levelp print))
@@ -492,10 +494,10 @@
   (if (endp events)
       (mv nil state)
     (mv-let (erp state)
-      (speed-up-events-aux (first events) synonym-alist min-time-savings print state)
+      (speed-up-events-aux (first events) synonym-alist min-time-savings min-event-time print state)
       (if erp
           (mv erp state)
-        (speed-up-events (rest events) synonym-alist min-time-savings print state)))))
+        (speed-up-events (rest events) synonym-alist min-time-savings min-event-time print state)))))
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
@@ -503,6 +505,7 @@
                              dir      ; todo: allow a keyword?
                              synonym-alist
                              min-time-savings
+                             min-event-time
                              print
                              state)
   (declare (xargs :guard (and (stringp bookname)
@@ -510,6 +513,7 @@
                                   (stringp dir))
                               (symbol-alistp synonym-alist)
                               (or (rationalp min-time-savings) (eq :auto min-time-savings))
+                              (or (rationalp min-event-time) (eq :auto min-event-time))
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
@@ -520,7 +524,8 @@
       (let* ((state (widen-margins state))
              ;; Suppress annoying time tracker messages.
              (fake (time-tracker-fn nil nil nil nil nil nil nil)) ; from :trans (time-tracker nil)
-             (min-time-savings (if (eq :auto min-time-savings) *minimum-time-savings-to-report* min-time-savings)))
+             (min-time-savings (if (eq :auto min-time-savings) *minimum-time-savings-to-report* min-time-savings))
+             (min-event-time (if (eq :auto min-event-time) *minimum-event-time-to-speed-up* min-event-time)))
         (declare (ignore fake))
         (prog2$
           (and print (cw "~%~%(SPEEDING UP ~x0.~%" full-book-path)) ; matches the close paren below
@@ -532,7 +537,7 @@
                  (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
             (progn$ (and (eq print :verbose) (cw "  (Book contains ~x0 forms.)~%" (len events)))
                     (mv-let (erp state)
-                      (speed-up-events events synonym-alist min-time-savings print state)
+                      (speed-up-events events synonym-alist min-time-savings min-event-time print state)
                       (let* ((state (unwiden-margins state))
                              (state (set-cbd-simple old-cbd state)))
                         (prog2$ (cw ")~%")
@@ -543,6 +548,7 @@
                          dir
                          synonym-alist
                          min-time-savings ; in seconds
+                         min-event-time ; in seconds
                          print
                          state)
   (declare (xargs :guard (and (stringp bookname)
@@ -550,12 +556,13 @@
                                   (stringp dir))
                               (symbol-alistp synonym-alist)
                               (or (rationalp min-time-savings) (eq :auto min-time-savings))
+                              (or (rationalp min-event-time) (eq :auto min-event-time))
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
   (revert-world
    (mv-let (erp state)
-     (speed-up-book-fn-aux bookname dir synonym-alist min-time-savings print state)
+     (speed-up-book-fn-aux bookname dir synonym-alist min-time-savings min-event-time print state)
      (mv erp :invisible state))))
 
 ;; Example: (SPEED-UP-BOOK "helper").  This makes no changes to the world, just
@@ -565,5 +572,6 @@
                         (dir ':cbd)
                         (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
                         (min-time-savings ':auto) ; in seconds
+                        (min-event-time ':auto) ; in seconds
                         (print ':brief))
-  `(speed-up-book-fn ,bookname ,dir ,synonym-alist ,min-time-savings ,print state))
+  `(speed-up-book-fn ,bookname ,dir ,synonym-alist ,min-time-savings ,min-event-time ,print state))

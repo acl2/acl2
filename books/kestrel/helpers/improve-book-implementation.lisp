@@ -396,7 +396,7 @@
               (state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) hints nil 100000 state)))
          ;; Try to speed up the proof:
          (mv-let (erp state)
-           (speed-up-defthm event print nil *minimum-time-savings-to-report* state) ; todo: thread through the min time savings
+           (speed-up-defthm event print nil *minimum-time-savings-to-report* *minimum-event-time-to-speed-up* state) ; todo: thread through the min time savings
            (if erp
                (mv erp state)
              (prog2$ (and print (cw ")~%"))
@@ -441,7 +441,7 @@
   (prog2$
    (and print (cw " (For ~x0:" (first (rest event))))
    (mv-let (erp state)
-     (speed-up-defrule event *minimum-time-savings-to-report* print nil state) ; todo: thread through the min time savings
+     (speed-up-defrule event *minimum-time-savings-to-report* *minimum-event-time-to-speed-up* print nil state) ; todo: thread through the min time savings
      (declare (ignore erp)) ; todo: why?
      (prog2$ (and print (cw ")~%"))
              (submit-event event nil nil state)))))
