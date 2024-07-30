@@ -1898,7 +1898,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-c-chars ((pstate parstatep))
+(define lex-*-c-char ((pstate parstatep))
   :returns (mv erp
                (cchars c-char-listp)
                (closing-squote-pos positionp)
@@ -1907,6 +1907,9 @@
           in a character constant."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "That is, parse a @('*c-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('c-char').")
    (xdoc::p
     "This is called when we expect a character constant,
      after reading the opening single quote of a character constant.
@@ -1949,7 +1952,7 @@
               (retok cchar pos pstate))
           (b* ((cchar (c-char-char char)))
             (retok cchar pos pstate))))
-       ((erp cchars closing-squote-pos pstate) (lex-c-chars pstate)))
+       ((erp cchars closing-squote-pos pstate) (lex-*-c-char pstate)))
     (retok (cons cchar cchars) closing-squote-pos pstate))
   :measure (parsize pstate)
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -1958,13 +1961,13 @@
 
   ///
 
-  (defret parsize-of-lex-c-chars-uncond
+  (defret parsize-of-lex-*-c-char-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear
     :hints (("Goal" :induct t)))
 
-  (defret parsize-of-lex-c-chars-cond
+  (defret parsize-of-lex-*-c-char-cond
     (implies (not erp)
              (<= (parsize new-pstate)
                  (1- (- (parsize pstate)
@@ -2065,11 +2068,11 @@
      So we read zero or more characters and escape sequences,
      and ensure that there is at least one (according to the grammar).
      In the process of reading those characters and escape sequences,
-     we read up to the closing single quote (see @(tsee lex-c-chars)),
+     we read up to the closing single quote (see @(tsee lex-*-c-char)),
      whose position we use as the ending one of the span we return.
      The starting position of the span is passed to this function as input."))
   (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
-       ((erp cchars closing-squote-pos pstate) (lex-c-chars pstate))
+       ((erp cchars closing-squote-pos pstate) (lex-*-c-char pstate))
        (span (make-span :start first-pos :end closing-squote-pos))
        ((unless cchars)
         (reterr-msg :where (position-to-msg closing-squote-pos)

@@ -864,33 +864,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; lex-c-chars
+; lex-*-c-char
 
 (test-lex
- lex-c-chars
+ lex-*-c-char
  "a'"
  :cond (equal ast (list (c-char-char (char-code #\a)))))
 
 (test-lex
- lex-c-chars
+ lex-*-c-char
  "\\a'"
  :cond (equal ast (list (c-char-escape (escape-simple (simple-escape-a))))))
 
 (test-lex
- lex-c-chars
+ lex-*-c-char
  "&\\xf7'"
  :cond (equal ast (list (c-char-char (char-code #\&))
                         (c-char-escape (escape-hex (list #\f #\7))))))
 
 (test-lex
- lex-c-chars
+ lex-*-c-char
  "\\1111'"
  :cond (equal ast (list (c-char-escape
                          (escape-oct (oct-escape-three #\1 #\1 #\1)))
                         (c-char-char (char-code #\1)))))
 
 (test-lex
- lex-c-chars
+ lex-*-c-char
  "ABC'"
  :cond (and (equal ast (list (c-char-char (char-code #\A))
                              (c-char-char (char-code #\B))
@@ -898,27 +898,27 @@
             (equal pos/span (position 1 3))))
 
 (test-lex-fail
- lex-c-chars
+ lex-*-c-char
  "")
 
 (test-lex-fail
- lex-c-chars
+ lex-*-c-char
  "a")
 
 (test-lex-fail
- lex-c-chars
+ lex-*-c-char
  "a\\'")
 
 (test-lex-fail
- lex-c-chars
+ lex-*-c-char
  "a\\z'")
 
 (test-lex-fail
- lex-c-chars
+ lex-*-c-char
  (list (char-code #\a) 10 (char-code #\b) (char-code #\')))
 
 (test-lex-fail
- lex-c-chars
+ lex-*-c-char
  (list (char-code #\a) 13 10 (char-code #\')))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
