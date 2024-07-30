@@ -1875,9 +1875,9 @@
            (raise "Internal error: element ~x0 is not a rule name." elem)
            (mv nil nil nil))
           (rulename (element-rulename->get elem))
-          (rulename-string (rulename->get rulename))
           (conjunct
-           `(iff (,conc-matchp (tree-nonleaf->branches cst) ,rulename-string)
+           `(iff (,conc-matchp (tree-nonleaf->branches cst)
+                               ,(pretty-print-element elem))
                  ,conc-info.discriminant-term))
           ((unless (and (consp conc-info.rep-infos)
                         (endp (cdr conc-info.rep-infos))))
