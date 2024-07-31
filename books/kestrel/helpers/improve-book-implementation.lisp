@@ -43,13 +43,11 @@
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
-(include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
-(include-book "kestrel/strings-light/strip-suffix-from-strings" :dir :system)
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
 (include-book "linter")
+(include-book "books-in-subtree")
 (include-book "speed-up-implementation") ; also gets us abbreviate-event
-(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
-
+(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system)) ; drop?
 
 ;move
 (defund duplicate-items-aux (lst acc)
@@ -70,36 +68,6 @@
 (defund duplicate-items (lst)
   (declare (xargs :guard (true-listp lst)))
   (duplicate-items-aux lst nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defttag books-in-subtree) ; for sys-call+ below
-
-;; Looks for .lisp files in the current subtree.
-;; Returns (mv book-paths state) where the BOOK-PATHS have no .lisp extensions.
-;move
-(defun books-in-subtree (state)
-  (declare (xargs :stobjs state))
-  (mv-let (erp filename-lines state)
-    (sys-call+ "find" '("." "-name" "*.lisp") state)
-    (if erp
-        (prog2$ (er hard? 'books-in-subtree "Failed to find books: ~x0." erp)
-                (mv nil state))
-      (mv (strip-suffix-from-strings ".lisp" (remove-equal "" (split-string-repeatedly filename-lines #\Newline)))
-          state))))
-
-;move
-;; Looks for .lisp files in the current subtree.
-;; Returns (mv book-paths state) where the BOOK-PATHS have no .lisp extensions.
-(defun books-in-dir (state)
-  (declare (xargs :stobjs state))
-  (mv-let (erp filename-lines state)
-    (sys-call+ "find" '("." "-maxdepth" "1" "-name" "*.lisp") state)
-    (if erp
-        (prog2$ (er hard? 'books-in-dir "Failed to find books: ~x0." erp)
-                (mv nil state))
-      (mv (strip-suffix-from-strings ".lisp" (remove-equal "" (split-string-repeatedly filename-lines #\Newline)))
-          state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -396,7 +364,7 @@
               (state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) hints nil 100000 state)))
          ;; Try to speed up the proof:
          (mv-let (erp state)
-           (speed-up-defthm event print nil *minimum-time-savings-to-report* *minimum-event-time-to-speed-up* state) ; todo: thread through the min time savings
+           (speed-up-defthm event *minimum-time-savings-to-report* *minimum-event-time-to-speed-up* print nil state) ; todo: thread through the min time savings
            (if erp
                (mv erp state)
              (prog2$ (and print (cw ")~%"))
@@ -681,6 +649,7 @@
         (improve-books-fn-aux (rest books) dir print state)))))
 
 ;; Returns (mv erp nil state) where EVENT is usually (value-triple :invisible).
+;todo: put print arg last
 (defun improve-books-fn (print dir subdirsp state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose))
                               (or (eq :cbd dir)

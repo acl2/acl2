@@ -12,6 +12,7 @@
 
 (include-book "check-packages")
 (include-book "auto-return-type")
+(include-book "books-in-subtree")
 (include-book "helper-old")
 (include-book "helper")
 (include-book "deps")
