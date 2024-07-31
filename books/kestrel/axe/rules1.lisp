@@ -1545,8 +1545,6 @@
                   (bv-array-write size1 len index val lst)))
   :hints (("Goal" :in-theory (enable bv-array-write))))
 
-(in-theory (disable NTH-BECOMES-BV-ARRAY-READ))
-
 (defthm bv-array-read-of-bvchop-list-tighten
   (implies (and (< 0 len)
                 (integerp len)
@@ -2068,8 +2066,6 @@
                                    ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                    ;CDR-OF-TAKE-BECOMES-SUBRANGE ;bozo
                                    UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
-
-(in-theory (disable subrange)) ;move
 
 ;all cases - drop some hyps?
 ;this rule seemed to split into a lot of cases before the two "irrelevant write" cases were combined
