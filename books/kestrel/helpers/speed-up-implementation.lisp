@@ -133,6 +133,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; returns a string
 (defun abbreviate-event (event)
   (declare (xargs :guard t
                   :mode :program))
@@ -301,6 +302,7 @@
 ;; - tries turning off TAU
 ;; - tries :induct t if the proof used induction, in case time was wasted before reverting to induction
 ;; TODO: Compare to speed-up-defrule.  Keep in sync, or merge them.
+;; todo: refactor to generate list of hints, with descriptions, to try.
 (defun speed-up-defthm (event min-time-savings min-event-time print print-headerp state)
   (declare (xargs :guard (and (print-levelp print) ; todo: caller doesn't allow t?
                               (booleanp print-headerp))
@@ -455,9 +457,9 @@
                      table)
          (mv nil state))
         (otherwise (if throw-errorp
-                       (prog2$ (er hard? 'speed-up-event-fn "Unsupported event: ~X01." form nil)
+                       (prog2$ (er hard? 'speed-up-event-fn "Unsupported event: ~s0." (abbreviate-event form))
                                (mv :unsupported-event state))
-                     (prog2$ (cw "~%Unsupported event: ~X01." form nil)
+                     (prog2$ (cw "~%Unsupported event: ~s0." (abbreviate-event form))
                              (mv nil state))))))))
 
 (defmacro speed-up-event (form &key
