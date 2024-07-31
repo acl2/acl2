@@ -167,7 +167,7 @@
 (defthmd bv-array-read-when-data-isnt-an-all-unsigned-byte-p
   (implies (and (syntaxp (and (quotep data)
                               (quotep esize)))
-                (not (all-unsigned-byte-p esize data))
+                (not (all-unsigned-byte-p esize data)) ; gets computed
                 (equal (len data) len)
                 (natp esize)
                 (< 0 len))
@@ -969,10 +969,11 @@
                            (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
                             ARRAY-REDUCTION-WHEN-ALL-SAME)))))
 
+;rename
 (defthmd bv-array-write-when-data-isnt-an-all-unsigned-byte-p
-  (implies (and (syntaxp (quotep data))
-                (syntaxp (quotep esize))
-                (not (all-unsigned-byte-p esize data))
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep esize)))
+                (not (all-unsigned-byte-p esize data)) ; gets evaluated
                 (equal (len data) len)
                 (< INDEX (LEN DATA))
                 (natp index)
