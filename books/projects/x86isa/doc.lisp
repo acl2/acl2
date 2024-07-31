@@ -53,6 +53,9 @@
 ;; are excluded from the x86isa manual.
 (include-book "proofs/utilities/top" :ttags :all)
 
+;; Virtualization based validation
+(include-book "virtualization/top" :ttags :all)
+
 ;; ======================================================================
 
 ;; Files will be copied from X86ISA/images to res/x86isa of the x86
@@ -293,10 +296,15 @@
   :short "How do we trust that our x86 ISA model is faithful to the
   real machine?"
 
-  :long "<p>Doc. topic coming soon!  For now, here's an illustrative
-  image.</p>
+  :long "<p>A past version of this model was validated in @('app-view') with
+  cosimulation using tools internal to Centaur Technology. See the graphic bellow:</p>
 
- <p><img src='res/x86isa/cosim.png' /></p>")
+ <p><img src='res/x86isa/cosim.png' /></p>
+
+ <p>This validation system was lost to history. To debug the model while
+ attempting to boot Linux on it, we built a new validation system that works
+ similarly, but works in the @('system-view') and is built on opensource tools.
+ For more information see @(see virtualization-for-validation)</p>")
 
 (defxdoc publications
   :parents (x86isa)
