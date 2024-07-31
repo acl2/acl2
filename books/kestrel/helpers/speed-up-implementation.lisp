@@ -27,6 +27,7 @@
 ;; TODO: TODO: Handle theorems not at the top level
 ;; TODO: Handle defthm-flags
 ;; TODO: Try different ruler-extenders
+;; todo: disallow print nil?
 
 (include-book "replay-book-helpers") ; for load-port-file-if-exists
 (include-book "books-in-subtree")
@@ -515,7 +516,7 @@
                               (symbol-alistp synonym-alist)
                               (or (rationalp min-time-savings) (eq :auto min-time-savings))
                               (or (rationalp min-event-time) (eq :auto min-event-time))
-                              (member-eq print '(nil :brief :verbose)))
+                              (member-eq print '(nil :brief t :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
   (mv-let (erp events full-book-path state)
@@ -558,7 +559,7 @@
                               (symbol-alistp synonym-alist)
                               (or (rationalp min-time-savings) (eq :auto min-time-savings))
                               (or (rationalp min-event-time) (eq :auto min-event-time))
-                              (member-eq print '(nil :brief :verbose)))
+                              (member-eq print '(nil :brief t :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
   (revert-world
@@ -588,7 +589,7 @@
                               (symbol-alistp synonym-alist)
                               (or (rationalp min-time-savings) (eq :auto min-time-savings))
                               (or (rationalp min-event-time) (eq :auto min-event-time))
-                              (member-eq print '(nil :brief :verbose)))
+                              (member-eq print '(nil :brief t :verbose)))
                   :stobjs state :mode :program))
   (if (endp books)
       (mv nil '(value-triple :invisible) state)
@@ -608,7 +609,7 @@
                               (symbol-alistp synonym-alist)
                               (or (rationalp min-time-savings) (eq :auto min-time-savings))
                               (or (rationalp min-event-time) (eq :auto min-event-time))
-                              (member-eq print '(nil :brief :verbose)))
+                              (member-eq print '(nil :brief t :verbose)))
                   :stobjs state :mode :program))
   (let* ((dir (if (eq dir :cbd) "." dir))
          (full-dir (canonical-pathname dir t state))
