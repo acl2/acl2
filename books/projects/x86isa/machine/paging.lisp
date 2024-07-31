@@ -3320,7 +3320,8 @@
   :guard (and (not (app-view x86))
               (canonical-address-p lin-addr))
 
-  :guard-hints (("Goal" :in-theory (e/d (acl2::bool->bit bitops::logsquash segment-selectorbits->rpl ia32e-la-to-pa-without-tlb)
+  :guard-hints (("Goal" :in-theory (e/d (acl2::bool->bit bitops::logsquash segment-selectorbits->rpl
+                                         ia32e-la-to-pa-without-tlb logapp-is-logapp-inline)
                                         (unsigned-byte-p
                                           signed-byte-p
                                           bitops::logand-with-negated-bitmask
@@ -3374,7 +3375,10 @@
                                      :cpl cpl))
          (tlb-entry (cdr (hons-get tlb-key tlb)))
          ((when tlb-entry) (mv nil 
-                               (logapp 12 lin-addr tlb-entry)
+                               (mbe :logic (logapp 12 lin-addr tlb-entry)
+                                    :exec (the (unsigned-byte 52)
+                                               (logapp-inline 12 lin-addr
+                                                              (the (unsigned-byte 40) tlb-entry))))
                                x86))
 
          ;; We didn't find a valid tlb entry

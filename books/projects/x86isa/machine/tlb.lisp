@@ -127,14 +127,13 @@
   `(logior (logand ,a (1- (ash 1 ,n)))
            (ash ,b ,n)))
 
-(local
-  (defthmd logapp-is-logapp-inline
-           (implies (and (natp n)
-                         (integerp a)
-                         (integerp b))
-                    (equal (logapp n a b)
-                           (logapp-inline n a b)))
-           :hints (("Goal" :in-theory (enable bitops::logapp** bitops::logapp-induct)))))
+(defthmd logapp-is-logapp-inline
+         (implies (and (natp n)
+                       (integerp a)
+                       (integerp b))
+                  (equal (logapp n a b)
+                         (logapp-inline n a b)))
+         :hints (("Goal" :in-theory (enable bitops::logapp** bitops::logapp-induct))))
 
 (local
   (define gen-fast-ctor (fields)
