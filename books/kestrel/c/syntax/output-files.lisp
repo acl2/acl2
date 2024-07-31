@@ -104,7 +104,8 @@
                                        output-files-process-inputp))))
                (process output-files-process-inputp)
                (const-files symbolp)
-               (indentation-size posp))
+               (indent-size posp)
+               (paren-nested-conds booleanp))
   :short "Process the inputs."
   :long
   (xdoc::topstring
@@ -113,7 +114,7 @@
      is the value of the constant specified by the @(':const') input.")
    (xdoc::p
     "The other results of this function are the homonymous inputs."))
-  (b* (((reterr) (fileset nil) :write nil 1)
+  (b* (((reterr) (fileset nil) :write nil 1 nil)
        ;; Check and obtain options.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -212,21 +213,35 @@
                       violates that requirement."
                      *output-files-printer-options*
                      printer-options)))
-       (indentation-size-option (assoc-eq :indentation-size
-                                          printer-options-alist))
-       (indentation-size (if indentation-size-option
-                             (cdr indentation-size-option)
-                           2))
-       ((unless (posp indentation-size))
+       ;; Process :INDENTATION-SIZE sub-input.
+       (indent-size-option (assoc-eq :indentation-size
+                                     printer-options-alist))
+       (indent-size (if indent-size-option
+                        (cdr indent-size-option)
+                      2))
+       ((unless (posp indent-size))
         (reterr (msg "The :INDENTATION-LEVEL option ~
                       of the :PRINTER-OPTIONS input ~
                       must be a positive integer, ~
                       but it is ~x0 instead."
-                     indentation-size))))
+                     indent-size)))
+       ;; Process :PARENTHESIZE-NESTED-CONDITIONALS input.
+       (paren-nested-conds-option (assoc-eq :parenthesize-nested-conditional
+                                            printer-options-alist))
+       (paren-nested-conds (if paren-nested-conds-option
+                               (cdr paren-nested-conds-option)
+                             nil))
+       ((unless (booleanp paren-nested-conds))
+        (reterr (msg "The :PARENTHESIZE-NESTED-CONDITIONALS option ~
+                      of the :PRINTER-OPTIONS input ~
+                      must be a boolean, ~
+                      but it is ~x0 instead."
+                     paren-nested-conds))))
     (retok tunits/files
            process
            const-files
-           indentation-size))
+           indent-size
+           paren-nested-conds))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
 
   ///
@@ -245,7 +260,8 @@
 (define output-files-gen-files+events ((tunits/files tunitens/fileset-p)
                                        (process output-files-process-inputp)
                                        (const-files symbolp)
-                                       (indentation-size posp)
+                                       (indent-size posp)
+                                       (paren-nested-conds booleanp)
                                        state)
   :guard (and (implies (equal process :write)
                        (filesetp tunits/files))
@@ -266,8 +282,9 @@
        (events nil)
        ;; Print the abstract syntax if required.
        (files (if (eq process :print)
-                  (b* ((options (make-priopt :indent-size indentation-size
-                                             :paren-nested-conds nil)))
+                  (b* ((options (make-priopt
+                                 :indent-size indent-size
+                                 :paren-nested-conds paren-nested-conds)))
                     (print-fileset tunits/files options))
                 tunits/files))
        ;; Generate :CONST-FILES if required.
@@ -309,13 +326,15 @@
        ((erp tunits/files
              process
              const-files
-             indentation-size)
+             indent-size
+             paren-nested-conds)
         (output-files-process-inputs args (w state)))
        ((erp events state)
         (output-files-gen-files+events tunits/files
                                        process
                                        const-files
-                                       indentation-size
+                                       indent-size
+                                       paren-nested-conds
                                        state)))
     (retok `(progn ,@events) state)))
 

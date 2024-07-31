@@ -133,7 +133,23 @@
         where @('<posint>') is a positive integer.
         This specifies the size of each indentation level,
         measured in number of spaces.
-        If this option is not supplied, it defaults to 2."))
+        If this option is not supplied, it defaults to 2.")
+      (xdoc::li
+       "@(':parenthesize-nested-conditionals <t/nil>'),
+        where @('<t/nil>') is a boolean.
+        This specifies whether
+        conditional expressions that are `then' or `else' sub-expressions
+        of outer conditional expressions
+        should be parenthesized or not.
+        For instance, whether the expression"
+       (xdoc::codeblock "a ? b ? c : d : e ? f g")
+       "should be printed as"
+       (xdoc::codeblock "a ? (b ? c : e) : (e ? f : g)")
+       "The two expressions are equivalent due to the precedence rules of C,
+        but the second one is more readable.
+        If this option is @('t'), the printer adds the parentheses;
+        if thie option is @('nil'), no extra parentheses are added.
+        If this option is not supplied, it defaults to @('nil')."))
      (xdoc::p
       "This is currently the only supported printer option.
        More options may be added in the future.")
