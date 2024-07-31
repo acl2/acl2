@@ -33,7 +33,12 @@
 (local (include-book "kestrel/axe/rules3" :dir :system)) ; todo
 
 (local (in-theory (enable acl2::slice-becomes-getbit)))
-(local (in-theory (disable acl2::equal-of-bvchops-when-equal-of-getbits))) ;todo: looped, should have 32 in the name
+(local (in-theory (disable acl2::equal-of-bvchops-when-equal-of-getbits ;todo: looped, should have 32 in the name
+                           ;; for speed:
+                           acl2::getbit-when-bound
+                           acl2::unsigned-byte-p-from-bounds
+                           )))
+
 
 (defthm acl2::equal-of-bvchops-when-equal-of-getbits-8
   (implies (and (syntaxp (acl2::want-to-strengthen (equal (bvchop 7 x) (bvchop 7 y))))
@@ -464,7 +469,7 @@
                                   getbit
                                   ;slice logtail bvchop
                                   SIGNED-BYTE-P
-                                  bvchop
+                                  ;bvchop
                                   ACL2::ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4)
                            (;ACL2::PLUS-BVCAT-WITH-0
                             ;ACL2::PLUS-BVCAT-WITH-0-ALT
@@ -507,7 +512,6 @@
                         (equal 0 (getbit 63 x)))
                    (and (equal 1 (getbit 63 Y))
                         (equal 1 (getbit 63 x))))
-
            :in-theory (e/d ( ;signed-byte-p-with-top-bit-0
                             signed-byte-p-with-top-bit-0-bound
                             signed-byte-p-with-top-bit-1-bound
@@ -531,6 +535,7 @@
                             acl2::bvminus-becomes-bvplus-of-bvuminus
 ;acl2::plus-bvcat-with-0 ;looped
 ;acl2::plus-bvcat-with-0-alt ;looped
+                            acl2::LOGHEAD-BECOMES-BVCHOP ; for speed
                             )))))
 
 (defthmd jnl-condition-rewrite-1-32-helper
@@ -578,6 +583,7 @@
                             acl2::bvminus-becomes-bvplus-of-bvuminus
                             ;;acl2::plus-bvcat-with-0 ;looped
                             ;;acl2::plus-bvcat-with-0-alt ;looped
+                            acl2::signed-byte-p-forward ; for speed
                             )))))
 
 (defthm jnl-condition-rewrite-1-32
@@ -723,11 +729,11 @@
                                                    logapp
                                                    logext)
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::plus-bvcat-with-0 ;looped
-                                                    acl2::plus-bvcat-with-0-alt ;looped
-                                                    acl2::sbvlt-rewrite
-                                                    )))))
-
+                             acl2::plus-bvcat-with-0 ;looped
+                             acl2::plus-bvcat-with-0-alt ;looped
+                             acl2::sbvlt-rewrite
+                             acl2::bvchop-identity ; for speed
+                             )))))
 
 (defthm jnle-condition-rewrite-3
   (implies (and (signed-byte-p 64 x)
