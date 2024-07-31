@@ -29,6 +29,7 @@
 ;; TODO: Try different ruler-extenders
 
 (include-book "replay-book-helpers") ; for load-port-file-if-exists
+(include-book "books-in-subtree")
 (include-book "kestrel/file-io-light/read-book-contents" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-nice" :dir :system)
@@ -567,6 +568,7 @@
 
 ;; Example: (SPEED-UP-BOOK "helper").  This makes no changes to the world, just
 ;; prints suggestions for speeding up the book.
+;; todo: add doc
 (defmacro speed-up-book (bookname ; no extension
                         &key
                         (dir ':cbd)
@@ -575,3 +577,77 @@
                         (min-event-time ':auto) ; in seconds
                         (print ':brief))
   `(speed-up-book-fn ,bookname ,dir ,synonym-alist ,min-time-savings ,min-event-time ,print state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp nil state) where EVENT is usually (value-triple :invisible).
+(defun speed-up-books-fn-aux (books dir synonym-alist min-time-savings min-event-time print state)
+  (declare (xargs :guard (and (string-listp books)
+                              (or (eq :cbd dir)
+                                  (stringp dir))
+                              (symbol-alistp synonym-alist)
+                              (or (rationalp min-time-savings) (eq :auto min-time-savings))
+                              (or (rationalp min-event-time) (eq :auto min-event-time))
+                              (member-eq print '(nil :brief :verbose)))
+                  :stobjs state :mode :program))
+  (if (endp books)
+      (mv nil '(value-triple :invisible) state)
+    (mv-let (erp val state)
+      (speed-up-book-fn (first books) dir synonym-alist min-time-savings min-event-time print state)
+      (declare (ignore val))
+      (if erp
+          (prog2$ (er hard? 'speed-up-books-fn-aux "Error improving ~x0." (first books))
+                  (mv erp nil state))
+        (speed-up-books-fn-aux (rest books) dir synonym-alist min-time-savings min-event-time print state)))))
+
+;; Returns (mv erp nil state) where EVENT is usually (value-triple :invisible).
+(defun speed-up-books-fn (dir subdirsp synonym-alist min-time-savings min-event-time print state)
+  (declare (xargs :guard (and (or (eq :cbd dir)
+                                  (stringp dir))
+                              (booleanp subdirsp)
+                              (symbol-alistp synonym-alist)
+                              (or (rationalp min-time-savings) (eq :auto min-time-savings))
+                              (or (rationalp min-event-time) (eq :auto min-event-time))
+                              (member-eq print '(nil :brief :verbose)))
+                  :stobjs state :mode :program))
+  (let* ((dir (if (eq dir :cbd) "." dir))
+         (full-dir (canonical-pathname dir t state))
+         ;; (state (set-cbd-simple full-dir state))
+         )
+    (mv-let (books state)
+      (if subdirsp
+          (books-in-subtree state)
+        (books-in-dir state))
+      (prog2$ (if subdirsp
+                  (cw "~%(Will try to speed-up ~x0 books in ~s1 and subdirs.)" (len books) full-dir)
+                (cw "~%(Will try to speed-up ~x0 books in ~s1.)" (len books) full-dir))
+              ;; pass full-dir here?:
+              (speed-up-books-fn-aux books dir synonym-alist min-time-savings min-event-time print state)))))
+
+;; Tries to speed-up all books in DIR, not including books in subdirectories.
+;; By default, uses the connected book directory for DIR.
+(defmacro speed-up-books (&key
+                         (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
+                         (min-time-savings ':auto) ; in seconds
+                         (min-event-time ':auto)
+                         (print ':brief)
+                         ;; (dir ':cbd) ; doesn't work since the sys-call to get the list of books runs in the current dir
+                         )
+  `(make-event (speed-up-books-fn ':cbd ;;',dir
+                                  nil ; do not look in subdirs
+                                  ',synonym-alist ,min-time-savings ,min-event-time
+                                  ,print state)))
+
+;; Tries to speed-up all books in DIR, including books in subdirectories.
+;; By default, uses the connected book directory for DIR.
+(defmacro speed-up-books-in-subtree (&key
+                                     (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
+                                     (min-time-savings ':auto) ; in seconds
+                                     (min-event-time ':auto)
+                                     (print ':brief)
+                                    ;; (dir ':cbd) ; doesn't work since the sys-call to get the list of books runs in the current dir
+                                     )
+  `(make-event (speed-up-books-fn ':cbd ;;',dir
+                                  t ; do look into subdirs
+                                  ',synonym-alist ,min-time-savings ,min-event-time
+                                  ',print state)))
