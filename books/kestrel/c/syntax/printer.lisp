@@ -79,11 +79,29 @@
   (xdoc::topstring
    (xdoc::p
     "This fixtype collects options that control
-     various aspects of how the C code is printed.
-     We start with a single option for the size of each indentation level,
-     measured in number of spaces (a positive integer).
-     We plan to add more options in the future."))
-  ((indent-size pos))
+     various aspects of how the C code is printed.")
+   (xdoc::p
+    "Currently we support the following options:")
+   (xdoc::ul
+    (xdoc::li
+     "The indentation size,
+      i.e. how much each indentation level moves the starting column.
+      This is measured in number of spaces, as a positive integer.")
+    (xdoc::li
+     "A flag saying whether conditional expressions
+      nested in other conditional expressions
+      should be parenthesized or not.
+      For instance, whether the expression"
+     (xdoc::codeblock "a ? b ? c : d : e ? f g")
+     "should be printed as"
+     (xdoc::codeblock "a ? (b ? c : e) : (e ? f : g)")
+     "The two expressions are equivalent due to the precedence rules of C,
+      but the second one is more readable.
+      If the flag is @('t'), the printer adds the parentheses."))
+   (xdoc::p
+    "We may add more options in the future."))
+  ((indent-size pos)
+   (paren-nested-conds bool))
   :pred prioptp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -97,8 +115,11 @@
      in the form of this nullary function,
      which can be passed to @(tsee print-fileset).")
    (xdoc::p
-    "We set the indentation size to two spaces."))
-  (make-priopt :indent-size 2))
+    "We set the indentation size to two spaces.")
+   (xdoc::p
+    "We do not add parentheses around nested conditionals."))
+  (make-priopt :indent-size 2
+               :paren-nested-conds nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1515,7 +1536,27 @@
        On the other hand, single-nonterminal definientia
        do not correspond to any tree structure,
        but rather allow the same expression to have, in effect,
-       different priorities (a form of subtyping)."))
+       different priorities (a form of subtyping).")
+     (xdoc::p
+      "We treat the printing of conditional expressions
+       slightly differently based on the printer option
+       about parenthesizing nested conditional expressions.
+       The difference is in the expected priority
+       used for the `then' and `else' subexpressions.
+       If that flag is not set,
+       we print things with minimal parentheses,
+       and therefore we use
+       the lowest expression priority
+       for `then' and the conditional grade for `else',
+       consistently with the grammar rule for conditional expressions.
+       This means that if the `then' and/or `else' is a conditional expression,
+       it is not parenthesized.
+       If instead the flag is set,
+       then we use a higher-priority for both `then' and `else',
+       precisely the priority just one higher than conditional expressions,
+       namely the priority of logical disjunction.
+       This means that if the `then' and/or `else' is a conditional expression,
+       it is parenthesized, in order to raise its priority."))
     (b* ((actual-prio (expr->priority expr))
          (parenp (not (expr-priority-<= expected-prio actual-prio)))
          (pstate (if parenp
@@ -1659,11 +1700,21 @@
                 (pstate (print-expr expr.arg2 expected-arg2-prio pstate)))
              pstate)
            :cond
-           (b* ((pstate (print-expr expr.test (expr-priority-logor) pstate))
+           (b* ((raise-prio
+                 (priopt->paren-nested-conds (pristate->options pstate)))
+                (pstate (print-expr expr.test (expr-priority-logor) pstate))
                 (pstate (print-astring " ? " pstate))
-                (pstate (print-expr expr.then (expr-priority-expr) pstate))
+                (pstate (print-expr expr.then
+                                    (if raise-prio
+                                        (expr-priority-logor)
+                                      (expr-priority-expr))
+                                    pstate))
                 (pstate (print-astring " : " pstate))
-                (pstate (print-expr expr.else (expr-priority-cond) pstate)))
+                (pstate (print-expr expr.else
+                                    (if raise-prio
+                                        (expr-priority-logor)
+                                      (expr-priority-cond))
+                                    pstate)))
              pstate)
            :comma
            (b* ((pstate (print-expr expr.first (expr-priority-expr) pstate))

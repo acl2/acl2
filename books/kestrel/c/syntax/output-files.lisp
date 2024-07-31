@@ -260,17 +260,14 @@
      if required, we also generate the constant for the file set.
      Then we go through the file set
      and write the data of each value in the map
-     to the path of the associated key in the map.")
-   (xdoc::p
-    "We use default printer options for now,
-     but in the future we will make that
-     a parameter of @(tsee output-files)."))
+     to the path of the associated key in the map."))
   (b* (((reterr) nil state)
        ;; Initialize list of generated events.
        (events nil)
        ;; Print the abstract syntax if required.
        (files (if (eq process :print)
-                  (b* ((options (make-priopt :indent-size indentation-size)))
+                  (b* ((options (make-priopt :indent-size indentation-size
+                                             :paren-nested-conds nil)))
                     (print-fileset tunits/files options))
                 tunits/files))
        ;; Generate :CONST-FILES if required.
