@@ -37,16 +37,30 @@
        (- (cw str)))
       x86))
 
-;; This isn't actually implemented because we don't have
-;; any port I/O peripherals modeled. Instead, we use this
-;; instruction to perform what are essentially modelcalls (i.e. calls
-;; from the software running on the model into the model).
+(defxdoc modelcalls
+         :parents (x86isa)
+         :short "Modelcalls, like syscalls, but instead of calling into the OS, we call into the model."
+         :long "<p>A modelcall is like a syscall, but it calls into the model
+         asking it to do something. Model calls are done by calling the @(tsee
+         x86-out) instruction. On a real processor this would write to the IO
+         bus, but our processor doesn't support that.</p>
+
+         <p>At the moment, one model call is supported. Writing any byte to
+         port 1 results in printing out the null terminated string of one byte
+         characters pointed to by @('rbx').</p>")
+
 (def-inst x86-out
 
           ;; Op/En: I
           ;; E6 ib
 
-          :parents (one-byte-opcodes)
+          :long "<p>This isn't actually implemented because we don't have any port
+          I/O peripherals modeled. Instead, we use this instruction to perform
+          what are essentially modelcalls (i.e. calls from the software running
+          on the model into the model). See @(tsee modelcalls) for more
+          information.</p>"
+
+          :parents (one-byte-opcodes modelcalls)
 
           :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 

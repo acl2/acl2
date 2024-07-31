@@ -4,7 +4,7 @@
 
 (defsection
   tty
-  :parents (x86isa)
+  :parents (peripherals)
   :short "A TTY device for the @('x86isa')."
   :long "<p>In our effort to boot Linux on the @('x86isa') model, it was desirable
   to have a TTY device to allow us to interact with Linux running on the

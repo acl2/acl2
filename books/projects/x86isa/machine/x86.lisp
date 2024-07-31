@@ -1015,6 +1015,8 @@
                    :use (:instance ELEM-P-OF-XR-TTY-IN (i nil) (x86$a x86))))))
 
 (define x86-exec-peripherals (x86)
+  :parents (peripherals)
+  :short "Execute the peripherals"
   :guard-hints (("Goal" :use ((:instance ELEM-P-OF-XR-LAST-CLOCK-EVENT (i nil) (x86$a x86))
                               (:instance ELEM-P-OF-XR-TIME-STAMP-COUNTER (i nil) (x86$a x86)))
                         :in-theory (disable ELEM-P-OF-XR-LAST-CLOCK-EVENT ELEM-P-OF-XR-TIME-STAMP-COUNTER)))
