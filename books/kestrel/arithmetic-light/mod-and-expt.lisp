@@ -1,7 +1,7 @@
 ; A lightweight book about mod and expt.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; For mod-sum-cases, see the copyright on the RTL library.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,6 +28,7 @@
            (equal (mod x (expt 2 (+ -1 n)))
                   (* 1/2 (mod (* 2 x) (expt 2 n)))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct t ; for speed
 ;           :cases ((integerp n))
            :in-theory (e/d (expt mod-cancel ;expt-of-+
                                  )
@@ -181,7 +182,9 @@
                      (expt 2 size2))
                 (- (expt 2 size2)
                    (expt 2 size))))
-   :hints (("Goal" :in-theory (enable mod my-floor-lower-bound-2)
+   :hints (("Goal" :in-theory (e/d (mod my-floor-lower-bound-2)
+                                   (prefer-positive-addends-< ; for speed
+                                    ))
             :use (:instance my-floor-lower-bound-2
                             (i i)
                             (j (expt 2 (+ (- size) size2))))))))
