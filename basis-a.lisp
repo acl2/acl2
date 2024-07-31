@@ -9581,7 +9581,7 @@
                     (push ',name *non-executable-user-stobj-lst*)
                     (setq *user-stobj-alist*
                           (remove1-assoc-eq ',name *user-stobj-alist*)))
-                   (setf (cdr old-pair) ,init-form)))
+                   (t (setf (cdr old-pair) ,init-form))))
                  (non-executable
                   (pushnew ',name *non-executable-user-stobj-lst*))
                  (t

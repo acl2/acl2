@@ -161,6 +161,7 @@
                      nil
                      nil
                      nil
+                     0
                      nil
                      nil
                      ,gcc
@@ -516,13 +517,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro test-lex (fn input &key pos more-inputs cond)
-  ;; INPUT is an ACL2 string with the text to parse.
+  ;; INPUT is an ACL2 term with the text to lex,
+  ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
   ;; Optional COND may be over variables AST, POS/SPAN, PSTATE,
   ;; and also POS/SPAN2 for LEX-*-DIGIT.
   `(assert-event
-    (b* ((pstate (init-parstate (acl2::string=>nats ,input) nil))
+    (b* ((pstate (init-parstate (if (stringp ,input)
+                                    (acl2::string=>nats ,input)
+                                  ,input)
+                                nil))
          ,@(and pos
                 `((pstate (change-parstate pstate :position ,pos))))
          (,(if (member-eq fn '(lex-*-digit
@@ -535,13 +540,16 @@
         ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
 
 (defmacro test-lex-fail (fn input &key more-inputs)
-  ;; INPUT is an ACL2 string with the text to parse.
+  ;; INPUT is an ACL2 string with the text to lex.
   ;; Optional MORE-INPUTS go just before parser state input.
   `(assert-event
     (b* ((,(if (eq fn 'lex-*-digit)
                '(mv erp & & & &)
              '(mv erp & & &))
-          (,fn ,@more-inputs (init-parstate (acl2::string=>nats ,input) nil))))
+          (,fn ,@more-inputs (init-parstate (if (stringp ,input)
+                                                (acl2::string=>nats ,input)
+                                              ,input)
+                                            nil))))
       erp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -856,33 +864,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; lex-c-chars
+; lex-*-c-char
 
 (test-lex
- lex-c-chars
+ lex-*-c-char
  "a'"
  :cond (equal ast (list (c-char-char (char-code #\a)))))
 
 (test-lex
- lex-c-chars
+ lex-*-c-char
  "\\a'"
  :cond (equal ast (list (c-char-escape (escape-simple (simple-escape-a))))))
 
 (test-lex
- lex-c-chars
+ lex-*-c-char
  "&\\xf7'"
  :cond (equal ast (list (c-char-char (char-code #\&))
                         (c-char-escape (escape-hex (list #\f #\7))))))
 
 (test-lex
- lex-c-chars
+ lex-*-c-char
  "\\1111'"
  :cond (equal ast (list (c-char-escape
                          (escape-oct (oct-escape-three #\1 #\1 #\1)))
                         (c-char-char (char-code #\1)))))
 
 (test-lex
- lex-c-chars
+ lex-*-c-char
  "ABC'"
  :cond (and (equal ast (list (c-char-char (char-code #\A))
                              (c-char-char (char-code #\B))
@@ -890,20 +898,28 @@
             (equal pos/span (position 1 3))))
 
 (test-lex-fail
- lex-c-chars
+ lex-*-c-char
  "")
 
 (test-lex-fail
- lex-c-chars
+ lex-*-c-char
  "a")
 
 (test-lex-fail
- lex-c-chars
+ lex-*-c-char
  "a\\'")
 
 (test-lex-fail
- lex-c-chars
+ lex-*-c-char
  "a\\z'")
+
+(test-lex-fail
+ lex-*-c-char
+ (list (char-code #\a) 10 (char-code #\b) (char-code #\')))
+
+(test-lex-fail
+ lex-*-c-char
+ (list (char-code #\a) 13 10 (char-code #\')))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -912,8 +928,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro test-parse (fn input &key cond gcc)
-  ;; optional COND may be over variables AST, SPAN, PSTATE
-  ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST
+  ;; Input is an ACL2 term with the text to parse,
+  ;; where the term evaluates to a string or a list of bytes.
+  ;; Optional COND may be over variables AST, SPAN, PSTATE
+  ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST.
   `(assert-event
     (b* ((,(if (eq fn 'parse-external-declaration-list)
                '(mv erp ?ast ?span ?eofpos ?pstate)
