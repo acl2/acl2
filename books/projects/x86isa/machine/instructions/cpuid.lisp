@@ -12,9 +12,13 @@
 ;; INSTRUCTION: STI
 ;; ======================================================================
 
-;; machine/cpuid.lisp seems to have some info already, but I think it was WIP
-;; and never completed (and hence the instruction was never implemented),
-;; so I write my own set of cpuid info here
+;; TODO machine/cpuid.lisp should be unified with this. That wasn't done
+;; because its interface is not conducive to being adopted here since it
+;; outputs one field at a time rather than the whole register
+
+;; If I were to unify them, I'd change machine/cpuid.lisp to use a constrained
+;; function that outputs the value of a register given a leaf and subleaf. The
+;; interface presented by that could be implemented in terms of that.
 
 (defaggregate cpuid-info
               ((eax (unsigned-byte-p 32 eax))
