@@ -897,6 +897,14 @@
                              (c-char-char (char-code #\C))))
             (equal pos/span (position 1 3))))
 
+(test-lex
+ lex-*-c-char
+ "d\"q'"
+ :cond (and (equal ast (list (c-char-char (char-code #\d))
+                             (c-char-char (char-code #\"))
+                             (c-char-char (char-code #\q))))
+            (equal pos/span (position 1 3))))
+
 (test-lex-fail
  lex-*-c-char
  "")
