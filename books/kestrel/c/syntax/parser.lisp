@@ -8907,7 +8907,7 @@
        The returned @(tsee strunispec) value captures
        the structure or union specifier without the indication of
        whether it is a structure or a union,
-       which is done in @(tsee tyspec) instead;
+       which is done in @(tsee type-spec) instead;
        this is how we have factored our abstract syntax."))
     (b* (((reterr) (irr-strunispec) (irr-span) (irr-parstate))
          ;; There must be at least one token (identifier of open curly brace),
