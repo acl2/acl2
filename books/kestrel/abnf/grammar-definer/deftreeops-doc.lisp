@@ -214,9 +214,8 @@
      "@('<prefix>-<rulename>-conc-equivs')"
      (xdoc::p
       "For each rule name defined in the grammar
-       by an alternation of two or more concatenations,
-       such that each concatenation is
-       a singleton of a singleton repetition of a rule name element:
+       by an alternation of two or more concatenations
+       satisfying one of the conditions listed below,
        a theorem stating equivalences between
        (i) the branches (of a tree matching the rule name)
        matching each concatenation and
@@ -225,7 +224,24 @@
        there is an equivalence for each concatenation,
        and the theorem consists of the conjunction of the equivalences.
        This theorem is a conjunction of equivalences,
-       one for each concatenation that defines the rule name."))
+       one for each concatenation that defines the rule name.")
+     (xdoc::p
+      "The aforementioned conditions on
+       the alternation of two or more concatenations are
+       any of the following
+       (if neither are satisfied, this theorem is not generated):")
+     (xdoc::ul
+      (xdoc::li
+       "The alternation consists of two or more concatenations
+        each of which is a singleton,
+        each consisting of a repetition with range 1
+        whose element is a rule name.")
+      (xdoc::li
+       "The alternation consists of exactly two concatenations,
+        one of which is a singleton of a repetition with range 1
+        whose element is a character value notation,
+        and the other is a singleton of a repetition with range 1
+        whose element is a rule name.")))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-conc?')"

@@ -1770,10 +1770,14 @@
        (conc-equivs-thm-event?
         (and
          info.conc-equivs-thm
-         (= info.alt-kind 1) ; temporary
          (b* (((mv conjuncts rules lemma-instances)
                (deftreeops-gen-rulename-events-aux2
-                 alt info.conc-infos rulename-infos charval-infos conc-matchp)))
+                 alt
+                 info.alt-kind
+                 info.conc-infos
+                 rulename-infos
+                 charval-infos
+                 conc-matchp)))
            `((defruled ,info.conc-equivs-thm
                (implies (,matchp cst ,rulename-string)
                         (and ,@conjuncts))
@@ -1857,6 +1861,7 @@
 
    (define deftreeops-gen-rulename-events-aux2
      ((alt alternationp)
+      (alt-kind natp)
       (conc-infos deftreeops-conc-info-listp)
       (rulename-infos deftreeops-rulename-info-alistp)
       (charval-infos deftreeops-charval-info-alistp)
@@ -1901,9 +1906,13 @@
                   ((unless rulename-info)
                    (raise "Internal error: no information for rule name ~x0."
                           rulename)))
-               `(:instance
-                 ,(deftreeops-rulename-info->rulename-thm rulename-info)
-                 (cst (nth 0 (nth 0 (tree-nonleaf->branches cst)))))))
+               (if (= alt-kind 1)
+                   `(:instance
+                     ,(deftreeops-rulename-info->rulename-thm rulename-info)
+                     (cst (nth 0 (nth 0 (tree-nonleaf->branches cst)))))
+                 `(:instance
+                   ,(deftreeops-rulename-info->nonleaf-thm rulename-info)
+                   (cst (nth 0 (nth 0 (tree-nonleaf->branches cst))))))))
             ((element-case elem :char-val)
              (b* ((charval (element-char-val->get elem))
                   (charval-info (cdr (assoc-equal charval charval-infos)))
@@ -1919,6 +1928,7 @@
           ((mv more-conjuncts more-rules more-lemma-instances)
            (deftreeops-gen-rulename-events-aux2
              (cdr alt)
+             alt-kind
              (cdr conc-infos)
              rulename-infos
              charval-infos
