@@ -1781,7 +1781,9 @@
            `((defruled ,info.conc-equivs-thm
                (implies (,matchp cst ,rulename-string)
                         (and ,@conjuncts))
-               :in-theory '((:e rulename)
+               :in-theory '(,@(if (= info.alt-kind 1)
+                                  '((:e rulename))
+                                nil)
                             ,info.match-thm
                             ,@rules)
                :use ((:instance ,info.concs-thm
