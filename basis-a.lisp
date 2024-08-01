@@ -9566,7 +9566,21 @@
                              :congruent-stobj-rep congruent-stobj-rep
                              :non-memoizable non-memoizable
                              :non-executable non-executable)))
-           (cond (old-pair ; hence raw-mode
+           (cond (*hcomp-book-ht*
+
+; There is no need to update *user-stobj-alist* or
+; *non-executable-user-stobj-lst* when doing the early load of compiled files.
+; In particular, there is no need to create the stobj for insertion into the
+; *user-stobj-alist*, and this optimization can save considerable space at
+; include-book time.  Note that any *user-stobj-alist* built during an early
+; load of compiled files is anyhow discarded at the end of the load, and also
+; note that when make-event is called with non-nil :check-expansion, only the
+; expansion is created by macroexpansion in raw Lisp -- these observations add
+; confidence to this optimization.
+
+                  (assert (null old-pair))
+                  nil)
+                 (old-pair ; hence raw-mode
                   (fms "Note:  Redefining and ~@0 stobj ~x1 in ~
                         raw mode.~%"
                        (list (cons #\0 (if non-executable
