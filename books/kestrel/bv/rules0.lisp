@@ -1,7 +1,7 @@
 ; Mixed bit-vector theorems
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,15 +12,10 @@
 (in-package "ACL2")
 
 (include-book "bvchop")
-;(include-book "slice")
 (include-book "getbit")
 (include-book "bvplus")
-;(include-book "bvminus")
 (include-book "bvmult")
 (include-book "bitxor")
-;(include-book "bvcat")
-;(include-book "bvuminus")
-(include-book "unsigned-byte-p")
 (include-book "bitand")
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -56,3 +51,12 @@
                  (:instance bvplus-of-bvchop-arg2 (size 1) (x y) (y 0)))
            :in-theory (e/d (bitand  getbit-when-val-is-not-an-integer)
                            (bvplus-of-bvchop-arg2)))))
+
+;move
+(defthm getbit-0-of-bvplus
+  (implies (and (< 0 n)
+                (natp n))
+           (equal (getbit 0 (bvplus n x y))
+                  (bitxor (getbit 0 x)
+                          (getbit 0 y))))
+  :hints (("Goal" :in-theory (e/d ( getbit) ( BVCHOP-1-BECOMES-GETBIT)))))
