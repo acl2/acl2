@@ -1908,7 +1908,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, parse a @('*c-char'), in ABNF notation,
+    "That is, lex a @('*c-char'), in ABNF notation,
      i.e. a repetition of zero or more instances of @('c-char').")
    (xdoc::p
     "This is called when we expect a character constant,
@@ -1977,7 +1977,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-s-chars ((pstate parstatep))
+(define lex-*-s-char ((pstate parstatep))
   :returns (mv erp
                (schars s-char-listp)
                (closing-dquote-pos positionp)
@@ -1986,6 +1986,9 @@
           in a string literal."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "That is, lex a @('*s-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('s-char').")
    (xdoc::p
     "This is called when we expect a string literal,
      after reading the opening double quote of a string literal.
@@ -2028,7 +2031,7 @@
               (retok schar pos pstate))
           (b* ((schar (s-char-char char)))
             (retok schar pos pstate))))
-       ((erp schars closing-dquote-pos pstate) (lex-s-chars pstate)))
+       ((erp schars closing-dquote-pos pstate) (lex-*-s-char pstate)))
     (retok (cons schar schars) closing-dquote-pos pstate))
   :measure (parsize pstate)
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -2037,13 +2040,13 @@
 
   ///
 
-  (defret parsize-of-lex-s-chars-uncond
+  (defret parsize-of-lex-*-s-char-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear
     :hints (("Goal" :induct t)))
 
-  (defret parsize-of-lex-s-chars-cond
+  (defret parsize-of-lex-*-s-char-cond
     (implies (not erp)
              (<= (parsize new-pstate)
                  (1- (- (parsize pstate)
@@ -2111,11 +2114,11 @@
      have already been read.
      We read zero or more characters and escape sequences.
      In the process of reading those characters and escape sequences,
-     we read up to the closing double quote (see @(tsee lex-s-chars)),
+     we read up to the closing double quote (see @(tsee lex-*-s-char)),
      whose position we use as the ending one of the span we return.
      The starting position of the span is passed to this function as input."))
   (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
-       ((erp schars closing-dquote-pos pstate) (lex-s-chars pstate))
+       ((erp schars closing-dquote-pos pstate) (lex-*-s-char pstate))
        (span (make-span :start first-pos :end closing-dquote-pos)))
     (retok (lexeme-token (token-string (stringlit eprefix? schars)))
            span
@@ -5261,21 +5264,21 @@
 
 (define token-to-type-specifier-keyword ((token tokenp))
   :guard (token-type-specifier-keyword-p token)
-  :returns (tyspec tyspecp)
+  :returns (tyspec type-specp)
   :short "Map a token that is a type specifier consisting of a single keyword
           to the corresponding type specifier."
-  (cond ((equal token (token-keyword "void")) (tyspec-void))
-        ((equal token (token-keyword "char")) (tyspec-char))
-        ((equal token (token-keyword "short")) (tyspec-short))
-        ((equal token (token-keyword "int")) (tyspec-int))
-        ((equal token (token-keyword "long")) (tyspec-long))
-        ((equal token (token-keyword "float")) (tyspec-float))
-        ((equal token (token-keyword "double")) (tyspec-double))
-        ((equal token (token-keyword "signed")) (tyspec-signed))
-        ((equal token (token-keyword "unsigned")) (tyspec-unsigned))
-        ((equal token (token-keyword "_Bool")) (tyspec-bool))
-        ((equal token (token-keyword "_Complex")) (tyspec-complex))
-        (t (prog2$ (impossible) (irr-tyspec))))
+  (cond ((equal token (token-keyword "void")) (type-spec-void))
+        ((equal token (token-keyword "char")) (type-spec-char))
+        ((equal token (token-keyword "short")) (type-spec-short))
+        ((equal token (token-keyword "int")) (type-spec-int))
+        ((equal token (token-keyword "long")) (type-spec-long))
+        ((equal token (token-keyword "float")) (type-spec-float))
+        ((equal token (token-keyword "double")) (type-spec-double))
+        ((equal token (token-keyword "signed")) (type-spec-signed))
+        ((equal token (token-keyword "unsigned")) (type-spec-unsigned))
+        ((equal token (token-keyword "_Bool")) (type-spec-bool))
+        ((equal token (token-keyword "_Complex")) (type-spec-complex))
+        (t (prog2$ (impossible) (irr-type-spec))))
   :prepwork ((local (in-theory (enable token-type-specifier-keyword-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5665,7 +5668,7 @@
     "Under certain circumstances,
      the parser needs to figure out whether
      what comes next in the input is a parameter type list or a declarator:
-     see the discussion in @(tsee tyspec).
+     see the discussion in @(tsee type-spec).
      However, this cannot be always disambiguated,
      and so we need a third outcome for this case.
      This fixtype is the result of @(tsee classify-partys/declor/ambig)."))
@@ -5693,7 +5696,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "See the discussion in @(tsee tyspec) for background,
+    "See the discussion in @(tsee type-spec) for background,
      specifically the part regarding the @('(I1(I2(...(In)...)))') construction.
      This function is used to explore that construction,
      after having parsed the open parenthesis just before @('I1').
@@ -5713,7 +5716,7 @@
      we return a result indicating ambiguity.
      If instead we are not in that situation,
      we can resolve the ambiguity, and return a non-ambiguous result.
-     As explained in @(tsee tyspec),
+     As explained in @(tsee type-spec),
      the resolution propagates backwards,
      flipping the classifications.
      See the more detailed comments in the code of this function.")
@@ -8441,7 +8444,7 @@
                     (parse-type-name pstate))
                    ((erp last-span pstate) ; _Atomic ( typename )
                     (read-punctuator ")" pstate)))
-                (retok (specqual-tyspec (tyspec-atomic tyname))
+                (retok (specqual-tyspec (type-spec-atomic tyname))
                        (span-join span last-span)
                        pstate))))
            ;; If token2 is not an open parenthesis,
@@ -8457,7 +8460,7 @@
        ((equal token (token-keyword "struct")) ; struct
         (b* (((erp strunispec last-span pstate) ; struct strunispec
               (parse-struct-or-union-specifier pstate)))
-          (retok (specqual-tyspec (tyspec-struct strunispec))
+          (retok (specqual-tyspec (type-spec-struct strunispec))
                  (span-join span last-span)
                  pstate)))
        ;; If token is the keyword union
@@ -8465,7 +8468,7 @@
        ((equal token (token-keyword "union")) ; union
         (b* (((erp strunispec last-span pstate) ; union strunispec
               (parse-struct-or-union-specifier pstate)))
-          (retok (specqual-tyspec (tyspec-union strunispec))
+          (retok (specqual-tyspec (type-spec-union strunispec))
                  (span-join span last-span)
                  pstate)))
        ;; If token is the keyword enum,
@@ -8473,7 +8476,7 @@
        ((equal token (token-keyword "enum")) ; enum
         (b* (((erp enumspec last-span pstate) ; enum enumspec
               (parse-enum-specifier span pstate)))
-          (retok (specqual-tyspec (tyspec-enum enumspec))
+          (retok (specqual-tyspec (type-spec-enum enumspec))
                  (span-join span last-span)
                  pstate)))
        ;; If token is an identifier,
@@ -8483,7 +8486,7 @@
        ;; when this function is called, it must be the case that
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
-        (retok (specqual-tyspec (tyspec-tydef (token-ident->unwrap token)))
+        (retok (specqual-tyspec (type-spec-tydef (token-ident->unwrap token)))
                span
                pstate))
        ;; If token is a type qualifier, which is always a single keyword,
@@ -8687,7 +8690,7 @@
                     (parse-type-name pstate))
                    ((erp last-span pstate) ; _Atomic ( typename )
                     (read-punctuator ")" pstate)))
-                (retok (declspec-tyspec (tyspec-atomic tyname))
+                (retok (declspec-tyspec (type-spec-atomic tyname))
                        (span-join span last-span)
                        pstate))))
            ;; If token2 is not an open parenthesis,
@@ -8703,7 +8706,7 @@
        ((equal token (token-keyword "struct")) ; struct
         (b* (((erp strunispec last-span pstate) ; struct strunispec
               (parse-struct-or-union-specifier pstate)))
-          (retok (declspec-tyspec (tyspec-struct strunispec))
+          (retok (declspec-tyspec (type-spec-struct strunispec))
                  (span-join span last-span)
                  pstate)))
        ;; If token is the keyword union
@@ -8711,7 +8714,7 @@
        ((equal token (token-keyword "union")) ; union
         (b* (((erp strunispec last-span pstate) ; union strunispec
               (parse-struct-or-union-specifier pstate)))
-          (retok (declspec-tyspec (tyspec-union strunispec))
+          (retok (declspec-tyspec (type-spec-union strunispec))
                  (span-join span last-span)
                  pstate)))
        ;; If token is the keyword enum,
@@ -8719,7 +8722,7 @@
        ((equal token (token-keyword "enum")) ; enum
         (b* (((erp enumspec last-span pstate) ; enum enumspec
               (parse-enum-specifier span pstate)))
-          (retok (declspec-tyspec (tyspec-enum enumspec))
+          (retok (declspec-tyspec (type-spec-enum enumspec))
                  (span-join span last-span)
                  pstate)))
        ;; If token is an identifier,
@@ -8729,7 +8732,7 @@
        ;; when this function is called, it must be the case that
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
-        (retok (declspec-tyspec (tyspec-tydef (token-ident->unwrap token)))
+        (retok (declspec-tyspec (type-spec-tydef (token-ident->unwrap token)))
                span
                pstate))
        ;; If token is a type qualifier, which is always a single keyword,
@@ -8904,7 +8907,7 @@
        The returned @(tsee strunispec) value captures
        the structure or union specifier without the indication of
        whether it is a structure or a union,
-       which is done in @(tsee tyspec) instead;
+       which is done in @(tsee type-spec) instead;
        this is how we have factored our abstract syntax."))
     (b* (((reterr) (irr-strunispec) (irr-span) (irr-parstate))
          ;; There must be at least one token (identifier of open curly brace),

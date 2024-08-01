@@ -332,6 +332,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun remove-assumptions-about (fns-to-remove terms)
+  (declare (xargs :guard (and (symbol-listp fns-to-remove)
+                              (pseudo-term-listp terms))))
+  (if (endp terms)
+      nil
+    (let* ((term (first terms))
+           ;; strip a NOT if present:
+           (term (if (and (consp term)
+                          (eq 'not (ffn-symb term))
+                          (= 1 (len (fargs term))))
+                     (farg1 term)
+                   term)))
+      (if (and (consp term)
+               (member-eq (ffn-symb term) fns-to-remove))
+          (remove-assumptions-about fns-to-remove (rest terms))
+        (cons term (remove-assumptions-about fns-to-remove (rest terms)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: more?
+(defconst *non-stp-assumption-functions*
+  '(canonical-address-p$inline
+    program-at
+    separate
+    x86p
+    cr0bits-p$inline
+    cr4bits-p$inline
+    alignment-checking-enabled-p
+    ))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -409,7 +439,7 @@
          (dag dag-or-quote) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely:
          ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag
-                                                                      assumptions
+                                                                      (remove-assumptions-about *non-stp-assumption-functions* assumptions)
                                                                       t ; check-fnsp
                                                                       print state))
          ((when erp) (mv erp nil state))

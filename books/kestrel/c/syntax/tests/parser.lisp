@@ -897,6 +897,14 @@
                              (c-char-char (char-code #\C))))
             (equal pos/span (position 1 3))))
 
+(test-lex
+ lex-*-c-char
+ "d\"q'"
+ :cond (and (equal ast (list (c-char-char (char-code #\d))
+                             (c-char-char (char-code #\"))
+                             (c-char-char (char-code #\q))))
+            (equal pos/span (position 1 3))))
+
 (test-lex-fail
  lex-*-c-char
  "")
@@ -920,6 +928,51 @@
 (test-lex-fail
  lex-*-c-char
  (list (char-code #\a) 13 10 (char-code #\')))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-c-char
+
+(test-lex
+ lex-*-s-char
+ "p\""
+ :cond (equal ast (list (s-char-char (char-code #\p)))))
+
+(test-lex
+ lex-*-s-char
+ "'\""
+ :cond (equal ast (list (s-char-char (char-code #\')))))
+
+(test-lex
+ lex-*-s-char
+ "\\n\""
+ :cond (equal ast (list (s-char-escape (escape-simple (simple-escape-n))))))
+
+(test-lex
+ lex-*-s-char
+ "12\""
+ :cond (equal ast (list (s-char-char (char-code #\1))
+                        (s-char-char (char-code #\2)))))
+
+(test-lex-fail
+ lex-*-s-char
+ "")
+
+(test-lex-fail
+ lex-*-s-char
+ "noclose")
+
+(test-lex-fail
+ lex-*-s-char
+ "\\k\"")
+
+(test-lex-fail
+ lex-*-s-char
+ (list (char-code #\U) 10 (char-code #\")))
+
+(test-lex-fail
+ lex-*-s-char
+ (list (char-code #\U) 13 (char-code #\")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

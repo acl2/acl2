@@ -79,12 +79,47 @@
   (xdoc::topstring
    (xdoc::p
     "This fixtype collects options that control
-     various aspects of how the C code is printed.
-     We start with a single option for the size of each indentation level,
-     measured in number of spaces (a positive integer).
-     We plan to add more options in the future."))
-  ((indent-size pos))
+     various aspects of how the C code is printed.")
+   (xdoc::p
+    "Currently we support the following options:")
+   (xdoc::ul
+    (xdoc::li
+     "The indentation size,
+      i.e. how much each indentation level moves the starting column.
+      This is measured in number of spaces, as a positive integer.")
+    (xdoc::li
+     "A flag saying whether conditional expressions
+      nested in other conditional expressions
+      should be parenthesized or not.
+      For instance, whether the expression"
+     (xdoc::codeblock "a ? b ? c : d : e ? f g")
+     "should be printed as"
+     (xdoc::codeblock "a ? (b ? c : e) : (e ? f : g)")
+     "The two expressions are equivalent due to the precedence rules of C,
+      but the second one is more readable.
+      If the flag is @('t'), the printer adds the parentheses."))
+   (xdoc::p
+    "We may add more options in the future."))
+  ((indent-size pos)
+   (paren-nested-conds bool))
   :pred prioptp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define default-priopt ()
+  :short "Default printer options."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For convenience, we provide a choice of default printer options,
+     in the form of this nullary function,
+     which can be passed to @(tsee print-fileset).")
+   (xdoc::p
+    "We set the indentation size to two spaces.")
+   (xdoc::p
+    "We do not add parentheses around nested conditionals."))
+  (make-priopt :indent-size 2
+               :paren-nested-conds nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,7 +172,8 @@
     "Initially, no data has been printed, and the indentation level is 0."))
   (make-pristate :bytes-rev nil
                  :indent-level 0
-                 :options options))
+                 :options options)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1500,7 +1536,27 @@
        On the other hand, single-nonterminal definientia
        do not correspond to any tree structure,
        but rather allow the same expression to have, in effect,
-       different priorities (a form of subtyping)."))
+       different priorities (a form of subtyping).")
+     (xdoc::p
+      "We treat the printing of conditional expressions
+       slightly differently based on the printer option
+       about parenthesizing nested conditional expressions.
+       The difference is in the expected priority
+       used for the `then' and `else' subexpressions.
+       If that flag is not set,
+       we print things with minimal parentheses,
+       and therefore we use
+       the lowest expression priority
+       for `then' and the conditional grade for `else',
+       consistently with the grammar rule for conditional expressions.
+       This means that if the `then' and/or `else' is a conditional expression,
+       it is not parenthesized.
+       If instead the flag is set,
+       then we use a higher-priority for both `then' and `else',
+       precisely the priority just one higher than conditional expressions,
+       namely the priority of logical disjunction.
+       This means that if the `then' and/or `else' is a conditional expression,
+       it is parenthesized, in order to raise its priority."))
     (b* ((actual-prio (expr->priority expr))
          (parenp (not (expr-priority-<= expected-prio actual-prio)))
          (pstate (if parenp
@@ -1644,11 +1700,21 @@
                 (pstate (print-expr expr.arg2 expected-arg2-prio pstate)))
              pstate)
            :cond
-           (b* ((pstate (print-expr expr.test (expr-priority-logor) pstate))
+           (b* ((raise-prio
+                 (priopt->paren-nested-conds (pristate->options pstate)))
+                (pstate (print-expr expr.test (expr-priority-logor) pstate))
                 (pstate (print-astring " ? " pstate))
-                (pstate (print-expr expr.then (expr-priority-expr) pstate))
+                (pstate (print-expr expr.then
+                                    (if raise-prio
+                                        (expr-priority-logor)
+                                      (expr-priority-expr))
+                                    pstate))
                 (pstate (print-astring " : " pstate))
-                (pstate (print-expr expr.else (expr-priority-cond) pstate)))
+                (pstate (print-expr expr.else
+                                    (if raise-prio
+                                        (expr-priority-logor)
+                                      (expr-priority-cond))
+                                    pstate)))
              pstate)
            :comma
            (b* ((pstate (print-expr expr.first (expr-priority-expr) pstate))
@@ -1847,11 +1913,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-tyspec ((tyspec tyspecp) (pstate pristatep))
+  (define print-type-spec ((tyspec type-specp) (pstate pristatep))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a type specifier."
-    (tyspec-case
+    (type-spec-case
      tyspec
      :void (print-astring "void" pstate)
      :char (print-astring "char" pstate)
@@ -1878,7 +1944,7 @@
                 (pstate (print-enumspec tyspec.unwrap pstate)))
              pstate)
      :tydef (print-ident tyspec.name pstate))
-    :measure (tyspec-count tyspec))
+    :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1888,7 +1954,7 @@
     :short "Print a specifier or qualifier."
     (specqual-case
      specqual
-     :tyspec (print-tyspec specqual.unwrap pstate)
+     :tyspec (print-type-spec specqual.unwrap pstate)
      :tyqual (print-type-qual specqual.unwrap pstate)
      :alignspec (print-alignspec specqual.unwrap pstate))
     :measure (specqual-count specqual))
@@ -1941,7 +2007,7 @@
     (declspec-case
      declspec
      :stocla (print-stor-spec declspec.unwrap pstate)
-     :tyspec (print-tyspec declspec.unwrap pstate)
+     :tyspec (print-type-spec declspec.unwrap pstate)
      :tyqual (print-type-qual declspec.unwrap pstate)
      :funspec (print-fun-spec declspec.unwrap pstate)
      :alignspec (print-alignspec declspec.unwrap pstate))
@@ -3253,7 +3319,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-file ((tunit transunitp))
+(define print-file ((tunit transunitp) (options prioptp))
   :returns (data byte-listp)
   :short "Print (the data bytes of) a file."
   :long
@@ -3261,16 +3327,11 @@
    (xdoc::p
     "The input is a translation unit in the abstract syntax.
      We initialize the printing state,
-     we print the translation unit,
+     with the printing options passed as input.
+     We print the translation unit,
      we extract the data bytes from the final printing state,
-     and we reverse them (see @(tsee pristate)).")
-   (xdoc::p
-    "We set the indentation size to two spaces for now.
-     In the future, we will make this a top-level parameter.
-     We envision additional top-level parameters
-     to customize various aspects of the printing (e.g. right margin)."))
-  (b* ((options (make-priopt :indent-size 2))
-       (pstate (init-pristate options))
+     and we reverse them (see @(tsee pristate))."))
+  (b* ((pstate (init-pristate options))
        (pstate (print-transunit tunit pstate))
        (bytes-rev (pristate->bytes-rev pstate)))
     (rev bytes-rev))
@@ -3278,30 +3339,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-fileset ((tunits transunit-ensemblep))
+(define print-fileset ((tunits transunit-ensemblep) (options prioptp))
   :returns (fileset filesetp)
   :short "Print a file set."
   :long
   (xdoc::topstring
    (xdoc::p
     "The input is a translation unit ensemble in the abstract syntax.
+     We also pass the printer options as additional input.
      We go through each translation unit in the ensemble and print it,
      obtaining a file for each.
      We return a file set that corresponds to the translation unit ensemble.
      The file paths are the same
      for the translation unit ensemble and for the file set
      (they are the keys of the maps)."))
-  (fileset (print-fileset-loop (transunit-ensemble->unwrap tunits)))
+  (fileset (print-fileset-loop (transunit-ensemble->unwrap tunits) options))
   :hooks (:fix)
 
   :prepwork
-  ((define print-fileset-loop ((tunitmap filepath-transunit-mapp))
+  ((define print-fileset-loop ((tunitmap filepath-transunit-mapp)
+                               (options prioptp))
      :returns (filemap filepath-filedata-mapp)
      :parents nil
      (b* (((when (omap::emptyp tunitmap)) nil)
           ((mv filepath tunit) (omap::head tunitmap))
-          (data (print-file tunit))
-          (filemap (print-fileset-loop (omap::tail tunitmap))))
+          (data (print-file tunit options))
+          (filemap (print-fileset-loop (omap::tail tunitmap) options)))
        (omap::update (filepath-fix filepath) (filedata data) filemap))
      :verify-guards :after-returns
 
@@ -3311,8 +3374,10 @@
        (equal (omap::keys filemap)
               (omap::keys tunitmap))
        :hyp (filepath-transunit-mapp tunitmap)
-       :hints (("Goal" :induct t))
-     )))
+       :hints (("Goal" :induct t)))
+
+     (fty::deffixequiv print-fileset-loop
+       :args ((options prioptp)))))
 
   ///
 

@@ -697,8 +697,8 @@
           (declspec (car declspecs))
           ((unless (declspec-case declspec :tyspec)) (mv nil nil))
           (tyspec (declspec-tyspec->unwrap declspec))
-          ((unless (tyspec-case tyspec :tydef)) (mv nil nil))
-          (ident (tyspec-tydef->name tyspec))
+          ((unless (type-spec-case tyspec :tydef)) (mv nil nil))
+          (ident (type-spec-tydef->name tyspec))
           (kind? (dimb-lookup-ident ident table))
           ((when (equal kind? (dimb-kind-typedef))) (mv nil nil))
           ((mv yes/no names) (dimb-params-to-names-loop (cdr params) table))
@@ -1041,8 +1041,8 @@
       (retok (cons new-assoc new-assocs) table))
     :measure (genassoc-list-count assocs))
 
-  (define dimb-tyspec ((tyspec tyspecp) (table dimb-tablep))
-    :returns (mv erp (new-tyspec tyspecp) (new-table dimb-tablep))
+  (define dimb-type-spec ((tyspec type-specp) (table dimb-tablep))
+    :returns (mv erp (new-tyspec type-specp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
     :short "Disambiguate a type specifier."
     :long
@@ -1072,33 +1072,33 @@
       "If we encounter a @('typedef') name,
        we need to check that it is in the disambiguation table,
        with the right kind."))
-    (b* (((reterr) (irr-tyspec) (irr-dimb-table)))
-      (tyspec-case
+    (b* (((reterr) (irr-type-spec) (irr-dimb-table)))
+      (type-spec-case
        tyspec
-       :void (retok (tyspec-void) (dimb-table-fix table))
-       :char (retok (tyspec-char) (dimb-table-fix table))
-       :short (retok (tyspec-short) (dimb-table-fix table))
-       :int (retok (tyspec-int) (dimb-table-fix table))
-       :long (retok (tyspec-long) (dimb-table-fix table))
-       :float (retok (tyspec-float) (dimb-table-fix table))
-       :double (retok (tyspec-double) (dimb-table-fix table))
-       :signed (retok (tyspec-signed) (dimb-table-fix table))
-       :unsigned (retok (tyspec-unsigned) (dimb-table-fix table))
-       :bool (retok (tyspec-bool) (dimb-table-fix table))
-       :complex (retok (tyspec-complex) (dimb-table-fix table))
+       :void (retok (type-spec-void) (dimb-table-fix table))
+       :char (retok (type-spec-char) (dimb-table-fix table))
+       :short (retok (type-spec-short) (dimb-table-fix table))
+       :int (retok (type-spec-int) (dimb-table-fix table))
+       :long (retok (type-spec-long) (dimb-table-fix table))
+       :float (retok (type-spec-float) (dimb-table-fix table))
+       :double (retok (type-spec-double) (dimb-table-fix table))
+       :signed (retok (type-spec-signed) (dimb-table-fix table))
+       :unsigned (retok (type-spec-unsigned) (dimb-table-fix table))
+       :bool (retok (type-spec-bool) (dimb-table-fix table))
+       :complex (retok (type-spec-complex) (dimb-table-fix table))
        :atomic (b* (((erp new-type table) (dimb-tyname tyspec.type table)))
-                 (retok (tyspec-atomic new-type) table))
+                 (retok (type-spec-atomic new-type) table))
        :struct (b* (((erp new-strunispec table)
                      (dimb-strunispec tyspec.unwrap table)))
-                 (retok (tyspec-struct new-strunispec)
+                 (retok (type-spec-struct new-strunispec)
                         table))
        :union (b* (((erp new-strunispec table)
                     (dimb-strunispec tyspec.unwrap table)))
-                (retok (tyspec-union new-strunispec)
+                (retok (type-spec-union new-strunispec)
                        table))
        :enum (b* (((erp new-enumspec table)
                    (dimb-enumspec tyspec.unwrap table)))
-               (retok (tyspec-enum new-enumspec) table))
+               (retok (type-spec-enum new-enumspec) table))
        :tydef (b* ((kind (dimb-lookup-ident tyspec.name table))
                    ((unless kind)
                     (reterr
@@ -1107,7 +1107,7 @@
                           tyspec.name))))
                 (dimb-kind-case
                  kind
-                 :typedef (retok (tyspec-tydef tyspec.name)
+                 :typedef (retok (type-spec-tydef tyspec.name)
                                  (dimb-table-fix table))
                  :objfun (reterr
                           (msg "The identifier ~x0 denotes ~
@@ -1119,7 +1119,7 @@
                                    an enumeration constant ~
                                    but it is used as a typedef name."
                                   tyspec.name))))))
-    :measure (tyspec-count tyspec))
+    :measure (type-spec-count tyspec))
 
   (define dimb-specqual ((specqual specqualp) (table dimb-tablep))
     :returns (mv erp (new-specqual specqualp) (new-table dimb-tablep))
@@ -1134,7 +1134,7 @@
       (specqual-case
        specqual
        :tyspec (b* (((erp new-tyspec table)
-                     (dimb-tyspec specqual.unwrap table)))
+                     (dimb-type-spec specqual.unwrap table)))
                  (retok (specqual-tyspec new-tyspec)
                         table))
        :tyqual (retok (specqual-tyqual specqual.unwrap)
@@ -1229,7 +1229,7 @@
                         (dimb-kind-fix kind)
                         (dimb-table-fix table)))
        :tyspec (b* (((erp new-tyspec table)
-                     (dimb-tyspec declspec.unwrap table)))
+                     (dimb-type-spec declspec.unwrap table)))
                  (retok (declspec-tyspec new-tyspec)
                         (dimb-kind-fix kind)
                         (dimb-table-fix table)))

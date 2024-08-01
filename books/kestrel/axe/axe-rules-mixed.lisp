@@ -84,12 +84,6 @@
 ;;   :hints (("Goal" :use (:instance bvuminus-when-smaller)
 ;;            :in-theory (disable bvuminus-when-smaller))))
 
-
-
-
-
-
-
 (DEFTHMd BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-NO-SPLIT-dag
   (IMPLIES (AND (syntaxp (QUOTEP SIZE))
                 (syntaxp (QUOTEP K))
