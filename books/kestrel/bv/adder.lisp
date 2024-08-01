@@ -305,17 +305,27 @@
                              ;full-adder-carry
                              ;
                              ;;BVCAT-OF-+-LOW
-                             BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
-                                         BVCAT-TIGHTEN-UPPER-SIZE
-                                         ;BVCAT-OF-*-LOW
-                                         ;BVCAT-OF-*-high
-                                         ;GETBIT-OF-+-BVCHOP-EXPAND4
-                                         ;GETBIT-OF-+-BVCHOP-EXPAND3
-                                         ;GETBIT-0-OF-PLUS
-                                         BVPLUS-1-BECOMES-BITXOR
-                                         ;BVCHOP-1-OF-PLUS
-                                         ;BVCAT-OF-+-HIGH
-                                         )))
+                             BVCAT-EQUAL-REWRITE-ALT
+                             BVCAT-EQUAL-REWRITE
+                             BVCAT-TIGHTEN-UPPER-SIZE
+                             ;;BVCAT-OF-*-LOW
+                             ;;BVCAT-OF-*-high
+                             ;;GETBIT-OF-+-BVCHOP-EXPAND4
+                             ;;GETBIT-OF-+-BVCHOP-EXPAND3
+                             ;;GETBIT-0-OF-PLUS
+                             BVPLUS-1-BECOMES-BITXOR
+                             ;;BVCHOP-1-OF-PLUS
+                             ;;BVCAT-OF-+-HIGH
+                             ;;for speed:
+                             COMMUTATIVITY-2-OF-+
+                             COMMUTATIVITY-OF-+
+                             <=-OF-BVCHOP-SAME-LINEAR-2
+                             <=-OF-BVCHOP-SAME-LINEAR
+                             BVCHOP-PLUS-1-SPLIT
+                             ;; <-OF-EXPT-AND-EXPT-SAME-BASE
+                             ;; UNSIGNED-BYTE-P-OF-+-OF-MINUS-ALT
+                             BVPLUS-COMMUTATIVE
+                             )))
            ;; ("subgoal *1/2" :cases ((and (equal 0 (GETBIT 0 CARRY)) (equal 0 (GETBIT 0 X))(equal 0 (GETBIT 0 y)))
            ;;                                    (and (equal 0 (GETBIT 0 CARRY))(equal 0 (GETBIT 0 X))(equal 1 (GETBIT 0 y)))
            ;;                                    (and (equal 0 (GETBIT 0 CARRY))(equal 1 (GETBIT 0 X))(equal 0 (GETBIT 0 y)))
