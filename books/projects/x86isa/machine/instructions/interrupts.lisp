@@ -80,6 +80,10 @@
           ;; TODO Support modes other than 64-bit mode.
           (b* (((unless (equal proc-mode *64-bit-mode*)) (!!ms-fresh :iret-not-supported))
 
+               ((the (integer 2 8) operand-size)
+                (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
+               ((unless (equal operand-size 8)) (!!ms-fresh :iret-unsupported-operand-size operand-size))
+
                ;; Get addresses
                (rsp (read-*sp proc-mode x86))
                ((mv flg new-cs-addr) (add-to-*sp proc-mode rsp 8 x86))
@@ -93,33 +97,28 @@
 
                ;; Get values
                (check-alignment? (alignment-checking-enabled-p x86))
-               ((mv flg new-rip x86) (rme64 proc-mode rsp #.*ss* :r check-alignment? x86))
-               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-               (new-rip (i64 new-rip))
-               ((mv flg new-cs x86) (rme64 proc-mode new-cs-addr #.*ss* :r check-alignment? x86))
-               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+               ((mv flg new-rip x86) (rime64 proc-mode rsp #.*ss* :r check-alignment? x86))
+               ((when flg) (!!ms-fresh :rme64 flg))
+               ((mv flg new-cs x86) (rme16 proc-mode new-cs-addr #.*ss* :r check-alignment? x86))
+               ((when flg) (!!ms-fresh :rme16 flg))
                ((mv flg new-rflags x86) (rme64 proc-mode new-rflags-addr #.*ss* :r check-alignment? x86))
-               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-               ((mv flg new-rsp x86) (rme64 proc-mode new-rsp-addr #.*ss* :r check-alignment? x86))
-               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-               (new-rsp (i64 new-rsp))
-               ((mv flg new-ss x86) (rme64 proc-mode new-ss-addr #.*ss* :r check-alignment? x86))
-               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-
-               ;; Restore state
-               ;; TODO What to do if the new-rip is not canonical?
-               (new-rip (logext *max-linear-address-size* new-rip))
-               (x86 (write-*ip proc-mode new-rip x86))
-               ;; TODO What should we do if the selectors are larger than 16 bytes?
-               (new-cs (loghead 16 new-cs))
-               (x86 (load-segment-reg *cs* new-cs x86))
-               ;; TODO What to do if the new-rflags has reserved bits set?
+               ;; TODO What to do if the new-rflags has upper 32 bits set?
                (new-rflags (loghead 32 new-rflags))
+               ((when flg) (!!ms-fresh :rme64 flg))
+               ((mv flg new-rsp x86) (rime64 proc-mode new-rsp-addr #.*ss* :r check-alignment? x86))
+               ((when flg) (!!ms-fresh :rime64 flg))
+               ((mv flg new-ss x86) (rme16 proc-mode new-ss-addr #.*ss* :r check-alignment? x86))
+               ((when flg) (!!ms-fresh :rme16 flg))
+               
+               ((unless (canonical-address-p new-rip))
+                (!!fault-fresh :gp 0 :non-canonical-iret-rip new-rip)) ;; #GP(0)
+               ((when (equal new-cs 0)) (!!fault-fresh :gp new-cs :null-iret-cs new-cs)) ;; #GP(new-cs)
+
                (x86 (!rflags new-rflags x86))
-               ;; TODO What should we do if the selectors are larger than 16 bytes?
-               (x86 (write-*sp proc-mode new-rsp x86))
-               (new-ss (loghead 16 new-ss))
-               (x86 (load-segment-reg *ss* new-ss x86)))
+               (x86 (load-segment-reg *ss* new-ss x86))
+               (x86 (load-segment-reg *cs* new-cs x86))
+               (x86 (write-*ip proc-mode new-rip x86))
+               (x86 (write-*sp proc-mode new-rsp x86)))
               x86))
 
 (def-inst x86-int3
