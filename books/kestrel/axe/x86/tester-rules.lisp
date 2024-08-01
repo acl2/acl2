@@ -27,7 +27,7 @@
 (include-book "kestrel/x86/read-and-write" :dir :system)
 (include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
-(include-book "kestrel/axe/axe-rules-mixed" :dir :system) ; todo; make local
+(local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ; drop?
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -49,24 +49,25 @@
 
 ;(def-constant-opener bool-fix$inline) ; or build into axe?
 
+;gen
 (defthm not-sbvlt-of-sbvdiv-and-minus-constant-32-64
   (implies (unsigned-byte-p 31 x)
-           (not (sbvlt '64 (sbvdiv '64 x y) '18446744071562067968)))
+           (not (sbvlt 64 (sbvdiv 64 x y) 18446744071562067968)))
   :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) ()))))
 
 (defthm not-sbvlt-of-constant-and-sbvdiv-32-64
   (implies (unsigned-byte-p 31 x)
-           (not (SBVLT '64 '2147483647 (SBVDIV '64 x y))))
+           (not (sbvlt 64 2147483647 (sbvdiv 64 x y))))
   :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) ()))))
 
 (defthm not-bvlt-of-constant-and-bvdiv-64-128
   (implies (unsigned-byte-p 64 x)
-           (not (BVLT '128 '18446744073709551615 (bvdiv '128 x y))))
-  :hints (("Goal" :in-theory (enable BVDIV bvlt))))
+           (not (bvlt 128 18446744073709551615 (bvdiv 128 x y))))
+  :hints (("Goal" :in-theory (enable bvdiv bvlt))))
 
 (defthm not-bvlt-of-constant-and-bvdiv-32-64
   (implies (unsigned-byte-p 32 x)
-           (not (bvlt '64 4294967295 (bvdiv 64 x y))))
+           (not (bvlt 64 4294967295 (bvdiv 64 x y))))
   :hints (("Goal" :in-theory (enable bvdiv bvlt))))
 
 ;; todo: do we want to see myif or if?

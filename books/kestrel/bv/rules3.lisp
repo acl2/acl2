@@ -42,7 +42,7 @@
 
 ;the complication here is because of how we associate bvcat...
 ;restrict to when y is a bvcat?
-(defthm plus-bvcat-with-0
+(defthmd plus-bvcat-with-0
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (bind-free (bind-var-to-bv-term-size 'newsize2 x) (newsize2))
                 (equal 0 (bvchop newsize2 y))
@@ -59,7 +59,7 @@
                            (;mod-=-0
                             NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))))
 
-(defthm plus-bvcat-with-0-alt
+(defthmd plus-bvcat-with-0-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (bind-free (bind-var-to-bv-term-size 'newsize2 x) (newsize2))
                 (equal 0 (bvchop newsize2 y))

@@ -12,10 +12,10 @@
 
 ;; This utility tries to resolve IF/MYIF/BOOLIF/BVIF tests in the dag, using STP and the contexts of the nodes.
 
-;; TODO: Add the ability to rewrite tests when pruning.
+;; TODO: Add the ability to rewrite IF tests when pruning.
 
 (include-book "prove-with-stp")
-(include-book "rewriter-basic")
+(include-book "rewriter-basic") ; just for the post-rewrite
 (include-book "dag-size-fast")
 (include-book "basic-rules")
 (include-book "rule-lists") ; for unsigned-byte-p-forced-rules

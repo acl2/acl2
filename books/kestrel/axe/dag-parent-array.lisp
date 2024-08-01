@@ -178,9 +178,7 @@
                                (+ 1 (largest-non-quotep items))))
   :hints (("Goal" :in-theory (enable largest-non-quotep first-atom all-consp))))
 
-;;;
-;;; find-matching-node
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns the nodenum from NODENUMS at which (cons fn args) exists (if any), otherwise nil
 (defund find-matching-node (fn args nodenums dag-array)
@@ -199,16 +197,18 @@
           nodenum
         (find-matching-node fn args (cdr nodenums) dag-array)))))
 
-(defthm integerp-of-find-matching-node
-  (implies (nat-listp nodenums)
-           (iff (integerp (find-matching-node fn args nodenums dag-array))
-                (find-matching-node fn args nodenums dag-array)))
-  :hints (("Goal" :in-theory (enable find-matching-node))))
+(local
+  (defthm integerp-of-find-matching-node
+    (implies (nat-listp nodenums)
+             (iff (integerp (find-matching-node fn args nodenums dag-array))
+                  (find-matching-node fn args nodenums dag-array)))
+    :hints (("Goal" :in-theory (enable find-matching-node)))))
 
-(defthm nonneg-of-find-matching-node
-  (implies (nat-listp nodenums)
-           (<= 0 (find-matching-node fn args nodenums dag-array)))
-  :hints (("Goal" :in-theory (enable find-matching-node))))
+(local
+  (defthm nonneg-of-find-matching-node
+    (implies (nat-listp nodenums)
+             (<= 0 (find-matching-node fn args nodenums dag-array)))
+    :hints (("Goal" :in-theory (enable find-matching-node)))))
 
 ;;;
 ;;; find-expr-using-parents
@@ -281,8 +281,6 @@
               dag-len))
   :hints (("Goal" :in-theory (enable find-matching-node))))
 
-
-
 ;; (thm
 ;;  (ALL-< (FIND-SHORTEST-PARENT-LST (AREF1 'DAG-PARENT-ARRAY
 ;;                                         DAG-PARENT-ARRAY
@@ -333,9 +331,7 @@
                             ;<-of-find-matching-node
                             )))))
 
-;;;
-;;; add-to-parents-of-atoms
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;add NODENUM to the parent lists for those ITEMS which are not quoteps
 ;; Same as add-to-parents-of-atoms-with-name except this fixes 'dag-parent-array as the dag-parent-array-name.
@@ -357,14 +353,15 @@
                                      (aset1 'dag-parent-array dag-parent-array item new-parents)))
         (add-to-parents-of-atoms (rest items) nodenum dag-parent-array)))))
 
-(defthm array1p-of-add-to-parents-of-atoms
-  (implies (and (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
-                ;(darg-listp items)
-                (natp nodenum)
-                ;(<= nodenum top-nodenum-to-check)
-                (array1p 'dag-parent-array dag-parent-array))
-           (array1p 'dag-parent-array (add-to-parents-of-atoms items nodenum dag-parent-array)))
-  :hints (("Goal" :in-theory (enable dag-parent-arrayp add-to-parents-of-atoms integer-listp))))
+(local
+  (defthm array1p-of-add-to-parents-of-atoms
+    (implies (and (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
+                  ;;(darg-listp items)
+                  (natp nodenum)
+                  ;;(<= nodenum top-nodenum-to-check)
+                  (array1p 'dag-parent-array dag-parent-array))
+             (array1p 'dag-parent-array (add-to-parents-of-atoms items nodenum dag-parent-array)))
+    :hints (("Goal" :in-theory (enable dag-parent-arrayp add-to-parents-of-atoms integer-listp)))))
 
 (defthm default-of-add-to-parents-of-atoms
   (implies (and (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
