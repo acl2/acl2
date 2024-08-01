@@ -1908,7 +1908,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, parse a @('*c-char'), in ABNF notation,
+    "That is, lex a @('*c-char'), in ABNF notation,
      i.e. a repetition of zero or more instances of @('c-char').")
    (xdoc::p
     "This is called when we expect a character constant,
@@ -1977,7 +1977,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-s-chars ((pstate parstatep))
+(define lex-*-s-char ((pstate parstatep))
   :returns (mv erp
                (schars s-char-listp)
                (closing-dquote-pos positionp)
@@ -1986,6 +1986,9 @@
           in a string literal."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "That is, lex a @('*s-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('s-char').")
    (xdoc::p
     "This is called when we expect a string literal,
      after reading the opening double quote of a string literal.
@@ -2028,7 +2031,7 @@
               (retok schar pos pstate))
           (b* ((schar (s-char-char char)))
             (retok schar pos pstate))))
-       ((erp schars closing-dquote-pos pstate) (lex-s-chars pstate)))
+       ((erp schars closing-dquote-pos pstate) (lex-*-s-char pstate)))
     (retok (cons schar schars) closing-dquote-pos pstate))
   :measure (parsize pstate)
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -2037,13 +2040,13 @@
 
   ///
 
-  (defret parsize-of-lex-s-chars-uncond
+  (defret parsize-of-lex-*-s-char-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear
     :hints (("Goal" :induct t)))
 
-  (defret parsize-of-lex-s-chars-cond
+  (defret parsize-of-lex-*-s-char-cond
     (implies (not erp)
              (<= (parsize new-pstate)
                  (1- (- (parsize pstate)
@@ -2111,11 +2114,11 @@
      have already been read.
      We read zero or more characters and escape sequences.
      In the process of reading those characters and escape sequences,
-     we read up to the closing double quote (see @(tsee lex-s-chars)),
+     we read up to the closing double quote (see @(tsee lex-*-s-char)),
      whose position we use as the ending one of the span we return.
      The starting position of the span is passed to this function as input."))
   (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
-       ((erp schars closing-dquote-pos pstate) (lex-s-chars pstate))
+       ((erp schars closing-dquote-pos pstate) (lex-*-s-char pstate))
        (span (make-span :start first-pos :end closing-dquote-pos)))
     (retok (lexeme-token (token-string (stringlit eprefix? schars)))
            span
