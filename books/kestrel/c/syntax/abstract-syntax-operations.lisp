@@ -152,17 +152,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-tyspec
+(defirrelevant irr-type-spec
   :short "An irrelevant type specifier."
-  :type tyspecp
-  :body (tyspec-void))
+  :type type-specp
+  :body (type-spec-void))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-specqual
   :short "An irrelevant type specifier or type qualifier."
   :type specqualp
-  :body (specqual-tyspec (irr-tyspec)))
+  :body (specqual-tyspec (irr-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -176,7 +176,7 @@
 (defirrelevant irr-declspec
   :short "An irrelevant declaration specifier."
   :type declspecp
-  :body (declspec-tyspec (irr-tyspec)))
+  :body (declspec-tyspec (irr-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -941,7 +941,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-declspec-list-all-tyspec ((declspecs declspec-listp))
-  :returns (mv (yes/no booleanp) (tyspecs tyspec-listp))
+  :returns (mv (yes/no booleanp) (tyspecs type-spec-listp))
   :short "Check if all the declaration specifiers in a list
           are type specifiers."
   :long
@@ -962,7 +962,7 @@
 
 (define check-declspec-list-all-tyspec/storspec ((declspecs declspec-listp))
   :returns (mv (yes/no booleanp)
-               (tyspecs tyspec-listp)
+               (tyspecs type-spec-listp)
                (stor-specs stor-spec-listp))
   :short "Check if all the declaration specifiers in a list
           are type specifiers or storage class specifiers."
@@ -996,7 +996,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-specqual-list-all-tyspec ((specquals specqual-listp))
-  :returns (mv (yes/no booleanp) (tyspecs tyspec-listp))
+  :returns (mv (yes/no booleanp) (tyspecs type-spec-listp))
   :short "Check if all the specifiers and qualifiers in a list
           are type specifiers."
   :long
@@ -1015,8 +1015,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declspec-list-to-tyspec-list ((declspecs declspec-listp))
-  :returns (tyspecs tyspec-listp)
+(define declspec-list-to-type-spec-list ((declspecs declspec-listp))
+  :returns (tyspecs type-spec-listp)
   :short "Extract the list of type specifiers
           from a list of declaration specifiers,
           preserving the order."
@@ -1024,8 +1024,8 @@
        (declspec (car declspecs)))
     (if (declspec-case declspec :tyspec)
         (cons (declspec-tyspec->unwrap declspec)
-              (declspec-list-to-tyspec-list (cdr declspecs)))
-      (declspec-list-to-tyspec-list (cdr declspecs))))
+              (declspec-list-to-type-spec-list (cdr declspecs)))
+      (declspec-list-to-type-spec-list (cdr declspecs))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1045,8 +1045,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define specqual-list-to-tyspec-list ((specquals specqual-listp))
-  :returns (tyspecs tyspec-listp)
+(define specqual-list-to-type-spec-list ((specquals specqual-listp))
+  :returns (tyspecs type-spec-listp)
   :short "Extract the list of type specifiers
           from a list of type specifiers and qualifiers,
           preserving the order."
@@ -1054,8 +1054,8 @@
        (specqual (car specquals)))
     (if (specqual-case specqual :tyspec)
         (cons (specqual-tyspec->unwrap specqual)
-              (specqual-list-to-tyspec-list (cdr specquals)))
-      (specqual-list-to-tyspec-list (cdr specquals))))
+              (specqual-list-to-type-spec-list (cdr specquals)))
+      (specqual-list-to-type-spec-list (cdr specquals))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

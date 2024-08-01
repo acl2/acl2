@@ -229,6 +229,12 @@
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated.")
     (xdoc::li
+     "If the @('conc-equivs-thm') component is not @('nil'),
+      a positive integer indicating the kind of alternation
+      among the ones listed as supported in @(tsee deftreeops):
+      1 for the first one, 2 for the second one.
+      This is 0 if @('conc-equivs-thm') is @('nil').")
+    (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc?') function
       described in @(tsee deftreeops).
       This is @('nil') if the function is not generated.")
@@ -241,6 +247,7 @@
    (match-thm acl2::symbol)
    (concs-thm acl2::symbol)
    (conc-equivs-thm acl2::symbol)
+   (alt-kind nat)
    (check-conc-fn acl2::symbol)
    (conc-infos deftreeops-conc-info-list))
   :pred deftreeops-rulename-infop)
@@ -319,7 +326,13 @@
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil nil
-  :pred deftreeops-charval-info-alistp)
+  :pred deftreeops-charval-info-alistp
+  ///
+
+  (defrule deftreeops-charval-infop-when-deftreeops-charval-info-alistp
+    (implies (deftreeops-charval-info-alistp alist)
+             (iff (deftreeops-charval-infop (cdr (assoc-equal key alist)))
+                  (cdr (assoc-equal key alist))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -663,7 +676,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define deftreeops-gen-discriminant-terms ((alt alternationp))
-  :returns (terms true-listp)
+  :returns (mv (terms true-listp) (alt-kind natp))
   :short "Generate the terms to discriminate among
           two or more concatenations that form
           the alternation that defines a rule name."
@@ -674,31 +687,59 @@
      the @('<prefix>-<rulename>-conc-equivs') theorem
      described in @(tsee deftreeops).")
    (xdoc::p
-    "For now we only support alternations of certain forms.")
+    "For now we only support alternations of the forms
+     listed in the description of @('<prefix>-<rulename>-conc-equivs')
+     in @(tsee deftreeops).
+     The @('alt-kind') result of this function indicates which one,
+     as a positive integer in the same order as listed,
+     or it is 0 if the alternation is a singleton
+     or does not have a supported form,
+     i.e. if there is no need to indicate the supported form.")
    (xdoc::p
-    "If the alternation does not have a supported form, we return @('nil');
+    "If the alternation does not have a supported form,
+     we return @('nil') as the @('terms') result;
      otherwise, we return a list of terms,
      of the same length as the alternation.
      Recall that @(tsee deftreeops) requires the grammar to be well-formed,
      and that well-formed grammars have non-empty alternations:
-     so there is never ambiguity about the result of this function.")
+     so the @('terms') result cannot be @('nil')
+     if the alternation is supported.")
    (xdoc::p
     "If the alternation is a singleton,
      we return a singleton list consisting of the term @('t'),
      which makes sense since the concatenation must be always that only one.
-     Otherwise, we require the alternation to consist of
-     concatenations that are all singletons,
-     each consisting of a repetition with range 1
-     whose element is a rule name.
-     In this case, we return two or more terms,
-     each of which checks whether the one subtree
-     has the corresponding rule name as root."))
-  (b* (((when (endp alt)) nil) ; never happens
-       ((when (endp (cdr alt))) (list t)))
-    (deftreeops-gen-discriminant-terms-aux alt))
+     Otherwise, we check for different forms of the two or more alternatives:")
+   (xdoc::ul
+    (xdoc::li
+     "If the alternation consists of two or more concatenations
+      each of which is a singleton,
+      each consisting of a repetition with range 1
+      whose element is a rule name:
+      then we return two or more terms,
+      each of which checks whether the one subtree
+      has the corresponding rule name as root.")
+    (xdoc::li
+     "If the alternation consists of exactly two concatenations,
+      one of which is a singleton of a repetition with range 1
+      whose element is numeric or character value notation,
+      and the other is a singleton of a repetition with range 1
+      whose element is a rule name:
+      then we return two terms,
+      one that checks whether the one subtree is a terminal leaf
+      (for the numeric or character value notation case),
+      and the other that checks whether the one subtree is a non-leaf
+      (for the other case).")))
+  (b* (((when (endp alt)) (mv nil 0)) ; never happens
+       ((when (endp (cdr alt))) (mv (list t) 0))
+       (terms? (deftreeops-gen-discriminant-terms-aux1 alt))
+       ((when terms?) (mv terms? 1))
+       (terms? (deftreeops-gen-discriminant-terms-aux2 alt))
+       ((when terms?) (mv terms? 2)))
+    (mv nil 0))
 
   :prepwork
-  ((define deftreeops-gen-discriminant-terms-aux ((alt alternationp))
+
+  ((define deftreeops-gen-discriminant-terms-aux1 ((alt alternationp))
      :guard (consp alt)
      :returns (terms true-listp)
      :parents nil
@@ -720,12 +761,60 @@
                         (rulename ,(rulename->get rulename))))
           (alt (cdr alt))
           ((when (endp alt)) (list term))
-          (terms (deftreeops-gen-discriminant-terms-aux alt))
+          (terms (deftreeops-gen-discriminant-terms-aux1 alt))
           ((unless terms) nil))
        (cons term terms))
      ///
 
-     (defret len-of-deftreeops-gen-discriminant-terms-aux
+     (defret len-of-deftreeops-gen-discriminant-terms-aux1
+       (implies terms
+                (equal (len terms)
+                       (len alt)))))
+
+   (define deftreeops-gen-discriminant-terms-aux2 ((alt alternationp))
+     :guard (and (consp alt)
+                 (consp (cdr alt)))
+     :returns (terms true-listp)
+     :parents nil
+     (b* (((unless (endp (cddr alt))) nil)
+          (conc1 (car alt))
+          (conc2 (cadr alt))
+          ((unless (and (consp conc1)
+                        (consp conc2)
+                        (endp (cdr conc1))
+                        (endp (cdr conc2))))
+           nil)
+          (rep1 (car conc1))
+          (rep2 (car conc2))
+          ((unless (and (equal (repetition->range rep1)
+                               (make-repeat-range :min 1
+                                                  :max (nati-finite 1)))
+                        (equal (repetition->range rep2)
+                               (make-repeat-range :min 1
+                                                  :max (nati-finite 1)))))
+           nil)
+          (elem1 (repetition->element rep1))
+          (elem2 (repetition->element rep2)))
+       (cond ((and (element-case elem1 :rulename)
+                   (element-case elem2 :char-val))
+              (list `(tree-case
+                      (nth 0 (nth 0 (tree-nonleaf->branches cst)))
+                      :nonleaf)
+                    `(tree-case
+                      (nth 0 (nth 0 (tree-nonleaf->branches cst)))
+                      :leafterm)))
+             ((and (element-case elem1 :char-val)
+                   (element-case elem2 :rulename))
+              (list `(tree-case
+                      (nth 0 (nth 0 (tree-nonleaf->branches cst)))
+                      :leafterm)
+                    `(tree-case
+                      (nth 0 (nth 0 (tree-nonleaf->branches cst)))
+                      :nonleaf)))
+             (t nil)))
+     ///
+
+     (defret len-of-deftreeops-gen-discriminant-terms-aux2
        (implies terms
                 (equal (len terms)
                        (len alt))))))
@@ -943,7 +1032,7 @@
        (concs-thm
         (packn-pos (list prefix '- rulename-upstring '-concs)
                    prefix))
-       (terms (deftreeops-gen-discriminant-terms alt))
+       ((mv terms alt-kind) (deftreeops-gen-discriminant-terms alt))
        (terms-or-nils (or terms
                           (repeat (len alt) nil)))
        (alt-singletonp (and (consp alt)
@@ -956,6 +1045,7 @@
        (check-conc-fn
         (and (not alt-singletonp)
              terms
+             (= alt-kind 1) ; temporary
              (packn-pos (list prefix '- rulename-upstring '-conc?)
                         prefix)))
        (conc-infos (deftreeops-gen-conc-info-list
@@ -968,6 +1058,7 @@
               :match-thm match-thm
               :concs-thm concs-thm
               :conc-equivs-thm conc-equivs-thm
+              :alt-kind alt-kind
               :check-conc-fn check-conc-fn
               :conc-infos conc-infos)))
     info))
@@ -1591,7 +1682,9 @@
    (info deftreeops-rulename-infop)
    (prefix acl2::symbolp)
    (rulename-infos deftreeops-rulename-info-alistp
-                   "Information about all the rule names."))
+                   "Information about all the rule names.")
+   (charval-infos deftreeops-charval-info-alistp
+                  "Information about all the character value notations."))
   :returns (mv (nonleaf-thm-event pseudo-event-formp)
                (rulename-thm-event pseudo-event-formp)
                (match-thm-event pseudo-event-formp)
@@ -1679,11 +1772,18 @@
          info.conc-equivs-thm
          (b* (((mv conjuncts rules lemma-instances)
                (deftreeops-gen-rulename-events-aux2
-                 alt info.conc-infos rulename-infos conc-matchp)))
+                 alt
+                 info.alt-kind
+                 info.conc-infos
+                 rulename-infos
+                 charval-infos
+                 conc-matchp)))
            `((defruled ,info.conc-equivs-thm
                (implies (,matchp cst ,rulename-string)
                         (and ,@conjuncts))
-               :in-theory '((:e rulename)
+               :in-theory '(,@(if (= info.alt-kind 1)
+                                  '((:e rulename))
+                                nil)
                             ,info.match-thm
                             ,@rules)
                :use ((:instance ,info.concs-thm
@@ -1763,8 +1863,10 @@
 
    (define deftreeops-gen-rulename-events-aux2
      ((alt alternationp)
+      (alt-kind natp)
       (conc-infos deftreeops-conc-info-listp)
       (rulename-infos deftreeops-rulename-info-alistp)
+      (charval-infos deftreeops-charval-info-alistp)
       (conc-matchp acl2::symbolp))
      :guard (equal (len conc-infos) (len alt))
      :returns (mv (conjuncts true-listp)
@@ -1785,13 +1887,9 @@
            (raise "Internal error: non-singleton repetition ~x0." rep)
            (mv nil nil nil))
           (elem (repetition->element rep))
-          ((unless (element-case elem :rulename))
-           (raise "Internal error: element ~x0 is not a rule name." elem)
-           (mv nil nil nil))
-          (rulename (element-rulename->get elem))
-          (rulename-string (rulename->get rulename))
           (conjunct
-           `(iff (,conc-matchp (tree-nonleaf->branches cst) ,rulename-string)
+           `(iff (,conc-matchp (tree-nonleaf->branches cst)
+                               ,(pretty-print-element elem))
                  ,conc-info.discriminant-term))
           ((unless (and (consp conc-info.rep-infos)
                         (endp (cdr conc-info.rep-infos))))
@@ -1800,18 +1898,43 @@
                   conc-info.rep-infos)
            (mv nil nil nil))
           ((deftreeops-rep-info rep-info) (car conc-info.rep-infos))
-          (rulename-info (cdr (assoc-equal rulename rulename-infos)))
-          ((unless rulename-info)
-           (raise "Internal error: no information for rule name ~x0." rulename)
-           (mv nil nil nil))
           (rules (list conc-info.matching-thm
                        rep-info.matching-thm))
           (lemma-instance
-           `(:instance ,(deftreeops-rulename-info->rulename-thm rulename-info)
-                       (cst (nth 0 (nth 0 (tree-nonleaf->branches cst))))))
+           (cond
+            ((element-case elem :rulename)
+             (b* ((rulename (element-rulename->get elem))
+                  (rulename-info (cdr (assoc-equal rulename rulename-infos)))
+                  ((unless rulename-info)
+                   (raise "Internal error: no information for rule name ~x0."
+                          rulename)))
+               (if (= alt-kind 1)
+                   `(:instance
+                     ,(deftreeops-rulename-info->rulename-thm rulename-info)
+                     (cst (nth 0 (nth 0 (tree-nonleaf->branches cst)))))
+                 `(:instance
+                   ,(deftreeops-rulename-info->nonleaf-thm rulename-info)
+                   (cst (nth 0 (nth 0 (tree-nonleaf->branches cst))))))))
+            ((element-case elem :char-val)
+             (b* ((charval (element-char-val->get elem))
+                  (charval-info (cdr (assoc-equal charval charval-infos)))
+                  ((unless charval-info)
+                   (raise "Internal error: no information for ~
+                           character value notation ~x0."
+                          charval)))
+               `(:instance
+                 ,(deftreeops-charval-info->leafterm-thm charval-info)
+                 (cst (nth 0 (nth 0 (tree-nonleaf->branches cst)))))))
+            (t
+             (raise "Internal error: found element ~x0." elem))))
           ((mv more-conjuncts more-rules more-lemma-instances)
            (deftreeops-gen-rulename-events-aux2
-             (cdr alt) (cdr conc-infos) rulename-infos conc-matchp)))
+             (cdr alt)
+             alt-kind
+             (cdr conc-infos)
+             rulename-infos
+             charval-infos
+             conc-matchp)))
        (mv (cons conjunct more-conjuncts)
            (append rules more-rules)
            (cons lemma-instance more-lemma-instances))))
@@ -1875,6 +1998,7 @@
 
 (define deftreeops-gen-rulename-alist-events
   ((rulename-infos deftreeops-rulename-info-alistp)
+   (charval-infos deftreeops-charval-info-alistp)
    (prefix acl2::symbolp))
   :returns (mv (nonleaf-thm-events pseudo-event-form-listp)
                (rulename-thm-events pseudo-event-form-listp)
@@ -1889,13 +2013,14 @@
                (get-tree-fn-events pseudo-event-form-listp))
   :short "Generate the events for all the rule names in the alist."
   (deftreeops-gen-rulename-alist-events-aux
-    rulename-infos prefix rulename-infos)
+    rulename-infos prefix rulename-infos charval-infos)
 
   :prepwork
   ((define deftreeops-gen-rulename-alist-events-aux
      ((rest-rulename-infos deftreeops-rulename-info-alistp)
       (prefix acl2::symbolp)
-      (all-rulename-infos deftreeops-rulename-info-alistp))
+      (all-rulename-infos deftreeops-rulename-info-alistp)
+      (charval-infos deftreeops-charval-info-alistp))
      :returns (mv (nonleaf-thm-events pseudo-event-form-listp)
                   (rulename-thm-events pseudo-event-form-listp)
                   (match-thm-events pseudo-event-form-listp)
@@ -1924,7 +2049,7 @@
                get-tree-list-fn-events
                get-tree-fn-events)
            (deftreeops-gen-rulename-events
-             rulename alt info prefix all-rulename-infos))
+             rulename alt info prefix all-rulename-infos charval-infos))
           ((mv more-nonleaf-thm-events
                more-rulename-thm-events
                more-match-thm-events
@@ -1937,7 +2062,10 @@
                more-get-tree-list-fn-events
                more-get-tree-fn-events)
            (deftreeops-gen-rulename-alist-events-aux
-             (cdr rest-rulename-infos) prefix all-rulename-infos)))
+             (cdr rest-rulename-infos)
+             prefix
+             all-rulename-infos
+             charval-infos)))
        (mv (cons nonleaf-thm-event more-nonleaf-thm-events)
            (cons rulename-thm-event more-rulename-thm-events)
            (cons match-thm-event more-match-thm-events)
@@ -1953,8 +2081,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-gen-all-rulename-infos+events ((rules rulelistp)
-                                                  (prefix acl2::symbolp))
+(define deftreeops-gen-all-rulename-infos+events
+  ((rules rulelistp)
+   (charval-infos deftreeops-charval-info-alistp)
+   (prefix acl2::symbolp))
   :returns (mv (rulename-infos deftreeops-rulename-info-alistp)
                (rulename-events pseudo-event-form-listp))
   :short "Generate the information and events
@@ -1977,7 +2107,7 @@
             rep-matching-thm-events
             get-tree-list-fn-events
             get-tree-fn-events)
-        (deftreeops-gen-rulename-alist-events infos prefix))
+        (deftreeops-gen-rulename-alist-events infos charval-infos prefix))
        (events (append nonleaf-thm-events
                        rulename-thm-events
                        match-thm-events
@@ -2161,12 +2291,12 @@
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
   (b* ((matchers (deftreeops-gen-matchers grammar prefix))
-       ((mv rulename-infos rulename-events)
-        (deftreeops-gen-all-rulename-infos+events rules prefix))
        ((mv numrange-infos numrange-events)
         (deftreeops-gen-all-numrange-infos+events rules prefix))
        ((mv charval-infos charval-events)
         (deftreeops-gen-all-charval-infos+events rules prefix))
+       ((mv rulename-infos rulename-events)
+        (deftreeops-gen-all-rulename-infos+events rules charval-infos prefix))
        (table-value (make-deftreeops-table-value
                      :rulename-info-alist rulename-infos
                      :numrange-info-alist numrange-infos

@@ -1515,7 +1515,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum tyspec
+  (fty::deftagsum type-spec
     :parents (abstract-syntax exprs/decls)
     :short "Fixtype of type specifiers [C:6.7.3] [C:A.2.2]."
     :long
@@ -1547,7 +1547,7 @@
     (:union ((unwrap strunispec)))
     (:enum ((unwrap enumspec)))
     (:tydef ((name ident)))
-    :pred tyspecp
+    :pred type-specp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1563,7 +1563,7 @@
        to any nonterminal in the grammar in [C],
        but it is useful to define <i>specifier-qualifier-list</i>:
        see @(tsee specqual-list)."))
-    (:tyspec ((unwrap tyspec)))
+    (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:alignspec ((unwrap alignspec)))
     :pred specqualp
@@ -1626,7 +1626,7 @@
        but it is useful to define <i>declaration-specifiers</i>
        (see @(tsee declspec-list))."))
     (:stocla ((unwrap stor-spec)))
-    (:tyspec ((unwrap tyspec)))
+    (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:funspec ((unwrap fun-spec)))
     (:alignspec ((unwrap alignspec)))
@@ -2009,7 +2009,7 @@
      (xdoc::p
       "This corresponds to <i>struct-or-union-specifier</i>
        in the grammar in [C], but without the initial <i>struct-or-union</i>.
-       The only use of this fixtype is in @(tsee tyspec),
+       The only use of this fixtype is in @(tsee type-spec),
        where we have two separate cases for structures and unions.")
      (xdoc::p
       "This fixtype is a little broader than the grammar,
@@ -2253,17 +2253,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist tyspec-list
+(fty::deflist type-spec-list
   :parents (abstract-syntax)
   :short "Fixtype of lists of type specifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Type specifiers are defined in @(tsee tyspec)."))
-  :elt-type tyspec
+    "Type specifiers are defined in @(tsee type-spec)."))
+  :elt-type type-spec
   :true-listp t
   :elementp-of-nil nil
-  :pred tyspec-listp)
+  :pred type-spec-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
