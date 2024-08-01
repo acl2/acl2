@@ -406,7 +406,22 @@
                     (command-line stringp)
                     x86
                     state)
-  :guard-debug t
+  :prepwork ((local
+               (defthm xr-write-bytes-to-memory
+                       (implies 
+                         (and (not (equal fld :mem))
+                              (not (equal fld :tlb))
+                              (not (equal fld :fault)))
+                         (equal (xr fld idx (mv-nth 1 (write-bytes-to-memory addr val x86)))
+                                (xr fld idx x86)))
+                       :hints (("Goal"
+                                :in-theory (e/d (write-bytes-to-memory) ()))
+                               (and (consp (car id))
+                                    (< 1 (len (car id)))
+                                    '(:cases ((app-view x86))))))))
+  :guard (64-bit-modep x86)
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable 64-bit-modep init-zero-page load-file-into-memory))))
   (b* (;; Enable some features in cr0
        (x86 (!ctri 0 (logior #x60000010 ;; initial value of cr0 using vmx on an i7 10700k
                              (ash 1 0)  ;; Protected mode enable
@@ -461,10 +476,10 @@
        ((mv & x86) (write-bytes-to-memory (+ gdt-ptr #x18) (pack-u64 ds-descriptor) x86))
        (x86 (!stri *gdtr* (!gdtr/idtrBits->base-addr gdt-ptr (!gdtr/idtrBits->limit (1- gdt-size) 0)) x86))
        ;; Set CS = 0x10 and DS = ES = SS = 0x18
-       (x86 (load-segment-reg *CS* #x10 x86))
-       (x86 (load-segment-reg *DS* #x18 x86))
-       (x86 (load-segment-reg *ES* #x18 x86))
-       (x86 (load-segment-reg *SS* #x18 x86))
+       (x86 (load-segment-reg *CS* #x10 cs-descriptor x86))
+       (x86 (load-segment-reg *DS* #x18 ds-descriptor x86))
+       (x86 (load-segment-reg *ES* #x18 ds-descriptor x86))
+       (x86 (load-segment-reg *SS* #x18 ds-descriptor x86))
 
        ;; Clear the interrupt flag (bit 9 of rflags)
        (x86 (!rflags (logand (lognot (ash 1 9))

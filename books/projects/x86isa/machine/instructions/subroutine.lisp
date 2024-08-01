@@ -45,7 +45,6 @@
 
 (include-book "../decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
-(include-book "../load-segment-reg")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================
@@ -425,28 +424,38 @@
                ;; Update the x86 state:
 
                ;; Handle the far return case
-               ((mv new-rsp x86) (if (equal opcode #xCB)
-                                   (b* (((mv flg cs-selector x86) (rme-size-opt
-                                                                    proc-mode operand-size new-rsp #.*ss* :r check-alignment? x86
-                                                                    :mem-ptr? nil))
-                                        ((when flg)
-                                         (b* ((x86 (cond
-                                                     ((and (consp flg) (eql (car flg) :non-canonical-address))
-                                                      (!!fault-fresh :ss 0 :riml64-error flg)) ;; #SS(0)
-                                                     ((and (consp flg) (eql (car flg) :unaligned-linear-address))
-                                                      (!!fault-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
-                                                     (t ;; Unclassified error!
-                                                       (!!fault-fresh flg)))))
-                                             (mv 0 x86)))
-                                        ;; TODO what to do when the value on the stack is too large to fit into a segment register?
-                                        (cs-selector (loghead 16 cs-selector))
-                                        (x86 (load-segment-reg *cs* cs-selector x86))
-                                        ((mv flg new-rsp)
-                                         (add-to-*sp proc-mode new-rsp operand-size x86))
-                                        ((when flg) (b* ((x86 (!!fault-fresh :ss 0 :pop flg))) 
-                                                        (mv 0 x86))))
-                                       (mv new-rsp x86))
-                                   (mv new-rsp x86)))
+               ((mv new-rsp x86)
+                (if (equal opcode #xCB)
+                  (b* (((mv flg cs-selector x86)
+                        (rme-size-opt
+                          proc-mode operand-size new-rsp #.*ss* :r check-alignment? x86
+                          :mem-ptr? nil))
+                       ((when flg)
+                        (b* ((x86 (cond
+                                    ((and (consp flg) (eql (car flg) :non-canonical-address))
+                                     (!!fault-fresh :ss 0 :riml64-error flg)) ;; #SS(0)
+                                    ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+                                     (!!fault-fresh :ac 0 :memory-access-unaligned rsp)) ;; #AC(0)
+                                    (t ;; Unclassified error!
+                                      (!!fault-fresh flg)))))
+                            (mv 0 x86)))
+                       (cs-selector (loghead 16 cs-selector))
+                       ((mv flg cs-descriptor x86)
+                        (get-segment-descriptor #.*cs* cs-selector x86))
+                       ((when flg)
+                        (b* (((when (equal flg t))
+                              (b* ((x86 (!!ms-fresh :get-segment-descriptor)))
+                                  (mv 0 x86)))
+                             (x86 (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
+                            (mv 0 x86)))
+                       (x86 (load-segment-reg #.*cs* cs-selector cs-descriptor x86))
+                       ((mv flg new-rsp)
+                        (add-to-*sp proc-mode new-rsp operand-size x86))
+                       ((when flg)
+                        (b* ((x86 (!!fault-fresh :ss 0 :pop flg))) 
+                            (mv 0 x86))))
+                      (mv new-rsp x86))
+                  (mv new-rsp x86)))
                ((when (or (fault x86)
                           (ms x86))) x86)
 

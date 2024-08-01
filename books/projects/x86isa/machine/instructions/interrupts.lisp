@@ -2,7 +2,6 @@
 
 ;; ======================================================================
 
-(include-book "../load-segment-reg")
 (include-book "../decoding-and-spec-utils"
 	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
@@ -70,7 +69,6 @@
 
           :parents (one-byte-opcodes)
 
-          :guard-debug t
           :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
 
           :returns (x86 x86p :hyp (x86p x86))
@@ -113,10 +111,23 @@
                ((unless (canonical-address-p new-rip))
                 (!!fault-fresh :gp 0 :non-canonical-iret-rip new-rip)) ;; #GP(0)
                ((when (equal new-cs 0)) (!!fault-fresh :gp new-cs :null-iret-cs new-cs)) ;; #GP(new-cs)
+               ((mv flg cs-descriptor x86)
+                (get-segment-descriptor #.*cs* new-cs x86))
+               ((when flg)
+                (if (equal flg t)
+                  (!!ms-fresh :get-system-segment-descriptor)
+                  (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
+
+               ((mv flg ss-descriptor x86)
+                (get-segment-descriptor #.*ss* new-ss x86))
+               ((when flg)
+                (if (equal flg t)
+                  (!!ms-fresh :get-system-segment-descriptor)
+                  (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
 
                (x86 (!rflags new-rflags x86))
-               (x86 (load-segment-reg *ss* new-ss x86))
-               (x86 (load-segment-reg *cs* new-cs x86))
+               (x86 (load-segment-reg *ss* new-ss ss-descriptor x86))
+               (x86 (load-segment-reg *cs* new-cs cs-descriptor x86))
                (x86 (write-*ip proc-mode new-rip x86))
                (x86 (write-*sp proc-mode new-rsp x86)))
               x86))

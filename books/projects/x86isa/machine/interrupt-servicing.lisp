@@ -4,7 +4,6 @@
 
 (include-book "state")
 (include-book "decoding-and-spec-utils")
-(include-book "load-segment-reg")
 
 (defconst *pg-interrupt-vector* 14)
 
@@ -95,9 +94,12 @@
                                     ((mv flg new-rsp x86) (rml64 new-rsp-addr :r x86))
                                     (new-rsp (i64 new-rsp))
                                     (x86 (!implicit-supervisor-access prev-implicit-supervisor-access x86))
-
                                     ((when flg) (mv t 0 x86))
-                                    (x86 (load-segment-reg *ss* 0 x86))) ;; load the null selector
+
+                                    ;; load the null selector
+                                    ((mv flg descriptor x86) (get-segment-descriptor #.*ss* 0 x86))
+                                    ((when flg) (mv t 0 x86))
+                                    (x86 (load-segment-reg #.*ss* 0 descriptor x86)))
                                    (mv nil new-rsp x86))
                                (mv nil old-rsp x86) ;; No stack switch
                                ))
@@ -105,10 +107,11 @@
        (x86 (!rgfi *rsp* new-rsp x86))
 
        (old-rip (read-*ip proc-mode x86))
-       (x86 (load-segment-reg *cs* selector x86))
+       ((mv flg descriptor x86) (get-segment-descriptor #.*cs* selector x86))
+       ((when flg) (mv t x86))
+       (x86 (load-segment-reg #.*cs* selector descriptor x86))
        (x86 (push-stack-vals ((8 old-ss)
                               (8 (n64 old-rsp))
-                              ;; Rflags is 32bits. Fixing it to a 64 bit value makes guards easier.
                               (8 (rflags x86))
                               (8 old-cs)
                               (8 (n64 old-rip))) x86))

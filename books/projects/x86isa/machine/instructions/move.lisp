@@ -43,7 +43,6 @@
 
 ;; ======================================================================
 
-(include-book "../load-segment-reg")
 (include-book "../decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -184,14 +183,21 @@
                ((when badlength?)
                 (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-               ((when (and (equal opcode #x8E)
-                           (>= reg *segment-register-names-len*)))
-                (!!ms-fresh :invalid-segment-register))
                ;; Update the x86 state:
                (x86 (if (equal opcode #x8E)
-                      (load-segment-reg reg (logand reg/mem #xFFFF) x86)
+                      (b* (((when (>= reg #.*segment-register-names-len*))
+                            (!!ms-fresh :invalid-dest-sreg))
+                           (selector (loghead 16 reg/mem))
+                           ((mv flg descriptor x86) (get-segment-descriptor reg selector x86))
+                           ((when flg)
+                            (b* (((when (equal flg t)) (!!ms-fresh :get-segment-descriptor)))
+                                (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
+                           (x86 (load-segment-reg reg selector descriptor x86)))
+                          x86)
                       (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
                                   reg/mem rex-byte x86)))
+               ((when (or (fault x86)
+                          (ms x86))) x86)
                (x86 (write-*ip proc-mode temp-rip x86)))
               x86))
 

@@ -43,7 +43,6 @@
 
 ;; ======================================================================
 
-(include-book "../load-segment-reg")
 (include-book "../decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (local (include-book "../guard-helpers"))
@@ -106,8 +105,15 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
+       ((mv flg descriptor x86)
+        (get-system-segment-descriptor #.*tr* reg/mem x86))
+       ((when flg)
+        (if (equal flg t)
+          (!!ms-fresh :get-system-segment-descriptor)
+          (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
+
        ;; Update the x86 state:
-       (x86 (load-system-segment-reg *tr* reg/mem x86))
+       (x86 (load-system-segment-reg #.*tr* reg/mem descriptor x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
