@@ -93,14 +93,14 @@
     genassoc-list-fix
     genassoc-list-count
 
-    tyspecp
-    tyspec-fix
-    tyspec-count
-    tyspec-case
-    tyspec-atomic
-    tyspec-struct
-    tyspec-union
-    tyspec-enum
+    type-specp
+    type-spec-fix
+    type-spec-count
+    type-spec-case
+    type-spec-atomic
+    type-spec-struct
+    type-spec-union
+    type-spec-enum
 
     specqualp
     specqual-fix

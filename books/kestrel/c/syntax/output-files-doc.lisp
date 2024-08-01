@@ -51,9 +51,11 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(output-files :const ...       ; no default"
-     "              :process ...     ; default :print"
-     "              :const-files ... ; default nil"))
+     "(output-files :const           ...  ; no default"
+     "              :process         ...  ; default :print"
+     "              :const-files     ...  ; default nil"
+     "              :printer-options ...  ; default nil"
+     "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -110,7 +112,50 @@
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const-files*') be the name of this constant,
-       if not @('nil').")))
+       if not @('nil')."))
+
+    (xdoc::desc
+     "@(':printer-options') &mdash; default @('nil')"
+     (xdoc::p
+      "Specifies options for various aspects of how the C code is printed.")
+     (xdoc::p
+      "This must be a "
+      (xdoc::seetopic "acl2::keyword-value-listp" "keyword-value list")
+      " @('(opt-name1 opt-value1 opt-name2 opt-value2 ...)')
+       where each @('opt-namek') is a keyword among the ones described below,
+       and each @('opt-valuek') is one of the allowed values
+       for the corresponding keyword as described below.")
+     (xdoc::p
+      "The following options are supported:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':indentation-size <posint>'),
+        where @('<posint>') is a positive integer.
+        This specifies the size of each indentation level,
+        measured in number of spaces.
+        If this option is not supplied, it defaults to 2.")
+      (xdoc::li
+       "@(':parenthesize-nested-conditionals <t/nil>'),
+        where @('<t/nil>') is a boolean.
+        This specifies whether
+        conditional expressions that are `then' or `else' sub-expressions
+        of outer conditional expressions
+        should be parenthesized or not.
+        For instance, whether the expression"
+       (xdoc::codeblock "a ? b ? c : d : e ? f g")
+       "should be printed as"
+       (xdoc::codeblock "a ? (b ? c : e) : (e ? f : g)")
+       "The two expressions are equivalent due to the precedence rules of C,
+        but the second one is more readable.
+        If this option is @('t'), the printer adds the parentheses;
+        if thie option is @('nil'), no extra parentheses are added.
+        If this option is not supplied, it defaults to @('nil')."))
+     (xdoc::p
+      "This is currently the only supported printer option.
+       More options may be added in the future.")
+     (xdoc::p
+      "Unless @(':process') is @(':print') (possibly by default),
+       this @(':printer-options') input must be @('nil').")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
