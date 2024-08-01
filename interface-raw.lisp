@@ -5685,6 +5685,11 @@
 ; tables.  We therefore protect the one global managed by add-trip that is not
 ; managed by those hash tables: *user-stobj-alist*.
 
+; Note however that with the changes made 8/1/2024 to the raw-Lisp definitions
+; of defstobj and defabsstobj to avoid updating *user-stobj-alist* during early
+; loading of compiled files, we don't see how *user-stobj-alist* could actually
+; be modified here.  Nevertheless, we keep this binding for extra robustness.
+
                       *user-stobj-alist*)
                      (*hcomp-full-book-string* full-book-string)
                      (*hcomp-full-book-name* full-book-name)
