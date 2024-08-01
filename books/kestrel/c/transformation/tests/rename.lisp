@@ -49,7 +49,7 @@
                                            nil))))
 
 (defconst *fileset-rename*
-  (c$::print-fileset *transunits-rename*))
+  (c$::print-fileset *transunits-rename* (c$::default-priopt)))
 
 (defconst *filepath-rename*
   (filepath "file.RENAME.c"))

@@ -37,6 +37,7 @@
                 erp
                 impossible
                 keyword-listp
+                keyword-value-list-to-alist
                 make-event-terse
                 nat
                 nat-list

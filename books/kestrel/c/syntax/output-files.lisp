@@ -17,6 +17,7 @@
 (include-book "kestrel/std/system/constant-value" :dir :system)
 (include-book "kestrel/std/util/error-value-tuples" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "system/pseudo-event-formp" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
@@ -28,6 +29,14 @@
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled symbol-listp-of-strip-cars-when-symbol-alistp
+  (implies (symbol-alistp alist)
+           (symbol-listp (strip-cars alist)))
+  :induct t
+  :enable symbol-alistp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,10 +60,21 @@
   :short "Keyword options accepted by @(tsee output-files)."
   (list :const
         :process
-        :const-files)
+        :const-files
+        :printer-options)
   ///
   (assert-event (keyword-listp *output-files-allowed-options*))
   (assert-event (no-duplicatesp-eq *output-files-allowed-options*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *output-files-printer-options*
+  :short "Keyword options accepted in
+          the @(':printer-options') of @(tsee output-files)."
+  (list :indentation-size)
+  ///
+  (assert-event (keyword-listp *output-files-printer-options*))
+  (assert-event (no-duplicatesp-eq *output-files-printer-options*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -83,7 +103,9 @@
                                (enable tunitens/fileset-p
                                        output-files-process-inputp))))
                (process output-files-process-inputp)
-               (const-files symbolp))
+               (const-files symbolp)
+               (indent-size posp)
+               (paren-nested-conds booleanp))
   :short "Process the inputs."
   :long
   (xdoc::topstring
@@ -92,7 +114,7 @@
      is the value of the constant specified by the @(':const') input.")
    (xdoc::p
     "The other results of this function are the homonymous inputs."))
-  (b* (((reterr) (fileset nil) :write nil)
+  (b* (((reterr) (fileset nil) :write nil 1 nil)
        ;; Check and obtain options.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -158,8 +180,68 @@
                    (not process)))
         (reterr (msg "The :CONST-FILES input must be NIL ~
                       if the :PROCESS input is NIL, ~
-                      which is the case in this call of OUTPUT-FILES."))))
-    (retok tunits/files process const-files))
+                      which is the case in this call of OUTPUT-FILES.")))
+       ;; Process :PRINTER-OPTIONS input.
+       (printer-options-option (assoc-eq :printer-options options))
+       (printer-options (if printer-options-option
+                            (cdr printer-options-option)
+                          nil))
+       ((unless (keyword-value-listp printer-options))
+        (reterr (msg "The :PRINTER-OPTIONS input must be ~
+                      a value-keyword list, ~
+                      but it is ~x0 instead."
+                     printer-options)))
+       ((when (and (not (eq process :print))
+                   (consp printer-options)))
+        (reterr (msg "Since the :PROCESS input is not :PRINT, ~
+                      the :PRINTER-OPTIONS input must be NIL, ~
+                      but it is ~x0 instead."
+                     printer-options)))
+       (printer-options-alist (keyword-value-list-to-alist printer-options))
+       (printer-options-keywords (strip-cars printer-options-alist))
+       ((unless (no-duplicatesp-eq printer-options-keywords))
+        (reterr (msg "The list of keywords in the :PRINTER-OPTIONS input ~
+                      must have no duplicates, ~
+                      but the supplied :PRINTER-OPTIONS input ~x0 ~
+                      violates that requirement."
+                     printer-options)))
+       ((unless (subsetp-eq printer-options-keywords
+                            *output-files-printer-options*))
+        (reterr (msg "The list of keywords in the :PRINTER-OPTIONS input ~
+                      must be among ~&0, ~
+                      but the supplied :PRINTER-OPTIONS input ~x0 ~
+                      violates that requirement."
+                     *output-files-printer-options*
+                     printer-options)))
+       ;; Process :INDENTATION-SIZE sub-input.
+       (indent-size-option (assoc-eq :indentation-size
+                                     printer-options-alist))
+       (indent-size (if indent-size-option
+                        (cdr indent-size-option)
+                      2))
+       ((unless (posp indent-size))
+        (reterr (msg "The :INDENTATION-LEVEL option ~
+                      of the :PRINTER-OPTIONS input ~
+                      must be a positive integer, ~
+                      but it is ~x0 instead."
+                     indent-size)))
+       ;; Process :PARENTHESIZE-NESTED-CONDITIONALS input.
+       (paren-nested-conds-option (assoc-eq :parenthesize-nested-conditional
+                                            printer-options-alist))
+       (paren-nested-conds (if paren-nested-conds-option
+                               (cdr paren-nested-conds-option)
+                             nil))
+       ((unless (booleanp paren-nested-conds))
+        (reterr (msg "The :PARENTHESIZE-NESTED-CONDITIONALS option ~
+                      of the :PRINTER-OPTIONS input ~
+                      must be a boolean, ~
+                      but it is ~x0 instead."
+                     paren-nested-conds))))
+    (retok tunits/files
+           process
+           const-files
+           indent-size
+           paren-nested-conds))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
 
   ///
@@ -178,6 +260,8 @@
 (define output-files-gen-files+events ((tunits/files tunitens/fileset-p)
                                        (process output-files-process-inputp)
                                        (const-files symbolp)
+                                       (indent-size posp)
+                                       (paren-nested-conds booleanp)
                                        state)
   :guard (and (implies (equal process :write)
                        (filesetp tunits/files))
@@ -198,7 +282,10 @@
        (events nil)
        ;; Print the abstract syntax if required.
        (files (if (eq process :print)
-                  (print-fileset tunits/files)
+                  (b* ((options (make-priopt
+                                 :indent-size indent-size
+                                 :paren-nested-conds paren-nested-conds)))
+                    (print-fileset tunits/files options))
                 tunits/files))
        ;; Generate :CONST-FILES if required.
        (events (if const-files
@@ -238,12 +325,16 @@
   (b* (((reterr) '(_) state)
        ((erp tunits/files
              process
-             const-files)
+             const-files
+             indent-size
+             paren-nested-conds)
         (output-files-process-inputs args (w state)))
        ((erp events state)
         (output-files-gen-files+events tunits/files
                                        process
                                        const-files
+                                       indent-size
+                                       paren-nested-conds
                                        state)))
     (retok `(progn ,@events) state)))
 
