@@ -199,29 +199,29 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-tyspec ((tyspec tyspecp))
-    :returns (new-tyspec tyspecp)
+  (define simpadd0-type-spec ((tyspec type-specp))
+    :returns (new-tyspec type-specp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a type specifier."
-    (tyspec-case
+    (type-spec-case
      tyspec
-     :void (tyspec-fix tyspec)
-     :char (tyspec-fix tyspec)
-     :short (tyspec-fix tyspec)
-     :int (tyspec-fix tyspec)
-     :long (tyspec-fix tyspec)
-     :float (tyspec-fix tyspec)
-     :double (tyspec-fix tyspec)
-     :signed (tyspec-fix tyspec)
-     :unsigned (tyspec-fix tyspec)
-     :bool (tyspec-fix tyspec)
-     :complex (tyspec-fix tyspec)
-     :atomic (tyspec-atomic (simpadd0-tyname tyspec.type))
-     :struct (tyspec-struct (simpadd0-strunispec tyspec.unwrap))
-     :union (tyspec-union (simpadd0-strunispec tyspec.unwrap))
-     :enum (tyspec-enum (simpadd0-enumspec tyspec.unwrap))
-     :tydef (tyspec-fix tyspec))
-    :measure (tyspec-count tyspec))
+     :void (type-spec-fix tyspec)
+     :char (type-spec-fix tyspec)
+     :short (type-spec-fix tyspec)
+     :int (type-spec-fix tyspec)
+     :long (type-spec-fix tyspec)
+     :float (type-spec-fix tyspec)
+     :double (type-spec-fix tyspec)
+     :signed (type-spec-fix tyspec)
+     :unsigned (type-spec-fix tyspec)
+     :bool (type-spec-fix tyspec)
+     :complex (type-spec-fix tyspec)
+     :atomic (type-spec-atomic (simpadd0-tyname tyspec.type))
+     :struct (type-spec-struct (simpadd0-strunispec tyspec.unwrap))
+     :union (type-spec-union (simpadd0-strunispec tyspec.unwrap))
+     :enum (type-spec-enum (simpadd0-enumspec tyspec.unwrap))
+     :tydef (type-spec-fix tyspec))
+    :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -231,7 +231,7 @@
     :short "Transform a type specifier or qualifier."
     (specqual-case
      specqual
-     :tyspec (specqual-tyspec (simpadd0-tyspec specqual.unwrap))
+     :tyspec (specqual-tyspec (simpadd0-type-spec specqual.unwrap))
      :tyqual (specqual-fix specqual)
      :alignspec (specqual-alignspec (simpadd0-alignspec specqual.unwrap)))
     :measure (specqual-count specqual))
@@ -271,7 +271,7 @@
     (declspec-case
      declspec
      :stocla (declspec-fix declspec)
-     :tyspec (declspec-tyspec (simpadd0-tyspec declspec.unwrap))
+     :tyspec (declspec-tyspec (simpadd0-type-spec declspec.unwrap))
      :tyqual (declspec-fix declspec)
      :funspec (declspec-fix declspec)
      :alignspec (declspec-alignspec (simpadd0-alignspec declspec.unwrap)))

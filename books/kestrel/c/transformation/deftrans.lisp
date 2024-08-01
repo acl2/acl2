@@ -242,7 +242,7 @@
     (:linear c$::enumer-count-of-car)
     (:linear c$::enumer-list-count-of-cdr)
     (:linear c$::enumer-list-count-of-enumspec->list)
-    (:linear c$::enumspec-count-of-tyspec-enum->unwrap)
+    (:linear c$::enumspec-count-of-type-spec-enum->unwrap)
     (:linear c$::expr-count-of-car)
     (:linear c$::expr-count-of-const-expr->unwrap)
     (:linear c$::expr-count-of-dirabsdeclor-array-static1->expr)
@@ -304,17 +304,17 @@
     (:linear c$::structdeclor-count-of-car)
     (:linear c$::structdeclor-list-count-of-cdr)
     (:linear c$::structdeclor-list-count-of-structdecl-member->declor)
-    (:linear c$::strunispec-count-of-tyspec-struct->unwrap)
-    (:linear c$::strunispec-count-of-tyspec-union->unwrap)
+    (:linear c$::strunispec-count-of-type-spec-struct->unwrap)
+    (:linear c$::strunispec-count-of-type-spec-union->unwrap)
     (:linear c$::tyname-count-of-alignspec-alignas-type->type)
     (:linear c$::tyname-count-of-expr-alignof->type)
     (:linear c$::tyname-count-of-expr-cast->type)
     (:linear c$::tyname-count-of-expr-complit->type)
     (:linear c$::tyname-count-of-expr-sizeof->type)
     (:linear c$::tyname-count-of-genassoc-type->type)
-    (:linear c$::tyname-count-of-tyspec-atomic->type)
-    (:linear c$::tyspec-count-of-declspec-tyspec->unwrap)
-    (:linear c$::tyspec-count-of-specqual-tyspec->unwrap)))
+    (:linear c$::tyname-count-of-type-spec-atomic->type)
+    (:linear c$::type-spec-count-of-declspec-tyspec->unwrap)
+    (:linear c$::type-spec-count-of-specqual-tyspec->unwrap)))
 
 (defthy deftrans-theory-type-prescription
   '((:type-prescription absdeclor)
@@ -339,7 +339,7 @@
     (:type-prescription c$::consp-of-paramdeclor-fix)
     (:type-prescription c$::consp-of-specqual-fix)
     (:type-prescription c$::consp-of-stmt-fix)
-    (:type-prescription c$::consp-of-tyspec-fix)
+    (:type-prescription c$::consp-of-type-spec-fix)
     (:type-prescription c$::declspec-fix$inline)
     (:type-prescription c$::designor-fix$inline)
     (:type-prescription c$::dirabsdeclor-array)
@@ -410,7 +410,7 @@
     (:type-prescription c$::return-type-of-structdeclor-list-count.count)
     (:type-prescription c$::return-type-of-strunispec-count.count)
     (:type-prescription c$::return-type-of-tyname-count.count)
-    (:type-prescription c$::return-type-of-tyspec-count.count)
+    (:type-prescription c$::return-type-of-type-spec-count.count)
     (:type-prescription c$::specqual-fix$inline)
     (:type-prescription c$::stmt-dowhile)
     (:type-prescription c$::stmt-fix$inline)
@@ -422,7 +422,7 @@
     (:type-prescription c$::stmt-switch)
     (:type-prescription c$::stmt-while)
     (:type-prescription c$::structdecl-member)
-    (:type-prescription c$::tyspec-fix$inline)
+    (:type-prescription c$::type-spec-fix$inline)
     (:type-prescription const-expr)
     (:type-prescription const-expr-count)
     (:type-prescription const-expr-option-count)
@@ -489,11 +489,11 @@
     (:type-prescription strunispec-count)
     (:type-prescription tyname)
     (:type-prescription tyname-count)
-    (:type-prescription tyspec-atomic)
-    (:type-prescription tyspec-count)
-    (:type-prescription tyspec-enum)
-    (:type-prescription tyspec-struct)
-    (:type-prescription tyspec-union)))
+    (:type-prescription type-spec-atomic)
+    (:type-prescription type-spec-count)
+    (:type-prescription type-spec-enum)
+    (:type-prescription type-spec-struct)
+    (:type-prescription type-spec-union)))
 
 (defthy deftrans-measure-theory
   '(endp
@@ -767,37 +767,37 @@
    '(:returns (new-genassocs genassoc-listp)
      :measure (genassoc-list-count genassocs))))
 
-(define deftrans-defn-tyspec
+(define deftrans-defn-type-spec
   ((names alistp)
    (bodies alistp)
    (extra-args true-listp)
    (extra-args-names true-listp))
   (deftrans-defn
-   'tyspec
+   'type-spec
    names
    bodies
-   '((tyspec tyspecp))
+   '((tyspec type-specp))
    extra-args
-   `(tyspec-case
+   `(type-spec-case
       tyspec
-      :void (tyspec-fix tyspec)
-      :char (tyspec-fix tyspec)
-      :short (tyspec-fix tyspec)
-      :int (tyspec-fix tyspec)
-      :long (tyspec-fix tyspec)
-      :float (tyspec-fix tyspec)
-      :double (tyspec-fix tyspec)
-      :signed (tyspec-fix tyspec)
-      :unsigned (tyspec-fix tyspec)
-      :bool (tyspec-fix tyspec)
-      :complex (tyspec-fix tyspec)
-      :atomic (tyspec-atomic (,(cdr (assoc-eq 'tyname names)) tyspec.type ,@extra-args-names))
-      :struct (tyspec-struct (,(cdr (assoc-eq 'strunispec names)) tyspec.unwrap ,@extra-args-names))
-      :union (tyspec-union (,(cdr (assoc-eq 'strunispec names)) tyspec.unwrap ,@extra-args-names))
-      :enum (tyspec-enum (,(cdr (assoc-eq 'enumspec names)) tyspec.unwrap ,@extra-args-names))
-      :tydef (tyspec-fix tyspec))
-   '(:returns (new-tyspec tyspecp)
-     :measure (tyspec-count tyspec))))
+      :void (type-spec-fix tyspec)
+      :char (type-spec-fix tyspec)
+      :short (type-spec-fix tyspec)
+      :int (type-spec-fix tyspec)
+      :long (type-spec-fix tyspec)
+      :float (type-spec-fix tyspec)
+      :double (type-spec-fix tyspec)
+      :signed (type-spec-fix tyspec)
+      :unsigned (type-spec-fix tyspec)
+      :bool (type-spec-fix tyspec)
+      :complex (type-spec-fix tyspec)
+      :atomic (type-spec-atomic (,(cdr (assoc-eq 'tyname names)) tyspec.type ,@extra-args-names))
+      :struct (type-spec-struct (,(cdr (assoc-eq 'strunispec names)) tyspec.unwrap ,@extra-args-names))
+      :union (type-spec-union (,(cdr (assoc-eq 'strunispec names)) tyspec.unwrap ,@extra-args-names))
+      :enum (type-spec-enum (,(cdr (assoc-eq 'enumspec names)) tyspec.unwrap ,@extra-args-names))
+      :tydef (type-spec-fix tyspec))
+   '(:returns (new-tyspec type-specp)
+     :measure (type-spec-count tyspec))))
 
 (define deftrans-defn-specqual
   ((names alistp)
@@ -812,7 +812,7 @@
    extra-args
    `(specqual-case
       specqual
-      :tyspec (specqual-tyspec (,(cdr (assoc-eq 'tyspec names)) specqual.unwrap ,@extra-args-names))
+      :tyspec (specqual-tyspec (,(cdr (assoc-eq 'type-spec names)) specqual.unwrap ,@extra-args-names))
       :tyqual (specqual-fix specqual)
       :alignspec (specqual-alignspec (,(cdr (assoc-eq 'alignspec names)) specqual.unwrap ,@extra-args-names)))
    '(:returns (new-specqual specqualp)
@@ -871,7 +871,7 @@
    `(declspec-case
       declspec
       :stocla (declspec-fix declspec)
-      :tyspec (declspec-tyspec (,(cdr (assoc-eq 'tyspec names)) declspec.unwrap ,@extra-args-names))
+      :tyspec (declspec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.unwrap ,@extra-args-names))
       :tyqual (declspec-fix declspec)
       :funspec (declspec-fix declspec)
       :alignspec (declspec-alignspec (,(cdr (assoc-eq 'alignspec names)) declspec.unwrap ,@extra-args-names)))
@@ -1689,7 +1689,7 @@
     const-expr-option
     genassoc
     genassoc-list
-    tyspec
+    type-spec
     specqual
     specqual-list
     alignspec
@@ -1823,7 +1823,7 @@
          ,(deftrans-defn-const-expr-option   names bodies extra-args extra-args-names)
          ,(deftrans-defn-genassoc            names bodies extra-args extra-args-names)
          ,(deftrans-defn-genassoc-list       names bodies extra-args extra-args-names)
-         ,(deftrans-defn-tyspec              names bodies extra-args extra-args-names)
+         ,(deftrans-defn-type-spec           names bodies extra-args extra-args-names)
          ,(deftrans-defn-specqual            names bodies extra-args extra-args-names)
          ,(deftrans-defn-specqual-list       names bodies extra-args extra-args-names)
          ,(deftrans-defn-alignspec           names bodies extra-args extra-args-names)

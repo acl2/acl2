@@ -1913,11 +1913,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-tyspec ((tyspec tyspecp) (pstate pristatep))
+  (define print-type-spec ((tyspec type-specp) (pstate pristatep))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a type specifier."
-    (tyspec-case
+    (type-spec-case
      tyspec
      :void (print-astring "void" pstate)
      :char (print-astring "char" pstate)
@@ -1944,7 +1944,7 @@
                 (pstate (print-enumspec tyspec.unwrap pstate)))
              pstate)
      :tydef (print-ident tyspec.name pstate))
-    :measure (tyspec-count tyspec))
+    :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1954,7 +1954,7 @@
     :short "Print a specifier or qualifier."
     (specqual-case
      specqual
-     :tyspec (print-tyspec specqual.unwrap pstate)
+     :tyspec (print-type-spec specqual.unwrap pstate)
      :tyqual (print-type-qual specqual.unwrap pstate)
      :alignspec (print-alignspec specqual.unwrap pstate))
     :measure (specqual-count specqual))
@@ -2007,7 +2007,7 @@
     (declspec-case
      declspec
      :stocla (print-stor-spec declspec.unwrap pstate)
-     :tyspec (print-tyspec declspec.unwrap pstate)
+     :tyspec (print-type-spec declspec.unwrap pstate)
      :tyqual (print-type-qual declspec.unwrap pstate)
      :funspec (print-fun-spec declspec.unwrap pstate)
      :alignspec (print-alignspec declspec.unwrap pstate))
