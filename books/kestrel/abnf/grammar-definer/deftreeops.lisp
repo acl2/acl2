@@ -326,7 +326,13 @@
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil nil
-  :pred deftreeops-charval-info-alistp)
+  :pred deftreeops-charval-info-alistp
+  ///
+
+  (defrule deftreeops-charval-infop-when-deftreeops-charval-info-alistp
+    (implies (deftreeops-charval-info-alistp alist)
+             (iff (deftreeops-charval-infop (cdr (assoc-equal key alist)))
+                  (cdr (assoc-equal key alist))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1676,7 +1682,9 @@
    (info deftreeops-rulename-infop)
    (prefix acl2::symbolp)
    (rulename-infos deftreeops-rulename-info-alistp
-                   "Information about all the rule names."))
+                   "Information about all the rule names.")
+   (charval-infos deftreeops-charval-info-alistp
+                  "Information about all the character value notations."))
   :returns (mv (nonleaf-thm-event pseudo-event-formp)
                (rulename-thm-event pseudo-event-formp)
                (match-thm-event pseudo-event-formp)
@@ -1765,7 +1773,7 @@
          (= info.alt-kind 1) ; temporary
          (b* (((mv conjuncts rules lemma-instances)
                (deftreeops-gen-rulename-events-aux2
-                 alt info.conc-infos rulename-infos conc-matchp)))
+                 alt info.conc-infos rulename-infos charval-infos conc-matchp)))
            `((defruled ,info.conc-equivs-thm
                (implies (,matchp cst ,rulename-string)
                         (and ,@conjuncts))
@@ -1851,6 +1859,7 @@
      ((alt alternationp)
       (conc-infos deftreeops-conc-info-listp)
       (rulename-infos deftreeops-rulename-info-alistp)
+      (charval-infos deftreeops-charval-info-alistp)
       (conc-matchp acl2::symbolp))
      :guard (equal (len conc-infos) (len alt))
      :returns (mv (conjuncts true-listp)
@@ -1871,10 +1880,6 @@
            (raise "Internal error: non-singleton repetition ~x0." rep)
            (mv nil nil nil))
           (elem (repetition->element rep))
-          ((unless (element-case elem :rulename))
-           (raise "Internal error: element ~x0 is not a rule name." elem)
-           (mv nil nil nil))
-          (rulename (element-rulename->get elem))
           (conjunct
            `(iff (,conc-matchp (tree-nonleaf->branches cst)
                                ,(pretty-print-element elem))
@@ -1886,18 +1891,38 @@
                   conc-info.rep-infos)
            (mv nil nil nil))
           ((deftreeops-rep-info rep-info) (car conc-info.rep-infos))
-          (rulename-info (cdr (assoc-equal rulename rulename-infos)))
-          ((unless rulename-info)
-           (raise "Internal error: no information for rule name ~x0." rulename)
-           (mv nil nil nil))
           (rules (list conc-info.matching-thm
                        rep-info.matching-thm))
           (lemma-instance
-           `(:instance ,(deftreeops-rulename-info->rulename-thm rulename-info)
-                       (cst (nth 0 (nth 0 (tree-nonleaf->branches cst))))))
+           (cond
+            ((element-case elem :rulename)
+             (b* ((rulename (element-rulename->get elem))
+                  (rulename-info (cdr (assoc-equal rulename rulename-infos)))
+                  ((unless rulename-info)
+                   (raise "Internal error: no information for rule name ~x0."
+                          rulename)))
+               `(:instance
+                 ,(deftreeops-rulename-info->rulename-thm rulename-info)
+                 (cst (nth 0 (nth 0 (tree-nonleaf->branches cst)))))))
+            ((element-case elem :char-val)
+             (b* ((charval (element-char-val->get elem))
+                  (charval-info (cdr (assoc-equal charval charval-infos)))
+                  ((unless charval-info)
+                   (raise "Internal error: no information for ~
+                           character value notation ~x0."
+                          charval)))
+               `(:instance
+                 ,(deftreeops-charval-info->leafterm-thm charval-info)
+                 (cst (nth 0 (nth 0 (tree-nonleaf->branches cst)))))))
+            (t
+             (raise "Internal error: found element ~x0." elem))))
           ((mv more-conjuncts more-rules more-lemma-instances)
            (deftreeops-gen-rulename-events-aux2
-             (cdr alt) (cdr conc-infos) rulename-infos conc-matchp)))
+             (cdr alt)
+             (cdr conc-infos)
+             rulename-infos
+             charval-infos
+             conc-matchp)))
        (mv (cons conjunct more-conjuncts)
            (append rules more-rules)
            (cons lemma-instance more-lemma-instances))))
@@ -1961,6 +1986,7 @@
 
 (define deftreeops-gen-rulename-alist-events
   ((rulename-infos deftreeops-rulename-info-alistp)
+   (charval-infos deftreeops-charval-info-alistp)
    (prefix acl2::symbolp))
   :returns (mv (nonleaf-thm-events pseudo-event-form-listp)
                (rulename-thm-events pseudo-event-form-listp)
@@ -1975,13 +2001,14 @@
                (get-tree-fn-events pseudo-event-form-listp))
   :short "Generate the events for all the rule names in the alist."
   (deftreeops-gen-rulename-alist-events-aux
-    rulename-infos prefix rulename-infos)
+    rulename-infos prefix rulename-infos charval-infos)
 
   :prepwork
   ((define deftreeops-gen-rulename-alist-events-aux
      ((rest-rulename-infos deftreeops-rulename-info-alistp)
       (prefix acl2::symbolp)
-      (all-rulename-infos deftreeops-rulename-info-alistp))
+      (all-rulename-infos deftreeops-rulename-info-alistp)
+      (charval-infos deftreeops-charval-info-alistp))
      :returns (mv (nonleaf-thm-events pseudo-event-form-listp)
                   (rulename-thm-events pseudo-event-form-listp)
                   (match-thm-events pseudo-event-form-listp)
@@ -2010,7 +2037,7 @@
                get-tree-list-fn-events
                get-tree-fn-events)
            (deftreeops-gen-rulename-events
-             rulename alt info prefix all-rulename-infos))
+             rulename alt info prefix all-rulename-infos charval-infos))
           ((mv more-nonleaf-thm-events
                more-rulename-thm-events
                more-match-thm-events
@@ -2023,7 +2050,10 @@
                more-get-tree-list-fn-events
                more-get-tree-fn-events)
            (deftreeops-gen-rulename-alist-events-aux
-             (cdr rest-rulename-infos) prefix all-rulename-infos)))
+             (cdr rest-rulename-infos)
+             prefix
+             all-rulename-infos
+             charval-infos)))
        (mv (cons nonleaf-thm-event more-nonleaf-thm-events)
            (cons rulename-thm-event more-rulename-thm-events)
            (cons match-thm-event more-match-thm-events)
@@ -2039,8 +2069,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-gen-all-rulename-infos+events ((rules rulelistp)
-                                                  (prefix acl2::symbolp))
+(define deftreeops-gen-all-rulename-infos+events
+  ((rules rulelistp)
+   (charval-infos deftreeops-charval-info-alistp)
+   (prefix acl2::symbolp))
   :returns (mv (rulename-infos deftreeops-rulename-info-alistp)
                (rulename-events pseudo-event-form-listp))
   :short "Generate the information and events
@@ -2063,7 +2095,7 @@
             rep-matching-thm-events
             get-tree-list-fn-events
             get-tree-fn-events)
-        (deftreeops-gen-rulename-alist-events infos prefix))
+        (deftreeops-gen-rulename-alist-events infos charval-infos prefix))
        (events (append nonleaf-thm-events
                        rulename-thm-events
                        match-thm-events
@@ -2247,12 +2279,12 @@
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
   (b* ((matchers (deftreeops-gen-matchers grammar prefix))
-       ((mv rulename-infos rulename-events)
-        (deftreeops-gen-all-rulename-infos+events rules prefix))
        ((mv numrange-infos numrange-events)
         (deftreeops-gen-all-numrange-infos+events rules prefix))
        ((mv charval-infos charval-events)
         (deftreeops-gen-all-charval-infos+events rules prefix))
+       ((mv rulename-infos rulename-events)
+        (deftreeops-gen-all-rulename-infos+events rules charval-infos prefix))
        (table-value (make-deftreeops-table-value
                      :rulename-info-alist rulename-infos
                      :numrange-info-alist numrange-infos
