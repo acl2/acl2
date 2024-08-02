@@ -146,7 +146,7 @@
             (mv nil
                 (mod bitOffset (ash operand-size 3))
                 (rgfi-size operand-size
-                           (reg-index r/m rex-byte #.*b*)
+                           (reg-index r/m rex-byte #.*r*)
                            rex-byte
                            x86)
                 x86)
@@ -267,7 +267,7 @@
             (mv nil
                 (mod bitOffset (ash operand-size 3))
                 (rgfi-size operand-size
-                           (reg-index r/m rex-byte #.*b*)
+                           (reg-index r/m rex-byte #.*r*)
                            rex-byte
                            x86)
                 nil
@@ -309,7 +309,7 @@
         (if (equal mod #b11)
             ;; bitBase is a register operand
             (let ((x86 (!rgfi-size operand-size
-                                   (reg-index r/m rex-byte #.*b*)
+                                   (reg-index r/m rex-byte #.*r*)
                                    (loghead operand-size val)
                                    rex-byte
                                    x86)))
