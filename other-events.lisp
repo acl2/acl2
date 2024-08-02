@@ -21765,7 +21765,11 @@
                                    :non-memoizable
                                    ',(non-memoizable-stobj-raw st$c)
                                    :non-executable non-executable)))
-                 (cond (old-pair ; hence raw-mode
+                 (cond (*hcomp-book-ht*
+; See comment about this case in the raw-Lisp definition of defstobj.
+                        (assert (null old-pair))
+                        nil)
+                       (old-pair ; hence raw-mode
                         (fms "Note:  Redefining and reinitializing (abstract) ~
                               stobj ~x0 in raw mode.~%"
                              (list (cons #\0 ',name))
