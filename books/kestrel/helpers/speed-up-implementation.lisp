@@ -1,4 +1,4 @@
-; A utility that suggests ways to speed up a theorem
+; A utility that suggests ways to speed up events and books
 ;
 ; Copyright (C) 2023-2024 Kestrel Institute
 ;
@@ -131,6 +131,44 @@
     (declare (ignore value))
     (mv erp state)))
 
+;; Returns (mv erp seconds state) where erp is non-nil if the event failed.
+(defun submit-and-revert-event-with-time (event print throw-errorp state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
+                              (booleanp throw-errorp))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state))
+  ;; Record the start time:
+  (mv-let (start-time state)
+    (get-real-time state)
+    ;; Submit and revert the event:
+    (mv-let (erp state)
+      (submit-and-revert-event event print throw-errorp state)
+      ;; Record the end time:
+      (mv-let (end-time state)
+        (get-real-time state)
+        (if erp
+            (mv erp nil state)
+          (let* ((elapsed-time (- end-time start-time)))
+            (mv nil elapsed-time state)))))))
+
+;; Returns (mv erp seconds state) where erp is non-nil if the event failed.
+;; We time the event twice in case one is slow (e.g., if garbage collection happens to occur):
+(defun submit-and-revert-event-twice-with-time (event print throw-errorp state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
+                              (booleanp throw-errorp))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state))
+  (mv-let (erp elapsed-time1 state)
+    (submit-and-revert-event-with-time event print throw-errorp state)
+    (if erp
+        (mv erp nil state)
+      (mv-let (erp elapsed-time2 state)
+        (submit-and-revert-event-with-time event print throw-errorp state)
+        (if erp
+            (mv erp nil state)
+          ;; We return the min, so as to try to get the time without garbage collection:
+          (mv nil (min elapsed-time1 elapsed-time2) state))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; returns a string
@@ -231,47 +269,40 @@
   (declare (xargs :guard (rationalp time-to-beat)
                   :mode :program
                   :stobjs state))
-  ;; Record the start time:
-  (mv-let (start-time state)
-    (get-real-time state)
-    ;; Try the event with the rune disabled::
-    (mv-let (erp state)
-      (submit-and-revert-event `(saving-event-data (progn (in-theory (disable ,rune))
-                                                          ,event))
-                               nil nil state)
-      ;; Record the end time:
-      (mv-let (end-time state)
-        (get-real-time state)
-        (if erp
-            state ; the event failed after doing the disable
-          (if (member-equal rune (get-event-data 'rules state))
-              ;; the disable didn't really work (perhaps there is an explicit enable hint), so don't recommend it
-              (prog2$ (cw "Disablng ~x0 didn't really take effect.")
-                      state)
-            (let* ((elapsed-time (- end-time start-time)))
-              (if (< elapsed-time time-to-beat)
-                  (let* ((savings (- time-to-beat elapsed-time))
-                         (percent-saved (floor (* 100 (/ savings time-to-beat)) 1)))
-                    (if (<= min-time-savings savings)
-                        (progn$ (cw "~%  (Speedup: disable ~x0 to save " rune)
-                                (print-to-hundredths savings)
-                                (cw " of ")
-                                (print-to-hundredths time-to-beat)
-                                (cw " seconds (~x0%))" percent-saved)
-                                state)
-                      (progn$ ;;  (cw "~%  (Minimal speedup: disable ~x0 to save " rune)
+  ;; Try the event with the rune disabled::
+  (mv-let (erp elapsed-time state)
+    ;; todo: save event-data only on the second try?  or avoid that, since it can interfere with the timing?
+    (submit-and-revert-event-twice-with-time `(saving-event-data (progn (in-theory (disable ,rune)) ; todo: event may re-enable the rune
+                                                                  ,event)) nil nil state)
+    (if erp
+        state ; the event failed after doing the disable
+      (if (member-equal rune (get-event-data 'rules state))
+          ;; the disable didn't really work (perhaps there is an explicit enable hint), so don't recommend it
+          (prog2$ (cw "Disablng ~x0 didn't really take effect.")
+                  state)
+        (if (< elapsed-time time-to-beat)
+            (let* ((savings (- time-to-beat elapsed-time))
+                   (percent-saved (floor (* 100 (/ savings time-to-beat)) 1)))
+              (if (<= min-time-savings savings)
+                  (progn$ (cw "~%  (Speedup: disable ~x0 to save " rune)
+                          (print-to-hundredths savings)
+                          (cw " of ")
+                          (print-to-hundredths time-to-beat)
+                          (cw " seconds (~x0%))" percent-saved)
+                          state)
+                (progn$ ;;  (cw "~%  (Minimal speedup: disable ~x0 to save " rune)
                        ;; (print-to-hundredths savings)
                        ;; (cw " of ")
                        ;; (print-to-hundredths time-to-beat)
                        ;; (cw " seconds (~x0%))" percent-saved)
-                       state
-                       )))
-                (progn$ ;;  (cw "~%  (Slower: disable ~x0: " rune)
+                 state
+                 )))
+          (progn$ ;;  (cw "~%  (Slower: disable ~x0: " rune)
                  ;; (print-to-hundredths elapsed-time)
                  ;; (cw " vs ")
                  ;; (print-to-hundredths time-to-beat)
                  ;; (cw " seconds)")
-                 state)))))))))
+           state))))))
 
 ;; Returns state.  Prints suggestion for RUNES which, if disabled beforehand, lead to significant speed ups for EVENT.
 (defun try-to-drop-runes-from-event (runes event time-to-beat min-time-savings state)
@@ -325,7 +356,7 @@
            (mv nil state))
       ;; Do the proof and time it:
        (mv-let (erp provedp original-time state)
-        ;; This seems to save the event-data, at least the rules used:
+         ;; This seems to save the event-data, at least the rules used:
          (prove$-twice-with-time body
                                  hints
                                  nil
@@ -393,37 +424,34 @@
   (prog2$
    (and print print-headerp (cw "~%For ~s0:" (first (rest event)))) ; speedups are indented below this, and start with newlines
    (let ((name (cadr event)))
-    ;; Record the start time:
-     (mv-let (start-time state)
-       (get-real-time state)
-      ;; Do the proof and time it (todo: do it twice, like we do for defthm, for better timings):
-       (mv-let (erp state)
-         (submit-and-revert-event `(saving-event-data ,event) nil nil state)
-        ;; Record the end time:
-         (mv-let (end-time state)
-           (get-real-time state)
-           (if erp
-               (prog2$ (er hard? 'speed-up-defrule "~x0 was expected to prove, but it failed." name)
-                       (mv erp state))
-             (let* ((elapsed-time (- end-time start-time)))
-               (if (< elapsed-time min-event-time)
-                   (progn$ ;; (cw "~%(Not trying to speed up ~x0 because it only takes " name)
-                   ;; (print-to-hundredths elapsed-time)
-                   ;; (cw " seconds)")
-                     (mv nil state))
-                ;; Get the list of runes used in the proof:
-                 (let* ((runes-used (runes-used-for-event name state)))
-                   (if (not runes-used)
-                       (prog2$ (cw "~%WARNING: No runes reported as used by ~x0." name)
-                               (mv nil state))
-                     (let* ((rules-to-try-to-drop (runes-to-try-disabling runes-used (w state)))
-                            (state (try-to-drop-runes-from-event rules-to-try-to-drop event elapsed-time min-time-savings state)))
-                       (mv nil state)))))))))))))
+     ;; Do the proof and time it
+     ;; todo: consider excluding prep-lemmas and prep-books from the timing, somehow
+     ;; could try dropping prep-books or any local prep lemmas
+     ;; todo: save event date only on the second try?  or avoid that, since it can interfere with the timing?
+     (mv-let (erp elapsed-time state)
+       (submit-and-revert-event-twice-with-time `(saving-event-data ,event) nil nil state)
+       (if erp
+           (prog2$ (er hard? 'speed-up-defrule "~x0 was expected to prove, but it failed." name)
+                   (mv erp state))
+         (if (< elapsed-time min-event-time)
+             (progn$ ;; (cw "~%(Not trying to speed up ~x0 because it only takes " name)
+              ;; (print-to-hundredths elapsed-time)
+              ;; (cw " seconds)")
+              (mv nil state))
+           ;; Get the list of runes used in the proof:
+           (let* ((runes-used (runes-used-for-event name state)))
+             (if (not runes-used)
+                 (prog2$ (cw "~%WARNING: No runes reported as used by ~x0." name)
+                         (mv nil state))
+               (let* ((rules-to-try-to-drop (runes-to-try-disabling runes-used (w state)))
+                      (state (try-to-drop-runes-from-event rules-to-try-to-drop event elapsed-time min-time-savings state)))
+                 (mv nil state))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp state).
 ;; TODO: Handle more kinds of events, like defun!
+;; todo: expand macros, evaluate make-events (revert the world?), handle progn and encapsulate (revert the world).
 (defun speed-up-event-fn (form synonym-alist min-time-savings min-event-time print throw-errorp state)
   (declare (xargs :guard (and (print-levelp print) ; todo: finish threading this through
                               (booleanp throw-errorp))
@@ -441,20 +469,25 @@
                    fn))))
       (case fn
         ((defthm defthmd) (speed-up-defthm form min-time-savings min-event-time print t state))
-        ((defrule defruled) (speed-up-defrule form min-time-savings min-event-time print t state))
+        ((defrule defruled defrulel defruledl) (speed-up-defrule form min-time-savings min-event-time print t state))
         (local (speed-up-event-fn (cadr form) synonym-alist min-time-savings min-event-time print throw-errorp state)) ; strip the local ; todo: this submits it as non-local (ok?)
         ;; Things we don't try to speed up (but improve-book could try to change in-theory events):
         ;; TODO: Add to this list (see :doc events):
-        ((in-package defconst deflabel defmacro
-                     defstobj
-                     defstub
-                     deftheory
-                     defthy
-                     defttag
-                     defxdoc
-                     include-book in-theory theory-invariant
-                     set-ignore-ok set-state-ok set-irrelevant-formals-ok set-well-founded-relation
-                     table)
+        ((in-package
+          defconst
+          deflabel
+          defmacro defmacro+
+          defstobj
+          defstub
+          deftheory defthy
+          defttag
+          defxdoc defxdoc+
+          include-book
+          in-theory
+          theory-invariant
+          set-ignore-ok set-state-ok set-irrelevant-formals-ok set-well-founded-relation
+          skip-proofs
+          table)
          (mv nil state))
         (otherwise (if throw-errorp
                        (prog2$ (er hard? 'speed-up-event-fn "Unsupported event: ~s0." (abbreviate-event form))
@@ -462,6 +495,8 @@
                      (prog2$ (cw "~%Unsupported event: ~s0." (abbreviate-event form))
                              (mv nil state))))))))
 
+;; Tries to speed up the given event but does not submit it.
+;; See doc in doc.lisp.
 (defmacro speed-up-event (form &key
                                (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
                                (min-time-savings ':auto) ; in seconds
@@ -475,7 +510,7 @@
 
 ;; Submits the event, after printing suggestions for improving it.
 ;; Returns (mv erp state).
-(defun speed-up-events-aux (event synonym-alist min-time-savings min-event-time print state)
+(defun speed-up-and-submit-event (event synonym-alist min-time-savings min-event-time print state)
   (declare (xargs :guard (print-levelp print) ; todo: finish threading this through
                   :mode :program
                   :stobjs state))
@@ -485,11 +520,12 @@
                        state)
     (if nil ; erp ; todo
         (mv erp state)
-      (submit-event event nil t state))))
+      ;; For speed, we skip the proofs (todo: can this interfere with calls to make-event?) when submitting the event:
+      (submit-event `(skip-proofs ,event) nil t state))))
 
 ;; Submits each event, after printing suggestions for improving it.
 ;; Returns (mv erp state).
-(defun speed-up-events (events synonym-alist min-time-savings min-event-time print state)
+(defun speed-up-and-submit-events (events synonym-alist min-time-savings min-event-time print state)
   (declare (xargs :guard (and (true-listp events)
                               (symbol-alistp synonym-alist)
                               (print-levelp print))
@@ -498,10 +534,10 @@
   (if (endp events)
       (mv nil state)
     (mv-let (erp state)
-      (speed-up-events-aux (first events) synonym-alist min-time-savings min-event-time print state)
+      (speed-up-and-submit-event (first events) synonym-alist min-time-savings min-event-time print state)
       (if erp
           (mv erp state)
-        (speed-up-events (rest events) synonym-alist min-time-savings min-event-time print state)))))
+        (speed-up-and-submit-events (rest events) synonym-alist min-time-savings min-event-time print state)))))
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
@@ -541,7 +577,7 @@
                  (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
             (progn$ (and (eq print :verbose) (cw "  (Book contains ~x0 forms.)~%" (len events)))
                     (mv-let (erp state)
-                      (speed-up-events events synonym-alist min-time-savings min-event-time print state)
+                      (speed-up-and-submit-events events synonym-alist min-time-savings min-event-time print state)
                       (let* ((state (unwiden-margins state))
                              (state (set-cbd-simple old-cbd state)))
                         (prog2$ (cw ")~%")
