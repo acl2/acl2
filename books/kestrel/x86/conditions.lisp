@@ -1247,6 +1247,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;nice
+(defthm jb-condition-of-cf-spec8
+  (equal (jb-condition (cf-spec8 x))
+         (not (unsigned-byte-p 8 x)))
+  :hints (("Goal" :in-theory (enable cf-spec8 jb-condition))))
+
+;nice
+(defthm jb-condition-of-cf-spec16
+  (equal (jb-condition (cf-spec16 x))
+         (not (unsigned-byte-p 16 x)))
+  :hints (("Goal" :in-theory (enable cf-spec16 jb-condition))))
+
+;nice
 (defthm jb-condition-of-cf-spec32
   (equal (jb-condition (cf-spec32 x))
          (not (unsigned-byte-p 32 x)))
@@ -1257,6 +1269,8 @@
   (equal (jb-condition (cf-spec64 x))
          (not (unsigned-byte-p 64 x)))
   :hints (("Goal" :in-theory (enable cf-spec64 jb-condition))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm jb-condition-of-bvif-1-0-1
   (equal (jb-condition (bvif 1 test 0 1))
