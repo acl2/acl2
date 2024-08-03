@@ -16,7 +16,7 @@
 ;(local (include-book "logior"))
 (local (include-book "logxor"))
 (local (include-book "logand-b"))
-(local (include-book "rules0")) ; needed to prove getbit-0-of-bvplus
+;(local (include-book "rules0")) ; needed to prove getbit-0-of-bvplus
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
@@ -1353,15 +1353,6 @@
                           (and (equal 1 x) (equal 0 y))
                           (and (equal 1 x) (equal 1 y))))))
 
-;move
-(defthm getbit-0-of-bvplus
-  (implies (and (< 0 n)
-                (natp n))
-           (equal (getbit 0 (bvplus n x y))
-                  (bitxor (getbit 0 x)
-                          (getbit 0 y))))
-  :hints (("Goal" :in-theory (e/d (GETBIT-OF-BVPLUS getbit) ( BVCHOP-1-BECOMES-GETBIT)))))
-
 ;trying without these 2 Thu Mar 31 17:48:32 2011
 ;; ;for sha1? too gross of a hack?
 ;; (defthm bitxor-bitand-bitnot-hack
@@ -1476,7 +1467,6 @@
                        (< (bvchop lowsize y) k))))
   :hints (("Goal" :in-theory (enable BVCAT LOGAPP bvchop))))
 
-
 (defthmd getbit-numeric-bound
   (implies (and (syntaxp (quotep k))
                 (<= 2 k)
@@ -1484,8 +1474,6 @@
            (< (getbit n x) k))
   :hints (("Goal" :use (:instance BOUND-WHEN-USB2 (n 1) (x (GETBIT N X)))
            :in-theory (disable BOUND-WHEN-USB2))))
-
-
 
 ;can use this to prove the mask thms?
 (defthmd logand-bvchop-when-usb
@@ -1596,7 +1584,6 @@
            (equal (BVPLUS 16 (BVCAT 8 y 8 0) x)
                   (bvcat 8 y 8 x))))
 
-
 (defthm bvcat-mask-lemma-14
   (implies (integerp x)
            (equal (BVAND 14 16128 x)
@@ -1610,8 +1597,6 @@
                 (< k1 k2)
                 )
            (< k1 (max x k2))))
-
-
 
 ;; (defthm getbit-of-bif
 ;;   (implies (and (natp n))
@@ -1635,8 +1620,6 @@
                          (bitand (bitnot test) y))))
   :hints (("Goal" :in-theory (disable BITXOR-OF-1-BECOMES-BITNOT-ARG1)
            :DO-NOT '(preprocess))))
-
-(in-theory (disable bvuminus))
 
 (defthm bvif-becomes-bif
   (equal (bvif 1 test x y)
@@ -1665,9 +1648,6 @@
                 (< free y))
            (< x y)))
 
-
-
-
 (defthm cancel-from-logext-equality-helper
   (implies (and (integerp x)
                 (integerp k))
@@ -1680,10 +1660,7 @@
                             ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4
                             )
                            (BVCHOP-1-BECOMES-GETBIT
-
-                            anti-slice
-
-                            )))))
+                            anti-slice)))))
 
 (defthm cancel-from-logext-equality-helper2
   (implies (and (integerp x)
@@ -1698,10 +1675,7 @@
            :in-theory (disable
                        logext-of-+-of-bvchop
                        BVCHOP-1-BECOMES-GETBIT
-
-                       anti-slice
-                       ;
-                       ))))
+                       anti-slice))))
 
 (defthm cancel-from-logext-equality
   (implies (and (integerp x)
@@ -2262,7 +2236,6 @@
 ;;             :induct t
 ;;             :do-not '(generalize eliminate-destructors))))
 
-
 ;rename
 (defthmd bvchop-recollapse
   (implies (natp n)
@@ -2273,8 +2246,6 @@
   :hints (("Goal" :in-theory (enable bvcat logapp)
            :use (:instance split-bv (x (bvchop (+ 1 n) x)) (n (+ 1 n)) (m n)))))
 
-
-
 (defthm unsigned-byte-p-of-+-of-bvchop-and-*-of-expt
   (implies (and (unsigned-byte-p 1 bit)
                 (posp n))
@@ -2282,7 +2253,6 @@
                                  (* (EXPT 2 (+ -1 N)) bit))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p)
            :cases ((equal 0 bit)))))
-
 
 (defthm recollapse-sum-bits
   (implies (posp n)

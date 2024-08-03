@@ -2128,14 +2128,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Doesn't apply to when x is a + since we turn bvplus back into + for x86 stack pointer calculations.
+;; Doesn't apply when x is a + since we turn bvplus back into + for x86 stack pointer calculations.
 (defthm bvplus-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x '(binary-+) dag-array))
            (equal (bvplus size x y)
                   (bvplus size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-;; Doesn't apply to when y is a + since we turn bvplus back into + for x86 stack pointer calculations.
+;; Doesn't apply when y is a + since we turn bvplus back into + for x86 stack pointer calculations.
 (defthm bvplus-convert-arg3-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp y '(binary-+) dag-array))
            (equal (bvplus size x y)

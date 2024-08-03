@@ -16,7 +16,7 @@
 ;; causing its supporting libraries to be included.  This helps minimize the
 ;; effect of the speed-up tool itself on the books being improved.
 
-;; (defttag speed-up) ; because books-in-subtree and books-in-dir call sys-call+
+(defttag speed-up) ; because books-in-subtree and books-in-dir call sys-call+
 
 (with-supporters
   (local (include-book "speed-up-implementation"))
@@ -24,4 +24,7 @@
   :names (speed-up-event-fn
           speed-up-event
           speed-up-book-fn
-          speed-up-book))
+          speed-up-book
+          speed-up-books-fn
+          speed-up-books
+          speed-up-books-in-subtree))

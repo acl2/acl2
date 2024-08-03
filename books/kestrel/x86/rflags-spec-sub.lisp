@@ -26,13 +26,13 @@
 ;; todo: consider simplifying these
 ;; todo: more sizes of these?
 
-(defun sub-cf-spec8 (dst src)
+(defund sub-cf-spec8 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 8 dst)
                               (unsigned-byte-p 8 src))))
   (bool->bit (< dst src)))
 
 ;; oddly, this only covers the least significant byte of the result. -- why "oddly"?
-(defun sub-of-spec8 (dst src)
+(defund sub-of-spec8 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 8 dst)
                               (unsigned-byte-p 8 src))
                   :guard-hints (("Goal" :in-theory (enable signed-byte-p)))))
@@ -40,14 +40,14 @@
                (logext 8 src) ;(n8-to-i8 src)
                )))
 
-(defun sub-pf-spec8 (dst src)
+(defund sub-pf-spec8 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 8 dst)
                               (unsigned-byte-p 8 src))))
   (pf-spec8 (n-size 8 (- (logext 8 dst) ;(n8-to-i8 dst)
                          (logext 8 src) ;(n8-to-i8 src)
                          ))))
 
-(defun sub-sf-spec8 (dst src)
+(defund sub-sf-spec8 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 8 dst)
                               (unsigned-byte-p 8 src))))
   (sf-spec8 (n-size 8 (- (logext 8 dst) ;(n8-to-i8 dst)
@@ -55,7 +55,7 @@
                          ))))
 
 ;; todo: use the same function for all sizes?
-(defun sub-zf-spec8 (dst src)
+(defund sub-zf-spec8 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 8 dst)
                               (unsigned-byte-p 8 src))))
   (bool->bit (equal src dst)) ; much simpler
@@ -65,33 +65,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sub-cf-spec16 (dst src)
+(defund sub-cf-spec16 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 16 dst)
                               (unsigned-byte-p 16 src))))
   (bool->bit (< dst src)))
 
 ;; oddly, this only covers the least significant byte of the result.
-(defun sub-of-spec16 (dst src)
+(defund sub-of-spec16 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 16 dst)
                               (unsigned-byte-p 16 src))
                   :guard-hints (("Goal" :in-theory (enable signed-byte-p)))))
   (of-spec16 (- (n16-to-i16 dst)
                 (n16-to-i16 src))))
 
-(defun sub-pf-spec16 (dst src)
+(defund sub-pf-spec16 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 16 dst)
                               (unsigned-byte-p 16 src))))
   (pf-spec16 (n-size 16 (- (n16-to-i16 dst)
                            (n16-to-i16 src)))))
 
-(defun sub-sf-spec16 (dst src)
+(defund sub-sf-spec16 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 16 dst)
                               (unsigned-byte-p 16 src))))
   (sf-spec16 (n-size 16 (- (n16-to-i16 dst)
                            (n16-to-i16 src)))))
 
 ;; todo: use the same function for all sizes?
-(defun sub-zf-spec16 (dst src)
+(defund sub-zf-spec16 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 16 dst)
                               (unsigned-byte-p 16 src))))
   (bool->bit (equal src dst)) ; much simpler
@@ -101,33 +101,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sub-cf-spec32 (dst src)
+(defund sub-cf-spec32 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 32 dst)
                               (unsigned-byte-p 32 src))))
   (bool->bit (< dst src)))
 
 ;; oddly, this only covers the least significant byte of the result.
-(defun sub-of-spec32 (dst src)
+(defund sub-of-spec32 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 32 dst)
                               (unsigned-byte-p 32 src))
                   :guard-hints (("Goal" :in-theory (enable signed-byte-p)))))
   (of-spec32 (- (n32-to-i32 dst)
                 (n32-to-i32 src))))
 
-(defun sub-pf-spec32 (dst src)
+(defund sub-pf-spec32 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 32 dst)
                               (unsigned-byte-p 32 src))))
   (pf-spec32 (n-size 32 (- (n32-to-i32 dst)
                            (n32-to-i32 src)))))
 
-(defun sub-sf-spec32 (dst src)
+(defund sub-sf-spec32 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 32 dst)
                               (unsigned-byte-p 32 src))))
   (sf-spec32 (n-size 32 (- (n32-to-i32 dst)
                            (n32-to-i32 src)))))
 
 ;; todo: use the same function for all sizes?
-(defun sub-zf-spec32 (dst src)
+(defund sub-zf-spec32 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 32 dst)
                               (unsigned-byte-p 32 src))))
   (bool->bit (equal src dst)) ; much simpler
@@ -137,7 +137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun sub-cf-spec64 (dst src)
+(defund sub-cf-spec64 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 64 dst)
                               (unsigned-byte-p 64 src))))
   (bool->bit (< dst src)))
@@ -150,19 +150,19 @@
                 (n64-to-i64 src))))
 
 ;; oddly, this only covers the least significant byte of the result.
-(defun sub-pf-spec64 (dst src)
+(defund sub-pf-spec64 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 64 dst)
                               (unsigned-byte-p 64 src))))
   (pf-spec64 (n-size 64 (- (n64-to-i64 dst)
                            (n64-to-i64 src)))))
 
-(defun sub-sf-spec64 (dst src)
+(defund sub-sf-spec64 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 64 dst)
                               (unsigned-byte-p 64 src))))
   (sf-spec64 (n-size 64 (- (n64-to-i64 dst)
                            (n64-to-i64 src)))))
 
-(defun sub-zf-spec64 (dst src)
+(defund sub-zf-spec64 (dst src)
   (declare (xargs :guard (and (unsigned-byte-p 64 dst)
                               (unsigned-byte-p 64 src))))
   (bool->bit (equal src dst)) ; much simpler

@@ -589,4 +589,4 @@
 ;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
 (def-constant-opener rtl::set-flag) ; drop?
 
-(defthmd booleanp-of-canonical-address-p (booleanp (canonical-address-p linadr)))
+(defthmd booleanp-of-canonical-address-p (booleanp (canonical-address-p lin-addr)))
