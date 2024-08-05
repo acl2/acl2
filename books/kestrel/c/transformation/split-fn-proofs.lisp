@@ -34,6 +34,9 @@
                                     term-new
                                     (fun c$::identp)
                                     new-fn-name)
+  ;; Right now new-fn-name is ignored, but in the future we likely want to use
+  ;; it to generate a more target expansion hint
+  (declare (ignore new-fn-name))
   :returns (event acl2::pseudo-event-formp)
   (b* ((string (c$::ident->unwrap fun))
        ((unless (stringp string))
