@@ -534,10 +534,10 @@
           (prog2$
            (cw "Note: The DAG (after applying pre-STP rules) is the constant NIL.~%")
            (mv *invalid* nil state))))
-       (- (and print (cw "(Pre-STP DAG: ~X01.~%" dag nil)))
-       (- (and print (cw "(Using ~x0 assumptions: ~X12.~%" (len assumptions) assumptions nil)))
+       (- (and print (cw "(Pre-STP DAG: ~X01.)~%" dag nil)))
+       (- (and print (cw "(Using ~x0 assumptions: ~X12.)~%" (len assumptions) assumptions nil)))
        (dag-size (dag-size dag))
-       (- (and print (cw " Calling STP to prove: ~x0.~%" (if (< dag-size 100) (dag-to-term dag) dag))))
+       (- (and print (cw "(Applying STP tactic to prove: ~x0.~%" (if (< dag-size 100) (dag-to-term dag) dag))))
        ;; todo: pull out some of this machinery (given a dag and assumptions, set up a disjunction in a dag-array):
        (dag-array-name 'dag-array)
        (dag-array (make-dag-into-array dag-array-name dag 0))
@@ -559,7 +559,7 @@
        ((mv provedp negated-assumption-nodenums) ; todo: can there really be constants in negated-assumption-nodenum-or-quoteps?
         (handle-constant-disjuncts negated-assumption-nodenum-or-quoteps nil))
        ((when provedp)
-        (cw "NOTE: Proved due to a assumption of false.~%")
+        (cw "NOTE: STP tactic proved it due to a assumption of false.)~%") ; balances "(Applying STP tactic"
         (mv *valid* nil state))
        ;; We'll try prove that either the conclusion is true or one of the assumptions is false:
        (disjunct-nodenums (cons top-nodenum negated-assumption-nodenums))
@@ -576,24 +576,24 @@
                                     state)))
     ;; this tactic has to prove the whole problem (it can't return a residual DAG)
     (if (eq *error* result)
-        (prog2$ (er hard? 'apply-tactic-stp "Error applying STP tactic.)~%")
+        (prog2$ (er hard? 'apply-tactic-stp "Error applying STP tactic.)~%") ; balances "(Applying STP tactic"
                 (mv *error* nil state))
       (if (eq *valid* result)
-          (prog2$ (and print (cw "STP proved the goal.)~%"))
+          (prog2$ (and print (cw "STP tactic proved the goal.)~%")) ; balances "(Applying STP tactic"
                   (mv *valid* nil state))
         (if (eq *invalid* result) ;TODO: Can't happen if we ask for counterexamples?
-            (prog2$ (and print (cw "STP said the goal is invalid.)~%"))
+            (prog2$ (and print (cw "STP tactic said the goal is invalid.)~%")) ; balances "(Applying STP tactic"
                     (mv *no-change* nil state))
           (if (eq *timedout* result)
-              (prog2$ (and print (cw "STP timed out.)~%"))
+              (prog2$ (and print (cw "STP tactic timed out.)~%")) ; balances "(Applying STP tactic"
                       (mv *no-change* nil state))
             (if (call-of *counterexample* result)
-                (prog2$ (and print (cw "STP returned a counterexample.)~%"))
+                (prog2$ (and print (cw "STP tactic returned a counterexample.)~%")) ; balances "(Applying STP tactic"
                         (mv *invalid* ;this is a true counterexample, so give up
                             `(:var-counterexample ,(lookup-nodes-in-counterexample (farg1 result) dag-array-name dag-array)) ;; return the counterexample in the info
                             state))
               (if (call-of *possible-counterexample* result)
-                  (prog2$ (and print (cw "STP returned a possible counterexample.)~%"))
+                  (prog2$ (and print (cw "STP tactic returned a possible counterexample.)~%")) ; balances "(Applying STP tactic"
                           (mv *no-change*
                               (append result ;; return the counterexample in the info
                                       (list :dag dag-array :disjuncts disjunct-nodenums))
@@ -937,6 +937,7 @@
        ((when (not (member-eq type '(:bit :boolean))))
         (er hard 'prove-with-tactics-fn "Illegal value of :type argument: ~x0. Must be :boolean or :bit." type)
         (mv *error* nil nil nil state))
+       (- (and print (cw "(Applying tactic prover:~%")))
        ((mv erp rule-alist) (make-rule-alist rules (w state)))
        ((when erp) (mv *error* nil nil nil state))
 ;       (axe-rule-set (make-axe-rules rules state)) ;todo; don't need both of these..
@@ -964,13 +965,15 @@
           (mv nil assumptions state)))
        ((when erp) (mv *error* nil nil nil state))
        (vars (merge-sort-symbol< (dag-vars dag)))
-       (- (cw "Variables in DAG: ~x0~%" vars))
+       (- (and print (cw "(Variables in DAG: ~x0)~%" vars)))
        ((mv result info-acc state)
         (apply-proof-tactics-to-problem (make-problem dag assumptions)
                                         tactics
                                         rule-alist
                                         (make-interpreted-function-alist interpreted-fns (w state))
-                                        monitor normalize-xors print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp nil state)))
+                                        monitor normalize-xors print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp nil state))
+       (- (and print (cw "Tactic prover result: ~x0.)~%" result))) ; balances "(Applying tactic prover" above
+       )
     ;;todo: returning the dag and assumptions here seems a bit gross:
     (mv result info-acc dag assumptions state)))
 
