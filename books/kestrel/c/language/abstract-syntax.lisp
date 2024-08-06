@@ -14,7 +14,7 @@
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 
-; to generate more typed list theorems:
+; to generate more typed list theorems in FTY::DEFLIST:
 (local (include-book "std/lists/append" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
