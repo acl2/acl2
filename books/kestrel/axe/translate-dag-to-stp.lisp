@@ -2554,7 +2554,7 @@
        ;;           )
        ;;          (and print (cw ")")) ;matches "(Calling STP"
        ;;          (mv *error* state)))
-       (- (and (print-level-at-least-tp print) (cw ")~%"))) ;matches "(Calling STP"
+       (- (and (print-level-at-least-tp print) (cw "Done calling STP.)~%"))) ;matches "(Calling STP"
        )
     ;;no error:
     (mv result state)))
