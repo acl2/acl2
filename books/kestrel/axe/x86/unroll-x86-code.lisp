@@ -514,7 +514,7 @@
                                             t ; normalize-xors
                                             memoizep)
                     (mv erp result state))))
-               (- (cw "Done with final simplification.)~%"))
+               (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
                ((when erp) (mv erp nil state)))
             (mv (erp-nil) dag-or-quote state))
         ;; Continue the symbolic execution:
