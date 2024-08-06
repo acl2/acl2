@@ -22,6 +22,7 @@
 
 (local (include-book "std/lists/butlast" :dir :system))
 (local (include-book "std/lists/last" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -605,8 +606,6 @@
         (type-sllong)
         (type-ullong))
   ///
-
-  (local (include-book "std/lists/len" :dir :system))
 
   (defruled member-nonchar-integer-types-as-pred
     (implies (typep type)
