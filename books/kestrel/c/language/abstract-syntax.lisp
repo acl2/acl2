@@ -39,25 +39,30 @@
      (as part of perhaps a larger character set like Unicode).")
    (xdoc::p
     "We plan to generalize and extend this abstract syntax
-     to not make specific assumptions and to cover all the C constructs.
+     to avoid specific assumptions and to cover all the C constructs.
      In particular, we plan to use the formalization of "
     (xdoc::seetopic "character-sets" "character sets")
     " to lift the ASCII assumption.")
    (xdoc::p
-    "We also plan to differentiate this abstract syntax,
-     used as part of our C langauge formalization,
-     from a different abstract syntax
-     that is tailored to being used in tools such as ATC:
-     see @(see atc-abstract-syntax) for a discussion.
-     Currently this abstract syntax plays that role too,
-     and corresponds to the concrete syntax captured in @('grammar.abnf'):
-     see the discussion there as well.
-     Thus, this abstract syntax is meant to capture syntax
-     that is neither before nor after preprocessing,
-     but rather that may include constructs from
-     both before and after preprocessing.
-     For the language formalization, instead we plan
-     to formalize the translation phases [C:5.1.1.2] in detail."))
+    "The purpose of this abstract syntax is to support
+     our formal definition of (a subset of) C.
+     In contrast, the purpose of the more recently added "
+    (xdoc::seetopic "c$::abstract-syntax" "abstract syntax for tools")
+    " is to support the implementation of tools for C in ACL2.
+     Currently "
+    (xdoc::seetopic "atc" "ATC")
+    " uses the abstract syntax defined here and not that one,
+     but we plan to have it use that one instead,
+     leaving the purpose of the one defined here
+     exclusively to formally define the language.
+     Because of its current use in ATC,
+     the abstract syntax defined here
+     captures constructs both before and after preprocessing;
+     however, after ATC no longer uses it,
+     we plan to change it to capture
+     just the constructs after preprocessing,
+     and more broadly we plan to formalize
+     the translation phases [C:5.1.1.2] in detail."))
   :order-subtopics t
   :default-parent t)
 
