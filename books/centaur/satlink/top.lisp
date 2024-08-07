@@ -485,16 +485,16 @@ work.</p>")
        (minus-p (eql (char x n) #\-))
        (n       (if minus-p (+ n 1) n))
        ((when (int= xl n))
-        (cw "SATLINK: Error parsing variable line: ends with minus? ~s0" x)
+        (cw "SATLINK: Error parsing variable line: ends with minus? ~s0~%" x)
         (mv t saw-zero-p env$))
 
        ((mv val len) (str::parse-nat-from-string x 0 0 n xl))
        ((when (zp len))
         ;; Expected a number here.
-        (cw "SATLINK: Error parsing variable line: ~s0" x)
+        (cw "SATLINK: Error parsing variable line: ~s0~%" x)
         (mv t saw-zero-p env$))
        ((when (and (zp val) saw-zero-p))
-        (cw "SATLINK: Error: saw zero multiple times: ~s0" x)
+        (cw "SATLINK: Error: saw zero multiple times: ~s0~%" x)
         (mv t saw-zero-p env$))
        (saw-zero-p (or saw-zero-p (zp val)))
        (index (1- val)) ;; Adjusted for dimacs encoding
@@ -512,68 +512,71 @@ work.</p>")
                     env$))))
     (satlink-parse-variable-line x (+ n len) xl saw-zero-p env$)))
 
+
+
+(fty::defprod satlink-parser-state
+  ((saw-unsat-p booleanp)
+   (saw-sat-p booleanp)
+   (saw-unknown-p booleanp)
+   (saw-zero-p booleanp))
+  :layout :tree)
+
 (define satlink-handle-line
   :parents (dimacs-interp)
   ((line        "one line of sat solver output" stringp)
-   (saw-unsat-p "have we seen an 's UNSATISFIABLE' line?")
-   (saw-sat-p   "have we seen an 's SATISFIABLE' line?")
-   (saw-zero-p  "have we seen a 0 in a 'v' line?")
+   (pstate satlink-parser-state-p)
    (env$        "evolving variable bindings"))
   :returns
   (mv (error-p "did we see something we don't understand?")
-      saw-unsat-p
-      saw-sat-p
-      saw-zero-p
+      (new-pstate satlink-parser-state-p)
       env$)
 
   (b* ((len (length line))
        ((when (< len 2))
         ;; We'll ignore blank lines and lines that don't have a "x " at the
         ;; beginning, where x is "s" or "v".
-        (mv nil saw-unsat-p saw-sat-p saw-zero-p env$))
+        (mv nil (satlink-parser-state-fix pstate) env$))
        (char (char line 0))
        ((unless (and (or (eql char #\s)  ;; Result
                          (eql char #\v)) ;; Variable assignment
                      (eql (char line 1) #\Space)))
         ;; Ignore it
-        (mv nil saw-unsat-p saw-sat-p saw-zero-p env$))
+        (mv nil (satlink-parser-state-fix pstate) env$))
        ((when (eql char #\s))
         (cond ((str::strprefixp "s SATISFIABLE" line)
-               (mv nil saw-unsat-p t saw-zero-p env$))
+               (mv nil (change-satlink-parser-state pstate :saw-sat-p t) env$))
               ((str::strprefixp "s UNSATISFIABLE" line)
-               (mv nil t saw-sat-p saw-zero-p env$))
+               (mv nil (change-satlink-parser-state pstate :saw-unsat-p t) env$))
+              ((str::strprefixp "s UNKNOWN" line)
+               (mv nil (change-satlink-parser-state pstate :saw-unknown-p t) env$))
               (t
                (prog2$
                 (cw "SATLINK: Unrecognized result line: ~s0~%" line)
-                (mv nil saw-unsat-p saw-sat-p saw-zero-p env$)))))
+                (mv nil (satlink-parser-state-fix pstate) env$)))))
        ;; Else it's a variable line
-       ((when saw-zero-p)
+       ((when (satlink-parser-state->saw-zero-p pstate))
         (cw "SATLINK: Variable lines after already saw zero: ~s0~%" line)
-        (mv t saw-unsat-p saw-sat-p saw-zero-p env$))
+        (mv t (satlink-parser-state-fix pstate) env$))
        ((mv error saw-zero-p env$)
         (satlink-parse-variable-line line 1 len nil env$)))
-    (mv error saw-unsat-p saw-sat-p saw-zero-p env$)))
+    (mv error (change-satlink-parser-state pstate :saw-zero-p (and saw-zero-p t)) env$)))
 
 (define satlink-handle-lines
   :parents (dimacs-interp)
   ((lines string-listp)
-   (saw-unsat-p "have we seen an 's UNSATISFIABLE' line?")
-   (saw-sat-p   "have we seen an 's SATISFIABLE' line?")
-   (saw-zero-p  "have we seen a 0 in a 'v' line?")
+   (pstate satlink-parser-state-p)
    (env$        "evolving variable bindings"))
   :returns
   (mv (error-p "did we see something we don't understand?")
-      saw-unsat-p
-      saw-sat-p
-      saw-zero-p
+      (new-pstate satlink-parser-state-p)
       env$)
   (b* (((when (atom lines))
-        (mv nil saw-unsat-p saw-sat-p saw-zero-p env$))
-       ((mv error-p saw-unsat-p saw-sat-p saw-zero-p env$)
-        (satlink-handle-line (car lines) saw-unsat-p saw-sat-p saw-zero-p env$))
+        (mv nil (satlink-parser-state-fix pstate) env$))
+       ((mv error-p pstate env$)
+        (satlink-handle-line (car lines) pstate env$))
        ((when error-p)
-        (mv error-p saw-unsat-p saw-sat-p saw-zero-p env$)))
-    (satlink-handle-lines (cdr lines) saw-unsat-p saw-sat-p saw-zero-p env$)))
+        (mv error-p pstate env$)))
+    (satlink-handle-lines (cdr lines) pstate env$)))
 
 (define satlink-parse-output
   :parents (dimacs-interp)
@@ -581,26 +584,38 @@ work.</p>")
    (env$              "empty env to populate, should be sized already."))
   :returns (mv (status "Either :failed, :sat, or :unsat")
                (env$   "Variable assignment, in the :sat case."))
-  (b* (((mv error-p saw-unsat-p saw-sat-p saw-zero-p env$)
-        (satlink-handle-lines out nil nil nil env$))
+  (b* (((mv error-p (satlink-parser-state pstate) env$)
+        (satlink-handle-lines out (make-satlink-parser-state) env$))
        ((when error-p)
         ;; Already printed a warning
         (mv :failed env$))
        ;; There are a couple of other weird things to detect.
-       ((when (and saw-unsat-p saw-sat-p))
-        (cw "SATLINK: solver says both SAT and UNSAT?   Uh... guys?")
+       ((when (and pstate.saw-unsat-p pstate.saw-sat-p))
+        (cw "SATLINK error: solver says both SAT and UNSAT~%")
         (mv :failed env$))
-       ((when (and saw-sat-p (not saw-zero-p)))
-        (cw "SATLINK: solver says SAT but we didn't find a 0 in variable lines?")
+       ((when (and pstate.saw-unsat-p pstate.saw-unknown-p))
+        (cw "SATLINK error: solver says both UNSAT and UNKNOWN~%")
         (mv :failed env$))
-       ((when (and saw-unsat-p saw-zero-p))
-        (cw "SATLINK: solver says UNSAT but is giving us variables?")
+       ((when (and pstate.saw-sat-p pstate.saw-unknown-p))
+        (cw "SATLINK error: solver says both SAT and UNKNOWN~%")
         (mv :failed env$))
-       ((when saw-unsat-p)
+       ((when (and pstate.saw-sat-p (not pstate.saw-zero-p)))
+        (cw "SATLINK error: solver says SAT but we didn't find a 0 in variable lines?~%")
+        (mv :failed env$))
+       ((when (and pstate.saw-unsat-p pstate.saw-zero-p))
+        (cw "SATLINK error: solver says UNSAT but is giving us variables?~%")
+        (mv :failed env$))
+       ((when (and pstate.saw-unknown-p pstate.saw-zero-p))
+        (cw "SATLINK error: solver says UNKNOWN but is giving us variables?~%")
+        (mv :failed env$))
+       ((when pstate.saw-unsat-p)
         (mv :unsat env$))
-       ((when saw-sat-p)
-        (mv :sat env$)))
+       ((when pstate.saw-sat-p)
+        (mv :sat env$))
+       ((when pstate.saw-unknown-p)
+        (mv :failed env$)))
     ;; Didn't see either sat or unsat.
+    (cw "SATLINK error: solver didn't report its result~%")
     (mv :failed env$)))
 
 (defsection satlink-extra-hook
@@ -717,7 +732,7 @@ satlink-run).</p>"
           state))
 
        (cmd (str::cat config.cmdline " " filename))
-       ((mv & lines state)
+       ((mv status lines state)
         (time$ (acl2::tshell-call cmd
                                   ;; Print only if :verbose t is on, and use a
                                   ;; custom printing function that skips variable
@@ -728,6 +743,10 @@ satlink-run).</p>"
                :msg "; SATLINK: `~s0`: ~st sec, ~sa bytes~%"
                :args (list cmd)
                :mintime config.mintime))
+
+       ((when (eql status 127))
+        (cw "SATLINK: Couldn't execute SAT solver command `~s0` (exit code 127).  Not in path?~%" cmd)
+        (mv :failed env$ nil state))
 
        ((unless (string-listp lines))
         (cw "SATLINK: Tshell somehow didn't give us a string list.~%")
