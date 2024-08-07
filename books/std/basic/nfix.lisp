@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection std/basic/nfix
-  :parents (std/basic-extensions std/basic)
+  :parents (std/basic nfix)
   :short "Rules about @(tsee nfix)."
 
   (defthm nfix-when-natp

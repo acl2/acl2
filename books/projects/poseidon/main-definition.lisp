@@ -28,8 +28,8 @@
 (include-book "std/typed-lists/nat-listp" :dir :system)
 
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
-(local (include-book "kestrel/std/basic/ifix" :dir :system))
-(local (include-book "kestrel/std/basic/nfix" :dir :system))
+(local (include-book "std/basic/ifix" :dir :system))
+(local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))

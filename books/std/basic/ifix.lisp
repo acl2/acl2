@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection std/basic/ifix
-  :parents (std/basic-extensions std/basic)
+  :parents (std/basic ifix)
   :short "Rules about @(tsee ifix)."
 
   (defthm ifix-when-integerp

@@ -34,10 +34,13 @@
 (include-book "bytep")
 (include-book "defs")
 (include-book "fix")
+(include-book "ifix")
 (include-book "intern-in-package-of-symbol")
 (include-book "maybe-natp")
+(include-book "nfix")
 (include-book "nibblep")
 (include-book "pos-fix")
+(include-book "rfix")
 (include-book "symbol-name-lst")
 (include-book "two-nats-measure")
 
