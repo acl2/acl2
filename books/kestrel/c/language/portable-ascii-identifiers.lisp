@@ -71,7 +71,7 @@
      we say `presumably' because [C] does not seem to explicitly prohibit
      the use of non-ASCII Unicode characters in the basic source character set
      (although it seems odd to do that).
-     The  characters in (4) may or may not be
+     The characters in (4) may or may not be
      part of the basic source character set;
      [C] imposes no constraints on them.")
    (xdoc::p
@@ -87,8 +87,7 @@
      and the basic source character set consists of ASCII characters.
      Our model of "
     (xdoc::seetopic "ident" "identifiers")
-    " uses ACL2 strings, which consist of ISO 8859-1 characters,
-     which are a superset of the ASCII characters.")
+    " uses ACL2 strings, which are a superset of the ASCII characters.")
    (xdoc::p
     "Thus, in order for our identifiers to be both ASCII and portable,
      they must consist exclusively of characters from (1) and (2) above,
