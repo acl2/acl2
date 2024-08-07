@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "fix")
 (include-book "good-pseudo-termp")
 (include-book "good-pseudo-term-listp")
 (include-book "good-valuep")

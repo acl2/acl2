@@ -38,6 +38,7 @@
 (include-book "two-nats-measure")
 (include-book "intern-in-package-of-symbol")
 (include-book "symbol-name-lst")
+(include-book "fix")
 
 (defxdoc std/basic
   :parents (std)

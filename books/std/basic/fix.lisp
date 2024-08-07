@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection std/basic/fix
-  :parents (std/basic-extensions std/basic)
+  :parents (std/basic fix)
   :short "Rules about @(tsee fix)."
 
   (defthm fix-when-acl2-numberp
