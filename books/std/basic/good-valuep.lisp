@@ -17,7 +17,7 @@
 
 (define good-valuep (x)
   :returns (yes/no booleanp)
-  :parents (std/basic-extensions std/basic)
+  :parents (std/basic)
   :short "Check if a value is ``good''."
   :long
   (xdoc::topstring
