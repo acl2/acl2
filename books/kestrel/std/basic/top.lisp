@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "mbt-dollar")
 (include-book "member-symbol-name")
 (include-book "nonkeyword-listp")
 (include-book "organize-symbols-by-name")
