@@ -41,6 +41,7 @@
 (include-book "ifix")
 (include-book "intern-in-package-of-symbol")
 (include-book "maybe-natp")
+(include-book "maybe-string-fix")
 (include-book "nfix")
 (include-book "nibblep")
 (include-book "pos-fix")
