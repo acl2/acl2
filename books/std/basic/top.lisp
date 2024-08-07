@@ -40,6 +40,7 @@
 (include-book "nfix")
 (include-book "nibblep")
 (include-book "pos-fix")
+(include-book "realfix")
 (include-book "rfix")
 (include-book "symbol-name-lst")
 (include-book "two-nats-measure")

@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection std/basic/realfix
-  :parents (std/basic-extensions std/basic)
+  :parents (std/basic realfix)
   :short "Rules about @(tsee realfix)."
 
   (defthm realfix-when-real/rationalp
