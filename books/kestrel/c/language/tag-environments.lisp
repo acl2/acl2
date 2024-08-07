@@ -78,7 +78,7 @@
    (xdoc::p
     "See @(tsee tag-info) for a description and a reference
      to flexible array members.
-     If there are no member,
+     If there are no members,
      which cannot happen in well-formed structure types
      (although we do not capture this invariant in @(tsee tag-info)),
      we return @('nil')."))
