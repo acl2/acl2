@@ -46,7 +46,7 @@
   (define declor-get-ident
     ((declor declorp))
     :short "Get the identifier described by a declarator."
-    :returns (ident (or (not ident) (identp ident)))
+    :returns (ident? ident-optionp)
     (b* (((declor declor) declor))
       (dirdeclor-get-ident declor.decl))
     :measure (declor-count declor))
@@ -54,7 +54,7 @@
   (define dirdeclor-get-ident
     :short "Get the identifier described by a direct declarator."
     ((dirdeclor dirdeclorp))
-    :returns (ident (or (not ident) (identp ident)))
+    :returns (ident? ident-optionp)
     (dirdeclor-case
      dirdeclor
      :ident dirdeclor.unwrap
@@ -68,14 +68,6 @@
     :measure (dirdeclor-count dirdeclor))
 
   :hints (("Goal" :in-theory (enable o< o-finp))))
-
-(defruled identp-of-declor-get-ident-under-iff
-  (iff (identp (declor-get-ident declor))
-       (declor-get-ident declor))
-  :use return-type-of-declor-get-ident.ident
-  :disable return-type-of-declor-get-ident.ident)
-
-(local (in-theory (enable identp-of-declor-get-ident-under-iff)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
