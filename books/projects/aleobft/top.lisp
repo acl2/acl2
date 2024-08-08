@@ -54,9 +54,9 @@
      While this work is in progress,
      we may have these multiple subdirectories for different versions,
      but eventually we may converge to one version,
-     in this directory (not in subdirectories),
+     in this directory (not in any subdirectory),
      which subsumes all the previous versions.
-     The overall reason for having successively more complex versions
+     The overall reason for tackling increasingly complex versions
      of the formal specification and correctness proofs of AleoBFT
      is to better manage the inherent complexity of the protocol.")
    (xdoc::p
