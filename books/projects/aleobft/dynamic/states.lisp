@@ -13,6 +13,7 @@
 
 (include-book "addresses")
 (include-book "transactions")
+(include-book "blocks")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,4 +26,5 @@
     "We introduce fixtypes for the states, and their components,
      that the AleoBFT system may be in at any given time."))
   :order-subtopics (addresses
-                    transactions))
+                    transactions
+                    blocks))
