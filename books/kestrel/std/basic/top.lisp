@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "nonkeyword-listp")
 (include-book "organize-symbols-by-name")
 (include-book "organize-symbols-by-pkg")
 (include-book "symbol-package-name-lst")

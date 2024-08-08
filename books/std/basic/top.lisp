@@ -46,6 +46,7 @@
 (include-book "member-symbol-name")
 (include-book "nfix")
 (include-book "nibblep")
+(include-book "nonkeyword-listp")
 (include-book "pos-fix")
 (include-book "realfix")
 (include-book "rfix")
