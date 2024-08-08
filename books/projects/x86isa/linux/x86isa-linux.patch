@@ -1,4 +1,4 @@
-From 468096483e779530b43aa0e90ba652bf69eaeb3a Mon Sep 17 00:00:00 2001
+From b6b6741f864759909c7b602267a35e0d789e6b06 Mon Sep 17 00:00:00 2001
 From: Yahya Sohail <yahya.sohail@intel.com>
 Date: Wed, 31 Jul 2024 12:06:33 -0700
 Subject: [PATCH] This patch adds support for running the ACL2 x86isa model.
@@ -46,13 +46,11 @@ model.
  drivers/char/ttyx86isa.c              |  136 ++
  drivers/clocksource/Kconfig           |    3 +
  drivers/clocksource/Makefile          |    1 +
- drivers/clocksource/clockx86isa.c     |   58 +
+ drivers/clocksource/clockx86isa.c     |   62 +
  include/linux/clockx86isa.h           |   11 +
  init/calibrate.c                      |  445 ++---
- kernel/irq_work.c                     |    4 +-
  kernel/printk/printk.c                |    1 +
- kernel/time/timer.c                   |    6 +-
- 37 files changed, 3281 insertions(+), 423 deletions(-)
+ 35 files changed, 3278 insertions(+), 420 deletions(-)
  create mode 100644 .config
  create mode 100644 drivers/block/blkx86isa.c
  create mode 100644 drivers/char/ttyx86isa.c
@@ -3709,10 +3707,10 @@ index 5d93c9e3fc55..e95471512430 100644
 +obj-$(CONFIG_CLOCK_X86ISA)	+= clockx86isa.o
 diff --git a/drivers/clocksource/clockx86isa.c b/drivers/clocksource/clockx86isa.c
 new file mode 100644
-index 000000000000..82bbf985f52c
+index 000000000000..0b296d5219b9
 --- /dev/null
 +++ b/drivers/clocksource/clockx86isa.c
-@@ -0,0 +1,58 @@
+@@ -0,0 +1,62 @@
 +#include <linux/clockchips.h>
 +#include <linux/init.h>
 +#include <linux/io.h>
@@ -3730,9 +3728,10 @@ index 000000000000..82bbf985f52c
 +
 +static struct clocksource x86isa_cs = {
 +	.name = "x86isa clocksource",
-+	.rating = 1,
++	.rating = 400,
 +	.read = clocksource_x86isa_read,
 +	.mask = CLOCKSOURCE_MASK(64),
++  .flags = CLOCK_SOURCE_IS_CONTINUOUS
 +};
 +
 +int __init clocksource_x86isa_init(void)
@@ -3745,21 +3744,24 @@ index 000000000000..82bbf985f52c
 +
 +static int x86isa_clock_event_shutdown(struct clock_event_device *evt)
 +{
++	printk("Disabling clock events");
 +	writeb(0, clock_x86isa_enable_ptr);
++	printk("Clock events disabled");
 +	return 0;
 +}
 +
 +static int x86isa_clock_event_periodic(struct clock_event_device *evt)
 +{
-+	pr_debug("Enabling clock events");
++	printk("Enabling clock events");
 +	writeb(-1, clock_x86isa_enable_ptr);
-+	pr_debug("Clock events enabled");
++	printk("Clock events enabled");
 +	return 0;
 +}
 +
 +struct clock_event_device x86isa_clock_event = {
 +	.name = "x86isa clock event",
 +	.features = CLOCK_EVT_FEAT_PERIODIC,
++  .rating = 400,
 +	.set_state_shutdown = x86isa_clock_event_shutdown,
 +	.set_state_periodic = x86isa_clock_event_periodic,
 +};
@@ -3769,7 +3771,7 @@ index 000000000000..82bbf985f52c
 +	x86isa_clock_event.cpumask = cpumask_of(smp_processor_id());
 +
 +	clock_x86isa_enable_ptr = ioremap_wt(0x108, 1);
-+	clockevents_config_and_register(&x86isa_clock_event, 1, 0, 0);
++	clockevents_config_and_register(&x86isa_clock_event, 0, 0, 0);
 +}
 diff --git a/include/linux/clockx86isa.h b/include/linux/clockx86isa.h
 new file mode 100644
@@ -4258,21 +4260,6 @@ index f3831272f113..19d87ffab661 100644
  	per_cpu(cpu_loops_per_jiffy, this_cpu) = lpj;
  	if (!printed)
  		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 2f4fb336dda1..d033d9424c1d 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -242,7 +242,9 @@ static void irq_work_run_list(struct llist_head *list)
- 	 * in a per-CPU thread in preemptible context. Only the items which are
- 	 * marked as IRQ_WORK_HARD_IRQ will be processed in hardirq context.
- 	 */
--	BUG_ON(!irqs_disabled() && !IS_ENABLED(CONFIG_PREEMPT_RT));
-+  // I'm hoping this isn't important
-+  // this check is failing for some reason
-+	// BUG_ON(!irqs_disabled() && !IS_ENABLED(CONFIG_PREEMPT_RT));
- 
- 	if (llist_empty(list))
- 		return;
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
 index 357a4d18f638..abca2df532ec 100644
 --- a/kernel/printk/printk.c
@@ -4285,23 +4272,6 @@ index 357a4d18f638..abca2df532ec 100644
  
  	/* Mark and strip a trailing newline. */
  	if (text_len && text[text_len - 1] == '\n') {
-diff --git a/kernel/time/timer.c b/kernel/time/timer.c
-index 63a8ce7177dd..99d015ffc3be 100644
---- a/kernel/time/timer.c
-+++ b/kernel/time/timer.c
-@@ -2013,8 +2013,10 @@ static inline void __run_timers(struct timer_base *base)
- 		 * base::next_expiry was set to base::clk +
- 		 * NEXT_TIMER_MAX_DELTA.
- 		 */
--		WARN_ON_ONCE(!levels && !base->next_expiry_recalc
--			     && base->timers_pending);
-+    // I *think* this may be triggering because our timer isn't fast enough or
-+    // something like that. Hopefully commenting it out is fine.
-+		// WARN_ON_ONCE(!levels && !base->next_expiry_recalc
-+		// 	     && base->timers_pending);
- 		base->clk++;
- 		base->next_expiry = __next_timer_interrupt(base);
- 
 -- 
 2.26.2
 
