@@ -180,6 +180,18 @@
     "Identifiers are defined in @(tsee ident)."))
   :pred ident-optionp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset ident-option-set
+  :short "Fixtype of sets of optional identifiers."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Identifiers are defined in @(tsee ident)."))
+  :elt-type ident-option
+  :elementp-of-nil t
+  :pred ident-option-setp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum lsuffix

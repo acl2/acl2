@@ -55,8 +55,9 @@
      the next unparsed token and the tokens that follow it.
      That is, they prefetch the token, so it is ready for the next function.
      If the end of the input is reached, the next token is @('nil')
-     (and so is the list of tokens after it).")))
-
+     (and so is the list of tokens after it)."))
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -505,7 +506,7 @@
          ;; Although in general we could return the argument `current`
          ;; when we see "*" but no following primary-expression,
          ;; but since there is nothing else that could start with "*"
-         ;; we simplify and return an error if there is "*" without a 
+         ;; we simplify and return an error if there is "*" without a
          ;; following primary-expression.
          (current (abnf::make-tree-nonleaf
                    :rulename? (abnf::rulename "multiplication-expression")
@@ -624,7 +625,7 @@
          ;; Although in general we could return the argument `current`
          ;; when we see "+" but no following multiplication-expression,
          ;; but since there is nothing else that could start with "*"
-         ;; we simplify and return an error if there is "*" without a 
+         ;; we simplify and return an error if there is "*" without a
          ;; following multiplication-expression.
          (current (abnf::make-tree-nonleaf
                    :rulename? (abnf::rulename "addition-expression")

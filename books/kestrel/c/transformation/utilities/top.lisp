@@ -13,6 +13,7 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "call-graph")
 (include-book "free-vars")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

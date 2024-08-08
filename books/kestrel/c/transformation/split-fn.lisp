@@ -17,7 +17,6 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "centaur/fty/deftypes" :dir :system)
-(include-book "kestrel/std/util/defirrelevant" :dir :system)
 (include-book "kestrel/std/util/error-value-tuples" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
@@ -104,8 +103,7 @@
    (xdoc::p
      "If the parameter declaration is unnamed, or if it has not been
       disambiguated, the empty map is returned instead."))
-  :returns (map ident-paramdecl-mapp
-                :hints (("Goal" :in-theory (enable identp-of-declor-get-ident-under-iff))))
+  :returns (map ident-paramdecl-mapp)
   (b* (((paramdecl paramdecl) paramdecl))
     (paramdeclor-case
       paramdecl.decl
@@ -158,9 +156,7 @@
      ((declspecs declspec-listp)
       (initdeclors initdeclor-listp))
      :returns
-     (map ident-paramdecl-mapp
-          :hints (("Goal" :in-theory (enable identp-of-declor-get-ident-under-iff)
-                          :induct t)))
+     (map ident-paramdecl-mapp)
      (b* (((when (endp initdeclors))
            nil)
           ((initdeclor initdeclor) (first initdeclors))
