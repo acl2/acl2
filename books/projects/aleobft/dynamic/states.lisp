@@ -16,6 +16,7 @@
 (include-book "blocks")
 (include-book "certificates")
 (include-book "validator-states")
+(include-book "messages")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,4 +32,5 @@
                     transactions
                     blocks
                     certificates
-                    validator-states))
+                    validator-states
+                    messages))
