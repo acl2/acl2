@@ -15,6 +15,7 @@
 (include-book "transactions")
 (include-book "blocks")
 (include-book "certificates")
+(include-book "validator-states")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,4 +30,5 @@
   :order-subtopics (addresses
                     transactions
                     blocks
-                    certificates))
+                    certificates
+                    validator-states))
