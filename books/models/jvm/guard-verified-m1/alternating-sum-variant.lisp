@@ -206,4 +206,3 @@
 ; *pi* with (list n) as input produces a state, sf, that is halted and which
 ; contains (ceiling n 2) on top of the stack.  Note that the algorithm used by
 ; *pi* is not specified or derivable from this formula.
-

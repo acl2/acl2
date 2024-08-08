@@ -492,36 +492,35 @@ to students to see their definitions as warm-up exercises.
 (in-theory (disable all-pcs-okp))
 
 (verify-guards gsm1
-               :hints
-               (("Goal" :do-not-induct t)
-                ("Goal'"
-                 :use ((:instance subsetp-strip-cars-gsm1
-                                  (pc (+ pc (arg1 (nth pc program))))
-                                  (stackn (+ -1 stackn))
-                                  (program program)
-                                  (map (cons (cons pc stackn) map)))
-                       (:instance member-subsetp
-                                  (e pc)
-                                  (a (strip-cars (cons (cons pc stackn) map)))
-                                  (b (strip-cars (gsm1 (+ pc (arg1 (nth pc program)))
-                                                       (+ -1 stackn)
-                                                       program (cons (cons pc stackn) map)))))
-                       (:instance subsetp-trans
-                                  (a (strip-cars map))
-                                  (b (strip-cars (cons (cons pc stackn) map)))
-                                  (c (strip-cars (gsm1 (+ pc (arg1 (nth pc program)))
-                                                       (+ -1 stackn)
-                                                       program (cons (cons pc stackn) map)))))
-                       (:instance strong-set-difference-equal-subsetp
-                                  (e pc)
-                                  (little2 (strip-cars map))
-                                  (little1 (strip-cars (gsm1 (+ pc (arg1 (nth pc program)))
-                                                             (+ -1 stackn)
-                                                             program (cons (cons pc stackn) map))))
-                                  (big (nats-below (len program)))))
-                 :in-theory (disable subsetp-strip-cars-gsm1
-                                     member-subsetp
-                                     subsetp-trans))))
+  :hints
+  (("Goal" :do-not-induct t
+    :use ((:instance subsetp-strip-cars-gsm1
+                     (pc (+ pc (arg1 (nth pc program))))
+                     (stackn (+ -1 stackn))
+                     (program program)
+                     (map (cons (cons pc stackn) map)))
+          (:instance member-subsetp
+                     (e pc)
+                     (a (strip-cars (cons (cons pc stackn) map)))
+                     (b (strip-cars (gsm1 (+ pc (arg1 (nth pc program)))
+                                          (+ -1 stackn)
+                                          program (cons (cons pc stackn) map)))))
+          (:instance subsetp-trans
+                     (a (strip-cars map))
+                     (b (strip-cars (cons (cons pc stackn) map)))
+                     (c (strip-cars (gsm1 (+ pc (arg1 (nth pc program)))
+                                          (+ -1 stackn)
+                                          program (cons (cons pc stackn) map)))))
+          (:instance strong-set-difference-equal-subsetp
+                     (e pc)
+                     (little2 (strip-cars map))
+                     (little1 (strip-cars (gsm1 (+ pc (arg1 (nth pc program)))
+                                                (+ -1 stackn)
+                                                program (cons (cons pc stackn) map))))
+                     (big (nats-below (len program)))))
+    :in-theory (disable subsetp-strip-cars-gsm1
+                        member-subsetp
+                        subsetp-trans))))
 
 (defthm eqlable-listp-nats-below
   (eqlable-listp (nats-below n)))

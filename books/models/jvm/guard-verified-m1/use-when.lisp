@@ -171,5 +171,3 @@
                               (flat-annotationsp flat-apats))))
   `(add-default-hints
     '((use-when-fn ',name ',(flat-annotations-to-doublets flat-apats) ',alist clause))))
-
-

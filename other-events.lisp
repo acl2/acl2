@@ -14871,7 +14871,7 @@
            (let ((pkg-name (package-entry-name entry)))
              (when (not (member-equal
                          pkg-name ; from initial known-package-alist
-                         '("ACL2-USER" "ACL2-PC"
+                         '("ACL2-USER" "ACL2-PC" "BIB"
                            "ACL2-INPUT-CHANNEL"
                            "ACL2-OUTPUT-CHANNEL"
                            "ACL2" "COMMON-LISP" "KEYWORD")))

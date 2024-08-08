@@ -486,8 +486,8 @@ rules ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER,
 the :definitions CLK, DO-INST, EXECUTE-GOTO, EXECUTE-IADD, EXECUTE-ICONST,
 EXECUTE-IFEQ, EXECUTE-ILOAD, EXECUTE-IMUL, EXECUTE-ISTORE, NEXT-INST,
 NTH, SYNP, UPDATE-NTH and ^, the :executable-counterparts of ARG1,
-BINARY-+, CONSP, EQUAL, NTH, OP-CODE and ZP, primitive type reasoning
-and the :rewrite rules ACL2::|(* y (* x z))|, ACL2::|(+ y x)|, CAR-CONS,
+BINARY-+, EQUAL, NTH, OP-CODE and ZP, primitive type reasoning and
+the :rewrite rules ACL2::|(* y (* x z))|, ACL2::|(+ y x)|, CAR-CONS,
 CDR-CONS, M1-CLK+, M1-OPENER, NTH-ADD1!, ACL2::REMOVE-WEAK-INEQUALITIES,
 STACKS, STATES and STEP-OPENER.
 
@@ -748,11 +748,10 @@ Subgoal *1/1'
 
 But simplification reduces this to T, using the :compound-recognizer
 rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions CLK, DO-INST,
-EXECUTE-IFEQ, EXECUTE-ILOAD, NEXT-INST, NTH and ^, the :executable-
-counterparts of ARG1, BINARY-+, CONSP, EQUAL, NTH, OP-CODE and ZP,
-primitive type reasoning and the :rewrite rules ACL2::|(* 1 x)|, 
-ACL2::|(* y x)|, CAR-CONS, CDR-CONS, M1-OPENER, NTH-ADD1!, STACKS,
-STATES and STEP-OPENER.
+EXECUTE-IFEQ, EXECUTE-ILOAD, NEXT-INST, NTH, SYNP and ^, the :executable-
+counterparts of ARG1, BINARY-+, EQUAL, NTH, OP-CODE and ZP, primitive
+type reasoning and the :rewrite rules ACL2::|(* 1 x)|, ACL2::|(* y x)|,
+CAR-CONS, CDR-CONS, M1-OPENER, NTH-ADD1!, STACKS, STATES and STEP-OPENER.
 
 That completes the proof of *1.
 
@@ -782,7 +781,6 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART ARG1)
         (:EXECUTABLE-COUNTERPART BINARY-+)
-        (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART INTEGERP)
         (:EXECUTABLE-COUNTERPART NOT)
@@ -1037,8 +1035,8 @@ rules ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER,
 the :definitions CLK, DO-INST, EXECUTE-GOTO, EXECUTE-IADD, EXECUTE-ICONST,
 EXECUTE-IFEQ, EXECUTE-ILOAD, EXECUTE-IMUL, EXECUTE-ISTORE, NEXT-INST,
 NTH, SYNP, UPDATE-NTH and ^, the :executable-counterparts of ARG1,
-BINARY-+, CONSP, EQUAL, NTH, OP-CODE and ZP, primitive type reasoning
-and the :rewrite rules ACL2::|(* (* x y) z)|, ACL2::|(* y (* x z))|,
+BINARY-+, EQUAL, NTH, OP-CODE and ZP, primitive type reasoning and
+the :rewrite rules ACL2::|(* (* x y) z)|, ACL2::|(* y (* x z))|, 
 ACL2::|(+ y x)|, CAR-CONS, CDR-CONS, M1-CLK+, M1-OPENER, NTH-ADD1!,
 ACL2::REMOVE-WEAK-INEQUALITIES, STACKS, STATES and STEP-OPENER.
 
@@ -1113,11 +1111,10 @@ Subgoal *1/1''
 
 But simplification reduces this to T, using the :compound-recognizer
 rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions CLK, DO-INST,
-EXECUTE-IFEQ, EXECUTE-ILOAD, NEXT-INST, NTH and ^, the :executable-
-counterparts of ARG1, BINARY-+, CONSP, EQUAL, NTH, OP-CODE and ZP,
-primitive type reasoning and the :rewrite rules ACL2::|(* 1 x)|, 
-ACL2::|(* y x)|, CAR-CONS, CDR-CONS, M1-OPENER, NTH-ADD1!, STACKS,
-STATES and STEP-OPENER.
+EXECUTE-IFEQ, EXECUTE-ILOAD, NEXT-INST, NTH, SYNP and ^, the :executable-
+counterparts of ARG1, BINARY-+, EQUAL, NTH, OP-CODE and ZP, primitive
+type reasoning and the :rewrite rules ACL2::|(* 1 x)|, ACL2::|(* y x)|,
+CAR-CONS, CDR-CONS, M1-OPENER, NTH-ADD1!, STACKS, STATES and STEP-OPENER.
 
 That completes the proof of *1.
 
@@ -1150,7 +1147,6 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART ARG1)
         (:EXECUTABLE-COUNTERPART BINARY-+)
-        (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART INTEGERP)
         (:EXECUTABLE-COUNTERPART NOT)
@@ -1226,9 +1222,9 @@ Goal'
 
 This simplifies, using the :compound-recognizer rule 
 ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST (if-intro),
-EXECUTE-IFEQ (if-intro), EXECUTE-ILOAD, NEXT-INST and NTH, the :executable-
-counterparts of <, ARG1, BINARY-+, CONSP, EQUAL, INTEGERP, NOT, NTH,
-OP-CODE and ZP and the :rewrite rules CAR-CONS, CDR-CONS, M1-OPENER,
+EXECUTE-IFEQ (if-intro), EXECUTE-ILOAD, NEXT-INST, NTH and SYNP, the
+:executable-counterparts of <, ARG1, BINARY-+, EQUAL, INTEGERP, NOT,
+NTH, OP-CODE and ZP and the :rewrite rules CAR-CONS, CDR-CONS, M1-OPENER,
 NTH-ADD1!, STACKS, STATES and STEP-OPENER, to the following two conjectures.
 
 Subgoal 2
@@ -1260,9 +1256,9 @@ Subgoal 2
 
 This simplifies, using the :compound-recognizer rule 
 ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, EXECUTE-ILOAD,
-NEXT-INST and NTH, the :executable-counterparts of ARG1, BINARY-+,
-CONSP, EQUAL, NTH, OP-CODE and ZP and the :rewrite rules CAR-CONS,
-CDR-CONS, NTH-ADD1!, STATES and STEP-OPENER, to
+NEXT-INST, NTH and SYNP, the :executable-counterparts of ARG1, BINARY-+,
+EQUAL, NTH, OP-CODE and ZP and the :rewrite rules CAR-CONS, CDR-CONS,
+NTH-ADD1!, STATES and STEP-OPENER, to
 
 Subgoal 2'
 (IMPLIES (AND (INTEGERP I)
@@ -1320,8 +1316,8 @@ Subgoal 1
 This simplifies, using the :compound-recognizer rule 
 ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST, EXECUTE-GOTO,
 EXECUTE-IADD, EXECUTE-ICONST, EXECUTE-ILOAD, EXECUTE-IMUL, EXECUTE-ISTORE,
-NEXT-INST, NTH and UPDATE-NTH, the :executable-counterparts of ARG1,
-BINARY-+, CONSP, EQUAL, NTH, OP-CODE and ZP and the :rewrite rules
+NEXT-INST, NTH, SYNP and UPDATE-NTH, the :executable-counterparts of
+ARG1, BINARY-+, EQUAL, NTH, OP-CODE and ZP and the :rewrite rules 
 ACL2::|(+ y x)|, CAR-CONS, CDR-CONS, NTH-ADD1!, STACKS, STATES and
 STEP-OPENER, to
 
@@ -1374,11 +1370,11 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION NATP)
         (:DEFINITION NEXT-INST)
         (:DEFINITION NTH)
+        (:DEFINITION SYNP)
         (:DEFINITION UPDATE-NTH)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART ARG1)
         (:EXECUTABLE-COUNTERPART BINARY-+)
-        (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART INTEGERP)
         (:EXECUTABLE-COUNTERPART NOT)

@@ -210,7 +210,8 @@ but I want to students to see their definitions as warm-up exercises.
 ; Step Stuff
 
 (defthm step-opener
-  (implies (consp (next-inst s))
+  (implies (and (equal ins (next-inst s))
+                (syntaxp (quotep ins)))
            (equal (step s)
                   (do-inst (next-inst s) s))))
 
@@ -269,4 +270,3 @@ but I want to students to see their definitions as warm-up exercises.
 (defthm update-nth-update-nth-2
   (equal (update-nth i v (update-nth i w list))
          (update-nth i v list)))
-
