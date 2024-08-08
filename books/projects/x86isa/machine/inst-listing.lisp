@@ -9299,7 +9299,7 @@
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "BTR" (OP :OP #xFB3)
           (ARG :OP1 '(E V) :OP2 '(G V))
-          '(X86-BT-0F-B3)
+          '(X86-BTR-0F-B3)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "LFS" (OP :OP #xFB4)
           (ARG :OP1 '(G V) :OP2 '(M P))
