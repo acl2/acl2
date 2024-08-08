@@ -20,11 +20,11 @@
 
 (include-book "centaur/depgraph/invert" :dir :system)
 (include-book "centaur/depgraph/transdeps" :dir :system)
-(include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/tail-recursive-p" :dir :system)
 (include-book "std/basic/organize-symbols-by-pkg" :dir :system)
+(include-book "std/basic/symbol-package-name-lst" :dir :system)
 (include-book "std/typed-alists/symbol-symbollist-alistp" :dir :system)
 
 (local (include-book "std/basic/symbol-name-lst" :dir :system))

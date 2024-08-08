@@ -10,8 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "symbol-package-name-lst")
-(include-book "symbol-package-name-non-cl")
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

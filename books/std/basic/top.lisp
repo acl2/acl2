@@ -53,6 +53,8 @@
 (include-book "realfix")
 (include-book "rfix")
 (include-book "symbol-name-lst")
+(include-book "symbol-package-name-lst")
+(include-book "symbol-package-name-non-cl")
 (include-book "two-nats-measure")
 
 (defxdoc std/basic

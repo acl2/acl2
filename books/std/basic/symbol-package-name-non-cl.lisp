@@ -1,13 +1,13 @@
 ; Standard Basic Library
 ;
 ; Copyright (C) 2017 Regents of the University of Texas
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors:
 ;   Matt Kaufmann (kaufmann@cs.utexas.edu)
-;   Alessandro Coglio (coglio@kestrel.edu)
+;   Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,7 +21,7 @@
 (define symbol-package-name-non-cl ((sym symbolp))
   :returns (pkg stringp)
   :enabled t
-  :parents (std/basic-extensions std/basic)
+  :parents (std/basic)
   :short "The @(tsee symbol-package-name) of a symbol,
           but not @('\"COMMON-LISP\"')."
   :long
