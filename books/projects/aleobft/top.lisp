@@ -44,15 +44,18 @@
      of a version of AleoBFT with static committees and without stake,
      which is therefore similar to Bullshark,
      but with some differences unique to AleoBFT.
-     We plan to add other subdirectories, parallel to @('static'),
+     We have also started another directory @('dynamic'),
+     for a version of AleoBFT with dynamic committees.
+     We plan to add other subdirectories,
+     parallel to @('static') and @('dynamic'),
      for versions of the formal specification and correctness proofs
      that cover additional aspects of AleoBFT,
-     most prominently dynamic committees and stake.
+     such as stake and syncing.
      While this work is in progress,
-     we may have subdirectories for different versions,
+     we may have these multiple subdirectories for different versions,
      but eventually we may converge to one version,
      in this directory (not in subdirectories),
-     which subsumed all the previous versions.
+     which subsumes all the previous versions.
      The overall reason for having successively more complex versions
      of the formal specification and correctness proofs of AleoBFT
      is to better manage the inherent complexity of the protocol.")
