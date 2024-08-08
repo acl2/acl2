@@ -231,7 +231,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented Syntax"))
+   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
 
    (xdoc::p
     "A new sub-library has been added,
@@ -279,6 +279,15 @@
      for each generated C construct.
      This new approach will co-exist with the current one,
      until the former will replace the latter.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5
+    (xdoc::seetopic "c2c::transformation-tools" "C Transformation Tools"))
+
+   (xdoc::p
+    "A new sub-library has been added,
+     which contains tools to perform C-to-C transformations.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

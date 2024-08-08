@@ -5,7 +5,6 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Eric McCarthy (bendyarm on GitHub)
-;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,8 +12,20 @@
 
 (include-book "kestrel/abnf/parsing-tools/defdefparse" :dir :system)
 
-;; Note, the contents here should eventually be combined with the
-;; ABNF community books in the ABNF package.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ abnf-extensions
+  :parents (concrete-syntax)
+  :short "Some ABNF library extensions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are temporarily here,
+     but they should be eventually moved to the "
+    (xdoc::seetopic "abnf::abnf" "ABNF library")
+    "."))
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
