@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection std/basic/if*
-  :parents (std/basic-extensions std/basic)
+  :parents (std/basic if*)
   :short "Rules about @(tsee if*)."
   :long
   (xdoc::topstring

@@ -14,13 +14,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection std/basic/fix
-  :parents (std/basic-extensions std/basic)
-  :short "Rules about @(tsee fix)."
+(defsection std/basic/rfix
+  :parents (std/basic rfix)
+  :short "Rules about @(tsee rfix)."
 
-  (defthm fix-when-acl2-numberp
-    (implies (acl2-numberp x)
-             (equal (fix x) x)))
+  (defthm rfix-when-rationalp
+    (implies (rationalp x)
+             (equal (rfix x) x)))
 
-  (defthmd acl2-numberp-of-fix
-    (acl2-numberp (fix x))))
+  (defthmd rationalp-of-rfix
+    (rationalp (rfix x))))

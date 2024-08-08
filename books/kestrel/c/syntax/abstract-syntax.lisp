@@ -1868,7 +1868,12 @@
        This fixtype is similar to @(tsee declor)
        (see that fixtype's documentation in particular
        for an explanation of the modeling of the <i>pointer</i> part),
-       but the abstract direct declarator is optional."))
+       but the abstract direct declarator is optional.")
+     (xdoc::p
+      "To match the grammar, we cannot have
+       both an empty list of pointers
+       and an absent direct abstract declarator.
+       This constraint is currently not enforced in this fixtype."))
     ((pointers type-qual-list-list)
      (decl? dirabsdeclor-option))
     :pred absdeclorp

@@ -14,13 +14,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection std/basic/nfix
-  :parents (std/basic-extensions std/basic)
-  :short "Rules about @(tsee nfix)."
+(defsection mbt$
+  :parents (std/basic mbt)
+  :short "Variant of @(tsee mbt) that allows any non-@('nil') value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "While @(tsee mbt)'s guard obligation requires
+     the argument to be @(tsee equal) to @('t'),
+     this variant only requires it to be @(tsee iff)-equivalent to @('t'),
+     i.e. non-@('nil').")
+   (xdoc::@def "mbt$"))
 
-  (defthm nfix-when-natp
-    (implies (natp x)
-             (equal (nfix x) x)))
-
-  (defthmd natp-of-nfix
-    (natp (nfix x))))
+  (defmacro mbt$ (x)
+    `(mbt (if ,x t nil))))

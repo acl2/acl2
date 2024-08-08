@@ -14,13 +14,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection std/basic/realfix
-  :parents (std/basic-extensions std/basic)
-  :short "Rules about @(tsee realfix)."
+(defsection std/basic/nfix
+  :parents (std/basic nfix)
+  :short "Rules about @(tsee nfix)."
 
-  (defthm realfix-when-real/rationalp
-    (implies (real/rationalp x)
-             (equal (realfix x) x)))
+  (defthm nfix-when-natp
+    (implies (natp x)
+             (equal (nfix x) x)))
 
-  (defthmd real/rationalp-of-realfix
-    (real/rationalp (realfix x))))
+  (defthmd natp-of-nfix
+    (natp (nfix x))))
