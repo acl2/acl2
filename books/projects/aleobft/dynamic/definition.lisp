@@ -11,8 +11,7 @@
 
 (in-package "ALEO")
 
-(include-book "xdoc/constructors" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "states")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,4 +28,5 @@
      the possible initial states,
      and the possible transitions by which
      an event takes a state to a new state
-     (the events `label' the transitions between states).")))
+     (the events `label' the transitions between states)."))
+  :order-subtopics (states))
