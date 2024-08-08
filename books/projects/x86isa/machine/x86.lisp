@@ -1034,6 +1034,7 @@
        (last-clock-event (last-clock-event x86))
        (x86 (if (and (> last-clock-event 100000)
                      (equal (rflagsBits->intf (rflags x86)) 1)
+                     (not (inhibit-interrupts-one-instruction x86))
                      (not (equal (memi #x108 x86) 0))
                      (not (fault x86)))
               (b* ((x86 (!last-clock-event 0 x86))
@@ -1150,7 +1151,7 @@
        ((when (or (ms x86) (fault x86))) x86)
        (app-view? (app-view x86))
 
-       (set-interrupt? (set-interrupt-flag-next x86))
+       (inhibit-interrupts-one-instruction? (inhibit-interrupts-one-instruction x86))
        (x86 (b* ((ctx 'x86-fetch-decode-execute)
 
                  (proc-mode (x86-operation-mode x86))
@@ -1366,10 +1367,9 @@
               (handle-faults x86)
               x86))
 
-       ((when set-interrupt?) (!rflags (!rflagsBits->intf
-                                         1
-                                         (rflags x86))
-                                       x86)))
+       (x86 (if inhibit-interrupts-one-instruction?
+              (!inhibit-interrupts-one-instruction nil x86)
+              x86)))
       x86)
 
 

@@ -1060,11 +1060,8 @@
                           (not (cw "              op0: ~s0 ] ~%"
                                    (str::hexify (unquote opcode/vex/evex-byte)))))))
           (equal (x86-fetch-decode-execute x86)
-                 (if (set-interrupt-flag-next x86)
-                   (!rflags (!rflagsBits->intf
-                              1
-                              (rflags x86-executed))
-                            x86-executed)
+                 (if (inhibit-interrupts-one-instruction x86)
+                   (!inhibit-interrupts-one-instruction nil x86-executed)
                    x86-executed)))
         :hints
         (("Goal"

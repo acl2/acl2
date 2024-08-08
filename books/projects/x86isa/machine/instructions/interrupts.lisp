@@ -26,13 +26,12 @@
 
   :body
 
-  ;; STI sets the interrupt flag on the next instruction.
-  ;; Therefore, we don't set the interrupt flag in this instruction body.
-  ;; Instead, we set this field on the processor state which is used to
-  ;; in fetch-execute-decode to set the flag on the next cycle.
-  ;; See the reference for the STI instruction in Volume 2B 4.3 in the
-  ;; Intel manuals.
-  (b* ((x86 (!set-interrupt-flag-next t x86)))
+  (b* ((x86 (!rflags (!rflagsBits->intf 1 (rflags x86)) x86))
+       ;; STI doesn't allow interrupts to occur between it and the next
+       ;; instruction, so we set the inhibit-interrupts-one-instruction flag
+       ;; See the reference for the STI instruction in Volume 2B 4.3 in the
+       ;; Intel manuals.
+       (x86 (!inhibit-interrupts-one-instruction t x86)))
       (write-*ip proc-mode temp-rip x86)))
 
 (local

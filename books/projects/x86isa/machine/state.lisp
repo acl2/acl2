@@ -559,12 +559,17 @@
     ;;        :updater !mem)
     (:doc "</li>")
 
-    (:doc "<li>@('Set Interrupt Flag Next'): The Intel manual states that the STI instruction sets the interrupt
-           flag after the next instruction is executed. To allow for this behavior, we set this field when the STI instruction is
-           executed. Consult the documentation for STI in Volume 2B 4.3 in the Intel manual.<br/>")
-    (set-interrupt-flag-next   :type (satisfies booleanp)
-                               :initially nil
-                               :fix (acl2::bool-fix x))
+    (:doc "<li>@('Inhibit Interrupts One Instruction'): The Intel manual states
+          that some instructions, like the STI instruction, inhibit interrupts
+          for one instruction after execution, despite the interrupt flag being
+          set immediately. This flag is used to implement that. It is t when
+          interrupts should not be allows and is cleared after executing an
+          instruction if it was set at the beginning of the instruction.
+          Consult the documentation for STI in Volume 2B 4.3 in the Intel
+          manual.<br/>")
+    (inhibit-interrupts-one-instruction   :type (satisfies booleanp)
+                                          :initially nil
+                                          :fix (acl2::bool-fix x))
     (:doc "</li>")
 
     (:doc "<li>@('Time Stamp Counter'): This keeps track of how many instructions have been executed for the RDTSC instruction.<br/>")

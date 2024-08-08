@@ -57,9 +57,7 @@
   (and
    ;; The x86 state is well-formed.
    (x86p x86)
-   ;; We will not set the interrupt flag after
-   ;; executing the next instruction
-   (not (set-interrupt-flag-next x86))
+   (not (inhibit-interrupts-one-instruction x86))
    ;; The model is operating in 64-bit mode.
    (64-bit-modep x86)
    ;; The model is operating in the system-level non-marking view.

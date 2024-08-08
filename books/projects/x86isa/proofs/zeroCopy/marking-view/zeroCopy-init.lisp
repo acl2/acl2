@@ -665,9 +665,7 @@
 (defun-nx x86-state-okp (x86)
   (and
    (x86p x86)
-   ;; We will not set the interrupt flag after
-   ;; executing the next instruction
-   (not (set-interrupt-flag-next x86))
+   (not (inhibit-interrupts-one-instruction x86))
    (equal (xr :ms nil x86) nil)
    (equal (xr :fault nil x86) nil)
    (64-bit-modep x86)
