@@ -1,18 +1,18 @@
 ; Standard Basic Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
+(include-book "std/typed-alists/string-symbollist-alistp" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
-(include-book "std/typed-alists/string-symbollist-alistp" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -20,7 +20,7 @@
 
 (define organize-symbols-by-pkg ((syms symbol-listp))
   :returns (syms-by-pkg string-symbollist-alistp :hyp :guard)
-  :parents (std/basic-extensions std/basic)
+  :parents (std/basic)
   :short "Organize a list of symbols by their packages."
   :long
   (xdoc::topstring

@@ -47,6 +47,8 @@
 (include-book "nfix")
 (include-book "nibblep")
 (include-book "nonkeyword-listp")
+(include-book "organize-symbols-by-name")
+(include-book "organize-symbols-by-pkg")
 (include-book "pos-fix")
 (include-book "realfix")
 (include-book "rfix")

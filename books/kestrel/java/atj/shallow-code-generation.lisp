@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,11 +20,11 @@
 
 (include-book "centaur/depgraph/invert" :dir :system)
 (include-book "centaur/depgraph/transdeps" :dir :system)
-(include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/tail-recursive-p" :dir :system)
+(include-book "std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "std/typed-alists/symbol-symbollist-alistp" :dir :system)
 
 (local (include-book "std/basic/symbol-name-lst" :dir :system))
