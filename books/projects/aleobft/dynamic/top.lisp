@@ -11,8 +11,7 @@
 
 (in-package "ALEO")
 
-(include-book "xdoc/constructors" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "definition")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,4 +36,5 @@
      It also does not capture stake, but only numbers of validators
      (i.e. every validator has the same stake).")
    (xdoc::p
-    "This is work in progress.")))
+    "This is work in progress."))
+  :order-subtopics (definition))
