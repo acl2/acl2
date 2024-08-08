@@ -172,7 +172,7 @@
       but for now we model it explicitly,
       because that is closer to the implementation.")
     (xdoc::li
-     "The state of the timeer; see @(tsee timer)."))
+     "The state of the timer; see @(tsee timer)."))
    (xdoc::p
     "The address of the validator, which never changes,
      is captured outside this fixtype,
