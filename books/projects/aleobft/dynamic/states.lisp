@@ -12,6 +12,7 @@
 (in-package "ALEO")
 
 (include-book "addresses")
+(include-book "transactions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,4 +24,5 @@
    (xdoc::p
     "We introduce fixtypes for the states, and their components,
      that the AleoBFT system may be in at any given time."))
-  :order-subtopics (addresses))
+  :order-subtopics (addresses
+                    transactions))
