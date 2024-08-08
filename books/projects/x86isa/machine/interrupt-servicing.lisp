@@ -47,15 +47,25 @@
 
 (define setup-interrupt-handler1 ((int-vec :type (unsigned-byte 8))
                                   x86)
+  :guard-hints (("Goal" :in-theory (enable !rflagsBits->tf !rflagsBits->rf !rflagsBits->intf)))
   :returns (mv (flg booleanp)
                (x86 x86p :hyp (x86p x86)))
+  ;; I initially did this guard proof when I was still early in learning the
+  ;; ACL2 prover. I used arithmetic-5. I hindsight, bitops probably would be
+  ;; better and make this clearner.
   :prepwork
-  ((local (defthm unsigned-byte-p-64-of-xr-rflags
+  ((local (defthm rflags-stuff
+                  (and (not (negp (xr :rflags i x86)))
+                       (unsigned-byte-p 64 (xr :rflags i x86)))
+                  :hints (("Goal" :use (:instance elem-p-of-xr-rflags (x86$a x86))
+                           :in-theory (disable elem-p-of-xr-rflags)))))
+   (local (defthm unsigned-byte-p-64-of-xr-rflags
                   (unsigned-byte-p 64 (xr :rflags i x86))
                   :hints (("Goal" :use (:instance elem-p-of-xr-rflags (i i) (x86$a x86)) :in-theory (disable elem-p-of-xr-rflags)))))
    (local (defthm integerp-ssr-hidden-base
                   (integerp (xr :ssr-hidden-base i x86))
                   :hints (("Goal" :use (:instance elem-p-of-xr-ssr-hidden-base (i i) (x86$a x86)))))))
+
   (b* ((proc-mode (x86-operation-mode x86))
        ;; Only 64-bit mode is supported for now
        ((unless (equal proc-mode #.*64-bit-mode*)) (mv t x86))
@@ -116,13 +126,20 @@
                               (8 old-cs)
                               (8 (n64 old-rip))) x86))
 
+       (new-rflags (!rflagsBits->tf 0 (!rflagsBits->rf 0 (rflags x86))))
+       ;; If this is an interrupt gate (as opposed to a trap gate), we need to
+       ;; additionally clear the interrupt flag
+       (new-rflags (if (equal (interrupt/trap-gate-descriptorBits->type idt-gate-descriptor) #b1110)
+                     (!rflagsBits->intf 0 (rflags x86))
+                     new-rflags))
+       (x86 (!rflags new-rflags x86))
+
        ;; Jump to the appropriate code
        (offset (i64 (logapp 32
                             (logapp 16
                                     (interrupt/trap-gate-descriptorBits->offset15-0 idt-gate-descriptor)
                                     (interrupt/trap-gate-descriptorBits->offset31-16 idt-gate-descriptor))
                             (interrupt/trap-gate-descriptorBits->offset63-32 idt-gate-descriptor))))
-       ;; TODO what to do if the offset is not canonical?
        ((unless (canonical-address-p offset)) (mv t x86))
        (x86 (write-*ip proc-mode offset x86)))
       (mv nil x86)))
