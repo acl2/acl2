@@ -1,12 +1,12 @@
 ; System Utilities -- Term Utilities
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2018 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors:
-;   Alessandro Coglio (coglio@kestrel.edu)
+;   Alessandro Coglio (www.alessandrocoglio.info)
 ;   Eric Smith (eric.smith@kestrel.edu)
 ;   Matt Kaufmann (kaufmann@cs.utexas.edu)
 
@@ -23,7 +23,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/all-lambdas" :dir :system)
 (include-book "kestrel/std/system/all-non-gv-exec-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/all-non-gv-ffn-symbs" :dir :system)
@@ -48,6 +47,7 @@
 (include-book "kestrel/std/system/lambda-logic-fnsp" :dir :system)
 (include-book "kestrel/std/system/term-function-recognizers" :dir :system)
 (include-book "kestrel/std/system/term-guard-obligation" :dir :system)
+(include-book "std/basic/symbol-package-name-lst" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/util/defines" :dir :system)
 (include-book "world-queries")
