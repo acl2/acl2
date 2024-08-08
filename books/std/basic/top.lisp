@@ -43,6 +43,7 @@
 (include-book "maybe-natp")
 (include-book "maybe-string-fix")
 (include-book "mbt-dollar")
+(include-book "member-symbol-name")
 (include-book "nfix")
 (include-book "nibblep")
 (include-book "pos-fix")
