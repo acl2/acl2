@@ -14,6 +14,7 @@
 (include-book "addresses")
 (include-book "transactions")
 (include-book "blocks")
+(include-book "certificates")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,4 +28,5 @@
      that the AleoBFT system may be in at any given time."))
   :order-subtopics (addresses
                     transactions
-                    blocks))
+                    blocks
+                    certificates))
