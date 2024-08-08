@@ -29,21 +29,29 @@
                                  :connect :active
                                  :remote-host "localhost"
                                  :remote-port 4425))
-         (response (make-array (* 17 8) :element-type '(unsigned-byte 8))))
+         (response (make-array (* 18 8) :element-type '(unsigned-byte 8))))
     (read-sequence response sock)
     (close sock)
     (b* ((real-rip (get-nth-uint64 response 16))
-	 (- (format t "real-rip: ~X~&" real-rip))
+         (real-rflags (get-nth-uint64 response 17))
+         (- (format t "real-rip: ~X~&" real-rip))
+         (- (format t "real-rflags: ~X~&" real-rflags))
          ((mv success? x86) (run-until-rip-or-n real-rip 30 x86))
          (- (loop for i from 0 to 15
                   do (format t "~X " (n64 (rgfi i x86)))))
          ((when (not success?)) (mv nil x86))
          (- (format t "~&"))
+         (- (format t "rflags ~X~&" (rflags x86)))
          (- (format t "rip: ~X~&" (rip x86)))
-	 (- (format t "diffs: "))
-	 (- (loop for i from 0 to 15
+         (- (format t "diffs: "))
+         (- (loop for i from 0 to 15
                   do (format t "~X " (- (get-nth-uint64 response i) (n64 (rgfi i x86))))))
-	 (- (format t "~&")))
-        (mv (loop for i from 0 to 15
-                  always (= (get-nth-uint64 response i) (n64 (rgfi i x86))))
+         (- (format t "~&")))
+        (mv (and (loop for i from 0 to 15
+                       always (= (get-nth-uint64 response i) (n64 (rgfi i x86))))
+                 ;; Doesn't make sense to compare all bits of rflags since many
+                 ;; may be undefined, but we do want to compare intf, since
+                 ;; that one is always defined
+                 (equal (rflagsBits->intf (rflags x86))
+                        (rflagsBits->intf real-rflags)))
             x86))))

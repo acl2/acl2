@@ -303,8 +303,7 @@ void vm_load_model_state(vm *v, x86_model_state *state) {
 
   v->guest_mem = state->mem;
 
-  vm_link_mem(v, 0, 0x1000, (void *)((uintptr_t)v->guest_mem + 0x1000),
-              (4UL << 30) - 0x1000);
+  vm_link_mem(v, 0, 0, (void *)((uintptr_t)v->guest_mem), (4UL << 30));
 }
 
 static uint64_t translate_addr(vcpu *vc, uint64_t linear_address) {
@@ -368,6 +367,11 @@ uint64_t vm_run(vm *v) {
     fprintf(stderr, "%.*s", (uint16_t)regs.r13,
             (char *)((uintptr_t)v->guest_mem + rbx_phys));
     regs.rip += 2;
+  } else if (v->vcpu.run->exit_reason == KVM_EXIT_MMIO) {
+    printf("%lx <-> %lx\n", v->vcpu.run->mmio.data, v->vcpu.run->mmio.phys_addr);
+  } else if (v->vcpu.run->exit_reason == KVM_EXIT_HLT) {
+    printf("HLTed\n");
+    regs.rip += 1;
   } else {
     struct kvm_regs regs;
     ioctl(v->vcpu.fd, KVM_GET_REGS, &regs);
@@ -428,7 +432,7 @@ void vm_run_single(vm *v) {
 //   } while (old_regs.rip == new_regs.rip || in_hole(new_regs.rip));
 // }
 
-uint64_t get_gprs(vm *v, gprs_file *gprs) {
+uint64_t get_gprs(vm *v, gprs_file *gprs, uint64_t *rflags) {
   struct kvm_regs regs;
   ioctl(v->vcpu.fd, KVM_GET_REGS, &regs);
 
@@ -448,6 +452,7 @@ uint64_t get_gprs(vm *v, gprs_file *gprs) {
   gprs->r13 = regs.r13;
   gprs->r14 = regs.r14;
   gprs->r15 = regs.r15;
+  *rflags = regs.rflags;
   return regs.rip;
 }
 
@@ -498,22 +503,25 @@ int main(int argc, char **argv) {
 
     vm_run_single(v);
     gprs_file real_gprs;
-    uint64_t rip = get_gprs(v, &real_gprs);
+    uint64_t real_rflags;
+    uint64_t rip = get_gprs(v, &real_gprs, &real_rflags);
     printf("\nGot real registers\n");
     for (size_t i = 0; i < 16; i++) {
       printf("%lx ", *(uint64_t *)((uintptr_t)&real_gprs + i * 8));
     }
     printf("\nGot RIP: %lx\n", rip);
+    printf("\nGot rflags: %lx\n", real_rflags);
 
     send(consock_fd, &real_gprs, sizeof(real_gprs), 0);
     send(consock_fd, &rip, sizeof(rip), 0);
-    printf("Sent real gprs and rip\n");
+    send(consock_fd, &real_rflags, sizeof(real_rflags), 0);
+    printf("Sent real gprs, rip, and rflags\n");
     close(consock_fd);
   }
 
   close(sock_fd);
 #else
-  vm_run_single(v);
+  vm_run(v);
 #endif
 
   vm_cleanup(v);
