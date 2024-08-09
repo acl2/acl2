@@ -1,6 +1,0 @@
-(cw "env->segs[~x0].selector = ~x1;~%env->segs[~x0].base = ~x1;~%env->segs[~x0].limit = ~x2;~%env->segs[~x0].flags = ~x3;~%" 0 (seg-visiblei 0 x86) (seg-hidden-basei 0 x86) (seg-hidden-attri 0 x86))
-(cw "env->segs[~x0].selector = ~x1;~%env->segs[~x0].base = ~x1;~%env->segs[~x0].limit = ~x2;~%env->segs[~x0].flags = ~x3;~%" 1 (seg-visiblei 1 x86) (seg-hidden-basei 1 x86) (seg-hidden-attri 1 x86))
-(cw "env->segs[~x0].selector = ~x1;~%env->segs[~x0].base = ~x1;~%env->segs[~x0].limit = ~x2;~%env->segs[~x0].flags = ~x3;~%" 2 (seg-visiblei 2 x86) (seg-hidden-basei 2 x86) (seg-hidden-attri 2 x86))
-(cw "env->segs[~x0].selector = ~x1;~%env->segs[~x0].base = ~x1;~%env->segs[~x0].limit = ~x2;~%env->segs[~x0].flags = ~x3;~%" 3 (seg-visiblei 3 x86) (seg-hidden-basei 3 x86) (seg-hidden-attri 3 x86))
-(cw "env->segs[~x0].selector = ~x1;~%env->segs[~x0].base = ~x1;~%env->segs[~x0].limit = ~x2;~%env->segs[~x0].flags = ~x3;~%" 4 (seg-visiblei 4 x86) (seg-hidden-basei 4 x86) (seg-hidden-attri 4 x86))
-(cw "env->segs[~x0].selector = ~x1;~%env->segs[~x0].base = ~x1;~%env->segs[~x0].limit = ~x2;~%env->segs[~x0].flags = ~x3;~%" 5 (seg-visiblei 5 x86) (seg-hidden-basei 5 x86) (seg-hidden-attri 5 x86))

@@ -1,9 +1,0 @@
-#!/bin/sh
-
-# Saved August 3, 2023  21:16:39
-#  then August 22, 2023  12:06:46
-
-absdir=`perl -e 'use Cwd "abs_path";print abs_path(shift)' $0`
-THISSCRIPTDIR="$( cd "$( dirname "$absdir" )" && pwd -P )"
-export CCL_DEFAULT_DIRECTORY="/home/captaincyber/ccl/"
-exec "/home/captaincyber/ccl/lx86cl64" -I "$THISSCRIPTDIR/linux-acl2.lx86cl64" -K ISO-8859-1 -e "(acl2::acl2-default-restart)" "$@"
