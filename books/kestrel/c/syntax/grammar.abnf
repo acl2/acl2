@@ -959,13 +959,14 @@ asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
 ; not to provide a formalization of GCC extensions.
 
 ; As a GCC extension, we allow one or more attribute specifiers
-; to occur just before the ending semicolon of a declaration.
+; to occur just before the ending semicolon of
+; a declaration and a structure declaration.
 ; The grammar rule allows the absence of such attribute specifiers,
 ; for the case in which there happen to be none,
 ; and also for the standard language without GCC extensions.
-; This is not the only place where attribute specifiers may occur,
+; These are not the only places where attribute specifiers may occur,
 ; in the full GCC extensions,
-; but it is one of the places that have been observed;
+; but it is two of the places that have been observed;
 ; it is also possible that not all kinds of declarations actually allow that.
 ; However, our purpose in supporting the GCC extensions, for now,
 ; is not to completely characterize the legal ones,
@@ -1032,6 +1033,7 @@ struct-declaration-list = struct-declaration
 struct-declaration = [ %s"__extension__" ]
                      specifier-qualifier-list
                      [ struct-declarator-list ]
+                     *attribute-specifier
                      ";"
                    / static-assert-declaration
 

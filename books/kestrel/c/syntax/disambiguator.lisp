@@ -1806,7 +1806,8 @@
              (dimb-structdeclor-list structdecl.declor table)))
          (retok (make-structdecl-member :extension structdecl.extension
                                         :specqual new-specqual
-                                        :declor new-declor)
+                                        :declor new-declor
+                                        :attrib structdecl.attrib)
                 table))
        :statassert
        (b* (((erp new-statassert table)

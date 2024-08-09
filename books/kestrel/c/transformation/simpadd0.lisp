@@ -560,7 +560,8 @@
      :member (make-structdecl-member
               :extension structdecl.extension
               :specqual (simpadd0-specqual-list structdecl.specqual)
-              :declor (simpadd0-structdeclor-list structdecl.declor))
+              :declor (simpadd0-structdeclor-list structdecl.declor)
+              :attrib structdecl.attrib)
      :statassert (structdecl-statassert
                   (simpadd0-statassert structdecl.unwrap)))
     :measure (structdecl-count structdecl))

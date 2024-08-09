@@ -1286,7 +1286,8 @@
       :member (make-structdecl-member
                 :extension structdecl.extension
                 :specqual (,(cdr (assoc-eq 'specqual-list names)) structdecl.specqual ,@extra-args-names)
-                :declor (,(cdr (assoc-eq 'structdeclor-list names)) structdecl.declor ,@extra-args-names))
+                :declor (,(cdr (assoc-eq 'structdeclor-list names)) structdecl.declor ,@extra-args-names)
+                :attrib structdecl.attrib)
       :statassert (structdecl-statassert
                     (,(cdr (assoc-eq 'statassert names)) structdecl.unwrap ,@extra-args-names)))
    '(:returns (new-structdecl structdeclp)
