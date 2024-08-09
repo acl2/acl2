@@ -1570,7 +1570,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum specqual
+  (fty::deftagsum spec/qual
     :parents (abstract-syntax exprs/decls)
     :short "Fixtype of type specifiers and type qualifiers
             [C:6.7.2.1] [C:A.2.2]."
@@ -1580,29 +1580,29 @@
       "This does not correspond directly
        to any nonterminal in the grammar in [C],
        but it is useful to define <i>specifier-qualifier-list</i>:
-       see @(tsee specqual-list)."))
+       see @(tsee spec/qual-list)."))
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:alignspec ((unwrap alignspec)))
-    :pred specqualp
+    :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist specqual-list
+  (fty::deflist spec/qual-list
     :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of type specifiers and type qualifiers."
     :long
     (xdoc::topstring
      (xdoc::p
       "The fixtype of type specifiers and type qualifiers
-       is defined in @(tsee specqual).")
+       is defined in @(tsee spec/qual).")
      (xdoc::p
       "This fixtype corresponds to <i>specifier-qualifier-list</i>."))
-    :elt-type specqual
+    :elt-type spec/qual
     :true-listp t
     :elementp-of-nil nil
-    :pred specqual-listp
+    :pred spec/qual-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2017,7 +2017,7 @@
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>type-name</i> in the grammar in [C]."))
-    ((specqual specqual-list)
+    ((specqual spec/qual-list)
      (decl? absdeclor-option))
     :pred tynamep
     :measure (two-nats-measure (acl2-count x) 4))
@@ -2072,7 +2072,7 @@
        a possibly empty list of attribute specifiers,
        which come after the declarator (cf. the grammar)"))
     (:member ((extension bool)
-              (specqual specqual-list)
+              (specqual spec/qual-list)
               (declor structdeclor-list)
               (attrib attrib-spec-list)))
     (:statassert ((unwrap statassert)))

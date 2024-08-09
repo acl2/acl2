@@ -8385,7 +8385,7 @@
 
   (define parse-specifier/qualifier ((tyspec-seenp booleanp)
                                      (pstate parstatep))
-    :returns (mv erp (specqual specqualp) (span spanp) (new-pstate parstatep))
+    :returns (mv erp (specqual spec/qual-p) (span spanp) (new-pstate parstatep))
     :parents (parser parse-exprs/decls)
     :short "Parse a specifier or qualifier."
     :long
@@ -8426,13 +8426,13 @@
        the @('_Atomic') must start a type specifier,
        so we must parse a type name after the open parenthesis,
        and finally the closing parenthesis."))
-    (b* (((reterr) (irr-specqual) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-spec/qual) (irr-span) (irr-parstate))
          ((erp token span pstate) (read-token pstate)))
       (cond
        ;; If token is a type specifier consisting of a single keyword,
        ;; return that type specifier.
        ((token-type-specifier-keyword-p token) ; void/char/.../_Complex
-        (retok (specqual-tyspec (token-to-type-specifier-keyword token))
+        (retok (spec/qual-tyspec (token-to-type-specifier-keyword token))
                span
                pstate))
        ;; If token is the keyword _Atomic,
@@ -8449,7 +8449,7 @@
                 ;; If we have already seen a type specifier,
                 ;; this must be a type qualifier.
                 (b* ((pstate (unread-token pstate))) ; _Atomic
-                  (retok (specqual-tyqual (type-qual-atomic))
+                  (retok (spec/qual-tyqual (type-qual-atomic))
                          span
                          pstate))
               ;; If we have not already seen a type specifier,
@@ -8460,7 +8460,7 @@
                     (parse-type-name pstate))
                    ((erp last-span pstate) ; _Atomic ( typename )
                     (read-punctuator ")" pstate)))
-                (retok (specqual-tyspec (type-spec-atomic tyname))
+                (retok (spec/qual-tyspec (type-spec-atomic tyname))
                        (span-join span last-span)
                        pstate))))
            ;; If token2 is not an open parenthesis,
@@ -8468,7 +8468,7 @@
            (t ; _Atomic other
             (b* ((pstate ; _Atomic
                   (if token2 (unread-token pstate) pstate)))
-              (retok (specqual-tyqual (type-qual-atomic))
+              (retok (spec/qual-tyqual (type-qual-atomic))
                      span
                      pstate))))))
        ;; If token is the keyword struct,
@@ -8476,7 +8476,7 @@
        ((equal token (token-keyword "struct")) ; struct
         (b* (((erp strunispec last-span pstate) ; struct strunispec
               (parse-struct-or-union-specifier pstate)))
-          (retok (specqual-tyspec (type-spec-struct strunispec))
+          (retok (spec/qual-tyspec (type-spec-struct strunispec))
                  (span-join span last-span)
                  pstate)))
        ;; If token is the keyword union
@@ -8484,7 +8484,7 @@
        ((equal token (token-keyword "union")) ; union
         (b* (((erp strunispec last-span pstate) ; union strunispec
               (parse-struct-or-union-specifier pstate)))
-          (retok (specqual-tyspec (type-spec-union strunispec))
+          (retok (spec/qual-tyspec (type-spec-union strunispec))
                  (span-join span last-span)
                  pstate)))
        ;; If token is the keyword enum,
@@ -8492,7 +8492,7 @@
        ((equal token (token-keyword "enum")) ; enum
         (b* (((erp enumspec last-span pstate) ; enum enumspec
               (parse-enum-specifier span pstate)))
-          (retok (specqual-tyspec (type-spec-enum enumspec))
+          (retok (spec/qual-tyspec (type-spec-enum enumspec))
                  (span-join span last-span)
                  pstate)))
        ;; If token is an identifier,
@@ -8502,13 +8502,13 @@
        ;; when this function is called, it must be the case that
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
-        (retok (specqual-tyspec (type-spec-tydef (token-ident->unwrap token)))
+        (retok (spec/qual-tyspec (type-spec-tydef (token-ident->unwrap token)))
                span
                pstate))
        ;; If token is a type qualifier, which is always a single keyword,
        ;; we have that type qualifier.
        ((token-type-qualifier-p token) ; tyqual
-        (retok (specqual-tyqual (token-to-type-qualifier token))
+        (retok (spec/qual-tyqual (token-to-type-qualifier token))
                span
                pstate))
        ;; If token is the keyword _Alignas,
@@ -8516,7 +8516,7 @@
        ((equal token (token-keyword "_Alignas")) ; _Alignas
         (b* (((erp alignspec last-span pstate) ; _Alignas ( ... )
               (parse-alignment-specifier span pstate)))
-          (retok (specqual-alignspec alignspec)
+          (retok (spec/qual-alignspec alignspec)
                  (span-join span last-span)
                  pstate)))
        ;; If token is anything else, it is an error.
@@ -8553,7 +8553,7 @@
   (define parse-specifier-qualifier-list ((tyspec-seenp booleanp)
                                           (pstate parstatep))
     :returns (mv erp
-                 (specquals specqual-listp)
+                 (specquals spec/qual-listp)
                  (span spanp)
                  (new-pstate parstatep))
     :parents (parser parse-exprs/decls)
@@ -8574,7 +8574,7 @@
          ((unless (mbt (<= (parsize pstate) (1- psize))))
           (reterr :impossible))
          (tyspec-seenp (or tyspec-seenp
-                           (specqual-case specqual :tyspec)))
+                           (spec/qual-case specqual :tyspec)))
          ((erp token & pstate) (read-token pstate)))
       (cond
        ;; If token is an identifier,

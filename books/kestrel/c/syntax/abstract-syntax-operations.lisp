@@ -159,10 +159,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-specqual
+(defirrelevant irr-spec/qual
   :short "An irrelevant type specifier or type qualifier."
-  :type specqualp
-  :body (specqual-tyspec (irr-type-spec)))
+  :type spec/qual-p
+  :body (spec/qual-tyspec (irr-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -998,7 +998,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-specqual-list-all-tyspec ((specquals specqual-listp))
+(define check-spec/qual-list-all-tyspec ((specquals spec/qual-listp))
   :returns (mv (yes/no booleanp) (tyspecs type-spec-listp))
   :short "Check if all the specifiers and qualifiers in a list
           are type specifiers."
@@ -1009,10 +1009,10 @@
      also return the list of type specifiers, in the same order."))
   (b* (((when (endp specquals)) (mv t nil))
        (specqual (car specquals))
-       ((unless (specqual-case specqual :tyspec)) (mv nil nil))
-       ((mv yes/no tyspecs) (check-specqual-list-all-tyspec (cdr specquals))))
+       ((unless (spec/qual-case specqual :tyspec)) (mv nil nil))
+       ((mv yes/no tyspecs) (check-spec/qual-list-all-tyspec (cdr specquals))))
     (if yes/no
-        (mv t (cons (specqual-tyspec->unwrap specqual) tyspecs))
+        (mv t (cons (spec/qual-tyspec->unwrap specqual) tyspecs))
       (mv nil nil)))
   :hooks (:fix))
 
@@ -1048,17 +1048,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define specqual-list-to-type-spec-list ((specquals specqual-listp))
+(define spec/qual-list-to-type-spec-list ((specquals spec/qual-listp))
   :returns (tyspecs type-spec-listp)
   :short "Extract the list of type specifiers
           from a list of type specifiers and qualifiers,
           preserving the order."
   (b* (((when (endp specquals)) nil)
        (specqual (car specquals)))
-    (if (specqual-case specqual :tyspec)
-        (cons (specqual-tyspec->unwrap specqual)
-              (specqual-list-to-type-spec-list (cdr specquals)))
-      (specqual-list-to-type-spec-list (cdr specquals))))
+    (if (spec/qual-case specqual :tyspec)
+        (cons (spec/qual-tyspec->unwrap specqual)
+              (spec/qual-list-to-type-spec-list (cdr specquals)))
+      (spec/qual-list-to-type-spec-list (cdr specquals))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

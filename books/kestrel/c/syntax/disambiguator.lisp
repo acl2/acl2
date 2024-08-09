@@ -1122,8 +1122,8 @@
                                   tyspec.name))))))
     :measure (type-spec-count tyspec))
 
-  (define dimb-specqual ((specqual specqualp) (table dimb-tablep))
-    :returns (mv erp (new-specqual specqualp) (new-table dimb-tablep))
+  (define dimb-spec/qual ((specqual spec/qual-p) (table dimb-tablep))
+    :returns (mv erp (new-specqual spec/qual-p) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
     :short "Disambiguate a specifier or qualifier."
     :long
@@ -1131,23 +1131,23 @@
      (xdoc::p
       "Type qualifiers are left unchanged.
        Type specifiers may extend the disambiguation table."))
-    (b* (((reterr) (irr-specqual) (irr-dimb-table)))
-      (specqual-case
+    (b* (((reterr) (irr-spec/qual) (irr-dimb-table)))
+      (spec/qual-case
        specqual
        :tyspec (b* (((erp new-tyspec table)
                      (dimb-type-spec specqual.unwrap table)))
-                 (retok (specqual-tyspec new-tyspec)
+                 (retok (spec/qual-tyspec new-tyspec)
                         table))
-       :tyqual (retok (specqual-tyqual specqual.unwrap)
+       :tyqual (retok (spec/qual-tyqual specqual.unwrap)
                       (dimb-table-fix table))
        :alignspec (b* (((erp new-alignspec table)
                         (dimb-alignspec specqual.unwrap table)))
-                    (retok (specqual-alignspec new-alignspec)
+                    (retok (spec/qual-alignspec new-alignspec)
                            table))))
-    :measure (specqual-count specqual))
+    :measure (spec/qual-count specqual))
 
-  (define dimb-specqual-list ((specquals specqual-listp) (table dimb-tablep))
-    :returns (mv erp (new-specquals specqual-listp) (new-table dimb-tablep))
+  (define dimb-spec/qual-list ((specquals spec/qual-listp) (table dimb-tablep))
+    :returns (mv erp (new-specquals spec/qual-listp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
     :short "Disambiguate a list of specifiers and qualifiers."
     :long
@@ -1157,10 +1157,10 @@
        which may be updated by each."))
     (b* (((reterr) nil (irr-dimb-table))
          ((when (endp specquals)) (retok nil (dimb-table-fix table)))
-         ((erp new-specqual table) (dimb-specqual (car specquals) table))
-         ((erp new-specquals table) (dimb-specqual-list (cdr specquals) table)))
+         ((erp new-specqual table) (dimb-spec/qual (car specquals) table))
+         ((erp new-specquals table) (dimb-spec/qual-list (cdr specquals) table)))
       (retok (cons new-specqual new-specquals) table))
-    :measure (specqual-list-count specquals))
+    :measure (spec/qual-list-count specquals))
 
   (define dimb-alignspec ((alignspec alignspecp) (table dimb-tablep))
     :returns (mv erp (new-alignspec alignspecp) (new-table dimb-tablep))
@@ -1769,7 +1769,7 @@
     :short "Disambiguate a type name."
     (b* (((reterr) (irr-tyname) (irr-dimb-table))
          ((tyname tyname) tyname)
-         ((erp new-specqual table) (dimb-specqual-list tyname.specqual table))
+         ((erp new-specqual table) (dimb-spec/qual-list tyname.specqual table))
          ((erp new-decl? table) (dimb-absdeclor-option tyname.decl? table)))
       (retok (make-tyname :specqual new-specqual :decl? new-decl?)
              table))
@@ -1801,7 +1801,7 @@
        structdecl
        :member
        (b* (((erp new-specqual table)
-             (dimb-specqual-list structdecl.specqual table))
+             (dimb-spec/qual-list structdecl.specqual table))
             ((erp new-declor table)
              (dimb-structdeclor-list structdecl.declor table)))
          (retok (make-structdecl-member :extension structdecl.extension

@@ -193,7 +193,7 @@
     (:forward-chaining c$::dirdeclor-kind-possibilities)
     (:forward-chaining c$::genassoc-kind-possibilities)
     (:forward-chaining c$::initer-kind-possibilities)
-    (:forward-chaining c$::specqual-kind-possibilities)
+    (:forward-chaining c$::spec/qual-kind-possibilities)
     (:forward-chaining c$::structdecl-kind-possibilities)))
 
 (defthy deftrans-theory-linear
@@ -202,7 +202,7 @@
     (:linear c$::absdeclor-count-of-paramdeclor-absdeclor->unwrap)
     (:linear c$::absdeclor-option-count-of-tyname->decl?)
     (:linear c$::alignspec-count-of-declspec-alignspec->unwrap)
-    (:linear c$::alignspec-count-of-specqual-alignspec->unwrap)
+    (:linear c$::alignspec-count-of-spec/qual-alignspec->unwrap)
     (:linear c$::block-item-count-of-car)
     (:linear c$::block-item-list-count-of-cdr)
     (:linear c$::block-item-list-count-of-stmt-compound->items)
@@ -284,10 +284,10 @@
     (:linear c$::paramdecl-list-count-of-dirabsdeclor-function->params)
     (:linear c$::paramdecl-list-count-of-dirdeclor-function-params->params)
     (:linear c$::paramdeclor-count-of-paramdecl->decl)
-    (:linear c$::specqual-count-of-car)
-    (:linear c$::specqual-list-count-of-cdr)
-    (:linear c$::specqual-list-count-of-structdecl-member->specqual)
-    (:linear c$::specqual-list-count-of-tyname->specqual)
+    (:linear c$::spec/qual-count-of-car)
+    (:linear c$::spec/qual-list-count-of-cdr)
+    (:linear c$::spec/qual-list-count-of-structdecl-member->specqual)
+    (:linear c$::spec/qual-list-count-of-tyname->specqual)
     (:linear c$::statassert-count-of-structdecl-statassert->unwrap)
     (:linear c$::stmt-count-of-block-item-stmt->unwrap)
     (:linear c$::stmt-count-of-stmt-dowhile->body)
@@ -315,7 +315,7 @@
     (:linear c$::tyname-count-of-genassoc-type->type)
     (:linear c$::tyname-count-of-type-spec-atomic->type)
     (:linear c$::type-spec-count-of-declspec-tyspec->unwrap)
-    (:linear c$::type-spec-count-of-specqual-tyspec->unwrap)))
+    (:linear c$::type-spec-count-of-spec/qual-tyspec->unwrap)))
 
 (defthy deftrans-theory-type-prescription
   '((:type-prescription absdeclor)
@@ -338,7 +338,7 @@
     (:type-prescription c$::consp-of-dirdeclor-fix)
     (:type-prescription c$::consp-of-expr-fix)
     (:type-prescription c$::consp-of-paramdeclor-fix)
-    (:type-prescription c$::consp-of-specqual-fix)
+    (:type-prescription c$::consp-of-spec/qual-fix)
     (:type-prescription c$::consp-of-stmt-fix)
     (:type-prescription c$::consp-of-type-spec-fix)
     (:type-prescription c$::declspec-fix$inline)
@@ -401,8 +401,8 @@
     (:type-prescription c$::return-type-of-paramdecl-count.count)
     (:type-prescription c$::return-type-of-paramdecl-list-count.count)
     (:type-prescription c$::return-type-of-paramdeclor-count.count)
-    (:type-prescription c$::return-type-of-specqual-count.count)
-    (:type-prescription c$::return-type-of-specqual-list-count.count)
+    (:type-prescription c$::return-type-of-spec/qual-count.count)
+    (:type-prescription c$::return-type-of-spec/qual-list-count.count)
     (:type-prescription c$::return-type-of-statassert-count.count)
     (:type-prescription c$::return-type-of-stmt-count.count)
     (:type-prescription c$::return-type-of-structdecl-count.count)
@@ -412,7 +412,7 @@
     (:type-prescription c$::return-type-of-strunispec-count.count)
     (:type-prescription c$::return-type-of-tyname-count.count)
     (:type-prescription c$::return-type-of-type-spec-count.count)
-    (:type-prescription c$::specqual-fix$inline)
+    (:type-prescription c$::spec/qual-fix$inline)
     (:type-prescription c$::stmt-dowhile)
     (:type-prescription c$::stmt-fix$inline)
     (:type-prescription c$::stmt-for-expr)
@@ -470,10 +470,10 @@
     (:type-prescription paramdeclor-count)
     (:type-prescription paramdeclor-declor)
     (:type-prescription paramdeclor-none)
-    (:type-prescription specqual-alignspec)
-    (:type-prescription specqual-count)
-    (:type-prescription specqual-list-count)
-    (:type-prescription specqual-tyspec)
+    (:type-prescription spec/qual-alignspec)
+    (:type-prescription spec/qual-count)
+    (:type-prescription spec/qual-list-count)
+    (:type-prescription spec/qual-tyspec)
     (:type-prescription statassert)
     (:type-prescription statassert-count)
     (:type-prescription stmt-compound)
@@ -802,42 +802,42 @@
    '(:returns (new-tyspec type-specp)
      :measure (type-spec-count tyspec))))
 
-(define deftrans-defn-specqual
+(define deftrans-defn-spec/qual
   ((names alistp)
    (bodies alistp)
    (extra-args true-listp)
    (extra-args-names true-listp))
   (deftrans-defn
-   'specqual
+   'spec/qual
    names
    bodies
-   '((specqual specqualp))
+   '((specqual spec/qual-p))
    extra-args
-   `(specqual-case
+   `(spec/qual-case
       specqual
-      :tyspec (specqual-tyspec (,(cdr (assoc-eq 'type-spec names)) specqual.unwrap ,@extra-args-names))
-      :tyqual (specqual-fix specqual)
-      :alignspec (specqual-alignspec (,(cdr (assoc-eq 'alignspec names)) specqual.unwrap ,@extra-args-names)))
-   '(:returns (new-specqual specqualp)
-     :measure (specqual-count specqual))))
+      :tyspec (spec/qual-tyspec (,(cdr (assoc-eq 'type-spec names)) specqual.unwrap ,@extra-args-names))
+      :tyqual (spec/qual-fix specqual)
+      :alignspec (spec/qual-alignspec (,(cdr (assoc-eq 'alignspec names)) specqual.unwrap ,@extra-args-names)))
+   '(:returns (new-specqual spec/qual-p)
+     :measure (spec/qual-count specqual))))
 
-(define deftrans-defn-specqual-list
+(define deftrans-defn-spec/qual-list
   ((names alistp)
    (bodies alistp)
    (extra-args true-listp)
    (extra-args-names true-listp))
   (deftrans-defn
-   'specqual-list
+   'spec/qual-list
    names
    bodies
-   '((specquals specqual-listp))
+   '((specquals spec/qual-listp))
    extra-args
    `(if (endp specquals)
         nil
-      (cons (,(cdr (assoc-eq 'specqual names)) (car specquals) ,@extra-args-names)
-            (,(cdr (assoc-eq 'specqual-list names)) (cdr specquals) ,@extra-args-names)))
-   '(:returns (new-specquals specqual-listp)
-     :measure (specqual-list-count specquals))))
+      (cons (,(cdr (assoc-eq 'spec/qual names)) (car specquals) ,@extra-args-names)
+            (,(cdr (assoc-eq 'spec/qual-list names)) (cdr specquals) ,@extra-args-names)))
+   '(:returns (new-specquals spec/qual-listp)
+     :measure (spec/qual-list-count specquals))))
 
 (define deftrans-defn-alignspec
   ((names alistp)
@@ -1247,7 +1247,7 @@
    extra-args
    `(b* (((tyname tyname) tyname))
       (make-tyname
-        :specqual (,(cdr (assoc-eq 'specqual-list names)) tyname.specqual ,@extra-args-names)
+        :specqual (,(cdr (assoc-eq 'spec/qual-list names)) tyname.specqual ,@extra-args-names)
         :decl? (,(cdr (assoc-eq 'absdeclor-option names)) tyname.decl? ,@extra-args-names)))
    '(:returns (new-tyname tynamep)
      :measure (tyname-count tyname))))
@@ -1285,7 +1285,7 @@
       structdecl
       :member (make-structdecl-member
                 :extension structdecl.extension
-                :specqual (,(cdr (assoc-eq 'specqual-list names)) structdecl.specqual ,@extra-args-names)
+                :specqual (,(cdr (assoc-eq 'spec/qual-list names)) structdecl.specqual ,@extra-args-names)
                 :declor (,(cdr (assoc-eq 'structdeclor-list names)) structdecl.declor ,@extra-args-names)
                 :attrib structdecl.attrib)
       :statassert (structdecl-statassert
@@ -1694,8 +1694,8 @@
     genassoc
     genassoc-list
     type-spec
-    specqual
-    specqual-list
+    spec/qual
+    spec/qual-list
     alignspec
     declspec
     declspec-list
@@ -1828,8 +1828,8 @@
          ,(deftrans-defn-genassoc            names bodies extra-args extra-args-names)
          ,(deftrans-defn-genassoc-list       names bodies extra-args extra-args-names)
          ,(deftrans-defn-type-spec           names bodies extra-args extra-args-names)
-         ,(deftrans-defn-specqual            names bodies extra-args extra-args-names)
-         ,(deftrans-defn-specqual-list       names bodies extra-args extra-args-names)
+         ,(deftrans-defn-spec/qual           names bodies extra-args extra-args-names)
+         ,(deftrans-defn-spec/qual-list      names bodies extra-args extra-args-names)
          ,(deftrans-defn-alignspec           names bodies extra-args extra-args-names)
          ,(deftrans-defn-declspec            names bodies extra-args extra-args-names)
          ,(deftrans-defn-declspec-list       names bodies extra-args extra-args-names)
