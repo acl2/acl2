@@ -291,4 +291,3 @@
 ; The use of LET* and LET are just convenient ways for the macro to manipulate
 ; the user's specification, which is in terms of the state variable s instead
 ; of s0 and sk.
-

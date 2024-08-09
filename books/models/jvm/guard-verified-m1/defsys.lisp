@@ -1767,5 +1767,3 @@ QED!
       (if ld-flg
           `(ld ',final-event-lst :ld-pre-eval-print t)
           `(encapsulate nil ,@final-event-lst))))))
-
-

@@ -1,0 +1,2 @@
+(include-book "m2")
+(certify-book "examples" ? 1)

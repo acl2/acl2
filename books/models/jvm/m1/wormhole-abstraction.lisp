@@ -348,4 +348,3 @@
                 (equal (top (stack sf))
                        (! n))))
   :rule-classes nil)
-
