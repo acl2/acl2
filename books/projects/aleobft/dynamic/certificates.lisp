@@ -148,10 +148,9 @@
     :enable set::in)
 
   (defruled certificate-set->author-set-of-union
-    (implies (certificate-setp certs2)
-             (equal (certificate-set->author-set (set::union certs1 certs2))
-                    (set::union (certificate-set->author-set certs1)
-                                (certificate-set->author-set certs2))))
+    (equal (certificate-set->author-set (set::union certs1 certs2))
+           (set::union (certificate-set->author-set certs1)
+                       (certificate-set->author-set (set::sfix certs2))))
     :induct t
     :enable (set::union
              certificate-set->author-set-of-insert))
@@ -204,10 +203,9 @@
     :enable set::in)
 
   (defruled certificate-set->round-set-of-union
-    (implies (certificate-setp certs2)
-             (equal (certificate-set->round-set (set::union certs1 certs2))
-                    (set::union (certificate-set->round-set certs1)
-                                (certificate-set->round-set certs2))))
+    (equal (certificate-set->round-set (set::union certs1 certs2))
+           (set::union (certificate-set->round-set certs1)
+                       (certificate-set->round-set (set::sfix certs2))))
     :induct t
     :enable (set::union
              certificate-set->round-set-of-insert))
