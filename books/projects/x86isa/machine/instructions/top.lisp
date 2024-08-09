@@ -181,8 +181,21 @@ writes the final value of the instruction pointer into RIP.</p>")
        ;; "If an interrupt ... is used to resume execution after a HLT
        ;; instruction, the saved instruction pointer points to the instruction
        ;; following the HLT instruction."
-       (x86 (write-*ip proc-mode temp-rip x86)))
-    ;; (!!ms-fresh :legal-halt :hlt)
+       (x86 (write-*ip proc-mode temp-rip x86))
+
+       ;; In sys-view, HLT is essentially a NOP. This isn't correct; we should
+       ;; stop executing instructions until we get an interrupt. However, most
+       ;; of the time HLT is called in a loop, so it works fine for most real
+       ;; world programs. Fixing this would require adding a halt state to the
+       ;; model state and making it so either we spin the timer until it
+       ;; interrupts or skip enough timer steps to cause an interrupt. This
+       ;; breaks the notion that our model's time is tied to the number of
+       ;; instructions executed, but that isn't a big deal.
+
+       ;; In app-view, we set ms to stop execution
+       (x86 (if (app-view x86)
+              (!!ms-fresh :legal-halt :hlt)
+              x86)))
     x86))
 
 ;; ======================================================================
