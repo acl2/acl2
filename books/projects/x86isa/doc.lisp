@@ -56,6 +56,9 @@
 ;; Virtualization based validation
 (include-book "virtualization/top" :ttags :all)
 
+;; Saving and restoring the state
+(include-book "machine/save-restore" :ttags :all)
+
 ;; ======================================================================
 
 ;; Files will be copied from X86ISA/images to res/x86isa of the x86

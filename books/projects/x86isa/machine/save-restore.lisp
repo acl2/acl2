@@ -204,10 +204,24 @@
                         (open-output-channel-p1 channel :byte state))
                    (state-p1 (write-mem-to-channel size channel x86 state)))))
 
-(define save-x86 ((filename stringp)
-                  (memsize natp)
+(defxdoc save-restore
+         :parents (x86isa)
+         :short "Tools for saving and restoring the x86 state"
+         :long "<p>While most ACL2 objects can be serialized using @(see
+         acl2::serialize), stobjs can not. The @('x86') state is an absstobj,
+so we can't directly use serialize. Instead, we convert the state, excluding
+the memory, into a cons tree and write that out to a file with serialize. Then,
+we write the low n bytes, where n is user specified, of memory out to disk in
+another file, thereby avoiding constructing a potentially very large cons tree.
+Restoring the state is essentially the process in reverse.</p>")
+
+(define save-x86 ((filename stringp "The name of the file to write the
+                            non-memory state out to. The memory will be written
+                            out to &lt;filename&gt;.mem.")
+                  (memsize natp "The number of bytes of memory to save.")
                   x86
                   state)
+  :parents (save-restore)
   :guard (<= memsize *mem-size-in-bytes*)
   (b* ((serialized-x86 (serialize-x86 x86))
        (state (serialize-write filename serialized-x86))
@@ -243,10 +257,13 @@
                         (open-input-channel-p1 channel :byte state))
                    (state-p1 (mv-nth 1 (read-mem-from-channel size channel x86 state))))))
 
-(define restore-x86 ((filename stringp)
-                     (memsize natp)
+(define restore-x86 ((filename stringp "The name of the file to read the
+                               non-memory state from. The memory will be read
+                               from &lt;filename&gt;.mem.")
+                     (memsize natp "The number of bytes to read out of the memory file and into the memory")
                      x86
                      state)
+  :parents (save-restore)
   :guard (<= memsize *mem-size-in-bytes*)
   (b* (((mv read-in-x86 state) (serialize-read filename))
        (x86 (deserialize-x86 read-in-x86 x86))
