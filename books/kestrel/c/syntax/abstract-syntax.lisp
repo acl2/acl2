@@ -2846,7 +2846,14 @@
   :short "Fixtype of omaps from file paths to translation units."
   :key-type filepath
   :val-type transunit
-  :pred filepath-transunit-mapp)
+  :pred filepath-transunit-mapp
+  ///
+
+  (defrule filepath-setp-of-keys-when-filepath-transunit-mapp
+    (implies (filepath-transunit-mapp map)
+             (filepath-setp (omap::keys map)))
+    :induct t
+    :enable omap::keys))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
