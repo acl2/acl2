@@ -363,7 +363,7 @@
                       (n$2 (update-n$val n n$2)))
                  (mv n$ n$2))
                (update-uenvalid t two-usuallyequal-nums))))
-         
+
 (defun fields-of-two-usuallyequal-nums (two-usuallyequal-nums)
   (declare (xargs :stobjs two-usuallyequal-nums))
   (stobj-let ((n$ (uenslot1 two-usuallyequal-nums))
