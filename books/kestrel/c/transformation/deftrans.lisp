@@ -128,7 +128,8 @@
        "            :sizeof-ambig (prog2$"
        "                            (raise \"Misusage error: ~x0.\" (expr-fix expr))"
        "                            (expr-fix expr))"
-       "            :alignof (expr-alignof (my-simpadd0-tyname expr.type))"
+       "            :alignof (make-expr-alignof :type (my-simpadd0-tyname expr.type)"
+       "                                        :uscores expr.uscores)"
        "            :cast (make-expr-cast"
        "                    :type (my-simpadd0-tyname expr.type)"
        "                    :arg (my-simpadd0-expr expr.arg))"
@@ -627,7 +628,9 @@
       :sizeof-ambig (prog2$
                       (raise "Misusage error: ~x0." (expr-fix expr))
                       (expr-fix expr))
-      :alignof (expr-alignof (,(cdr (assoc-eq 'tyname names)) expr.type ,@extra-args-names))
+      :alignof (make-expr-alignof
+                :type (,(cdr (assoc-eq 'tyname names)) expr.type ,@extra-args-names)
+                :uscores expr.uscores)
       :cast (make-expr-cast
               :type (,(cdr (assoc-eq 'tyname names)) expr.type ,@extra-args-names)
               :arg (,(cdr (assoc-eq 'expr names)) expr.arg ,@extra-args-names))
@@ -1283,7 +1286,8 @@
       :member (make-structdecl-member
                 :extension structdecl.extension
                 :specqual (,(cdr (assoc-eq 'specqual-list names)) structdecl.specqual ,@extra-args-names)
-                :declor (,(cdr (assoc-eq 'structdeclor-list names)) structdecl.declor ,@extra-args-names))
+                :declor (,(cdr (assoc-eq 'structdeclor-list names)) structdecl.declor ,@extra-args-names)
+                :attrib structdecl.attrib)
       :statassert (structdecl-statassert
                     (,(cdr (assoc-eq 'statassert names)) structdecl.unwrap ,@extra-args-names)))
    '(:returns (new-structdecl structdeclp)

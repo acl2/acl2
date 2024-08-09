@@ -29,6 +29,14 @@
     ident-setp
     ident-set-fix
 
+    ident-option
+    ident-optionp
+    ident-option-fix
+
+    ident-option-set
+    ident-option-setp
+    ident-option-set-fix
+
     dec/oct/hex-const-case
     dec/oct/hex-const-oct
 
@@ -58,6 +66,7 @@
     make-expr-unary
     expr-sizeof
     expr-alignof
+    make-expr-alignof
     make-expr-cast
     make-expr-binary
     make-expr-cond

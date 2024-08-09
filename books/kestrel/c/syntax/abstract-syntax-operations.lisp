@@ -267,7 +267,10 @@
 (defirrelevant irr-structdecl
   :short "An irrelevant structure declaration."
   :type structdeclp
-  :body (make-structdecl-member :extension nil :specqual nil :declor nil))
+  :body (make-structdecl-member :extension nil
+                                :specqual nil
+                                :declor nil
+                                :attrib nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

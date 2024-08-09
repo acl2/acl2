@@ -172,5 +172,3 @@
 ; contains (+ (/ (expt n 3) 3) (/ (expt n 2) 2) (/ n 6)) on top of the stack.
 ; Note that the algorithm used by *pi* is not specified or derivable from this
 ; formula.
-
-

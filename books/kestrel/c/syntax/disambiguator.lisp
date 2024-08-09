@@ -847,7 +847,8 @@
                          table)))
        :alignof
        (b* (((erp new-tyname table) (dimb-tyname expr.type table)))
-         (retok (expr-alignof new-tyname) table))
+         (retok (make-expr-alignof :type new-tyname :uscores expr.uscores)
+                table))
        :cast
        (b* (((erp new-type table) (dimb-tyname expr.type table))
             ((erp new-arg table) (dimb-expr expr.arg table)))
@@ -1805,7 +1806,8 @@
              (dimb-structdeclor-list structdecl.declor table)))
          (retok (make-structdecl-member :extension structdecl.extension
                                         :specqual new-specqual
-                                        :declor new-declor)
+                                        :declor new-declor
+                                        :attrib structdecl.attrib)
                 table))
        :statassert
        (b* (((erp new-statassert table)
@@ -2573,7 +2575,7 @@
      If the flag is @('t'), for now the only difference is that
      we initialize the disambiguation table with some GCC built-ins.
      For now the only add some built-ins
-     that we have observed in a preprocessed file.
+     that we have observed in some preprocessed files.
      We should revisit this, adding all the GCC built-ins,
      with clear and accurate references."))
   (b* (((reterr) (irr-transunit))
@@ -2592,6 +2594,9 @@
                                          table))
                   (table (dimb-add-ident (ident "__builtin_bswap64")
                                          (dimb-kind-objfun)
+                                         table))
+                  (table (dimb-add-ident (ident "_Float128")
+                                         (dimb-kind-typedef)
                                          table)))
                table)
            table))

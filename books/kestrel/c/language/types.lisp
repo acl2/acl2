@@ -22,6 +22,7 @@
 
 (local (include-book "std/lists/butlast" :dir :system))
 (local (include-book "std/lists/last" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -94,7 +95,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset type-set
-  :short "Fixtype of osets of types."
+  :short "Fixtype of sets of types."
   :elt-type type
   :elementp-of-nil nil
   :pred type-setp)
@@ -156,12 +157,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This contains information about
+    "These contain information about
      the members of structure and union types [C:6.7.2.1].
-     This information consists of a name and a type.
+     This information consists of a name and a type, for each member.
      We do not capture bit fields (including anonymous ones)
      and we do not capture static assertions.
-     This information mirrors @(tsee struct-declon).")
+     The information we capture mirrors @(tsee struct-declon).")
    (xdoc::p
     "We call these `member types' because they are
      the static counterpart of the member values
@@ -218,7 +219,8 @@
     "We search from the beginning and stop at the first hit;
      since the names are unique in well-formed lists,
      the exact search strategy makes no difference
-     We return the type of the member if the search is successful."))
+     We return the type of the member if the search is successful.
+     We return @('nil') if the search is unsuccessful."))
   (b* (((when (endp members)) nil)
        ((when (equal (ident-fix name)
                      (member-type->name (car members))))
@@ -327,6 +329,7 @@
 
 (std::deflist type-integer-listp (x)
   :guard (type-listp x)
+  :short "Check if a list of types consists of all integer types."
   (type-integerp x)
   ///
   (fty::deffixequiv type-integer-listp
@@ -352,6 +355,7 @@
 
 (std::deflist type-arithmetic-listp (x)
   :guard (type-listp x)
+  :short "Check if a list of types consists of all arithmetic types."
   (type-arithmeticp x)
   ///
   (fty::deffixequiv type-arithmetic-listp
@@ -418,6 +422,8 @@
 
 (std::deflist type-nonchar-integer-listp (x)
   :guard (type-listp x)
+  :short "Check if a list of types consists of
+          all integer types except the plain @('char') type."
   (type-nonchar-integerp x)
   ///
   (fty::deffixequiv type-nonchar-integer-listp
@@ -473,7 +479,7 @@
    (xdoc::p
     "This is a subroutine of @(tsee tyname-to-type), in a sense.
      A type specifier sequence already denotes a type (of certain kinds);
-     but in general it is type names that denote types (of all kidns)."))
+     but in general it is type names that denote types (of all kinds)."))
   (tyspecseq-case tyspec
                   :void (type-void)
                   :char (type-char)
@@ -600,8 +606,6 @@
         (type-sllong)
         (type-ullong))
   ///
-
-  (local (include-book "std/lists/len" :dir :system))
 
   (defruled member-nonchar-integer-types-as-pred
     (implies (typep type)

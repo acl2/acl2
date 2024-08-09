@@ -1680,7 +1680,9 @@
                 (pstate (print-astring ")" pstate)))
              pstate)
            :alignof
-           (b* ((pstate (print-astring "_Alignof(" pstate))
+           (b* ((pstate (if expr.uscores
+                            (print-astring "__alignof__(" pstate)
+                          (print-astring "_Alignof(" pstate)))
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
@@ -2530,6 +2532,12 @@
                                                             pstate)))
                         pstate)
                     pstate))
+          (pstate (if structdecl.attrib
+                      (b* ((pstate (print-astring " " pstate))
+                           (pstate (print-attrib-spec-list structdecl.attrib
+                                                           pstate)))
+                        pstate)
+                    pstate))
           (pstate (print-astring ";" pstate)))
        pstate)
      :statassert (print-statassert structdecl.unwrap pstate))
@@ -2691,6 +2699,70 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define print-attrib ((attr attribp) (pstate pristatep))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls)
+    :short "Print a GCC attribute."
+    (attrib-case
+     attr
+     :name (print-ident attr.name pstate)
+     :name-param
+     (b* ((pstate (print-ident attr.name pstate))
+          (pstate (print-astring "(" pstate))
+          (pstate (if attr.param
+                      (print-expr-list attr.param pstate)
+                    pstate))
+          (pstate (print-astring ")" pstate)))
+       pstate))
+    :measure (attrib-count attr))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-attrib-list ((attrs attrib-listp) (pstate pristatep))
+    :guard (consp attrs)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls)
+    :short "Print a list of one or more GCC attributes, comma-separated."
+    (b* (((unless (mbt (consp attrs))) (pristate-fix pstate))
+         (pstate (print-attrib (car attrs) pstate))
+         ((when (endp (cdr attrs))) pstate)
+         (pstate (print-astring ", " pstate)))
+      (print-attrib-list (cdr attrs) pstate))
+    :measure (attrib-list-count attrs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-attrib-spec ((attrspec attrib-specp) (pstate pristatep))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls)
+    :short "Print an attribute specifier."
+    (b* ((pstate (print-astring "__attribute__ ((" pstate))
+         (attrs (attrib-spec->attribs attrspec))
+         (pstate (if (consp attrs)
+                     (print-attrib-list attrs pstate)
+                   pstate))
+         (pstate (print-astring "))" pstate)))
+      pstate)
+    :measure (attrib-spec-count attrspec))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-attrib-spec-list ((attrspecs attrib-spec-listp)
+                                  (pstate pristatep))
+    :guard (consp attrspecs)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls)
+    :short "Print a list of one or more attribute specifiers,
+          separated by single spaces."
+    (b* (((unless (mbt (consp attrspecs))) (pristate-fix pstate))
+         (pstate (print-attrib-spec (car attrspecs) pstate))
+         ((when (endp (cdr attrspecs))) pstate)
+         (pstate (print-astring " " pstate)))
+      (print-attrib-spec-list (cdr attrspecs) pstate))
+    :measure (attrib-spec-list-count attrspecs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :ruler-extenders :all
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -2708,66 +2780,6 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual print-exprs/decls))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-attrib ((attr attribp) (pstate pristatep))
-  :returns (new-pstate pristatep)
-  :short "Print a GCC attribute."
-  (attrib-case
-   attr
-   :name (print-ident attr.name pstate)
-   :name-param
-   (b* ((pstate (print-ident attr.name pstate))
-        (pstate (print-astring "(" pstate))
-        (pstate (if attr.param
-                    (print-expr-list attr.param pstate)
-                  pstate))
-        (pstate (print-astring ")" pstate)))
-     pstate))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-attrib-list ((attrs attrib-listp) (pstate pristatep))
-  :guard (consp attrs)
-  :returns (new-pstate pristatep)
-  :short "Print a list of one or more GCC attributes, comma-separated."
-  (b* (((unless (mbt (consp attrs))) (pristate-fix pstate))
-       (pstate (print-attrib (car attrs) pstate))
-       ((when (endp (cdr attrs))) pstate)
-       (pstate (print-astring ", " pstate)))
-    (print-attrib-list (cdr attrs) pstate))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-attrib-spec ((attrspec attrib-specp) (pstate pristatep))
-  :returns (new-pstate pristatep)
-  :short "Print an attribute specifier."
-  (b* ((pstate (print-astring "__attribute__ ((" pstate))
-       (attrs (attrib-spec->attribs attrspec))
-       (pstate (if (consp attrs)
-                   (print-attrib-list attrs pstate)
-                 pstate))
-       (pstate (print-astring "))" pstate)))
-    pstate)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-attrib-spec-list ((attrspecs attrib-spec-listp)
-                                (pstate pristatep))
-  :guard (consp attrspecs)
-  :returns (new-pstate pristatep)
-  :short "Print a list of one or more attribute specifiers,
-          separated by single spaces."
-  (b* (((unless (mbt (consp attrspecs))) (pristate-fix pstate))
-       (pstate (print-attrib-spec (car attrspecs) pstate))
-       ((when (endp (cdr attrspecs))) pstate)
-       (pstate (print-astring " " pstate)))
-    (print-attrib-spec-list (cdr attrspecs) pstate))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -260,5 +260,3 @@
                             (* (loi 0 s)
                                (loi 1 s)))))
        :rule-classes nil)
-
-

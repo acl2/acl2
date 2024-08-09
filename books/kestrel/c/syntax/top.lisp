@@ -24,6 +24,7 @@
 (include-book "output-files")
 (include-book "output-files-doc")
 (include-book "langdef-mapping")
+(include-book "formalized")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,7 +117,10 @@
      with the formal language definition in @(see c::language).
      We already provide a (partial) mapping
      from the tool-oriented abstract syntax
-     to the abstract syntax of the formal language definition.")
+     to the abstract syntax of the formal language definition.
+     We also provide predicates to identify which subset of the abstract syntax
+     not only maps to the language definition's abstract syntax,
+     but also that is covered by the formal semantics we have so far.")
    (xdoc::p
     "All the items described above form a sub-library of our ACL2 library for C,
      in the directory @('[books]/kestrel/c/syntax').
@@ -138,4 +142,5 @@
                     printer
                     input-files
                     output-files
-                    mapping-to-language-definition))
+                    mapping-to-language-definition
+                    formalized-subset))

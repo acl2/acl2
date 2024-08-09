@@ -1193,9 +1193,12 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; The GCL proclaim mechanism puts symbols in package "ACL2-PC" into file
 ; acl2-proclaims.lisp.  So Lisp needs to know about that package when it loads
 ; that file.  We introduce that package in a harmless way here.  Although we
-; only need to do so for GCL, we do so for every Lisp, for uniformity.
+; only need to do so for GCL, we do so for every Lisp, for uniformity.  Added
+; August 2024: In complete analogy we do the same thing for the "BIB" package.
 (maybe-make-package "ACL2-PC")
 (maybe-introduce-empty-pkg-2 "ACL2-PC")
+(maybe-make-package "BIB")
+(maybe-introduce-empty-pkg-2 "BIB")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR ACL2 CHARACTER READER

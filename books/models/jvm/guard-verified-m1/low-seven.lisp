@@ -81,4 +81,3 @@
          :code (low-seven x 0)
          :ghost-formals (n)
          :ghost-base-value (mv 0 -1 -1))))
-

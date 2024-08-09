@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc concrete-syntax
+(defxdoc+ concrete-syntax
   :parents (syntax-for-tools)
   :short "A formulation of the concrete syntax of C for use by tools."
   :long
@@ -53,7 +53,9 @@
      However, we are instantiating certain aspects of the concrete syntax
      which [C] leaves open, such as the exact character set used.")
    (xdoc::p
-    "We plan to add a parser and a pretty-printer.")))
+    "We plan to add a parser and a pretty-printer."))
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

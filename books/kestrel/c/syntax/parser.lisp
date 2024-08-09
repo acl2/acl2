@@ -1454,7 +1454,8 @@
                                    "_Static_assert"
                                    "_Thread_local"))
             (and (parstate->gcc pstate)
-                 (member-equal string '("asm"
+                 (member-equal string '("__alignof__"
+                                        "asm"
                                         "__asm__"
                                         "__attribute__"
                                         "__extension__"
@@ -5109,7 +5110,16 @@
      a preincrement or predecrement operator,
      or a unary operator as defined in the grammar,
      or a @('sizeof') keyword,
-     or a @('_Alignof') keyword."))
+     or an @('_Alignof') keyword.")
+   (xdoc::p
+    "We also compare the token against
+     the GCC extension variant @('__alignof__') of @('_Alignof').
+     Note that this variant is a keywords only if GCC extensions are supported:
+     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     So the comparison here with that variant keyword
+     will always fail if GCC extensions are not supported,
+     because in that case both @('__alignof__')
+     would be an identifier token, not a keyword token."))
   (or (token-primary-expression-start-p token?)
       (equal token? (token-punctuator "++"))
       (equal token? (token-punctuator "--"))
@@ -5120,7 +5130,8 @@
       (equal token? (token-punctuator "~"))
       (equal token? (token-punctuator "!"))
       (equal token? (token-keyword "sizeof"))
-      (equal token? (token-keyword "_Alignof")))
+      (equal token? (token-keyword "_Alignof"))
+      (equal token? (token-keyword "__alignof__")))
   ///
 
   (defrule non-nil-when-token-unary-expression-start-p
@@ -7289,14 +7300,19 @@
                      pstate))))))
        ;; If token is '_Alignof',
        ;; we parse an open parenthesis, a type name, and a closed parenthesis.
-       ((equal token (token-keyword "_Alignof")) ; _Alignof
+       ;; We also allow '__alignof__',
+       ;; which can be a keyword only if GCC extensions are supported.
+       ((or (equal token (token-keyword "_Alignof")) ; _Alignof
+            (equal token (token-keyword "__alignof__"))) ; __alignof__
         (b* (((erp & pstate) ; _Alignof (
               (read-punctuator "(" pstate))
              ((erp tyname & pstate) ; _Alignof ( typename
               (parse-type-name pstate))
              ((erp last-span pstate) ; _Alignof ( typename )
               (read-punctuator ")" pstate)))
-          (retok (expr-alignof tyname)
+          (retok (make-expr-alignof
+                  :type tyname
+                  :uscores (equal token (token-keyword "__alignof__")))
                  (span-join span last-span)
                  pstate)))
        ;; If token is anything else, it is an error.
@@ -10028,7 +10044,8 @@
        optionally followed by a list of one or more structure declarators.
        If GCC extensions are supported,
        a non-assert structure declaration
-       may start with the @('__extension__') keyword."))
+       may start with the @('__extension__') keyword,
+       and may end (before the semicolon) with attribute specifiers."))
     (b* (((reterr) (irr-structdecl) (irr-span) (irr-parstate))
          ((erp token span pstate) (read-token pstate)))
       (cond
@@ -10059,16 +10076,50 @@
           (cond
            ;; If token2 may start a structure declarator,
            ;; we must have a list of one or more structure declarators,
-           ;; which we parse, and then we parse the final semicolon.
-           ((token-struct-declarator-start-p token2) ; specquals structdeclor...
-            (b* ((pstate (unread-token pstate)) ; specquals
-                 ((erp structdeclors & pstate) ; specquals structdeclors
+           ;; which we parse, and then we parse the final semicolon,
+           ;; preceded by zero or more attribute specifiers
+           ;; if GCC extensions are supported.
+           ((token-struct-declarator-start-p token2)
+            ;; [__extension__] specquals structdeclor...
+            (b* ((pstate (unread-token pstate))
+                 ;; [__extension__] specquals
+                 (psize (parsize pstate))
+                 ((erp structdeclors & pstate)
+                  ;; [__extension__] specquals structdeclors
                   (parse-struct-declarator-list pstate))
-                 ((erp last-span pstate) ; specquals structdeclors ;
+                 ((unless (mbt (<= (parsize pstate) (1- psize))))
+                  (reterr :impossible))
+                 ((erp attrspecs & pstate)
+                  ;; [__extension__] specquals structdeclors [attrspecs]
+                  (parse-*-attribute-specifier pstate))
+                 ((erp last-span pstate)
+                  ;; [__extension__] specquals structdeclors [attrspecs] ;
                   (read-punctuator ";" pstate)))
               (retok (make-structdecl-member :extension extension
                                              :specqual specquals
-                                             :declor structdeclors)
+                                             :declor structdeclors
+                                             :attrib attrspecs)
+                     (span-join span last-span)
+                     pstate)))
+           ;; If token2 is the keyword '__attribute__',
+           ;; GCC extensions must be supported
+           ;; (otherwise '__attribute__' would not be a keyword).
+           ;; We parse one or more attribute specifiers,
+           ;; and then the final semicolon.
+           ((equal token2 (token-keyword "__attribute__"))
+            ;; [__extension__] specquals __attribute__
+            (b* ((pstate (unread-token pstate))
+                 ;; [__extension__] specquals
+                 ((erp attrspecs & pstate)
+                  ;; [__extension__] specquals [attrspecs]
+                  (parse-*-attribute-specifier pstate))
+                 ((erp last-span pstate)
+                  ;; [__extension__] specquals [attrspecs] ;
+                  (read-punctuator ";" pstate)))
+              (retok (make-structdecl-member :extension extension
+                                             :specqual specquals
+                                             :declor nil
+                                             :attrib attrspecs)
                      (span-join span last-span)
                      pstate)))
            ;; If token2 is a semicolon,
@@ -10076,7 +10127,8 @@
            ((equal token2 (token-punctuator ";")) ; specquals ;
             (retok (make-structdecl-member :extension extension
                                            :specqual specquals
-                                           :declor nil)
+                                           :declor nil
+                                           :attrib nil)
                    (span-join span span2)
                    pstate))
            ;; If token2 is anything else, it is an error.
@@ -10748,6 +10800,172 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define parse-attribute-parameters ((pstate parstatep))
+    :returns (mv erp
+                 (attrparams expr-listp)
+                 (span spanp)
+                 (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse attribute parameters."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is only used if GCC extensions are supported.
+       See the ABNF grammar rule for @('attribute-parameters').")
+     (xdoc::p
+      "If parsing is successful, we return a list of zero or more expressions,
+       which are the parameters.
+       We re-use @(tsee parse-argument-expressions)
+       to parse the zero or more comma-separated expressions.
+       This parsing function does exactly what is needed here."))
+    (b* (((reterr) nil (irr-span) (irr-parstate))
+         ((erp open-span pstate) (read-punctuator "(" pstate))
+         ((erp exprs & pstate) (parse-argument-expressions pstate))
+         ((erp close-span pstate) (read-punctuator ")" pstate)))
+      (retok exprs (span-join open-span close-span) pstate))
+    :measure (two-nats-measure (parsize pstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-attribute ((pstate parstatep))
+    :returns (mv erp (attr attribp) (span spanp) (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse an attribute."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is only used if GCC extensions are supported.
+       See the ABNF grammar rule for @('attribute')."))
+    (b* (((reterr) (irr-attrib) (irr-span) (irr-parstate))
+         ((erp ident ident-span pstate) (read-identifier pstate)) ; ident
+         ((erp token & pstate) (read-token pstate)))
+      (cond
+       ;; If token is an open parenthesis, the attribute has parameters.
+       ((equal token (token-punctuator "(")) ; ident (
+        (b* ((pstate (unread-token pstate)) ; ident
+             ((erp exprs span pstate) ; ident ( exprs )
+              (parse-attribute-parameters pstate)))
+          (retok (make-attrib-name-param :name ident :param exprs)
+                 (span-join ident-span span)
+                 pstate)))
+       ;; If token is anything else, the attribute is just a name.
+       (t ; ident other
+        (b* ((pstate (if token (unread-token pstate) pstate))) ; ident
+          (retok (attrib-name ident) ident-span pstate)))))
+    :measure (two-nats-measure (parsize pstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-attribute-list ((pstate parstatep))
+    :returns (mv erp (attrs attrib-listp) (span spanp) (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse a list of one or more attributes, separated by commas."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is only used if GCC extensions are supported.
+       See the ABNF grammar rule for @('attribute-list')."))
+    (b* (((reterr) nil (irr-span) (irr-parstate))
+         (psize (parsize pstate))
+         ((erp attr span pstate) (parse-attribute pstate)) ; attr
+         ((unless (mbt (<= (parsize pstate) (1- psize)))) (reterr :impossible))
+         ((erp token & pstate) (read-token pstate)))
+      (cond
+       ;; If token is a comma,
+       ;; we recursively parse one or more additional attributes,
+       ;; and we combine them with the one parsed just above.
+       ((equal token (token-punctuator ",")) ; attr ,
+        (b* (((erp attrs last-span pstate) ; attr , attrs
+              (parse-attribute-list pstate)))
+          (retok (cons attr attrs) (span-join span last-span) pstate)))
+       ;; If token is not a comma,
+       ;; we have just the one attribute we parsed above.
+       (t ; attr other
+        (b* ((pstate (if token (unread-token pstate) pstate))) ; attr
+          (retok (list attr) span pstate)))))
+    :measure (two-nats-measure (parsize pstate) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-attribute-specifier ((first-span spanp) (pstate parstatep))
+    :returns (mv erp (attrspec attrib-specp) (span spanp) (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse an attribute specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is only used if GCC extensions are supported.
+       See the ABNF grammar rule for @('attribute-specifier').")
+     (xdoc::p
+      "This is called after parsing the initial @('__attribute__'),
+       whose span we pass to this parsing function as input."))
+    (b* (((reterr) (irr-attrib-spec) (irr-span) (irr-parstate))
+         ;; __attribute__
+         ((erp & pstate) (read-punctuator "(" pstate)) ; __attribute__ (
+         ((erp & pstate) (read-punctuator "(" pstate)) ; __attribute__ ( (
+         ((erp attrs & pstate) ; __attribute__ ( ( attrs
+          (parse-attribute-list pstate))
+         ((erp & pstate) ; __attribute__ ( ( attrs )
+          (read-punctuator ")" pstate))
+         ((erp last-span pstate) ; __attribute__ ( ( attrs ) )
+          (read-punctuator ")" pstate)))
+      (retok (attrib-spec attrs) (span-join first-span last-span) pstate))
+    :measure (two-nats-measure (parsize pstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-*-attribute-specifier ((pstate parstatep))
+    :returns (mv erp
+                 (attrspecs attrib-spec-listp)
+                 (span spanp)
+                 (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse zero or more attribute specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We parse a @('*attribute-specifier') in ABNF notation,
+       i.e. a repetition of zero or more attribute specifiers;
+       see ABNF grammar rule for @('attribute-specifier').")
+     (xdoc::p
+      "If the next token is the @('__attribute__') keyword,
+       we finish parsing the attribute specifier,
+       and we recursively call this function
+       to parse zero or more additional attribute specifiers,
+       which we combine with the one just parsed.")
+     (xdoc::p
+      "If there are no attribute specifiers, we return an irrelevant span.
+       When combining the span of the first attribute specifier (if present)
+       with the span of the remaining zero or more attribute specifiers,
+       we join spans only if the remaining ones are one or more;
+       if there are zero, the span of the first attribute specifier
+       is also the span of the whole sequence.")
+     (xdoc::p
+      "If GCC extensions are not supported,
+       this parsing function always returns the empty list,
+       because @('__attribute__') is a keyword
+       only if GCC extensions are supported."))
+    (b* (((reterr) nil (irr-span) (irr-parstate))
+         ((erp token first-span pstate) (read-token pstate))
+         ((unless (equal token (token-keyword "__attribute__")))
+          (b* ((pstate (if token (unread-token pstate) pstate)))
+            (retok nil (irr-span) pstate)))
+         ;; __attribute__
+         (psize (parsize pstate))
+         ((erp attrspec span pstate)
+          (parse-attribute-specifier first-span pstate))
+         ((unless (mbt (<= (parsize pstate) (1- psize)))) (reterr :impossible))
+         ;; __attribute__ ( ( ... ) )
+         ((erp attrspecs last-span pstate)
+          ;; __attribute__ ( ( ... ) ) [attrspecs]
+          (parse-*-attribute-specifier pstate)))
+      (retok (cons attrspec attrspecs)
+             (if attrspecs (span-join span last-span) span)
+             pstate))
+    :measure (two-nats-measure (parsize pstate) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :prepwork ((local (in-theory (disable acl2::member-of-cons)))) ; for speed
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -11100,6 +11318,31 @@
           (parsize pstate))
       :rule-classes :linear
       :fn parse-declarator-or-abstract-declarator)
+    (defret parsize-of-parse-attribute-parameters-uncond
+      (<= (parsize new-pstate)
+          (parsize pstate))
+      :rule-classes :linear
+      :fn parse-attribute-parameters)
+    (defret parsize-of-parse-attribute-uncond
+      (<= (parsize new-pstate)
+          (parsize pstate))
+      :rule-classes :linear
+      :fn parse-attribute)
+    (defret parsize-of-parse-attribute-list-uncond
+      (<= (parsize new-pstate)
+          (parsize pstate))
+      :rule-classes :linear
+      :fn parse-attribute-list)
+    (defret parsize-of-parse-attribute-specifier-uncond
+      (<= (parsize new-pstate)
+          (parsize pstate))
+      :rule-classes :linear
+      :fn parse-attribute-specifier)
+    (defret parsize-of-parse-*-attribute-specifier-uncond
+      (<= (parsize new-pstate)
+          (parsize pstate))
+      :rule-classes :linear
+      :fn parse-*-attribute-specifier)
     :hints
     (("Goal" :in-theory (enable fix nfix))
      (cond
@@ -11496,6 +11739,34 @@
                    (1- (parsize pstate))))
       :rule-classes :linear
       :fn parse-declarator-or-abstract-declarator)
+    (defret parsize-of-parse-attribute-parameters-cond
+      (implies (not erp)
+               (<= (parsize new-pstate)
+                   (1- (parsize pstate))))
+      :rule-classes :linear
+      :fn parse-attribute-parameters)
+    (defret parsize-of-parse-attribute-cond
+      (implies (not erp)
+               (<= (parsize new-pstate)
+                   (1- (parsize pstate))))
+      :rule-classes :linear
+      :fn parse-attribute)
+    (defret parsize-of-parse-attribute-list-cond
+      (implies (not erp)
+               (<= (parsize new-pstate)
+                   (1- (parsize pstate))))
+      :rule-classes :linear
+      :fn parse-attribute-list)
+    (defret parsize-of-parse-attribute-specifier-cond
+      (implies (not erp)
+               (<= (parsize new-pstate)
+                   (1- (parsize pstate))))
+      :rule-classes :linear
+      :fn parse-attribute-specifier)
+    (defret parsize-of-parse-*-attribute-specifier-cond
+      t
+      :rule-classes nil
+      :fn parse-*-attribute-specifier)
     :hints
     (("Goal" :in-theory (enable fix nfix))
      (cond
@@ -11572,221 +11843,6 @@
   (verify-guards parse-expression
     :hints (("Goal" :in-theory (e/d (acl2::member-of-cons)
                                     ((:e tau-system))))))) ; for speed
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-attribute-parameters ((pstate parstatep))
-  :returns (mv erp
-               (attrparams expr-listp)
-               (span spanp)
-               (new-pstate parstatep))
-  :short "Parse attribute parameters."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is only used if GCC extensions are supported.
-     See the ABNF grammar rule for @('attribute-parameters').")
-   (xdoc::p
-    "If parsing is successful, we return a list of zero or more expressions,
-     which are the parameters.
-     We re-use @(tsee parse-argument-expressions)
-     to parse the zero or more comma-separated expressions.
-     This parsing function does exactly what is needed here."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
-       ((erp open-span pstate) (read-punctuator "(" pstate))
-       ((erp exprs & pstate) (parse-argument-expressions pstate))
-       ((erp close-span pstate) (read-punctuator ")" pstate)))
-    (retok exprs (span-join open-span close-span) pstate))
-
-  ///
-
-  (defret parsize-of-parse-attribute-parameters-uncond
-    (<= (parsize new-pstate)
-        (parsize pstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-attribute-parameters-cond
-    (implies (not erp)
-             (<= (parsize new-pstate)
-                 (1- (parsize pstate))))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-attribute ((pstate parstatep))
-  :returns (mv erp (attr attribp) (span spanp) (new-pstate parstatep))
-  :short "Parse an attribute."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is only used if GCC extensions are supported.
-     See the ABNF grammar rule for @('attribute')."))
-  (b* (((reterr) (irr-attrib) (irr-span) (irr-parstate))
-       ((erp ident ident-span pstate) (read-identifier pstate)) ; ident
-       ((erp token & pstate) (read-token pstate)))
-    (cond
-     ;; If token is an open parenthesis, the attribute has parameters.
-     ((equal token (token-punctuator "(")) ; ident (
-      (b* ((pstate (unread-token pstate)) ; ident
-           ((erp exprs span pstate) ; ident ( exprs )
-            (parse-attribute-parameters pstate)))
-        (retok (make-attrib-name-param :name ident :param exprs)
-               (span-join ident-span span)
-               pstate)))
-     ;; If token is anything else, the attribute is just a name.
-     (t ; ident other
-      (b* ((pstate (if token (unread-token pstate) pstate))) ; ident
-        (retok (attrib-name ident) ident-span pstate)))))
-
-  ///
-
-  (defret parsize-of-parse-attribute-uncond
-    (<= (parsize new-pstate)
-        (parsize pstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-attribute-cond
-    (implies (not erp)
-             (<= (parsize new-pstate)
-                 (1- (parsize pstate))))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-attribute-list ((pstate parstatep))
-  :returns (mv erp (attrs attrib-listp) (span spanp) (new-pstate parstatep))
-  :short "Parse a list of one or more attributes, separated by commas."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is only used if GCC extensions are supported.
-     See the ABNF grammar rule for @('attribute-list')."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
-       ((erp attr span pstate) (parse-attribute pstate)) ; attr
-       ((erp token & pstate) (read-token pstate)))
-    (cond
-     ;; If token is a comma,
-     ;; we recursively parse one or more additional attributes,
-     ;; and we combine them with the one parsed just above.
-     ((equal token (token-punctuator ",")) ; attr ,
-      (b* (((erp attrs last-span pstate) ; attr , attrs
-            (parse-attribute-list pstate)))
-        (retok (cons attr attrs) (span-join span last-span) pstate)))
-     ;; If token is not a comma,
-     ;; we have just the one attribute we parsed above.
-     (t ; attr other
-      (b* ((pstate (if token (unread-token pstate) pstate))) ; attr
-        (retok (list attr) span pstate)))))
-  :measure (parsize pstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns
-
-  ///
-
-  (defret parsize-of-parse-attribute-list-uncond
-    (<= (parsize new-pstate)
-        (parsize pstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret parsize-of-parse-attribute-list-cond
-    (implies (not erp)
-             (<= (parsize new-pstate)
-                 (1- (parsize pstate))))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-attribute-specifier ((first-span spanp) (pstate parstatep))
-  :returns (mv erp (attrspec attrib-specp) (span spanp) (new-pstate parstatep))
-  :short "Parse an attribute specifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is only used if GCC extensions are supported.
-     See the ABNF grammar rule for @('attribute-specifier').")
-   (xdoc::p
-    "This is called after parsing the initial @('__attribute__'),
-     whose span we pass to this parsing function as input."))
-  (b* (((reterr) (irr-attrib-spec) (irr-span) (irr-parstate))
-       ;; __attribute__
-       ((erp & pstate) (read-punctuator "(" pstate)) ; __attribute__ (
-       ((erp & pstate) (read-punctuator "(" pstate)) ; __attribute__ ( (
-       ((erp attrs & pstate) ; __attribute__ ( ( attrs
-        (parse-attribute-list pstate))
-       ((erp & pstate) ; __attribute__ ( ( attrs )
-        (read-punctuator ")" pstate))
-       ((erp last-span pstate) ; __attribute__ ( ( attrs ) )
-        (read-punctuator ")" pstate)))
-    (retok (attrib-spec attrs) (span-join first-span last-span) pstate))
-
-  ///
-
-  (defret parsize-of-parse-attribute-specifier-uncond
-    (<= (parsize new-pstate)
-        (parsize pstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-attribute-specifier-cond
-    (implies (not erp)
-             (<= (parsize new-pstate)
-                 (1- (parsize pstate))))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-*-attribute-specifier ((pstate parstatep))
-  :returns (mv erp
-               (attrspecs attrib-spec-listp)
-               (span spanp)
-               (new-pstate parstatep))
-  :short "Parse zero or more attribute specifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is only used if GCC extensions are supported.
-     We parse a @('*attribute-specifier') in ABNF notation,
-     i.e. a repetition of zero or more attribute specifiers;
-     see ABNF grammar rule for @('attribute-specifier').")
-   (xdoc::p
-    "If the next token is the @('__attribute__') keyword,
-     we finish parsing the attribute specifier,
-     and we recursively call this function
-     to parse zero or more additional attribute specifiers,
-     which we combine with the one just parsed.")
-   (xdoc::p
-    "If there are no attribute specifiers, we return an irrelevant span.
-     When combining the span of the first attribute specifier (if present)
-     with the span of the remaining zero or more attribute specifiers,
-     we join spans only if the remaining ones are one or more;
-     if there are zero, the span of the first attribute specifier
-     is also the span of the whole sequence."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
-       ((erp token first-span pstate) (read-token pstate))
-       ((unless (equal token (token-keyword "__attribute__")))
-        (b* ((pstate (if token (unread-token pstate) pstate)))
-          (retok nil (irr-span) pstate)))
-       ;; __attribute__
-       ((erp attrspec span pstate)
-        (parse-attribute-specifier first-span pstate))
-       ;; __attribute__ ( ( ... ) )
-       ((erp attrspecs last-span pstate) (parse-*-attribute-specifier pstate)))
-    ;; __attribute__ ( ( ... ) ) zero-or-more-attribute-specifiers
-    (retok (cons attrspec attrspecs)
-           (if attrspecs (span-join span last-span) span)
-           pstate))
-  :measure (parsize pstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns
-
-  ///
-
-  (defret parsize-of-parse-*-attribute-specifier-uncond
-    (<= (parsize new-pstate)
-        (parsize pstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

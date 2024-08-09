@@ -1,0 +1,42 @@
+The paper
+
+``Proving Theorems about Java-like Byte Code,'' in E.-R. Olderog and
+  B. Steffen (eds.) Correct System Design -- Recent Insights and Advances, LNCS
+  1710, pp. 139-162, 1999.
+
+formalized a version of the JVM that included method invocation (both static
+and virtual) and return, and class instances (including a demonstration of
+inheritance).  The machine in the paper was named tjvm for ``Toy JVM.''
+Accompanying the paper were two proof scripts, named tjvm.lisp and
+examples.lisp.
+
+But to put this model in its ``proper'' place in the sequence of JVM models, we
+have renamed it to be m2 (in the proof scripts).  So the files
+
+m2.lisp -- the definition of the m2 machine, formerly known as tjvm
+examples.lisp -- some example proofs about m2
+
+To carry this out,
+
+I renamed the "TJVM" package to be "M2"
+I replaced every tjvm (or "TJVM") by m2 (or "M2") respectively
+
+and in addition, in the file examples.lisp I made the following changes as I
+transcribed the paper into the ACL2 examples.lisp script.
+
+I deleted the defun of natp because natp is now an ACL2 primitive.
+
+The definition, on page 2 of the paper, in which the bold face symbol Fact is
+defined to be an ACL2 object containing the byte code for the method
+named "fact", is transcribed in the examples.lisp script to a definition of the
+constant function fact-method.  ACL2 does not support bold face symbols.
+
+The same convention is followed for transcribing the bold face method constants
+xIncrement, inBox, setColor, and setColorBox (which thus are replaced by the
+constant functions xIncrement-method, inBox-method, setColor-method, and
+setColorBox-method).
+
+Three class constants are defined in the paper as bold face Math-class,
+Point-class, and ColoredPoint-class and they are transcribed in the script as
+the constant functions Math-class, Point-class, and ColoredPoint-class (without
+bold face).
