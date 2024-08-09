@@ -92,7 +92,8 @@
      :sizeof-ambig (prog2$
                     (raise "Misusage error: ~x0." (expr-fix expr))
                     (expr-fix expr))
-     :alignof (expr-alignof (simpadd0-tyname expr.type))
+     :alignof (make-expr-alignof :type (simpadd0-tyname expr.type)
+                                 :uscores expr.uscores)
      :cast (make-expr-cast
             :type (simpadd0-tyname expr.type)
             :arg (simpadd0-expr expr.arg))
@@ -559,7 +560,8 @@
      :member (make-structdecl-member
               :extension structdecl.extension
               :specqual (simpadd0-specqual-list structdecl.specqual)
-              :declor (simpadd0-structdeclor-list structdecl.declor))
+              :declor (simpadd0-structdeclor-list structdecl.declor)
+              :attrib structdecl.attrib)
      :statassert (structdecl-statassert
                   (simpadd0-statassert structdecl.unwrap)))
     :measure (structdecl-count structdecl))

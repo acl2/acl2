@@ -140,15 +140,7 @@
       which events are possible and which new states they lead to.")
     (xdoc::li
      "The number of the last round at which
-      this validator has committed an anchor.
-      This is calculable from the blockchain state component,
-      since blocks include round numbers (see @(tsee block));
-      this will be stated and proved as an invariant,
-      under additional invariant conditions on
-      the blockchain's round numbers being all even
-      (because each block comes from an anchor)
-      and being in strictly increasing order from right to left
-      (because anchors are committed in order).")
+      this validator has committed an anchor.")
     (xdoc::li
      "The blockchain as seen by the validator.
       We model it as a list of blocks from right to left,
@@ -180,7 +172,7 @@
       but for now we model it explicitly,
       because that is closer to the implementation.")
     (xdoc::li
-     "The state of the timeer; see @(tsee timer)."))
+     "The state of the timer; see @(tsee timer)."))
    (xdoc::p
     "The address of the validator, which never changes,
      is captured outside this fixtype,

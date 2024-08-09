@@ -182,4 +182,3 @@
 ; and which contains 1 or 0 on top of the stack depending on whether x < y.
 ; Note that the algorithm used by *pi* is not specified or derivable from this
 ; formula.
-

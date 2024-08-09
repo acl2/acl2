@@ -336,5 +336,3 @@
    (defthm !tmi3-spec
      :hints
      (("Subgoal *1/10'" :expand (!TMI3 ST TAPE POS TM W (NNIL W) N))))))
-
-
