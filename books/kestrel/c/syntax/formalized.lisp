@@ -44,7 +44,7 @@
      corresponds to the subset of C that has both static and dynamic semantics.
      This is the subset for which we can state and prove formal properties,
      e.g. of a "
-    (xdoc::seetopic "c2c:transformation-tools" "C-to-C transformation")
+    (xdoc::seetopic "c2c::transformation-tools" "C-to-C transformation")
     ". Here we provide such a characterization,
      in the form of predicates over the abstract syntax fixtypes.")
    (xdoc::p
@@ -397,7 +397,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the expressions supported by @(tsee exec-expr-asg).
+    "These are the expressions supported by @(tsee c::exec-expr-asg).
      The expression must be a simple assignment expression.
      The sub-expressions must have formal dynamic semantics.
      The left expression must be pure.
@@ -585,7 +585,7 @@
      (xdoc::p
       "Statements not supported by @(tsee ldm-stmt)
        are not supported here either.
-       In addition, we look at @(tsee exec-stmt) to determine
+       In addition, we look at @(tsee c::exec-stmt) to determine
        which of those statements have formal dynamic semantics,
        and what restrictions there are on the kinds of expressions
        that can occur in the statements."))
