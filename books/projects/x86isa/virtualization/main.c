@@ -52,51 +52,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-typedef struct {
-  uint8_t (*page)[1 << 20];
-  uint16_t slot;
-} l2;
-
-typedef struct {
-  l2 *l2s[1 << 22];
-} l1;
-
-typedef struct {
-  l1 *l1s[1 << 22];
-  uint16_t min_inused_slot;
-} x86_mem;
-
 typedef uint64_t vm_ptr;
-
-// Calloc guarantees 0 initialization
-// Technically the pointers should be NULL initialized, not 0, but
-// for our use we can assume NULL is 0
-x86_mem *mem_create() { return calloc(1, sizeof(x86_mem)); }
-
-l2 *l2_ptr(x86_mem *mem, uint64_t pg_addr) {
-  uint32_t i1 = (pg_addr >> 22) & ((1 << 22) - 1);
-  uint32_t i2 = pg_addr & ((1 << 22) - 1);
-  if (mem->l1s[i1] == NULL)
-    mem->l1s[i1] = calloc(1, sizeof(l1));
-
-  if (mem->l1s[i1]->l2s[i2] == NULL) {
-    mem->l1s[i1]->l2s[i2] = malloc(sizeof(l2));
-    mem->l1s[i1]->l2s[i2]->slot = 0;
-    mem->l1s[i1]->l2s[i2]->page = malloc(1 << 20);
-  }
-  return mem->l1s[i1]->l2s[i2];
-}
-
-uint8_t *byte_ptr(x86_mem *mem, vm_ptr addr) {
-  uint32_t offset = addr & ((1 << 20) - 1);
-  return &(*l2_ptr(mem, addr >> 20)->page)[offset];
-}
-
-void mem_write(x86_mem *mem, vm_ptr addr, uint8_t val) {
-  *byte_ptr(mem, addr) = val;
-}
-
-uint8_t mem_read(x86_mem *mem, vm_ptr addr) { return *byte_ptr(mem, addr); }
 
 typedef int kvm_fd;
 
@@ -435,40 +391,6 @@ void vm_run_single(vm *v) {
   ioctl(v->vcpu.fd, KVM_SET_GUEST_DEBUG, &guest_dbg);
   vm_run(v);
 }
-
-// typedef struct {
-//   uint64_t min, max;
-// } hole;
-
-// Note: These holes must also be added in top.lisp
-// const hole holes[] = {{0x9e030, 0x9e050}};
-
-// bool in_hole(uint64_t addr) {
-//   for (size_t idx = 0; idx < sizeof(holes) / sizeof(hole); idx++) {
-//     const hole *h = &holes[idx];
-//     if (addr >= h->min && addr <= h->max) {
-//       return true;
-//     }
-//   }
-// 
-//   return false;
-// }
-// 
-// void vm_run_outside_hole_single_instruction(vm *v) {
-//   struct kvm_regs old_regs;
-//   struct kvm_regs new_regs;
-//   struct kvm_guest_debug guest_dbg = {
-//       .control = KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_SINGLESTEP |
-//                  KVM_GUESTDBG_USE_SW_BP,
-//   };
-// 
-//   do {
-//     ioctl(v->vcpu.fd, KVM_GET_REGS, &old_regs);
-//     ioctl(v->vcpu.fd, KVM_SET_GUEST_DEBUG, &guest_dbg);
-//     ioctl(v->vcpu.fd, KVM_RUN, NULL);
-//     ioctl(v->vcpu.fd, KVM_GET_REGS, &new_regs);
-//   } while (old_regs.rip == new_regs.rip || in_hole(new_regs.rip));
-// }
 
 uint64_t get_gprs(vm *v, gprs_file *gprs, uint64_t *rflags) {
   struct kvm_regs regs;
