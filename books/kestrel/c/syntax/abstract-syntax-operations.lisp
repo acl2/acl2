@@ -1125,3 +1125,44 @@
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define transunit-ensemble-paths ((tunits transunit-ensemblep))
+  :returns (paths filepath-setp)
+  :short "Set of file paths in a translation unit ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the keys of the map from file paths to translation units.")
+   (xdoc::p
+    "It is more concise, and more abstract,
+     than extracting the map and then the keys.")
+   (xdoc::p
+    "Together with @(tsee transunit-at-path),
+     it can be used as an API to inspect translation unit ensembles."))
+  (omap::keys (transunit-ensemble->unwrap tunits))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define transunit-at-path ((path filepathp) (tunits transunit-ensemblep))
+  :guard (set::in path (transunit-ensemble-paths tunits))
+  :returns (tunit transunitp)
+  :short "Translation unit at a certain path in a translation unit ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the value associated to the key (path) in the map,
+     which the guard requires to be in the translation unit ensemble.")
+   (xdoc::p
+    "It is more concise, and more abstract,
+     than accessing the map and then looking up the path.")
+   (xdoc::p
+    "Together with @(tsee transunit-ensemble-paths),
+     it can be used an as API to inspect a file set."))
+  (transunit-fix
+   (omap::lookup (filepath-fix path) (transunit-ensemble->unwrap tunits)))
+  :guard-hints (("Goal" :in-theory (enable omap::assoc-to-in-of-keys
+                                           transunit-ensemble-paths)))
+  :hooks (:fix))
