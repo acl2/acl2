@@ -1454,7 +1454,8 @@
                                    "_Static_assert"
                                    "_Thread_local"))
             (and (parstate->gcc pstate)
-                 (member-equal string '("asm"
+                 (member-equal string '("__alignof__"
+                                        "asm"
                                         "__asm__"
                                         "__attribute__"
                                         "__extension__"
@@ -5109,7 +5110,16 @@
      a preincrement or predecrement operator,
      or a unary operator as defined in the grammar,
      or a @('sizeof') keyword,
-     or a @('_Alignof') keyword."))
+     or an @('_Alignof') keyword.")
+   (xdoc::p
+    "We also compare the token against
+     the GCC extension variant @('__alignof__') of @('_Alignof').
+     Note that this variant is a keywords only if GCC extensions are supported:
+     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     So the comparison here with that variant keyword
+     will always fail if GCC extensions are not supported,
+     because in that case both @('__alignof__')
+     would be an identifier token, not a keyword token."))
   (or (token-primary-expression-start-p token?)
       (equal token? (token-punctuator "++"))
       (equal token? (token-punctuator "--"))
@@ -5120,7 +5130,8 @@
       (equal token? (token-punctuator "~"))
       (equal token? (token-punctuator "!"))
       (equal token? (token-keyword "sizeof"))
-      (equal token? (token-keyword "_Alignof")))
+      (equal token? (token-keyword "_Alignof"))
+      (equal token? (token-keyword "__alignof__")))
   ///
 
   (defrule non-nil-when-token-unary-expression-start-p
@@ -7289,14 +7300,19 @@
                      pstate))))))
        ;; If token is '_Alignof',
        ;; we parse an open parenthesis, a type name, and a closed parenthesis.
-       ((equal token (token-keyword "_Alignof")) ; _Alignof
+       ;; We also allow '__alignof__',
+       ;; which can be a keyword only if GCC extensions are supported.
+       ((or (equal token (token-keyword "_Alignof")) ; _Alignof
+            (equal token (token-keyword "__alignof__"))) ; __alignof__
         (b* (((erp & pstate) ; _Alignof (
               (read-punctuator "(" pstate))
              ((erp tyname & pstate) ; _Alignof ( typename
               (parse-type-name pstate))
              ((erp last-span pstate) ; _Alignof ( typename )
               (read-punctuator ")" pstate)))
-          (retok (expr-alignof tyname)
+          (retok (make-expr-alignof
+                  :type tyname
+                  :uscores (equal token (token-keyword "__alignof__")))
                  (span-join span last-span)
                  pstate)))
        ;; If token is anything else, it is an error.

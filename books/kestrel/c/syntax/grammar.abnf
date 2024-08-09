@@ -439,6 +439,9 @@ keyword = %s"auto"
 ; Our goal here is not to thoroughly cover all the GCC extensions,
 ; but only to cover practical C code that uses certain GCC extensions.
 
+; We include the '__alignof__' keywords, which is equivalent to '_Alignof'.
+; The latter is standard, presumably added to the standard after GCC.
+
 ; We include the 'asm' keyword, and its '__asm__' variant;
 ; see https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html.
 
@@ -456,7 +459,8 @@ keyword = %s"auto"
 ; but it begins with "As with the C front end, ...".
 ; Furthermore, we have seen '__inline' and '__restrict' in actual C code.
 
-gcc-keyword = %s"asm"
+gcc-keyword = %s"__alignof__"
+            / %s"asm"
             / %s"__asm__"
             / %s"__attribute__"
             / %s"__extension__"

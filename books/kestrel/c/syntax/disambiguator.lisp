@@ -847,7 +847,8 @@
                          table)))
        :alignof
        (b* (((erp new-tyname table) (dimb-tyname expr.type table)))
-         (retok (expr-alignof new-tyname) table))
+         (retok (make-expr-alignof :type new-tyname :uscores expr.uscores)
+                table))
        :cast
        (b* (((erp new-type table) (dimb-tyname expr.type table))
             ((erp new-arg table) (dimb-expr expr.arg table)))

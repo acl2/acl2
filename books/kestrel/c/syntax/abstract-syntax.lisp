@@ -1229,6 +1229,11 @@
        This is captured by the @(':sizeof-ambig') case,
        which contains an @(tsee amb-expr/tyname).")
      (xdoc::p
+      "The @(':alignof') case of this fixtype
+       includes a flag saying whether the keyword used is
+       the standard @('_Alignof') or the GCC extension @('__alignof__').
+       The latter is allowed only if GCC extensions are enabled.")
+     (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
      (xdoc::p
@@ -1404,7 +1409,8 @@
              (arg expr)))
     (:sizeof ((type tyname)))
     (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
-    (:alignof ((type tyname)))
+    (:alignof ((type tyname)
+               (uscores bool)))
     (:cast ((type tyname)
             (arg expr)))
     (:binary ((op binop)

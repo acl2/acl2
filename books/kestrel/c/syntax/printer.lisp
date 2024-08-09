@@ -1680,7 +1680,9 @@
                 (pstate (print-astring ")" pstate)))
              pstate)
            :alignof
-           (b* ((pstate (print-astring "_Alignof(" pstate))
+           (b* ((pstate (if expr.uscores
+                            (print-astring "__alignof__(" pstate)
+                          (print-astring "_Alignof(" pstate)))
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
