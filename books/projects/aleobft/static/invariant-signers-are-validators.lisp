@@ -56,7 +56,7 @@
      they could be faulty ones."))
   :returns (yes/no booleanp)
   (set::subset (certificate->signers cert)
-               (validator-addresses systate)))
+               (all-addresses systate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
