@@ -10,13 +10,9 @@
 
 (in-package "STR")
 
-(include-book "bin-digit-char-listp")
 (include-book "char-kinds")
-(include-book "dec-digit-char-listp")
 (include-book "decimal-fty")
 (include-book "explode-implode-equalities")
-(include-book "hex-digit-char-listp")
-(include-book "oct-digit-char-listp")
 (include-book "strtok-bang")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
