@@ -1,13 +1,5 @@
-#
-# Simulation and recovery files
-#
-stuff.tar.xz
-x86-state.bak
-
 machine/x86isa_full_exec_support.lisp
 machine/syscalls.acl2
-
-# The usual suspects...
 workxxx*
 *@expansion.lsp
 *.out
