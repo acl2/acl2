@@ -4,6 +4,9 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2020, Shilpi Goel
+; Copyright (C) May - August 2023, Regents of the University of Texas
+; Copyright (C) August 2023 - May 2024, Yahya Sohail
+; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +38,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@gmail.com>
+; Contributing Author(s):
+; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 (include-book "init-page-tables" :ttags :all)

@@ -1,4 +1,4 @@
-From b6b6741f864759909c7b602267a35e0d789e6b06 Mon Sep 17 00:00:00 2001
+From 9b4127029b5263f60b80466aded79356fe5f4f13 Mon Sep 17 00:00:00 2001
 From: Yahya Sohail <yahya.sohail@intel.com>
 Date: Wed, 31 Jul 2024 12:06:33 -0700
 Subject: [PATCH] This patch adds support for running the ACL2 x86isa model.
@@ -14,6 +14,23 @@ The changes include the following:
 
 It also includes a `.config` file for building the kernel for the x86isa
 model.
+
+Copyright (C) May - August 2023, Regents of the University of Texas
+Copyright (C) August 2023 - May 2024, Yahya Sohail
+Copyright (C) May 2024 - August 2024, Intel Corporation
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; version 2.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 ---
  .config                               | 2465 +++++++++++++++++++++++++
  arch/x86/boot/compressed/acpi.c       |    5 +-

@@ -3,7 +3,9 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2015, May - August 2023, Regents of the University of Texas
+; Copyright (C) August 2023 - May 2024, Yahya Sohail
+; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -40,6 +42,8 @@
 ; Robert Krug         <rkrug@cs.utexas.edu>
 ; Updated by Shilpi Goel <shilpi@centtech.com> in June, 2021 to use
 ; the bigmem and defrstobj books.
+; Contributing Author(s):
+; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 
