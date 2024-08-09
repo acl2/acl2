@@ -43,5 +43,3 @@
 (in-package "X86ISA")
 
 (reset-prehistory)
-
-(set-guard-checking nil)

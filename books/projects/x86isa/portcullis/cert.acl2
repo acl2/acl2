@@ -40,6 +40,6 @@
 
 (set-waterfall-parallelism t)
 (include-book "portcullis")
-;; cert-flags: ? t :skip-proofs-okp t
+;; cert-flags: ? t
 
 ;; ======================================================================

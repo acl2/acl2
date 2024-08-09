@@ -149,10 +149,6 @@
                           (tlb-consistent-n n lin-addr r-w-x x86)))
           :hints (("Goal" :in-theory (e/d (disjoint-p) (ia32e-la-to-pa)))))
 
-  ;; (skip-proofs (defthm tlb-consistent-n-non-canonical
-  ;;                      (implies (not (tlb-consistent-n n lin-addr r-w-x x86))
-  ;;                               (canonical-address-p lin-addr))))
-
   (local (include-book "arithmetic-5/top" :dir :system))
 
   (defthm tlb-consistent-n-implies-tlb-consistent
