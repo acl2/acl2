@@ -56,7 +56,8 @@
             :sizeof-ambig (prog2$
                             (raise "Misusage error: ~x0." (expr-fix expr))
                             (expr-fix expr))
-            :alignof (expr-alignof (my-simpadd0-tyname expr.type))
+            :alignof (make-expr-alignof :type (my-simpadd0-tyname expr.type)
+                                        :uscores expr.uscores)
             :cast (make-expr-cast
                     :type (my-simpadd0-tyname expr.type)
                     :arg (my-simpadd0-expr expr.arg))

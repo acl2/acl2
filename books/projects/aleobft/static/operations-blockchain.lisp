@@ -177,7 +177,6 @@
      the result is the set of certificate to commit in this block.
      So we collect all the transactions from the certificates,
      we form a block, and we add it to the blockchain.
-     The round number for the block is taken from the anchor.
      We also update the set of committed certificates,
      and return it along with the blockchain."))
   (b* (((when (endp anchors))
@@ -189,8 +188,7 @@
        (hist-certs (certificate-causal-history anchor dag))
        (certs-to-commit (set::difference hist-certs committed-certs))
        (transs (transactions-from-certificates certs-to-commit))
-       (block (make-block :transactions transs
-                          :round (certificate->round anchor)))
+       (block (make-block :transactions transs))
        (blockchain (cons block blockchain))
        (committed-certs (set::union committed-certs certs-to-commit)))
     (mv blockchain committed-certs))

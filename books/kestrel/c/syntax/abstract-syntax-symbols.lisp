@@ -66,6 +66,7 @@
     make-expr-unary
     expr-sizeof
     expr-alignof
+    make-expr-alignof
     make-expr-cast
     make-expr-binary
     make-expr-cond

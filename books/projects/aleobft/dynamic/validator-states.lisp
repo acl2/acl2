@@ -15,7 +15,7 @@
 (include-book "certificates")
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
-(local (include-book "std/lists/top" :dir :system))
+;; (local (include-book "std/lists/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -55,7 +55,7 @@
     "These pairs serve to record, in a validator state,
      which certificates have been endorsed
      but not received from the network yet.
-     See the definition of validator states and of state transitions
+     See @(tsee validator-state) and the definition of state transitions
      for details about the exact use of these pairs."))
   ((address address)
    (pos posp))
@@ -85,7 +85,7 @@
     "Our model does not represent real time,
      but it represents the state of timers,
      which may be either running or expired.
-     Each validator has such a timer."))
+     Each validator has such a timer: see @(tsee validator-state)."))
   (:running ())
   (:expired ())
   :pred timerp)
@@ -99,8 +99,7 @@
    (xdoc::p
     "As explained in @(see validator-states),
      faulty validators are modeled with no internal state.
-     This justifies the generic name @('validator-state') for this fixtype,
-     as opposed to something like @('correct-validator-state').")
+     So this fixtype only models the state of correct validators.")
    (xdoc::p
     "We model the state of a correct validator as consisting of:")
    (xdoc::ol
@@ -109,16 +108,20 @@
     (xdoc::li
      "The DAG of certificates, modeled as a set.
       Invariants about the uniqueness of author and round combinations
-      are stated later.")
+      are stated and proved elsewhere.")
     (xdoc::li
      "A buffer of certificates that the validator has received
       but has not been able to put into the DAG yet
-      because some of its causal history is missing.
+      because some of its predecessor certificates
+      (identified by the @('previous') certificate component)
+      are not in the DAG yet.
       Certificates move from the buffer to the DAG
-      once their causal history is in the DAG.
+      once their predecessors are in the DAG.
+      This is in fact an important invariant, stated and proved elsewhere.
       The buffer is modeled as a set,
       since ordering does not matter,
-      given the way we formalize (later) certificate movement.")
+      given the way we formalize certificate movement
+      as non-deterministic choice.")
     (xdoc::li
      "A set of pairs, each consisting of an address and a positive integer,
       which represents the author-round combinations
@@ -131,8 +134,8 @@
       (such different proposals would come from a faulty validator):
       this is a critical property to guarantee non-equivocation.
       Here we model the exchange of proposals and signatures
-      at a more abstract level,
-      but we need to model this aspect to enforce that
+      at a more abstract level, not explicitly,
+      but we still need to model this aspect to enforce that
       there will not be different certificates, in the system,
       with the same combination of author and round number.
       The use of this component of the state of a correct validator
@@ -149,14 +152,14 @@
       We leave the genesis block implicit:
       the rightmost block in our list is actually
       the block just after the genesis block.
-      This blockchain state component of the validator should be redundant,
-      calculable from the DAG state component
-      and from information about the committed rounds.
-      This is the case also because we do not model garbage collection.
-      However, it is more convenient to explicate the blockchain
-      in order to define the state transition system,
-      and then to prove its redundancy as an invariant,
-      since the proof may require a bit of work.")
+      In the model of AleoBFT with static committees,
+      we have proved that this blockchain state component is redundant,
+      calculable from other state components.
+      The same should be the case for dynamic committees as well.
+      However, the reasons (i.e. proof) of this redundancy are somewhat complex,
+      and thus it is better to include the blockchain in the validator state,
+      so that the state transitions can be formally defined
+      in a way that is closer to AleoBFT's implementation.")
     (xdoc::li
      "The set of all the certificates that have been committed so far,
       i.e. whose transactions have been included in the blockchain.
@@ -167,10 +170,14 @@
       to be committed the next time anchors are committed,
       by computing the full causal history
       but removing the already committed certificates.
-      This state component should be redundant,
-      calculable from other state components,
-      but for now we model it explicitly,
-      because that is closer to the implementation.")
+      In the model of AleoBFT with static committees,
+      we have proved that this committed certificates state component
+      is redundant, calculable from other state components.
+      The same should be the case for dynamic committees.
+      However, for the same reason outlines above for the blockchain component,
+      it is best to leave this component in the state,
+      for a more natural definition of the state transitions,
+      and to prove later its redundancy.")
     (xdoc::li
      "The state of the timer; see @(tsee timer)."))
    (xdoc::p
@@ -179,11 +186,9 @@
      in the map from validator addresses to validator states
      in @(tsee system-state).")
    (xdoc::p
-    "Invariants on validator states,
-     such as the aforementioned uniqueness of
-     author and round combinations in the DAG certificates,
-     as well as others like disjointness of DAG and buffer,
-     are formalized later."))
+    "There are many invariants on validator states,
+     such as the ones mentioned above.
+     These are stated and proved elsewhere."))
   ((round pos)
    (dag certificate-set)
    (buffer certificate-set)

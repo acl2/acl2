@@ -12,7 +12,6 @@
 (in-package "ALEO")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/fty/pos-set" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
@@ -34,7 +33,7 @@
      which is an Aleo blockchain address of the form @('aleo1...').
      By `validator' we mean not only one in the committee,
      but any possible validator that may be in a committee;
-     in fact, the committees is dynamic.")
+     in fact, the committee is dynamic.")
    (xdoc::p
     "In our model, the details of these addresses are irrelevant,
      so we treat addresses as abstract entities.

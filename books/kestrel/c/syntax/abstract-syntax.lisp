@@ -1229,6 +1229,11 @@
        This is captured by the @(':sizeof-ambig') case,
        which contains an @(tsee amb-expr/tyname).")
      (xdoc::p
+      "The @(':alignof') case of this fixtype
+       includes a flag saying whether the keyword used is
+       the standard @('_Alignof') or the GCC extension @('__alignof__').
+       The latter is allowed only if GCC extensions are enabled.")
+     (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
      (xdoc::p
@@ -1404,7 +1409,8 @@
              (arg expr)))
     (:sizeof ((type tyname)))
     (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
-    (:alignof ((type tyname)))
+    (:alignof ((type tyname)
+               (uscores bool)))
     (:cast ((type tyname)
             (arg expr)))
     (:binary ((op binop)
@@ -2060,10 +2066,15 @@
        a member declaration starts with
        the @('__extension__') GCC keyword.
        We model that as a boolean that says whether
-       that keyword is present or absent."))
+       that keyword is present or absent.")
+     (xdoc::p
+      "As a GCC extension, we include
+       a possibly empty list of attribute specifiers,
+       which come after the declarator (cf. the grammar)"))
     (:member ((extension bool)
               (specqual specqual-list)
-              (declor structdeclor-list)))
+              (declor structdeclor-list)
+              (attrib attrib-spec-list)))
     (:statassert ((unwrap statassert)))
     :pred structdeclp
     :base-case-override :statassert
@@ -2266,7 +2277,107 @@
     ((declor declor)
      (absdeclor absdeclor))
     :pred amb-declor/absdeclor-p
-    :measure (two-nats-measure (acl2-count x) 3)))
+    :measure (two-nats-measure (acl2-count x) 3))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum attrib
+    :parents (abstract-syntax exprs/decls)
+    :short "Fixtype of GCC attributes."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is part of the "
+      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html"
+                   "GCC extension for attributes")
+      ". For now we only model the older @('__attribute__') syntax.")
+     (xdoc::p
+      "The documentation lists three kinds of attributes:
+       empty, names, and names with parameters.
+       For now we only model the latter two kinds.
+       The documentation lists three kinds of parameters
+       (which presumably refer to the whole collection of parameters
+       of a single attribute with parameters,
+       not to a single parameter,
+       because otherwise it would be unclear what it means,
+       for a single parameter, to be a comma-separated list of things,
+       given that parameters are themselves comma-separated.
+       However, the three kinds of (lists of) parameters overlap syntactically:
+       an instance of the first kind,
+       i.e. an identifier,
+       could be also an expression,
+       and thus could be also an instance of the third kind;
+       an instance of the second kind,
+       i.e. an identifier followed by one or more expressions,
+       could be also just a list of two or more expressions,
+       and thus an instance of the third kind.
+       Thus, we simply define an attribute with parameter as
+       containing a list of zero or more expressions,
+       which covers all three kinds of parameters.")
+     (xdoc::p
+      "Although an attribute name could be an identifier or a keyword,
+       since grammatically keywords are also identifiers,
+       we just use identifiers in this definition of attributes.
+       We can always identify which identifiers are in fact keywords.")
+     (xdoc::p
+      "Note the distinction between an attribute that is just a name,
+       and an attributed that consists of a name and zero parameters:
+       in concrete syntax, the latter would include open and closed parentheses,
+       without anything in between (except white space or comments)."))
+    (:name ((name ident)))
+    (:name-param ((name ident)
+                  (param expr-list)))
+    :pred attribp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist attrib-list
+    :parents (abstract-syntax exprs/decls)
+    :short "Fixtype of lists of GCC attributes."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "GCC attributes are defined in @(tsee attrib)."))
+    :elt-type attrib
+    :true-listp t
+    :elementp-of-nil nil
+    :pred attrib-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod attrib-spec
+    :parents (abstract-syntax exprs/decls)
+    :short "Fixtype of GCC attribute specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is part of the "
+      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html"
+                   "GCC extension for attributes")
+      ". For now we only model the older @('__attribute__') syntax.")
+     (xdoc::p
+      "We wrap a possibly empty list of attributes,
+       leaving the @('__attribute__') part implicit."))
+    ((attribs attrib-list))
+    :pred attrib-specp
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist attrib-spec-list
+    :parents (abstract-syntax exprs/decls)
+    :short "Fixtype of lists of GCC attribute specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "GCC attribute specifiers are defined in @(tsee attrib-spec)."))
+    :elt-type attrib-spec
+    :true-listp t
+    :elementp-of-nil nil
+    :pred attrib-spec-listp
+    :measure (two-nats-measure (acl2-count x) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2337,98 +2448,6 @@
   (:absdeclor ((unwrap absdeclor)))
   (:ambig ((unwrap amb-declor/absdeclor)))
   :pred amb?-declor/absdeclor-p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum attrib
-  :short "Fixtype of GCC attributes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is part of the "
-    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html"
-                 "GCC extension for attributes")
-    ". For now we only model the older @('__attribute__') syntax.")
-   (xdoc::p
-    "The documentation lists three kinds of attributes:
-     empty, names, and names with parameters.
-     For now we only model the latter two kinds.
-     The documentation lists three kinds of parameters
-     (which presumably refer to the whole collection of parameters
-     of a single attribute with parameters,
-     not to a single parameter,
-     because otherwise it would be unclear what it means,
-     for a single parameter, to be a comma-separated list of things,
-     given that parameters are themselves comma-separated.
-     However, the three kinds of (lists of) parameters overlap syntactically:
-     an instance of the first kind,
-     i.e. an identifier,
-     could be also an expression,
-     and thus could be also an instance of the third kind;
-     an instance of the second kind,
-     i.e. an identifier followed by one or more expressions,
-     could be also just a list of two or more expressions,
-     and thus an instance of the third kind.
-     Thus, we simply define an attribute with parameter as
-     containing a list of zero or more expressions,
-     which covers all three kinds of parameters.")
-   (xdoc::p
-    "Although an attribute name could be an identifier or a keyword,
-     since grammatically keywords are also identifiers,
-     we just use identifiers in this definition of attributes.
-     We can always identify which identifiers are in fact keywords.")
-   (xdoc::p
-    "Note the distinction between an attribute that is just a name,
-     and an attributed that consists of a name and zero parameters:
-     in concrete syntax, the latter would include open and closed parentheses,
-     without anything in between (except white space or comments)."))
-  (:name ((name ident)))
-  (:name-param ((name ident)
-                (param expr-list)))
-  :pred attribp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist attrib-list
-  :short "Fixtype of lists of GCC attributes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "GCC attributes are defined in @(tsee attrib)."))
-  :elt-type attrib
-  :true-listp t
-  :elementp-of-nil nil
-  :pred attrib-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod attrib-spec
-  :short "Fixtype of GCC attribute specifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is part of the "
-    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html"
-                 "GCC extension for attributes")
-    ". For now we only model the older @('__attribute__') syntax.")
-   (xdoc::p
-    "We wrap a possibly empty list of attributes,
-     leaving the @('__attribute__') part implicit."))
-  ((attribs attrib-list))
-  :pred attrib-specp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist attrib-spec-list
-  :short "Fixtype of lists of GCC attribute specifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "GCC attribute specifiers are defined in @(tsee attrib-spec)."))
-  :elt-type attrib-spec
-  :true-listp t
-  :elementp-of-nil nil
-  :pred attrib-spec-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
