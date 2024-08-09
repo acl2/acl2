@@ -433,6 +433,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
+
+   (xdoc::p
+    "The Std/basic books extensions in @('[books]/kestrel/std/basic')
+     have been integrated into @('[books]/std/basic').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
 
    (xdoc::p
