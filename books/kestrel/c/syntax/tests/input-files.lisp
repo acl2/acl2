@@ -91,7 +91,7 @@ int main(void) {
 (acl2::assert! (filesetp *preproc-simple/stdbool/stdint*))
 
 (acl2::assert-equal
- (omap::keys (fileset->unwrap *preproc-simple/stdbool/stdint*))
+ (fileset-paths *preproc-simple/stdbool/stdint*)
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c")
                        (filepath "stdint.c"))))
@@ -123,7 +123,7 @@ int main(void) {
 (acl2::assert! (transunit-ensemblep *parsed-simple*))
 
 (acl2::assert-equal
- (omap::keys (transunit-ensemble->unwrap *parsed-simple*))
+ (transunit-ensemble-paths *parsed-simple*)
  (set::mergesort (list (filepath "simple.c"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -155,7 +155,7 @@ int main(void) {
 (acl2::assert! (transunit-ensemblep *parsed-simple/stdbool*))
 
 (acl2::assert-equal
- (omap::keys (transunit-ensemble->unwrap *parsed-simple/stdbool*))
+ (transunit-ensemble-paths *parsed-simple/stdbool*)
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c"))))
 
