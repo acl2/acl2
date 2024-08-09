@@ -323,6 +323,26 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "JVM Models @('models/jvm/')")
+
+   (xdoc::p
+    "A few new example proof files were added to
+     @('models/jvm/guard-verified-m1/m1.lisp') to illustrate reasoning about
+     non-terminating programs.  These files were already included in the
+     unguarded version of @('m1') on the directory @('models/jvm/m1/m1.lisp')
+     so no new proof techniques are demonstrated.")
+
+   (xdoc::p
+    "A new subdirectory, @('models/jvm/m2/'), was added.  @('M2') is like
+     @('m1') but also formalizes versions of the JVM's @('invokevirtual'),
+     @('invokestatic'), @('return'), and the instructions for allocating and
+     manipulating Objects.  No claim is made that @('m2') is exactly compliant
+     with the JVM spec, but the model does show a way to model subroutine call
+     and object manipulation (with inheritance).  The directory also includes
+     example proofs of programs involving these features.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
 
    (xdoc::p
