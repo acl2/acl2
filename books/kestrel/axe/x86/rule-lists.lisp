@@ -2153,7 +2153,7 @@
 
             acl2::integerp-of-ash)))
 
-;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
+;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
 (set-axe-rule-priority acl2::bvplus-of-+-combine-constants -1)
 
