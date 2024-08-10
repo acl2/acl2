@@ -187,14 +187,14 @@
                   (set::in val (correct-addresses systate))
                   (set::in cert (certificates-for-validator val systate)))
              (set::subset (certificate->signers cert)
-                          (validator-addresses systate)))
+                          (all-addresses systate)))
     :use system-signers-are-validators-p-necc
     :enable certificate-signers-are-validators-p)
 
   (defrulel create-certificate-signers-are-validators
     (implies (create-certificate-possiblep new-cert systate)
              (set::subset (certificate->signers new-cert)
-                          (validator-addresses systate)))
+                          (all-addresses systate)))
     :enable (create-certificate-possiblep
              certificate->signers))
 
@@ -235,11 +235,11 @@
 
   (defrulel common-signers-are-validators
     (implies (and (set::subset (certificate->signers cert1)
-                               (validator-addresses systate))
+                               (all-addresses systate))
                   (set::subset (certificate->signers cert2)
-                               (validator-addresses systate)))
+                               (all-addresses systate)))
              (set::subset (common-signers cert1 cert2)
-                          (validator-addresses systate)))
+                          (all-addresses systate)))
     :enable (common-signers
              set::expensive-rules))
 
@@ -248,8 +248,8 @@
   ;; We need this fact to prove the next one after this.
 
   (defrulel cardinality-of-union-of-validators
-    (implies (and (set::subset vals1 (validator-addresses systate))
-                  (set::subset vals2 (validator-addresses systate)))
+    (implies (and (set::subset vals1 (all-addresses systate))
+                  (set::subset vals2 (all-addresses systate)))
              (<= (set::cardinality (set::union vals1 vals2))
                  (number-validators systate)))
     :rule-classes :linear
@@ -291,9 +291,9 @@
   ;; because we need SET::EXPAND-CARDINALITY-OF-INTERSECT instead.
 
   (defruledl intersection-gt-max-faulty
-    (implies (and (not (set::emptyp (validator-addresses systate)))
-                  (set::subset vals1 (validator-addresses systate))
-                  (set::subset vals2 (validator-addresses systate))
+    (implies (and (not (set::emptyp (all-addresses systate)))
+                  (set::subset vals1 (all-addresses systate))
+                  (set::subset vals2 (all-addresses systate))
                   (equal (set::cardinality vals1) (quorum systate))
                   (equal (set::cardinality vals2) (quorum systate)))
              (> (set::cardinality (set::intersect vals1 vals2))
@@ -318,7 +318,7 @@
                 (max-faulty systate)))
     :rule-classes :linear
     :enable (common-signers
-             nonempty-validator-addresses-when-correct-validator)
+             nonempty-all-addresses-when-correct-validator)
     :use (:instance intersection-gt-max-faulty
                     (vals1 (certificate->signers cert))
                     (vals2 (certificate->signers new-cert))))
@@ -357,7 +357,7 @@
   ;; all the validators in the set must be faulty.
 
   (defruledl all-faulty-validators-when-not-pick-correct-validator
-    (implies (and (set::subset vals (validator-addresses systate))
+    (implies (and (set::subset vals (all-addresses systate))
                   (not (pick-correct-validator vals systate)))
              (set::subset vals (faulty-addresses systate)))
     :induct t
@@ -372,7 +372,7 @@
   ;; That is, it must return a correct validator address.
 
   (defrulel pick-correct-validator-when-fault-tolerant-p
-    (implies (and (set::subset vals (validator-addresses systate))
+    (implies (and (set::subset vals (all-addresses systate))
                   (fault-tolerant-p systate)
                   (> (set::cardinality vals)
                      (max-faulty systate)))

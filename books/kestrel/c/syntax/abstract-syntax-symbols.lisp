@@ -111,16 +111,16 @@
     type-spec-union
     type-spec-enum
 
-    specqualp
-    specqual-fix
-    specqual-count
-    specqual-case
-    specqual-tyspec
-    specqual-alignspec
+    spec/qual-p
+    spec/qual-fix
+    spec/qual-count
+    spec/qual-case
+    spec/qual-tyspec
+    spec/qual-alignspec
 
-    specqual-listp
-    specqual-list-fix
-    specqual-list-count
+    spec/qual-listp
+    spec/qual-list-fix
+    spec/qual-list-count
 
     alignspecp
     alignspec-fix

@@ -64,7 +64,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk system-blockchain-redundantp ((systate system-statep))
-  :guard (and (not (set::emptyp (validator-addresses systate)))
+  :guard (and (not (set::emptyp (all-addresses systate)))
               (system-last-is-even-p systate)
               (system-last-anchor-present-p systate))
   :returns (yes/no booleanp)
@@ -75,7 +75,7 @@
           (implies (set::in val (correct-addresses systate))
                    (validator-blockchain-redundantp
                     (get-validator-state val systate)
-                    (validator-addresses systate))))
+                    (all-addresses systate))))
   :guard-hints
   (("Goal" :in-theory (enable system-last-is-even-p-necc
                               system-last-anchor-present-p-necc))))
@@ -124,11 +124,11 @@
                   (create-certificate-possiblep cert systate)
                   (validator-blockchain-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-blockchain-redundantp
               (get-validator-state
                val (create-certificate-next cert systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable (validator-blockchain-redundantp
              system-unequivocal-dag-p-when-system-unequivocal-certificates-p
              system-unequivocal-dag-p-necc
@@ -143,7 +143,7 @@
                             val (create-certificate-next cert systate))))
                     (anchors (validator-anchors
                               (get-validator-state val systate)
-                              (validator-addresses systate))))
+                              (all-addresses systate))))
     :disable validator-state->dag-of-create-certificate-next)
 
   (defrule system-blockchain-redundantp-of-create-certificate-next
@@ -178,11 +178,11 @@
                   (receive-certificate-possiblep msg systate)
                   (validator-blockchain-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-blockchain-redundantp
               (get-validator-state
                val (receive-certificate-next msg systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable (validator-blockchain-redundantp))
 
   (defrule system-blockchain-redundantp-of-receive-certificate-next
@@ -218,11 +218,11 @@
                   (store-certificate-possiblep cert val1 systate)
                   (validator-blockchain-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-blockchain-redundantp
               (get-validator-state
                val (store-certificate-next cert val1 systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable (validator-blockchain-redundantp
              system-unequivocal-dag-p-when-system-unequivocal-certificates-p
              system-unequivocal-dag-p-necc
@@ -237,7 +237,7 @@
                             val (store-certificate-next cert val1 systate))))
                     (anchors (validator-anchors
                               (get-validator-state val systate)
-                              (validator-addresses systate))))
+                              (all-addresses systate))))
     :disable validator-state->dag-of-store-certificate-next)
 
   (defrule system-blockchain-redundantp-of-store-certificate-next
@@ -271,11 +271,11 @@
                   (advance-round-possiblep val1 systate)
                   (validator-blockchain-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-blockchain-redundantp
               (get-validator-state
                val (advance-round-next val1 systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable (validator-blockchain-redundantp))
 
   (defrule system-blockchain-redundantp-of-advance-round-next
@@ -320,11 +320,11 @@
                   (commit-anchors-possiblep val1 systate)
                   (validator-blockchain-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-blockchain-redundantp
               (get-validator-state
                val (commit-anchors-next val1 systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable (validator-blockchain-redundantp
              calculate-blockchain
              validator-committed-redundantp
@@ -363,11 +363,11 @@
                   (timer-expires-possiblep val1 systate)
                   (validator-blockchain-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-blockchain-redundantp
               (get-validator-state
                val (timer-expires-next val1 systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable (validator-blockchain-redundantp))
 
   (defrule system-blockchain-redundantp-of-timer-expires-next

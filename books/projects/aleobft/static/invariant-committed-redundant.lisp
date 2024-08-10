@@ -86,7 +86,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk system-committed-redundantp ((systate system-statep))
-  :guard (and (not (set::emptyp (validator-addresses systate)))
+  :guard (and (not (set::emptyp (all-addresses systate)))
               (system-last-is-even-p systate)
               (system-last-anchor-present-p systate))
   :returns (yes/no booleanp)
@@ -97,7 +97,7 @@
           (implies (set::in val (correct-addresses systate))
                    (validator-committed-redundantp
                     (get-validator-state val systate)
-                    (validator-addresses systate))))
+                    (all-addresses systate))))
   :guard-hints
   (("Goal" :in-theory (enable system-last-is-even-p-necc
                               system-last-anchor-present-p-necc))))
@@ -144,10 +144,10 @@
                   (create-certificate-possiblep cert systate)
                   (validator-committed-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-committed-redundantp
               (get-validator-state val (create-certificate-next cert systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable (validator-committed-redundantp
              system-last-anchor-present-p-necc)
     :disable validator-state->dag-of-create-certificate-next)
@@ -185,10 +185,10 @@
                   (receive-certificate-possiblep msg systate)
                   (validator-committed-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-committed-redundantp
               (get-validator-state val (receive-certificate-next msg systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable validator-committed-redundantp)
 
   (defrule system-committed-redundantp-of-receive-certificate-next
@@ -222,11 +222,11 @@
                   (store-certificate-possiblep cert val1 systate)
                   (validator-committed-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-committed-redundantp
               (get-validator-state
                val (store-certificate-next cert val1 systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable (validator-committed-redundantp
              system-last-anchor-present-p-necc)
     :disable validator-state->dag-of-store-certificate-next)
@@ -262,10 +262,10 @@
                   (advance-round-possiblep val1 systate)
                   (validator-committed-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-committed-redundantp
               (get-validator-state val (advance-round-next val1 systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable validator-committed-redundantp)
 
   (defrule system-committed-redundantp-of-advance-round-next
@@ -312,10 +312,10 @@
                   (commit-anchors-possiblep val1 systate)
                   (validator-committed-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-committed-redundantp
               (get-validator-state val (commit-anchors-next val1 systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable (validator-committed-redundantp
              commit-anchors-possiblep
              commit-anchors-next
@@ -334,13 +334,13 @@
     :use ((:instance
            dag-all-path-to-p-necc
            (cert (last-anchor (get-validator-state val systate)
-                              (validator-addresses systate)))
+                              (all-addresses systate)))
            (dag (validator-state->dag (get-validator-state val systate)))
            (cert1 (get-certificate-with-author+round
                    (leader-at-round
                     (+ -1
                        (validator-state->round (get-validator-state val systate)))
-                    (validator-addresses systate))
+                    (all-addresses systate))
                    (+ -1
                       (validator-state->round (get-validator-state val systate)))
                    (validator-state->dag (get-validator-state val systate)))))
@@ -353,13 +353,13 @@
                   (leader-at-round
                    (+ -1
                       (validator-state->round (get-validator-state val systate)))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (+ -1
                      (validator-state->round (get-validator-state val systate)))
                   (validator-state->dag (get-validator-state val systate))))
            (author (leader-at-round
                     (validator-state->last (get-validator-state val systate))
-                    (validator-addresses systate)))
+                    (all-addresses systate)))
            (round (validator-state->last (get-validator-state val systate)))
            (dag (validator-state->dag (get-validator-state val systate))))))
 
@@ -396,10 +396,10 @@
                   (timer-expires-possiblep val1 systate)
                   (validator-committed-redundantp
                    (get-validator-state val systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-committed-redundantp
               (get-validator-state val (timer-expires-next val1 systate))
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable validator-committed-redundantp)
 
   (defrule system-committed-redundantp-of-timer-expires-next

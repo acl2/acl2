@@ -103,7 +103,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define validator-addresses ((systate system-statep))
+(define all-addresses ((systate system-statep))
   :returns (addrs address-setp)
   :short "Set of the addresses of all the validators in the system."
   :long
@@ -114,13 +114,13 @@
   :hooks (:fix)
   ///
 
-  (defruled validator-addresses-fold
+  (defruled all-addresses-fold
     (equal (omap::keys (system-state->validators systate))
-           (validator-addresses systate))
-    :enable validator-addresses)
+           (all-addresses systate))
+    :enable all-addresses)
 
-  (theory-invariant (incompatible (:definition validator-addresses)
-                                  (:rewrite validator-addresses-fold))))
+  (theory-invariant (incompatible (:definition all-addresses)
+                                  (:rewrite all-addresses-fold))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -205,24 +205,24 @@
 
   ///
 
-  (defrule correct-addresses-subset-validator-addresses
+  (defrule correct-addresses-subset-all-addresses
     (set::subset (correct-addresses systate)
-                 (validator-addresses systate))
-    :enable (validator-addresses
+                 (all-addresses systate))
+    :enable (all-addresses
              correct-addresses-loop-subset-keys))
 
-  ;; Variant of the theorem just above with validator-addresses expanded.
-  ;; Useful when validator-addresses is enabled in a proof.
+  ;; Variant of the theorem just above with all-addresses expanded.
+  ;; Useful when all-addresses is enabled in a proof.
   (defrule correct-addresses-subset-keys-validators
     (set::subset (correct-addresses systate)
                  (omap::keys (system-state->validators systate)))
-    :use correct-addresses-subset-validator-addresses
-    :disable correct-addresses-subset-validator-addresses
-    :enable validator-addresses)
+    :use correct-addresses-subset-all-addresses
+    :disable correct-addresses-subset-all-addresses
+    :enable all-addresses)
 
-  (defrule in-validator-addresses-when-in-correct-addresses
+  (defrule in-all-addresses-when-in-correct-addresses
     (implies (set::in val (correct-addresses systate))
-             (set::in val (validator-addresses systate)))
+             (set::in val (all-addresses systate)))
     :disable correct-addresses
     :enable set::expensive-rules)
 
@@ -234,11 +234,11 @@
     (correct-addresses
      lookup-nonnil-of-correct-addresses-loop))
 
-  (defruled nonempty-validator-addresses-when-correct-validator
+  (defruled nonempty-all-addresses-when-correct-validator
     (implies (set::in val (correct-addresses systate))
-             (not (set::emptyp (validator-addresses systate))))
-    :use correct-addresses-subset-validator-addresses
-    :disable correct-addresses-subset-validator-addresses)
+             (not (set::emptyp (all-addresses systate))))
+    :use correct-addresses-subset-all-addresses
+    :disable correct-addresses-subset-all-addresses)
 
   (defruled not-nil-in-correct-addresses
     (not (set::in nil (correct-addresses systate)))
@@ -256,14 +256,14 @@
      or equivalently the difference between
      the set of all the validator addresses
      and the set of all the correct validator addresses."))
-  (set::difference (validator-addresses systate)
+  (set::difference (all-addresses systate)
                    (correct-addresses systate))
   :hooks (:fix)
   ///
 
-  (defrule faulty-addresses-subset-validator-addresses
+  (defrule faulty-addresses-subset-all-addresses
     (set::subset (faulty-addresses systate)
-                 (validator-addresses systate))))
+                 (all-addresses systate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,18 +275,18 @@
    (xdoc::p
     "This is the total number of validators in the system,
      often denoted @($n$) in the BFT literature."))
-  (set::cardinality (validator-addresses systate))
+  (set::cardinality (all-addresses systate))
   :hooks (:fix)
   ///
 
   (defruled number-validators-alt-def
     (equal (number-validators systate)
            (omap::size (system-state->validators systate)))
-    :enable (validator-addresses
+    :enable (all-addresses
              omap::size-to-cardinality-of-keys))
 
-  (defrule number-validator-gt-0-when-nonempty-validator-addresses
-    (implies (not (set::emptyp (validator-addresses systate)))
+  (defrule number-validator-gt-0-when-nonempty-all-addresses
+    (implies (not (set::emptyp (all-addresses systate)))
              (> (number-validators systate) 0))
     :rule-classes :linear))
 
@@ -333,12 +333,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-validator-state ((val addressp) (systate system-statep))
-  :guard (set::in val (validator-addresses systate))
+  :guard (set::in val (all-addresses systate))
   :returns (vstate? validator-state-optionp)
   :short "Retrieve the state of a validator from the system."
   (validator-state-option-fix
    (omap::lookup val (system-state->validators systate)))
-  :guard-hints (("Goal" :in-theory (enable validator-addresses
+  :guard-hints (("Goal" :in-theory (enable all-addresses
                                            omap::assoc-to-in-of-keys)))
   ///
 
@@ -383,12 +383,12 @@
   (fty::deffixequiv update-validator-state
     :args ((systate system-statep)))
 
-  (defret validator-addresses-of-update-validator-state
-    (equal (validator-addresses new-systate)
-           (validator-addresses systate))
-    :hyp (and (set::in val (validator-addresses systate))
+  (defret all-addresses-of-update-validator-state
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hyp (and (set::in val (all-addresses systate))
               (validator-statep vstate))
-    :hints (("Goal" :in-theory (enable validator-addresses))))
+    :hints (("Goal" :in-theory (enable all-addresses))))
 
   (defret correct-addresses-of-update-validator-state
     (equal (correct-addresses new-systate)
@@ -441,10 +441,10 @@
   :hooks (:fix)
   ///
 
-  (defret validator-addresses-of-update-network-state
-    (equal (validator-addresses new-systate)
-           (validator-addresses systate))
-    :hints (("Goal" :in-theory (enable validator-addresses))))
+  (defret all-addresses-of-update-network-state
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hints (("Goal" :in-theory (enable all-addresses))))
 
   (defret correct-addresses-of-update-network-state
     (equal (correct-addresses new-systate)

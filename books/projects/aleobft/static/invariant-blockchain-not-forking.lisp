@@ -105,11 +105,11 @@
            (lists-nofork-p
             (calculate-blockchain
              (validator-anchors (get-validator-state val1 systate)
-                                (validator-addresses systate))
+                                (all-addresses systate))
              (validator-state->dag (get-validator-state val1 systate)))
             (calculate-blockchain
              (validator-anchors (get-validator-state val2 systate)
-                                (validator-addresses systate))
+                                (all-addresses systate))
              (validator-state->dag (get-validator-state val2 systate)))))
   :enable (lists-nofork-p
            nthcdr-of-calculate-blockchain
@@ -126,7 +126,7 @@
                           (get-validator-state val2 systate)))
                    (anchors (validator-anchors
                              (get-validator-state val1 systate)
-                             (validator-addresses systate))))
+                             (all-addresses systate))))
         (:instance calculate-blockchain-of-unequivocal-dags
                    (dag1 (validator-state->dag
                           (get-validator-state val1 systate)))
@@ -134,7 +134,7 @@
                           (get-validator-state val2 systate)))
                    (anchors (validator-anchors
                              (get-validator-state val2 systate)
-                             (validator-addresses systate))))
+                             (all-addresses systate))))
         (:instance system-last-anchor-present-p-necc (val val1))
         (:instance system-last-anchor-present-p-necc (val val2))))
 

@@ -1950,31 +1950,31 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-specqual ((specqual specqualp) (pstate pristatep))
+  (define print-spec/qual ((specqual spec/qual-p) (pstate pristatep))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a specifier or qualifier."
-    (specqual-case
+    (spec/qual-case
      specqual
      :tyspec (print-type-spec specqual.unwrap pstate)
      :tyqual (print-type-qual specqual.unwrap pstate)
      :alignspec (print-alignspec specqual.unwrap pstate))
-    :measure (specqual-count specqual))
+    :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-specqual-list ((specquals specqual-listp) (pstate pristatep))
+  (define print-spec/qual-list ((specquals spec/qual-listp) (pstate pristatep))
     :guard (consp specquals)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more specifiers and qualifiers,
             separated by spaces."
     (b* (((unless (mbt (consp specquals))) (pristate-fix pstate))
-         (pstate (print-specqual (car specquals) pstate))
+         (pstate (print-spec/qual (car specquals) pstate))
          ((when (endp (cdr specquals))) pstate)
          (pstate (print-astring " " pstate)))
-      (print-specqual-list (cdr specquals) pstate))
-    :measure (specqual-list-count specquals))
+      (print-spec/qual-list (cdr specquals) pstate))
+    :measure (spec/qual-list-count specquals))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2449,7 +2449,7 @@
          ((unless tyname.specqual)
           (raise "Misusage error: empty list of specifiers and qualifiers.")
           (pristate-fix pstate))
-         (pstate (print-specqual-list tyname.specqual pstate))
+         (pstate (print-spec/qual-list tyname.specqual pstate))
          ((unless (absdeclor-option-case tyname.decl? :some)) pstate)
          (pstate (print-astring " " pstate))
          (pstate (print-absdeclor (absdeclor-option-some->val tyname.decl?)
@@ -2525,7 +2525,7 @@
           ((unless structdecl.specqual)
            (raise "Misusage error: empty specifier/qualifier list.")
            pstate)
-          (pstate (print-specqual-list structdecl.specqual pstate))
+          (pstate (print-spec/qual-list structdecl.specqual pstate))
           (pstate (if structdecl.declor
                       (b* ((pstate (print-astring " " pstate))
                            (pstate (print-structdeclor-list structdecl.declor

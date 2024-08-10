@@ -65,7 +65,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk system-anchors-nofork-p ((systate system-statep))
-  :guard (and (not (set::emptyp (validator-addresses systate)))
+  :guard (and (not (set::emptyp (all-addresses systate)))
               (system-last-is-even-p systate)
               (system-last-anchor-present-p systate))
   :returns (yes/no booleanp)
@@ -77,9 +77,9 @@
                         (set::in val2 (correct-addresses systate)))
                    (lists-nofork-p
                     (validator-anchors (get-validator-state val1 systate)
-                                       (validator-addresses systate))
+                                       (all-addresses systate))
                     (validator-anchors (get-validator-state val2 systate)
-                                       (validator-addresses systate)))))
+                                       (all-addresses systate)))))
   :guard-hints (("Goal" :in-theory (enable* system-last-is-even-p-necc
                                             system-last-anchor-present-p-necc
                                             set::expensive-rules))))
@@ -108,9 +108,9 @@
                     0)
              (lists-nofork-p
               (validator-anchors (get-validator-state val1 systate)
-                                 (validator-addresses systate))
+                                 (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
-                                 (validator-addresses systate))))
+                                 (all-addresses systate))))
     :enable validator-anchors)
 
   ;; The case in which the second validator has not committed any anchor
@@ -122,9 +122,9 @@
                     0)
              (lists-nofork-p
               (validator-anchors (get-validator-state val1 systate)
-                                 (validator-addresses systate))
+                                 (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
-                                 (validator-addresses systate))))
+                                 (all-addresses systate))))
     :enable validator-anchors)
 
   ;; If the two validators have the same last committed round,
@@ -150,9 +150,9 @@
                           (get-validator-state val2 systate))))
              (lists-nofork-p
               (validator-anchors (get-validator-state val1 systate)
-                                 (validator-addresses systate))
+                                 (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
-                                 (validator-addresses systate))))
+                                 (all-addresses systate))))
     :enable (validator-anchors
              system-unequivocal-dag-p-necc
              system-unequivocal-dags-p-necc
@@ -165,12 +165,12 @@
                             (get-validator-state val2 systate)))
                      (last-anchor (last-anchor
                                    (get-validator-state val1 systate)
-                                   (validator-addresses systate)))
-                     (vals (validator-addresses systate)))
+                                   (all-addresses systate)))
+                     (vals (all-addresses systate)))
           (:instance same-last-anchor-if-same-last
                      (vstate1 (get-validator-state val1 systate))
                      (vstate2 (get-validator-state val2 systate))
-                     (vals (validator-addresses systate)))))
+                     (vals (all-addresses systate)))))
 
   ;; If both validators have committed anchors
   ;; and the second validator is ahead of the first one,
@@ -198,9 +198,9 @@
                       (get-validator-state val1 systate))))
              (lists-nofork-p
               (validator-anchors (get-validator-state val1 systate)
-                                 (validator-addresses systate))
+                                 (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
-                                 (validator-addresses systate))))
+                                 (all-addresses systate))))
     :enable (system-unequivocal-dag-p-necc
              system-unequivocal-dags-p-necc
              system-previous-in-dag-p-necc
@@ -213,13 +213,13 @@
                             (get-validator-state val1 systate)))
                      (dag2 (validator-state->dag
                             (get-validator-state val2 systate)))
-                     (vals (validator-addresses systate))
+                     (vals (all-addresses systate))
                      (anchor1 (last-anchor
                                (get-validator-state val1 systate)
-                               (validator-addresses systate)))
+                               (all-addresses systate)))
                      (anchor2 (last-anchor
                                (get-validator-state val2 systate)
-                               (validator-addresses systate))))))
+                               (all-addresses systate))))))
 
   ;; If both validators have committed anchors
   ;; and the first one is ahead of the second one,
@@ -244,9 +244,9 @@
                       (get-validator-state val2 systate))))
              (lists-nofork-p
               (validator-anchors (get-validator-state val1 systate)
-                                 (validator-addresses systate))
+                                 (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
-                                 (validator-addresses systate))))
+                                 (all-addresses systate))))
     :use (:instance case-last1-before-last2
                     (val1 val2)
                     (val2 val1)))
@@ -269,9 +269,9 @@
                   (set::in val2 (correct-addresses systate)))
              (lists-nofork-p
               (validator-anchors (get-validator-state val1 systate)
-                                 (validator-addresses systate))
+                                 (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
-                                 (validator-addresses systate))))
+                                 (all-addresses systate))))
     :use (case-last1-0
           case-last2-0
           case-last1-equal-last2

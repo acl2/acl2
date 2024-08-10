@@ -62,20 +62,20 @@
            (equal (validator-anchors
                    (get-validator-state
                     val (create-certificate-next cert systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (validator-anchors (get-validator-state val systate)
-                                     (validator-addresses systate))))
+                                     (all-addresses systate))))
   :enable (validator-anchors
            system-unequivocal-dag-p-necc
            system-unequivocal-dag-p-when-system-unequivocal-certificates-p
            system-previous-in-dag-p-necc)
   :cases ((equal val (certificate->author cert)))
   :use ((:instance collect-all-anchors-of-unequivocal-dag-superset
-                   (vals (validator-addresses systate))
+                   (vals (all-addresses systate))
                    (last-anchor
                     (last-anchor
                      (get-validator-state (certificate->author cert) systate)
-                     (validator-addresses systate)))
+                     (all-addresses systate)))
                    (dag (validator-state->dag
                          (get-validator-state (certificate->author cert)
                                               systate)))
@@ -102,9 +102,9 @@
            (equal (validator-anchors
                    (get-validator-state
                     val (receive-certificate-next msg systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (validator-anchors (get-validator-state val systate)
-                                     (validator-addresses systate))))
+                                     (all-addresses systate))))
   :enable validator-anchors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,20 +132,20 @@
            (equal (validator-anchors
                    (get-validator-state
                     val (store-certificate-next cert val1 systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (validator-anchors (get-validator-state val systate)
-                                     (validator-addresses systate))))
+                                     (all-addresses systate))))
   :enable (validator-anchors
            system-unequivocal-dag-p-necc
            system-unequivocal-dag-p-when-system-unequivocal-certificates-p
            system-previous-in-dag-p-necc
            system-last-anchor-present-p-necc)
   :use (:instance collect-all-anchors-of-unequivocal-dag-superset
-                  (vals (validator-addresses systate))
+                  (vals (all-addresses systate))
                   (last-anchor
                    (last-anchor
                     (get-validator-state val systate)
-                    (validator-addresses systate)))
+                    (all-addresses systate)))
                   (dag (validator-state->dag
                         (get-validator-state val systate)))
                   (dag2 (validator-state->dag
@@ -169,9 +169,9 @@
            (equal (validator-anchors
                    (get-validator-state
                     val (advance-round-next val1 systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (validator-anchors (get-validator-state val systate)
-                                     (validator-addresses systate))))
+                                     (all-addresses systate))))
   :enable validator-anchors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -197,13 +197,13 @@
    (equal (validator-anchors
            (get-validator-state
             val (commit-anchors-next val1 systate))
-           (validator-addresses systate))
+           (all-addresses systate))
           (if (equal val val1)
               (b* (((validator-state vstate)
                     (get-validator-state val systate))
                    (commit-round (1- vstate.round))
                    (leader (leader-at-round commit-round
-                                            (validator-addresses systate)))
+                                            (all-addresses systate)))
                    (anchor (get-certificate-with-author+round leader
                                                               commit-round
                                                               vstate.dag))
@@ -211,12 +211,12 @@
                                              (- commit-round 2)
                                              vstate.last
                                              vstate.dag
-                                             (validator-addresses systate))))
+                                             (all-addresses systate))))
                 (append anchors
                         (validator-anchors (get-validator-state val systate)
-                                           (validator-addresses systate))))
+                                           (all-addresses systate))))
             (validator-anchors (get-validator-state val systate)
-                               (validator-addresses systate)))))
+                               (all-addresses systate)))))
   :enable (commit-anchors-possiblep
            validator-anchors
            collect-all-anchors
@@ -228,13 +228,13 @@
            get-certificate-with-author+round-element-when-not-nil)
   :use (:instance collect-all-anchors-to-append-of-collect-anchors
                   (anchor (last-anchor (get-validator-state val systate)
-                                       (validator-addresses systate)))
+                                       (all-addresses systate)))
                   (anchor1 (get-certificate-with-author+round
                             (leader-at-round
                              (+ -1
                                 (validator-state->round
                                  (get-validator-state val systate)))
-                             (validator-addresses systate))
+                             (all-addresses systate))
                             (+ -1
                                (validator-state->round
                                 (get-validator-state val systate)))
@@ -242,7 +242,7 @@
                              (get-validator-state val systate))))
                   (dag (validator-state->dag
                         (get-validator-state val systate)))
-                  (vals (validator-addresses systate)))
+                  (vals (all-addresses systate)))
 
   :prep-lemmas
   ((defrule lemma
@@ -267,7 +267,7 @@
            (equal (validator-anchors
                    (get-validator-state
                     val (timer-expires-next val1 systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (validator-anchors (get-validator-state val systate)
-                                     (validator-addresses systate))))
+                                     (all-addresses systate))))
   :enable validator-anchors)

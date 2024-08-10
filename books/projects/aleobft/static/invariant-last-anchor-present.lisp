@@ -44,7 +44,7 @@
 
 (define-sk system-last-anchor-present-p ((systate system-statep))
   :guard (and (system-last-is-even-p systate)
-              (not (set::emptyp (validator-addresses systate))))
+              (not (set::emptyp (all-addresses systate))))
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           for each correct validator,
@@ -55,7 +55,7 @@
                    (b* ((vstate (get-validator-state val systate)))
                      (implies (not (equal (validator-state->last vstate) 0))
                               (last-anchor vstate
-                                           (validator-addresses systate))))))
+                                           (all-addresses systate))))))
   :guard-hints (("Goal" :in-theory (enable system-last-is-even-p-necc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -88,10 +88,10 @@
     (implies (and (set::in val (correct-addresses systate))
                   (certificatep cert)
                   (last-anchor (get-validator-state val systate)
-                               (validator-addresses systate)))
+                               (all-addresses systate)))
              (last-anchor (get-validator-state
                            val (create-certificate-next cert systate))
-                          (validator-addresses systate)))
+                          (all-addresses systate)))
     :enable last-anchor)
 
   (defrule system-last-anchor-present-p-of-create-certificate-next
@@ -117,10 +117,10 @@
     (implies (and (set::in val (correct-addresses systate))
                   (receive-certificate-possiblep msg systate)
                   (last-anchor (get-validator-state val systate)
-                               (validator-addresses systate)))
+                               (all-addresses systate)))
              (last-anchor (get-validator-state
                            val (receive-certificate-next msg systate))
-                          (validator-addresses systate)))
+                          (all-addresses systate)))
     :enable last-anchor)
 
   (defrule system-last-anchor-present-p-of-receive-certificate-next
@@ -147,10 +147,10 @@
     (implies (and (set::in val (correct-addresses systate))
                   (store-certificate-possiblep cert val1 systate)
                   (last-anchor (get-validator-state val systate)
-                               (validator-addresses systate)))
+                               (all-addresses systate)))
              (last-anchor (get-validator-state
                            val (store-certificate-next cert val1 systate))
-                          (validator-addresses systate)))
+                          (all-addresses systate)))
     :enable last-anchor)
 
   (defrule system-last-anchor-present-p-of-store-certificate-next
@@ -175,10 +175,10 @@
     (implies (and (set::in val (correct-addresses systate))
                   (advance-round-possiblep val1 systate)
                   (last-anchor (get-validator-state val systate)
-                               (validator-addresses systate)))
+                               (all-addresses systate)))
              (last-anchor (get-validator-state
                            val (advance-round-next val1 systate))
-                          (validator-addresses systate)))
+                          (all-addresses systate)))
     :enable last-anchor)
 
   (defrule system-last-anchor-present-p-of-advance-round-next
@@ -207,10 +207,10 @@
                   (commit-anchors-possiblep val1 systate)
                   (or (equal val val1)
                       (last-anchor (get-validator-state val systate)
-                                   (validator-addresses systate))))
+                                   (all-addresses systate))))
              (last-anchor (get-validator-state
                            val (commit-anchors-next val1 systate))
-                          (validator-addresses systate)))
+                          (all-addresses systate)))
     :enable (last-anchor
              commit-anchors-possiblep))
 
@@ -236,10 +236,10 @@
     (implies (and (set::in val (correct-addresses systate))
                   (timer-expires-possiblep val1 systate)
                   (last-anchor (get-validator-state val systate)
-                               (validator-addresses systate)))
+                               (all-addresses systate)))
              (last-anchor (get-validator-state
                            val (timer-expires-next val1 systate))
-                          (validator-addresses systate)))
+                          (all-addresses systate)))
     :enable last-anchor)
 
   (defrule system-last-anchor-present-p-of-timer-expires-next

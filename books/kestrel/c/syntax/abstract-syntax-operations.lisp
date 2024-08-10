@@ -159,10 +159,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-specqual
+(defirrelevant irr-spec/qual
   :short "An irrelevant type specifier or type qualifier."
-  :type specqualp
-  :body (specqual-tyspec (irr-type-spec)))
+  :type spec/qual-p
+  :body (spec/qual-tyspec (irr-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -998,7 +998,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-specqual-list-all-tyspec ((specquals specqual-listp))
+(define check-spec/qual-list-all-tyspec ((specquals spec/qual-listp))
   :returns (mv (yes/no booleanp) (tyspecs type-spec-listp))
   :short "Check if all the specifiers and qualifiers in a list
           are type specifiers."
@@ -1009,10 +1009,10 @@
      also return the list of type specifiers, in the same order."))
   (b* (((when (endp specquals)) (mv t nil))
        (specqual (car specquals))
-       ((unless (specqual-case specqual :tyspec)) (mv nil nil))
-       ((mv yes/no tyspecs) (check-specqual-list-all-tyspec (cdr specquals))))
+       ((unless (spec/qual-case specqual :tyspec)) (mv nil nil))
+       ((mv yes/no tyspecs) (check-spec/qual-list-all-tyspec (cdr specquals))))
     (if yes/no
-        (mv t (cons (specqual-tyspec->unwrap specqual) tyspecs))
+        (mv t (cons (spec/qual-tyspec->unwrap specqual) tyspecs))
       (mv nil nil)))
   :hooks (:fix))
 
@@ -1048,17 +1048,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define specqual-list-to-type-spec-list ((specquals specqual-listp))
+(define spec/qual-list-to-type-spec-list ((specquals spec/qual-listp))
   :returns (tyspecs type-spec-listp)
   :short "Extract the list of type specifiers
           from a list of type specifiers and qualifiers,
           preserving the order."
   (b* (((when (endp specquals)) nil)
        (specqual (car specquals)))
-    (if (specqual-case specqual :tyspec)
-        (cons (specqual-tyspec->unwrap specqual)
-              (specqual-list-to-type-spec-list (cdr specquals)))
-      (specqual-list-to-type-spec-list (cdr specquals))))
+    (if (spec/qual-case specqual :tyspec)
+        (cons (spec/qual-tyspec->unwrap specqual)
+              (spec/qual-list-to-type-spec-list (cdr specquals)))
+      (spec/qual-list-to-type-spec-list (cdr specquals))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1124,4 +1124,45 @@
     (list (expr-fix expr)))
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define transunit-ensemble-paths ((tunits transunit-ensemblep))
+  :returns (paths filepath-setp)
+  :short "Set of file paths in a translation unit ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the keys of the map from file paths to translation units.")
+   (xdoc::p
+    "It is more concise, and more abstract,
+     than extracting the map and then the keys.")
+   (xdoc::p
+    "Together with @(tsee transunit-at-path),
+     it can be used as an API to inspect translation unit ensembles."))
+  (omap::keys (transunit-ensemble->unwrap tunits))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define transunit-at-path ((path filepathp) (tunits transunit-ensemblep))
+  :guard (set::in path (transunit-ensemble-paths tunits))
+  :returns (tunit transunitp)
+  :short "Translation unit at a certain path in a translation unit ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the value associated to the key (path) in the map,
+     which the guard requires to be in the translation unit ensemble.")
+   (xdoc::p
+    "It is more concise, and more abstract,
+     than accessing the map and then looking up the path.")
+   (xdoc::p
+    "Together with @(tsee transunit-ensemble-paths),
+     it can be used an as API to inspect a file set."))
+  (transunit-fix
+   (omap::lookup (filepath-fix path) (transunit-ensemble->unwrap tunits)))
+  :guard-hints (("Goal" :in-theory (enable omap::assoc-to-in-of-keys
+                                           transunit-ensemble-paths)))
   :hooks (:fix))

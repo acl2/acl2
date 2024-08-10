@@ -53,7 +53,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection invariant-validator-addresses
+(defsection invariant-all-addresses
   :short "The set of the addresses of all the validators
           is unchanged by all transitions."
   :long
@@ -67,58 +67,58 @@
      which are formulated and proved separately
      for the different kinds of events."))
 
-  (defrule validator-addresses-of-create-certificate-next
+  (defrule all-addresses-of-create-certificate-next
     (implies (create-certificate-possiblep cert systate)
-             (equal (validator-addresses
+             (equal (all-addresses
                      (create-certificate-next cert systate))
-                    (validator-addresses systate)))
+                    (all-addresses systate)))
     :enable (create-certificate-possiblep
              create-certificate-next))
 
-  (defrule validator-addresses-of-receive-certificate-next
+  (defrule all-addresses-of-receive-certificate-next
     (implies (receive-certificate-possiblep msg systate)
-             (equal (validator-addresses
+             (equal (all-addresses
                      (receive-certificate-next msg systate))
-                    (validator-addresses systate)))
+                    (all-addresses systate)))
     :enable (receive-certificate-possiblep
              receive-certificate-next))
 
-  (defrule validator-addresses-of-store-certificate-next
+  (defrule all-addresses-of-store-certificate-next
     (implies (store-certificate-possiblep cert val systate)
-             (equal (validator-addresses
+             (equal (all-addresses
                      (store-certificate-next cert val systate))
-                    (validator-addresses systate)))
+                    (all-addresses systate)))
     :enable (store-certificate-possiblep
              store-certificate-next))
 
-  (defrule validator-addresses-of-advance-round-next
+  (defrule all-addresses-of-advance-round-next
     (implies (advance-round-possiblep val systate)
-             (equal (validator-addresses
+             (equal (all-addresses
                      (advance-round-next val systate))
-                    (validator-addresses systate)))
+                    (all-addresses systate)))
     :enable (advance-round-possiblep
              advance-round-next))
 
-  (defrule validator-addresses-of-commit-anchors-next
+  (defrule all-addresses-of-commit-anchors-next
     (implies (commit-anchors-possiblep val systate)
-             (equal (validator-addresses
+             (equal (all-addresses
                      (commit-anchors-next val systate))
-                    (validator-addresses systate)))
+                    (all-addresses systate)))
     :enable (commit-anchors-possiblep
              commit-anchors-next))
 
-  (defrule validator-addresses-of-timer-expires-next
+  (defrule all-addresses-of-timer-expires-next
     (implies (timer-expires-possiblep val systate)
-             (equal (validator-addresses
+             (equal (all-addresses
                      (timer-expires-next val systate))
-                    (validator-addresses systate)))
+                    (all-addresses systate)))
     :enable (timer-expires-possiblep
              timer-expires-next))
 
-  (defrule validator-addresses-of-event-next
+  (defrule all-addresses-of-event-next
     (implies (event-possiblep event systate)
-             (equal (validator-addresses (event-next event systate))
-                    (validator-addresses systate)))
+             (equal (all-addresses (event-next event systate))
+                    (all-addresses systate)))
     :enable (event-possiblep
              event-next)))
 

@@ -61,7 +61,14 @@
   :short "Fixtype of omaps from file paths to file data."
   :key-type filepath
   :val-type filedata
-  :pred filepath-filedata-mapp)
+  :pred filepath-filedata-mapp
+  ///
+
+  (defrule filepath-setp-of-keys-when-filepath-filedata-mapp
+    (implies (filepath-filedata-mapp map)
+             (filepath-setp (omap::keys map)))
+    :induct t
+    :enable omap::keys))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -76,3 +83,43 @@
      for separation and extensibility."))
   ((unwrap filepath-filedata-map))
   :pred filesetp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fileset-paths ((files filesetp))
+  :returns (paths filepath-setp)
+  :short "Set of file paths in a file set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the keys of the map from file paths to file data.")
+   (xdoc::p
+    "It is more concise, and more abstract,
+     than extracting the map and then the keys.")
+   (xdoc::p
+    "Together with @(tsee file-at-path),
+     it can be used as an API to inspect a file set."))
+  (omap::keys (fileset->unwrap files))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define file-at-path ((path filepathp) (files filesetp))
+  :guard (set::in path (fileset-paths files))
+  :returns (data filedatap)
+  :short "File data at a certain path in a file set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the value associated to the key (path) in the map,
+     which the guard requires to be in the file set.")
+   (xdoc::p
+    "It is more concise, and more abstract,
+     than accessing the map and then looking up the path.")
+   (xdoc::p
+    "Together with @(tsee fileset-paths),
+     it can be used an as API to inspect a file set."))
+  (filedata-fix (omap::lookup (filepath-fix path) (fileset->unwrap files)))
+  :guard-hints (("Goal" :in-theory (enable omap::assoc-to-in-of-keys
+                                           fileset-paths)))
+  :hooks (:fix))

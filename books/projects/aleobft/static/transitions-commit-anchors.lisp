@@ -67,7 +67,7 @@
        (commit-round (1- current-round))
        (last-committed-round (validator-state->last vstate))
        ((unless (> commit-round last-committed-round)) nil)
-       (vals (validator-addresses systate))
+       (vals (all-addresses systate))
        (leader (leader-at-round commit-round vals))
        (dag (validator-state->dag vstate))
        (anchor? (get-certificate-with-author+round leader commit-round dag))
@@ -108,7 +108,7 @@
      We also update the last committed round
      to the one for the anchor at the even round."))
   (b* ((vstate (get-validator-state val systate))
-       (vals (validator-addresses systate))
+       (vals (all-addresses systate))
        (new-vstate (commit-anchors-next-val vals vstate)))
     (update-validator-state val new-vstate systate))
   :guard-hints (("Goal" :in-theory (enable commit-anchors-possiblep
@@ -206,7 +206,7 @@
                       (get-validator-state val systate))
                      (commit-round (1- vstate.round))
                      (leader (leader-at-round commit-round
-                                              (validator-addresses systate)))
+                                              (all-addresses systate)))
                      (anchor (get-certificate-with-author+round leader
                                                                 commit-round
                                                                 vstate.dag))
@@ -214,7 +214,7 @@
                                                (- commit-round 2)
                                                vstate.last
                                                vstate.dag
-                                               (validator-addresses systate))))
+                                               (all-addresses systate))))
                   (mv-nth 0 (extend-blockchain anchors
                                                vstate.dag
                                                vstate.blockchain

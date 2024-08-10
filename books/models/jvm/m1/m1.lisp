@@ -210,8 +210,7 @@ but I want to students to see their definitions as warm-up exercises.
 ; Step Stuff
 
 (defthm step-opener
-  (implies (and (equal ins (next-inst s))
-                (syntaxp (quotep ins)))
+  (implies (consp (next-inst s))
            (equal (step s)
                   (do-inst (next-inst s) s))))
 
