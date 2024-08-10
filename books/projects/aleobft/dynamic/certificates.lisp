@@ -112,16 +112,7 @@
   :short "Fixtype of sets of certificates."
   :elt-type certificate
   :elementp-of-nil nil
-  :pred certificate-setp
-
-  ///
-
-  (defrule certificate-setp-of-intersect
-    (implies (and (certificate-setp x)
-                  (certificate-setp y))
-             (certificate-setp (set::intersect x y)))
-    :induct t
-    :enable set::intersect))
+  :pred certificate-setp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
