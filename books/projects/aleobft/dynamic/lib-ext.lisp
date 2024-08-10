@@ -19,3 +19,10 @@
 (set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule omap::lookup-of-update
+  (equal (omap::lookup key (omap::update key1 val map))
+         (if (equal key key1)
+             val
+           (omap::lookup key map)))
+  :enable omap::lookup)
