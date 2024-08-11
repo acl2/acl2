@@ -237,15 +237,21 @@
                                  (map vstates))))
        :disable omap::head-key-not-in-keys-of-tail)
 
-     (defrule correct-addresses-loop-of-update
+     (defruled correct-addresses-loop-of-update
        (implies (and (validators-statep vstates)
-                     (set::in val (correct-addresses-loop vstates))
+                     (addressp val)
                      (validator-statep vstate))
-                (equal (correct-addresses-loop (omap::update val vstate vstates))
-                       (correct-addresses-loop vstates)))
+                (equal
+                 (correct-addresses-loop (omap::update val vstate vstates))
+                 (cond ((validator-statep vstate)
+                        (set::insert val (correct-addresses-loop vstates)))
+                       ((set::in val (correct-addresses-loop vstates))
+                        (set::delete val (correct-addresses-loop vstates)))
+                       (t (correct-addresses-loop vstates)))))
        :enable (set::double-containment-no-backchain-limit
                 set::expensive-rules
-                in-of-correct-addresses-loop)
+                in-of-correct-addresses-loop
+                omap::lookup)
        :disable correct-addresses-loop)))
 
   ///
@@ -313,7 +319,8 @@
     (equal (correct-addresses new-systate)
            (correct-addresses systate))
     :hyp (set::in val (correct-addresses systate))
-    :hints (("Goal" :in-theory (enable correct-addresses))))
+    :hints (("Goal" :in-theory (enable correct-addresses
+                                       correct-addresses-loop-of-update))))
 
   (defret faulty-addresses-of-update-validator-state
     (equal (faulty-addresses new-systate)
