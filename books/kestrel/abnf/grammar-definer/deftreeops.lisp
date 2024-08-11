@@ -359,7 +359,10 @@
     (xdoc::li
      "The alist from rule names to rule name information.")
     (xdoc::li
-     "The alist from numeric ranges to numeric range information.")))
+     "The alist from numeric ranges to numeric range information.")
+    (xdoc::li
+     "The alist from character value notations
+      to character value notation information.")))
   ((rulename-info-alist deftreeops-rulename-info-alist)
    (numrange-info-alist deftreeops-numrange-info-alist)
    (charval-info-alist deftreeops-charval-info-alist))

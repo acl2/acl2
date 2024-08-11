@@ -541,7 +541,7 @@
      and must form a supported sequence."))
   (b* (((reterr) (c::tyname (c::tyspecseq-void) (c::obj-adeclor-none)))
        ((tyname tyname) tyname)
-       ((mv okp tyspecs) (check-specqual-list-all-tyspec tyname.specqual))
+       ((mv okp tyspecs) (check-spec/qual-list-all-tyspec tyname.specqual))
        ((when (not okp))
         (reterr (msg "Unsupported specifiers and qualifiers ~
                       in type name ~x0."
@@ -738,7 +738,7 @@
                      (structdecl-fix structdecl))))
        (specquals (structdecl-member->specqual structdecl))
        (declors (structdecl-member->declor structdecl))
-       ((mv okp tyspecs) (check-specqual-list-all-tyspec specquals))
+       ((mv okp tyspecs) (check-spec/qual-list-all-tyspec specquals))
        ((unless okp)
         (reterr (msg "Unsupported specifier and qualifier list ~
                       in structure declaration ~x0."

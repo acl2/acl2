@@ -58,7 +58,7 @@
                                    (author addressp)
                                    (round posp)
                                    (systate system-statep))
-  :guard (set::in signer (validator-addresses systate))
+  :guard (set::in signer (all-addresses systate))
   :returns (yes/no booleanp)
   :short "Check that a validator (signer) has a record of
           a certificate author-round pair."

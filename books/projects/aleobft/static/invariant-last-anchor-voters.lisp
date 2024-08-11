@@ -74,7 +74,7 @@
     (>= yes (1+ max-faulty))))
 
 (define-sk system-last-anchor-voters-p ((systate system-statep))
-  :guard (and (not (set::emptyp (validator-addresses systate)))
+  :guard (and (not (set::emptyp (all-addresses systate)))
               (system-last-is-even-p systate)
               (system-last-anchor-present-p systate))
   :returns (yes/no booleanp)
@@ -87,7 +87,7 @@
                    (validator-last-anchor-voters-p
                     (get-validator-state val systate)
                     (max-faulty systate)
-                    (validator-addresses systate))))
+                    (all-addresses systate))))
   :guard-hints (("Goal"
                  :in-theory (enable system-last-is-even-p-necc
                                     system-last-anchor-present-p-necc))))
@@ -125,11 +125,11 @@
                   (validator-last-anchor-voters-p
                    (get-validator-state val systate)
                    (max-faulty systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-last-anchor-voters-p
               (get-validator-state val (create-certificate-next cert systate))
               (max-faulty systate)
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable validator-last-anchor-voters-p)
 
   (defrule system-last-anchor-voters-p-of-create-certificate-next
@@ -157,11 +157,11 @@
                   (validator-last-anchor-voters-p
                    (get-validator-state val systate)
                    (max-faulty systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-last-anchor-voters-p
               (get-validator-state val (receive-certificate-next msg systate))
               (max-faulty systate)
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable validator-last-anchor-voters-p)
 
   (defrule system-last-anchor-voters-p-of-receive-certificate-next
@@ -191,12 +191,12 @@
                   (validator-last-anchor-voters-p
                    (get-validator-state val systate)
                    (max-faulty systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-last-anchor-voters-p
               (get-validator-state val
                                    (store-certificate-next cert val1 systate))
               (max-faulty systate)
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable validator-last-anchor-voters-p)
 
   (defrule system-last-anchor-voters-p-of-store-certificate-next
@@ -224,12 +224,12 @@
                   (validator-last-anchor-voters-p
                    (get-validator-state val systate)
                    (max-faulty systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-last-anchor-voters-p
               (get-validator-state val
                                    (advance-round-next val1 systate))
               (max-faulty systate)
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable validator-last-anchor-voters-p)
 
   (defrule system-last-anchor-voters-p-of-advance-round-next
@@ -259,12 +259,12 @@
                   (validator-last-anchor-voters-p
                    (get-validator-state val systate)
                    (max-faulty systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-last-anchor-voters-p
               (get-validator-state val
                                    (commit-anchors-next val1 systate))
               (max-faulty systate)
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
              fix
              commit-anchors-possiblep))
@@ -293,12 +293,12 @@
                   (validator-last-anchor-voters-p
                    (get-validator-state val systate)
                    (max-faulty systate)
-                   (validator-addresses systate)))
+                   (all-addresses systate)))
              (validator-last-anchor-voters-p
               (get-validator-state val
                                    (timer-expires-next val1 systate))
               (max-faulty systate)
-              (validator-addresses systate)))
+              (all-addresses systate)))
     :enable validator-last-anchor-voters-p)
 
   (defrule system-last-anchor-voters-p-of-timer-expires-next

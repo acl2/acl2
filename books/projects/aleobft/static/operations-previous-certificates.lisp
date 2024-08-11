@@ -45,7 +45,7 @@
                                             (previous address-setp)
                                             (round posp)
                                             (systate system-statep))
-  :guard (set::in signer (validator-addresses systate))
+  :guard (set::in signer (all-addresses systate))
   :returns (yes/no booleanp)
   :short "Check whether a validator who signed a certificate
           has the certificate's previous certificates in its DAG."
@@ -83,7 +83,7 @@
                                               (previous address-setp)
                                               (round posp)
                                               (systate system-statep))
-  :guard (set::subset signers (validator-addresses systate))
+  :guard (set::subset signers (all-addresses systate))
   :returns (yes/no booleanp)
   :short "Check whether all the correct validators who signed a certificate
           have the certificate's previous certificates in their DAG."

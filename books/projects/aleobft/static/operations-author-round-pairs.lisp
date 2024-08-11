@@ -52,7 +52,7 @@
                                              (author addressp)
                                              (round posp)
                                              (systate system-statep))
-  :guard (set::in signer (validator-addresses systate))
+  :guard (set::in signer (all-addresses systate))
   :returns (yes/no booleanp)
   :short "Check whether a validator who signed a certificate
           does not have, and has not signed, already a certificate
@@ -89,7 +89,7 @@
                                             (author addressp)
                                             (round posp)
                                             (systate system-statep))
-  :guard (set::subset signers (validator-addresses systate))
+  :guard (set::subset signers (all-addresses systate))
   :returns (yes/no booleanp)
   :short "Check whether all the correct validators who signed a certificate
           do not have, and have not signed, already a certificate
@@ -175,7 +175,7 @@
                       (author addressp)
                       (round posp)
                       (systate system-statep))
-  :guard (set::subset endorsers (validator-addresses systate))
+  :guard (set::subset endorsers (all-addresses systate))
   :returns (new-systate system-statep)
   :short "Add an author-round pair to the set of endorsed pairs of
           all the correct validators in a given set of endorsers."
@@ -213,10 +213,10 @@
            (get-network-state systate))
     :hints (("Goal" :induct t)))
 
-  (defret validator-addresses-of-add-endorsed
-    (equal (validator-addresses new-systate)
-           (validator-addresses systate))
-    :hyp (set::subset endorsers (validator-addresses systate))
+  (defret all-addresses-of-add-endorsed
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hyp (set::subset endorsers (all-addresses systate))
     :hints (("Goal"
              :induct t
              :in-theory (enable* set::expensive-rules))))
@@ -224,7 +224,7 @@
   (defret correct-addresses-of-add-endorsed
     (equal (correct-addresses new-systate)
            (correct-addresses systate))
-    :hyp (set::subset endorsers (validator-addresses systate))
+    :hyp (set::subset endorsers (all-addresses systate))
     :hints (("Goal"
              :induct t
              :in-theory (enable* set::expensive-rules))))

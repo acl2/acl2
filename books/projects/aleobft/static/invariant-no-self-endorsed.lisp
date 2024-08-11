@@ -271,7 +271,7 @@
                   (not (set::in author endorsers))
                   (addressp author)
                   (address-setp endorsers)
-                  (set::subset endorsers (validator-addresses systate)))
+                  (set::subset endorsers (all-addresses systate)))
              (system-endorsed-not-self-p
               (add-endorsed endorsers author round systate)))
     :induct t

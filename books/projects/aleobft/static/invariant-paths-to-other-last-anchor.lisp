@@ -68,7 +68,7 @@
                         (set::in val2 (correct-addresses systate)))
                    (b* ((vstate1 (get-validator-state val1 systate))
                         (vstate2 (get-validator-state val2 systate))
-                        (vals (validator-addresses systate))
+                        (vals (all-addresses systate))
                         (anchor (last-anchor vstate1 vals)))
                      (implies anchor
                               (dag-all-path-to-p
@@ -76,7 +76,7 @@
                                (validator-state->dag vstate2))))))
   :guard-hints
   (("Goal"
-    :in-theory (enable nonempty-validator-addresses-when-correct-validator
+    :in-theory (enable nonempty-all-addresses-when-correct-validator
                        system-last-is-even-p-necc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,7 +133,7 @@
              system-unequivocal-dags-p-necc
              quorum
              number-validators
-             nonempty-validator-addresses-when-correct-validator
+             nonempty-all-addresses-when-correct-validator
              dag-authors-are-validators-p
              anchorp
              system-previous-in-dag-p-necc
@@ -156,8 +156,8 @@
                 (mv-nth 0
                         (system-paths-to-other-last-anchor-p-witness systate))
                 systate)
-               (validator-addresses systate)))
-      (vals (validator-addresses systate))
+               (all-addresses systate)))
+      (vals (all-addresses systate))
       (f (max-faulty systate)))
      (:instance
       system-dag-previous-are-quorum-p-necc

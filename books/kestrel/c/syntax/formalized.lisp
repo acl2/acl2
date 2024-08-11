@@ -259,7 +259,7 @@
      We must also ensure that there are no type qualifiers,
      which are not supported in the formal semantics."))
   (b* (((tyname tyname) tyname)
-       ((mv okp tyspecs) (check-specqual-list-all-tyspec tyname.specqual)))
+       ((mv okp tyspecs) (check-spec/qual-list-all-tyspec tyname.specqual)))
     (and okp
          (type-spec-list-integer-formalp tyspecs)
          (not tyname.decl?)))
@@ -787,7 +787,7 @@
    structdecl
    :member (and structdecl.extension
                 (b* (((mv okp tyspecs)
-                      (check-specqual-list-all-tyspec structdecl.specqual)))
+                      (check-spec/qual-list-all-tyspec structdecl.specqual)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
                 (consp structdecl.declor)

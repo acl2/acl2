@@ -122,7 +122,7 @@
      the addresses of the authors of the previous certificates of @('cert')
      are addresses of validators in the system."))
   (b* (((certificate cert) cert)
-       ((unless (set::in cert.author (validator-addresses systate))) nil)
+       ((unless (set::in cert.author (all-addresses systate))) nil)
        (vstate (get-validator-state cert.author systate))
        ((unless (or (not vstate)
                     (equal cert.round
@@ -133,7 +133,7 @@
                   (= (set::cardinality cert.previous)
                      (quorum systate))))
         nil)
-       ((unless (set::subset cert.endorsers (validator-addresses systate)))
+       ((unless (set::subset cert.endorsers (all-addresses systate)))
         nil)
        ((when (set::in cert.author cert.endorsers)) nil)
        ((unless (= (set::cardinality cert.endorsers)
@@ -360,7 +360,7 @@
 
   (defrule get-network-state-of-create-certificate-next
     (implies (set::subset (certificate->endorsers cert)
-                          (validator-addresses systate))
+                          (all-addresses systate))
              (equal (get-network-state
                      (create-certificate-next cert systate))
                     (set::union

@@ -57,7 +57,7 @@
                    (dag-authors-are-validators-p
                     (validator-state->dag
                      (get-validator-state val systate))
-                    (validator-addresses systate)))))
+                    (all-addresses systate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,7 +116,7 @@
                            (certificate-set->author-set
                             (validator-state->dag
                              (get-validator-state val systate)))))
-             (set::in author (validator-addresses systate)))
+             (set::in author (all-addresses systate)))
     :use ((:instance system-signers-are-validators-p-necc
                      (cert (thecert author
                                     (validator-state->dag

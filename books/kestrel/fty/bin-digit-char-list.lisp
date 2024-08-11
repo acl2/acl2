@@ -13,7 +13,7 @@
 (include-book "bin-digit-char")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/std/strings/bin-digit-char-listp" :dir :system)
+(include-book "std/strings/bin-digit-char-listp" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

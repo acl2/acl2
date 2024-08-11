@@ -205,7 +205,7 @@
   (defrule system-buffer-not-self-p-of-add-endorsed
     (implies (and (system-buffer-not-self-p systate)
                   (address-setp endorsers)
-                  (set::subset endorsers (validator-addresses systate)))
+                  (set::subset endorsers (all-addresses systate)))
              (system-buffer-not-self-p
               (add-endorsed endorsers author round systate)))
     :induct t

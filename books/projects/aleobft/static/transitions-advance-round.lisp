@@ -73,7 +73,7 @@
        (round (validator-state->round vstate))
        (dag (validator-state->dag vstate))
        (timeout (timer-case (validator-state->timer vstate) :expired))
-       (vals (validator-addresses systate)))
+       (vals (all-addresses systate)))
     (if (evenp round)
         (b* ((leader (leader-at-round round vals))
              (anchor? (get-certificate-with-author+round leader round dag)))

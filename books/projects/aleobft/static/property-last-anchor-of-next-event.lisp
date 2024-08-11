@@ -61,9 +61,9 @@
            (equal (last-anchor
                    (get-validator-state
                     val (create-certificate-next cert systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (last-anchor (get-validator-state val systate)
-                               (validator-addresses systate))))
+                               (all-addresses systate))))
   :enable last-anchor
   :disable validator-state->dag-of-create-certificate-next
   :use system-last-anchor-present-p-necc)
@@ -83,9 +83,9 @@
            (equal (last-anchor
                    (get-validator-state
                     val (receive-certificate-next msg systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (last-anchor (get-validator-state val systate)
-                               (validator-addresses systate))))
+                               (all-addresses systate))))
   :enable last-anchor)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -111,9 +111,9 @@
            (equal (last-anchor
                    (get-validator-state
                     val (store-certificate-next cert val1 systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (last-anchor (get-validator-state val systate)
-                               (validator-addresses systate))))
+                               (all-addresses systate))))
   :enable last-anchor
   :disable validator-state->dag-of-store-certificate-next
   :use system-last-anchor-present-p-necc)
@@ -133,9 +133,9 @@
            (equal (last-anchor
                    (get-validator-state
                     val (advance-round-next val1 systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (last-anchor (get-validator-state val systate)
-                               (validator-addresses systate))))
+                               (all-addresses systate))))
   :enable last-anchor)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -159,17 +159,17 @@
            (equal (last-anchor
                    (get-validator-state
                     val (commit-anchors-next val1 systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (if (equal val1 val)
                       (b* ((round (1- (validator-state->round
                                        (get-validator-state val systate)))))
                         (get-certificate-with-author+round
-                         (leader-at-round round (validator-addresses systate))
+                         (leader-at-round round (all-addresses systate))
                          round
                          (validator-state->dag
                           (get-validator-state val systate))))
                     (last-anchor (get-validator-state val systate)
-                                 (validator-addresses systate)))))
+                                 (all-addresses systate)))))
   :enable (last-anchor
            commit-anchors-next
            commit-anchors-next-val
@@ -191,7 +191,7 @@
            (equal (last-anchor
                    (get-validator-state
                     val (timer-expires-next val1 systate))
-                   (validator-addresses systate))
+                   (all-addresses systate))
                   (last-anchor (get-validator-state val systate)
-                               (validator-addresses systate))))
+                               (all-addresses systate))))
   :enable last-anchor)

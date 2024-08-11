@@ -226,27 +226,27 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-specqual ((specqual specqualp))
-    :returns (new-specqual specqualp)
+  (define simpadd0-spec/qual ((specqual spec/qual-p))
+    :returns (new-specqual spec/qual-p)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a type specifier or qualifier."
-    (specqual-case
+    (spec/qual-case
      specqual
-     :tyspec (specqual-tyspec (simpadd0-type-spec specqual.unwrap))
-     :tyqual (specqual-fix specqual)
-     :alignspec (specqual-alignspec (simpadd0-alignspec specqual.unwrap)))
-    :measure (specqual-count specqual))
+     :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.unwrap))
+     :tyqual (spec/qual-fix specqual)
+     :alignspec (spec/qual-alignspec (simpadd0-alignspec specqual.unwrap)))
+    :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-specqual-list ((specquals specqual-listp))
-    :returns (new-specquals specqual-listp)
+  (define simpadd0-spec/qual-list ((specquals spec/qual-listp))
+    :returns (new-specquals spec/qual-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of type specifiers and qualifiers."
     (cond ((endp specquals) nil)
-          (t (cons (simpadd0-specqual (car specquals))
-                   (simpadd0-specqual-list (cdr specquals)))))
-    :measure (specqual-list-count specquals))
+          (t (cons (simpadd0-spec/qual (car specquals))
+                   (simpadd0-spec/qual-list (cdr specquals)))))
+    :measure (spec/qual-list-count specquals))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -533,7 +533,7 @@
     :short "Transform a type name."
     (b* (((tyname tyname) tyname))
       (make-tyname
-       :specqual (simpadd0-specqual-list tyname.specqual)
+       :specqual (simpadd0-spec/qual-list tyname.specqual)
        :decl? (simpadd0-absdeclor-option tyname.decl?)))
     :measure (tyname-count tyname))
 
@@ -559,7 +559,7 @@
      structdecl
      :member (make-structdecl-member
               :extension structdecl.extension
-              :specqual (simpadd0-specqual-list structdecl.specqual)
+              :specqual (simpadd0-spec/qual-list structdecl.specqual)
               :declor (simpadd0-structdeclor-list structdecl.declor)
               :attrib structdecl.attrib)
      :statassert (structdecl-statassert
