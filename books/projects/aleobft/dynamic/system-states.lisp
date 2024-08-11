@@ -240,10 +240,10 @@
      (defruled correct-addresses-loop-of-update
        (implies (and (validators-statep vstates)
                      (addressp val)
-                     (validator-statep vstate))
+                     (validator-state-optionp vstate?))
                 (equal
-                 (correct-addresses-loop (omap::update val vstate vstates))
-                 (cond ((validator-statep vstate)
+                 (correct-addresses-loop (omap::update val vstate? vstates))
+                 (cond ((validator-statep vstate?)
                         (set::insert val (correct-addresses-loop vstates)))
                        ((set::in val (correct-addresses-loop vstates))
                         (set::delete val (correct-addresses-loop vstates)))
