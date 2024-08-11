@@ -43,7 +43,6 @@
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
-(include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
 ;(include-book "kestrel/bv-lists/nth2" :dir :system) ; todo: drop?
 ;(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
 (include-book "kestrel/bv-lists/array-patterns" :dir :system) ; for every-nth
@@ -294,15 +293,6 @@
  (defthm eql-becomes-eql
    (equal (eql x y)
           (equal x y))))
-
-(defund negated-elems-listp-unguarded (width lst1 lst2)
-  (declare (xargs :guard t))
-  (negated-elems-listp (nfix width) lst1 lst2))
-
-(defthm negated-elems-listp-unguarded-correct
-  (equal (negated-elems-listp-unguarded width lst1 lst2)
-         (negated-elems-listp width lst1 lst2))
-  :hints (("Goal" :in-theory (enable negated-elems-listp-unguarded))))
 
 ;; (defund getbit-is-always-0-unguarded (n items)
 ;;   (declare (xargs :guard t))
