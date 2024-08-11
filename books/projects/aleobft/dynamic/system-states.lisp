@@ -245,8 +245,7 @@
                        (correct-addresses-loop vstates)))
        :enable (set::double-containment-no-backchain-limit
                 set::expensive-rules
-                in-of-correct-addresses-loop
-                omap::lookup)
+                in-of-correct-addresses-loop)
        :disable correct-addresses-loop)))
 
   ///
