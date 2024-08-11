@@ -30,4 +30,5 @@
      and the possible transitions by which
      an event takes a state to a new state
      (the events `label' the transitions between states)."))
-  :order-subtopics (states))
+  :order-subtopics (states
+                    events))
