@@ -13,6 +13,7 @@
 
 (include-book "states")
 (include-book "events")
+(include-book "initialization")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,4 +32,5 @@
      an event takes a state to a new state
      (the events `label' the transitions between states)."))
   :order-subtopics (states
-                    events))
+                    events
+                    initialization))
