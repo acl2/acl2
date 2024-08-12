@@ -13613,14 +13613,14 @@
               (t (value t)))))
     (value (and no-errp-1 no-errp-2))))
 
-(defun include-book-process-embedded-events (ev-lst 
+(defun include-book-process-embedded-events (ev-lst
                                              directory-name ttags-info
                                              cert-obj cert-ttags cert-data
                                              behalf-of-certify-flg
                                              full-book-string full-book-name
                                              skip-proofsp expansion-alist
                                              ctx state)
-                                              
+
 ; This function is called by include-book-fn1, to process the events in the
 ; given book, and to return the new value to be installed for state global
 ; ttags-allowed in the case that the book is considered to be certified.  The
@@ -14763,7 +14763,7 @@
         (t
          (subst-by-position-eliding-defconst1 alist (cdr lst) (1+ index)
                                               (cons (car lst) acc)))))
-                                       
+
 
 (defun subst-by-position-eliding-defconst (alist lst index)
 
@@ -20720,48 +20720,46 @@
                           name 'congruent-stobj-rep congruent-stobj-rep
                           (putprop-unless
                            name 'non-memoizable non-memoizable nil
-                           (putprop-unless
-                            name 'non-executablep non-executable nil
-                            (putprop
+                           (putprop
 
 ; Here I declare that name is Common Lisp compliant.  Below I similarly declare
 ; the-live-var.  All elements of the namex list of an event must have the same
 ; symbol-class.
 
-                             name 'symbol-class :common-lisp-compliant
-                             (put-stobjs-in-and-outs
-                              name template
+                            name 'symbol-class :common-lisp-compliant
+                            (put-stobjs-in-and-outs
+                             name template
 
 ; Rockwell Addition: It is convenient for the recognizer to be in a
 ; fixed position in this list, so I can find out its name.
 
-                              (putprop
-                               name 'stobj
-                               (make stobj-property
-                                     :live-var the-live-var
-                                     :recognizer recog-name
-                                     :creator creator-name
-                                     :names
+                             (putprop
+                              name 'stobj
+                              (make stobj-property
+                                    :live-var the-live-var
+                                    :recognizer recog-name
+                                    :creator creator-name
+                                    :names
 ; See the comment in the binding of names above.
-                                     (append (set-difference-eq
-                                              names
-                                              (list recog-name
-                                                    creator-name))
-                                             field-const-names))
+                                    (append (set-difference-eq
+                                             names
+                                             (list recog-name
+                                                   creator-name))
+                                            field-const-names))
+                              (putprop-x-lst1
+                               names 'stobj-function name
                                (putprop-x-lst1
-                                names 'stobj-function name
-                                (putprop-x-lst1
-                                 field-const-names 'stobj-constant name
+                                field-const-names 'stobj-constant name
+                                (putprop
+                                 the-live-var 'stobj-live-var name
                                  (putprop
-                                  the-live-var 'stobj-live-var name
+                                  the-live-var 'symbol-class
+                                  :common-lisp-compliant
                                   (putprop
-                                   the-live-var 'symbol-class
-                                   :common-lisp-compliant
-                                   (putprop
-                                    name
-                                    'accessor-names
-                                    (accessor-array name field-names)
-                                    wrld2)))))))))))))
+                                   name
+                                   'accessor-names
+                                   (accessor-array name field-names)
+                                   wrld2))))))))))))
                        (discriminator
                         (cons 'defstobj
                               (make
