@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-DYNAMIC")
 
 (include-book "centaur/fty/top" :dir :system)
 

@@ -9,14 +9,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-DYNAMIC")
 
 (include-book "definition")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ aleobft-dynamic
-  :parents (aleobft)
+  :parents (aleo::aleobft)
   :short "Formal specification and correctness proofs of
           AleoBFT with dynamic committees."
   :long

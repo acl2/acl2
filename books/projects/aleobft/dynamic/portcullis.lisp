@@ -4,9 +4,9 @@
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
-; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+; Authors: Alessandro Coglio (acoglio on GitHub)
 ;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
+(in-package "ACL2")
