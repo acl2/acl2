@@ -130,21 +130,3 @@
   :induct t
   :enable (set::subset
            set::expensive-rules))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled omap::size-to-cardinality-of-keys
-  (equal (omap::size map)
-         (set::cardinality (omap::keys map)))
-  :induct t
-  :enable (omap::size
-           omap::keys
-           set::expensive-rules))
-
-(defruled omap::cardinality-of-keys-to-size
-  (equal (set::cardinality (omap::keys map))
-         (omap::size map))
-  :enable omap::size-to-cardinality-of-keys)
-
-(theory-invariant (incompatible (:rewrite omap::size-to-cardinality-of-keys)
-                                (:rewrite omap::cardinality-of-keys-to-size)))
