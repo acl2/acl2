@@ -424,7 +424,6 @@
                                (and (consp (car id))
                                     (< 1 (len (car id)))
                                     '(:cases ((app-view x86))))))))
-  :guard (64-bit-modep x86)
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable 64-bit-modep init-zero-page load-file-into-memory))))
   (b* (;; Enable some features in cr0
