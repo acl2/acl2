@@ -305,7 +305,7 @@
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
            (dlistp (lead-inds a))))
 
-;; By (lead-inds a), (lead-inds a) is a sublist of (ninit n):
+;; (lead-inds a) is a sublist of (ninit n):
 
 (defthmd sublistp-lead-inds-ninit
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
@@ -940,7 +940,7 @@
          (bq (first-rows n br)))
     (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
                   (solvablep a b m)
-	          (= (row-rank a) n))
+	          (invertiblep a n))
 	     (iff (solutionp x a b)
 	          (equal x (col 0 bq))))))
 
