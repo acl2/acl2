@@ -243,7 +243,7 @@
                    (state-p1 (write-mem-to-channel size channel x86 state)))))
 
 (defxdoc save-restore
-         :parents (x86isa)
+         :parents (x86isa-state)
          :short "Tools for saving and restoring the x86 state"
          :long "<p>While most ACL2 objects can be serialized using @(see
          acl2::serialize), stobjs can not. The @('x86') state is an absstobj,

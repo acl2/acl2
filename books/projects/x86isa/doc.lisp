@@ -742,7 +742,7 @@
          transfering files into and out of the Linux system running in the
          model.</p>
 
-         <p>You can't mount it like any other drive on a Linux system, but you
+         <p>You can mount it like any other drive on a Linux system, but you
          may notice that, if your system is configured as we did above,
          @('/dev') doesn't have a @('/dev/blkx86isa'). In fact, it doesn't have
          anything but the @('/dev/console') we constructed when building the
