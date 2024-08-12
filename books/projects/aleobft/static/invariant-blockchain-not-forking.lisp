@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-STATIC")
 
 (include-book "invariant-anchors-not-forking")
 (include-book "invariant-blockchain-redundant")

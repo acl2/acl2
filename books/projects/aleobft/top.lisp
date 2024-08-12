@@ -84,4 +84,4 @@
      mainly as state invariants, which we show
      to hold in the initial states
      and to be preserved by state transitions."))
-  :order-subtopics (aleobft-static))
+  :order-subtopics (aleobft-static::aleobft-static))

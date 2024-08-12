@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-STATIC")
 
 (include-book "invariant-max-faulty")
 (include-book "invariant-last-anchor-present")

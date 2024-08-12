@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-STATIC")
 
 (include-book "invariant-signers-are-validators")
 

@@ -1,6 +1,6 @@
 ; Aleo Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2024 Aleo Systems Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -9,4 +9,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
+(ld "package.lsp")
