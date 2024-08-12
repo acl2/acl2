@@ -133,13 +133,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule omap::head-key-not-in-keys-of-tail
-  (not (set::in (mv-nth 0 (omap::head map))
-                (omap::keys (omap::tail map))))
-  :enable omap::in-of-keys-to-assoc)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruled omap::size-to-cardinality-of-keys
   (equal (omap::size map)
          (set::cardinality (omap::keys map)))
