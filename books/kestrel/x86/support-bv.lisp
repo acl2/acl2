@@ -1,7 +1,7 @@
 ; Supporting rules about bit-vectors
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,6 +28,15 @@
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 ;(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+
+(defthm fix-of-ifix
+  (equal (fix (ifix x))
+         (ifix x)))
+
+(defthm fix-when-integerp
+  (implies (integerp x)
+           (equal (fix x)
+                  x)))
 
 ;; ;replace the other one!
 ;; (encapsulate ()
@@ -96,9 +105,8 @@
                                    ;equal-of-+-when-negative-constant
                                    )))))
 
-
-
-(defthm +-of-minus1-and-bvcat-of-0
+;drop?
+(defthmd +-of-minus1-and-bvcat-of-0
   (implies (natp size)
            (equal (+ -1 (BVCAT 1 1 size 0))
                   (+ -1 (expt 2 size))))
@@ -135,7 +143,6 @@
 (defthm bvchop-upper-bound-strong
   (implies (natp n)
            (<= (bvchop n x) (+ -1 (expt 2 n))))
-  :rule-classes (:rewrite)
   :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm bvplus-of-*-of-256
@@ -156,15 +163,9 @@
                             bvchop-upper-bound-strong
                             BVCHOP-BOUND-2)))))
 
-
-(defthm fix-when-integerp
-  (implies (integerp x)
-           (equal (fix x)
-                  x)))
-
 (defthm open-ash-positive-constants
-  (implies (and (syntaxp (quotep i))
-                (syntaxp (quotep c))
+  (implies (and (syntaxp (and (quotep i)
+                              (quotep c)))
                 (natp c)
                 (integerp i))
            (equal (ash i c)
@@ -196,17 +197,13 @@
            (equal (bvplus 32 x y)
                   (bvplus 32 x2 y))))
 
-(defthm fix-of-ifix
-  (equal (fix (ifix x))
-         (ifix x)))
-
 (defthm equal-of-bvchop-and-bvplus-same
   (implies (natp size)
-           (equal (EQUAL (BVCHOP size K) (BVPLUS size n K))
-                  (equal (bvchop size n) 0)))
+           (equal (equal (bvchop size x) (bvplus size y x))
+                  (equal (bvchop size y) 0)))
   :hints (("Goal"
            :in-theory (e/d (bvplus bvchop-of-sum-cases bvuminus bvminus)
-                           ( bvminus-becomes-bvplus-of-bvuminus
-                                                    ;; bvcat-of-+-high
-   ;                                                    NTH-OF-CDR
-                                                    )) )))
+                           (bvminus-becomes-bvplus-of-bvuminus
+                            ;; bvcat-of-+-high
+                            ;; NTH-OF-CDR
+                            )))))
