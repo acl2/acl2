@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ messages
-  :parents (states)
+  :parents (states events)
   :short "Messages."
   :long
   (xdoc::topstring

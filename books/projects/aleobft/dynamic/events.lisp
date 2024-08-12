@@ -26,10 +26,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We introduce a fixtype for the events
-     of the state transition system that models AleoBFT.
-     In the framework of labeled state transition systems,
-     these events are the labels."))
+    "We introduce a fixtype for the events that can happen in the system,
+     which move the system from state to state.")
+   (xdoc::p
+    "In the framework of labeled state transition systems,
+     these events are the labels of the transitions."))
   :order-subtopics (messages)
   :default-parent t)
 
@@ -40,7 +41,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The system evolves its state (see @(tsee system-state))
+    "The system changes its state (see @(tsee system-state))
      in response to the following events:")
    (xdoc::ol
     (xdoc::li
@@ -48,32 +49,28 @@
       Note that the certificate includes the author,
       i.e. it indicates the validator.
       This adds the certificate to the DAG of the validator,
-      and broadcasts the certificate to all the correct validators
-      (the latter point is discussed in more detail later).")
+      and broadcasts the certificate on the network.")
     (xdoc::li
      "A validator receives a certificate,
       from a message in the network,
       which is removed from the network
-      and added to the buffer of the validator.")
+      and added to the buffer of the validator.
+      Note that the message indicates the validator,
+      as the destination.")
     (xdoc::li
      "A validator stores a certificate into the DAG,
-      moving it there from the buffer.")
+      moving it there from the buffer.
+      The event indicates the validator and the certificate.")
     (xdoc::li
      "A validator advances its round.")
     (xdoc::li
      "A validator commits anchors.")
     (xdoc::li
-     "A validator's timer expires."))
-   (xdoc::p
-    "Each event can only happen in certain states,
-     e.g. a validator can generate a new certificate
-     only if it has a quorum of preceding certificates in the DAG.
-     If an event is possible, then the next state is uniquely determined
-     by the current state and the event."))
+     "A validator's timer expires.")))
   (:create-certificate ((certificate certificate)))
   (:receive-certificate ((message message)))
-  (:store-certificate ((certificate certificate)
-                       (validator address)))
+  (:store-certificate ((validator address)
+                       (certificate certificate)))
   (:advance-round ((validator address)))
   (:commit-anchors ((validator address)))
   (:timer-expires ((validator address)))
