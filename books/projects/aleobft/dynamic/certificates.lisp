@@ -16,7 +16,7 @@
 
 (include-book "kestrel/fty/pos-set" :dir :system)
 
-(local (include-book "../static/lib-ext"))
+(local (include-book "lib-ext"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -112,16 +112,7 @@
   :short "Fixtype of sets of certificates."
   :elt-type certificate
   :elementp-of-nil nil
-  :pred certificate-setp
-
-  ///
-
-  (defrule certificate-setp-of-intersect
-    (implies (and (certificate-setp x)
-                  (certificate-setp y))
-             (certificate-setp (set::intersect x y)))
-    :induct t
-    :enable set::intersect))
+  :pred certificate-setp)
 
 ;;;;;;;;;;;;;;;;;;;;
 

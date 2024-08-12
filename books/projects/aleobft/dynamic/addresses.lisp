@@ -39,7 +39,8 @@
      so we treat addresses as abstract entities.
      Our model only needs to compare addresses for equality.")
    (xdoc::p
-    "In our model, addresses are also used to represent signatures."))
+    "In our model, addresses are also used to represent signatures:
+     see our model of @(see certificates)."))
   :order-subtopics t
   :default-parent t)
 
