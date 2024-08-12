@@ -1032,7 +1032,12 @@
        (implies (and (set::in x (keys map))
                      (set::in x keys))
                 (set::in x (keys (restrict keys map))))
-       :enable restrict))))
+       :enable restrict)))
+
+  (defrule head-key-not-in-keys-of-tail
+    (not (set::in (mv-nth 0 (head map))
+                  (keys (tail map))))
+    :enable in-of-keys-to-assoc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
