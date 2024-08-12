@@ -1972,7 +1972,7 @@
             jb-condition-of-cf-spec16
             jb-condition-of-cf-spec32
             jb-condition-of-cf-spec64
-            jb-condition-of-getbit ; for when we turn a cf-spec function into getbit (do we still do that?)
+            ;jb-condition-of-getbit ; for when we turn a cf-spec function into getbit (do we still do that?)
             jnb-condition-of-sub-cf-spec8
             jnb-condition-of-sub-cf-spec16
             jnb-condition-of-sub-cf-spec32
@@ -1990,8 +1990,8 @@
             jl-condition-of-sub-sf-spec32-and-sub-of-spec32
             jl-condition-of-sub-sf-spec64-and-sub-of-spec64
 
-;            jnl-condition-of-sf-spec32-and-of-spec32-same
-;            jnl-condition-of-sf-spec64-and-of-spec64-same
+            ;; jnl-condition-of-sf-spec32-and-of-spec32-same
+            ;; jnl-condition-of-sf-spec64-and-of-spec64-same
             ;; jnl-condition-of-sf-spec64-and-0
             jnl-condition-of-sub-sf-spec8-and-sub-of-spec8-same
             jnl-condition-of-sub-sf-spec16-and-sub-of-spec16-same
@@ -4582,9 +4582,9 @@
             bvdiv-tighten-64-32
             not-bvlt-of-max-when-unsiged-byte-p
             ;x86isa::sf-spec32-rewrite ; trying without...
-            jle-condition-rewrite-1-with-bvif ; this one works on bvif
-            jle-condition-rewrite-1-with-bvif-and-bvchop
-            jle-condition-rewrite-1-with-bvchop
+            ;jle-condition-rewrite-1-with-bvif ; this one works on bvif
+            ;jle-condition-rewrite-1-with-bvif-and-bvchop
+            ;jle-condition-rewrite-1-with-bvchop
             ;; jnl-condition-of-getbit-31-and-0
             ;;jnl-condition-rewrite-16
             ;;jnl-condition-rewrite-16b
