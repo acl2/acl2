@@ -1191,7 +1191,19 @@
   ;;              (size m)
   ;;            (1+ (size m)))))
 
-)
+  (defruled size-to-cardinality-of-keys
+    (equal (size map)
+           (set::cardinality (keys map)))
+    :induct t
+    :enable (size keys set::expensive-rules))
+
+  (defruled cardinality-of-keys-to-size
+    (equal (set::cardinality (keys map))
+           (size map))
+    :enable size-to-cardinality-of-keys)
+
+  (theory-invariant (incompatible (:rewrite size-to-cardinality-of-keys)
+                                  (:rewrite cardinality-of-keys-to-size))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
