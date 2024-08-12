@@ -4,6 +4,9 @@
 (include-book "projects/groups/symmetric" :dir :system)
 (local (include-book "support/fdet"))
 
+;; The determinant of an nxn matrix a is (fdet a n).  The definitrion is based on the symmetric group,
+;; (sym n), defined in "books/projects/groups/symmetric".
+
 ;; The term contributed by a permutation p in (sym n) to the determinant of an nxn
 ;;  matrix a is computed as follows:
 ;;   (1) select an entry from each row of a, the selection from row i being the one
@@ -33,7 +36,7 @@
 (defund fdet (a n)
   (fdet-sum a (slist n) n))
 
-;; By pair-listp-perm-pairs and fp-pairs-prod, fdet-prod and fdet-term return ring elements:
+;; By pair-listp-perm-pairs and fp-pairs-prod, fdet-prod and fdet-term return field elements:
 
 (defthm fp-fdet-prod
   (implies (and (fmatp a n n) (posp n)
@@ -45,6 +48,8 @@
   (implies (and (fmatp a n n) (posp n)
                 (member p (slist n)))
            (fp (fdet-term a p n))))
+
+;; Therefore, the determinat of a is a field element:
 
 (defthm fp-fdet
   (implies (and (fmatp a n n) (posp n))
@@ -80,7 +85,6 @@
 	          (fdet a n))))
 
 ;; fdet is alternating, i.e., if 2 rows of a are equal, then its determinant is (f0).
-
 ;; To prove this, suppose rows i and j of a are equal, where i <> j.  Given a permutation p, let
 ;; p' = (comp-perm p (transpose i j n) n).  Then the factors of (fdet-prod a p' n) are the same as
 ;; those of (fdet-prod a p n):
@@ -193,10 +197,11 @@
 ;;                   (f* (fdet a (n))
 ;;                       (fdetn (id-fmat (n)))))))
 
-;; If we also prove that for a given function f, (f a n) satisfies the constraints on (fdetn a),
+;; Thus, if we prove that for a given function f, (f a n) satisfies the constraints on (fdetn a),
 ;; we may conclude by functional instantiation that (f a n) = (f* (fdet a n) (f (id-fmat n))).
 ;; From this it follows that if f has the additional property (f (id-fmat n)) = (f1), then
-;; (f a) = (fdet a (n)).
+;; (f a) = (fdet a (n)).  Our reason for not including this property in the constraints on fdetn
+;; wiil be come clear in the proof of multiplicativity of fdet.
 
 ;; Note that we have replaced the property that fdetn is alternating with the weaker property
 ;; fdetn-adjacent-equal, which says that the value is (f0) if 2 adjacent rows are equal.  This
@@ -265,7 +270,7 @@
 
 ;; and
 
-;;   (nth (1+ i) a') = (nth (nth (1+ i) (transpose (1+ i) j (n))) a) = (nth j a) = (nth i a)
+;;   (nth (1+ i) a') = (nth (nth (1+ i) (transpose (1+ i) j (n))) a) = (nth j a) = (nth i a),
 
 ;; and by fdetn-adjacent-equal, (fdetn a') = (f0).  By fdetn-transpose-rows,
 
