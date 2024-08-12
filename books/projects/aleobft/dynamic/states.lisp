@@ -28,7 +28,9 @@
   (xdoc::topstring
    (xdoc::p
     "We introduce fixtypes for the states, and their components,
-     that the AleoBFT system may be in at any given time."))
+     that the AleoBFT system may be in at any given time.
+     Along with the fixtypes,
+     we also introduce some basic operations on some of them."))
   :order-subtopics (addresses
                     transactions
                     blocks

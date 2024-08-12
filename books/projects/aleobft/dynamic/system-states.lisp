@@ -93,7 +93,13 @@
     "Besides the validators,
      we also model the state of the network that connects the validators,
      in terms of messages in transit,
-     which have been sent but not received yet."))
+     which have been sent but not received yet.")
+   (xdoc::p
+    "We also introduce operations to handle system states
+     in a slightly more abstract way:
+     operations to retrieve validator addresses,
+     operations to read and write validator states,
+     and operations to read and write the network state."))
   :order-subtopics t
   :default-parent t)
 
