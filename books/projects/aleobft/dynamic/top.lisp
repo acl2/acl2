@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ aleobft-dynamic
-  :parents (aleo::aleobft)
+  :parents (aleobft::aleobft)
   :short "Formal specification and correctness proofs of
           AleoBFT with dynamic committees."
   :long
