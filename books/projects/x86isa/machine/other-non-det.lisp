@@ -74,11 +74,11 @@ HW_RND_GEN)\).</p>"
        ((mv rand x86)
         (undef-read x86))
        (rand (loghead (ash size 3) rand)))
-    (mv cf rand x86))
+      (mv cf rand x86))
   ///
   (defthm x86p-of-mv-nth-2-hw_rnd_gen-logic
-    (implies (x86p x86)
-             (x86p (mv-nth 2 (hw_rnd_gen-logic size x86))))))
+          (implies (x86p x86)
+                   (x86p (mv-nth 2 (hw_rnd_gen-logic size x86))))))
 
 (define HW_RND_GEN
   ((size :type (integer 2 8))
@@ -92,8 +92,8 @@ HW_RND_GEN)\).</p>"
   ///
 
   (defthm x86p-of-mv-nth-2-hw_rnd_gen
-    (implies (x86p x86)
-             (x86p (mv-nth 2 (hw_rnd_gen size x86))))))
+          (implies (x86p x86)
+                   (x86p (mv-nth 2 (hw_rnd_gen size x86))))))
 
 ;; ======================================================================
 

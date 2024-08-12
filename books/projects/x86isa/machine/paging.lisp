@@ -3,7 +3,9 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2015, May - August 2023, Regents of the University of Texas
+; Copyright (C) August 2023 - May 2024, Yahya Sohail
+; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -36,17 +38,18 @@
 ; Original Author(s):
 ; Robert Krug         <rkrug@cs.utexas.edu>
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 (include-book "paging-structures" :dir :utils)
-(include-book "physical-memory" :ttags (:undef-flg))
+(include-book "physical-memory" :ttags (:undef-flg :include-raw))
 (include-book "clause-processors/find-matching" :dir :system)
 
 ;; [Shilpi]: For now, I've removed nested paging and all paging modes
 ;; except IA-32e paging from our model.
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
 ;; ======================================================================
 
@@ -63,6 +66,145 @@
 (local (xdoc::set-default-parents ia32e-paging))
 
 ;; ======================================================================
+
+(define same-page ((lin-addr integerp)
+                   (lin-addr-2 integerp))
+  (or (equal lin-addr lin-addr-2)
+      (and (mbt (and (integerp lin-addr)
+                     (integerp lin-addr-2)))
+           (equal (logtail 12 lin-addr)
+                  (logtail 12 lin-addr-2))))
+  ///
+  (defequiv same-page)
+
+  (local (defthmd equal-logtail-i-implies-equal-logtail-j-for-j>=i
+                  (implies (and (natp i)
+                                (integerp x)
+                                (integerp y)
+                                (integerp j)
+                                (>= j i)
+                                (equal (logtail i x)
+                                       (logtail i y)))
+                           (equal (logtail j x)
+                                  (logtail j y)))
+                  :hints (("Goal" :in-theory (enable logtail**
+                                                     bitops::logtail-induct)))))
+
+  (defthm same-page-implies-logtails>=12-equal
+          (implies (and (integerp i)
+                        (>= i 12)
+                        (same-page y (double-rewrite x))
+                        (syntaxp (not (equal x y))))
+                   (equal (logtail i x)
+                          (logtail i y)))
+          :hints (("Goal" :use (:instance equal-logtail-i-implies-equal-logtail-j-for-j>=i (i 12) (j i) (x x) (y y)))))
+
+  (defthm same-page-address-construction
+          (implies (same-page x y)
+                   (same-page (logior (loghead i x)
+                                      (ash z i))
+                              (logior (loghead i y)
+                                      (ash z i))))
+          :rule-classes :congruence)
+
+  (defthm same-page-implies-logapp<=12-equal
+          (implies (and (integerp n)
+                        (<= n 12)
+                        (same-page y (double-rewrite x))
+                        (syntaxp (not (equal x y))))
+                   (same-page (logapp n x z)
+                              (logapp n y z)))
+          :hints (("Goal" :in-theory (enable logtail**
+                                             bitops::logtail-induct
+                                             logapp**
+                                             bitops::logapp-induct))))
+
+  (defthm same-page-implies-same-page-logheads
+          (implies (same-page a b)
+                   (same-page (loghead n a) (loghead n b)))
+          :rule-classes :congruence)
+
+  (local (defthmd logext-maintains-logtail-equals
+                  (implies (and (integerp k)
+                                (> k n)
+                                (natp n)
+                                (integerp x)
+                                (integerp y)
+                                (equal (logtail n x)
+                                       (logtail n y)))
+                           (equal (logtail n (logext k x))
+                                  (logtail n (logext k y))))
+                  :hints (("Goal" :in-theory (enable logtail**
+                                                     bitops::logtail-induct
+                                                     logext**
+                                                     bitops::logext-induct)))))
+
+  (defthm logexting-maintains-same-page
+          (implies (and (integerp n)
+                        (> n 12)
+                        (same-page y (double-rewrite x))
+                        (syntaxp (not (equal x y))))
+                   (same-page (logext n x)
+                              (logext n y)))
+          :hints (("Goal" :use (:instance logext-maintains-logtail-equals (n 12) (k n)))))
+
+  (defthmd logtails<=12-equal-implies-same-page
+           (implies (and (integerp x)
+                         (integerp y)
+                         (natp n)
+                         (<= n 12)
+                         (equal (logtail n x) (logtail n y)))
+                    (same-page x y))
+           :hints (("Goal" :use (:instance equal-logtail-i-implies-equal-logtail-j-for-j>=i (j 12) (i n))))))
+
+(defthm 0-loghead-of-ash
+        (implies (and (natp n)
+                      (natp m)
+                      (<= n m))
+                 (equal (loghead n (ash x m))
+                        0))
+        :hints (("Goal" :in-theory (enable loghead** bitops::loghead-induct
+                                           ash** bitops::ash**-induct))))
+
+(define same-page-offset ((lin-addr integerp)
+                          (lin-addr-2 integerp))
+  (equal (loghead 12 lin-addr)
+         (loghead 12 lin-addr-2))
+  ///
+  (defequiv same-page-offset)
+
+  (defthm same-page-offset-addr-construction
+          (implies (and (natp n)
+                        (>= n 12))
+                   (same-page-offset (logior (loghead n x)
+                                             (ash y n))
+                                     x)))
+
+  (defthm logexted-is-same-page
+          (implies (and (natp n)
+                        (>= n 12))
+                   (same-page-offset (logext n x)
+                                     x)))
+
+  (local (defthmd equal-loghead-implies-equal-more-restrictive-logheads
+                  (implies (and (natp n)
+                                (natp m)
+                                (<= m n)
+                                (equal (loghead n x)
+                                       (loghead n y)))
+                           (equal (loghead m x)
+                                  (loghead m y)))
+                  :hints (("Goal" :in-theory (enable loghead** bitops::loghead-induct)))))
+
+  (defthm same-page-offset-implies-same-logheads
+          (implies (and (natp n)
+                        (<= n 12)
+                        (same-page-offset y (double-rewrite x))
+                        (syntaxp (not (equal x y))))
+                   (equal (loghead n x)
+                          (loghead n y)))
+          :hints (("Goal" :use (:instance equal-loghead-implies-equal-more-restrictive-logheads
+                                          (n 12) (m n) (x x) (y y))))))
 
 (defthm loghead-zero-smaller
   (implies (and (equal (loghead n x) 0)
@@ -92,7 +234,7 @@
        ;; the real machine and the former is the index of the
        ;; register in the x86 stobj.
        (ia32-efer (the (unsigned-byte 12)
-                    (n12 (msri *ia32_efer-idx* x86)))))
+                       (n12 (msri *ia32_efer-idx* x86)))))
 
       (cond ((equal (cr0Bits->pg cr0) 0)
              ;; Paging is off
@@ -104,8 +246,8 @@
              ;; PAE paging
              (n32p lin-addr))
             (t
-             ;; IA32e paging
-             (canonical-address-p lin-addr)))))
+              ;; IA32e paging
+              (canonical-address-p lin-addr)))))
 
 (define page-fault-err-no
   ((p-flag :type (unsigned-byte 1))
@@ -193,48 +335,48 @@
   (b* ((old-faults (fault x86))
        (new-faults (cons (list :page-fault err-no addr) old-faults))
        (x86 (!fault new-faults x86)))
-    ;; [Shilpi]: I replaced (list :page-fault-exception err-no addr)
-    ;; with t below because in the old world, the flag would differ
-    ;; for every error, thereby disallowing dealing with all
-    ;; page-faulting situations in one case, which slowed reasoning
-    ;; down. There's no loss of information because the fault field
-    ;; contains the error number and the address at which a fault
-    ;; occurred.
-    (mv t 0 x86))
+      ;; [Shilpi]: I replaced (list :page-fault-exception err-no addr)
+      ;; with t below because in the old world, the flag would differ
+      ;; for every error, thereby disallowing dealing with all
+      ;; page-faulting situations in one case, which slowed reasoning
+      ;; down. There's no loss of information because the fault field
+      ;; contains the error number and the address at which a fault
+      ;; occurred.
+      (mv t 0 x86))
   ///
 
   (defthm mv-nth-0-page-fault-exception
-    (mv-nth 0 (page-fault-exception addr err-no x86)))
+          (mv-nth 0 (page-fault-exception addr err-no x86)))
 
   (defthm mv-nth-1-page-fault-exception
-    (equal (mv-nth 1 (page-fault-exception addr err-no x86))
-           0))
+          (equal (mv-nth 1 (page-fault-exception addr err-no x86))
+                 0))
 
   (defthm xr-page-fault-exception
-    (implies (not (equal fld :fault))
-             (equal (xr fld index (mv-nth 2 (page-fault-exception addr err-no x86)))
-                    (xr fld index x86))))
+          (implies (not (equal fld :fault))
+                   (equal (xr fld index (mv-nth 2 (page-fault-exception addr err-no x86)))
+                          (xr fld index x86))))
 
   (defthm page-fault-exception-xw-values
-    (implies (not (equal fld :fault))
-             (and (equal (mv-nth 0 (page-fault-exception addr err-no (xw fld index value x86)))
-                         (mv-nth 0 (page-fault-exception addr err-no x86)))
-                  (equal (mv-nth 1 (page-fault-exception addr err-no (xw fld index value x86)))
-                         0))))
+          (implies (not (equal fld :fault))
+                   (and (equal (mv-nth 0 (page-fault-exception addr err-no (xw fld index value x86)))
+                               (mv-nth 0 (page-fault-exception addr err-no x86)))
+                        (equal (mv-nth 1 (page-fault-exception addr err-no (xw fld index value x86)))
+                               0))))
 
   (defthm page-fault-exception-xw-state
-    (implies (not (equal fld :fault))
-             (equal (mv-nth 2 (page-fault-exception addr err-no (xw fld index value x86)))
-                    (xw fld index value (mv-nth 2 (page-fault-exception addr err-no x86))))))
+          (implies (not (equal fld :fault))
+                   (equal (mv-nth 2 (page-fault-exception addr err-no (xw fld index value x86)))
+                          (xw fld index value (mv-nth 2 (page-fault-exception addr err-no x86))))))
 
   (defrule 64-bit-modep-of-page-fault-exception
-    (equal (64-bit-modep (mv-nth 2 (page-fault-exception addr err-no x86)))
-           (64-bit-modep x86)))
+           (equal (64-bit-modep (mv-nth 2 (page-fault-exception addr err-no x86)))
+                  (64-bit-modep x86)))
 
   (defrule x86-operation-mode-of-page-fault-exception
-    (equal (x86-operation-mode (mv-nth 2 (page-fault-exception addr err-no x86)))
-           (x86-operation-mode x86))
-    :enable x86-operation-mode))
+           (equal (x86-operation-mode (mv-nth 2 (page-fault-exception addr err-no x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode))
 
 ;; [Shilpi] Don't need functions like page-present, page-size, etc. anymore
 ;; since I've got efficient bitstruct functions now.  Should eliminate the
@@ -533,7 +675,14 @@
       :hints-l (("Goal" :in-theory (e/d ()
                                         (page-table-entry-addr))))
       :gen-linear t
-      :gen-type t))
+      :gen-type t)
+
+    (defthm page-table-entry-addr-equal-if-same-page
+            (implies (same-page lin-addr lin-addr-2)
+                     (equal (page-table-entry-addr lin-addr base-addr)
+                            (page-table-entry-addr lin-addr-2 base-addr)))
+            :hints (("Goal" :in-theory (enable same-page)))
+            :rule-classes :congruence))
 
   (define page-directory-entry-addr
     ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -596,7 +745,13 @@
       :concl (+ 7 (page-directory-entry-addr lin-addr base-addr))
       :gen-linear t
       :gen-type t
-      :hints-l (("Goal" :in-theory (e/d () (page-directory-entry-addr))))))
+      :hints-l (("Goal" :in-theory (e/d () (page-directory-entry-addr)))))
+
+    (defthm page-directory-entry-addr-equal-if-same-page
+            (implies (same-page lin-addr lin-addr-2)
+                     (equal (page-directory-entry-addr lin-addr base-addr)
+                            (page-directory-entry-addr lin-addr-2 base-addr)))
+            :rule-classes :congruence))
 
   (define page-dir-ptr-table-entry-addr
     ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -657,7 +812,13 @@
       :hints-l (("Goal" :in-theory (e/d ()
                                         (page-dir-ptr-table-entry-addr))))
       :gen-linear t
-      :gen-type t))
+      :gen-type t)
+
+    (defthm page-dir-ptr-table-entry-addr-equal-if-same-page
+            (implies (same-page lin-addr lin-addr-2)
+                     (equal (page-dir-ptr-table-entry-addr lin-addr base-addr)
+                            (page-dir-ptr-table-entry-addr lin-addr-2 base-addr)))
+            :rule-classes :congruence))
 
   (define pml4-table-entry-addr
     ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -718,7 +879,14 @@
       :concl (+ 7 (pml4-table-entry-addr lin-addr base-addr))
       :gen-linear t
       :gen-type t
-      :hints-l (("Goal" :in-theory (e/d () (pml4-table-entry-addr)))))))
+      :hints-l (("Goal" :in-theory (e/d () (pml4-table-entry-addr))))))
+
+    (defthm pml4-table-entry-addr-equal-if-same-page
+              (implies (same-page lin-addr lin-addr-2)
+                       (equal (pml4-table-entry-addr lin-addr base-addr)
+                              (pml4-table-entry-addr lin-addr-2 base-addr)))
+              :hints (("Goal" :in-theory (enable pml4-table-entry-addr)))
+              :rule-classes :congruence))
 
 (in-theory (e/d () (adding-7-to-shifted-bits)))
 
@@ -737,96 +905,243 @@
 (define paging-entry-no-page-fault-p
   ((structure-type :type (unsigned-byte 2)
                    "@('0'): Page Table;
-                    @('1'): Page Directory;
-                    @('2'): Page Directory Pointer Table;
-                    @('3'): PML4 Table")
-   (lin-addr       :type (signed-byte   #.*max-linear-address-size*))
-   (entry          :type (unsigned-byte 64))
-   (u/s-acc        :type (unsigned-byte  1)
-                   "@('logand') of @('user-supervisor') field of all superior paging entries")
-   (r/w-acc        :type (unsigned-byte  1)
-                   "@('logand') of @('read-write') field of all superior paging entries")
-   (x/d-acc        :type (unsigned-byte  1)
-                   "@('logand') of @('execute-disable') field of all superior paging entries")
-   (wp             :type (unsigned-byte  1))
-   (smep           :type (unsigned-byte  1)
-                   "Supervisor Mode Execution Prevention")
-   (smap           :type (unsigned-byte  1)
-                   "Supervisor Mode Access Prevention")
-   (ac             :type (unsigned-byte 1)
-                   "@('AC') field from @('RFLAGS')")
-   (nxe            :type (unsigned-byte  1))
-   (r-w-x          :type (member  :r :w :x))
-   (cpl            :type (unsigned-byte  2))
-   x86
-   &optional
-   ;; TO-DO: For now, we are treating all supervisor-mode accesses as
-   ;; explicit. We need to detect and then account for implicit
-   ;; accesses later.
-   ((supervisor-mode-access-type
-     :type (unsigned-byte 1)
-     "@('0'): Explicit; @('1'): Implicit")
-    ;; Default value is 0.
-    '0))
+                   @('1'): Page Directory;
+                   @('2'): Page Directory Pointer Table;
+                   @('3'): PML4 Table")
+                   (lin-addr       :type (signed-byte   #.*max-linear-address-size*))
+                   (entry          :type (unsigned-byte 64))
+                   (u/s-acc        :type (unsigned-byte  1)
+                                   "@('logand') of @('user-supervisor') field of all superior paging entries")
+                   (r/w-acc        :type (unsigned-byte  1)
+                                   "@('logand') of @('read-write') field of all superior paging entries")
+                   (x/d-acc        :type (unsigned-byte  1)
+                                   "@('logand') of @('execute-disable') field of all superior paging entries")
+                   (wp             :type (unsigned-byte  1))
+                   (smep           :type (unsigned-byte  1)
+                                   "Supervisor Mode Execution Prevention")
+                   (smap           :type (unsigned-byte  1)
+                                   "Supervisor Mode Access Prevention")
+                   (ac             :type (unsigned-byte 1)
+                                   "@('AC') field from @('RFLAGS')")
+                   (nxe            :type (unsigned-byte  1))
+                   (implicit-supervisor-access
+                      :type (unsigned-byte 1)
+                      "@('0'): Explicit; @('1'): Implicit")
+                   (r-w-x          :type (member  :r :w :x))
+                   (cpl            :type (unsigned-byte  2))
+                   x86)
   :short "Determining access rights and detecting page faults"
   :long "<p>Source for determining the access rights: Section 4.6 in
-   the Intel Manuals, Vol. 3A.</p>
+  the Intel Manuals, Vol. 3A.</p>
 
-<p>It is important to differentiate between:</p>
+  <p>It is important to differentiate between:</p>
 
-<ol>
-<li>a supervisor-mode and a user-mode access</li>
-<li>an implicit and an explicit supervisor-mode access</li>
-<li>a supervisor-mode and a user-mode address</li>
-</ol>
+  <ol>
+  <li>a supervisor-mode and a user-mode access</li>
+  <li>an implicit and an explicit supervisor-mode access</li>
+  <li>a supervisor-mode and a user-mode address</li>
+  </ol>
 
-<p>These concepts are defined below.</p>
+  <p>These concepts are defined below.</p>
 
-<ul>
+  <ul>
 
-<li>Every access to a linear address is either a <b>supervisor-mode
-access</b> or a <b>user-mode access</b>. For all instruction fetches
-and most data accesses, accesses made while CPL @('<') 3 are
-<b>supervisor-mode accesses</b>, while accesses made while CPL = 3 are
-<b>user-mode accesses</b>.</li>
+  <li>Every access to a linear address is either a <b>supervisor-mode
+  access</b> or a <b>user-mode access</b>. For all instruction fetches
+  and most data accesses, accesses made while CPL @('<') 3 are
+  <b>supervisor-mode accesses</b>, while accesses made while CPL = 3 are
+  <b>user-mode accesses</b>.</li>
 
-<li>Some operations implicitly access system data structures with
-linear addresses; the resulting accesses to those data structures are
-supervisor-mode accesses regardless of CPL. Examples of such accesses
-include the following: accesses to the global descriptor table \(GDT\)
-or local descriptor table \(LDT\) to load a segment descriptor;
-accesses to the interrupt descriptor table \(IDT\) when delivering an
-interrupt or exception; and accesses to the task-state segment \(TSS\)
-as part of a task switch or change of CPL. All these accesses are
-called <b>implicit supervisor-mode accesses</b> regardless of
-CPL. Other accesses made while CPL @('<') 3 are called <b>explicit
-supervisor-mode accesses</b>.</li>
+  <li>Some operations implicitly access system data structures with
+  linear addresses; the resulting accesses to those data structures are
+  supervisor-mode accesses regardless of CPL. Examples of such accesses
+  include the following: accesses to the global descriptor table \(GDT\)
+  or local descriptor table \(LDT\) to load a segment descriptor;
+  accesses to the interrupt descriptor table \(IDT\) when delivering an
+  interrupt or exception; and accesses to the task-state segment \(TSS\)
+  as part of a task switch or change of CPL. All these accesses are
+  called <b>implicit supervisor-mode accesses</b> regardless of
+  CPL. Other accesses made while CPL @('<') 3 are called <b>explicit
+  supervisor-mode accesses</b>.</li>
 
-<li>If the U/S flag \(bit 2\) is 0 in at least one of the
-paging-structure entries, the address is a <b>supervisor-mode
-address</b>. Otherwise, the address is a <b>user-mode
-address</b>.</li>
+  <li>If the U/S flag \(bit 2\) is 0 in at least one of the
+  paging-structure entries, the address is a <b>supervisor-mode
+  address</b>. Otherwise, the address is a <b>user-mode
+  address</b>.</li>
 
-<p><i>TO-DO:</i> For now, we are treating all supervisor-mode accesses
-as explicit. We need to detect and then account for implicit
-accesses.</p>
+  <p><i>TO-DO:</i> For now, we are treating all supervisor-mode accesses
+  as explicit. We need to detect and then account for implicit
+  accesses.</p>
 
-</ul>"
+  </ul>"
 
   :prepwork
   ((local (in-theory (e/d* ()
                            (signed-byte-p
-                            unsigned-byte-p
-                            bitops::logand-with-negated-bitmask
-                            acl2::ifix-negative-to-negp
-                            (:rewrite default-<-1)
-                            (:rewrite default-<-2)
-                            bitops::unsigned-byte-p-incr
-                            weed-out-irrelevant-logand-when-first-operand-constant
-                            negative-logand-to-positive-logand-with-integerp-x
-                            (tau-system))))))
+                             unsigned-byte-p
+                             bitops::logand-with-negated-bitmask
+                             acl2::ifix-negative-to-negp
+                             (:rewrite default-<-1)
+                             (:rewrite default-<-2)
+                             bitops::unsigned-byte-p-incr
+                             weed-out-irrelevant-logand-when-first-operand-constant
+                             negative-logand-to-positive-logand-with-integerp-x
+                             (tau-system)))))
 
-  :guard (not (app-view x86))
+   (define paging-entry-no-page-fault-p-did-fault?
+           ((u/s-all :type (unsigned-byte 1))
+            (r/w-all :type (unsigned-byte 1))
+            (x/d-all :type (unsigned-byte 1))
+            (wp      :type (unsigned-byte 1))
+            (smep    :type (unsigned-byte 1))
+            (smap    :type (unsigned-byte 1))
+            (ac      :type (unsigned-byte 1))
+            (nxe     :type (unsigned-byte 1))
+            (implicit-supervisor-access :type (unsigned-byte 1))
+            (r-w-x   :type (member :r :w :x))
+            (cpl     :type (unsigned-byte 2)))
+     :returns (fault? booleanp)
+     :guard (or (not (equal implicit-supervisor-access 1))
+                (< cpl 3))
+     :enabled t
+     (or
+       ;; Read fault:
+       (and (equal r-w-x :r)
+            (if (< cpl 3)
+              (if (equal u/s-all 0)
+                ;; Data may be read (implicitly or explicitly)
+                ;; from any supervisor-mode address.
+                nil
+                ;; Data reads from user-mode pages
+                (if (equal smap 0)
+                  ;; If CR4.SMAP = 0, data may be read from
+                  ;; any user-mode address.
+                  nil
+                  ;; If CR4.SMAP = 1: If EFLAGS.AC = 1 and the
+                  ;; access is explicit, data may be read from any
+                  ;; user-mode address. If EFLAGS.AC = 0 or the
+                  ;; access is implicit, data may not be read from
+                  ;; any user-mode address.
+                  (or (equal implicit-supervisor-access 1)
+                      (equal ac 0))))
+              ;; In user mode (CPL = 3), data may be read from
+              ;; any linear address with a valid translation
+              ;; for which the U/S flag (bit 2) is 1 in every
+              ;; paging-structure entry controlling the trans-
+              ;; lation.
+              (equal u/s-all 0)))
+       ;; Write fault:
+       (and (equal r-w-x :w)
+            (if (< cpl 3)
+              (if (equal u/s-all 0)
+                ;; Data writes to supervisor-mode addresses.
+
+                ;; If CR0.WP = 0, data may be written to
+                ;; any supervisor-mode address.  If CR0.WP
+                ;; = 1, data may be written to any
+                ;; supervisor-mode address with a
+                ;; translation for which the R/W flag (bit
+                ;; 1) is 1 in every paging-structure entry
+                ;; controlling the translation.
+                (and (equal wp 1)
+                     (equal r/w-all 0))
+
+                ;; Data writes to user-mode addresses.
+
+                (if (equal wp 0)
+                  ;; If CR4.SMAP = 0, data may be written to
+                  ;; any user-mode address.  If CR4.SMAP = 1:
+                  ;; If EFLAGS.AC = 1 and the access is
+                  ;; explicit, data may be written to any
+                  ;; user-mode address. If EFLAGS.AC = 0 or
+                  ;; the access is implicit, data may not be
+                  ;; written to any user-mode address.
+                  (if (equal smap 0)
+                    nil
+                    (or (equal implicit-supervisor-access 1)
+                        (equal ac 0)))
+
+                  ;; If CR4.SMAP = 0, data may be written to
+                  ;; any user-mode address with a translation
+                  ;; for which the R/W flag is 1 in every
+                  ;; paging-structure entry controlling the
+                  ;; translation.
+                  (if (equal smap 0)
+                    (equal r/w-all 0)
+                    ;; If CR4.SMAP = 1: If EFLAGS.AC = 1 and
+                    ;; the access is explicit, data may be
+                    ;; written to any user-mode address with a
+                    ;; translation for which the R/W flag is 1
+                    ;; in every paging-structure entry
+                    ;; controlling the translation. If
+                    ;; EFLAGS.AC = 0 or the access is implicit,
+                    ;; data may not be written to any user-mode
+                    ;; address.
+                    (if (and (equal implicit-supervisor-access 0)
+                             (equal ac 1))
+                      (equal r/w-all 0)
+                      t))))
+              ;; In user mode (CPL = 3), data may be written
+              ;; to any linear address with a valid
+              ;; translation for which both the R/W flag and
+              ;; the U/S flag are 1 in every paging-structure
+              ;; entry controlling the translation.
+              (or (equal u/s-all 0)
+                  (equal r/w-all 0))))
+       ;; Instruction fetch fault:
+       (and (equal r-w-x :x)
+            (if (< cpl 3)
+
+              (if (equal u/s-all 0)
+                ;; Instruction fetches from supervisor-mode addresses.
+
+                ;; If IA32_EFER.NXE = 0, instructions may be
+                ;; fetched from any supervisor-mode
+                ;; address. If IA32_EFER.NXE = 1,
+                ;; instructions may be fetched from any
+                ;; supervisor-mode address with a translation
+                ;; for which the XD flag (bit 63) is 0 in
+                ;; every paging-structure entry controlling
+                ;; the translation.
+                (if (equal nxe 0)
+                  nil
+                  (equal x/d-all 1))
+
+                ;; Instruction fetches from user-mode addresses.
+
+                (if (equal smep 0)
+                  ;; If CR4.SMEP = 0, if IA32_EFER.NXE =
+                  ;; 0, instructions may be fetched from
+                  ;; any user-mode address, and if
+                  ;; IA32_EFER.NXE = 1, instructions may
+                  ;; be fetched from any user-mode address
+                  ;; with a translation for which the XD
+                  ;; flag is 0 in every paging-structure
+                  ;; entry controlling the translation.
+                  (if (equal nxe 0)
+                    nil
+                    (equal x/d-all 1))
+                  ;; If CR4.SMEP = 1, instructions may not
+                  ;; be fetched from any user-mode address.
+                  t))
+
+              ;; In user mode (CPL = 3): If IA32_EFER.NXE = 0,
+              ;; instructions may be fetched from any linear
+              ;; address with a valid translation for which
+              ;; the U/S flag is 1 in every paging-structure
+              ;; entry controlling the translation.  If
+              ;; IA32_EFER.NXE = 1, instructions may be
+              ;; fetched from any linear address with a valid
+              ;; translation for which the U/S flag is 1 and
+              ;; the XD flag is 0 in every paging-structure
+              ;; entry controlling the translation.
+              (or (equal u/s-all 0)
+                  (and (equal nxe 1)
+                       (equal x/d-all 1))))))))
+
+  :guard (and (not (app-view x86))
+              (or (not (equal implicit-supervisor-access 1))
+                  (< cpl 3)))
   :returns (mv flg val (x86 x86p :hyp (x86p x86)
                             :hints (("Goal" :in-theory (e/d () (x86p))))))
 
@@ -837,10 +1152,10 @@ accesses.</p>
        ((when (equal page-present 0))
         ;; Page not present fault:
         (let ((err-no (page-fault-err-no
-                       page-present r-w-x cpl
-                       0      ;; rsvd
-                       smep 1 ;; pae
-                       nxe)))
+                        page-present r-w-x cpl
+                        0      ;; rsvd
+                        smep 1 ;; pae
+                        nxe)))
           (page-fault-exception lin-addr err-no x86)))
 
        ;; From this point onwards, we know that the page is present.
@@ -862,399 +1177,362 @@ accesses.</p>
                              :exec (ia32e-page-tablesBits->ps  entry)))
 
        (rsvd
-        (mbe :logic (if (or (and (equal structure-type 3)
-                                 ;; Page size should be zero for the PML4 Table.
-                                 (equal page-size 1))
-                            (and
-                             ;; Page size doesn't exist for the Page Table.
-                             (not (equal structure-type 0))
-                             (not (equal structure-type 3))
-                             (equal page-size 1)
-                             (if (equal structure-type 1)
+         (mbe :logic (if (or (and (equal structure-type 3)
+                                  ;; Page size should be zero for the PML4 Table.
+                                  (equal page-size 1))
+                             (and
+                               ;; Page size doesn't exist for the Page Table.
+                               (not (equal structure-type 0))
+                               (not (equal structure-type 3))
+                               (equal page-size 1)
+                               (if (equal structure-type 1)
                                  ;; Page Directory
                                  (not (equal (part-select entry :low 13 :high 20) 0))
-                               ;; Page Directory Pointer Table
-                               (not (equal (part-select entry :low 13 :high 29) 0))))
-                            (and (equal nxe 0)
-                                 (not (equal execute-disable 0))))
-                        1
-                      0)
-             :exec  (if (or (and (equal structure-type 3)
-                                 (equal page-size 1))
-                            (and (not (equal structure-type 0))
-                                 (not (equal structure-type 3))
-                                 (equal page-size 1)
-                                 (if (equal structure-type 1)
-                                     (not (equal (the (unsigned-byte 8)
-                                                   (logand 255
-                                                           (the (unsigned-byte 51)
-                                                             (ash entry (- 13)))))
-                                                 0))
-                                   (not (equal (the (unsigned-byte 17)
-                                                 (logand #x1ffff
-                                                         (the (unsigned-byte 51)
-                                                           (ash entry (- 13)))))
-                                               0))))
-                            (and (equal nxe 0)
-                                 (not (equal (ia32e-page-tablesBits->xd entry) 0))))
-                        1
-                      0)))
+                                 ;; Page Directory Pointer Table
+                                 (not (equal (part-select entry :low 13 :high 29) 0))))
+                             (and (equal nxe 0)
+                                  (not (equal execute-disable 0))))
+                       1
+                       0)
+              :exec  (if (or (and (equal structure-type 3)
+                                  (equal page-size 1))
+                             (and (not (equal structure-type 0))
+                                  (not (equal structure-type 3))
+                                  (equal page-size 1)
+                                  (if (equal structure-type 1)
+                                    (not (equal (the (unsigned-byte 8)
+                                                     (logand 255
+                                                             (the (unsigned-byte 51)
+                                                                  (ash entry (- 13)))))
+                                                0))
+                                    (not (equal (the (unsigned-byte 17)
+                                                     (logand #x1ffff
+                                                             (the (unsigned-byte 51)
+                                                                  (ash entry (- 13)))))
+                                                0))))
+                             (and (equal nxe 0)
+                                  (not (equal (ia32e-page-tablesBits->xd entry) 0))))
+                       1
+                       0)))
        ((when (equal rsvd 1))
         ;; Reserved bits fault.
         (let ((err-no (page-fault-err-no
-                       page-present r-w-x cpl rsvd smep
-                       1 ;; pae
-                       nxe)))
+                        page-present r-w-x cpl rsvd smep
+                        1 ;; pae
+                        nxe)))
           (page-fault-exception lin-addr err-no x86)))
 
-       ((when (or
-               ;; Read fault:
-               (and (equal r-w-x :r)
-                    (if (< cpl 3)
-                        (if (equal u/s-all 0)
-                            ;; Data may be read (implicitly or explicitly)
-                            ;; from any supervisor-mode address.
-                            nil
-                          ;; Data reads from user-mode pages
-                          (if (equal smap 0)
-                              ;; If CR4.SMAP = 0, data may be read from
-                              ;; any user-mode address.
-                              nil
-                            ;; If CR4.SMAP = 1: If EFLAGS.AC = 1 and the
-                            ;; access is explicit, data may be read from any
-                            ;; user-mode address. If EFLAGS.AC = 0 or the
-                            ;; access is implicit, data may not be read from
-                            ;; any user-mode address.
-                            (or (equal supervisor-mode-access-type 1)
-                                (equal ac 0))))
-                      ;; In user mode (CPL = 3), data may be read from
-                      ;; any linear address with a valid translation
-                      ;; for which the U/S flag (bit 2) is 1 in every
-                      ;; paging-structure entry controlling the trans-
-                      ;; lation.
-                      (equal u/s-all 0)))
-               ;; Write fault:
-               (and (equal r-w-x :w)
-                    (if (< cpl 3)
-                        (if (equal u/s-all 0)
-                            ;; Data writes to supervisor-mode addresses.
-
-                            ;; If CR0.WP = 0, data may be written to
-                            ;; any supervisor-mode address.  If CR0.WP
-                            ;; = 1, data may be written to any
-                            ;; supervisor-mode address with a
-                            ;; translation for which the R/W flag (bit
-                            ;; 1) is 1 in every paging-structure entry
-                            ;; controlling the translation.
-                            (and (equal wp 1)
-                                 (equal r/w-all 0))
-
-                          ;; Data writes to user-mode addresses.
-
-                          (if (equal wp 0)
-                              ;; If CR4.SMAP = 0, data may be written to
-                              ;; any user-mode address.  If CR4.SMAP = 1:
-                              ;; If EFLAGS.AC = 1 and the access is
-                              ;; explicit, data may be written to any
-                              ;; user-mode address. If EFLAGS.AC = 0 or
-                              ;; the access is implicit, data may not be
-                              ;; written to any user-mode address.
-                              (if (equal smap 0)
-                                  nil
-                                (or (equal supervisor-mode-access-type 1)
-                                    (equal ac 0)))
-
-                            ;; If CR4.SMAP = 0, data may be written to
-                            ;; any user-mode address with a translation
-                            ;; for which the R/W flag is 1 in every
-                            ;; paging-structure entry controlling the
-                            ;; translation.
-                            (if (equal smap 0)
-                                (equal r/w-all 0)
-                              ;; If CR4.SMAP = 1: If EFLAGS.AC = 1 and
-                              ;; the access is explicit, data may be
-                              ;; written to any user-mode address with a
-                              ;; translation for which the R/W flag is 1
-                              ;; in every paging-structure entry
-                              ;; controlling the translation. If
-                              ;; EFLAGS.AC = 0 or the access is implicit,
-                              ;; data may not be written to any user-mode
-                              ;; address.
-                              (if (and (equal supervisor-mode-access-type 0)
-                                       (equal ac 1))
-                                  (equal r/w-all 0)
-                                t))))
-                      ;; In user mode (CPL = 3), data may be written
-                      ;; to any linear address with a valid
-                      ;; translation for which both the R/W flag and
-                      ;; the U/S flag are 1 in every paging-structure
-                      ;; entry controlling the translation.
-                      (or (equal u/s-all 0)
-                          (equal r/w-all 0))))
-               ;; Instruction fetch fault:
-               (and (equal r-w-x :x)
-                    (if (< cpl 3)
-
-                        (if (equal u/s-all 0)
-                            ;; Instruction fetches from supervisor-mode addresses.
-
-                            ;; If IA32_EFER.NXE = 0, instructions may be
-                            ;; fetched from any supervisor-mode
-                            ;; address. If IA32_EFER.NXE = 1,
-                            ;; instructions may be fetched from any
-                            ;; supervisor-mode address with a translation
-                            ;; for which the XD flag (bit 63) is 0 in
-                            ;; every paging-structure entry controlling
-                            ;; the translation.
-                            (if (equal nxe 0)
-                                nil
-                              (equal x/d-all 1))
-
-                          ;; Instruction fetches from user-mode addresses.
-
-                          (if (equal smep 0)
-                              ;; If CR4.SMEP = 0, if IA32_EFER.NXE =
-                              ;; 0, instructions may be fetched from
-                              ;; any user-mode address, and if
-                              ;; IA32_EFER.NXE = 1, instructions may
-                              ;; be fetched from any user-mode address
-                              ;; with a translation for which the XD
-                              ;; flag is 0 in every paging-structure
-                              ;; entry controlling the translation.
-                              (if (equal nxe 0)
-                                  nil
-                                (equal x/d-all 1))
-                            ;; If CR4.SMEP = 1, instructions may not
-                            ;; be fetched from any user-mode address.
-                            t))
-
-                      ;; In user mode (CPL = 3): If IA32_EFER.NXE = 0,
-                      ;; instructions may be fetched from any linear
-                      ;; address with a valid translation for which
-                      ;; the U/S flag is 1 in every paging-structure
-                      ;; entry controlling the translation.  If
-                      ;; IA32_EFER.NXE = 1, instructions may be
-                      ;; fetched from any linear address with a valid
-                      ;; translation for which the U/S flag is 1 and
-                      ;; the XD flag is 0 in every paging-structure
-                      ;; entry controlling the translation.
-                      (or (equal u/s-all 0)
-                          (and (equal nxe 1)
-                               (equal x/d-all 1)))))))
+       ((when (paging-entry-no-page-fault-p-did-fault? u/s-all r/w-all x/d-all wp smep smap
+                                                       ac nxe implicit-supervisor-access r-w-x cpl))
         (let ((err-no (page-fault-err-no
-                       page-present r-w-x cpl rsvd smep
-                       1 ;; pae
-                       nxe)))
+                        page-present r-w-x cpl rsvd smep
+                        1 ;; pae
+                        nxe)))
           (page-fault-exception lin-addr err-no x86))))
-    (mv nil 0 x86))
+      (mv nil 0 x86))
 
   ///
 
   (local (in-theory (e/d (page-fault-exception) ())))
 
   (defthm mv-nth-1-paging-entry-no-page-fault-p-value
-    (equal (mv-nth 1
-                   (paging-entry-no-page-fault-p
-                    structure-type lin-addr entry
-                    u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86
-                    ignored))
-           0))
+          (equal (mv-nth 1
+                         (paging-entry-no-page-fault-p
+                           structure-type lin-addr entry
+                           u/s-acc r/w-acc x/d-acc
+                           wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                 0))
 
   (defthm xr-paging-entry-no-page-fault-p
-    (implies (not (equal fld :fault))
-             (equal (xr fld index
-                        (mv-nth 2
-                                (paging-entry-no-page-fault-p
-                                 structure-type lin-addr entry
-                                 u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl x86
-                                 ignored)))
-                    (xr fld index x86))))
+          (implies (not (equal fld :fault))
+                   (equal (xr fld index
+                              (mv-nth 2
+                                      (paging-entry-no-page-fault-p
+                                        structure-type lin-addr entry
+                                        u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr fld index x86))))
+
+  (defthm rm-low-64-paging-entry-no-page-fault-p
+          (equal (rm-low-64 addr (mv-nth 2 (paging-entry-no-page-fault-p
+                                             structure-type lin-addr entry
+                                             u/s-acc r/w-acc x/d-acc
+                                             wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                 (rm-low-64 addr x86)))
 
   (defthm paging-entry-no-page-fault-p-xw-values
-    (implies (not (equal fld :fault))
-             (and (equal (mv-nth 0
-                                 (paging-entry-no-page-fault-p
-                                  structure-type lin-addr entry
-                                  u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  (xw fld index value x86)
-                                  ignored))
-                         (mv-nth 0
-                                 (paging-entry-no-page-fault-p
-                                  structure-type lin-addr entry
-                                  u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl x86
-                                  ignored)))
-                  (equal (mv-nth 1
-                                 (paging-entry-no-page-fault-p
-                                  structure-type lin-addr entry
-                                  u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  (xw fld index value x86)
-                                  ignored))
-                         (mv-nth 1
-                                 (paging-entry-no-page-fault-p
-                                  structure-type lin-addr entry
-                                  u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl x86
-                                  ignored))))))
+          (and (equal (mv-nth 0
+                              (paging-entry-no-page-fault-p
+                                structure-type lin-addr entry
+                                u/s-acc r/w-acc x/d-acc
+                                wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                (xw fld index value x86)))
+                      (mv-nth 0
+                              (paging-entry-no-page-fault-p
+                                structure-type lin-addr entry
+                                u/s-acc r/w-acc x/d-acc
+                                wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+               (equal (mv-nth 1
+                              (paging-entry-no-page-fault-p
+                                structure-type lin-addr entry
+                                u/s-acc r/w-acc x/d-acc
+                                wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                (xw fld index value x86)))
+                      (mv-nth 1
+                              (paging-entry-no-page-fault-p
+                                structure-type lin-addr entry
+                                u/s-acc r/w-acc x/d-acc
+                                wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))))
 
   (defthm paging-entry-no-page-fault-p-xw-state
-    (implies (not (equal fld :fault))
-             (equal (mv-nth 2
-                            (paging-entry-no-page-fault-p
-                             structure-type lin-addr entry
-                             u/s-acc r/w-acc x/d-acc
-                             wp smep smap ac nxe r-w-x cpl
-                             (xw fld index value x86)
-                             ignored))
-                    (xw fld index value
-                        (mv-nth 2
-                                (paging-entry-no-page-fault-p
-                                 structure-type lin-addr entry
-                                 u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl x86
-                                 ignored))))))
+          (implies (not (equal fld :fault))
+                   (equal (mv-nth 2
+                                  (paging-entry-no-page-fault-p
+                                    structure-type lin-addr entry
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                    (xw fld index value x86)))
+                          (xw fld index value
+                              (mv-nth 2
+                                      (paging-entry-no-page-fault-p
+                                        structure-type lin-addr entry
+                                        u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))))
 
   (defthm mv-nth-2-paging-entry-no-page-fault-p-does-not-modify-x86-if-no-fault
-    (implies (not (mv-nth 0 (paging-entry-no-page-fault-p
-                             structure-type lin-addr
-                             entry u/s-acc r/w-acc x/d-acc wp
-                             smep smap ac nxe r-w-x cpl x86 ignored)))
-             (equal (mv-nth
-                     2
-                     (paging-entry-no-page-fault-p
-                      structure-type lin-addr
-                      entry u/s-acc r/w-acc x/d-acc wp
-                      smep smap ac nxe r-w-x cpl x86 ignored))
-                    x86))
-    :hints (("Goal" :in-theory (e/d (page-fault-exception)
-                                    ()))))
+          (implies (not (mv-nth 0 (paging-entry-no-page-fault-p
+                                    structure-type lin-addr
+                                    entry u/s-acc r/w-acc x/d-acc wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (equal (mv-nth
+                            2
+                            (paging-entry-no-page-fault-p
+                              structure-type lin-addr
+                              entry u/s-acc r/w-acc x/d-acc wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          x86))
+          :hints (("Goal" :in-theory (e/d (page-fault-exception)
+                                          ()))))
 
   (define find-similar-paging-entries-from-page-present-equality-aux
     ((index natp) entry-var calls)
     (if (atom calls)
-        nil
+      nil
       (b* ((one-call (car calls))
            ((unless (and (true-listp one-call)
                          (true-listp (nth index one-call))
                          (equal (len (nth index one-call)) 2)))
             nil))
-        (cons (list (cons entry-var    (nth 1 (nth index one-call))))
-              (find-similar-paging-entries-from-page-present-equality-aux
-               index entry-var (cdr calls))))))
+          (cons (list (cons entry-var    (nth 1 (nth index one-call))))
+                (find-similar-paging-entries-from-page-present-equality-aux
+                  index entry-var (cdr calls))))))
 
   (defun find-similar-paging-entries-from-page-present-equality
-      (bound-entry-val entry-var mfc state)
+    (bound-entry-val entry-var mfc state)
     (declare (xargs :stobjs (state) :mode :program)
              (ignorable state))
     (b* (((mv index calls)
           (mv
-           2
-           (acl2::find-matches-list
-            `(equal (page-present ,bound-entry-val) (page-present e))
-            (acl2::mfc-clause mfc)
-            nil)))
+            2
+            (acl2::find-matches-list
+              `(equal (page-present ,bound-entry-val) (page-present e))
+              (acl2::mfc-clause mfc)
+              nil)))
          ((mv index calls)
           (if (not calls)
-              (mv 1
-                  (acl2::find-matches-list
-                   `(equal (page-present e) (page-present ,bound-entry-val))
-                   (acl2::mfc-clause mfc)
-                   nil))
+            (mv 1
+                (acl2::find-matches-list
+                  `(equal (page-present e) (page-present ,bound-entry-val))
+                  (acl2::mfc-clause mfc)
+                  nil))
             (mv index calls)))
          ((when (not calls))
           ;; equality of page-present term not encountered.
           nil))
-      (find-similar-paging-entries-from-page-present-equality-aux index entry-var calls)))
+        (find-similar-paging-entries-from-page-present-equality-aux index entry-var calls)))
 
   (defthm mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
-    (implies (and
-              (bind-free (find-similar-paging-entries-from-page-present-equality
-                          entry-1 'entry-2 mfc state)
-                         (entry-2))
-              (syntaxp (not (eq entry-1 entry-2)))
-              (equal (page-present entry-1)
-                     (page-present entry-2))
-              (equal (page-read-write entry-1)
-                     (page-read-write entry-2))
-              (equal (page-user-supervisor entry-1)
-                     (page-user-supervisor entry-2))
-              (equal (page-execute-disable entry-1)
-                     (page-execute-disable entry-2))
-              (equal (page-size entry-1)
-                     (page-size entry-2))
-              (if (equal structure-type 1)
-                  ;; For Page Directory
-                  (equal (part-select entry-1 :low 13 :high 20)
-                         (part-select entry-2 :low 13 :high 20))
-                ;; For Page Directory Pointer Table
-                (if (equal structure-type 2)
-                    (equal (part-select entry-1 :low 13 :high 29)
-                           (part-select entry-2 :low 13 :high 29))
-                  t))
-              (unsigned-byte-p 2 structure-type)
-              (unsigned-byte-p 64 entry-1)
-              (unsigned-byte-p 64 entry-2))
-             (equal (mv-nth 0
-                            (paging-entry-no-page-fault-p
-                             structure-type lin-addr entry-1
-                             u/s-acc r/w-acc x/d-acc
-                             wp smep smap ac nxe r-w-x cpl
-                             x86 ignored))
-                    (mv-nth 0
-                            (paging-entry-no-page-fault-p
-                             structure-type lin-addr entry-2
-                             u/s-acc r/w-acc x/d-acc
-                             wp smep smap ac nxe r-w-x cpl
-                             x86 ignored))))
-    :hints (("Goal"
-             :do-not-induct t
-             :in-theory (e/d* (page-fault-exception)
-                              (bitops::logand-with-negated-bitmask
-                               (:meta acl2::mv-nth-cons-meta)
-                               force (force))))))
+          (implies (and
+                     (bind-free (find-similar-paging-entries-from-page-present-equality
+                                  entry-1 'entry-2 mfc state)
+                                (entry-2))
+                     (syntaxp (not (eq entry-1 entry-2)))
+                     (equal (page-present entry-1)
+                            (page-present entry-2))
+                     (equal (page-read-write entry-1)
+                            (page-read-write entry-2))
+                     (equal (page-user-supervisor entry-1)
+                            (page-user-supervisor entry-2))
+                     (equal (page-execute-disable entry-1)
+                            (page-execute-disable entry-2))
+                     (equal (page-size entry-1)
+                            (page-size entry-2))
+                     (if (equal structure-type 1)
+                       ;; For Page Directory
+                       (equal (part-select entry-1 :low 13 :high 20)
+                              (part-select entry-2 :low 13 :high 20))
+                       ;; For Page Directory Pointer Table
+                       (if (equal structure-type 2)
+                         (equal (part-select entry-1 :low 13 :high 29)
+                                (part-select entry-2 :low 13 :high 29))
+                         t))
+                     (unsigned-byte-p 2 structure-type)
+                     (unsigned-byte-p 64 entry-1)
+                     (unsigned-byte-p 64 entry-2))
+                   (equal (mv-nth 0
+                                  (paging-entry-no-page-fault-p
+                                    structure-type lin-addr entry-1
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          (mv-nth 0
+                                  (paging-entry-no-page-fault-p
+                                    structure-type lin-addr entry-2
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal"
+                   :do-not-induct t
+                   :in-theory (e/d* (page-fault-exception)
+                                    (bitops::logand-with-negated-bitmask
+                                      (:meta acl2::mv-nth-cons-meta)
+                                      force (force))))))
 
   (defthm mv-nth-0-paging-entry-no-page-fault-p-is-independent-of-lin-addr
-    (implies
-     (not
-      (mv-nth
-       0
-       (paging-entry-no-page-fault-p structure-type
-                                     lin-addr entry u/s-acc r/w-acc
-                                     x/d-acc wp smep smap ac nxe r-w-x
-                                     cpl x86 supervisor-mode-access-type)))
-     (equal
-      (mv-nth
-       0
-       (paging-entry-no-page-fault-p structure-type (+ n lin-addr)
-                                     entry u/s-acc r/w-acc
-                                     x/d-acc wp smep smap ac nxe r-w-x
-                                     cpl x86 supervisor-mode-access-type))
-      nil))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (commutativity-of-+
-                                      not
-                                      bitops::logand-with-negated-bitmask)))))
+          (implies
+            (not
+              (mv-nth
+                0
+                (paging-entry-no-page-fault-p structure-type
+                                              lin-addr entry u/s-acc r/w-acc
+                                              x/d-acc wp smep smap ac nxe implicit-supervisor-access r-w-x
+                                              cpl x86)))
+            (equal
+              (mv-nth
+                0
+                (paging-entry-no-page-fault-p structure-type (+ n lin-addr)
+                                              entry u/s-acc r/w-acc
+                                              x/d-acc wp smep smap ac nxe implicit-supervisor-access r-w-x
+                                              cpl x86))
+              nil))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (commutativity-of-+
+                                             not
+                                             bitops::logand-with-negated-bitmask)))))
 
   (defrule 64-bit-modep-of-paging-entry-no-page-fault-p
-    (equal (64-bit-modep (mv-nth 2 (paging-entry-no-page-fault-p
-                                    structure-type lin-addr entry
-                                    u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))
-           (64-bit-modep x86)))
+           (equal (64-bit-modep (mv-nth 2 (paging-entry-no-page-fault-p
+                                            structure-type lin-addr entry
+                                            u/s-acc r/w-acc x/d-acc
+                                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (64-bit-modep x86)))
 
   (defrule x86-operation-mode-of-paging-entry-no-page-fault-p
-    (equal (x86-operation-mode (mv-nth 2 (paging-entry-no-page-fault-p
-                                    structure-type lin-addr entry
-                                    u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))
-           (x86-operation-mode x86))
-    :enable x86-operation-mode))
+           (equal (x86-operation-mode (mv-nth 2 (paging-entry-no-page-fault-p
+                                                  structure-type lin-addr entry
+                                                  u/s-acc r/w-acc x/d-acc
+                                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode)
+
+  (defthm paging-entry-no-page-fault-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (paging-entry-no-page-fault-p
+                                      structure-type lin-addr entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          (mv-nth 0 (paging-entry-no-page-fault-p
+                                      structure-type lin-addr-2 entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :rule-classes :congruence)
+
+  (defthm paging-entry-no-page-fault-val-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 1 (paging-entry-no-page-fault-p
+                                      structure-type lin-addr entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          (mv-nth 1 (paging-entry-no-page-fault-p
+                                      structure-type lin-addr-2 entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :rule-classes :congruence)
+
+  (defthm paging-entry-no-page-fault-p-invariant-under-paging-entry-no-page-fault-p
+           (and (equal (mv-nth 0 (paging-entry-no-page-fault-p
+                                   structure-type lin-addr entry
+                                   u/s-acc r/w-acc x/d-acc
+                                   wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                   (mv-nth 2 (paging-entry-no-page-fault-p
+                                               structure-type2 lin-addr2 entry2
+                                               u/s-acc2 r/w-acc2 x/d-acc2
+                                               wp2 smep2 smap2 ac2 nxe2  implicit-supervisor-access2 r-w-x2 cpl2
+                                               x86))))
+                       (mv-nth 0 (paging-entry-no-page-fault-p
+                                   structure-type lin-addr entry
+                                   u/s-acc r/w-acc x/d-acc
+                                   wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                (equal (mv-nth 1 (paging-entry-no-page-fault-p
+                                   structure-type lin-addr entry
+                                   u/s-acc r/w-acc x/d-acc
+                                   wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                   (mv-nth 2 (paging-entry-no-page-fault-p
+                                               structure-type2 lin-addr2 entry2
+                                               u/s-acc2 r/w-acc2 x/d-acc2
+                                               wp2 smep2 smap2 ac2 nxe2  implicit-supervisor-access2 r-w-x2 cpl2
+                                               x86))))
+                       (mv-nth 1 (paging-entry-no-page-fault-p
+                                   structure-type lin-addr entry
+                                   u/s-acc r/w-acc x/d-acc
+                                   wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+           :hints (("Goal" :in-theory (disable paging-entry-no-page-fault-p-did-fault?))))
+
+  (defthm paging-entry-no-page-fault-p-invariant-under-setting-dirty-bit
+          (and (equal (mv-nth 0 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr (set-dirty-bit entry)
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                      (mv-nth 0 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr entry
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+               (equal (mv-nth 1 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr (set-dirty-bit entry)
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                      (mv-nth 1 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr entry
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (e/d (ia32e-page-tablesbits-fix !ia32e-page-tablesbits->d
+                                           ia32e-page-tablesbits->u/s ia32e-page-tablesbits->r/w
+                                           ia32e-page-tablesbits->xd ia32e-page-tablesbits->p
+                                           ia32e-page-tablesbits->ps)
+                                          (paging-entry-no-page-fault-p-did-fault?)))))
+
+  (defthm paging-entry-no-page-fault-p-invariant-under-setting-accessed-bit
+          (and (equal (mv-nth 0 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr (set-accessed-bit entry)
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                      (mv-nth 0 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr entry
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+               (equal (mv-nth 1 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr (set-accessed-bit entry)
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                      (mv-nth 1 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr entry
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (e/d (ia32e-page-tablesbits-fix !ia32e-page-tablesbits->a
+                                           ia32e-page-tablesbits->u/s ia32e-page-tablesbits->r/w
+                                           ia32e-page-tablesbits->xd ia32e-page-tablesbits->p
+                                           ia32e-page-tablesbits->ps)
+                                          (paging-entry-no-page-fault-p-did-fault?))))))
 
 ;; ======================================================================
+
+(defconst *paging-levels* '(page-table page-directory page-dir-ptr-table pml4-table))
 
 (define ia32e-la-to-pa-page-table
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -1267,6 +1545,7 @@ accesses.</p>
    (smap      :type (unsigned-byte  1))
    (ac        :type (unsigned-byte  1))
    (nxe       :type (unsigned-byte  1))
+   (implicit-supervisor-access :type (unsigned-byte 1))
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
    (x86))
@@ -1279,85 +1558,95 @@ accesses.</p>
               ;; the 40 bits wide address obtained
               ;; from the referencing PDE, shifted
               ;; left by 12.
-              (equal (loghead 12 base-addr) 0))
+              (equal (loghead 12 base-addr) 0)
+              (or (not (equal implicit-supervisor-access 1))
+                  (< cpl 3)))
   :guard-hints (("Goal" :in-theory (e/d (ia32e-pte-4K-pageBits->page)
                                         (unsigned-byte-p
-                                         signed-byte-p
-                                         member-equal
-                                         not))))
+                                          signed-byte-p
+                                          member-equal
+                                          not))))
 
   ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
   ;; Manual.
 
   (if (mbt (not (app-view x86)))
 
-      (b* (
-           ;; Fix the inputs of this function without incurring execution
-           ;; overhead.
-           (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
-                          :exec lin-addr))
-           (base-addr (mbe :logic (part-install
-                                   0
-                                   (loghead *physical-address-size* base-addr)
-                                   :low 0 :width 12)
-                           :exec base-addr))
+    (b* (;; Fix the inputs of this function without incurring execution
+         ;; overhead.
+         (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                        :exec lin-addr))
+         (base-addr (mbe :logic (part-install
+                                  0
+                                  (loghead *physical-address-size* base-addr)
+                                  :low 0 :width 12)
+                         :exec base-addr))
 
-           ;; First, we get the PTE (page table entry) address. A PTE is
-           ;; selected using the physical address defined as follows:
-           ;;     Bits 51:12 are from the PDE (base-addr here).
-           ;;     Bits 11:3 are bits 20:12 of the linear address.
-           ;;     Bits 2:0 are all 0.
+         ;; First, we get the PTE (page table entry) address. A PTE is
+         ;; selected using the physical address defined as follows:
+         ;;     Bits 51:12 are from the PDE (base-addr here).
+         ;;     Bits 11:3 are bits 20:12 of the linear address.
+         ;;     Bits 2:0 are all 0.
 
-           (p-entry-addr
-            (the (unsigned-byte #.*physical-address-size*)
-              (page-table-entry-addr lin-addr base-addr)))
+         (p-entry-addr
+           (the (unsigned-byte #.*physical-address-size*)
+                (page-table-entry-addr lin-addr base-addr)))
 
-           ;;  [Shilpi]: Removed nested paging specification at this
-           ;;  point.
+         ;;  [Shilpi]: Removed nested paging specification at this
+         ;;  point.
 
-           ;; Now we can read the PTE.
-           (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
+         ;; Now we can read the PTE.
+         (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
 
-           ((mv fault-flg val x86)
-            (paging-entry-no-page-fault-p
-             0 ;; structure-type
-             lin-addr entry
-             u/s-acc r/w-acc x/d-acc
-             wp smep smap ac nxe r-w-x cpl x86))
-           ((when fault-flg)
-            (mv 'Page-Fault val x86))
+         ((mv fault-flg val x86)
+          (paging-entry-no-page-fault-p
+            0 ;; structure-type
+            lin-addr entry
+            u/s-acc r/w-acc x/d-acc
+            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
 
-           ;; No errors, so we proceed with the address translation.
+         ;; Regardless of whether the above page faulted, if the entry was present,
+         ;; we must set the accessed bit
+         (marking-view? (marking-view x86))
+         ((mv updated? updated-entry)
+          (if (and marking-view?
+                   (equal (mbe :logic (page-present entry)
+                               :exec (ia32e-page-tablesBits->p entry))
+                          1))
+            (b* ((accessed (mbe :logic (accessed-bit entry)
+                                :exec (ia32e-page-tablesBits->a entry))))
+                (if (equal accessed 0)
+                  (mv t
+                      (mbe :logic (set-accessed-bit entry)
+                           :exec (!ia32e-page-tablesBits->a 1 entry)))
+                  (mv nil entry)))
+            (mv nil entry)))
 
-           (x86
-            (if (marking-view x86)
-                ;; Mark A and D bits, as the x86 machine does.
-                (b* (
-                     ;; Get accessed and dirty bits:
-                     (accessed        (mbe :logic (accessed-bit entry)
-                                           :exec (ia32e-page-tablesBits->a entry)))
-                     (dirty           (mbe :logic (dirty-bit entry)
-                                           :exec (ia32e-page-tablesBits->d entry)))
-                     ;; Compute accessed and dirty bits:
-                     ((mv updated? entry)
-                      (if (equal accessed 0)
-                          (mv t
-                              (mbe :logic (set-accessed-bit entry)
-                                   :exec (!ia32e-page-tablesBits->a 1 entry)))
-                        (mv nil entry)))
-                     ((mv updated? entry)
-                      (if (and (equal dirty 0)
-                               (equal r-w-x :w))
-                          (mv t (mbe :logic (set-dirty-bit entry)
-                                     :exec (!ia32e-page-tablesBits->d 1 entry)))
-                        (mv updated? entry)))
-                     ;; Update x86 (to reflect accessed and dirty bits change), if needed:
-                     (x86 (if updated?
-                              (wm-low-64 p-entry-addr entry x86)
-                            x86)))
-                  x86)
-              ;; Do not mark A/D bits.
-              x86)))
+         ((when fault-flg)
+          ;; If we updated the entry, we must write it before returning
+          (b* ((x86 (if updated?
+                      (wm-low-64 p-entry-addr updated-entry x86)
+                      x86)))
+              (mv 'Page-Fault val x86)))
+
+         ;; No errors, so we proceed with the address translation.
+
+         ((mv updated? updated-entry)
+          (if marking-view?
+            ;; Mark D bit
+            (b* ((dirty (mbe :logic (dirty-bit entry)
+                             :exec (ia32e-page-tablesBits->d entry))))
+                (if (and (equal dirty 0)
+                         (equal r-w-x :w))
+                  (mv t (mbe :logic (set-dirty-bit updated-entry)
+                             :exec (!ia32e-page-tablesBits->d 1 updated-entry)))
+                  (mv updated? updated-entry)))
+            (mv nil updated-entry)))
+
+        ;; If we set one or both of the accessed and dirty bits, update the state
+        (x86 (if updated?
+               (wm-low-64 p-entry-addr updated-entry x86)
+               x86)))
 
         ;; Return physical address and the modified x86 state.  Note that the
         ;; base address of the 4K frame would be just
@@ -1366,26 +1655,26 @@ accesses.</p>
 
             (mbe
 
-             :logic
-             (part-install
-              (part-select lin-addr :low 0 :high 11)
-              (ash (ia32e-pte-4K-pageBits->page entry) 12)
-              :low 0 :high 11)
+              :logic
+              (part-install
+                (part-select lin-addr :low 0 :high 11)
+                (ash (ia32e-pte-4K-pageBits->page entry) 12)
+                :low 0 :high 11)
 
 
-             :exec
-             (the (unsigned-byte #.*physical-address-size*)
-               (logior
-                (the (unsigned-byte #.*physical-address-size*)
-                  (logand
-                   (the (unsigned-byte #.*physical-address-size*)
-                     (ash
-                      (the (unsigned-byte 40)
-                        (ia32e-pte-4K-pageBits->page entry))
-                      12))
-                   -4096))
-                (the (unsigned-byte 12)
-                  (logand 4095 lin-addr)))))
+              :exec
+              (the (unsigned-byte #.*physical-address-size*)
+                   (logior
+                     (the (unsigned-byte #.*physical-address-size*)
+                          (logand
+                            (the (unsigned-byte #.*physical-address-size*)
+                                 (ash
+                                   (the (unsigned-byte 40)
+                                        (ia32e-pte-4K-pageBits->page entry))
+                                   12))
+                            -4096))
+                     (the (unsigned-byte 12)
+                          (logand 4095 lin-addr)))))
             x86))
 
     (mv t 0 x86))
@@ -1394,136 +1683,170 @@ accesses.</p>
   ///
 
   (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-page-table
-    :hyp t
-    :bound *physical-address-size*
-    :concl (mv-nth 1
-                   (ia32e-la-to-pa-page-table
-                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86))
+                          :hyp t
+                          :bound *physical-address-size*
+                          :concl (mv-nth 1
+                                         (ia32e-la-to-pa-page-table
+                                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                           wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
 
-    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
-    :gen-type t)
+                          :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+                          :gen-linear t
+                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
+                          :gen-type t)
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa-page-table
-    (implies (x86p x86)
-             (x86p
-              (mv-nth 2
-                      (ia32e-la-to-pa-page-table
-                       lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl x86))))
-    :hints (("Goal" :in-theory (e/d () (x86p)))))
+          (implies (x86p x86)
+                   (x86p
+                     (mv-nth 2
+                             (ia32e-la-to-pa-page-table
+                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (e/d () (x86p)))))
 
   (defthm xr-ia32e-la-to-pa-page-table
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index
-                        (mv-nth 2
-                                (ia32e-la-to-pa-page-table
-                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl x86)))
-                    (xr fld index x86))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-page-table
+                                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr fld index x86))))
 
   (defthm xr-fault-ia32e-la-to-pa-page-table
-    (implies (not (mv-nth 0
-                          (ia32e-la-to-pa-page-table
-                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-w-x cpl x86)))
-             (equal (xr :fault index
-                        (mv-nth 2
+          (implies (not (mv-nth 0
                                 (ia32e-la-to-pa-page-table
-                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl x86)))
-                    (xr :fault index x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (force
-                                      (force)
-                                      (:definition not)
-                                      (:meta acl2::mv-nth-cons-meta))))))
+                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (equal (xr :fault index
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-page-table
+                                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr :fault index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (force
+                                             (force)
+                                             (:definition not)
+                                             (:meta acl2::mv-nth-cons-meta))))))
 
   (defthm xr-ia32e-la-to-pa-page-table-in-non-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-table
-                                             lin-addr
-                                             base-addr u/s-acc r/w-acc x/d-acc
-                                             wp smep smap ac nxe r-w-x cpl x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (negative-logand-to-positive-logand-with-integerp-x
-                                      bitops::logand-with-negated-bitmask)))))
+          (implies (and (not (marking-view x86))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-table
+                                                    lin-addr
+                                                    base-addr u/s-acc r/w-acc x/d-acc
+                                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (negative-logand-to-positive-logand-with-integerp-x
+                                             bitops::logand-with-negated-bitmask)))))
 
   (defthm ia32e-la-to-pa-page-table-xw-values
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault))
-                  (not (equal fld :app-view)))
-             (and (equal (mv-nth 0
-                                 (ia32e-la-to-pa-page-table
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  (xw fld index value x86)))
-                         (mv-nth 0
-                                 (ia32e-la-to-pa-page-table
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  x86)))
-                  (equal (mv-nth 1
-                                 (ia32e-la-to-pa-page-table
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  (xw fld index value x86)))
-                         (mv-nth 1
-                                 (ia32e-la-to-pa-page-table
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  x86))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :app-view)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-page-table
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         (xw fld index value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-page-table
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-page-table
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         (xw fld index value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-page-table
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         x86))))))
 
   (defthm ia32e-la-to-pa-page-table-xw-state
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault))
-                  (not (equal fld :app-view))
-                  (not (equal fld :marking-view)))
-             (equal (mv-nth 2
-                            (ia32e-la-to-pa-page-table
-                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                             wp smep smap ac nxe r-w-x cpl
-                             (xw fld index value x86)))
-                    (xw fld index value
-                        (mv-nth 2
-                                (ia32e-la-to-pa-page-table
-                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl
-                                 x86))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault))
+                        (not (equal fld :app-view))
+                        (not (equal fld :marking-view)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-page-table
+                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                    (xw fld index value x86)))
+                          (xw fld index value
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-page-table
+                                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                        x86))))))
 
   (defthm mv-nth-2-ia32e-la-to-pa-page-table-system-level-non-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (mv-nth 0 (ia32e-la-to-pa-page-table
-                                  lin-addr
-                                  base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl x86))))
-             (equal (mv-nth
-                     2
-                     (ia32e-la-to-pa-page-table
-                      lin-addr
-                      base-addr u/s-acc r/w-acc x/d-acc
-                      wp smep smap ac nxe r-w-x cpl x86))
-                    x86)))
+          (implies (and (not (marking-view x86))
+                        (not (mv-nth 0 (ia32e-la-to-pa-page-table
+                                         lin-addr
+                                         base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+                   (equal (mv-nth
+                            2
+                            (ia32e-la-to-pa-page-table
+                              lin-addr
+                              base-addr u/s-acc r/w-acc x/d-acc
+                              wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          x86)))
 
   (defrule 64-bit-modep-of-ia32e-la-to-pa-page-table
-    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-table
-                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))
-           (64-bit-modep x86))
-    :enable (wm-low-32 wm-low-64))
+           (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-table
+                                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (64-bit-modep x86))
+           :enable (wm-low-32 wm-low-64))
 
   (defrule x86-operation-mode-of-ia32e-la-to-pa-page-table
-    (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-page-table
-                                          lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                          wp smep smap ac nxe r-w-x cpl x86)))
-           (x86-operation-mode x86))
-    :enable x86-operation-mode
-    :disable ia32e-la-to-pa-page-table))
+           (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-page-table
+                                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode
+           :disable ia32e-la-to-pa-page-table)
+
+  (defthm ia32e-la-to-pa-page-table-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-page-table
+                                    lin-addr entry
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-page-table
+                                                 lin-addr entry
+                                                 u/s-acc r/w-acc x/d-acc
+                                                 wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-page-table-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-page-table
+                                      lin-addr entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          (mv-nth 0 (ia32e-la-to-pa-page-table
+                                      lin-addr-2 entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-page-table-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-page-table
+                                          lin-addr entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                              (mv-nth 1 (ia32e-la-to-pa-page-table
+                                          lin-addr-2 entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :rule-classes :congruence))
 
 ;; ----------------------------------------------------------------------
 
@@ -1538,6 +1861,7 @@ accesses.</p>
    (smap      :type (unsigned-byte  1))
    (ac        :type (unsigned-byte  1))
    (nxe       :type (unsigned-byte  1))
+   (implicit-supervisor-access :type (unsigned-byte 1))
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
    (x86))
@@ -1550,317 +1874,348 @@ accesses.</p>
               ;; the 40 bits wide address obtained
               ;; from the referencing PDE, shifted
               ;; left by 12.
-              (equal (loghead 12 base-addr) 0))
+              (equal (loghead 12 base-addr) 0)
+              (or (not (equal implicit-supervisor-access 1))
+                  (< cpl 3)))
   :guard-hints (("Goal" :in-theory (e/d (!ia32e-page-tablesbits->a
-                                         !ia32e-pde-2mb-pagebits->a
-                                         !ia32e-pde-2mb-pagebits->d
-                                         !ia32e-page-tablesbits->d
-                                         ia32e-page-tablesbits->d
-                                         ia32e-pde-2mb-pagebits->d
-                                         ia32e-page-tablesbits->a
-                                         ia32e-pde-2mb-pagebits->a)
+                                          !ia32e-pde-2mb-pagebits->a
+                                          !ia32e-pde-2mb-pagebits->d
+                                          !ia32e-page-tablesbits->d
+                                          ia32e-page-tablesbits->d
+                                          ia32e-pde-2mb-pagebits->d
+                                          ia32e-page-tablesbits->a
+                                          ia32e-pde-2mb-pagebits->a)
                                         (unsigned-byte-p
-                                         signed-byte-p
-                                         member-equal
-                                         not))))
+                                          signed-byte-p
+                                          member-equal
+                                          not))))
 
   ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
   ;; Manual.
 
   (if (mbt (not (app-view x86)))
 
-      (b* (
-           ;; Fix the inputs of this function without incurring execution
-           ;; overhead.
-           (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
-                          :exec lin-addr))
-           (base-addr (mbe :logic (part-install
-                                   0
-                                   (loghead *physical-address-size* base-addr)
-                                   :low 0 :width 12)
-                           :exec base-addr))
-           ;; First, we get the PDE (page directory entry) address. A PDE
-           ;; is selected using the physical address defined as follows:
-           ;;     Bits 51:12 are from the PDPTE (base-addr here).
-           ;;     Bits 11:3 are bits 29:21 of the linear address.
-           ;;     Bits 2:0 are all 0.
+    (b* (
+         ;; Fix the inputs of this function without incurring execution
+         ;; overhead.
+         (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                        :exec lin-addr))
+         (base-addr (mbe :logic (part-install
+                                  0
+                                  (loghead *physical-address-size* base-addr)
+                                  :low 0 :width 12)
+                         :exec base-addr))
+         ;; First, we get the PDE (page directory entry) address. A PDE
+         ;; is selected using the physical address defined as follows:
+         ;;     Bits 51:12 are from the PDPTE (base-addr here).
+         ;;     Bits 11:3 are bits 29:21 of the linear address.
+         ;;     Bits 2:0 are all 0.
 
-           (p-entry-addr
-            (the (unsigned-byte #.*physical-address-size*)
-              (page-directory-entry-addr lin-addr base-addr)))
+         (p-entry-addr
+           (the (unsigned-byte #.*physical-address-size*)
+                (page-directory-entry-addr lin-addr base-addr)))
 
-           ;;  [Shilpi]: Removed nested paging specification at this
-           ;;  point.
+         ;;  [Shilpi]: Removed nested paging specification at this
+         ;;  point.
 
-           ;; Now we can read the PTE.
-           (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
+         ;; Now we can read the PTE.
+         (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
 
-           (u/s-all
-            (mbe :logic (logand u/s-acc (page-user-supervisor entry))
-                 :exec (the (unsigned-byte 1)
-                         (logand u/s-acc (ia32e-page-tablesBits->u/s entry)))))
-           (r/w-all
-            (mbe :logic (logand r/w-acc (page-read-write entry))
-                 :exec (the (unsigned-byte 1)
-                         (logand r/w-acc (ia32e-page-tablesBits->r/w entry)))))
-           (x/d-all
-            (mbe :logic (logand x/d-acc (page-execute-disable entry))
-                 :exec (the (unsigned-byte 1)
-                         (logand x/d-acc (ia32e-page-tablesBits->xd entry)))))
+         (u/s-all
+           (mbe :logic (logand u/s-acc (page-user-supervisor entry))
+                :exec (the (unsigned-byte 1)
+                           (logand u/s-acc (ia32e-page-tablesBits->u/s entry)))))
+         (r/w-all
+           (mbe :logic (logand r/w-acc (page-read-write entry))
+                :exec (the (unsigned-byte 1)
+                           (logand r/w-acc (ia32e-page-tablesBits->r/w entry)))))
+         (x/d-all
+           (mbe :logic (logand x/d-acc (page-execute-disable entry))
+                :exec (the (unsigned-byte 1)
+                           (logand x/d-acc (ia32e-page-tablesBits->xd entry)))))
 
-           ((mv fault-flg val x86)
-            (paging-entry-no-page-fault-p
-             1 ;; structure-type
-             lin-addr entry
-             u/s-all r/w-all x/d-all
-             wp smep smap ac nxe r-w-x cpl x86))
-           ((when fault-flg)
-            (mv 'Page-Fault val x86)))
+         ((mv fault-flg val x86)
+          (paging-entry-no-page-fault-p
+            1 ;; structure-type
+            lin-addr entry
+            u/s-all r/w-all x/d-all
+            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+
+         ;; Regardless of whether the above page faulted, if the entry was present,
+         ;; we must set the accessed bit
+         (marking-view? (marking-view x86))
+         ((mv updated? updated-entry)
+          (if (and marking-view?
+                   (equal (mbe :logic (page-present entry)
+                               :exec (ia32e-page-tablesBits->p entry))
+                          1))
+            (b* ((accessed (mbe :logic (accessed-bit entry)
+                                :exec (ia32e-page-tablesBits->a entry))))
+                (if (equal accessed 0)
+                  (mv t
+                      (mbe :logic (set-accessed-bit entry)
+                           :exec (!ia32e-page-tablesBits->a 1 entry)))
+                  (mv nil entry)))
+            (mv nil entry)))
+
+         ((when fault-flg)
+          ;; If we updated the entry, we must write it before returning
+          (b* ((x86 (if updated?
+                      (wm-low-64 p-entry-addr updated-entry x86)
+                      x86)))
+              (mv 'Page-Fault val x86))))
 
         ;; No errors at this level, so we proceed with the translation:
 
         (if (mbe :logic (equal (page-size entry) 1)
                  :exec (equal (ia32e-page-tablesBits->ps entry) 1))
-            ;; 2MB page
+          ;; 2MB page
 
-            (let ((x86
-                   (if (marking-view x86)
-                       ;; Mark A and D bits.
-                       (b* (
-                            ;; Get accessed and dirty bits:
-                            (accessed        (mbe :logic (accessed-bit entry)
-                                                  :exec (ia32e-pde-2MB-pageBits->a entry)))
-                            (dirty           (mbe :logic (dirty-bit entry)
-                                                  :exec (ia32e-pde-2MB-pageBits->d entry)))
+          (b* (((mv updated? updated-entry)
+                (if marking-view?
+                  ;; Mark D bit
+                  (b* ((dirty (mbe :logic (dirty-bit entry)
+                                   :exec (ia32e-page-tablesBits->d entry))))
+                      (if (and (equal dirty 0)
+                               (equal r-w-x :w))
+                        (mv t (mbe :logic (set-dirty-bit updated-entry)
+                                   :exec (!ia32e-page-tablesBits->d 1 updated-entry)))
+                        (mv updated? updated-entry)))
+                  (mv nil entry)))
 
-                            ;; Compute accessed and dirty bits:
-                            ((mv updated? entry)
-                             (if (equal accessed 0)
-                                 (mv t
-                                     (mbe :logic (set-accessed-bit entry)
-                                          :exec (!ia32e-pde-2MB-pageBits->a 1 entry)))
-                               (mv nil entry)))
-                            ((mv updated? entry)
-                             (if (and (equal dirty 0)
-                                      (equal r-w-x :w))
-                                 (mv t
-                                     (mbe :logic (set-dirty-bit entry)
-                                          :exec (!ia32e-pde-2MB-pageBits->d 1 entry)))
-                               (mv updated? entry)))
-                            ;; Update x86 (to reflect accessed and dirty bits change):
-                            (x86 (if updated?
-                                     (wm-low-64 p-entry-addr entry x86)
-                                   x86)))
-                         x86)
-                     ;; Don't mark A and D bits.
-                     x86)))
-              ;; Return address of 2MB page frame and the modified x86 state.
-              (mv nil
-                  (mbe
-                   :logic
-                   (part-install
+               ;; If we set one or both of the accessed and dirty bits, update the state
+               (x86 (if updated?
+                      (wm-low-64 p-entry-addr updated-entry x86)
+                      x86)))
+            ;; Return address of 2MB page frame and the modified x86 state.
+            (mv nil
+                (mbe
+                  :logic
+                  (part-install
                     (part-select lin-addr :low 0 :high 20)
                     (ash (ia32e-pde-2MB-pageBits->page entry) 21)
                     :low 0 :high 20)
-                   :exec
-                   (the
-                       (unsigned-byte 52)
-                     (logior
+                  :exec
+                  (the
+                    (unsigned-byte 52)
+                    (logior
                       (the
-                          (unsigned-byte 52)
+                        (unsigned-byte 52)
                         (logand (the
-                                    (unsigned-byte 52)
+                                  (unsigned-byte 52)
                                   (ash (the (unsigned-byte 31)
-                                         (ia32e-pde-2mb-pageBits->page entry))
+                                            (ia32e-pde-2mb-pageBits->page entry))
                                        21))
                                 (lognot (1- (ash 1 21)))))
                       (the
-                          (unsigned-byte 21)
+                        (unsigned-byte 21)
                         (logand (1- (ash 1 21)) lin-addr)))))
-                  x86))
+                x86))
           ;; Go to the next level of page table structure (PT, which
           ;; references a 4KB page)
           (b* ((page-table-base-addr
-                (ash (ia32e-pde-pg-tableBits->pt entry) 12))
+                 (ash (ia32e-pde-pg-tableBits->pt entry) 12))
                ((mv flag
                     (the (unsigned-byte #.*physical-address-size*) p-addr)
                     x86)
                 (ia32e-la-to-pa-page-table
-                 lin-addr page-table-base-addr
-                 u/s-all r/w-all x/d-all
-                 wp smep smap ac nxe r-w-x cpl
-                 x86))
-               ((when flag)
-                ;; Error, so do not update accessed bit.
-                (mv flag 0 x86))
-
-               (x86
-                (if (marking-view x86)
-                    ;; Mark A bit.
-                    (b* (
-                         ;; Get possibly updated entry --- note that
-                         ;; if PDE and PTE are the same entries, entry
-                         ;; would have its A and/or D flags set
-                         ;; because of the walk done in
-                         ;; ia32e-la-to-pa-page-table.
-                         (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
-                         ;; Get accessed bit.  Dirty bit is ignored when PDE
-                         ;; references the PT.
-                         (accessed        (mbe :logic (accessed-bit entry)
-                                               :exec (ia32e-page-tablesBits->a entry)))
-                         ;; Update accessed bit, if needed.
-                         (entry (if (equal accessed 0)
-                                    (mbe :logic (set-accessed-bit entry)
-                                         :exec (!ia32e-page-tablesBits->a 1 entry))
-                                  entry))
-                         (x86 (if (equal accessed 0)
-                                  (wm-low-64 p-entry-addr entry x86)
-                                x86)))
-                      x86)
-                  ;; Don't mark A and D bits.
-                  x86)))
-            (mv nil p-addr x86))))
+                  lin-addr page-table-base-addr
+                  u/s-all r/w-all x/d-all
+                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                  x86))
+               ;; If we updated the entry, we must write it before returning
+               ;; We reread the entry because it is possible a lower level set the dirty bit on it
+               ;; This requires us to set the accessed bit again
+               (entry (rm-low-64 p-entry-addr x86))
+               (x86 (if marking-view?
+                      (b* ((accessed (mbe :logic (accessed-bit entry)
+                                          :exec (ia32e-page-tablesBits->a entry)))
+                           ((unless (equal accessed 0)) x86))
+                          (wm-low-64 p-entry-addr (set-accessed-bit entry) x86))
+                      x86))
+               ((when flag) (mv flag 0 x86)))
+              (mv nil p-addr x86))))
 
     (mv t 0 x86))
 
   ///
 
   (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-page-directory
-    :hyp t
-    :bound *physical-address-size*
-    :concl (mv-nth 1
-                   (ia32e-la-to-pa-page-directory
-                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl
-                    x86))
+                          :hyp t
+                          :bound *physical-address-size*
+                          :concl (mv-nth 1
+                                         (ia32e-la-to-pa-page-directory
+                                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                           wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                           x86))
 
-    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-    :otf-flg t
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
-    :gen-type t
-    :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p) (not)))))
+                          :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+                          :otf-flg t
+                          :gen-linear t
+                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
+                          :gen-type t
+                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p) (not)))))
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa-page-directory
-    (implies (x86p x86)
-             (x86p
-              (mv-nth 2
-                      (ia32e-la-to-pa-page-directory
-                       lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl
-                       x86))))
-    :hints (("Goal" :in-theory (e/d () (x86p)))))
+          (implies (x86p x86)
+                   (x86p
+                     (mv-nth 2
+                             (ia32e-la-to-pa-page-directory
+                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                               x86))))
+          :hints (("Goal" :in-theory (e/d () (x86p)))))
 
   (defthm xr-ia32e-la-to-pa-page-directory
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index
-                        (mv-nth 2
-                                (ia32e-la-to-pa-page-directory
-                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl
-                                 x86)))
-                    (xr fld index x86))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-page-directory
+                                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                        x86)))
+                          (xr fld index x86))))
 
   (defthm xr-fault-ia32e-la-to-pa-page-directory
-    (implies (not (mv-nth 0
-                          (ia32e-la-to-pa-page-directory
-                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-w-x cpl x86)))
-             (equal (xr :fault index
-                        (mv-nth 2
+          (implies (not (mv-nth 0
                                 (ia32e-la-to-pa-page-directory
-                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl x86)))
-                    (xr :fault index x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (force
-                                      (force)
-                                      (:definition not)
-                                      (:meta acl2::mv-nth-cons-meta))))))
+                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (equal (xr :fault index
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-page-directory
+                                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr :fault index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (force
+                                             (force)
+                                             (:definition not)
+                                             (:meta acl2::mv-nth-cons-meta))))))
 
   (defthm xr-and-ia32e-la-to-pa-page-directory-in-non-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-directory
-                                             lin-addr
-                                             base-addr u/s-acc r/w-acc x/d-acc
-                                             wp smep smap ac nxe r-w-x cpl x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (negative-logand-to-positive-logand-with-integerp-x
-                                      bitops::logand-with-negated-bitmask)))))
+          (implies (and (not (marking-view x86))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-directory
+                                                    lin-addr
+                                                    base-addr u/s-acc r/w-acc x/d-acc
+                                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (negative-logand-to-positive-logand-with-integerp-x
+                                             bitops::logand-with-negated-bitmask)))))
 
   (defthm ia32e-la-to-pa-page-directory-xw-values
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault))
-                  (not (equal fld :app-view)))
-             (and (equal (mv-nth 0
-                                 (ia32e-la-to-pa-page-directory
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  (xw fld index value x86)))
-                         (mv-nth 0
-                                 (ia32e-la-to-pa-page-directory
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  x86)))
-                  (equal (mv-nth 1
-                                 (ia32e-la-to-pa-page-directory
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  (xw fld index value x86)))
-                         (mv-nth 1
-                                 (ia32e-la-to-pa-page-directory
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  x86))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :app-view)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-page-directory
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         (xw fld index value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-page-directory
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-page-directory
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         (xw fld index value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-page-directory
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         x86))))))
 
   (defthm ia32e-la-to-pa-page-directory-xw-state
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault))
-                  (not (equal fld :app-view))
-                  (not (equal fld :marking-view)))
-             (equal (mv-nth 2
-                            (ia32e-la-to-pa-page-directory
-                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                             wp smep smap ac nxe r-w-x cpl
-                             (xw fld index value x86)))
-                    (xw fld index value
-                        (mv-nth 2
-                                (ia32e-la-to-pa-page-directory
-                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl
-                                 x86))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault))
+                        (not (equal fld :app-view))
+                        (not (equal fld :marking-view)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-page-directory
+                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                    (xw fld index value x86)))
+                          (xw fld index value
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-page-directory
+                                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                        x86))))))
 
   (defthm mv-nth-2-ia32e-la-to-pa-page-directory-system-level-non-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (mv-nth 0 (ia32e-la-to-pa-page-directory
-                                  lin-addr
-                                  base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl x86))))
-             (equal (mv-nth
-                     2
-                     (ia32e-la-to-pa-page-directory
-                      lin-addr
-                      base-addr u/s-acc r/w-acc x/d-acc
-                      wp smep smap ac nxe r-w-x cpl x86))
-                    x86)))
+          (implies (and (not (marking-view x86))
+                        (not (mv-nth 0 (ia32e-la-to-pa-page-directory
+                                         lin-addr
+                                         base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+                   (equal (mv-nth
+                            2
+                            (ia32e-la-to-pa-page-directory
+                              lin-addr
+                              base-addr u/s-acc r/w-acc x/d-acc
+                              wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          x86)))
 
   (defrule 64-bit-modep-of-ia32e-la-to-pa-page-directory
-    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-directory
-                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))
-           (64-bit-modep x86))
-    :enable (wm-low-32 wm-low-64))
+           (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-directory
+                                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (64-bit-modep x86))
+           :enable (wm-low-32 wm-low-64))
 
   (defrule x86-operation-mode-of-ia32e-la-to-pa-page-directory
-    (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-page-directory
-                                          lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                          wp smep smap ac nxe r-w-x cpl x86)))
-           (x86-operation-mode x86))
-    :enable x86-operation-mode
-    :disable ia32e-la-to-pa-page-directory))
+           (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-page-directory
+                                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode
+           :disable ia32e-la-to-pa-page-directory)
+
+  (defthm ia32e-la-to-pa-page-directory-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-page-directory
+                                    lin-addr entry
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-page-directory
+                                                 lin-addr entry
+                                                 u/s-acc r/w-acc x/d-acc
+                                                 wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-page-directory-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-page-directory
+                                      lin-addr entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          (mv-nth 0 (ia32e-la-to-pa-page-directory
+                                      lin-addr-2 entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-page-directory-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-page-directory
+                                          lin-addr entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                              (mv-nth 1 (ia32e-la-to-pa-page-directory
+                                          lin-addr-2 entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence))
 
 ;; ----------------------------------------------------------------------
 
@@ -1875,6 +2230,7 @@ accesses.</p>
    (smap      :type (unsigned-byte  1))
    (ac        :type (unsigned-byte  1))
    (nxe       :type (unsigned-byte  1))
+   (implicit-supervisor-access :type (unsigned-byte 1))
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
    (x86))
@@ -1887,323 +2243,353 @@ accesses.</p>
               ;; the 40 bits wide address obtained
               ;; from the referencing PDE, shifted
               ;; left by 12.
-              (equal (loghead 12 base-addr) 0))
+              (equal (loghead 12 base-addr) 0)
+              (or (not (equal implicit-supervisor-access 1))
+                  (< cpl 3)))
 
   :guard-hints (("Goal" :in-theory (e/d (!ia32e-page-tablesbits->a
-                                         !ia32e-pde-2mb-pagebits->a
-                                         !ia32e-pdpte-1gb-pagebits->a
-                                         !ia32e-pde-2mb-pagebits->d
-                                         !ia32e-page-tablesbits->d
-                                         !ia32e-pdpte-1gb-pagebits->d
-                                         ia32e-pdpte-1gb-pagebits->d
-                                         ia32e-page-tablesbits->d
-                                         ia32e-pde-2mb-pagebits->d
-                                         ia32e-page-tablesbits->a
-                                         ia32e-pde-2mb-pagebits->a
-                                         ia32e-pdpte-1gb-pagebits->a)
+                                          !ia32e-pde-2mb-pagebits->a
+                                          !ia32e-pdpte-1gb-pagebits->a
+                                          !ia32e-pde-2mb-pagebits->d
+                                          !ia32e-page-tablesbits->d
+                                          !ia32e-pdpte-1gb-pagebits->d
+                                          ia32e-pdpte-1gb-pagebits->d
+                                          ia32e-page-tablesbits->d
+                                          ia32e-pde-2mb-pagebits->d
+                                          ia32e-page-tablesbits->a
+                                          ia32e-pde-2mb-pagebits->a
+                                          ia32e-pdpte-1gb-pagebits->a)
                                         (unsigned-byte-p
-                                         signed-byte-p
-                                         member-equal
-                                         not))))
+                                          signed-byte-p
+                                          member-equal
+                                          not))))
 
   ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
   ;; Manual.
 
   (if (mbt (not (app-view x86)))
 
-      (b* (
-           ;; Fix the inputs of this function without incurring execution
-           ;; overhead.
-           (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
-                          :exec lin-addr))
-           (base-addr (mbe :logic (part-install
-                                   0
-                                   (loghead *physical-address-size* base-addr)
-                                   :low 0 :width 12)
-                           :exec base-addr))
+    (b* (
+         ;; Fix the inputs of this function without incurring execution
+         ;; overhead.
+         (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                        :exec lin-addr))
+         (base-addr (mbe :logic (part-install
+                                  0
+                                  (loghead *physical-address-size* base-addr)
+                                  :low 0 :width 12)
+                         :exec base-addr))
 
-           ;; First, we get the PDPTE (page directory pointer table entry)
-           ;; address.  A PDPTE is selected using the physical address
-           ;; defined as follows:
-           ;;   Bits 51:12 are from the PML4E.
-           ;;   Bits 11:3 are bits 38:30 of the linear address.
-           ;;   Bits 2:0 are all 0.
+         ;; First, we get the PDPTE (page directory pointer table entry)
+         ;; address.  A PDPTE is selected using the physical address
+         ;; defined as follows:
+         ;;   Bits 51:12 are from the PML4E.
+         ;;   Bits 11:3 are bits 38:30 of the linear address.
+         ;;   Bits 2:0 are all 0.
 
-           (p-entry-addr
-            (the (unsigned-byte #.*physical-address-size*)
-              (page-dir-ptr-table-entry-addr lin-addr base-addr)))
+         (p-entry-addr
+           (the (unsigned-byte #.*physical-address-size*)
+                (page-dir-ptr-table-entry-addr lin-addr base-addr)))
 
-           ;;  [Shilpi]: Removed nested paging specification at this
-           ;;  point.
+         ;;  [Shilpi]: Removed nested paging specification at this
+         ;;  point.
 
-           ;; Now we can read the PDPTE.
-           (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
+         ;; Now we can read the PDPTE.
+         (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
 
-           (u/s-all
-            (mbe :logic (logand u/s-acc (page-user-supervisor entry))
-                 :exec (the (unsigned-byte 1)
-                         (logand u/s-acc (ia32e-page-tablesBits->u/s entry)))))
-           (r/w-all
-            (mbe :logic (logand r/w-acc (page-read-write entry))
-                 :exec (the (unsigned-byte 1)
-                         (logand r/w-acc (ia32e-page-tablesBits->r/w entry)))))
-           (x/d-all
-            (mbe :logic (logand x/d-acc (page-execute-disable entry))
-                 :exec (the (unsigned-byte 1)
-                         (logand x/d-acc (ia32e-page-tablesBits->xd entry)))))
+         (u/s-all
+           (mbe :logic (logand u/s-acc (page-user-supervisor entry))
+                :exec (the (unsigned-byte 1)
+                           (logand u/s-acc (ia32e-page-tablesBits->u/s entry)))))
+         (r/w-all
+           (mbe :logic (logand r/w-acc (page-read-write entry))
+                :exec (the (unsigned-byte 1)
+                           (logand r/w-acc (ia32e-page-tablesBits->r/w entry)))))
+         (x/d-all
+           (mbe :logic (logand x/d-acc (page-execute-disable entry))
+                :exec (the (unsigned-byte 1)
+                           (logand x/d-acc (ia32e-page-tablesBits->xd entry)))))
 
-           ((mv fault-flg val x86)
-            (paging-entry-no-page-fault-p
-             2 ;; structure-type
-             lin-addr entry
-             u/s-all r/w-all x/d-all
-             wp smep smap ac nxe r-w-x cpl x86))
-           ((when fault-flg)
-            (mv 'Page-Fault val x86)))
+         ((mv fault-flg val x86)
+          (paging-entry-no-page-fault-p
+            2 ;; structure-type
+            lin-addr entry
+            u/s-all r/w-all x/d-all
+            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+
+         ;; Regardless of whether the above page faulted, if the entry was present,
+         ;; we must set the accessed bit
+         (marking-view? (marking-view x86))
+         ((mv updated? updated-entry)
+          (if (and marking-view?
+                   (equal (mbe :logic (page-present entry)
+                               :exec (ia32e-page-tablesBits->p entry))
+                          1))
+            (b* ((accessed (mbe :logic (accessed-bit entry)
+                                :exec (ia32e-page-tablesBits->a entry))))
+                (if (equal accessed 0)
+                  (mv t
+                      (mbe :logic (set-accessed-bit entry)
+                           :exec (!ia32e-page-tablesBits->a 1 entry)))
+                  (mv nil entry)))
+            (mv nil entry)))
+
+         ((when fault-flg)
+          ;; If we updated the entry, we must write it before returning
+          (b* ((x86 (if updated?
+                      (wm-low-64 p-entry-addr updated-entry x86)
+                      x86)))
+              (mv 'Page-Fault val x86))))
 
         ;; No errors at this level, so we proceed with the translation.
 
         (if (mbe :logic (equal (page-size entry) 1)
                  :exec (equal (ia32e-page-tablesBits->ps entry) 1))
 
-            (let ((x86
-                   (if (marking-view x86)
-                       ;; Mark A and D bits.
-                       ;; 1GB page
-                       (b* (
-                            ;; Get accessed and dirty bits:
-                            (accessed        (mbe :logic (accessed-bit entry)
-                                                  :exec (ia32e-pdpte-1GB-pageBits->a entry)))
-                            (dirty           (mbe :logic (dirty-bit entry)
-                                                  :exec (ia32e-pdpte-1GB-pageBits->d entry)))
-                            ;; Compute accessed and dirty bits:
-                            ((mv updated? entry)
-                             (if (equal accessed 0)
-                                 (mv t
-                                     (mbe :logic (set-accessed-bit entry)
-                                          :exec (!ia32e-pdpte-1GB-pageBits->a 1 entry)))
-                               (mv nil entry)))
-                            ((mv updated? entry)
-                             (if (and (equal dirty 0)
-                                      (equal r-w-x :w))
-                                 (mv t
-                                     (mbe :logic (set-dirty-bit entry)
-                                          :exec (!ia32e-pdpte-1GB-pageBits->d 1 entry)))
-                               (mv updated? entry)))
-                            ;; Update x86 (to reflect accessed and dirty bits change), if needed:
-                            (x86 (if updated?
-                                     (wm-low-64 p-entry-addr entry x86)
-                                   x86)))
-                         x86)
-                     ;; Don't mark A and D bits.
-                     x86)))
-              ;;  Return address of 1GB page frame and the modified x86 state.
-              (mv nil
-                  (mbe
-                   :logic
-                   (part-install
+          (b* (((mv updated? updated-entry)
+                (if marking-view?
+                  ;; Mark D bit
+                  (b* ((dirty (mbe :logic (dirty-bit entry)
+                                   :exec (ia32e-page-tablesBits->d entry))))
+                      (if (and (equal dirty 0)
+                               (equal r-w-x :w))
+                        (mv t (mbe :logic (set-dirty-bit updated-entry)
+                                   :exec (!ia32e-page-tablesBits->d 1 updated-entry)))
+                        (mv updated? updated-entry)))
+                  (mv nil entry)))
+
+               ;; If we set one or both of the accessed and dirty bits, update the state
+               (x86 (if updated?
+                      (wm-low-64 p-entry-addr updated-entry x86)
+                      x86)))
+            ;;  Return address of 1GB page frame and the modified x86 state.
+            (mv nil
+                (mbe
+                  :logic
+                  (part-install
                     (part-select lin-addr :low 0 :high 29)
                     (ash (ia32e-pdpte-1GB-pageBits->page entry) 30)
                     :low 0 :high 29)
-                   :exec
-                   (the
-                       (unsigned-byte 52)
-                     (logior
+                  :exec
+                  (the
+                    (unsigned-byte 52)
+                    (logior
                       (the
-                          (unsigned-byte 52)
+                        (unsigned-byte 52)
                         (logand (the
-                                    (unsigned-byte 52)
+                                  (unsigned-byte 52)
                                   (ash
-                                   (the (unsigned-byte 22)
-                                     (ia32e-pdpte-1GB-pageBits->page entry))
-                                   30))
+                                    (the (unsigned-byte 22)
+                                         (ia32e-pdpte-1GB-pageBits->page entry))
+                                    30))
                                 (lognot (1- (ash 1 30)))))
                       (the (unsigned-byte 30)
-                        (logand (1- (ash 1 30)) lin-addr)))))
-                  x86))
+                           (logand (1- (ash 1 30)) lin-addr)))))
+                x86))
 
           ;; Go to the next level of page table structure (PD, which
           ;; will reference a 2MB page or a 4K page, eventually).
           (b* ((page-directory-base-addr
-                (ash (ia32e-pdpte-pg-dirBits->pd entry) 12))
+                 (ash (ia32e-pdpte-pg-dirBits->pd entry) 12))
                ((mv flag
                     (the (unsigned-byte #.*physical-address-size*) p-addr)
                     x86)
                 (ia32e-la-to-pa-page-directory
-                 lin-addr page-directory-base-addr u/s-all r/w-all x/d-all
-                 wp smep smap ac nxe r-w-x cpl x86))
-               ((when flag)
-                ;; Error, so do not update accessed bit
-                (mv flag 0 x86))
-
-               (x86
-                (if (marking-view x86)
-                    ;; Mark A bit.
-                    (b* (
-                         ;; Get possibly updated entry --- note that
-                         ;; if PDPTE and PDE are the same entries,
-                         ;; entry would have its A and/or D flags set
-                         ;; because of the walk done in
-                         ;; ia32e-la-to-pa-page-directory.
-                         (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
-                         ;; Get accessed bit. Dirty bit is ignored when PDPTE
-                         ;; references the PD.
-                         (accessed        (mbe :logic (accessed-bit entry)
-                                               :exec (ia32e-page-tablesBits->a entry)))
-                         ;; Update accessed bit, if needed.
-                         (entry (if (equal accessed 0)
-                                    (mbe :logic (set-accessed-bit entry)
-                                         :exec (!ia32e-page-tablesBits->a 1 entry))
-                                  entry))
-                         ;; Update x86, if needed.
-                         (x86 (if (equal accessed 0)
-                                  (wm-low-64 p-entry-addr entry x86)
-                                x86)))
-                      x86)
-                  ;; Don't mark A and D bits.
-                  x86)))
-            (mv nil p-addr x86))))
+                  lin-addr page-directory-base-addr u/s-all r/w-all x/d-all
+                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+               ;; If we updated the entry, we must write it before returning
+               ;; We reread the entry because it is possible a lower level set the dirty bit on it
+               ;; This requires us to set the accessed bit again
+               (entry (rm-low-64 p-entry-addr x86))
+               (x86 (if marking-view?
+                      (b* ((accessed (mbe :logic (accessed-bit entry)
+                                          :exec (ia32e-page-tablesBits->a entry)))
+                           ((unless (equal accessed 0)) x86))
+                          (wm-low-64 p-entry-addr (set-accessed-bit entry) x86))
+                      x86))
+               ((when flag) (mv flag 0 x86)))
+              (mv nil p-addr x86))))
 
     (mv t 0 x86))
 
   ///
 
   (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-page-dir-ptr-table
-    :hyp t
-    :bound *physical-address-size*
-    :concl (mv-nth 1
-                   (ia32e-la-to-pa-page-dir-ptr-table
-                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl
-                    x86))
+                          :hyp t
+                          :bound *physical-address-size*
+                          :concl (mv-nth 1
+                                         (ia32e-la-to-pa-page-dir-ptr-table
+                                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                           wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                           x86))
 
-    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-    :otf-flg t
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
-    :gen-type t
-    :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p) (not)))))
+                          :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+                          :otf-flg t
+                          :gen-linear t
+                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
+                          :gen-type t
+                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p) (not)))))
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
-    (implies (x86p x86)
-             (x86p
-              (mv-nth 2
-                      (ia32e-la-to-pa-page-dir-ptr-table
-                       lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl
-                       x86))))
-    :hints (("Goal" :in-theory (e/d () (x86p)))))
+          (implies (x86p x86)
+                   (x86p
+                     (mv-nth 2
+                             (ia32e-la-to-pa-page-dir-ptr-table
+                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                               x86))))
+          :hints (("Goal" :in-theory (e/d () (x86p)))))
 
   (defthm xr-ia32e-la-to-pa-page-dir-ptr-table
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index
-                        (mv-nth 2
-                                (ia32e-la-to-pa-page-dir-ptr-table
-                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl
-                                 x86)))
-                    (xr fld index x86))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-page-dir-ptr-table
+                                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                        x86)))
+                          (xr fld index x86))))
 
   (defthm xr-fault-ia32e-la-to-pa-page-dir-ptr-table
-    (implies (not (mv-nth 0
-                          (ia32e-la-to-pa-page-dir-ptr-table
-                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-w-x cpl x86)))
-             (equal (xr :fault index
-                        (mv-nth 2
+          (implies (not (mv-nth 0
                                 (ia32e-la-to-pa-page-dir-ptr-table
-                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl x86)))
-                    (xr :fault index x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (force
-                                      (force)
-                                      (:definition not)
-                                      (:meta acl2::mv-nth-cons-meta))))))
+                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (equal (xr :fault index
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-page-dir-ptr-table
+                                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr :fault index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (force
+                                             (force)
+                                             (:definition not)
+                                             (:meta acl2::mv-nth-cons-meta))))))
 
   (defthm xr-and-ia32e-la-to-pa-page-dir-ptr-table-in-non-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
-                                             lin-addr
-                                             base-addr u/s-acc r/w-acc x/d-acc
-                                             wp smep smap ac nxe r-w-x cpl x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (negative-logand-to-positive-logand-with-integerp-x
-                                      bitops::logand-with-negated-bitmask)))))
+          (implies (and (not (marking-view x86))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+                                                    lin-addr
+                                                    base-addr u/s-acc r/w-acc x/d-acc
+                                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (negative-logand-to-positive-logand-with-integerp-x
+                                             bitops::logand-with-negated-bitmask)))))
 
   (defthm ia32e-la-to-pa-page-dir-ptr-table-xw-values
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault))
-                  (not (equal fld :app-view)))
-             (and (equal (mv-nth 0
-                                 (ia32e-la-to-pa-page-dir-ptr-table
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  (xw fld index value x86)))
-                         (mv-nth 0
-                                 (ia32e-la-to-pa-page-dir-ptr-table
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  x86)))
-                  (equal (mv-nth 1
-                                 (ia32e-la-to-pa-page-dir-ptr-table
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  (xw fld index value x86)))
-                         (mv-nth 1
-                                 (ia32e-la-to-pa-page-dir-ptr-table
-                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl
-                                  x86))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :app-view)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-page-dir-ptr-table
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         (xw fld index value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-page-dir-ptr-table
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-page-dir-ptr-table
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         (xw fld index value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-page-dir-ptr-table
+                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         x86))))))
 
   (defthm ia32e-la-to-pa-page-dir-ptr-table-xw-state
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault))
-                  (not (equal fld :app-view))
-                  (not (equal fld :marking-view)))
-             (equal (mv-nth 2
-                            (ia32e-la-to-pa-page-dir-ptr-table
-                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                             wp smep smap ac nxe r-w-x cpl
-                             (xw fld index value x86)))
-                    (xw fld index value
-                        (mv-nth 2
-                                (ia32e-la-to-pa-page-dir-ptr-table
-                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl
-                                 x86))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault))
+                        (not (equal fld :app-view))
+                        (not (equal fld :marking-view)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-page-dir-ptr-table
+                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                    (xw fld index value x86)))
+                          (xw fld index value
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-page-dir-ptr-table
+                                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                        x86))))))
 
   (defthm mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table-system-level-non-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
-                                  lin-addr
-                                  base-addr u/s-acc r/w-acc x/d-acc
-                                  wp smep smap ac nxe r-w-x cpl x86))))
-             (equal (mv-nth
-                     2
-                     (ia32e-la-to-pa-page-dir-ptr-table
-                      lin-addr
-                      base-addr u/s-acc r/w-acc x/d-acc
-                      wp smep smap ac nxe r-w-x cpl x86))
-                    x86)))
+          (implies (and (not (marking-view x86))
+                        (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
+                                         lin-addr
+                                         base-addr u/s-acc r/w-acc x/d-acc
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+                   (equal (mv-nth
+                            2
+                            (ia32e-la-to-pa-page-dir-ptr-table
+                              lin-addr
+                              base-addr u/s-acc r/w-acc x/d-acc
+                              wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          x86)))
 
   (defrule 64-bit-modep-of-ia32e-la-to-pa-page-dir-ptr-table
-    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
-                                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                    wp smep smap ac nxe r-w-x cpl x86)))
-           (64-bit-modep x86))
-    :enable (wm-low-32 wm-low-64))
+           (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+                                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (64-bit-modep x86))
+           :enable (wm-low-32 wm-low-64))
 
   (defrule x86-operation-mode-of-ia32e-la-to-pa-page-dir-ptr-table
-    (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
-                                          lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                          wp smep smap ac nxe r-w-x cpl x86)))
-           (x86-operation-mode x86))
-    :enable x86-operation-mode
-    :disable ia32e-la-to-pa-page-dir-ptr-table))
+           (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-page-dir-ptr-table
+                                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode
+           :disable ia32e-la-to-pa-page-dir-ptr-table)
+
+  (defthm ia32e-la-to-pa-page-dir-ptr-table-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
+                                    lin-addr entry
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
+                                                 lin-addr entry
+                                                 u/s-acc r/w-acc x/d-acc
+                                                 wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-page-dir-ptr-table-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
+                                      lin-addr entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
+                                      lin-addr-2 entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-page-dir-ptr-table-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
+                                          lin-addr entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                              (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
+                                          lin-addr-2 entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence))
 
 ;; ----------------------------------------------------------------------
 
@@ -2215,6 +2601,7 @@ accesses.</p>
    (smap      :type (unsigned-byte  1))
    (ac        :type (unsigned-byte  1))
    (nxe       :type (unsigned-byte  1))
+   (implicit-supervisor-access :type (unsigned-byte 1))
    (r-w-x     :type (member  :r :w :x))
    (cpl       :type (unsigned-byte  2))
    (x86))
@@ -2227,101 +2614,96 @@ accesses.</p>
               ;; the 40 bits wide address obtained
               ;; from the referencing PDE, shifted
               ;; left by 12.
-              (equal (loghead 12 base-addr) 0))
+              (equal (loghead 12 base-addr) 0)
+              (or (not (equal implicit-supervisor-access 1))
+                  (< cpl 3)))
 
   :guard-hints (("Goal" :in-theory (e/d ()
                                         (unsigned-byte-p
-                                         signed-byte-p
-                                         member-equal
-                                         not))))
+                                          signed-byte-p
+                                          member-equal
+                                          not))))
 
   ;; Reference: Vol. 3A, Section 4.5 (Pg. 4-22) of the Feb'14 Intel
   ;; Manual.
 
   (if (mbt (not (app-view x86)))
 
-      (b* (
+    (b* (
 
-           ;; Fix the inputs of this function without incurring execution
-           ;; overhead.
-           (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
-                          :exec lin-addr))
-           (base-addr (mbe :logic (part-install
-                                   0
-                                   (loghead *physical-address-size* base-addr)
-                                   :low 0 :width 12)
-                           :exec base-addr))
+         ;; Fix the inputs of this function without incurring execution
+         ;; overhead.
+         (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                        :exec lin-addr))
+         (base-addr (mbe :logic (part-install
+                                  0
+                                  (loghead *physical-address-size* base-addr)
+                                  :low 0 :width 12)
+                         :exec base-addr))
 
-           ;; First, we get the address of the PML4E.  A PML4E is selected
-           ;; using the physical address defined as follows:
-           ;;   Bits 51:12 are from CR3.
-           ;;   Bits 11:3 are bits 47:39 of the linear address.
-           ;;   Bits 2:0 are all 0.
-           (p-entry-addr
-            (the (unsigned-byte #.*physical-address-size*)
-              (pml4-table-entry-addr lin-addr base-addr)))
+         ;; First, we get the address of the PML4E.  A PML4E is selected
+         ;; using the physical address defined as follows:
+         ;;   Bits 51:12 are from CR3.
+         ;;   Bits 11:3 are bits 47:39 of the linear address.
+         ;;   Bits 2:0 are all 0.
+         (p-entry-addr
+           (the (unsigned-byte #.*physical-address-size*)
+                (pml4-table-entry-addr lin-addr base-addr)))
 
-           ;; Now, we can read the PML4E.
-           (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
+         ;; Now, we can read the PML4E.
+         (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
 
-           (u/s-all (mbe :logic (page-user-supervisor entry)
-                         :exec (ia32e-page-tablesBits->u/s entry)))
-           (r/w-all (mbe :logic (page-read-write entry)
-                         :exec (ia32e-page-tablesBits->r/w entry)))
-           (x/d-all (mbe :logic (page-execute-disable entry)
-                         :exec (ia32e-page-tablesBits->xd entry)))
+         (u/s-all (mbe :logic (page-user-supervisor entry)
+                       :exec (ia32e-page-tablesBits->u/s entry)))
+         (r/w-all (mbe :logic (page-read-write entry)
+                       :exec (ia32e-page-tablesBits->r/w entry)))
+         (x/d-all (mbe :logic (page-execute-disable entry)
+                       :exec (ia32e-page-tablesBits->xd entry)))
 
-           ((mv fault-flg val x86)
-            (paging-entry-no-page-fault-p
-             3 ;; structure-type
-             lin-addr entry
-             u/s-all r/w-all x/d-all
-             wp smep smap ac nxe r-w-x cpl x86))
-           ((when fault-flg)
-            (mv 'Page-Fault val x86))
+         (marking-view? (marking-view x86))
 
-           ;; No errors at this level, so we proceed with the translation.
-           ;; We go to the next level of page table structure, i.e., PDPT.
+         ((mv fault-flg val x86)
+          (paging-entry-no-page-fault-p
+            3 ;; structure-type
+            lin-addr entry
+            u/s-all r/w-all x/d-all
+            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+         ((when fault-flg)
+          ;; Even if this entry page faulted, if the entry was present,
+          ;; we must set the accessed bit
+          (b* ((x86 (if (and marking-view?
+                             (equal (mbe :logic (page-present entry)
+                                         :exec (ia32e-page-tablesBits->p entry))
+                                    1))
+                      (b* ((accessed (mbe :logic (accessed-bit entry)
+                                          :exec (ia32e-page-tablesBits->a entry)))
+                           ((unless (equal accessed 0)) x86))
+                          (wm-low-64 p-entry-addr (set-accessed-bit entry) x86))
+                      x86)))
+              (mv 'Page-Fault val x86)))
 
-           (page-dir-ptr-table-base-addr
-            (ash (ia32e-pml4eBits->pdpt entry) 12))
-           ((mv flag
-                (the (unsigned-byte #.*physical-address-size*) p-addr)
-                x86)
-            (ia32e-la-to-pa-page-dir-ptr-table
-             lin-addr page-dir-ptr-table-base-addr u/s-all r/w-all x/d-all
-             wp smep smap ac nxe r-w-x cpl
-             x86))
-           ((when flag)
-            ;; Error, so do not update accessed bit.
-            (mv flag 0 x86))
+         ;; No errors at this level, so we proceed with the translation.
+         ;; We go to the next level of page table structure, i.e., PDPT.
 
-           (x86
-            (if (marking-view x86)
-                ;; Mark A bit.
-                (b* (
-                     ;; Get possibly updated entry --- note that if
-                     ;; PML4TE and PDPTE are the same entries, entry
-                     ;; would have its A and/or D flags set because of
-                     ;; the walk done in
-                     ;; ia32e-la-to-pa-page-dir-ptr-table.
-                     (entry (the (unsigned-byte 64) (rm-low-64 p-entry-addr x86)))
-                     ;; Get accessed bit. Dirty bit is ignored when PDPTE
-                     ;; references the PDPT.
-                     (accessed        (mbe :logic (accessed-bit entry)
-                                           :exec (ia32e-page-tablesBits->a entry)))
-                     ;; Update accessed bit, if needed.
-                     (entry (if (equal accessed 0)
-                                (mbe :logic (set-accessed-bit entry)
-                                     :exec (!ia32e-page-tablesBits->a 1 entry))
-                              entry))
-                     ;; Update x86, if needed.
-                     (x86 (if (equal accessed 0)
-                              (wm-low-64 p-entry-addr entry x86)
-                            x86)))
-                  x86)
-              ;; Don't mark A and D bits.
-              x86)))
+         (page-dir-ptr-table-base-addr
+           (ash (ia32e-pml4eBits->pdpt entry) 12))
+         ((mv flag
+              (the (unsigned-byte #.*physical-address-size*) p-addr)
+              x86)
+          (ia32e-la-to-pa-page-dir-ptr-table
+            lin-addr page-dir-ptr-table-base-addr u/s-all r/w-all x/d-all
+            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+            x86))
+         ;; Whether or not the next level page faulted, we must set the accessed flag
+         ;; We reread the entry because it is possible a lower level set the dirty bit on it
+         (entry (rm-low-64 p-entry-addr x86))
+         (x86 (if marking-view?
+                (b* ((accessed (mbe :logic (accessed-bit entry)
+                                    :exec (ia32e-page-tablesBits->a entry)))
+                     ((unless (equal accessed 0)) x86))
+                    (wm-low-64 p-entry-addr (set-accessed-bit entry) x86))
+                x86))
+         ((when flag) (mv flag 0 x86)))
         (mv nil p-addr x86))
 
     (mv t 0 x86))
@@ -2329,136 +2711,170 @@ accesses.</p>
   ///
 
   (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-pml4-table
-    :hyp t
-    :bound *physical-address-size*
-    :concl (mv-nth 1
-                   (ia32e-la-to-pa-pml4-table
-                    lin-addr base-addr
-                    wp smep smap ac nxe r-w-x cpl
-                    x86))
+                          :hyp t
+                          :bound *physical-address-size*
+                          :concl (mv-nth 1
+                                         (ia32e-la-to-pa-pml4-table
+                                           lin-addr base-addr
+                                           wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                           x86))
 
-    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-    :otf-flg t
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
-    :gen-type t
-    :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p) (not)))))
+                          :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+                          :otf-flg t
+                          :gen-linear t
+                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
+                          :gen-type t
+                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p) (not)))))
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa-pml4-table
-    (implies (x86p x86)
-             (x86p
-              (mv-nth 2
-                      (ia32e-la-to-pa-pml4-table
-                       lin-addr base-addr
-                       wp smep smap ac nxe r-w-x cpl
-                       x86))))
-    :hints (("Goal" :in-theory (e/d () (x86p)))))
+          (implies (x86p x86)
+                   (x86p
+                     (mv-nth 2
+                             (ia32e-la-to-pa-pml4-table
+                               lin-addr base-addr
+                               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                               x86))))
+          :hints (("Goal" :in-theory (e/d () (x86p)))))
 
   (defthm xr-ia32e-la-to-pa-pml4-table
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index
-                        (mv-nth 2
-                                (ia32e-la-to-pa-pml4-table
-                                 lin-addr base-addr
-                                 wp smep smap ac nxe r-w-x cpl
-                                 x86)))
-                    (xr fld index x86))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-pml4-table
+                                        lin-addr base-addr
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                        x86)))
+                          (xr fld index x86))))
 
   (defthm xr-fault-ia32e-la-to-pa-pml4-table
-    (implies (not (mv-nth 0
-                          (ia32e-la-to-pa-pml4-table
-                           lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
-             (equal (xr :fault index
-                        (mv-nth 2
+          (implies (not (mv-nth 0
                                 (ia32e-la-to-pa-pml4-table
-                                 lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
-                    (xr :fault index x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (force
-                                      (force)
-                                      (:definition not)
-                                      (:meta acl2::mv-nth-cons-meta))))))
+                                  lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (equal (xr :fault index
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-pml4-table
+                                        lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr :fault index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (force
+                                             (force)
+                                             (:definition not)
+                                             (:meta acl2::mv-nth-cons-meta))))))
 
   (defthm xr-and-ia32e-la-to-pa-pml4-table-in-non-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-pml4-table
-                                             lin-addr base-addr
-                                             wp smep smap ac nxe r-w-x cpl x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (negative-logand-to-positive-logand-with-integerp-x
-                                      bitops::logand-with-negated-bitmask)))))
+          (implies (and (not (marking-view x86))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                                                    lin-addr base-addr
+                                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (negative-logand-to-positive-logand-with-integerp-x
+                                             bitops::logand-with-negated-bitmask)))))
 
   (defthm ia32e-la-to-pa-pml4-table-xw-values
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault))
-                  (not (equal fld :app-view)))
-             (and (equal (mv-nth 0
-                                 (ia32e-la-to-pa-pml4-table
-                                  lin-addr base-addr
-                                  wp smep smap ac nxe r-w-x cpl
-                                  (xw fld index value x86)))
-                         (mv-nth 0
-                                 (ia32e-la-to-pa-pml4-table
-                                  lin-addr base-addr
-                                  wp smep smap ac nxe r-w-x cpl
-                                  x86)))
-                  (equal (mv-nth 1
-                                 (ia32e-la-to-pa-pml4-table
-                                  lin-addr base-addr
-                                  wp smep smap ac nxe r-w-x cpl
-                                  (xw fld index value x86)))
-                         (mv-nth 1
-                                 (ia32e-la-to-pa-pml4-table
-                                  lin-addr base-addr
-                                  wp smep smap ac nxe r-w-x cpl
-                                  x86))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :app-view)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-pml4-table
+                                         lin-addr base-addr
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         (xw fld index value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-pml4-table
+                                         lin-addr base-addr
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-pml4-table
+                                         lin-addr base-addr
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         (xw fld index value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-pml4-table
+                                         lin-addr base-addr
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                         x86))))))
 
   (defthm ia32e-la-to-pa-pml4-table-xw-state
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault))
-                  (not (equal fld :app-view))
-                  (not (equal fld :marking-view)))
-             (equal (mv-nth 2
-                            (ia32e-la-to-pa-pml4-table
-                             lin-addr base-addr
-                             wp smep smap ac nxe r-w-x cpl
-                             (xw fld index value x86)))
-                    (xw fld index value
-                        (mv-nth 2
-                                (ia32e-la-to-pa-pml4-table
-                                 lin-addr base-addr
-                                 wp smep smap ac nxe r-w-x cpl
-                                 x86))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault))
+                        (not (equal fld :app-view))
+                        (not (equal fld :marking-view)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-pml4-table
+                                    lin-addr base-addr
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                    (xw fld index value x86)))
+                          (xw fld index value
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-pml4-table
+                                        lin-addr base-addr
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                        x86))))))
 
   (defthm mv-nth-2-ia32e-la-to-pa-pml4-table-system-level-non-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
-                                  lin-addr base-addr
-                                  wp smep smap ac nxe r-w-x cpl x86))))
-             (equal (mv-nth
-                     2
-                     (ia32e-la-to-pa-pml4-table
-                      lin-addr base-addr
-                      wp smep smap ac nxe r-w-x cpl x86))
-                    x86)))
+          (implies (and (not (marking-view x86))
+                        (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
+                                         lin-addr base-addr
+                                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+                   (equal (mv-nth
+                            2
+                            (ia32e-la-to-pa-pml4-table
+                              lin-addr base-addr
+                              wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          x86)))
 
   (defrule 64-bit-modep-of-ia32e-la-to-pa-pml4-table
-    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-pml4-table
-                                    lin-addr base-addr
-                                    wp smep smap ac nxe r-w-x cpl x86)))
-           (64-bit-modep x86))
-    :enable (wm-low-32 wm-low-64))
+           (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                                            lin-addr base-addr
+                                            wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (64-bit-modep x86))
+           :enable (wm-low-32 wm-low-64))
 
   (defrule x86-operation-mode-of-ia32e-la-to-pa-pml4-table
-    (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-pml4-table
-                                          lin-addr base-addr
-                                          wp smep smap ac nxe r-w-x cpl x86)))
-           (x86-operation-mode x86))
-    :enable x86-operation-mode
-    :disable ia32e-la-to-pa-pml4-table))
+           (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-pml4-table
+                                                  lin-addr ase-addr
+                                                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode
+           :disable ia32e-la-to-pa-pml4-table)
+
+  (defthm ia32e-la-to-pa-pml4-table-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
+                                    lin-addr ase-addr
+                                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-pml4-table
+                                                 lin-addr ase-addr
+                                                 wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-pml4-table-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-pml4-table
+                                      lin-addr ase-addr
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          (mv-nth 0 (ia32e-la-to-pa-pml4-table
+                                      lin-addr-2 ase-addr
+                                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                   :use ((:instance logexting-maintains-same-page
+                                    (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-pml4-table-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-pml4-table
+                                          lin-addr ase-addr
+                                          wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                              (mv-nth 1 (ia32e-la-to-pa-pml4-table
+                                          lin-addr-2 ase-addr
+                                          wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence))
 
 ;; ----------------------------------------------------------------------
 
@@ -2466,6 +2882,435 @@ accesses.</p>
   (the (unsigned-byte 2)
        (segment-selectorBits->rpl
         (the (unsigned-byte 16) (seg-visiblei #.*cs* x86)))))
+
+(define ia32e-la-to-pa-without-tlb-internal
+  ((lin-addr :type (signed-byte   #.*max-linear-address-size*))
+   (wp        :type (unsigned-byte  1))
+   (smep      :type (unsigned-byte  1))
+   (smap      :type (unsigned-byte  1))
+   (ac        :type (unsigned-byte  1))
+   (nxe       :type (unsigned-byte  1))
+   (implicit-supervisor-access :type (unsigned-byte 1))
+   (r-w-x     :type (member  :r :w :x))
+   (cpl       :type (unsigned-byte  2))
+   (x86))
+
+  :parents (ia32e-paging)
+
+  :guard (and (not (app-view x86))
+              (canonical-address-p lin-addr)
+              (or (not (equal implicit-supervisor-access 1))
+                  (< cpl 3)))
+
+  :guard-hints (("Goal" :in-theory (e/d (acl2::bool->bit bitops::logsquash)
+                                        (unsigned-byte-p
+                                          signed-byte-p
+                                          bitops::logand-with-negated-bitmask
+                                          member-equal
+                                          not))))
+
+  ;; If lin-addr is not canonical, we should throw a general
+  ;; protection exception (#GP(0)).  (Or a stack fault (#SS) as
+  ;; appropriate?)
+
+  (if (mbt (not (app-view x86)))
+
+    (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                        :exec lin-addr))
+         (r-w-x (mbe :logic (if (member r-w-x '(:r :w :x))
+                              r-w-x
+                              :r)
+                     :exec r-w-x))
+         (cr3       (ctri *cr3* x86))
+         (pml4-table-base-addr
+           (mbe
+             :logic
+             (ash (cr3Bits->pdb cr3) 12)
+             :exec
+             (the (unsigned-byte 52)
+                  (ash (the (unsigned-byte 40) (cr3Bits->pdb cr3)) 12))))
+         ((mv flg phys-addr x86)
+          (ia32e-la-to-pa-pml4-table lin-addr pml4-table-base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+         ((when flg) (mv t 0 x86)))
+        (mv flg phys-addr x86))
+
+    (mv t 0 x86))
+
+  ///
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-in-non-app-view
+          (implies (xr :app-view nil x86)
+                   (equal (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)
+                          (mv t 0 x86))))
+
+  (local (defthm unsigned-byte-p-logapp
+                 (implies (and (natp j)
+                               (unsigned-byte-p i x)
+                               (integerp y))
+                          (unsigned-byte-p (+ i j) (logapp j y x)))))
+
+  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-without-tlb-internal
+                          :hyp t
+                          :bound *physical-address-size*
+                          :concl (mv-nth 1 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+
+                          :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p))))
+                          :otf-flg t
+                          :gen-linear t
+                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) (force (force)))))
+                          :gen-type t
+                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p)
+                                                            (force (force) not)))))
+
+  (defthm x86p-mv-nth-2-ia32e-la-to-pa-without-tlb-internal
+          (implies (x86p x86)
+                   (x86p (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (e/d () (x86p)))))
+
+  (defthm xr-ia32e-la-to-pa-without-tlb-internal
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm xr-fault-ia32e-la-to-pa-without-tlb-internal
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr :fault index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (force
+                                             (force)
+                                             (:definition not)
+                                             (:meta acl2::mv-nth-cons-meta))))))
+
+  (defthm xr-and-ia32e-la-to-pa-without-tlb-internal-in-non-marking-view
+          (implies (and (not (marking-view x86))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-xw-values
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                                                   (xw fld index value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                                       (xw fld index value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-xw-rflags-not-ac
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags x86)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                                       (xw :rflags nil value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                                       (xw :rflags nil value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))))
+          :hints (("Goal" :in-theory (e/d (rflagsbits->ac rflagsbits-fix) ()))))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-xw-state
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :fault))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view))
+                        (not (equal fld :marking-view)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                                  (xw fld index value x86)))
+                          (xw fld index value
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                                      x86)))))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-xw-rflags-state-not-ac
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags x86)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                                                  (xw :rflags nil value x86)))
+                          (xw :rflags nil value
+                              (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))))
+          :hints (("Goal" :in-theory (e/d* (rflagsBits->ac rflagsbits-fix) (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                          (mv-nth 0 (ia32e-la-to-pa-without-tlb-internal lin-addr-2 wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                   :use ((:instance logexting-maintains-same-page
+                                    (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                              (mv-nth 1 (ia32e-la-to-pa-without-tlb-internal lin-addr-2 wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm mv-nth-2-ia32e-la-to-pa-without-tlb-internal-system-level-non-marking-view
+    (implies (and (not (marking-view x86))
+                  (not (mv-nth 0 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
+             (equal (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+                    x86))
+    :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-without-tlb-internal) (force (force))))))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-without-tlb-internal
+           (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (64-bit-modep x86))
+           :enable (64-bit-modep)
+           :disable (force (force)))
+
+  (defrule x86-operation-mode-of-ia32e-la-to-pa-without-tlb-internal
+           (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode
+           :disable ia32e-la-to-pa-without-tlb-internal)
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-fixes-address
+          (equal (ia32e-la-to-pa-without-tlb-internal (logext 48 lin-addr) wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)
+                 (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+
+  (defthm ia32e-la-to-pa-without-tlb-internal-fixes-perm
+          (implies (not (member-p r-w-x '(:r :w :x)))
+                   (equal (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)
+                          (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access :r cpl x86)))))
+
+;; This isn't used in execution, but it's useful for reasoning
+(define ia32e-la-to-pa-without-tlb
+  ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
+             "Canonical linear address to be mapped to a physical address")
+   (r-w-x     :type (member  :r :w :x)
+              "Indicates whether this translation is on the behalf of a read, write, or instruction fetch")
+   (x86 "x86 state"))
+  :parents (ia32e-paging)
+
+  :guard-hints (("Goal" :in-theory (enable segment-selectorBits->rpl)))
+  :guard (and (not (app-view x86))
+              (canonical-address-p lin-addr))
+  (if (mbt (not (app-view x86)))
+
+    (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                        :exec lin-addr))
+         (r-w-x (mbe :logic (if (member r-w-x '(:r :w :x)) r-w-x :r)
+                     :exec r-w-x))
+         (implicit-supervisor-access (implicit-supervisor-access x86))
+         (cr0
+           ;; CR0 is still a 32-bit register in 64-bit mode.
+           (n32 (ctri *cr0* x86)))
+         (cr4
+           ;; CR4 has all but the low 22 bits reserved.
+           (n22 (ctri *cr4* x86)))
+         ;; Current privilege level (0-3), obtained from the CS segment selector [1:0]
+         (cpl (the (unsigned-byte  2) (if implicit-supervisor-access
+                                        0
+                                        (cpl x86))))
+         (implicit-supervisor-access (the (unsigned-byte 1)
+                                          (if implicit-supervisor-access 1 0)))
+         ;; ia32-efer has all but the low 12 bits reserved.
+         (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
+         (wp        (cr0Bits->wp cr0))
+         (smep      (cr4Bits->smep cr4))
+         (smap      (cr4Bits->smap cr4))
+         (ac        (rflagsBits->ac (rflags x86)))
+         (nxe       (ia32_eferBits->nxe ia32-efer)))
+        (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
+
+    (mv t 0 x86))
+  ///
+  (defthm ia32e-la-to-pa-without-tlb-in-non-app-view
+          (implies (xr :app-view nil x86)
+                   (equal (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)
+                          (mv t 0 x86))))
+
+  (local (defthm unsigned-byte-p-logapp
+                 (implies (and (natp j)
+                               (unsigned-byte-p i x)
+                               (integerp y))
+                          (unsigned-byte-p (+ i j) (logapp j y x)))))
+
+  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-without-tlb
+                          :hyp t
+                          :bound *physical-address-size*
+                          :concl (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+
+                          :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p))))
+                          :otf-flg t
+                          :gen-linear t
+                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) (force (force)))))
+                          :gen-type t
+                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p)
+                                                            (force (force) not)))))
+
+  (defthm x86p-mv-nth-2-ia32e-la-to-pa-without-tlb
+          (implies (x86p x86)
+                   (x86p (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
+          :hints (("Goal" :in-theory (e/d () (x86p)))))
+
+  (defthm xr-ia32e-la-to-pa-without-tlb
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm xr-fault-ia32e-la-to-pa-without-tlb
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                   (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                          (xr :fault index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (force
+                                             (force)
+                                             (:definition not)
+                                             (:meta acl2::mv-nth-cons-meta))))))
+
+  (defthm xr-and-ia32e-la-to-pa-without-tlb-in-non-marking-view
+          (implies (and (not (marking-view x86))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-xw-values
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view))
+                        (not (equal fld :implicit-supervisor-access)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                       (xw fld index value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                       (xw fld index value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-xw-rflags-not-ac
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags x86)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                       (xw :rflags nil value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                       (xw :rflags nil value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))))
+          :hints (("Goal" :in-theory (e/d (rflagsbits->ac rflagsbits-fix) ()))))
+
+  (defthm ia32e-la-to-pa-without-tlb-xw-state
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :fault))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view))
+                        (not (equal fld :marking-view))
+                        (not (equal fld :implicit-supervisor-access)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                  (xw fld index value x86)))
+                          (xw fld index value
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                      x86)))))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-xw-rflags-state-not-ac
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags x86)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                  (xw :rflags nil value x86)))
+                          (xw :rflags nil value
+                              (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))))
+          :hints (("Goal" :in-theory (e/d* (rflagsBits->ac rflagsbits-fix) (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-without-tlb-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                          (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr-2 r-w-x x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                   :use ((:instance logexting-maintains-same-page
+                                    (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-without-tlb-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                              (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr-2 r-w-x x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm mv-nth-2-ia32e-la-to-pa-without-tlb-system-level-non-marking-view
+    (implies (and (not (marking-view x86))
+                  (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
+             (equal (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                    x86))
+    :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-without-tlb) (force (force))))))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-without-tlb
+           (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                  (64-bit-modep x86))
+           :enable (64-bit-modep)
+           :disable (force (force)))
+
+  (defrule x86-operation-mode-of-ia32e-la-to-pa-without-tlb
+           (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode
+           :disable ia32e-la-to-pa-without-tlb)
+
+  (defthm ia32e-la-to-pa-without-tlb-fixes-address
+          (equal (ia32e-la-to-pa-without-tlb (logext 48 lin-addr) r-w-x x86)
+                 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+
+  (defthm ia32e-la-to-pa-without-tlb-fixes-perm
+          (implies (not (member-p r-w-x '(:r :w :x)))
+                   (equal (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)
+                          (ia32e-la-to-pa-without-tlb lin-addr :r x86)))))
 
 (define ia32e-la-to-pa
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
@@ -2479,12 +3324,13 @@ accesses.</p>
   :guard (and (not (app-view x86))
               (canonical-address-p lin-addr))
 
-  :guard-hints (("Goal" :in-theory (e/d (acl2::bool->bit)
+  :guard-hints (("Goal" :in-theory (e/d (acl2::bool->bit bitops::logsquash segment-selectorbits->rpl
+                                         ia32e-la-to-pa-without-tlb logapp-is-logapp-inline)
                                         (unsigned-byte-p
-                                         signed-byte-p
-                                         member-equal
-                                         not))))
-
+                                          signed-byte-p
+                                          bitops::logand-with-negated-bitmask
+                                          member-equal
+                                          not))))
 
   ;; If lin-addr is not canonical, we should throw a general
   ;; protection exception (#GP(0)).  (Or a stack fault (#SS) as
@@ -2492,181 +3338,224 @@ accesses.</p>
 
   (if (mbt (not (app-view x86)))
 
-      (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
-                          :exec lin-addr))
-           (cr0
-            ;; CR0 is still a 32-bit register in 64-bit mode.
-            (n32 (ctri *cr0* x86)))
-           (cr4
-            ;; CR4 has all but the low 22 bits reserved.
-            (n22 (ctri *cr4* x86)))
-           ;; Current privilege level (0-3), obtained from the CS segment selector [1:0]
-           (cpl (the (unsigned-byte  2) (cpl x86)))
-           ;; ia32-efer has all but the low 12 bits reserved.
-           (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
-           (wp        (cr0Bits->wp cr0))
-           (smep      (cr4Bits->smep cr4))
-           (smap      (cr4Bits->smap cr4))
-           (ac        (rflagsBits->ac (rflags x86)))
-           (nxe       (ia32_eferBits->nxe ia32-efer))
-           (cr3       (ctri *cr3* x86))
-           (pml4-table-base-addr
-            (mbe
-             :logic
-             (ash (cr3Bits->pdb cr3) 12)
-             :exec
-             (the (unsigned-byte 52)
-               (ash (the (unsigned-byte 40) (cr3Bits->pdb cr3)) 12)))))
-        (ia32e-la-to-pa-pml4-table lin-addr pml4-table-base-addr wp smep smap ac nxe r-w-x cpl x86))
+    (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                        :exec lin-addr))
+         (r-w-x (mbe :logic (if (member r-w-x '(:r :w :x)) r-w-x :r)
+                     :exec r-w-x))
+         (implicit-supervisor-access (implicit-supervisor-access x86))
+         (cr0
+           ;; CR0 is still a 32-bit register in 64-bit mode.
+           (n32 (ctri *cr0* x86)))
+         (cr4
+           ;; CR4 has all but the low 22 bits reserved.
+           (n22 (ctri *cr4* x86)))
+         ;; Current privilege level (0-3), obtained from the CS segment selector [1:0]
+         (cpl (the (unsigned-byte  2) (if implicit-supervisor-access
+                                        0
+                                        (cpl x86))))
+         (implicit-supervisor-access (the (unsigned-byte 1)
+                                          (if implicit-supervisor-access 1 0)))
+         ;; ia32-efer has all but the low 12 bits reserved.
+         (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
+         (wp        (cr0Bits->wp cr0))
+         (smep      (cr4Bits->smep cr4))
+         (smap      (cr4Bits->smap cr4))
+         (ac        (rflagsBits->ac (rflags x86)))
+         (nxe       (ia32_eferBits->nxe ia32-efer))
+         (vpn (logtail 12 (loghead #.*max-linear-address-size* lin-addr)))
+         (tlb (tlb x86))
+
+         (tlb-key (make-tlb-key-fast :vpn vpn
+                                     :r-w-x (case r-w-x
+                                              (:r 0)
+                                              (:w 1)
+                                              (:x 2))
+                                     :wp wp
+                                     :smep smep
+                                     :smap smap
+                                     :ac ac
+                                     :nxe nxe
+                                     :implicit-supervisor-access implicit-supervisor-access
+                                     :cpl cpl))
+         (tlb-entry (cdr (hons-get tlb-key tlb)))
+         ((when tlb-entry) (mv nil 
+                               (mbe :logic (logapp 12 lin-addr tlb-entry)
+                                    :exec (the (unsigned-byte 52)
+                                               (logapp-inline 12 lin-addr
+                                                              (the (unsigned-byte 40) tlb-entry))))
+                               x86))
+
+         ;; We didn't find a valid tlb entry
+         ((mv flg phys-addr x86) (mbe :exec (ia32e-la-to-pa-without-tlb-internal lin-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)
+                                      :logic (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+         ((when flg) (mv flg phys-addr x86))
+         (ppn (logtail 12 phys-addr))
+         (x86 (!tlb (hons-acons tlb-key ppn tlb) x86)))
+        (mv flg phys-addr x86))
 
     (mv t 0 x86))
 
   ///
 
-  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa
-    :hyp t
-    :bound *physical-address-size*
-    :concl (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
+  (local (defthm unsigned-byte-p-logapp
+                 (implies (and (natp j)
+                               (unsigned-byte-p i x)
+                               (integerp y))
+                          (unsigned-byte-p (+ i j) (logapp j y x)))))
 
-    :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p))))
-    :otf-flg t
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) (force (force)))))
-    :gen-type t
-    :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                      (force (force) not)))))
+  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa
+                          :hyp t
+                          :bound *physical-address-size*
+                          :concl (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
+
+                          :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p))))
+                          :otf-flg t
+                          :gen-linear t
+                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) (force (force)))))
+                          :gen-type t
+                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p)
+                                                            (force (force) not)))))
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa
-    (implies (x86p x86)
-             (x86p (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))))
-    :hints (("Goal" :in-theory (e/d () (x86p)))))
+          (implies (x86p x86)
+                   (x86p (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))))
+          :hints (("Goal" :in-theory (e/d () (x86p)))))
 
   (defthm xr-ia32e-la-to-pa
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault))
+                        (not (equal fld :tlb)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
   (defthm xr-fault-ia32e-la-to-pa
-    (implies (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
-             (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
-                    (xr :fault index x86)))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (force
-                                      (force)
-                                      (:definition not)
-                                      (:meta acl2::mv-nth-cons-meta))))))
+          (implies (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                   (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                          (xr :fault index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (force
+                                             (force)
+                                             (:definition not)
+                                             (:meta acl2::mv-nth-cons-meta))))))
 
   (defthm xr-and-ia32e-la-to-pa-in-non-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (equal fld :fault)))
-             (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+          (implies (and (not (marking-view x86))
+                        (not (equal fld :fault))
+                        (not (equal fld :tlb)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
   (defthm ia32e-la-to-pa-xw-values
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :rflags))
-                  (not (equal fld :fault))
-                  (not (equal fld :ctr))
-                  (not (equal fld :msr))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :app-view)))
-             (and (equal (mv-nth 0
-                                 (ia32e-la-to-pa lin-addr r-w-x
-                                                 (xw fld index value x86)))
-                         (mv-nth 0
-                                 (ia32e-la-to-pa lin-addr r-w-x x86)))
-                  (equal (mv-nth 1
-                                 (ia32e-la-to-pa lin-addr r-w-x
-                                                 (xw fld index value x86)))
-                         (mv-nth 1
-                                 (ia32e-la-to-pa lin-addr r-w-x x86))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :fault))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view))
+                        (not (equal fld :tlb))
+                        (not (equal fld :implicit-supervisor-access)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa lin-addr r-w-x
+                                                       (xw fld index value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa lin-addr r-w-x x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa lin-addr r-w-x
+                                                       (xw fld index value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa lin-addr r-w-x x86))))))
 
   (defthm ia32e-la-to-pa-xw-rflags-not-ac
-    (implies (equal (rflagsBits->ac value)
-                    (rflagsBits->ac (rflags x86)))
-             (and (equal (mv-nth 0
-                                 (ia32e-la-to-pa lin-addr r-w-x
-                                                 (xw :rflags nil value x86)))
-                         (mv-nth 0
-                                 (ia32e-la-to-pa lin-addr r-w-x x86)))
-                  (equal (mv-nth 1
-                                 (ia32e-la-to-pa lin-addr r-w-x
-                                                 (xw :rflags nil value x86)))
-                         (mv-nth 1
-                                 (ia32e-la-to-pa lin-addr r-w-x x86)))))
-    :hints (("Goal" :in-theory (e/d (rflagsbits->ac rflagsbits-fix) ()))))
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags x86)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa lin-addr r-w-x
+                                                       (xw :rflags nil value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa lin-addr r-w-x x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa lin-addr r-w-x
+                                                       (xw :rflags nil value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa lin-addr r-w-x x86)))))
+          :hints (("Goal" :in-theory (e/d (rflagsbits->ac rflagsbits-fix) ()))))
 
   (defthm ia32e-la-to-pa-xw-state
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :rflags))
-                  (not (equal fld :fault))
-                  (not (equal fld :ctr))
-                  (not (equal fld :msr))
-                  (not (equal fld :seg-visible))
-                  (not (equal fld :app-view))
-                  (not (equal fld :marking-view)))
-             (equal (mv-nth 2
-                            (ia32e-la-to-pa lin-addr r-w-x
-                                            (xw fld index value x86)))
-                    (xw fld index value
-                        (mv-nth 2
-                                (ia32e-la-to-pa lin-addr r-w-x
-                                                x86)))))
-    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :fault))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view))
+                        (not (equal fld :marking-view))
+                        (not (equal fld :tlb))
+                        (not (equal fld :implicit-supervisor-access)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa lin-addr r-w-x
+                                                  (xw fld index value x86)))
+                          (xw fld index value
+                              (mv-nth 2
+                                      (ia32e-la-to-pa lin-addr r-w-x
+                                                      x86)))))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
   (defthm ia32e-la-to-pa-xw-rflags-state-not-ac
-    (implies (equal (rflagsBits->ac value)
-                    (rflagsBits->ac (rflags x86)))
-             (equal (mv-nth 2
-                            (ia32e-la-to-pa lin-addr r-w-x
-                                            (xw :rflags nil value x86)))
-                    (xw :rflags nil value
-                        (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))))
-    :hints (("Goal" :in-theory (e/d* (rflagsBits->ac rflagsbits-fix) (force (force))))))
-
-  (defthm mv-nth-2-ia32e-la-to-pa-system-level-non-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))))
-             (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-                    x86))
-    :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) (force (force))))))
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags x86)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa lin-addr r-w-x
+                                                  (xw :rflags nil value x86)))
+                          (xw :rflags nil value
+                              (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))))
+          :hints (("Goal" :in-theory (e/d* (rflagsBits->ac rflagsbits-fix) (force (force))))))
 
   (defrule 64-bit-modep-of-ia32e-la-to-pa
-    (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
-           (64-bit-modep x86))
-    :enable (64-bit-modep)
-    :disable (force (force)))
+           (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                  (64-bit-modep x86))
+           :enable (64-bit-modep)
+           :disable (force (force)))
 
   (defrule x86-operation-mode-of-ia32e-la-to-pa
-    (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
-           (x86-operation-mode x86))
-    :enable x86-operation-mode
-    :disable ia32e-la-to-pa))
+           (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode
+           :disable ia32e-la-to-pa)
+
+  (defthm ia32e-la-to-pa-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))
+                          (mv-nth 0 (ia32e-la-to-pa lin-addr-2 r-w-x x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                   :use ((:instance logexting-maintains-same-page
+                                    (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
+                              (mv-nth 1 (ia32e-la-to-pa lin-addr-2 r-w-x x86))))
+          :hints (("Goal" :in-theory (e/d () (logexting-maintains-same-page))
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthmd ia32e-la-to-pa-fixes-address
+           (implies (not (canonical-address-p lin-addr))
+                    (equal (ia32e-la-to-pa lin-addr r-w-x x86)
+                           (ia32e-la-to-pa (logext 48 lin-addr) r-w-x x86))))
+
+  (defthm ia32e-la-to-pa-fixes-perm
+          (implies (not (member-p r-w-x '(:r :w :x)))
+            (equal (ia32e-la-to-pa lin-addr r-w-x x86)
+                   (ia32e-la-to-pa lin-addr :r x86)))))
+
+(in-theory (enable ia32e-la-to-pa-without-tlb-internal))
 
 ;; ======================================================================
-
-(local
- (defthm loghead-equality-monotone
-   (implies (and
-             ;; Here's a dumb bind-free, but hey, it works for my
-             ;; purpose!  I can make a nicer rule in the future or I
-             ;; can simply be lazy and add to the bind-free.
-             (bind-free (list (list (cons 'n ''12))
-                              (list (cons 'n ''21))
-                              (list (cons 'n ''30)))
-                        (n))
-             (equal (loghead n x) 0)
-             (natp n)
-             (natp m)
-             (natp x)
-             (<= m n))
-            (equal (loghead m x) 0))
-   :hints (("Goal" :in-theory
-            (e/d* (acl2::loghead** acl2::ihsext-inductions)
-                  ())))))
 
 (defthm page-table-lower-12-bits
   (implies (and (natp n)
@@ -2675,14 +3564,14 @@ accesses.</p>
                       0
                       (ia32e-la-to-pa-page-table
                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl
+                       wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                        x86))))
            (equal
             (loghead n
                      (mv-nth 1
                              (ia32e-la-to-pa-page-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-w-x cpl
+                              wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                               x86)))
             (loghead n lin-addr)))
   :hints
@@ -2696,12 +3585,12 @@ accesses.</p>
                 (not (equal (loghead n
                                      (mv-nth 1 (ia32e-la-to-pa-page-table
                                                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                                wp smep smap ac nxe r-w-x cpl
+                                                wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                                                 x86)))
                             (loghead n lin-addr))))
            (mv-nth 0 (ia32e-la-to-pa-page-table
                       lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                      wp smep smap ac nxe r-w-x cpl
+                      wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                       x86)))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-page-table)
                                   (unsigned-byte-p)))))
@@ -2713,14 +3602,14 @@ accesses.</p>
                  0
                  (ia32e-la-to-pa-page-table
                   lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                  wp smep smap ac nxe r-w-x cpl
+                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                   x86)))
            (equal
             (loghead n
                      (mv-nth 1
                              (ia32e-la-to-pa-page-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-w-x cpl
+                              wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                               x86)))
             0))
   :hints
@@ -2753,7 +3642,7 @@ accesses.</p>
                       0
                       (ia32e-la-to-pa-page-directory
                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl
+                       wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                        x86))))
            (equal
             (loghead n
@@ -2761,7 +3650,7 @@ accesses.</p>
                       1
                       (ia32e-la-to-pa-page-directory
                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl
+                       wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                        x86)))
             (loghead n lin-addr)))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-page-directory)
@@ -2776,14 +3665,14 @@ accesses.</p>
                                 1
                                 (ia32e-la-to-pa-page-directory
                                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                 wp smep smap ac nxe r-w-x cpl
+                                 wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                                  x86)))
                       (loghead n lin-addr))))
            (mv-nth
             0
             (ia32e-la-to-pa-page-directory
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
-             wp smep smap ac nxe r-w-x cpl
+             wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
              x86)))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-page-directory)
                                   (unsigned-byte-p)))))
@@ -2795,7 +3684,7 @@ accesses.</p>
                  0
                  (ia32e-la-to-pa-page-directory
                   lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                  wp smep smap ac nxe r-w-x cpl
+                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                   x86)))
            (equal
             (loghead n
@@ -2803,7 +3692,7 @@ accesses.</p>
                       1
                       (ia32e-la-to-pa-page-directory
                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl
+                       wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                        x86)))
             0))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-page-directory)
@@ -2816,7 +3705,7 @@ accesses.</p>
                       0
                       (ia32e-la-to-pa-page-dir-ptr-table
                        lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl
+                       wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                        x86))))
            (equal
             (loghead
@@ -2825,7 +3714,7 @@ accesses.</p>
               1
               (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                x86)))
             (loghead n lin-addr)))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
@@ -2844,14 +3733,14 @@ accesses.</p>
                         1
                         (ia32e-la-to-pa-page-dir-ptr-table
                          lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                         wp smep smap ac nxe r-w-x cpl
+                         wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                          x86)))
                       (loghead n lin-addr))))
            (mv-nth
             0
             (ia32e-la-to-pa-page-dir-ptr-table
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
-             wp smep smap ac nxe r-w-x cpl
+             wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
              x86)))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
                                   (unsigned-byte-p
@@ -2866,7 +3755,7 @@ accesses.</p>
                  0
                  (ia32e-la-to-pa-page-dir-ptr-table
                   lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                  wp smep smap ac nxe r-w-x cpl
+                  wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                   x86)))
            (equal
             (loghead
@@ -2875,7 +3764,7 @@ accesses.</p>
               1
               (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
                x86)))
             0))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
@@ -2890,17 +3779,21 @@ accesses.</p>
                 (not (mv-nth
                       0
                       (ia32e-la-to-pa-pml4-table
-                       lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86))))
+                       lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
            (equal
             (loghead
              n
              (mv-nth
               1
               (ia32e-la-to-pa-pml4-table
-               lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
+               lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
             (loghead n lin-addr)))
-  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-pml4-table)
-                                  (unsigned-byte-p)))))
+  :hints (("Goal" :do-not '(preprocess) ;; Preprocessing seems to make this theorem weirdly slow for some reason
+           :in-theory (e/d (ia32e-la-to-pa-pml4-table)
+                           (unsigned-byte-p
+                             acl2::loghead-identity
+                             unsigned-byte-p-when-ia32_eferbits-p
+                             unsigned-byte-p-when-12bits-p)))))
 
 (defthm pml4-lower-12-bits-error
   (implies (and (natp n)
@@ -2911,14 +3804,18 @@ accesses.</p>
                        (mv-nth
                         1
                         (ia32e-la-to-pa-pml4-table
-                         lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
+                         lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
                       (loghead n lin-addr))))
            (mv-nth
             0
             (ia32e-la-to-pa-pml4-table
-             lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
-  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-pml4-table)
-                                  (unsigned-byte-p)))))
+             lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
+  :hints (("Goal" :do-not '(preprocess) ;; Preprocessing seems to make this theorem weirdly slow for some reason
+           :in-theory (e/d (ia32e-la-to-pa-pml4-table)
+                           (unsigned-byte-p
+                             acl2::loghead-identity
+                             unsigned-byte-p-when-ia32_eferbits-p
+                             unsigned-byte-p-when-12bits-p)))))
 
 (defthm pml4-lower-12-bits-value-of-address-when-error
   (implies (and (natp n)
@@ -2926,17 +3823,21 @@ accesses.</p>
                 (mv-nth
                  0
                  (ia32e-la-to-pa-pml4-table
-                  lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
+                  lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
            (equal
             (loghead
              n
              (mv-nth
               1
               (ia32e-la-to-pa-pml4-table
-               lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
+               lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
             0))
-  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-pml4-table)
-                                  (unsigned-byte-p)))))
+  :hints (("Goal" :do-not '(preprocess) ;; Preprocessing seems to make this theorem weirdly slow for some reason
+           :in-theory (e/d (ia32e-la-to-pa-pml4-table)
+                           (unsigned-byte-p
+                             acl2::loghead-identity
+                             unsigned-byte-p-when-ia32_eferbits-p
+                             unsigned-byte-p-when-12bits-p)))))
 
 (defthm ia32e-la-to-pa-lower-12-bits
   (implies (and (natp n)
@@ -2962,11 +3863,20 @@ accesses.</p>
                         (loghead n lin-addr))))
            (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa)
-                                  (loghead-equality-monotone
-                                   acl2::loghead-identity
+                                  (acl2::loghead-identity
                                    unsigned-byte-p
                                    signed-byte-p
                                    force (force))))))
+
+(defthmd ia32e-la-to-pa-without-tlb-lower-12-bits-value-of-address-when-error
+  (implies (and (natp n)
+                (<= n 12)
+                (x86p x86)
+                (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+           (equal
+            (loghead n (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+            0))
+  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-without-tlb) ()))))
 
 (defthmd ia32e-la-to-pa-lower-12-bits-value-of-address-when-error
   (implies (and (natp n)
@@ -2976,7 +3886,7 @@ accesses.</p>
            (equal
             (loghead n (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))
             0))
-  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) ()))))
+  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa ia32e-la-to-pa-without-tlb-lower-12-bits-value-of-address-when-error) ()))))
 
 (defrulel ia32e-la-to-pa-lower-12-bits-alt
   ;; This local rule helps in the proof of
@@ -3044,8 +3954,7 @@ accesses.</p>
   :hints
   (("Goal" :in-theory
     (e/d* (acl2::ihsext-inductions acl2::ihsext-recursive-redefs)
-          (loghead-equality-monotone
-           acl2::loghead-identity
+          (acl2::loghead-identity
            unsigned-byte-p**))))
   :rule-classes :forward-chaining)
 
@@ -3060,8 +3969,7 @@ accesses.</p>
            :in-theory
            (e/d*
             (acl2::ihsext-inductions acl2::ihsext-recursive-redefs)
-            (loghead-equality-monotone
-             acl2::loghead-identity
+            (acl2::loghead-identity
              unsigned-byte-p**))))
   :rule-classes nil)
 

@@ -4,6 +4,8 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) August 2023 - May 2024, Yahya Sohail
+; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +37,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 (include-book "common-paging-lemmas" :ttags :all)
@@ -569,7 +573,7 @@
      (not (mv-nth 0
                   (ia32e-la-to-pa-page-table
                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                   wp smep smap ac nxe r-w-x cpl x86))))
+                   wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))))
     (canonical-address-p lin-addr)
     (physical-address-p base-addr)
     (equal (loghead 12 base-addr) 0)
@@ -578,7 +582,7 @@
            2
            (ia32e-la-to-pa-page-table
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-            wp smep smap ac nxe r-w-x cpl x86))
+            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
           (if (or (xr :app-view nil x86)
                   (not (xr :marking-view nil x86)))
               x86
@@ -599,7 +603,7 @@
    (and (mv-nth 0
                 (ia32e-la-to-pa-page-table
                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                 wp smep smap ac nxe r-w-x cpl x86))
+                 wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
         (disjoint-p (list index)
                     (open-qword-paddr-list
                      (xlate-governing-qword-addresses-for-page-table
@@ -611,13 +615,13 @@
            2
            (ia32e-la-to-pa-page-table
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-            wp smep smap ac nxe r-w-x cpl (xw :mem index val x86)))
+            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (xw :mem index val x86)))
           (xw :mem index val
               (mv-nth
                2
                (ia32e-la-to-pa-page-table
                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                wp smep smap ac nxe r-w-x cpl x86)))))
+                wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-table
                                     xlate-governing-qword-addresses-for-page-table)
                                    (bitops::logand-with-negated-bitmask
@@ -638,7 +642,7 @@
      (not (mv-nth 0
                   (ia32e-la-to-pa-page-directory
                    lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                   wp smep smap ac nxe r-w-x cpl x86)))
+                   wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
      (canonical-address-p lin-addr)
      (physical-address-p base-addr)
      (equal (loghead 12 base-addr) 0)
@@ -647,7 +651,7 @@
             2
             (ia32e-la-to-pa-page-directory
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
-             wp smep smap ac nxe r-w-x cpl x86))
+             wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
            (if (or (xr :app-view nil x86)
                    (not (xr :marking-view nil x86)))
                x86
@@ -676,7 +680,7 @@
               (ia32e-la-to-pa-page-directory
                lin-addr
                base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86)))
+               wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
      (canonical-address-p lin-addr)
      (physical-address-p base-addr)
      (equal (loghead 12 base-addr) 0)
@@ -685,7 +689,7 @@
             2
             (ia32e-la-to-pa-page-directory
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
-             wp smep smap ac nxe r-w-x cpl x86))
+             wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
            (if (or (xr :app-view nil x86)
                    (not (xr :marking-view nil x86)))
                x86
@@ -712,7 +716,7 @@
               (ia32e-la-to-pa-page-directory
                lin-addr
                base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86))))
+               wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))))
     (x86p x86)
     (canonical-address-p lin-addr)
     (physical-address-p base-addr)
@@ -721,7 +725,7 @@
            2
            (ia32e-la-to-pa-page-directory
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-            wp smep smap ac nxe r-w-x cpl x86))
+            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
           (if (or (xr :app-view nil x86)
                   (not (xr :marking-view nil x86)))
               x86
@@ -746,7 +750,7 @@
    (and (mv-nth 0
                 (ia32e-la-to-pa-page-directory
                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                 wp smep smap ac nxe r-w-x cpl x86))
+                 wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
         (disjoint-p (list index)
                     (open-qword-paddr-list
                      (xlate-governing-qword-addresses-for-page-directory
@@ -758,13 +762,13 @@
            2
            (ia32e-la-to-pa-page-directory
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-            wp smep smap ac nxe r-w-x cpl (xw :mem index val x86)))
+            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (xw :mem index val x86)))
           (xw :mem index val
               (mv-nth
                2
                (ia32e-la-to-pa-page-directory
                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                wp smep smap ac nxe r-w-x cpl x86)))))
+                wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-directory
                                     xlate-governing-qword-addresses-for-page-directory)
                                    (bitops::logand-with-negated-bitmask
@@ -786,7 +790,7 @@
            0
            (ia32e-la-to-pa-page-dir-ptr-table
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-            wp smep smap ac nxe r-w-x cpl x86)))
+            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
      (x86p x86)
      (canonical-address-p lin-addr)
      (physical-address-p base-addr)
@@ -795,7 +799,7 @@
             2
             (ia32e-la-to-pa-page-dir-ptr-table
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
-             wp smep smap ac nxe r-w-x cpl x86))
+             wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
            (if (or (xr :app-view nil x86)
                    (not (xr :marking-view nil x86)))
                x86
@@ -835,7 +839,7 @@
            0
            (ia32e-la-to-pa-page-dir-ptr-table
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-            wp smep smap ac nxe r-w-x cpl x86)))
+            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
      (x86p x86)
      (canonical-address-p lin-addr)
      (physical-address-p base-addr)
@@ -844,7 +848,7 @@
             2
             (ia32e-la-to-pa-page-dir-ptr-table
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
-             wp smep smap ac nxe r-w-x cpl x86))
+             wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
            (if (or (xr :app-view nil x86)
                    (not (xr :marking-view nil x86)))
                x86
@@ -888,7 +892,7 @@
               (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr
                base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86)))
+               wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
      (x86p x86)
      (canonical-address-p lin-addr)
      (physical-address-p base-addr)
@@ -897,7 +901,7 @@
             2
             (ia32e-la-to-pa-page-dir-ptr-table
              lin-addr base-addr u/s-acc r/w-acc x/d-acc
-             wp smep smap ac nxe r-w-x cpl x86))
+             wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
            (if (or (xr :app-view nil x86)
                    (not (xr :marking-view nil x86)))
                x86
@@ -925,7 +929,7 @@
       (mv-nth 0
               (ia32e-la-to-pa-page-dir-ptr-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86))))
+               wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))))
     (x86p x86)
     (canonical-address-p lin-addr)
     (physical-address-p base-addr)
@@ -934,7 +938,7 @@
            2
            (ia32e-la-to-pa-page-dir-ptr-table
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-            wp smep smap ac nxe r-w-x cpl x86))
+            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
           (if (or (xr :app-view nil x86)
                   (not (xr :marking-view nil x86)))
               x86
@@ -997,7 +1001,7 @@
    (and (mv-nth 0
                 (ia32e-la-to-pa-page-dir-ptr-table
                  lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                 wp smep smap ac nxe r-w-x cpl x86))
+                 wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
         (disjoint-p (list index)
                     (open-qword-paddr-list
                      (xlate-governing-qword-addresses-for-page-dir-ptr-table
@@ -1009,13 +1013,13 @@
            2
            (ia32e-la-to-pa-page-dir-ptr-table
             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-            wp smep smap ac nxe r-w-x cpl (xw :mem index val x86)))
+            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (xw :mem index val x86)))
           (xw :mem index val
               (mv-nth
                2
                (ia32e-la-to-pa-page-dir-ptr-table
                 lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                wp smep smap ac nxe r-w-x cpl x86)))))
+                wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
                                     xlate-governing-qword-addresses-for-page-dir-ptr-table)
                                    (bitops::logand-with-negated-bitmask
@@ -1045,7 +1049,7 @@
      (not
       (mv-nth 0
               (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep
-                                         smap ac nxe r-w-x cpl x86)))
+                                         smap ac nxe implict-supervisor-access r-w-x cpl x86)))
      (x86p x86)
      (canonical-address-p lin-addr)
      (physical-address-p base-addr)
@@ -1053,7 +1057,7 @@
     (equal (mv-nth
             2
             (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep smap
-                                       ac nxe r-w-x cpl x86))
+                                       ac nxe implict-supervisor-access r-w-x cpl x86))
            (if (or (xr :app-view nil x86)
                    (not (xr :marking-view nil x86)))
                x86
@@ -1113,7 +1117,7 @@
      (not
       (mv-nth 0
               (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep
-                                         smap ac nxe r-w-x cpl x86)))
+                                         smap ac nxe implict-supervisor-access r-w-x cpl x86)))
      (x86p x86)
      (canonical-address-p lin-addr)
      (physical-address-p base-addr)
@@ -1121,7 +1125,7 @@
     (equal (mv-nth
             2
             (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep smap
-                                       ac nxe r-w-x cpl x86))
+                                       ac nxe implict-supervisor-access r-w-x cpl x86))
            (if (or (xr :app-view nil x86)
                    (not (xr :marking-view nil x86)))
                x86
@@ -1183,7 +1187,7 @@
      (not
       (mv-nth 0
               (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep
-                                         smap ac nxe r-w-x cpl x86)))
+                                         smap ac nxe implict-supervisor-access r-w-x cpl x86)))
      (x86p x86)
      (canonical-address-p lin-addr)
      (physical-address-p base-addr)
@@ -1191,7 +1195,7 @@
     (equal (mv-nth
             2
             (ia32e-la-to-pa-pml4-table lin-addr base-addr wp smep smap
-                                       ac nxe r-w-x cpl x86))
+                                       ac nxe implict-supervisor-access r-w-x cpl x86))
            (if (or (xr :app-view nil x86)
                    (not (xr :marking-view nil x86)))
                x86
@@ -1220,7 +1224,7 @@
       (mv-nth 0
               (ia32e-la-to-pa-pml4-table
                lin-addr base-addr wp smep
-               smap ac nxe r-w-x cpl x86))))
+               smap ac nxe implict-supervisor-access r-w-x cpl x86))))
     (canonical-address-p lin-addr)
     (physical-address-p base-addr)
     (equal (loghead 12 base-addr) 0)
@@ -1228,7 +1232,7 @@
    (equal (mv-nth
            2
            (ia32e-la-to-pa-pml4-table
-            lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86))
+            lin-addr base-addr wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86))
           (if (or (xr :app-view nil x86)
                   (not (xr :marking-view nil x86)))
               x86
@@ -1321,7 +1325,7 @@
    (and (mv-nth 0
                 (ia32e-la-to-pa-pml4-table
                  lin-addr base-addr wp smep
-                 smap ac nxe r-w-x cpl x86))
+                 smap ac nxe implict-supervisor-access r-w-x cpl x86))
         (disjoint-p (list index)
                     (open-qword-paddr-list
                      (xlate-governing-qword-addresses-for-pml4-table
@@ -1333,13 +1337,13 @@
            2
            (ia32e-la-to-pa-pml4-table
             lin-addr base-addr wp smep smap
-            ac nxe r-w-x cpl (xw :mem index val x86)))
+            ac nxe implict-supervisor-access r-w-x cpl (xw :mem index val x86)))
           (xw :mem index val
               (mv-nth
                2
                (ia32e-la-to-pa-pml4-table
                 lin-addr base-addr wp smep
-                smap ac nxe r-w-x cpl x86)))))
+                smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-pml4-table
                                     xlate-governing-qword-addresses-for-pml4-table)
                                    (bitops::logand-with-negated-bitmask
@@ -1348,32 +1352,32 @@
 
 ;; ======================================================================
 
-;; Top-level page walk function:
+;; Top-level page walk function
+(defthm mv-nth-2-ia32e-la-to-pa-without-tlb-in-terms-of-updates-no-errors
+        (implies
+          (and
+            (member r-w-x '(:r :w :x))
+            (case-split (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
+            (canonical-address-p lin-addr)
+            (x86p x86))
+          (equal (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                 (if (or (xr :app-view nil x86)
+                         (not (xr :marking-view nil x86)))
+                   x86
+                   (mv-nth 1
+                           (update-a/d-bits
+                             (xlate-governing-qword-addresses lin-addr x86)
+                             r-w-x x86)))))
+        :hints (("Goal"
+                 :in-theory (e/d* (xlate-governing-qword-addresses
+                                    ia32e-la-to-pa-without-tlb)
+                                  (bitops::logand-with-negated-bitmask
+                                    accessed-bit
+                                    dirty-bit)))))
 
-(defthm mv-nth-2-ia32e-la-to-pa-in-terms-of-updates-no-errors
+(defthm xw-mem-mv-nth-2-ia32e-la-to-pa-without-tlb-errors-commute
   (implies
-   (and
-    (case-split (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))))
-    (canonical-address-p lin-addr)
-    (x86p x86))
-   (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-          (if (or (xr :app-view nil x86)
-                  (not (xr :marking-view nil x86)))
-              x86
-            (mv-nth 1
-                    (update-a/d-bits
-                     (xlate-governing-qword-addresses lin-addr x86)
-                     r-w-x x86)))))
-  :hints (("Goal"
-           :in-theory (e/d* (xlate-governing-qword-addresses
-                             ia32e-la-to-pa)
-                            (bitops::logand-with-negated-bitmask
-                             accessed-bit
-                             dirty-bit)))))
-
-(defthm xw-mem-mv-nth-2-ia32e-la-to-pa-errors-commute
-  (implies
-   (and (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))
+   (and (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
         (disjoint-p (list index)
                     (open-qword-paddr-list
                      (xlate-governing-qword-addresses
@@ -1381,12 +1385,12 @@
         (canonical-address-p lin-addr))
    (equal (mv-nth
            2
-           (ia32e-la-to-pa lin-addr r-w-x (xw :mem index val x86)))
+           (ia32e-la-to-pa-without-tlb lin-addr r-w-x (xw :mem index val x86)))
           (xw :mem index val
               (mv-nth
                2
-               (ia32e-la-to-pa lin-addr r-w-x x86)))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
+               (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-without-tlb
                                     xlate-governing-qword-addresses)
                                    (bitops::logand-with-negated-bitmask
                                     accessed-bit

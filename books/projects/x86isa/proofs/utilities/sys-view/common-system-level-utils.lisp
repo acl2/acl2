@@ -4,6 +4,8 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) August 2023 - May 2024, Yahya Sohail
+; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,18 +37,20 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 (include-book "physical-memory-utils")
 (include-book "gl-lemmas")
 (include-book "bind-free-utils")
+(include-book "paging/tlb")
 (include-book "clause-processors/find-subterms" :dir :system)
 (include-book "clause-processors/find-matching" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (include-book "centaur/gl/gl" :dir :system))
 
 (local (in-theory (e/d* () (signed-byte-p unsigned-byte-p))))
 
@@ -116,15 +120,8 @@
 ;; All these functions open up to rb.
 (in-theory (e/d (rml16 rml32 rml64) ()))
 
-(defthm mv-nth-2-rb-in-system-level-non-marking-view
-  (implies (and (not (marking-view x86))
-                (not (mv-nth 0 (rb n addr r-x x86))))
-           (equal (mv-nth 2 (rb n addr r-x x86)) x86))
-  :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
-
-(defthm mv-nth-2-rb-in-system-level-marking-view
+(defthm mv-nth-2-rb-in-system-view
   (implies (and (not (app-view x86))
-                (marking-view x86)
                 (not (mv-nth 0 (rb n addr r-x (double-rewrite x86)))))
            (equal (mv-nth 2 (rb n addr r-x x86))
                   (mv-nth 2 (las-to-pas n addr r-x (double-rewrite x86)))))
@@ -182,7 +179,7 @@
 (make-event
  (generate-read-fn-over-xw-thms
   (remove-elements-from-list
-   '(:mem :rflags :ctr :seg-visible :msr :fault :app-view :marking-view)
+   '(:mem :rflags :ctr :seg-visible :msr :fault :app-view :marking-view :tlb :implicit-supervisor-access)
    *x86-field-names-as-keywords*)
   'program-at
   (acl2::formals 'program-at (w state))
@@ -199,8 +196,15 @@
 
 ;; ======================================================================
 
-;; Lemmas about ia32e-la-to-pa and las-to-pas when an error is
+;; Lemmas about ia32e-la-to-pa-without-tlb and las-to-pas when an error is
 ;; encountered:
+
+(defthm mv-nth-1-ia32e-la-to-pa-without-tlb-when-error
+  (implies (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-x x86))
+           (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-x x86)) 0))
+  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-without-tlb
+                                   ia32e-la-to-pa-pml4-table)
+                                  (force (force))))))
 
 (defthm mv-nth-1-ia32e-la-to-pa-when-error
   (implies (mv-nth 0 (ia32e-la-to-pa lin-addr r-x x86))
@@ -223,20 +227,20 @@
   (implies (and (not (mv-nth 0
                              (ia32e-la-to-pa-page-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-1 cpl x86)))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86)))
                 (syntaxp (not (eq r-x-2 r-x-1)))
                 (not (mv-nth 0
                              (ia32e-la-to-pa-page-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-2 cpl x86))))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))))
            (equal (mv-nth 1
                           (ia32e-la-to-pa-page-table
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-2 cpl x86))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))
                   (mv-nth 1
                           (ia32e-la-to-pa-page-table
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-1 cpl x86))))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -250,20 +254,20 @@
   (implies (and (not (mv-nth 0
                              (ia32e-la-to-pa-page-directory
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-1 cpl x86)))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86)))
                 (syntaxp (not (eq r-x-2 r-x-1)))
                 (not (mv-nth 0
                              (ia32e-la-to-pa-page-directory
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-2 cpl x86))))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))))
            (equal (mv-nth 1
                           (ia32e-la-to-pa-page-directory
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-2 cpl x86))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))
                   (mv-nth 1
                           (ia32e-la-to-pa-page-directory
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-1 cpl x86))))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86))))
   :hints (("Goal"
            :use ((:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-page-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
@@ -317,20 +321,20 @@
   (implies (and (not (mv-nth 0
                              (ia32e-la-to-pa-page-dir-ptr-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-1 cpl x86)))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86)))
                 (syntaxp (not (eq r-x-2 r-x-1)))
                 (not (mv-nth 0
                              (ia32e-la-to-pa-page-dir-ptr-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-2 cpl x86))))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))))
            (equal (mv-nth 1
                           (ia32e-la-to-pa-page-dir-ptr-table
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-2 cpl x86))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))
                   (mv-nth 1
                           (ia32e-la-to-pa-page-dir-ptr-table
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-1 cpl x86))))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86))))
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-page-directory-when-no-errors
@@ -386,17 +390,17 @@
 (defthmd r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-pml4-table-when-no-errors
   (implies (and (not (mv-nth 0
                              (ia32e-la-to-pa-pml4-table
-                              lin-addr base-addr wp smep smap ac nxe r-x-1 cpl x86)))
+                              lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86)))
                 (syntaxp (not (eq r-x-2 r-x-1)))
                 (not (mv-nth 0
                              (ia32e-la-to-pa-pml4-table
-                              lin-addr base-addr wp smep smap ac nxe r-x-2 cpl x86))))
+                              lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))))
            (equal (mv-nth 1
                           (ia32e-la-to-pa-pml4-table
-                           lin-addr base-addr wp smep smap ac nxe r-x-2 cpl x86))
+                           lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))
                   (mv-nth 1
                           (ia32e-la-to-pa-pml4-table
-                           lin-addr base-addr wp smep smap ac nxe r-x-1 cpl x86))))
+                           lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86))))
   :hints (("Goal"
            :use ((:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-page-dir-ptr-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
@@ -438,7 +442,7 @@
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
-(defthm r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors
+(defthmd r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-without-tlb-when-no-errors
   (implies (and
             (bind-free (find-almost-matching-ia32e-la-to-pas
                         'r-x-1 lin-addr mfc state)
@@ -446,14 +450,14 @@
             (syntaxp (and (not (eq r-x-2 r-x-1))
                           ;; r-x-2 must be "smaller" than r-x-1.
                           (term-order r-x-2 r-x-1)))
-            (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-1 x86)))
-            (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-2 x86))))
-           (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-x-2 x86))
-                  (mv-nth 1 (ia32e-la-to-pa lin-addr r-x-1 x86))))
+            (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-x-1 x86)))
+            (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-x-2 x86))))
+           (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-x-2 x86))
+                  (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-x-1 x86))))
   :hints (("Goal"
            :use ((:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-pml4-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
-                            (cpl (cpl x86))
+                            (cpl (if (xr :implicit-supervisor-access nil x86) 0 (cpl x86)))
                             (base-addr
                              (ash (cr3bits->pdb (xr :ctr *cr3* x86)) 12))
                             (wp
@@ -466,8 +470,27 @@
                              (rflagsbits->ac (xr :rflags nil x86)))
                             (nxe
                              (ia32_eferbits->nxe
-                              (loghead 12 (xr :msr *ia32_efer-idx* x86))))))
-           :in-theory (e/d* (ia32e-la-to-pa) ()))))
+                              (loghead 12 (xr :msr *ia32_efer-idx* x86))))
+                            (implicit-supervisor-access (if (xr :implicit-supervisor-access nil x86) 1 0))
+                            (r-x-1 (if (member r-x-1 '(:r :w :x)) r-x-1 :r))
+                            (r-x-2 (if (member r-x-2 '(:r :w :x)) r-x-2 :r))))
+           :in-theory (e/d* (ia32e-la-to-pa-without-tlb) ()))))
+
+(defthm r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors
+  (implies (and
+            (bind-free (find-almost-matching-ia32e-la-to-pas
+                        'r-x-1 lin-addr mfc state)
+                       (r-x-1))
+            (syntaxp (and (not (eq r-x-2 r-x-1))
+                          ;; r-x-2 must be "smaller" than r-x-1.
+                          (term-order r-x-2 r-x-1)))
+            (tlb-consistent lin-addr r-x-1 x86)
+            (tlb-consistent lin-addr r-x-2 x86)
+            (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-1 x86)))
+            (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-2 x86))))
+           (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-x-2 x86))
+                  (mv-nth 1 (ia32e-la-to-pa lin-addr r-x-1 x86))))
+  :hints (("Goal" :use (:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-without-tlb-when-no-errors))))
 
 ;; ----------------------------------------------------------------------
 
@@ -475,22 +498,22 @@
   (implies (and (not (mv-nth 0
                              (ia32e-la-to-pa-page-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-1 cpl x86)))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86)))
                 (syntaxp (not (eq r-x-2 r-x-1)))
                 (not (equal r-x-1 :w))
                 (not (equal r-x-2 :w))
                 (not (mv-nth 0
                              (ia32e-la-to-pa-page-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-2 cpl x86))))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))))
            (equal (mv-nth 2
                           (ia32e-la-to-pa-page-table
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-2 cpl x86))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))
                   (mv-nth 2
                           (ia32e-la-to-pa-page-table
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-1 cpl x86))))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -504,22 +527,22 @@
   (implies (and (not (mv-nth 0
                              (ia32e-la-to-pa-page-directory
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-1 cpl x86)))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86)))
                 (syntaxp (not (eq r-x-2 r-x-1)))
                 (not (equal r-x-1 :w))
                 (not (equal r-x-2 :w))
                 (not (mv-nth 0
                              (ia32e-la-to-pa-page-directory
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-2 cpl x86))))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))))
            (equal (mv-nth 2
                           (ia32e-la-to-pa-page-directory
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-2 cpl x86))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))
                   (mv-nth 2
                           (ia32e-la-to-pa-page-directory
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-1 cpl x86))))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86))))
   :hints (("Goal"
            :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
@@ -575,22 +598,22 @@
   (implies (and (not (mv-nth 0
                              (ia32e-la-to-pa-page-dir-ptr-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-1 cpl x86)))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86)))
                 (syntaxp (not (eq r-x-2 r-x-1)))
                 (not (equal r-x-1 :w))
                 (not (equal r-x-2 :w))
                 (not (mv-nth 0
                              (ia32e-la-to-pa-page-dir-ptr-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-x-2 cpl x86))))
+                              wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))))
            (equal (mv-nth 2
                           (ia32e-la-to-pa-page-dir-ptr-table
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-2 cpl x86))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))
                   (mv-nth 2
                           (ia32e-la-to-pa-page-dir-ptr-table
                            lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-x-1 cpl x86))))
+                           wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86))))
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-directory-when-no-errors
@@ -646,19 +669,19 @@
 (defthmd r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-pml4-table-when-no-errors
   (implies (and (not (mv-nth 0
                              (ia32e-la-to-pa-pml4-table
-                              lin-addr base-addr wp smep smap ac nxe r-x-1 cpl x86)))
+                              lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86)))
                 (syntaxp (not (eq r-x-2 r-x-1)))
                 (not (equal r-x-1 :w))
                 (not (equal r-x-2 :w))
                 (not (mv-nth 0
                              (ia32e-la-to-pa-pml4-table
-                              lin-addr base-addr wp smep smap ac nxe r-x-2 cpl x86))))
+                              lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))))
            (equal (mv-nth 2
                           (ia32e-la-to-pa-pml4-table
-                           lin-addr base-addr wp smep smap ac nxe r-x-2 cpl x86))
+                           lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-x-2 cpl x86))
                   (mv-nth 2
                           (ia32e-la-to-pa-pml4-table
-                           lin-addr base-addr wp smep smap ac nxe r-x-1 cpl x86))))
+                           lin-addr base-addr wp smep smap ac nxe implicit-supervisor-access r-x-1 cpl x86))))
   :hints (("Goal"
            :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
@@ -700,7 +723,7 @@
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
-(defthm r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-when-no-errors
+(defthm r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-without-tlb-when-no-errors
   (implies (and (bind-free (find-almost-matching-ia32e-la-to-pas
                             'r-x-1 lin-addr mfc state)
                            (r-x-1))
@@ -710,14 +733,14 @@
                           (term-order r-x-2 r-x-1)))
                 (not (equal r-x-1 :w))
                 (not (equal r-x-2 :w))
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-1 x86)))
-                (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-2 x86))))
-           (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-x-2 x86))
-                  (mv-nth 2 (ia32e-la-to-pa lin-addr r-x-1 x86))))
+                (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-x-1 x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-x-2 x86))))
+           (equal (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-x-2 x86))
+                  (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-x-1 x86))))
   :hints (("Goal"
            :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-pml4-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
-                            (cpl (cpl x86))
+                            (cpl (if (xr :implicit-supervisor-access nil x86) 0 (cpl x86)))
                             (base-addr
                              (ash (cr3bits->pdb (xr :ctr *cr3* x86)) 12))
                             (wp (cr0bits->wp (loghead 32 (xr :ctr *cr0* x86))))
@@ -725,8 +748,11 @@
                             (smap (cr4bits->smap (loghead 22 (xr :ctr *cr4* x86))))
                             (ac (rflagsbits->ac (xr :rflags nil x86)))
                             (nxe (ia32_eferbits->nxe
-                                  (loghead 12 (xr :msr *ia32_efer-idx* x86))))))
-           :in-theory (e/d* (ia32e-la-to-pa) ()))))
+                                  (loghead 12 (xr :msr *ia32_efer-idx* x86))))
+                            (implicit-supervisor-access (if (xr :implicit-supervisor-access nil x86) 1 0))
+                            (r-x-1 (if (member r-x-1 '(:r :w :x)) r-x-1 :r))
+                            (r-x-2 (if (member r-x-2 '(:r :w :x)) r-x-2 :r))))
+           :in-theory (e/d* (ia32e-la-to-pa-without-tlb) ()))))
 
 ;; ======================================================================
 

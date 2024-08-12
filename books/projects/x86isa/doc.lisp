@@ -4,6 +4,8 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2024 Intel Corporation
+
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -52,6 +54,12 @@
 ;; proofs/top here --- the proofs of correctness of various programs
 ;; are excluded from the x86isa manual.
 (include-book "proofs/utilities/top" :ttags :all)
+
+;; Virtualization based validation
+(include-book "virtualization/top" :ttags :all)
+
+;; Saving and restoring the state
+(include-book "machine/save-restore" :ttags :all)
 
 ;; ======================================================================
 
@@ -293,10 +301,15 @@
   :short "How do we trust that our x86 ISA model is faithful to the
   real machine?"
 
-  :long "<p>Doc. topic coming soon!  For now, here's an illustrative
-  image.</p>
+  :long "<p>A past version of this model was validated in @('app-view') with
+  cosimulation using tools internal to Centaur Technology. See the graphic bellow:</p>
 
- <p><img src='res/x86isa/cosim.png' /></p>")
+ <p><img src='res/x86isa/cosim.png' /></p>
+
+ <p>This validation system was lost to history. To debug the model while
+ attempting to boot Linux on it, we built a new validation system that works
+ similarly, but works in the @('system-view') and is built on opensource tools.
+ For more information see @(see virtualization-for-validation)</p>")
 
 (defxdoc publications
   :parents (x86isa)
@@ -439,10 +452,9 @@
  <li>Verify guards of functions in
  @('tools/execution/exec-loaders/elf/').</li>
 
-<li>Add support for exception handling.
-Currently the occurence of an exception in the model
-just stores some information in the x86 state stobj,
-and the step function does nothing when that information is present.</li>
+ <li>Add support for handling more exceptions. In the past, no exception
+ handling was supported. In the effort to boot Linux, we added support for page
+ faults, but most other exceptions are still unhandled.</li>
 
  </ul>
 
@@ -455,6 +467,324 @@ and the step function does nothing when that information is present.</li>
  @('tools/execution/top.lisp').</li>
 
  </ul>")
+
+(defxdoc booting-linux
+         :parents (x86isa)
+         :short "Booting linux on the @('x86isa') model."
+
+         :long "<p>The x86isa model is capable of booting a slightly modified
+         version of Linux. This version of Linux is modified to add support for
+         our timer and TTY devices and a few other minor changes.</p>
+
+         <p>The following is a guide explaining how to boot Linux. First we
+         build the modified kernel. Then, we setup a root filesystem for the
+         machine running under the model. Finally, we load these into the model
+         and execute it.</p>
+
+         <h3>Building the Modified Kernel</h3>
+         <p>Rather than distributing the entire modified kernel source tree,
+         we've chosen to distribute a patch. We will download and patch the
+         Linux source tree via git. First, clone the Linux source tree from
+         kernel.org.</p>
+
+         <code>
+         git clone https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+         cd linux
+         </code>
+
+         <p>This will clone the Linux source tree into a folder called
+         @('linux') in your current working directory and then @('cd') into it.
+         We hope our patch continues to work on newer kernels, and welcome
+         contributions to fix it if it doesn't, but it was last tested applied
+         to commit @('12214540ad87'). If you wish to use this version, which is
+         what I recommend if you don't wish to deal with merge conflicts, run
+         the following command:</p>
+
+         <code>
+         git checkout 12214540ad87
+         </code>
+
+         <p>Now, we must apply the patch. The patch file is found in the ACL2
+         source tree in the file @('books/projects/x86isa/linux/x86isa-linux.patch').
+         Run the following command to apply it:</p>
+
+         <code>
+         git apply &lt;path to patch file&gt;
+         </code>
+
+         <p>All that's left to do is build the kernel. Normally, at this point
+         you'd run @('make menuconfig') to configure the kernel, but we
+         included a @('.config') file in the patch that configures the kernel
+         to work with the @('x86isa') model, so you don't need to do that.
+         Thus, all we have left to do is build the kernel.</p>
+
+         <p>Linux supports GCC and LLVM. I'm using @('gcc') version 13.2.0, but
+         I expect other versions of GCC will work fine. LLVM has not been
+         tested, but I'd expect it to work too. Follow the usual LLVM Linux
+         compilation steps if you wish to try that.</p>
+
+         <p>To compile with GCC, run:</p>
+         <code>
+         make
+         </code>
+
+         <p>Using multiple cores can increase build speed. Use</p>
+         <code>
+         make -j
+         </code>
+         <p>or</p>
+         <code>
+         make -j&lt;nprocs&gt;
+         </code>
+         <p>to use as many threads as you have logical processors or
+         @('<nprocs>') threads to build respectively.</p>
+
+         <p>This will build a @('bzImage') in @('arch/x86/boot/bzImage'). This
+         is the file we will load into the model.</p>
+
+         <h3>Setting up a Root Filesystem</h3>
+         <p>Note: you'll probably need a Unix like system for this step because
+         we deal with Unix device files. In principle, there's no reason why we
+         have to actually create these files in our filesystem and can't
+         directly construct the cpio archive containing them, but I don't know
+         of any tools to do that. If you're on Windows, using WSL is an option.
+         Once you make the rootfs image, you can transfer it to whatever system
+         you wish to use.</p>
+
+         <p>Most modern Linux machines boot by first loading an initramfs as
+         the filesystem mounted on @('/'). This, as the name suggests, is an
+         initial filesystem which resides in RAM. The kernel then starts
+         @('/init'), which mounts the \"real\" root filesystem, usually from a
+         disk. Then it uses the @('pivot_root') syscall to make it the new
+         @('/'). This allows Linux to dynamicly link in the appropriate kernel
+         modules from the initramfs, including disk and filesystem drivers
+         necessary to mount the \"real\" disk.</p>
+
+         <p>On our machine, we choose to use the initramfs as our root
+         filesystem and don't @('pivot_root'). This makes it so that we don't
+         have to use a disk device to boot. Linux requires the initramfs to be
+         a gzip compressed @('cpio') archive.</p>
+
+         <p>While this should work with other Linux distributions, we've tested
+         the model with Alpine Linux's rootfs. We chose this distribution
+         because it is small, making it easy to quickly recreate the cpio
+         archive as needed when testing and because they provide a download
+         link on their website for a tarball of their rootfs, rather than
+         having to bootstrap the rootfs using a tool like Arch Linux's
+         @('pacstrap').</p>
+
+         <p>Alpine Linux's rootfs can be downloaded here:
+         https://alpinelinux.org/downloads/ under the heading \"Mini Root
+         Filesystem\". You want the one built for @('x86_64'). This has been
+         tested with Alpine Linux version 3.20.2 but I expect newer versions to
+         work fine too.</p>
+
+         <p>Once you've downloded the Alpine mini root filesystem, do the
+         following to extract it:</p>
+
+         <code>
+         mkdir alpine
+         cd alpine
+         # Note: the Alpine tarball will extract into your current directory,
+         # so you should create a directory to contain the files, as shown
+         # above
+         tar xvf &lt;downloaded Alpine tarball path&gt;
+         </code>
+
+         <p>Now, we create the @('/dev/console') device file. Creating this file
+         requires root. In theory, It should be possible to create a cpio
+         archive containing this file without root. However, the @('cpio') tool
+         creates a cpio archive out of files on the filesystem. If you don't
+         have root on the machine you want to run the model on, you can always
+         create the initramfs on another computer and transfer it to the machine
+         you intend to boot Linux on.</p>
+
+         <p>Run the following command (in the directory you extracted the Alpine
+         rootfs to) to create the @('/dev/console') device file.</p>
+         <code>
+         sudo mknod dev/console c 5 3
+         </code>
+
+         <p>Next, we need to add a @('/init') executable. On Linux and other
+         Unix like systems, @('/init') is the first program the kernel starts
+         once it's done booting, and it runs until the system is shutdown. All
+         processes are children of @('/init') and forked from it or one of its
+         descendants.</p>
+
+         <p>Any executable you wish to run on the model that works with Alpine
+         Linux will work. We wish to start @('/bin/sh'). On many systems, one
+         could simply symlink @('/init') to @('/bin/sh'), but we can't do that
+         on Alpine Linux because Alpine uses Busybox's implementation of @('sh')
+         (as opposed to the more common Dash or GNU Bash implementation).</p>
+
+         <p>Busybox is an implementation the standard complement of utilities
+         you'd expect to find on Unix like systems, including @('sh'), @('ls'),
+         @('mount'), etc., kind of like GNU Coreutils. It is meant to be
+         lightweight and is common in embedded systems. For this reason, Busybox
+         is compiles all these tools into a single @('busybox') executable. If
+         you inspect to contents of @('bin') in your Alpine rootfs, you'll
+         notice that most executables are symlinks to @('/bin/busybox').</p>
+
+         <p>When started, Busybox inspects the contents of @('argv[0]') to
+         determine which program it should behave like. Thus, the same binary
+         acts like @('ls') when it is called using the @('ls') symlink and acts
+         like @('sh') when it is called with the @('ls') symlink. If we symlink
+         @('/init') to @('/bin/sh') Busybox will be started with @('argv[0]') =
+         to @('/init'), so it won't know that we want it to behave like
+         @('sh').</p>
+
+         <p>The solution for this is to write a little program which starts
+         @('sh'). There is however a complication here too. Alpine uses musl as
+         its implementation of libc and not GNU's glibc, which most Linux
+         systems use. Thus, if you simply compile a dynamicly linked C program
+         on a glibc Linux machines and try to run it on an Alpine Linux system,
+         it won't run since it won't be able to find glibc.</p>
+
+         <p>Therefore, we can either setup a musl toolchain and compile with a
+         compatible version of musl or build a statically linked executable. I
+         choose to use a statically linked executable, mainly since I didn't
+         want to setup a musl toolchain, and since I don't want to link in all
+         of glibc, I wrote it in assembly.</p>
+
+         <p>You can find the program in
+         @('books/projects/x86isa/linux/hello-user.S') in the ACL2 source tree.
+         This program simply writes 'hello from userspace' to stdout and then
+         @('execve')s @('/bin/sh'), replacing itself with the shell. It is
+         meant to be assembled with the Netwide Assembler (NASM), which can be
+         found at https://www.nasm.us/. Once you have it installed, run the
+         following at the shell to assemble and then link it (the linking
+         mainly just converts the object file to an executable, since we aren't
+         linking anything else into the binary):</p>
+         <code>
+         nasm -f elf64 hello-user.S
+         ld hello-user.o -o hello-user
+         </code>
+
+         <p>Then copy the @('hello-user') binary into the rootfs, and either
+         call it @('init') or use some other name but symlink @('init') to it.
+         Note: if you symlink to it, make sure the path your symlink points to
+         is absolute, with @('/') referring to your rootfs, not your computer's
+         @('/'). This may result in a symlink that is broken on your computer,
+         but when Linux is running in the model, the rootfs will be mounted at
+         @('/') so it'll work correctly.</p>
+
+         <p>The last step is to create the cpio archive. Use the following command:</p>
+         <code>
+         find &lt;alpine rootfs path&gt; | cpio --quiet -H newc -o | gzip -9 -n &lt;archive path&gt;.img
+         </code>
+
+         <p>Make sure you aren't saving your cpio archive in the alpine rootfs.</p>
+
+         <h3>Running Linux</h3>
+
+         <p>Once you've built the kernel and the rootfs, you're ready to run
+         Linux.</p>
+
+         <p>While it isn't required, we recommend using the @(tsee
+         bigmem-asymmetric::bigmem-asymmetric) memory model because it gives
+         better performance. See @(tsee physical-memory-model) for more
+         information about the memory models and how to switch.</p>
+
+         <p>Run the following in an ACL2 session (assuming you're in the
+         @('books/projects/x86isa') directory in the ACL2 source tree):</p>
+         <code>
+         (include-book \"tools/execution/top\")
+         ;; This writes out some identity mapped page tables
+         (init-sys-view #x10000000 x86)
+         ;; Enable peripherals and exception handling
+         (!enable-peripherals t x86)
+         (!handle-exceptions t x86)
+         ;; This function serves as our bootloader
+         (linux-load \"&lt;path to kernel bzImage&gt;\"
+                     \"&lt;path to rootfs archive&gt;\"
+                     ;; The following is the kernel command line. Unless you
+                     ;; know what you're doing, you don't have much reason to
+                     ;; touch this
+                     \"rootfstype=ramfs console=ttyprintk ignore_loglevel root=/dev/ram0\" x86
+                     state)
+         </code>
+
+         <p>This will load Linux into the model. Optionally, if you wish to be
+         able to interact with a shell on the machine over a TCP socket, you can
+         run:</p>
+         <code>
+         (defttag :tty-raw)
+         (include-raw \"machine/tty-raw.lsp\")
+         </code>
+         <p>After submitting the second form, the ACL2 session will hang. At
+         this point you can connect to localhost on TCP port 6444 using a
+         program like netcat or socat. For example, you can do this with netcat
+         by executing the following in a shell:</p>
+         <code>
+         nc localhost 6444
+         </code>
+         <p>Once you connect, ACL2 should continue. Note: this utility only
+         works in CCL and is unsound. Don't include it in proofs.</p>
+
+         <p>Now, all you have to do is start execution. Submit the following form to ACL2:</p>
+         <code>
+         (x86-run-steps &lt;n&gt; x86)
+         </code>
+         <p>This will tell ACL2 to execute @('<n>') instructions. Booting Linux
+         takes on the order of 600 million instructions. I usually just put in
+         some large number (though you probably want to keep it a fixnum).</p>
+
+         <p>As Linux boots, you should see the kernel log being printed in ACL2.
+         Eventually, once Linux is done starting, it'll start @('/init'). The
+         stdout of @('/init') will be printed to the kernel log. If you're using
+         @('tty-raw.lsp'), you'll be able to interact with it over the
+         socket.</p>
+
+         <h3>The @('blkx86isa') device</h3>
+         <p>The modified Linux kernel has support for a block device called
+         @('blkx86isa'). This device is essentially a view into the gigabyte of
+         physical memory at address @('0x100000000'). This could be useful for
+         transfering files into and out of the Linux system running in the
+         model.</p>
+
+         <p>You can mount it like any other drive on a Linux system, but you
+         may notice that, if your system is configured as we did above,
+         @('/dev') doesn't have a @('/dev/blkx86isa'). In fact, it doesn't have
+         anything but the @('/dev/console') we constructed when building the
+         rootfs. One can mount @('devtmpfs') on @('/dev') with the following
+         command:</p>
+         <code>
+         mount -t devtmpfs none /dev
+         </code>
+
+         <p>After doing this, you'll find a @('/dev/blkx86isa') device (and
+         other device files) in @('/dev'). You can use this like any other
+         block device.</p>")
+
+(defxdoc peripherals
+         :parents (x86isa)
+         :short "The various peripherals the @('x86isa') model contains"
+         :long "<p>The @('x86isa') model supports a couple of peripherals.
+         They only work when the @('enable-peripherals') field of the @('x86')
+         stobj is @('t'). These include a timer and TTY. See their respective
+         documentation topics below.</p>
+
+         <p>The primary limitation when writing peripherals for the model is
+         that the state can't change when memory is read. This is signficant
+         because many real life peripherals change state when values are read
+         from their memory mapped interface.</p>")
+
+(defxdoc timer
+         :parents (peripherals)
+         :short "The timer device"
+         :long "<p>The timer device can be used to receive an interrupt every
+         100,000 instruction executions. If the interrupt flag is zero 100,000
+         instructions after the last timer interrupt, we wait to send the
+         interrupt until after they get reenabled. To enable this, make sure
+         @('enable-peripherals') on the @('x86') stobj is @('t') and write a
+         non-zero byte to physical memory address @('0x108'). Additionally, if
+         to be able to handle the interrupt in software running on the model,
+         make sure the @('handle-exceptions') field of the @('x86') stobj is
+         also @('t').</p>
+
+         <p>The timer device also writes the number of instructions that have
+         been executed as a 64-bit unsigned integer to @('0x100'). This is the
+         same value returned by the @(tsee x86-rdtsc) instruction.</p>")
 
 ;; ----------------------------------------------------------------------
 

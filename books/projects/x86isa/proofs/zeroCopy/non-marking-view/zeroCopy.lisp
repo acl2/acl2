@@ -47,6 +47,12 @@
 
 ;; ======================================================================
 
+;; Note: This proof no longer works. It wasn't updated when the TLB was added.
+;; We did however update the marking-view version, so if you're interested in
+;; the proof of correctness of this program, you may want to check that one
+;; out. It is more involved, but it is done with the model in a mode that more
+;; closely models a real processor.
+
 ;; Introducing the system-level program:
 
 ;;  1 mov %cr3,%rax
@@ -150,7 +156,7 @@
 
 (defconst *rewire_dst_to_src-len* (len *rewire_dst_to_src*))
 
-(defun rewire_dst_to_src-clk () 58)
+(defun rewire_dst_to_src-clk () 59)
 
 ;; ======================================================================
 

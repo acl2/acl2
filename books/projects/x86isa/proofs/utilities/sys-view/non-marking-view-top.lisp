@@ -4,6 +4,8 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) August 2023 - May 2024, Yahya Sohail
+; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,15 +37,16 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 (include-book "common-system-level-utils")
-(include-book "paging/common-paging-lemmas")
+(include-book "paging/top")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
-(local (include-book "centaur/gl/gl" :dir :system))
 
 (local (in-theory (e/d* () (signed-byte-p unsigned-byte-p))))
 
@@ -283,6 +286,7 @@
                 (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (xw :mem index byte x86)))
                        (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))))
   :hints (("Goal"
+           :expand (las-to-pas n lin-addr r-w-x x86)
            :in-theory (e/d* (disjoint-p member-p)
                             (xlation-governing-entries-paddrs)))))
 
@@ -324,8 +328,11 @@
                        (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
                 (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
                        (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))))
-  :hints (("Goal" :induct (las-to-pas n lin-addr r-w-x x86)
-           :in-theory (e/d* (disjoint-p disjoint-p-commutative) (xlation-governing-entries-paddrs)))))
+  :hints (("Goal"
+           :in-theory (e/d* (disjoint-p disjoint-p-commutative)
+                            (xlation-governing-entries-paddrs))
+           :use (:instance xlate-equiv-structures-and-write-to-physical-memory-disjoint
+                           (val bytes) (x86-2 x86) (x86-1 x86)))))
 
 (defthm ia32e-la-to-pa-page-table-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-view
   (implies (and (not (mv-nth 0 (las-to-pas n write-addr :w x86)))
@@ -340,19 +347,19 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -377,19 +384,19 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-directory
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -415,19 +422,19 @@
             (equal (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                            wp smep smap ac nxe r-w-x cpl x86)))))
+                            wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -452,18 +459,18 @@
            (and
             (equal (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl
+                            lin-addr base-addr wp smep smap ac nxe implict-supervisor-access r-w-x cpl
                             (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 0
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))
+                            lin-addr base-addr wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))
             (equal (mv-nth 1
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl
+                            lin-addr base-addr wp smep smap ac nxe implict-supervisor-access r-w-x cpl
                             (mv-nth 1 (wb n write-addr w value x86))))
                    (mv-nth 1
                            (ia32e-la-to-pa-pml4-table
-                            lin-addr base-addr wp smep smap ac nxe r-w-x cpl x86)))))
+                            lin-addr base-addr wp smep smap ac nxe implict-supervisor-access r-w-x cpl x86)))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
@@ -473,6 +480,28 @@
                             (wb
                              xlation-governing-entries-paddrs-for-page-dir-ptr-table
                              bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
+
+(defthm ia32e-la-to-pa-without-tlb-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-view
+  (implies (and (not (mv-nth 0 (las-to-pas n write-addr :w x86)))
+                (disjoint-p (xlation-governing-entries-paddrs lin-addr x86)
+                            (mv-nth 1 (las-to-pas n write-addr :w x86)))
+                (not (marking-view x86))
+                (canonical-address-p lin-addr))
+           (and
+            (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (mv-nth 1 (wb n write-addr w value x86))))
+                   (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+            (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (mv-nth 1 (wb n write-addr w value x86))))
+                   (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa-without-tlb
+                             xlation-governing-entries-paddrs)
+                            (wb
+                             xlation-governing-entries-paddrs-for-pml4-table
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
@@ -490,12 +519,9 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
-                             member-p
-                             ia32e-la-to-pa
-                             xlation-governing-entries-paddrs)
-                            (wb
-                             xlation-governing-entries-paddrs-for-pml4-table
-                             (:meta acl2::mv-nth-cons-meta)
+                             disjoint-p-commutative
+                             member-p)
+                            ((:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
 (defthm la-to-pas-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs-in-non-marking-view
@@ -510,16 +536,46 @@
                    (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))))
   :hints (("Goal"
            :induct (cons (all-xlation-governing-entries-paddrs n lin-addr x86)
-                         (las-to-pas n lin-addr r-w-x (mv-nth 1 (wb n-w write-addr w value x86))))
-           :in-theory (e/d* (las-to-pas)
+                         (las-to-pas n lin-addr r-w-x x86))
+           :in-theory (e/d* (disjoint-p disjoint-p-commutative las-to-pas
+                             all-xlation-governing-entries-paddrs)
                             (wb
                              xlation-governing-entries-paddrs
                              (:meta acl2::mv-nth-cons-meta)
-                             force (force))))))
+                             force (force))))
+          ;; I don't understand why ACL2 refuses to expand some las-to-pas terms, given
+          ;; we are inducting using an induction scheme derived from las-to-pas
+          (and (consp (car id))
+                (< 1 (len (car id)))
+                '(:expand ((:free (x) (las-to-pas n lin-addr r-w-x x)))))))
 
 ;; ======================================================================
 
 ;; Lemmas about interaction of memory reads and writes:
+
+(defthm las-to-pas-leaves-mem-unchanged-in-non-marking-view
+        (implies (not (marking-view x86))
+                 (equal (xr :mem addr
+                            (mv-nth 2 (las-to-pas n addr2 r-w-x x86)))
+                   (xr :mem addr x86))))
+
+(defthm read-from-physical-memory-las-to-pas-in-non-marking-view
+        (implies (not (marking-view x86))
+                 (equal (read-from-physical-memory p-addrs
+                                                   (mv-nth 2 (las-to-pas n addr2 r-w-x x86)))
+                        (read-from-physical-memory p-addrs x86)))
+        :hints (("Goal" :in-theory (e/d () (las-to-pas)))))
+
+(defthm read-from-physical-memory-and-mv-nth-1-wb-disjoint-in-non-marking-view
+  ;; Similar to rb-wb-disjoint-in-non-marking-view
+  (implies (and (disjoint-p p-addrs
+                            (mv-nth 1 (las-to-pas n-w write-addr :w x86)))
+                (not (mv-nth 0 (las-to-pas n-w write-addr :w x86)))
+                (not (app-view x86))
+                (not (marking-view x86)))
+           (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb n-w write-addr w value x86)))
+                  (read-from-physical-memory p-addrs x86)))
+  :hints (("Goal" :in-theory (enable read-from-physical-memory wb))))
 
 (defthm rb-wb-disjoint-in-non-marking-view
   (implies (and (disjoint-p
@@ -536,18 +592,23 @@
                    (mv-nth 0 (rb n-r read-addr r-x x86)))
             (equal (mv-nth 1 (rb n-r read-addr r-x (mv-nth 1 (wb n-w write-addr w value x86))))
                    (mv-nth 1 (rb n-r read-addr r-x x86)))))
-  :hints (("Goal" :do-not-induct t)))
+  :hints (("Goal" :do-not-induct t :in-theory (disable wb))))
 
-(defthm read-from-physical-memory-and-mv-nth-1-wb-disjoint-in-non-marking-view
-  ;; Similar to rb-wb-disjoint-in-non-marking-view
-  (implies (and (disjoint-p p-addrs
-                            (mv-nth 1 (las-to-pas n-w write-addr :w x86)))
-                (not (mv-nth 0 (las-to-pas n-w write-addr :w x86)))
+(defthm read-from-physical-memory-and-mv-nth-1-wb-equal-in-non-marking-view
+  (implies (and (equal
+                  p-addrs
+                 (mv-nth 1 (las-to-pas n-w write-addr :w x86)))
+                (disjoint-p
+                 (all-xlation-governing-entries-paddrs n-r read-addr x86)
+                 p-addrs)
+                (no-duplicates-p
+                 (mv-nth 1 (las-to-pas n-w write-addr :w x86)))
                 (not (app-view x86))
-                (not (marking-view x86)))
+                (not (marking-view x86))
+                (not (mv-nth 0 (las-to-pas n-w write-addr :w x86))))
            (equal (read-from-physical-memory p-addrs (mv-nth 1 (wb n-w write-addr w value x86)))
-                  (read-from-physical-memory p-addrs x86)))
-  :hints (("Goal" :in-theory (e/d* (wb) ()))))
+                  (loghead (ash (nfix n-w) 3) value)))
+  :hints (("Goal" :in-theory (enable read-from-physical-memory wb))))
 
 (defthmd rb-wb-equal-in-non-marking-view
   (implies (and (equal
@@ -564,22 +625,22 @@
                 (not (mv-nth 0 (las-to-pas n-w write-addr :w x86))))
            (equal (mv-nth 1 (rb n-r read-addr r-x (mv-nth 1 (wb n-w write-addr w value x86))))
                   (loghead (ash (nfix n-w) 3) value)))
-  :hints (("Goal" :do-not-induct t
-           :in-theory (e/d* () (force (force))))))
+  :hints (("Goal" :do-not-induct t :in-theory (e/d* () (wb force (force))))))
 
 ;; ======================================================================
 
 ;; las-to-pas error:
 
 (local
- (defthmd mv-nth-0-las-to-pas-subset-p-in-non-marking-view-helper-0
-   (implies (and (equal addr-2 addr-1)
-                 ;; <n-2,addr-2> is a subset of <n-1,addr-1>.
-                 (<= (+ n-2 addr-2) (+ n-1 addr-2))
-                 (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
-                 (posp n-1))
-            (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
-                   nil))))
+  (defthmd mv-nth-0-las-to-pas-subset-p-in-non-marking-view-helper-0
+           (implies (and (equal addr-2 addr-1)
+                         ;; <n-2,addr-2> is a subset of <n-1,addr-1>.
+                         (<= (+ n-2 addr-2) (+ n-1 addr-2))
+                         (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
+                         (posp n-1))
+                    (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
+                           nil))
+           :hints (("Goal" :in-theory (enable las-to-pas)))))
 
 (local
  (defthmd mv-nth-0-las-to-pas-subset-p-in-non-marking-view-helper-1
@@ -592,6 +653,7 @@
                  (< 0 n-2))
             (not (mv-nth 0 (las-to-pas n-2 addr-1 r-w-x x86))))
    :hints (("Goal" :do-not-induct t
+            :expand ((las-to-pas n-1 addr-1 r-w-x x86))
             :use ((:instance mv-nth-0-las-to-pas-subset-p-in-non-marking-view-helper-0
                              (addr-2 addr-1)))))))
 
@@ -613,12 +675,6 @@
 ;; ======================================================================
 
 ;; Lemmas about program-at:
-
-(defthm program-at-nil-when-translation-error
-  (implies (and (mv-nth 0 (las-to-pas (len bytes) prog-addr :x x86))
-                (not (app-view x86)))
-           (equal (program-at prog-addr bytes x86) nil))
-  :hints (("Goal" :in-theory (e/d* (program-at) (force (force))))))
 
 (defthm no-errors-when-translating-program-bytes-in-non-marking-view
   ;; This rule will help in fetching instruction bytes given relevant
@@ -646,9 +702,9 @@
                 (not (marking-view x86)))
            (equal (mv-nth 0 (las-to-pas n addr :x x86)) nil))
   :hints (("Goal"
-           :use ((:instance program-at-nil-when-translation-error))
+           :use ((:instance program-at-implies-error-free-address-translation))
            :in-theory (e/d* (mv-nth-0-las-to-pas-subset-p-in-non-marking-view)
-                            (program-at-nil-when-translation-error)))))
+                            (program-at-implies-error-free-address-translation)))))
 
 (defthm program-at-wb-disjoint-in-non-marking-view
   (implies (and
@@ -676,6 +732,19 @@
                   (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
+(defthm mv-nth-1-rb-and-mv-nth-2-ia32e-la-to-pa-in-non-marking-view
+  (implies (not (marking-view x86))
+           (equal (mv-nth 1 (rb n addr r-x
+                                (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))))
+                  (mv-nth 1 (rb n addr r-x x86))))
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+(defthm mv-nth-1-rb-and-mv-nth-2-las-to-pas-in-non-marking-view
+        (implies (not (marking-view x86))
+                 (equal (mv-nth 1 (rb n-r addr r-x
+                                      (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))))
+                        (mv-nth 1 (rb n-r addr r-x x86))))
+        :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
 (defthmd rb-unwinding-thm-in-non-marking-view
   (implies (and (not (mv-nth 0 (rb n lin-addr r-w-x x86)))
@@ -771,48 +840,48 @@
            (rb-rb-induction-scheme n-1 a-1 n-2 a-2 val x86)))))
 
 (defthmd rb-rb-subset-in-non-marking-view
-  ;; [Shilpi]: Expensive rule. Keep this disabled.
-  (implies (and (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
-                (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
-                ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
-                ;; This non-strictness is nice because it lets me have
-                ;; a better hyp in one-read-with-rb-from-program-at-in-non-marking-view ---
-                ;; (< lin-addr (+ (len bytes) prog-addr))
-                ;; instead of
-                ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr))
-                (<= (+ j addr-j) (+ i addr-i))
-                (<= addr-i addr-j)
-                (canonical-address-p addr-i)
-                (canonical-address-p (+ -1 i addr-i))
-                (canonical-address-p addr-j)
-                (posp i) (posp j)
-                (not (app-view x86))
-                (not (marking-view x86))
-                (x86p x86))
-           (equal (mv-nth 1 (rb j addr-j r-w-x x86))
-                  (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
-  :hints (("Goal"
-           :induct (list (rb-rb-induction-scheme j addr-j i addr-i val x86)
-                         (las-to-pas i addr-i r-w-x x86)
-                         (las-to-pas j addr-j r-w-x x86))
-           :in-theory (e/d* (signed-byte-p
-                             ifix
-                             nfix
-                             rb-1-opener-theorem)
-                            (unsigned-byte-p)))
-          (if (equal (car id) '(0 1))
-              '(:expand ((las-to-pas i addr-i r-w-x x86))
-                        :use ((:instance rb-rb-same-start-address-different-op-sizes-non-marking-view
-                                         (addr addr-i)))
-                        :in-theory (e/d* (rb-rb-subset-helper-1
-                                          rb-rb-subset-helper-2
-                                          signed-byte-p
-                                          ifix
-                                          nfix
-                                          rb-1-opener-theorem)
-                                         (unsigned-byte-p
-                                          signed-byte-p)))
-            nil)))
+         ;; [Shilpi]: Expensive rule. Keep this disabled.
+         (implies (and (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
+                       (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
+                       ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
+                       ;; This non-strictness is nice because it lets me have
+                       ;; a better hyp in one-read-with-rb-from-program-at-in-non-marking-view ---
+                       ;; (< lin-addr (+ (len bytes) prog-addr))
+                       ;; instead of
+                       ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr))
+                       (<= (+ j addr-j) (+ i addr-i))
+                       (<= addr-i addr-j)
+                       (canonical-address-p addr-i)
+                       (canonical-address-p (+ -1 i addr-i))
+                       (canonical-address-p addr-j)
+                       (posp i) (posp j)
+                       (not (app-view x86))
+                       (not (marking-view x86))
+                       (x86p x86))
+                  (equal (mv-nth 1 (rb j addr-j r-w-x x86))
+                         (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
+         :hints (("Goal"
+                  :induct (list (rb-rb-induction-scheme j addr-j i addr-i val x86)
+                                (las-to-pas i addr-i r-w-x x86)
+                                (las-to-pas j addr-j r-w-x x86))
+                  :in-theory (e/d* (signed-byte-p
+                                     ifix
+                                     nfix
+                                     rb-1-opener-theorem)
+                                   (unsigned-byte-p)))
+                 (if (equal (car id) '(0 1))
+                   '(:expand ((las-to-pas i addr-i r-w-x x86))
+                             :use ((:instance rb-rb-same-start-address-different-op-sizes-non-marking-view
+                                              (addr addr-i)))
+                             :in-theory (e/d* (rb-rb-subset-helper-1
+                                                rb-rb-subset-helper-2
+                                                signed-byte-p
+                                                ifix
+                                                nfix
+                                                rb-1-opener-theorem)
+                                              (unsigned-byte-p
+                                                signed-byte-p)))
+                   nil)))
 
 (defthm many-reads-with-rb-from-program-at-in-non-marking-view
   (implies
@@ -887,45 +956,6 @@
 
 ;; ======================================================================
 
-(local
- (define r-x-irrelevant-ind-scheme (n lin-addr r-x-1 r-x-2 x86)
-   :verify-guards nil
-   :non-executable t
-   :enabled t
-   (if (zp n)
-       (mv nil nil x86)
-     (b* (((unless (canonical-address-p lin-addr))
-           (mv t nil x86))
-          ((mv flg-1 p-addr-1 x86-1)
-           (ia32e-la-to-pa lin-addr r-x-1 x86))
-          ((mv flg-2 p-addr-2 x86-2)
-           (ia32e-la-to-pa lin-addr r-x-2 x86))
-          ((unless (and (equal flg-1 flg-2)
-                        (equal p-addr-1 p-addr-2)
-                        (equal x86-1 x86-2)))
-           (mv t nil x86-1))
-          ((when flg-1) (mv flg-1 nil x86-1))
-          ((mv flgs p-addrs x86)
-           (r-x-irrelevant-ind-scheme
-            (1- n) (1+ lin-addr) r-x-1 r-x-2 x86)))
-       (mv flgs (if flgs nil (cons p-addr-1 p-addrs))
-           x86)))))
-
-(defthm r-x-is-irrelevant-for-mv-nth-1-las-to-pas-when-no-errors-in-non-marking-view
-  (implies (and
-            (bind-free (find-almost-matching-las-to-pas 'r-x-1 n lin-addr mfc state)
-                       (r-x-1))
-            (syntaxp (and (not (eq r-x-2 r-x-1))
-                          ;; r-x-2 must be "smaller" than r-x-1.
-                          (term-order r-x-2 r-x-1)))
-            (not (mv-nth 0 (las-to-pas n lin-addr r-x-1 x86)))
-            (not (mv-nth 0 (las-to-pas n lin-addr r-x-2 x86)))
-            (not (marking-view x86)))
-           (equal (mv-nth 1 (las-to-pas n lin-addr r-x-2 x86))
-                  (mv-nth 1 (las-to-pas n lin-addr r-x-1 x86))))
-  :hints (("Goal"
-           :induct (r-x-irrelevant-ind-scheme n lin-addr r-x-1 r-x-2 x86))))
-
 (defthm xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint-p-in-non-marking-view
   (implies (and (not (mv-nth 0 (las-to-pas n-w write-addr :w x86)))
                 (disjoint-p (xlation-governing-entries-paddrs lin-addr x86)
@@ -953,6 +983,110 @@
            :in-theory (e/d* (all-xlation-governing-entries-paddrs)
                             (xlation-governing-entries-paddrs wb))
            :induct (all-xlation-governing-entries-paddrs n lin-addr x86))))
+
+(defthm x86-fetch-decode-execute-opener-in-non-marking-view
+        (implies
+          (and
+            ;; Start: binding hypotheses.
+            (equal start-rip (rip x86))
+            (equal four-vals-of-get-prefixes (get-prefixes #.*64-bit-mode* start-rip 0 0 15 x86))
+            (equal flg-get-prefixes (mv-nth 0 four-vals-of-get-prefixes))
+            (equal prefixes (mv-nth 1 four-vals-of-get-prefixes))
+            (equal rex-byte (mv-nth 2 four-vals-of-get-prefixes))
+            (equal x86-1 (mv-nth 3 four-vals-of-get-prefixes))
+
+            (equal opcode/vex/evex-byte (prefixes->nxt prefixes))
+            (equal prefix-length (prefixes->num prefixes))
+            (equal temp-rip0 (+ prefix-length start-rip 1))
+
+            ;; *** No VEX prefixes ***
+            (not (equal opcode/vex/evex-byte #.*vex3-byte0*))
+            (not (equal opcode/vex/evex-byte #.*vex2-byte0*))
+            ;; *** No EVEX prefixes ***
+            (not (equal opcode/vex/evex-byte #.*evex-byte0*))
+
+            (equal modr/m?
+                   (one-byte-opcode-ModR/M-p #.*64-bit-mode* opcode/vex/evex-byte))
+
+            ;; modr/m byte:
+            (equal three-vals-of-modr/m
+                   (if modr/m? (rml08 temp-rip0 :x x86-1) (mv nil 0 x86-1)))
+            (equal flg-modr/m (mv-nth 0 three-vals-of-modr/m))
+            (equal modr/m (mv-nth 1 three-vals-of-modr/m))
+            (equal x86-2 (mv-nth 2 three-vals-of-modr/m))
+
+            (equal temp-rip1 (if modr/m? (1+ temp-rip0) temp-rip0))
+            (equal sib? (and modr/m? (x86-decode-sib-p modr/m nil)))
+
+            ;; sib byte:
+            (equal three-vals-of-sib
+                   (if sib? (rml08 temp-rip1 :x x86-2) (mv nil 0 x86-2)))
+            (equal flg-sib (mv-nth 0 three-vals-of-sib))
+            (equal sib (mv-nth 1 three-vals-of-sib))
+            (equal x86-3 (mv-nth 2 three-vals-of-sib))
+
+            (equal temp-rip2 (if sib? (1+ temp-rip1) temp-rip1))
+            (equal x86-executed
+                   (one-byte-opcode-execute
+                     #.*64-bit-mode* start-rip temp-rip2 prefixes rex-byte
+                     opcode/vex/evex-byte modr/m sib x86-3))
+            ;; End: binding hypotheses.
+
+            (not (marking-view x86))
+            (64-bit-modep (double-rewrite x86))
+            (not (app-view x86))
+            (not (ms x86))
+            (not (fault x86))
+            (x86p x86)
+            (not (double-rewrite flg-get-prefixes))
+            (canonical-address-p temp-rip0)
+            (if modr/m?
+              (and (not (double-rewrite flg-modr/m))
+                   (canonical-address-p temp-rip1))
+              t)
+            (if sib?
+              (and (not (double-rewrite flg-sib))
+                   (canonical-address-p temp-rip2))
+              t)
+
+            ;; Ideally I'd prove that enable-peripherals and handle-exceptions are preserved by
+            ;; one-byte-opcode-execute and then only check them on the original x86, but
+            ;; that's probably going to be hard because one-byte-opcode-execute has tons
+            ;; of branching, so I'd expect it to split into some ridiculous number of cases
+            (not (enable-peripherals x86-executed))
+            (or (not (fault x86-executed))
+                (not (handle-exceptions x86-executed)))
+
+            ;; Print the rip and the first opcode byte of the instruction
+            ;; under consideration after all the non-trivial hyps (above) of
+            ;; this rule have been relieved:
+            (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
+                          (not (cw "              op0: ~s0 ] ~%"
+                                   (str::hexify (unquote opcode/vex/evex-byte)))))))
+          (equal (x86-fetch-decode-execute x86)
+                 (if (inhibit-interrupts-one-instruction x86)
+                   (!inhibit-interrupts-one-instruction nil x86-executed)
+                   x86-executed)))
+        :hints
+        (("Goal"
+          :do-not '(preprocess)
+          :in-theory
+          (e/d (x86-fetch-decode-execute
+                 x86-operation-mode)
+               (one-byte-opcode-execute
+                 signed-byte-p
+                 not
+                 member-equal
+                 mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                 remove-duplicates-equal
+                 combine-bytes
+                 byte-listp
+                 acl2::ash-0
+                 open-qword-paddr-list
+                 unsigned-byte-p-of-combine-bytes
+                 get-prefixes-opener-lemma-no-prefix-byte
+                 mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-sys-view
+                 (force) force)))))
 
 ;; ======================================================================
 

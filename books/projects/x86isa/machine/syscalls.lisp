@@ -41,7 +41,7 @@
 (in-package "X86ISA")
 
 (include-book "syscall-numbers")
-(include-book "environment" :ttags (:undef-flg))
+(include-book "environment" :ttags (:include-raw :undef-flg))
 
 (local (include-book "std/lists/nthcdr" :dir :system))
 
@@ -431,13 +431,13 @@ with X86ISA_EXEC set to nil? See :doc x86isa-build-instructions."
     (local (in-theory (e/d (syscall-read-logic) ())))
 
     (defthm integerp-mv-nth-0-syscall-read
-      (integerp (mv-nth 0 (syscall-read fd *buf count x86)))
-      :rule-classes :type-prescription)
+            (integerp (mv-nth 0 (syscall-read fd *buf count x86)))
+            :rule-classes :type-prescription)
 
     (defthm x86p-mv-nth-1-syscall-read
-      (implies (and (x86p x86)
-                    (integerp fd))
-               (x86p (mv-nth 1 (syscall-read fd *buf count x86))))))
+            (implies (and (x86p x86)
+                          (integerp fd))
+                     (x86p (mv-nth 1 (syscall-read fd *buf count x86))))))
 
   (define syscall-write-logic (fd *buf count x86)
     :guard (and (integerp fd)
@@ -573,14 +573,14 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
     (local (in-theory (e/d (syscall-write-logic) ())))
 
     (defthm integerp-mv-nth-0-syscall-write
-      (implies (natp count)
-               (integerp (mv-nth 0 (syscall-write fd *buf count x86))))
-      :rule-classes :type-prescription)
+            (implies (natp count)
+                     (integerp (mv-nth 0 (syscall-write fd *buf count x86))))
+            :rule-classes :type-prescription)
 
     (defthm x86p-mv-nth-1-syscall-write
-      (implies (and (x86p x86)
-                    (integerp fd))
-               (x86p (mv-nth 1 (syscall-write fd *buf count x86))))))
+            (implies (and (x86p x86)
+                          (integerp fd))
+                     (x86p (mv-nth 1 (syscall-write fd *buf count x86))))))
 
   (define syscall-open-logic (pathname oflags mode x86)
 
@@ -708,15 +708,15 @@ not built with X86ISA_EXEC set to t? See :doc x86sa-build-instructions."
     (local (in-theory (e/d (syscall-open-logic) ())))
 
     (defthm integerp-mv-nth-0-syscall-open
-      (implies (and (x86p x86)
-                    (stringp pathname))
-               (integerp (mv-nth 0 (syscall-open pathname oflags mode x86))))
-      :rule-classes :type-prescription)
+            (implies (and (x86p x86)
+                          (stringp pathname))
+                     (integerp (mv-nth 0 (syscall-open pathname oflags mode x86))))
+            :rule-classes :type-prescription)
 
     (defthm x86p-mv-nth-1-syscall-open
-      (implies (and (x86p x86)
-                    (stringp pathname))
-               (x86p (mv-nth 1 (syscall-open pathname oflags mode x86))))))
+            (implies (and (x86p x86)
+                          (stringp pathname))
+                     (x86p (mv-nth 1 (syscall-open pathname oflags mode x86))))))
 
   (define syscall-close-logic (fd x86)
 
@@ -756,13 +756,13 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
     (local (in-theory (e/d (syscall-close-logic) ())))
 
     (defthm integerp-mv-nth-0-syscall-close
-      (integerp (mv-nth 0 (syscall-close fd x86)))
-      :rule-classes :type-prescription)
+            (integerp (mv-nth 0 (syscall-close fd x86)))
+            :rule-classes :type-prescription)
 
     (defthm x86p-mv-nth-1-syscall-close
-      (implies (and (x86p x86)
-                    (integerp fd))
-               (x86p (mv-nth 1 (syscall-close fd x86))))))
+            (implies (and (x86p x86)
+                          (integerp fd))
+                     (x86p (mv-nth 1 (syscall-close fd x86))))))
 
   (define syscall-lseek-logic (fd offset whence x86)
 
@@ -892,13 +892,13 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
     (local (in-theory (e/d (syscall-lseek-logic) ())))
 
     (defthm integerp-mv-nth-0-syscall-lseek
-      (integerp (mv-nth 0 (syscall-lseek fd offset whence x86)))
-      :rule-classes :type-prescription)
+            (integerp (mv-nth 0 (syscall-lseek fd offset whence x86)))
+            :rule-classes :type-prescription)
 
     (defthm x86p-mv-nth-1-syscall-lseek
-      (implies (and (x86p x86)
-                    (natp fd))
-               (x86p (mv-nth 1 (syscall-lseek fd offset whence x86))))))
+            (implies (and (x86p x86)
+                          (natp fd))
+                     (x86p (mv-nth 1 (syscall-lseek fd offset whence x86))))))
 
   (define syscall-fadvise64-logic (fd offset len advice x86)
     (declare (ignorable fd offset len advice x86))
@@ -973,12 +973,12 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
     (local (in-theory (e/d (syscall-dup-logic) ())))
 
     (defthm integerp-mv-nth-0-syscall-dup
-      (integerp (mv-nth 0 (syscall-dup oldfd x86)))
-      :rule-classes :type-prescription)
+            (integerp (mv-nth 0 (syscall-dup oldfd x86)))
+            :rule-classes :type-prescription)
 
     (defthm x86p-mv-nth-1-syscall-dup
-      (implies (x86p x86)
-               (x86p (mv-nth 1 (syscall-dup oldfd x86))))))
+            (implies (x86p x86)
+                     (x86p (mv-nth 1 (syscall-dup oldfd x86))))))
 
   (define syscall-dup2-logic (oldfd newfd x86)
     :long "<p>From the @('dup(2)') man page (Linux):</p>
@@ -1331,7 +1331,7 @@ to the kernel.</li>
 
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
-      x86))
+        x86))
 
   (define x86-syscall-write (x86)
 
@@ -1367,7 +1367,7 @@ to the kernel.</li>
 
          (x86 (!rgfi *rax* ret x86)))
 
-      x86))
+        x86))
 
   (define x86-syscall-open (x86)
 
@@ -1412,7 +1412,7 @@ to the kernel.</li>
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
 
-      x86))
+        x86))
 
   (define x86-syscall-close (x86)
 
@@ -1443,7 +1443,7 @@ to the kernel.</li>
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
 
-      x86))
+        x86))
 
   (define x86-syscall-lseek (x86)
 
@@ -1476,7 +1476,7 @@ to the kernel.</li>
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
 
-      x86))
+        x86))
 
   (define x86-syscall-fadvise64 (x86)
 
@@ -1491,7 +1491,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-fadvise64
-                                                   syscall-fadvise64-logic)
+                                                    syscall-fadvise64-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-fadvise64)
@@ -1514,7 +1514,7 @@ to the kernel.</li>
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
 
-      x86))
+        x86))
 
 
   (define x86-syscall-link (x86)
@@ -1527,7 +1527,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-link
-                                                   syscall-link-logic)
+                                                    syscall-link-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-link)
@@ -1565,7 +1565,7 @@ to the kernel.</li>
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
 
-      x86))
+        x86))
 
   (define x86-syscall-unlink (x86)
 
@@ -1576,7 +1576,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-unlink
-                                                   syscall-unlink-logic)
+                                                    syscall-unlink-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-unlink)
@@ -1601,7 +1601,7 @@ to the kernel.</li>
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
 
-      x86))
+        x86))
 
 
   (define x86-syscall-dup (x86)
@@ -1613,7 +1613,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-dup
-                                                   syscall-dup-logic)
+                                                    syscall-dup-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-dup)
@@ -1628,7 +1628,7 @@ to the kernel.</li>
 
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
-      x86))
+        x86))
 
   (define x86-syscall-dup2 (x86)
 
@@ -1640,7 +1640,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-dup2
-                                                   syscall-dup2-logic)
+                                                    syscall-dup2-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-dup2)
@@ -1659,7 +1659,7 @@ to the kernel.</li>
 
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
-      x86))
+        x86))
 
   (define x86-syscall-dup3 (x86)
 
@@ -1672,7 +1672,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-dup3
-                                                   syscall-dup3-logic)
+                                                    syscall-dup3-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-dup3)
@@ -1692,7 +1692,7 @@ to the kernel.</li>
 
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
-      x86))
+        x86))
 
   (define x86-syscall-stat (x86)
 
@@ -1704,7 +1704,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-stat
-                                                   syscall-stat-logic)
+                                                    syscall-stat-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-stat)
@@ -1729,7 +1729,7 @@ to the kernel.</li>
 
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
-      x86))
+        x86))
 
   (define x86-syscall-lstat (x86)
 
@@ -1741,7 +1741,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-lstat
-                                                   syscall-lstat-logic)
+                                                    syscall-lstat-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-lstat)
@@ -1766,7 +1766,7 @@ to the kernel.</li>
 
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
-      x86))
+        x86))
 
   (define x86-syscall-fstat (x86)
 
@@ -1778,7 +1778,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-fstat
-                                                   syscall-fstat-logic)
+                                                    syscall-fstat-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-fstat)
@@ -1797,7 +1797,7 @@ to the kernel.</li>
 
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
-      x86))
+        x86))
 
   (define x86-syscall-fcntl (x86)
 
@@ -1810,7 +1810,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-fcntl
-                                                   syscall-fcntl-logic)
+                                                    syscall-fcntl-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-fcntl)
@@ -1830,7 +1830,7 @@ to the kernel.</li>
 
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
-      x86))
+        x86))
 
   (define x86-syscall-truncate (x86)
 
@@ -1842,7 +1842,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-truncate
-                                                   syscall-truncate-logic)
+                                                    syscall-truncate-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-truncate)
@@ -1867,7 +1867,7 @@ to the kernel.</li>
 
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
-      x86))
+        x86))
 
   (define x86-syscall-ftruncate (x86)
 
@@ -1879,7 +1879,7 @@ to the kernel.</li>
     :parents (x86-syscall-args-and-return-value-marshalling)
     :returns (x86 x86p :hyp :guard
                   :hints (("Goal" :in-theory (e/d (syscall-ftruncate
-                                                   syscall-ftruncate-logic)
+                                                    syscall-ftruncate-logic)
                                                   (force (force))))))
 
     (b* ((ctx 'x86-syscall-ftruncate)
@@ -1898,6 +1898,6 @@ to the kernel.</li>
 
          ;; Save return code to rax
          (x86 (!rgfi *rax* ret x86)))
-      x86)))
+        x86)))
 
 ;; ======================================================================

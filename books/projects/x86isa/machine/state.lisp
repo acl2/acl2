@@ -3,7 +3,9 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2015, May - August 2023, Regents of the University of Texas
+; Copyright (C) August 2023 - May 2024, Yahya Sohail
+; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -40,6 +42,8 @@
 ; Robert Krug         <rkrug@cs.utexas.edu>
 ; Updated by Shilpi Goel <shilpi@centtech.com> in June, 2021 to use
 ; the bigmem and defrstobj books.
+; Contributing Author(s):
+; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 
@@ -59,6 +63,11 @@
 
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
+(include-book "hacking/hacker" :dir :system)
+(include-book "tools/include-raw" :dir :system)
+
+(include-book "tlb")
+(include-book "tty")
 
 ; cert_param: (non-lispworks)
 
@@ -92,6 +101,55 @@
 ;; ----------------------------------------------------------------------
 ;; x86 state
 ;; ----------------------------------------------------------------------
+
+(defsection physical-memory-model
+            :parents (x86isa-state)
+            :short "The physical memory models we support and when to use which"
+            :long "<p>We support the @(tsee bigmem::bigmem) and @(tsee
+            bigmem-asymmetric::bigmem-asymmetric) memory models for physical
+memory. Both of these are equivalent in reasoning, so for proofs it doesn't
+matter which you use. However, in execution, they have different performance
+characteristics.</p>
+
+<p>@(tsee bigmem::bigmem) provides constant access time for the entire address
+space. However, accessing a byte requires walking a 3 level hierarchy.</p>
+
+<p>@(tsee bigmem-asymmetric::bigmem-asymmetric) provides faster access to the
+lower 6GB of physical memory, because those values are stored in an array, but
+slower access to the rest of the address space, since it stores the rest of the
+values in in an ordered alist.</p>
+
+<p>If you're only going to be using the lower 6GB of memory (or mostly using
+the lower 6 GB) of memory, using the @(tsee
+bigmem-asymmetric::bigmem-asymmetric) makes sense, otherwise use @(tsee
+bigmem::bigmem)</p>
+
+<p>By default, the model uses @(tsee bigmem::bigmem). To switch to @(tsee
+bigmem-asymmetric::bigmem-asymmetric), edit @('machine/state.lisp') and make
+the following change:</p>
+
+<code>
+ ; The orginal three-level memory model.
++; (include-book \"centaur/bigmem/bigmem\" :dir :system)
+-(include-book \"centaur/bigmem/bigmem\" :dir :system)
+ 
+ ; Asymmetric memory model; faster for \"small\" addresses, and otherwise slower.
++(include-book \"centaur/bigmem-asymmetric/bigmem-asymmetric\" :dir :system)
+-; (include-book \"centaur/bigmem-asymmetric/bigmem-asymmetric\" :dir :system)
+...
+
+     (mem   :type (array (unsigned-byte 8) (,*mem-size-in-bytes*)) ;; 2^52
+            :initially 0
+            :fix (acl2::loghead 8 (ifix x))
++           :child-stobj bigmem-asymmetric::mem
++           :child-accessor bigmem-asymmetric::read-mem
++           :child-updater  bigmem-asymmetric::write-mem
+-           :child-stobj bigmem::mem
+-           :child-accessor bigmem::read-mem
+-           :child-updater  bigmem::write-mem
+            :accessor memi
+            :updater !memi)
+</code>")
 
 (defsection environment-field
 
@@ -233,6 +291,30 @@
     (marking-view :type (satisfies booleanp)
                   :fix (acl2::bool-fix x)
                   :initially t)
+    (:doc "</li>")
+
+    (:doc "<li>@('ENABLE-PERIPHERALS'): This field also acts as a
+    switch. When its value is @('t'), then the model's peripherals
+    (timer and TTY) are enabled. Otherwise, the model acts like
+    there are no peripherals. This only applies when the model
+    is in @('sys-view').<br/>")
+    (enable-peripherals :type (satisfies booleanp)
+                        :fix (acl2::bool-fix x)
+                        :initially t)
+    (:doc "</li>")
+
+    (:doc "<li>@('HANDLE-INTERRUPTS'): This field also acts as a
+    switch. When its value is @('t'), then exceptions and interrupts
+    are handled using handlers in the IDT. Otherwise, exceptions and
+    interrupts cause the ms or fault fields to be set after instruction
+    execution, which terminates execution when using x86-run. This
+    only applies when the model is in @('sys-view'). Note: The timer
+    peripheral triggers interrupts, and they won't be handled unless
+    this is @('t'), so if you are using it, you probably want to enable
+    this.<br/>")
+    (handle-exceptions :type (satisfies booleanp)
+                       :fix (acl2::bool-fix x)
+                       :initially t)
     (:doc "</li>")
 
     (:doc "<li>@('OS-INFO'): This field is meaningful only in
@@ -524,9 +606,78 @@
            :child-updater  bigmem::write-mem
            :accessor memi
            :updater !memi)
+    ;; (mem   :type bigmem::mem
+    ;;        :recognizer bigmem::memp
+    ;;        :accessor mem
+    ;;        :updater !mem)
+    (:doc "</li>")
+
+    (:doc "<li>@('Inhibit Interrupts One Instruction'): The Intel manual states
+          that some instructions, like the STI instruction, inhibit interrupts
+          for one instruction after execution, despite the interrupt flag being
+          set immediately. This flag is used to implement that. It is t when
+          interrupts should not be allows and is cleared after executing an
+          instruction if it was set at the beginning of the instruction.
+          Consult the documentation for STI in Volume 2B 4.3 in the Intel
+          manual.<br/>")
+    (inhibit-interrupts-one-instruction   :type (satisfies booleanp)
+                                          :initially nil
+                                          :fix (acl2::bool-fix x))
+    (:doc "</li>")
+
+    (:doc "<li>@('Time Stamp Counter'): This keeps track of how many instructions have been executed for the RDTSC instruction.<br/>")
+    (time-stamp-counter :type (satisfies natp)
+                        :initially 0
+                        :fix (nfix x))
+    (:doc "</li>")
+
+    (:doc "<li>@('Last Clock Event'): Our clock device sends a clock event every 100,000 instructions. When interrupts
+          are disabled, however, we can't send a clock event. Instead of sending one on every 100,000 instructions,
+          we send an interrupt if interrupts are enabled and the last clock event was 100,000 or more instructions ago.
+          This keeps track of how many instructions have been executed since the last clock event.<br/>")
+    (last-clock-event   :type (satisfies natp)
+                        :initially 0
+                        :fix (nfix x))
+    (:doc "</li>")
+
+    (:doc "<li>@('Implicit Supervisor Access'): This field is a boolean
+          flag that, when t, tells the address translation system that all
+          translations should be treated as implicit supervisor accesses,
+          regardless of current privilege level.<br/>")
+    (implicit-supervisor-access   :type (satisfies booleanp)
+                                  :initially nil
+                                  :fix (acl2::bool-fix x))
+    (:doc "</li>")
+
+    (:doc "<li>@('TLB'): This field models a (number of) TLB(s). See @(tsee tlb)
+    for a detailed discussion about our address translation caching scheme and
+    its consistency with the x86 ISA. It is a fast alist that is @(tsee tlbp).
+    Invalid translations are not cached.<br/>")
+    (tlb   :type (satisfies tlbp)
+           :initially :tlb
+           :fix (tlb-fix x))
+    (:doc "</li>")
+
+    (:doc "<li>@('TTY-in'): This field models the input buffer of the TTY device.<br/>")
+    (tty-in :type (satisfies tty-bufferp)
+            :initially nil
+            :fix (tty-buffer-fix x))
+    (:doc "</li>")
+
+    (:doc "<li>@('TTY-out'): This field models the output buffer of the TTY device.<br/>")
+    (tty-out :type (satisfies tty-bufferp)
+             :initially nil
+             :fix (tty-buffer-fix x))
     (:doc "</li>")
 
     (:doc "</ul>")))
+
+(make-event
+ `(defconst *x86-field-names-as-keywords*
+    ',(loop$ for i in (strip-cars *x86isa-state*)
+             when (not (equal i :doc))
+             collect
+             (intern$ (symbol-name i) "KEYWORD"))))
 
 (defun xdoc-x86-state (xs) ;; xs: *x86isa-state*
   (if (atom xs)
@@ -542,23 +693,23 @@
                   " })" rest)))))
 
 (with-output
-  :on summary
+    :on summary
   :summary-off #!acl2(:other-than errors time)
   (make-event
    `(rstobj2::defrstobj x86
-                        ,@(loop$ for fld in *x86isa-state* append
-                                 (if (equal (car fld) :doc)
-                                     nil
-                                   (list fld)))
-                        :inline t
-                        :non-memoizable t
-                        :enable '(bigmem::read-mem-over-write-mem
-                                  bigmem::read-mem-from-nil
-                                  bigmem::loghead-identity-alt)
-                        :accessor xr
-                        :updater  xw
-                        :accessor-template ( x)
-                        :updater-template (! x))))
+        ,@(loop$ for fld in *x86isa-state* append
+                (if (equal (car fld) :doc)
+                    nil
+                  (list fld)))
+      :inline t
+      :non-memoizable t
+      :enable '(bigmem::read-mem-over-write-mem
+                bigmem::read-mem-from-nil
+                bigmem::loghead-identity-alt)
+      :accessor xr
+      :updater  xw
+      :accessor-template ( x)
+      :updater-template (! x))))
 
 (defthm x86p-xw
   (implies (x86p x86)

@@ -83,7 +83,18 @@
 
   :body
 
-  (b* ((p2 (prefixes->seg prefixes))
+  (b* (;; At first glance, this special case seems unnecessary as #x90 is
+       ;; XCHG (r/e)ax, (r/e)ax. However, this should be a nop regardless of
+       ;; address size. See XCHG in Volume 2 Chapter 6.1 of the Intel SDM.
+       ;; Consider the following: #x90 is XCHG eax, eax when the prefix = 0 in
+       ;; 64-bit mode. Note the 32-bit eax and not 64-bit rax. If we didn't
+       ;; include a special case here, this would zero out the upper 32-bits of
+       ;; rax. While we're supposed to ignore instruction size prefixes, we
+       ;; need to consider REX.B, which may turn 0x90 into xchg r8w, ax.
+       ((when (and (equal opcode #x90) (not (logbitp *b* rex-byte))))
+        (write-*ip proc-mode temp-rip x86))
+
+       (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
@@ -266,6 +277,27 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
+;; ======================================================================
+;; INSTRUCTION: NOP
+;; ======================================================================
+
+(def-inst x86-one-byte-nop
+
+  ;; The real one byte nop opcode is encoded 0x90, which is
+  ;; XCHG eax, eax. This is used for nopping out opcodes in inst-listing.lisp
+
+  :parents (two-byte-opcodes)
+
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* ((x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
 ;; ======================================================================
 ;; INSTRUCTION: NOP
 ;; ======================================================================

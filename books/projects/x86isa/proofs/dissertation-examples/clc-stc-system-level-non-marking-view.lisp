@@ -57,11 +57,16 @@
   (and
    ;; The x86 state is well-formed.
    (x86p x86)
+   (not (inhibit-interrupts-one-instruction x86))
    ;; The model is operating in 64-bit mode.
    (64-bit-modep x86)
    ;; The model is operating in the system-level non-marking view.
    (not (app-view x86))
    (not (marking-view x86))
+   ;; We have a consistent tlb for the program memory
+   (tlb-consistent-n (len *program*) (rip x86) :x x86)
+   ;; The peripherals are disabled
+   (not (enable-peripherals x86))
    ;; The program is located at linear addresses ranging from (rip
    ;; x86) to (+ -1 (len *program*) (rip x86)).
    (program-at (rip x86) *program* x86)
@@ -82,7 +87,10 @@
 (defthm program-effects-1
   (implies (preconditions x86)
            (equal (x86-run 1 x86)
-                  (!rip (+ 1 (rip x86)) (!flgi :cf 0 x86))))
+                  (!rip (+ 1 (rip x86))
+                        (!flgi :cf 0
+                               (mv-nth 2
+                                       (las-to-pas 1 (xr :rip nil x86) :x x86))))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
                                     x86-operation-mode
                                     rflag-RoWs-enables)
@@ -91,7 +99,9 @@
 (defthm program-effects-2
   (implies (preconditions x86)
            (equal (x86-run 2 x86)
-                  (!rip (+ 2 (xr :rip nil x86)) (!flgi :cf 1 x86))))
+                  (!rip (+ 2 (xr :rip nil x86))
+                        (!flgi :cf 1 (mv-nth 2
+                                             (las-to-pas 2 (xr :rip nil x86) :x x86))))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
                                     x86-operation-mode
                                     las-to-pas
