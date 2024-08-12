@@ -15,4 +15,4 @@
 
 (reset-prehistory)
 
-(in-package "ALEO-DYNAMIC")
+(in-package "ALEOBFT-DYNAMIC")
