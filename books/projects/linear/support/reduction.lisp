@@ -6,14 +6,14 @@
 ;; Matrices of Field Elements
 ;;----------------------------------------------------------------------------------------
 
-;; mxn matrix over F:
+;; mxn matrix:
 
 (defun fmatp (a m n)
   (declare (xargs :measure (nfix m)))
   (if (zp m)
       (null a)
     (and (consp a)
-	 (flistp (car a) n)
+	 (flistnp (car a) n)
 	 (fmatp (cdr a) (1- m) n))))
 
 (defthm len-fmatp
@@ -29,18 +29,18 @@
 (defun row (i a)
   (nth i a))
 
-(defthm flistp-row
+(defthm flistnp-row
   (implies (and (natp m) (natp n) (fmatp a m n)
 	        (natp i) (< i m))
-           (flistp (row i a) n)))  
+           (flistnp (row i a) n)))
 
-(defthm len-row
+(defthm len-fmat-row
   (implies (and (natp m) (natp n) (fmatp a m n)
 	        (natp i) (< i m))
-	   (equal (len (row i a))
+	   (equal (len (nth i a))
 		  n)))
 
-;; jth column of a:
+;; jth column or a:
 
 (defun col (j a)
   (if (consp a)
@@ -48,10 +48,10 @@
             (col j (cdr a)))
     ()))
 
-(defthm flistp-col
+(defthm flistnp-col
   (implies (and (natp m) (natp n) (fmatp a m n)
 		(natp j) (< j n))
-	   (flistp (col j a) m)))
+	   (flistnp (col j a) m)))
 
 (defthm len-col
   (implies (and (natp m) (natp n) (fmatp a m n))
@@ -60,8 +60,8 @@
 
 ;; The entry of a matrix in row i and column j:
 
-(defun entry (i j a)
-  (nth j (nth i a)))
+(defun entry (i j mat)
+  (nth j (nth i mat)))
 
 (defthmd fp-entry
   (implies (and (natp m) (natp n) (fmatp a m n)
@@ -76,7 +76,43 @@
   (equal (nth i (col j a))
          (entry i j a)))
 
-;; To show that 2 matrices of the same dimensions are equal, it suffices to show that
+;; Replace kth row of a with r:
+
+(defun replace-row (a k r)
+  (if (zp k)
+      (cons r (cdr a))
+    (cons (car a) (replace-row (cdr a) (1- k) r))))
+
+(defthm nth-replace-row
+  (implies (and (natp k) (< k (len a)) (natp j) (< j (len a)))
+           (equal (nth j (replace-row a k r))
+	          (if (= j k)
+		      r
+		    (nth j a)))))
+
+(defthm fmatp-replace-row
+  (implies (and (fmatp a m n) (natp m) (natp n) (natp k) (< k m) (flistnp r n))
+           (fmatp (replace-row a k r) m n)))
+
+(defthm len-replace-row
+  (implies (and (natp k) (< k (len a)))
+           (equal (len (replace-row a k r))
+                  (len a))))
+
+(defthmd replace-fmat-row-self
+  (implies (and (fmatp a m n) (posp m) (posp n)
+                (natp i) (< i m))
+	   (equal (replace-row a i (row i a))
+	          a)))
+
+(defthmd replace-2-fmat-rows
+  (implies (and (fmatp a m n) (posp m) (posp n)
+                (natp i) (< i m) (natp j) (< j m) (not (= i j))
+		(flistnp x n) (flistnp y n))
+	   (equal (replace-row (replace-row a i x) j y)
+	          (replace-row (replace-row a j y) i x))))
+
+;; To show that 2 matrices of the same dimensions are equal, it surrices to show that
 ;; corresponding entries are equal.  That is, if 2 mxn matrices are not equal, then some
 ;; pair of corresponding entries are not equal:
 
@@ -85,7 +121,7 @@
 	 (j (nth-diff (row i a) (row i b))))
     (cons i j)))
 
-(defthmd entry-diff-lemma
+(defthmd fmat-entry-diff-lemma
   (implies (and (posp m) (posp n) (fmatp a m n) (fmatp b m n) (not (equal a b)))
 	   (let* ((pair (entry-diff a b))
 		  (i (car pair))
@@ -95,8 +131,8 @@
 		  (not (equal (entry i j a) (entry i j b))))))
   :hints (("Goal" :in-theory (enable entry-diff)
 	   :use ((:instance nth-diff-diff (x a) (y b))
-	         (:instance flistp-row (i (nth-diff a b)))
-	         (:instance flistp-row (i (nth-diff a b))  (a b))
+	         (:instance flistnp-row (i (nth-diff a b)))
+	         (:instance flistnp-row (i (nth-diff a b))  (a b))
 	         (:instance nth-diff-diff (x (row (nth-diff a b) a)) (y (row (nth-diff a b) b)))))))
 
 ;; Addition of mxn matrices:
@@ -200,95 +236,125 @@
 
 ;; The transpose of a matrix is the list of its columns:
 
-(defun transpose-aux (a j n)
+(defun transpose-mat-aux (a j n)
   (declare (xargs :measure (nfix (- n j))))
   (if (and (natp j) (natp n) (< j n))
-      (cons (col j a) (transpose-aux a (1+ j) n))
+      (cons (col j a) (transpose-mat-aux a (1+ j) n))
     ()))
 
-(defund transpose (a)
-  (transpose-aux a 0 (len (car a))))
+(defund transpose-mat (a)
+  (transpose-mat-aux a 0 (len (car a))))
 
-(local-defthmd fmatp-transpose-aux
+(local-defthmd fmatp-transpose-mat-aux
   (implies (and (natp m) (natp n) (fmatp a m n) (natp j) (< j n))
-	   (fmatp (transpose-aux a j n) (- n j) m)))
+	   (fmatp (transpose-mat-aux a j n) (- n j) m)))
 
 (defthmd fmatp-transpose
   (implies (and (posp m) (posp n) (fmatp a m n))
-	   (fmatp (transpose a) n m))
-  :hints (("Goal" :in-theory (enable transpose)
-                  :use ((:instance fmatp-transpose-aux (j 0))
-	                (:instance len-row (i 0))))))
+	   (fmatp (transpose-mat a) n m))
+  :hints (("Goal" :in-theory (enable transpose-mat)
+                  :use ((:instance fmatp-transpose-mat-aux (j 0))
+	                (:instance len-fmat-row (i 0))))))
 
-(local-defun transpose-aux-induct (i j)
+(local-defun transpose-mat-aux-induct (i j)
   (if (zp i)
       j
-    (list (transpose-aux-induct (1- i) (1+ j)))))
+    (list (transpose-mat-aux-induct (1- i) (1+ j)))))
 
-(local-defthmd nth-transpose-aux
+(local-defthmd nth-transpose-mat-aux
   (implies (and (natp n) (natp j) (< j n) (natp i) (< i (- n j)))
-	   (equal (nth i (transpose-aux a j n))
+	   (equal (nth i (transpose-mat-aux a j n))
 		  (col (+ j i) a)))
-  :hints (("Goal" :induct (transpose-aux-induct i j))
-	  ("Subgoal *1/1" :expand ((TRANSPOSE-AUX A J N)))))
+  :hints (("Goal" :induct (transpose-mat-aux-induct i j))
+	  ("Subgoal *1/1" :expand ((TRANSPOSE-MAT-AUX A J N)))))
 
-(defthm nth-transpose
+(defthm nth-transpose-fmat
   (implies (and (posp m) (posp n) (fmatp a m n)
                 (natp i) (< i n))
-	   (equal (nth i (transpose a))
+	   (equal (nth i (transpose-mat a))
 		  (col i a)))
-  :hints (("Goal" :in-theory (enable transpose)
-                  :use ((:instance nth-transpose-aux (n (len (car a))) (j 0))
-			(:instance len-row (i 0))))))
+  :hints (("Goal" :in-theory (enable transpose-mat)
+                  :use ((:instance nth-transpose-mat-aux (n (len (car a))) (j 0))
+			(:instance len-fmat-row (i 0))))))
 
-(defthm transpose-entry
+(defthm transpose-fmat-entry
   (implies (and (posp m) (posp n) (fmatp a m n)
 		(natp j) (< j n) (natp i) (< i m))
-	   (equal (entry j i (transpose a))
+	   (equal (entry j i (transpose-mat a))
 		  (entry i j a))))
 
-(local-defthmd fmatp-transpose-transpose
+(local-defthmd fmatp-transpose-2
   (implies (and (posp m) (posp n) (fmatp a m n))
-	   (fmatp (transpose (transpose a)) m n))
+	   (fmatp (transpose-mat (transpose-mat a)) m n))
   :hints (("Goal" :in-theory (enable fmatp-transpose))))
 
-(local-defthmd transpose-transpose-entry
+(local-defthmd transpose-2-entry
   (implies (and (posp m) (posp n) (fmatp a m n)
 		(natp j) (< j n) (natp i) (< i m))
-	   (equal (entry i j (transpose (transpose a)))
+	   (equal (entry i j (transpose-mat (transpose-mat a)))
 		  (entry i j a)))
   :hints (("Goal" :in-theory (e/d (fmatp-transpose) (entry)))))
 
-(defthm transpose-transpose
+(defthm transpose-fmat-2
   (implies (and (posp m) (posp n) (fmatp a m n))
-           (equal (transpose (transpose a))
+           (equal (transpose-mat (transpose-mat a))
 	          a))
   :hints (("Goal" :in-theory (disable entry)
-                  :use (fmatp-transpose-transpose
-		        (:instance transpose-transpose-entry
-			            (i (car (entry-diff a (transpose (transpose a)))))
-		                    (j (cdr (entry-diff a (transpose (transpose a))))))
-		        (:instance entry-diff-lemma (b (transpose (transpose a))))))))
+                  :use (fmatp-transpose-2
+		        (:instance transpose-2-entry
+			            (i (car (entry-diff a (transpose-mat (transpose-mat a)))))
+		                    (j (cdr (entry-diff a (transpose-mat (transpose-mat a))))))
+		        (:instance fmat-entry-diff-lemma (b (transpose-mat (transpose-mat a))))))))
 
-(defthmd col-transpose
+(defthmd col-transpose-fmat
   (implies (and (posp m) (posp n) (fmatp a m n)
                 (natp j) (< j m))
-	   (equal (col j (transpose a))
+	   (equal (col j (transpose-mat a))
 	          (row j a)))
   :hints (("Goal" :use (fmatp-transpose
-                        (:instance nth-transpose (a (transpose a)) (m n) (n m) (i j))))))
+                        (:instance nth-transpose-fmat (a (transpose-mat a)) (m n) (n m) (i j))))))
+
+;; Replace kth column of a with r:
+
+(defund replace-col (a k r)
+  (transpose-mat (replace-row (transpose-mat a) k r)))
+
+(defthm fmatp-replace-col
+  (implies (and (fmatp a m n) (posp m) (posp n) (natp k) (< k n) (flistnp r m))
+           (fmatp (replace-col a k r) m n))
+  :hints (("Goal" :in-theory (enable replace-col)
+	          :use (fmatp-transpose
+		        (:instance fmatp-replace-row (a (transpose-mat a)) (m n) (n m))
+			(:instance fmatp-transpose (m n) (n m) (a (replace-row (transpose-mat a) k r)))))))
+
+(defthm fmat-col-replace-col
+  (implies (and (fmatp a m n) (posp m) (posp n)
+		(natp k) (< k n) (natp j) (< j n)
+		(flistnp r m))
+           (equal (col j (replace-col a k r))
+	          (if (= j k)
+		      r
+		    (col j a))))
+  :hints (("Goal" :in-theory (enable replace-col)
+                  :use (fmatp-transpose
+		        (:instance fmatp-replace-row (a (transpose-mat a)) (m n) (n m))
+			(:instance fmatp-transpose (m n) (n m) (a (replace-row (transpose-mat a) k r)))
+			(:instance col-transpose-fmat (a (replace-row (transpose-mat a) k r)) (m n) (n m))
+			(:instance nth-replace-row (a (transpose-mat a)))))))
 
 ;; An important lemma in the proof of associativity of matrix multiplication:
-;; If (fmatp a m n), then (fmat-sum (transpose a)) = (fmat-sum a).
+;; If (fmatp a m n), then (fmat-sum (transpose-mat a)) = (fmat-sum a).
 ;; This holds trivially if either m = 0 or n = 0:
 
 (local-defthm fmat-sum-0-1
   (implies (and (natp m) (fmatp a m 0))
-           (equal (fmat-sum a) (f0))))
+           (equal (fmat-sum a) (f0)))
+  :hints (("Goal" :in-theory (enable flist-sum))))
 
 (defthm fmat-sum-0
   (implies (and (natp m) (natp n) (or (= m 0) (= n 0)) (fmatp a m n))
-           (equal (fmat-sum a) (f0))))
+           (equal (fmat-sum a) (f0)))
+  :hints (("Goal" :in-theory (enable flist-sum))))
 
 (local-defthm fmat-sum-transpose-0-1
   (implies (and (natp n) (fmatp a 0 n))
@@ -296,14 +362,15 @@
 
 (local-defthm fmat-sum-transpose-0-2
   (implies (and (natp n) (fmatp a 0 n))
-           (equal (fmat-sum (transpose-aux a j n))
-	          (f0))))
+           (equal (fmat-sum (transpose-mat-aux a j n))
+	          (f0)))
+  :hints (("Goal" :in-theory (enable flist-sum))))
 
 (defthm fmat-sum-transpose-0
   (implies (and (natp m) (natp n) (or (= m 0) (= n 0)) (fmatp a m n))
-           (equal (fmat-sum (transpose a))
+           (equal (fmat-sum (transpose-mat a))
 	          (f0)))
-  :hints (("Goal" :in-theory (enable transpose))))
+  :hints (("Goal" :in-theory (enable transpose-mat))))
 		        
 ;; In the inductive step, we assume that the claim holds when a is replaced by
 ;; (strip-mat a), which is the result of deleting its first row and first column:
@@ -337,18 +404,21 @@
   :hints (("Goal" :in-theory (enable strip-mat)
 	   :use (fmatp-cdr (:instance fmatp-cdrs (m (1- m)))))))
 
-(local-defthmd sum-mat-strip-mat-1
+
+(in-theory (enable flist-sum))
+
+(local-defthmd sum-fmat-strip-mat-1
   (implies (and (posp m) (posp n) (fmatp a m n))
 	   (equal (fmat-sum a)
 		  (f+ (f+ (entry 0 0 a) (flist-sum (cdr (row 0 a))))
 		      (fmat-sum (cdr a))))))
 
-(local-defthmd sum-mat-strip-mat-2
+(local-defthmd sum-fmat-strip-mat-2
   (implies (and (natp m) (posp n) (fmatp a m n))
-           (and (flistp (cars a) m)
+           (and (flistnp (cars a) m)
 	        (fmatp (cdrs a) m (1- n)))))
 
-(local-defthmd sum-mat-strip-mat-3
+(local-defthmd sum-fmat-strip-mat-3
   (IMPLIES (AND (natp m) (posp n) (fmatp a m n))
            (EQUAL (F+ (F+ (CAR (CAR A))
                           (FLIST-SUM (CDR (CAR A))))
@@ -359,17 +429,17 @@
                       (F+ (FLIST-SUM (CDR (CAR A)))
                           (FMAT-SUM (CDRS (CDR A)))))))
   :hints (("Goal" :in-theory (enable f+assoc)
-                  :use ((:instance sum-mat-strip-mat-2 (a (cdr a)) (m (1- m)))
+                  :use ((:instance sum-fmat-strip-mat-2 (a (cdr a)) (m (1- m)))
 		        (:instance f+assoc (x (caar a)) (y (flist-sum (cdar a))) (z (flist-sum (cars (cdr a)))))
 		        (:instance f+assoc (x (caar a)) (z (flist-sum (cdar a))) (y (flist-sum (cars (cdr a)))))
 			(:instance f+comm (x (flist-sum (cdar a))) (y (flist-sum (cars (cdr a)))))))))
 
-(local-defthmd sum-mat-strip-mat-4
+(local-defthmd sum-fmat-strip-mat-4
   (implies (and (natp m) (posp n) (fmatp a m n))
 	   (equal (fmat-sum a)
 	          (f+ (flist-sum (cars a))
 		      (fmat-sum (cdrs a)))))
-  :hints (("Subgoal *1/5" :use (sum-mat-strip-mat-3))))
+  :hints (("Subgoal *1/5" :use (sum-fmat-strip-mat-3))))
 
 (local-defthmd flist-sum-cars-cdr
   (equal (flist-sum (cars (cdr a)))
@@ -379,60 +449,60 @@
   (implies (and (posp m) (posp n) (fmatp a m n))
            (equal (cars a) (col 0 a))))
 
-(local-defthmd sum-mat-strip-mat-5
+(local-defthmd sum-fmat-strip-mat-5
   (implies (and (posp m) (posp n) (fmatp a m n))
 	   (equal (fmat-sum (cdr a))
 	          (f+ (flist-sum (cdr (col 0 a)))
 		      (fmat-sum (strip-mat a)))))
   :hints (("Goal" :in-theory (enable strip-mat)
                   :use (flist-sum-cars-cdr cars-col-0
-		        (:instance sum-mat-strip-mat-4 (m (1- m)) (a (cdr a)))))))
+		        (:instance sum-fmat-strip-mat-4 (m (1- m)) (a (cdr a)))))))
 
-(local-defthmd sum-mat-strip-mat-6
+(local-defthmd sum-fmat-strip-mat-6
   (implies (and (posp m) (posp n) (fmatp a m n))
 	   (equal (fmat-sum a)
 		  (f+ (f+ (entry 0 0 a) (flist-sum (cdr (row 0 a))))
 		      (f+ (flist-sum (cdr (col 0 a)))
 		          (fmat-sum (strip-mat a))))))
-  :hints (("Goal" :use (sum-mat-strip-mat-1 sum-mat-strip-mat-5))))
+  :hints (("Goal" :use (sum-fmat-strip-mat-1 sum-fmat-strip-mat-5))))
 
-(defthmd sum-mat-strip-mat
+(defthmd sum-fmat-strip-mat
   (implies (and (posp m) (posp n) (fmatp a m n))
 	   (equal (fmat-sum a)
 		  (f+ (entry 0 0 a)
 		      (f+ (f+ (flist-sum (cdr (row 0 a)))
 			      (flist-sum (cdr (col 0 a))))
 			  (fmat-sum (strip-mat a))))))			  
-  :hints (("Goal" :in-theory (e/d (sum-mat-strip-mat-6 f+assoc) (flistp-col))
+  :hints (("Goal" :in-theory (e/d (sum-fmat-strip-mat-6 f+assoc) (flistnp-col))
                   :use (fmatp-strip-mat
-		        (:instance flistp-row (i 0))
-		        (:instance flistp-col (j 0))
+		        (:instance flistnp-row (i 0))
+		        (:instance flistnp-col (j 0))
 		        (:instance fp-entry (i 0) (j 0))))))
 
-;; Since (row 0 a) = (col 0 (transpose a)) and (col 0 a) = (row 0 (transpose a)), we have
-;; the following:
+;; Since (row 0 a) = (col 0 (transpose-mat a)) and (col 0 a) = (row 0 (transpose-mat a)), we have
+;; the rollowing:
 
-(defthmd sum-mat-strip-mat-equal
+(defthmd sum-fmat-strip-mat-equal
   (implies (and (posp m) (posp n) (fmatp a m n)
-                (equal (fmat-sum (strip-mat a)) (fmat-sum (strip-mat (transpose a)))))
-	   (equal (fmat-sum (transpose a))
+                (equal (fmat-sum (strip-mat a)) (fmat-sum (strip-mat (transpose-mat a)))))
+	   (equal (fmat-sum (transpose-mat a))
 		  (fmat-sum a)))
-  :hints (("Goal" :in-theory (e/d (sum-mat-strip-mat col-transpose) (flistp-col))
+  :hints (("Goal" :in-theory (e/d (sum-fmat-strip-mat col-transpose-fmat) (flistnp-col))
                   :use (fmatp-transpose
-		        (:instance flistp-row (i 0))
-		        (:instance flistp-col (j 0))
+		        (:instance flistnp-row (i 0))
+		        (:instance flistnp-col (j 0))
 		        (:instance f+comm (x (flist-sum (cdr (row 0 a)))) (y (flist-sum (cdr (col 0 a)))))))))
 
-;; If either m = 0 or n = 0, then the hypothesis of sum-mat-strip-mat-equal holds trivially:
+;; If either m = 0 or n = 0, then the hypothesis of sum-fmat-strip-mat-equal holds trivially:
 
 (defthm fmat-sum-strip-mat-0
   (implies (and (posp m) (posp n) (or (= m 1) (= n 1)) (fmatp a m n))
            (and (equal (fmat-sum (strip-mat a)) (f0))
-	        (equal (fmat-sum (strip-mat (transpose a))) (f0))))
+	        (equal (fmat-sum (strip-mat (transpose-mat a))) (f0))))
   :hints (("Goal" :use (fmatp-strip-mat fmatp-transpose
-                        (:instance fmatp-strip-mat (a (transpose a)) (m n) (n m))
+                        (:instance fmatp-strip-mat (a (transpose-mat a)) (m n) (n m))
 			(:instance fmat-sum-0 (a (strip-mat a)) (m (1- m)) (n (1- n)))
-			(:instance fmat-sum-0 (a (strip-mat (transpose a))) (m (1- n)) (n (1- m)))))))
+			(:instance fmat-sum-0 (a (strip-mat (transpose-mat a))) (m (1- n)) (n (1- m)))))))
 
 (local-defthmd nth-cdr
   (implies (and (posp i) (consp l))
@@ -444,7 +514,7 @@
 	   (equal (nth i (cdrs l))
 		  (cdr (nth i l)))))
 
-(defthmd strip-mat-entry
+(defthmd strip-fmat-entry
   (implies (and (posp m) (posp n) (fmatp a m n)
 		(natp i) (natp j) (< i (1- m)) (< j (1- n)))
 	   (equal (entry i j (strip-mat a))
@@ -456,55 +526,55 @@
 
 (local-defthmd fmatp-transpose-strip-mat
   (implies (and (posp m) (posp n) (> m 1) (> n 1) (fmatp a m n))
-           (and (fmatp (transpose (strip-mat a)) (1- n) (1- m))
-	        (fmatp (strip-mat (transpose a)) (1- n) (1- m))))
+           (and (fmatp (transpose-mat (strip-mat a)) (1- n) (1- m))
+	        (fmatp (strip-mat (transpose-mat a)) (1- n) (1- m))))
   :hints (("Goal" :use (fmatp-transpose fmatp-strip-mat
                         (:instance fmatp-transpose (a (strip-mat a)) (m (1- m)) (n (1- n)))
-			(:instance fmatp-strip-mat (a (transpose a)) (m n) (n m))))))
+			(:instance fmatp-strip-mat (a (transpose-mat a)) (m n) (n m))))))
 
 (local-defthmd entry-transpose-strip-mat
   (implies (and (posp m) (posp n) (> m 1) (> n 1) (fmatp a m n)
 		(natp i) (natp j) (< i (1- n)) (< j (1- m)))
-	   (equal (entry i j (transpose (strip-mat a)))
-		  (entry i j (strip-mat (transpose a)))))
+	   (equal (entry i j (transpose-mat (strip-mat a)))
+		  (entry i j (strip-mat (transpose-mat a)))))
   :hints (("Goal" :use (fmatp-transpose fmatp-strip-mat
-                        (:instance transpose-entry (a (strip-mat a)) (m (1- m)) (n (1- n)) (i j) (j i))
-			(:instance strip-mat-entry (i j) (j i))
-			(:instance strip-mat-entry (a (transpose a)) (m n) (n m))
-			(:instance transpose-entry (i (1+ j)) (j (1+ i)))))))
+                        (:instance transpose-fmat-entry (a (strip-mat a)) (m (1- m)) (n (1- n)) (i j) (j i))
+			(:instance strip-fmat-entry (i j) (j i))
+			(:instance strip-fmat-entry (a (transpose-mat a)) (m n) (n m))
+			(:instance transpose-fmat-entry (i (1+ j)) (j (1+ i)))))))
 
-;; In the remaining case, we have the following:
+;; In the remaining case, we have the rollowing:
 
 (defthmd transpose-strip-mat
   (implies (and (posp m) (posp n) (> m 1) (> n 1) (fmatp a m n))
-	   (equal (transpose (strip-mat a))
-		  (strip-mat (transpose a))))
+	   (equal (transpose-mat (strip-mat a))
+		  (strip-mat (transpose-mat a))))
   :hints (("Goal" :use (fmatp-transpose-strip-mat
-                        (:instance entry-diff-lemma (a (transpose (strip-mat a))) (b (strip-mat (transpose a))) (m (1- n)) (n (1- m)))
+                        (:instance fmat-entry-diff-lemma (a (transpose-mat (strip-mat a))) (b (strip-mat (transpose-mat a))) (m (1- n)) (n (1- m)))
 			(:instance entry-transpose-strip-mat
-			  (i (car (entry-diff (transpose (strip-mat a)) (strip-mat (transpose a)))))
-			  (j (cdr (entry-diff (transpose (strip-mat a)) (strip-mat (transpose a))))))))))
+			  (i (car (entry-diff (transpose-mat (strip-mat a)) (strip-mat (transpose-mat a)))))
+			  (j (cdr (entry-diff (transpose-mat (strip-mat a)) (strip-mat (transpose-mat a))))))))))
 
-(local-defun sum-mat-transpose-induct (a m n)
+(local-defun sum-fmat-transpose-induct (a m n)
   (if (and (posp m) (posp n))
-      (list (sum-mat-transpose-induct (strip-mat a) (1- m) (1- n)))
+      (list (sum-fmat-transpose-induct (strip-mat a) (1- m) (1- n)))
     (list a m n)))
 
-;; The result follows by induction:
+;; The result rollows by induction:
 
-(defthmd sum-mat-transpose
+(defthmd sum-fmat-transpose
   (implies (and (natp m) (natp n) (fmatp a m n))
-	   (equal (fmat-sum (transpose a))
+	   (equal (fmat-sum (transpose-mat a))
 		  (fmat-sum a)))
-  :hints (("Goal" :induct (sum-mat-transpose-induct a m n))
-          ("Subgoal *1/1" :use (fmatp-strip-mat sum-mat-strip-mat-equal transpose-strip-mat fmat-sum-strip-mat-0))))
+  :hints (("Goal" :induct (sum-fmat-transpose-induct a m n))
+          ("Subgoal *1/1" :use (fmatp-strip-mat sum-fmat-strip-mat-equal transpose-strip-mat fmat-sum-strip-mat-0))))
 
 
 ;;----------------------------------------------------------------------------------------
 ;; Matrix Multiplication
 ;;----------------------------------------------------------------------------------------
 
-;; Dot product of 2 lists of field elements of the same length:
+;; Dot product of 2 lists of rield elements of the same length:
 
 (defun fdot (x y)
   (if (consp x)
@@ -515,24 +585,24 @@
 (in-theory (disable (fdot)))
 
 (defthm fp-fdot
-  (implies (and (flistp x n) (flistp y n))
+  (implies (and (flistnp x n) (flistnp y n))
            (fp (fdot x y)))
   :hints (("Goal" :in-theory (disable (fdot)))))
 
-(defthm fdot-flist0
-  (implies (and (natp n) (flistp x n))
-           (equal (fdot (flist0 n) x)
+(defthm fdot-flistn0
+  (implies (and (natp n) (flistnp x n))
+           (equal (fdot (flistn0 n) x)
 	          (f0)))
   :hints (("Goal" :in-theory (disable (fdot)))))
 
 (defthmd fdot-comm
-  (implies (and (flistp x n) (flistp y n))
+  (implies (and (flistnp x n) (flistnp y n))
            (equal (fdot x y) (fdot y x)))
   :hints (("Subgoal *1/1" :use ((:instance f*comm (x (car x)) (y (car y)))))
           ("Subgoal *1/3" :use ((:instance f*comm (x (car x)) (y (car y)))))))
 
 (defthmd fdot-flist-add
-  (implies (and (flistp x n) (flistp y n) (flistp z n))
+  (implies (and (flistnp x n) (flistnp y n) (flistnp z n))
 	   (equal (fdot (flist-add x y) z)
 		  (f+ (fdot x z) (fdot y z))))
   :hints (("Subgoal *1/4" :use ((:instance f+assoc (x (F* (CAR X) (CAR Z)))
@@ -551,7 +621,7 @@
 						   (z (FDOT (FLIST-ADD (CDR X) (CDR Y)) (CDR Z))))))))
 
 (defthmd fdot-flist-add-comm
-  (implies (and (flistp x n) (flistp y n) (flistp z n))
+  (implies (and (flistnp x n) (flistnp y n) (flistnp z n))
 	   (equal (fdot z (flist-add x y))
 		  (f+ (fdot z x) (fdot z y))))
   :hints (("Goal" :use (fdot-flist-add
@@ -560,7 +630,7 @@
 			(:instance fdot-comm (x z) (y (flist-add x y)))))))
 					   
 (defthmd fdot-flist-scalar-mul
-  (implies (and (flistp x n) (flistp y n) (fp c))
+  (implies (and (flistnp x n) (flistnp y n) (fp c))
 	   (equal (fdot (flist-scalar-mul c x) y)
 		  (f* c (fdot x y))))
   :hints (("Goal" :in-theory (enable f*assoc))))
@@ -573,9 +643,9 @@
             (fdot-list x (cdr l)))
     ()))
 
-(defthm flistp-fdot-list
-  (implies (and (fmatp l m n) (flistp x n))
-           (flistp (fdot-list x l) m)))
+(defthm flistnp-fdot-list
+  (implies (and (fmatp l m n) (flistnp x n))
+           (flistnp (fdot-list x l) m)))
 
 (defthm nth-fdot-list
   (implies (and (natp j) (< j (len l)))
@@ -586,7 +656,7 @@
 
 (defund fmat* (a b)
   (if (consp a)
-      (cons (fdot-list (car a) (transpose b))
+      (cons (fdot-list (car a) (transpose-mat b))
             (fmat* (cdr a) b))
     ()))
 
@@ -602,7 +672,7 @@
 (defthmd nth-fmat*
   (implies (and (natp m) (fmatp a m n) (natp i) (< i m))
            (equal (nth i (fmat* a b))
-	          (fdot-list (nth i a) (transpose b))))
+	          (fdot-list (nth i a) (transpose-mat b))))
   :hints (("Goal" :in-theory (enable fmat*))))
 
 (defthmd fmat*-entry
@@ -623,15 +693,15 @@
 		        (:instance fmatp-fmat* (a a2))
 			(:instance row-fmat-add (a a1) (b a2))
 			(:instance fdot-flist-add (x (nth i a1)) (y (nth i a2)) (z (col j b)))
-			(:instance flistp-row (a a1))
-			(:instance flistp-row (a a2))))))
+			(:instance flistnp-row (a a1))
+			(:instance flistnp-row (a a2))))))
 
 (defthmd fmat*-dist-1
   (implies (and (posp m) (posp n) (posp p) (fmatp a1 m n) (fmatp a2 m n) (fmatp b n p))
 	   (equal (fmat* (fmat-add a1 a2) b)
 		  (fmat-add (fmat* a1 b) (fmat* a2 b))))
   :hints (("Goal" :in-theory (disable fmatp-fmat-add)
-                  :use ((:instance entry-diff-lemma (a (fmat* (fmat-add a1 a2) b)) (b (fmat-add (fmat* a1 b) (fmat* a2 b))) (n p))
+                  :use ((:instance fmat-entry-diff-lemma (a (fmat* (fmat-add a1 a2) b)) (b (fmat-add (fmat* a1 b) (fmat* a2 b))) (n p))
                         (:instance fmat*-dist-1-entry
 			  (i (car (entry-diff (fmat* (fmat-add a1 a2) b) (fmat-add (fmat* a1 b) (fmat* a2 b)))))
 			  (j (cdr (entry-diff (fmat* (fmat-add a1 a2) b) (fmat-add (fmat* a1 b) (fmat* a2 b))))))
@@ -645,7 +715,7 @@
 	   (equal (entry i j (fmat* a (fmat-add b1 b2)))
 		  (entry i j (fmat-add (fmat* a b1) (fmat* a b2)))))
   :hints (("Goal" :in-theory (e/d (col-fmat-add fmat*-entry fmat-add-entry) (fdot-flist-add fmatp-fmat* entry))
-                  :use (flistp-row
+                  :use (flistnp-row
 		        (:instance fmatp-fmat* (b b1))
 		        (:instance fmatp-fmat* (b b2))
 			(:instance col-fmat-add (a b1) (b b2) (m n) (n p))			
@@ -653,15 +723,15 @@
 			(:instance fdot-comm (x (nth i a)) (y (flist-add (col j b1) (col j b2))))
 			(:instance fdot-comm (x (NTH I A)) (y (col j b1)))
 			(:instance fdot-comm (x (nth i a)) (y (col j b2)))
-			(:instance flistp-col (a b1) (m n) (n p))
-			(:instance flistp-col (a b2) (m n) (n p))))))
+			(:instance flistnp-col (a b1) (m n) (n p))
+			(:instance flistnp-col (a b2) (m n) (n p))))))
 			
 (defthmd fmat*-dist-2
   (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b1 n p) (fmatp b2 n p))
 	   (equal (fmat* a (fmat-add b1 b2))
 		  (fmat-add (fmat* a b1) (fmat* a b2))))
   :hints (("Goal" :in-theory (disable fmatp-fmat-add)
-                  :use ((:instance entry-diff-lemma (a (fmat* a (fmat-add b1 b2))) (b (fmat-add (fmat* a b1) (fmat* a b2))) (n p))
+                  :use ((:instance fmat-entry-diff-lemma (a (fmat* a (fmat-add b1 b2))) (b (fmat-add (fmat* a b1) (fmat* a b2))) (n p))
                         (:instance fmat*-dist-2-entry
 			  (i (car (entry-diff (fmat* a(fmat-add b1 b2)) (fmat-add (fmat* a b1) (fmat* a b2)))))
 			  (j (cdr (entry-diff (fmat* a(fmat-add b1 b2)) (fmat-add (fmat* a b1) (fmat* a b2))))))
@@ -675,9 +745,9 @@
 	   (equal (entry i j (fmat* (fmat-scalar-mul c a) b))
 		  (entry i j (fmat-scalar-mul c (fmat* a b)))))
   :hints (("Goal" :in-theory (e/d (fmat-scalar-mul-entry fmat*-entry) (fdot-flist-add fmatp-fmat* entry))  
-                  :use (row-fmat-scalar-mul fmatp-fmat*	fmatp-fmat-scalar-mul flistp-row
+                  :use (row-fmat-scalar-mul fmatp-fmat*	fmatp-fmat-scalar-mul flistnp-row
 		        (:instance fdot-flist-scalar-mul (x (nth i a)) (y (col j b)))
-			(:instance flistp-col (a b) (m n) (n p))
+			(:instance flistnp-col (a b) (m n) (n p))
 		        (:instance fmatp-fmat-scalar-mul (a (fmat* a b)) (n p))))))
 
 (defthmd fmat*-fmat-scalar-mul-1
@@ -687,7 +757,7 @@
   :hints (("Goal" :use (fmatp-fmat-scalar-mul
                         (:instance fmatp-fmat-scalar-mul (a (fmat* a b)) (n p))
                         (:instance fmatp-fmat* (a (fmat-scalar-mul c a)))
-                        (:instance entry-diff-lemma (a (fmat* (fmat-scalar-mul c a) b)) (b (fmat-scalar-mul c (fmat* a b))) (n p))
+                        (:instance fmat-entry-diff-lemma (a (fmat* (fmat-scalar-mul c a) b)) (b (fmat-scalar-mul c (fmat* a b))) (n p))
                         (:instance fmat*-fmat-scalar-mul-1-entry
 			            (i (car (entry-diff (fmat* (fmat-scalar-mul c a) b) (fmat-scalar-mul c (fmat* a b)))))
 			            (j (cdr (entry-diff (fmat* (fmat-scalar-mul c a) b) (fmat-scalar-mul c (fmat* a b))))))))))
@@ -698,12 +768,12 @@
 	   (equal (entry i j (fmat* a (fmat-scalar-mul c b)))
 		  (entry i j (fmat-scalar-mul c (fmat* a b)))))
   :hints (("Goal" :in-theory (e/d (fmat-scalar-mul-entry fmat*-entry) (fdot-flist-add fmatp-fmat* entry))  
-                  :use (fmatp-fmat* flistp-row
+                  :use (fmatp-fmat* flistnp-row
 		        (:instance fmatp-fmat-scalar-mul  (a b) (m n) (n p))
 		        (:instance col-fmat-scalar-mul (a b) (m n) (n p))
 			(:instance fdot-comm (x (nth i a)) (y (COL J (FMAT-SCALAR-MUL C B))))
 			(:instance fdot-flist-scalar-mul (x (col j b)) (y (nth i a)))
-			(:instance flistp-col (a b) (m n) (n p))
+			(:instance flistnp-col (a b) (m n) (n p))
 			(:instance fdot-comm (x (nth i a)) (y (col j b)))))))
 
 (defthmd fmat*-fmat-scalar-mul-2
@@ -713,7 +783,7 @@
   :hints (("Goal" :use ((:instance fmatp-fmat-scalar-mul (a b) (m n) (n p))
                         (:instance fmatp-fmat-scalar-mul (a (fmat* a b)) (n p))
                         (:instance fmatp-fmat* (b (fmat-scalar-mul c b)))
-                        (:instance entry-diff-lemma (a (fmat* a (fmat-scalar-mul c b))) (b (fmat-scalar-mul c (fmat* a b))) (n p))
+                        (:instance fmat-entry-diff-lemma (a (fmat* a (fmat-scalar-mul c b))) (b (fmat-scalar-mul c (fmat* a b))) (n p))
                         (:instance fmat*-fmat-scalar-mul-2-entry
 			            (i (car (entry-diff (fmat* a (fmat-scalar-mul c b)) (fmat-scalar-mul c (fmat* a b)))))
 			            (j (cdr (entry-diff (fmat* a (fmat-scalar-mul c b)) (fmat-scalar-mul c (fmat* a b))))))))))
@@ -721,218 +791,218 @@
 (local-defthmd transpose-fmat*-entry-1
   (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p)
                 (natp i) (< i p) (natp j) (< j m))
-	   (equal (entry i j (transpose (fmat* a b)))
+	   (equal (entry i j (transpose-mat (fmat* a b)))
 	          (fdot (row j a) (col i b))))
   :hints (("Goal" :use (fmatp-fmat*
-                        (:instance transpose-entry (i j) (j i) (a (fmat* a b)) (n p))
+                        (:instance transpose-fmat-entry (i j) (j i) (a (fmat* a b)) (n p))
                         (:instance fmat*-entry (i j) (j i))))))
 
 (local-defthmd transpose-fmat*-entry-2
   (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p)
                 (natp i) (< i p) (natp j) (< j m))
-	   (equal (entry i j (fmat* (transpose b) (transpose a)))
+	   (equal (entry i j (fmat* (transpose-mat b) (transpose-mat a)))
 	          (fdot (col i b) (row j a))))
-  :hints (("Goal" :use (fmatp-fmat* col-transpose fmatp-transpose
+  :hints (("Goal" :use (fmatp-fmat* col-transpose-fmat fmatp-transpose
                         (:instance fmatp-transpose (a b) (m n) (n p))
-                        (:instance fmat*-entry (a (transpose b)) (b (transpose a)) (m p) (p m))))))
+                        (:instance fmat*-entry (a (transpose-mat b)) (b (transpose-mat a)) (m p) (p m))))))
 
 (local-defthmd transpose-fmat*-entry
   (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p)
                 (natp i) (< i p) (natp j) (< j m))
-	   (equal (entry i j (transpose (fmat* a b)))
-	          (entry i j (fmat* (transpose b) (transpose a)))))
+	   (equal (entry i j (transpose-mat (fmat* a b)))
+	          (entry i j (fmat* (transpose-mat b) (transpose-mat a)))))
   :hints (("Goal" :use (transpose-fmat*-entry-1 transpose-fmat*-entry-2
-                        (:instance flistp-row (i j))
+                        (:instance flistnp-row (i j))
                         (:instance fdot-comm (x (row j a)) (y (col i b)))))))
 
 ;; Transpose of a product:
 
 (defthmd transpose-fmat*
   (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p))
-	   (equal (transpose (fmat* a b))
-	          (fmat* (transpose b) (transpose a))))
+	   (equal (transpose-mat (fmat* a b))
+	          (fmat* (transpose-mat b) (transpose-mat a))))
   :hints (("Goal" :use (fmatp-fmat* fmatp-transpose
                         (:instance fmatp-transpose (a b) (m n) (n p))
                         (:instance fmatp-transpose (a (fmat* a b)) (n p))
-			(:instance fmatp-fmat* (a (transpose b)) (b (transpose a)) (m p) (p m))
-			(:instance entry-diff-lemma (m p) (n m)
-			                            (a (transpose (fmat* a b)))
-			                            (b (fmat* (transpose b) (transpose a))))
+			(:instance fmatp-fmat* (a (transpose-mat b)) (b (transpose-mat a)) (m p) (p m))
+			(:instance fmat-entry-diff-lemma (m p) (n m)
+			                            (a (transpose-mat (fmat* a b)))
+			                            (b (fmat* (transpose-mat b) (transpose-mat a))))
                         (:instance transpose-fmat*-entry
-			            (i (car (entry-diff (transpose (fmat* a b)) (fmat* (transpose b) (transpose a)))))
-                                    (j (cdr (entry-diff (transpose (fmat* a b)) (fmat* (transpose b) (transpose a))))))))))
+			            (i (car (entry-diff (transpose-mat (fmat* a b)) (fmat* (transpose-mat b) (transpose-mat a)))))
+                                    (j (cdr (entry-diff (transpose-mat (fmat* a b)) (fmat* (transpose-mat b) (transpose-mat a))))))))))
 
-;; The definition of the nxn identify matrix is based on that of an flist of length n
+;; The definition of the nxn identity matrix is based on that of an flist of length n
 ;; with (f1) at index j and (f0) elsewhere:
 
-(defun unit (j n)
+(defun funit (j n)
   (if (zp n)
       ()
     (if (zp j)
-        (cons (f1) (flist0 (1- n)))
-      (cons (f0) (unit (1- j) (1- n))))))
+        (cons (f1) (flistn0 (1- n)))
+      (cons (f0) (funit (1- j) (1- n))))))
 
-(defthm flistp-unit
-  (flistp (unit j n) n))
+(defthm flistnp-funit
+  (flistnp (funit j n) n))
 
-(defun delta (i j)
+(defun fdelta (i j)
   (if (= i j) (f1) (f0)))
 
-(local-defun nth-unit-induct (i j n)
+(local-defun nth-funit-induct (i j n)
   (if (or (zp i) (zp j) (zp n))
       t
-    (list (nth-unit-induct (1- i) (1- j) (1- n)))))
+    (list (nth-funit-induct (1- i) (1- j) (1- n)))))
 
-(defthm nth-unit
+(defthm nth-funit
   (implies (and (natp n) (natp j) (< j n) (natp i) (< i n))
-           (equal (nth i (unit j n))
-	          (delta i j)))
-  :hints (("Goal" :induct (nth-unit-induct i j n))  
-          ("Subgoal *1/1" :expand ((unit j n)))))
+           (equal (nth i (funit j n))
+	          (fdelta i j)))
+  :hints (("Goal" :induct (nth-funit-induct i j n))  
+          ("Subgoal *1/1" :expand ((funit j n)))))
 
-;; Dot product of (unit j n) with an flist of length n:
+;; Dot product of (funit j n) with an flist of length n:
 
-(defthm fdot-unit
-  (implies (and (posp n) (flistp x n) (natp j) (< j n))
-           (equal (fdot (unit j n) x)
+(defthm fdot-funit
+  (implies (and (posp n) (flistnp x n) (natp j) (< j n))
+           (equal (fdot (funit j n) x)
 	          (nth j x))))
 
-(defthm fdot-unit-comm
-  (implies (and (posp n) (flistp x n) (natp j) (< j n))
-           (equal (fdot x (unit j n))
+(defthm fdot-funit-comm
+  (implies (and (posp n) (flistnp x n) (natp j) (< j n))
+           (equal (fdot x (funit j n))
 	          (nth j x)))
-  :hints (("Goal" :use ((:instance fdot-comm (y (unit j n)))))))
+  :hints (("Goal" :use ((:instance fdot-comm (y (funit j n)))))))
 
 ;; nxn identity matrix:
 
-(defun id-mat-aux (j n)
+(defun id-fmat-aux (j n)
   (declare (xargs :measure (nfix (- n j))))
   (if (and (natp j) (natp n) (< j n))
-      (cons (unit j n) (id-mat-aux (1+ j) n))
+      (cons (funit j n) (id-fmat-aux (1+ j) n))
     ()))
 
-(defund id-mat (n)
-  (id-mat-aux 0 n))
+(defund id-fmat (n)
+  (id-fmat-aux 0 n))
 
-(local-defthmd fmatp-id-mat-aux
+(local-defthmd fmatp-id-fmat-aux
   (implies (and (posp n) (natp j) (<= j n))
-           (fmatp (id-mat-aux j n) (- n j) n)))
+           (fmatp (id-fmat-aux j n) (- n j) n)))
 
-(defthm fmatp-id-mat
+(defthm fmatp-id-fmat
   (implies (posp n)
-           (fmatp (id-mat n) n n))
-  :hints (("Goal" :in-theory (enable id-mat)
-                  :use ((:instance fmatp-id-mat-aux (j 0))))))
+           (fmatp (id-fmat n) n n))
+  :hints (("Goal" :in-theory (enable id-fmat)
+                  :use ((:instance fmatp-id-fmat-aux (j 0))))))
 
-(local-defthmd nth-id-mat-aux
+(local-defthmd nth-id-fmat-aux
   (implies (and (natp n) (natp j) (< j n) (natp i) (< i (- n j)))
-	   (equal (nth i (id-mat-aux j n))
-		  (unit (+ j i) n)))
-  :hints (("Goal" :induct (transpose-aux-induct i j))
-	  ("Subgoal *1/1" :expand ((id-mat-aux j n)))))
+	   (equal (nth i (id-fmat-aux j n))
+		  (funit (+ j i) n)))
+  :hints (("Goal" :induct (transpose-mat-aux-induct i j))
+	  ("Subgoal *1/1" :expand ((id-fmat-aux j n)))))
 
-(defthm nth-id-mat
+(defthm nth-id-fmat
   (implies (and (posp n) (natp i) (< i n))
-	   (equal (nth i (id-mat n))
-		  (unit i n)))
-  :hints (("Goal" :in-theory (enable id-mat)
-                  :use ((:instance nth-id-mat-aux (j 0))))))
+	   (equal (nth i (id-fmat n))
+		  (funit i n)))
+  :hints (("Goal" :in-theory (enable id-fmat)
+                  :use ((:instance nth-id-fmat-aux (j 0))))))
 
-(defthmd entry-id-mat
+(defthmd entry-id-fmat
   (implies (and (natp n) (natp i) (natp j) (< i n) (< j n))
-           (equal (entry i j (id-mat n))
-	          (delta i j))))
+           (equal (entry i j (id-fmat n))
+	          (fdelta i j))))
 
-(local-defthmd entry-transpose-id-mat
+(local-defthmd entry-transpose-id-fmat
   (implies (and (natp n) (natp i) (natp j) (< i n) (< j n))
-           (equal (entry i j (transpose (id-mat n)))
-	          (entry i j (id-mat n))))
-  :hints  (("Goal" :use (entry-id-mat
-                         (:instance entry-id-mat (i j) (j i))
-			 (:instance transpose-entry (a (id-mat n)) (m n) (i j) (j i))))))
+           (equal (entry i j (transpose-mat (id-fmat n)))
+	          (entry i j (id-fmat n))))
+  :hints  (("Goal" :use (entry-id-fmat
+                         (:instance entry-id-fmat (i j) (j i))
+			 (:instance transpose-fmat-entry (a (id-fmat n)) (m n) (i j) (j i))))))
 
-(defthmd transpose-id-mat
+(defthmd transpose-id-fmat
   (implies (natp n)
-           (equal (transpose (id-mat n))
-	          (id-mat n)))
-  :hints  (("Goal" :use (fmatp-id-mat
-                         (:instance fmatp-transpose (a (id-mat n)) (m n))
-                         (:instance entry-diff-lemma (m n) (a (id-mat n)) (b (transpose (id-mat n))))
-			 (:instance entry-transpose-id-mat (i (car (entry-diff (id-mat n) (transpose (id-mat n)))))
-			                                   (j (cdr (entry-diff (id-mat n) (transpose (id-mat n))))))))))
+           (equal (transpose-mat (id-fmat n))
+	          (id-fmat n)))
+  :hints  (("Goal" :use (fmatp-id-fmat
+                         (:instance fmatp-transpose (a (id-fmat n)) (m n))
+                         (:instance fmat-entry-diff-lemma (m n) (a (id-fmat n)) (b (transpose-mat (id-fmat n))))
+			 (:instance entry-transpose-id-fmat (i (car (entry-diff (id-fmat n) (transpose-mat (id-fmat n)))))
+			                                   (j (cdr (entry-diff (id-fmat n) (transpose-mat (id-fmat n))))))))))
 
-(defthm col-id-mat
+(defthm col-id-fmat
   (implies (and (natp n) (natp j) (< j n))
-           (equal (col j (id-mat n))
-	          (unit j n)))
-  :hints (("Goal" :use (transpose-id-mat
-                        (:instance nth-transpose (m n) (a (id-mat n)) (i j))))))
+           (equal (col j (id-fmat n))
+	          (funit j n)))
+  :hints (("Goal" :use (transpose-id-fmat
+                        (:instance nth-transpose-fmat (m n) (a (id-fmat n)) (i j))))))
 
-;; (id-mat n) is a right identity:
+;; (id-fmat n) is a right identity:
 
-(local-defthmd entry-fmat*-id-mat-right
+(local-defthmd entry-fmat*-id-fmat-right
   (implies (and (posp m) (posp n) (fmatp a m n) (natp i) (< i m) (natp j) (< j n))
-           (equal (entry i j (fmat* a (id-mat n)))
+           (equal (entry i j (fmat* a (id-fmat n)))
 	          (entry i j a)))
-  :hints (("Goal" :use (flistp-row
-                        (:instance fmat*-entry (p n) (b (id-mat n)))
-                        (:instance fdot-comm (x (unit j n)) (y (nth i a)))))))
+  :hints (("Goal" :use (flistnp-row
+                        (:instance fmat*-entry (p n) (b (id-fmat n)))
+                        (:instance fdot-comm (x (funit j n)) (y (nth i a)))))))
 
-(defthmd id-mat-right
+(defthmd id-fmat-right
   (implies (and (posp m) (posp n) (fmatp a m n))
-           (equal (fmat* a (id-mat n))
+           (equal (fmat* a (id-fmat n))
 	          a))
-  :hints (("Goal" :use ((:instance fmatp-fmat* (b (id-mat n)) (p n))
-			(:instance entry-fmat*-id-mat-right (i (car (entry-diff a (fmat* a (id-mat n)))))
-			                                    (j (cdr (entry-diff a (fmat* a (id-mat n))))))
-                        (:instance entry-diff-lemma (b (fmat* a (id-mat n))))))))
+  :hints (("Goal" :use ((:instance fmatp-fmat* (b (id-fmat n)) (p n))
+			(:instance entry-fmat*-id-fmat-right (i (car (entry-diff a (fmat* a (id-fmat n)))))
+			                                    (j (cdr (entry-diff a (fmat* a (id-fmat n))))))
+                        (:instance fmat-entry-diff-lemma (b (fmat* a (id-fmat n))))))))
 
-;; (id-mat n) is a left identity:
+;; (id-fmat n) is a left identity:
 
-(local-defthmd entry-fmat*-id-mat-left
+(local-defthmd entry-fmat*-id-fmat-left
   (implies (and (posp m) (posp n) (fmatp a m n) (natp i) (< i m) (natp j) (< j n))
-           (equal (entry i j (fmat* (id-mat m) a))
+           (equal (entry i j (fmat* (id-fmat m) a))
 	          (entry i j a)))
-  :hints (("Goal" :use (flistp-row nth-col
-                        (:instance fmat*-entry (n m) (p n) (a (id-mat m)) (b a))))))
+  :hints (("Goal" :use (flistnp-row nth-col
+                        (:instance fmat*-entry (n m) (p n) (a (id-fmat m)) (b a))))))
 
-(defthmd id-mat-left
+(defthmd id-fmat-left
   (implies (and (posp m) (posp n) (fmatp a m n))
-           (equal (fmat* (id-mat m) a)
+           (equal (fmat* (id-fmat m) a)
 	          a))
-  :hints (("Goal" :use ((:instance fmatp-fmat* (a (id-mat m)) (b a) (n m) (p n))
-			(:instance entry-fmat*-id-mat-left (i (car (entry-diff a (fmat* (id-mat m) a))))
-			                                   (j (cdr (entry-diff a (fmat* (id-mat m) a)))))
-                        (:instance entry-diff-lemma (b (fmat* (id-mat m) a)))))))
+  :hints (("Goal" :use ((:instance fmatp-fmat* (a (id-fmat m)) (b a) (n m) (p n))
+			(:instance entry-fmat*-id-fmat-left (i (car (entry-diff a (fmat* (id-fmat m) a))))
+			                                   (j (cdr (entry-diff a (fmat* (id-fmat m) a)))))
+                        (:instance fmat-entry-diff-lemma (b (fmat* (id-fmat m) a)))))))
 							   
 ;; Associativity:
 
 ;; Let a, b, and c be matrices of dimensions mxn, nxp, and pxq, respectively.  Then
 ;; (fmat* a (fmat* b c)) and (fmat* (fmat* a b) c)) are both mxp matrices.  Our
 ;; objective is to prove that they are equal.  Let 0 <= i < m and 0 <= j < q.  It will
-;; suffice to show that
+;; surrice to show that
 
 ;;    (entry i j (fmat* a (fmat* b c))) = (entry i j (fmat* (fmat* a b) c)).
 
 ;; Applying fmat*-entry and expanding fdot, we find that both sides of this equation
 ;; are sums of n*p 3-way products.
 
-;; We shall construct an nxp matrix of 3-way products, (mat12 a b c i j), such that
+;; We shall construct an nxp matrix of 3-way products, (fmat12 a b c i j), such that
 
-;;    (entry i j (fmat* a (fmat* b c))) = (fmat-sum (mat12 a b c i j))
+;;    (entry i j (fmat* a (fmat* b c))) = (fmat-sum (fmat12 a b c i j))
 
-;; and a pxn matrix of 3-way products, (mat21 a b c), such that
+;; and a pxn matrix of 3-way products, (fmat21 a b c), such that
 
-;;    (entry i j (fmat* (fmat* a b) c)) = (fmat-sum (mat21 a b c i j)).
+;;    (entry i j (fmat* (fmat* a b) c)) = (fmat-sum (fmat21 a b c i j)).
 
-;; We shall show that (mat21 a b c i j) = (transpose (mat12 a b c i j)) and apply
+;; We shall show that (fmat21 a b c i j) = (transpose-mat (fmat12 a b c i j)) and apply
 ;; fmat-sum-transpose to conclude that
 
 ;;    (entry i j (fmat* a (fmat* b c))) = (entry i j (fmat* (fmat* a b) c)).
 
 ;; The entry on the left is the dot product of a row of a and a column of (fmat* b c),
 ;; and each entry of this column is a dot product of a row of b and a column of c.
-;; This leads to the definition of the nxp matrix of 3-way products, (mat12 a b c i j):
+;; This leads to the definition of the nxp matrix of 3-way products, (fmat12 a b c i j):
 
 (defun flist-mul-list (x l)
   (if (consp l)
@@ -946,7 +1016,7 @@
             (flist-scalar-mul-list (cdr x) (cdr l)))
     ()))
 
-(defund mat12 (a b c i j)
+(defund fmat12 (a b c i j)
   (flist-scalar-mul-list (row i a)
 	   	         (flist-mul-list (col j c) b)))
 
@@ -957,32 +1027,32 @@
     ()))
 
 (local-defthm flist-sum-flist-scalar-mul
-  (implies (and (fp x) (flistp l n))
+  (implies (and (fp x) (flistnp l n))
            (equal (flist-sum (flist-scalar-mul x l))
 	          (f* x (flist-sum l)))))
 
 (local-defthmd fmat-sum-flist-scalar-mul-list
-  (implies (and (flistp x n) (fmatp l n p))
+  (implies (and (flistnp x n) (fmatp l n p))
            (equal (fmat-sum (flist-scalar-mul-list x l))
                   (fdot x (flist-sum-list l)))))
 
 (local-defthm fmatp-flist-mul-list
-  (implies (and (fmatp a m n) (flistp x n))
+  (implies (and (fmatp a m n) (flistnp x n))
            (fmatp (flist-mul-list x a) m n)))
 
 (local-defthm fmatp-flist-scalar-mul-list
-  (implies (and (fmatp a m n) (flistp x m))
+  (implies (and (fmatp a m n) (flistnp x m))
            (fmatp (flist-scalar-mul-list x a) m n)))
 
-(defthmd fmatp-mat12
+(defthmd fmatp-fmat12
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
-	   (fmatp (mat12 a b c i j) n p))
-  :hints (("Goal" :in-theory (e/d (mat12) (flistp-col))
-                  :use (flistp-row
-		        (:instance flistp-col (a c) (m p) (n q))))))
+	   (fmatp (fmat12 a b c i j) n p))
+  :hints (("Goal" :in-theory (e/d (fmat12) (flistnp-col))
+                  :use (flistnp-row
+		        (:instance flistnp-col (a c) (m p) (n q))))))
 
-;; We derive the following expression for each entry of this matrix:
+;; We derive the rollowing expression for each entry of this matrix:
 
 (local-defthmd nth-flist-scalar-mul-list
   (equal (nth r (flist-scalar-mul-list x l))
@@ -1003,81 +1073,81 @@
            (equal (nth s (flist-mul x y))
 	          (f* (nth s x) (nth s y)))))
 
-(local-defthmd mat12-entry-1
+(local-defthmd fmat12-entry-1
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r n) (natp s) (< s p))
-           (equal (nth s (nth r (mat12 a b c i j)))
+           (equal (nth s (nth r (fmat12 a b c i j)))
 	          (nth s (flist-scalar-mul (entry i r a) (nth r (flist-mul-list (col j c) b))))))
-  :hints (("Goal" :in-theory (enable mat12 nth-flist-scalar-mul-list))))
+  :hints (("Goal" :in-theory (enable fmat12 nth-flist-scalar-mul-list))))
 
-(local-defthmd mat12-entry-2
+(local-defthmd fmat12-entry-2
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r n) (natp s) (< s p))
-           (equal (nth s (nth r (mat12 a b c i j)))
+           (equal (nth s (nth r (fmat12 a b c i j)))
 	          (nth s (flist-scalar-mul (entry i r a) (flist-mul (col j c) (nth r b))))))
-  :hints (("Goal" :in-theory (enable mat12-entry-1 nth-flist-mul-list))))
+  :hints (("Goal" :in-theory (enable fmat12-entry-1 nth-flist-mul-list))))
 
-(local-defthmd mat12-entry-3
+(local-defthmd fmat12-entry-3
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r n) (natp s) (< s p))
-           (equal (nth s (nth r (mat12 a b c i j)))
+           (equal (nth s (nth r (fmat12 a b c i j)))
 	          (f* (entry i r a) (nth s (flist-mul (col j c) (nth r b))))))
-  :hints (("Goal" :in-theory (e/d (mat12-entry-2) (flistp-col flistp-flist-mul))
+  :hints (("Goal" :in-theory (e/d (fmat12-entry-2) (flistnp-col flistnp-flist-mul))
                   :use ((:instance nth-flist-scalar-mul-2 (c (entry i r a)) (x (flist-mul (col j c) (nth r b))))
-		        (:instance flistp-flist-mul (n p) (x (col j c)) (y (nth r b)))
-			(:instance flistp-row (a b) (i r) (m n) (n p))
-			(:instance flistp-col (a c) (m p) (n q))))))
+		        (:instance flistnp-flist-mul (n p) (x (col j c)) (y (nth r b)))
+			(:instance flistnp-row (a b) (i r) (m n) (n p))
+			(:instance flistnp-col (a c) (m p) (n q))))))
 
-(local-defthmd mat12-entry-4
+(local-defthmd fmat12-entry-4
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r n) (natp s) (< s p))
-           (equal (nth s (nth r (mat12 a b c i j)))
+           (equal (nth s (nth r (fmat12 a b c i j)))
 	          (f* (entry i r a) (f* (entry s j c) (entry r s b)))))
-  :hints (("Goal" :in-theory (e/d (mat12-entry-3 nth-col) (flistp-col))
+  :hints (("Goal" :in-theory (e/d (fmat12-entry-3 nth-col) (flistnp-col))
                   :use ((:instance nth-flist-mul (x (col j c)) (y (nth r b)))
-			(:instance flistp-row (a b) (i r) (m n) (n p))
-			(:instance flistp-col (a c) (m p) (n q))))))
+			(:instance flistnp-row (a b) (i r) (m n) (n p))
+			(:instance flistnp-col (a c) (m p) (n q))))))
 
-(local-defthmd mat12-entry-5
+(local-defthmd fmat12-entry-5
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r n) (natp s) (< s p))
-           (equal (nth s (nth r (mat12 a b c i j)))
+           (equal (nth s (nth r (fmat12 a b c i j)))
 	          (f* (entry i r a) (f* (entry r s b) (entry s j c)))))
-  :hints (("Goal" :in-theory (enable mat12-entry-4)
+  :hints (("Goal" :in-theory (enable fmat12-entry-4)
                   :use ((:instance fp-entry (a b) (m n) (n p) (i r) (j s))
 			(:instance fp-entry (a c) (m p) (n q) (i s))
 			(:instance f*comm (x (entry r s b)) (y (entry s j c)))))))
 
-(defthmd mat12-entry
+(defthmd fmat12-entry
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r n) (natp s) (< s p))
-           (equal (entry r s (mat12 a b c i j))
+           (equal (entry r s (fmat12 a b c i j))
 	          (f* (f* (entry i r a) (entry r s b)) (entry s j c))))
-  :hints (("Goal" :in-theory (enable mat12-entry-5 f*assoc)
+  :hints (("Goal" :in-theory (enable fmat12-entry-5 f*assoc)
                   :use ((:instance fp-entry (j r))
 			(:instance fp-entry (a b) (m n) (n p) (i r) (j s))
 			(:instance fp-entry (a c) (m p) (n q) (i s))))))
 
 ;; The sum of these entries:
 
-(local-defthm fmat-sum-mat12-fdot
+(local-defthm fmat-sum-fmat12-fdot
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
-           (equal (fmat-sum (mat12 a b c i j))
+           (equal (fmat-sum (fmat12 a b c i j))
 	          (fdot (row i a)
 		        (flist-sum-list (flist-mul-list (col j c) b)))))
-  :hints (("Goal" :in-theory (enable mat12)
-                  :use (flistp-row
+  :hints (("Goal" :in-theory (enable fmat12)
+                  :use (flistnp-row
 		        (:instance fmat-sum-flist-scalar-mul-list (x (row i a)) (l (flist-mul-list (col j c) b)))))))	          
 
 (local-defthm flist-sum-flist-mul
-  (implies (and (flistp x n) (flistp y n))
+  (implies (and (flistnp x n) (flistnp y n))
            (equal (flist-sum (flist-mul x y))
 	          (fdot x y))))
 
@@ -1085,120 +1155,120 @@
   (implies (and (posp p) (posp q) (fmatp b n p) (fmatp c p q) (natp j) (< j q))
            (equal (flist-sum-list (flist-mul-list (col j c) b))
 	          (col j (fmat* b c))))
-  :hints (("Subgoal *1/3" :in-theory (disable flistp-col)
+  :hints (("Subgoal *1/3" :in-theory (disable flistnp-col)
                           :expand ((fmat* b c))
                           :use ((:instance fmatp-transpose (a c) (m p) (n q))
-			        (:instance flistp-row (a b) (m n) (n p) (i 0))
-			        (:instance flistp-col (a c) (m p) (n q))
+			        (:instance flistnp-row (a b) (m n) (n p) (i 0))
+			        (:instance flistnp-col (a c) (m p) (n q))
 				(:instance fdot-comm (n p) (x (col j c)) (y (car b)))))
           ("Subgoal *1/1" :expand ((fmat* () c)))))
 
-(local-defthm fmat-sum-mat12-fdot-row-col
+(local-defthm fmat-sum-fmat12-fdot-row-col
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
-           (equal (fmat-sum (mat12 a b c i j))
+           (equal (fmat-sum (fmat12 a b c i j))
 	          (fdot (row i a) (col j (fmat* b c))))))
 
-(defthm fmat-sum-mat12
+(defthm fmat-sum-fmat12
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
-           (equal (fmat-sum (mat12 a b c i j))
+           (equal (fmat-sum (fmat12 a b c i j))
 	          (entry i j (fmat* a (fmat* b c)))))
   :hints (("Goal" :use ((:instance fmat*-entry (b (fmat* b c)) (p q))))))
 
-;; The matrix (mat21 a b c i j) similarly relates to (entry i j (fmat* (fmat* a b) c):
+;; The matrix (fmat21 a b c i j) similarly relates to (entry i j (fmat* (fmat* a b) c):
 
-(defund mat21 (a b c i j)
+(defund fmat21 (a b c i j)
   (flist-scalar-mul-list (col j c)
-		         (flist-mul-list (row i a) (transpose b))))
+		         (flist-mul-list (row i a) (transpose-mat b))))
 
-(defthmd fmatp-mat21
+(defthmd fmatp-fmat21
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
-	   (fmatp (mat21 a b c i j) p n))
-  :hints (("Goal" :in-theory (e/d (mat21) (flistp-col))
-                  :use (flistp-row
+	   (fmatp (fmat21 a b c i j) p n))
+  :hints (("Goal" :in-theory (e/d (fmat21) (flistnp-col))
+                  :use (flistnp-row
 		        (:instance fmatp-transpose (a b) (m n) (n p))
-		        (:instance flistp-col (a c) (m p) (n q))))))
+		        (:instance flistnp-col (a c) (m p) (n q))))))
 
-(local-defthmd mat21-entry-1
+(local-defthmd fmat21-entry-1
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r p) (natp s) (< s n))
-           (equal (nth s (nth r (mat21 a b c i j)))
-	          (nth s (flist-scalar-mul (entry r j c) (nth r (flist-mul-list (row i a) (transpose b)))))))
-  :hints (("Goal" :in-theory (enable mat21 nth-col nth-flist-scalar-mul-list))))
+           (equal (nth s (nth r (fmat21 a b c i j)))
+	          (nth s (flist-scalar-mul (entry r j c) (nth r (flist-mul-list (row i a) (transpose-mat b)))))))
+  :hints (("Goal" :in-theory (enable fmat21 nth-col nth-flist-scalar-mul-list))))
 
-(local-defthmd mat21-entry-2
+(local-defthmd fmat21-entry-2
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r p) (natp s) (< s n))
-           (equal (nth s (nth r (mat21 a b c i j)))
+           (equal (nth s (nth r (fmat21 a b c i j)))
 	          (nth s (flist-scalar-mul (entry r j c) (flist-mul (row i a) (col r b))))))
-  :hints (("Goal" :in-theory (enable mat21-entry-1 nth-flist-mul-list)
+  :hints (("Goal" :in-theory (enable fmat21-entry-1 nth-flist-mul-list)
                   :use ((:instance fmatp-transpose (a b) (m n) (n p))))))
 
-(local-defthmd mat21-entry-3
+(local-defthmd fmat21-entry-3
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r p) (natp s) (< s n))
-           (equal (nth s (nth r (mat21 a b c i j)))
+           (equal (nth s (nth r (fmat21 a b c i j)))
 	          (f* (entry r j c) (nth s (flist-mul (row i a) (col r b))))))
-  :hints (("Goal" :in-theory (e/d (mat21-entry-2) (flistp-col flistp-flist-mul))
-                  :use (flistp-row
+  :hints (("Goal" :in-theory (e/d (fmat21-entry-2) (flistnp-col flistnp-flist-mul))
+                  :use (flistnp-row
 		        (:instance nth-flist-scalar-mul-2 (c (entry r j c)) (x (flist-mul (row i a) (col r b))))
-		        (:instance flistp-flist-mul (x (row i a)) (y (col r b)))
-			(:instance flistp-col (a b) (j r) (m n) (n p))))))
+		        (:instance flistnp-flist-mul (x (row i a)) (y (col r b)))
+			(:instance flistnp-col (a b) (j r) (m n) (n p))))))
 
-(local-defthmd mat21-entry-4
+(local-defthmd fmat21-entry-4
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r p) (natp s) (< s n))
-           (equal (nth s (nth r (mat21 a b c i j)))
+           (equal (nth s (nth r (fmat21 a b c i j)))
 	          (f* (entry r j c) (f* (entry i s a) (entry s r b)))))
-  :hints (("Goal" :in-theory (e/d (mat21-entry-3 nth-col) (flistp-col))
-                  :use (flistp-row
+  :hints (("Goal" :in-theory (e/d (fmat21-entry-3 nth-col) (flistnp-col))
+                  :use (flistnp-row
 		        (:instance nth-flist-mul (x (row i a)) (y (col r b)))
-			(:instance flistp-col (a b) (j r) (m n) (n p))))))
+			(:instance flistnp-col (a b) (j r) (m n) (n p))))))
 
-(local-defthmd mat21-entry-5
+(local-defthmd fmat21-entry-5
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r p) (natp s) (< s n))
-           (equal (nth s (nth r (mat21 a b c i j)))
+           (equal (nth s (nth r (fmat21 a b c i j)))
 	          (f* (f* (entry i s a) (entry s r b)) (entry r j c))))
-  :hints (("Goal" :in-theory (e/d (mat21-entry-4 fp-entry) (entry))
+  :hints (("Goal" :in-theory (e/d (fmat21-entry-4 fp-entry) (entry))
                   :use ((:instance f*comm (x (f* (entry i s a) (entry s r b))) (y (entry r j c)))))))
 
-(local-defthmd mat21-entry-6
+(local-defthmd fmat21-entry-6
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r p) (natp s) (< s n))
-           (equal (nth s (nth r (mat21 a b c i j)))
+           (equal (nth s (nth r (fmat21 a b c i j)))
 	          (f* (entry i s a) (f* (entry s r b) (entry r j c)))))
-  :hints (("Goal" :in-theory (e/d (mat21-entry-5 fp-entry) (entry))
+  :hints (("Goal" :in-theory (e/d (fmat21-entry-5 fp-entry) (entry))
                   :use ((:instance f*assoc (x (entry i s a)) (y (entry s r b)) (z (entry r j c)))))))
 
-(defthmd mat21-entry
+(defthmd fmat21-entry
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r p) (natp s) (< s n))
-           (equal (entry r s (mat21 a b c i j))
+           (equal (entry r s (fmat21 a b c i j))
 	          (f* (entry i s a) (f* (entry s r b) (entry r j c)))))
-  :hints (("Goal" :in-theory (enable mat21-entry-6))))
+  :hints (("Goal" :in-theory (enable fmat21-entry-6))))
 
 
-(local-defthm fmat-sum-mat21-1
+(local-defthm fmat-sum-fmat21-1
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
-           (equal (fmat-sum (mat21 a b c i j))
+           (equal (fmat-sum (fmat21 a b c i j))
 	          (fdot (col j c)
-		        (flist-sum-list (flist-mul-list (row i a) (transpose b))))))
-  :hints (("Goal" :in-theory (e/d (mat21) (flistp-col))
-                  :use (flistp-row
-		        (:instance flistp-col (a c) (m p) (n q))
+		        (flist-sum-list (flist-mul-list (row i a) (transpose-mat b))))))
+  :hints (("Goal" :in-theory (e/d (fmat21) (flistnp-col))
+                  :use (flistnp-row
+		        (:instance flistnp-col (a c) (m p) (n q))
 		        (:instance fmatp-transpose (a b) (m n) (n p))
-		        (:instance fmat-sum-flist-scalar-mul-list (n p) (p n) (x (col j c)) (l (flist-mul-list (row i a) (transpose b))))))))
+		        (:instance fmat-sum-flist-scalar-mul-list (n p) (p n) (x (col j c)) (l (flist-mul-list (row i a) (transpose-mat b))))))))
 
 (local (include-book "std/lists/nthcdr" :dir :system))
 
@@ -1210,7 +1280,7 @@
   (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p) (natp i) (< i m))
            (null (nthcdr p (nth i (fmat* a b)))))
   :hints (("Goal" :use (fmatp-fmat*
-                        (:instance flistp-row (a (fmat* a b)) (n p))
+                        (:instance flistnp-row (a (fmat* a b)) (n p))
 			(:instance null-nthcdr-len (l (nth i (fmat* a b))))))))
 
 (local-defthmd nthcdr-cons
@@ -1224,97 +1294,97 @@
                         (cdr (nthcdr j (nth i (fmat* a b)))))
                   (nthcdr j (nth i (fmat* a b)))))
   :hints (("Goal" :use (fmatp-fmat* fmat*-entry
-                        (:instance flistp-row (a (fmat* a b)) (n p))
+                        (:instance flistnp-row (a (fmat* a b)) (n p))
 			(:instance nthcdr-cons (l (nth i (fmat* a b))))))))
 
-(local-defthm fmat-sum-mat21-2
+(local-defthm fmat-sum-fmat21-2
   (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p) (natp i) (< i m) (natp j) (<= j p))
-           (equal (flist-sum-list (flist-mul-list (row i a) (transpose-aux b j p)))
+           (equal (flist-sum-list (flist-mul-list (row i a) (transpose-mat-aux b j p)))
 	          (nthcdr j (row i (fmat* a b)))))
-  :hints (("Goal" :induct (transpose-aux b j p))
+  :hints (("Goal" :induct (transpose-mat-aux b j p))
           ("Subgoal *1/2" :use (null-nthcdr-nth-fmat*))
-          ("Subgoal *1/1" :in-theory (disable flistp-col)
-	                  :use (flistp-row nthcdr-cons-fdot
-			        (:instance flistp-col (a b) (m n) (n p))))))
+          ("Subgoal *1/1" :in-theory (disable flistnp-col)
+	                  :use (flistnp-row nthcdr-cons-fdot
+			        (:instance flistnp-col (a b) (m n) (n p))))))
 
-(local-defthm fmat-sum-mat21-3
+(local-defthm fmat-sum-fmat21-3
   (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p) (natp i) (< i m))
-           (equal (flist-sum-list (flist-mul-list (row i a) (transpose b)))
+           (equal (flist-sum-list (flist-mul-list (row i a) (transpose-mat b)))
 	          (row i (fmat* a b))))
-  :hints (("Goal" :in-theory (enable transpose)
-                  :use ((:instance fmat-sum-mat21-2 (j 0))
-		        (:instance flistp-row (a b) (m n) (n p) (i 0))))))
+  :hints (("Goal" :in-theory (enable transpose-mat)
+                  :use ((:instance fmat-sum-fmat21-2 (j 0))
+		        (:instance flistnp-row (a b) (m n) (n p) (i 0))))))
 			        
-(local-defthm fmat-sum-mat21-4
+(local-defthm fmat-sum-fmat21-4
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
-           (equal (fmat-sum (mat21 a b c i j))
+           (equal (fmat-sum (fmat21 a b c i j))
 	          (fdot (col j c) (row i (fmat* a b)))))
-  :hints (("Goal" :use (fmat-sum-mat21-1 fmat-sum-mat21-3))))
+  :hints (("Goal" :use (fmat-sum-fmat21-1 fmat-sum-fmat21-3))))
 
-(defthm fmat-sum-mat21
+(defthm fmat-sum-fmat21
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
-           (equal (fmat-sum (mat21 a b c i j))
+           (equal (fmat-sum (fmat21 a b c i j))
 	          (entry i j (fmat* (fmat* a b) c))))
-  :hints (("Goal" :in-theory (disable flistp-col)
+  :hints (("Goal" :in-theory (disable flistnp-col)
                   :use (fmatp-fmat*
                         (:instance fmat*-entry (a (fmat* a b)) (b c) (n p) (p q))
                         (:instance fdot-comm (n p) (x (row i (fmat* a b))) (y (col j c)))
-			(:instance flistp-row (a (fmat* a b)) (n p))
-			(:instance flistp-col (a c) (m p) (n q))))))
+			(:instance flistnp-row (a (fmat* a b)) (n p))
+			(:instance flistnp-col (a c) (m p) (n q))))))
 
-;; Combine mat21-entry and mat12-entry:
+;; Combine fmat21-entry and fmat12-entry:
 
-(defthmd mat12-mat21-entry
+(defthmd fmat12-fmat21-entry
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r p) (natp s) (< s n))
-           (equal (entry r s (mat21 a b c i j))
-	          (entry s r (mat12 a b c i j))))
-  :hints (("Goal" :in-theory (e/d (f*assoc fp-entry mat21-entry mat12-entry) (entry)))))
+           (equal (entry r s (fmat21 a b c i j))
+	          (entry s r (fmat12 a b c i j))))
+  :hints (("Goal" :in-theory (e/d (f*assoc fp-entry fmat21-entry fmat12-entry) (entry)))))
 
-;; Apply transpose-entry:
+;; Apply transpose-fmat-entry:
 
-(local-defthmd mat12-transpose-mat21-entry
+(local-defthmd fmat12-transpose-fmat21-entry
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q)
 		(natp r) (< r p) (natp s) (< s n))
-           (equal (entry r s (mat21 a b c i j))
-	          (entry r s (transpose (mat12 a b c i j)))))
-  :hints (("Goal" :in-theory (e/d (mat12-mat21-entry) (entry))
-                  :use (fmatp-mat12))))
+           (equal (entry r s (fmat21 a b c i j))
+	          (entry r s (transpose-mat (fmat12 a b c i j)))))
+  :hints (("Goal" :in-theory (e/d (fmat12-fmat21-entry) (entry))
+                  :use (fmatp-fmat12))))
 
-(defthmd mat12-transpose-mat21
+(defthmd fmat12-transpose-fmat21
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
-           (equal (transpose (mat12 a b c i j))
-	          (mat21 a b c i j)))	          
-  :hints (("Goal" :use (fmatp-mat12 fmatp-mat21
-                        (:instance entry-diff-lemma (a (mat21 a b c i j)) (b (transpose (mat12 a b c i j))) (m p))
-                        (:instance fmatp-transpose (a (mat12 a b c i j)) (m n) (n p))
-			(:instance mat12-transpose-mat21-entry
-			            (r (car (entry-diff (mat21 a b c i j) (transpose (mat12 a b c i j)))))
-				    (s (cdr (entry-diff (mat21 a b c i j) (transpose (mat12 a b c i j))))))))))
+           (equal (transpose-mat (fmat12 a b c i j))
+	          (fmat21 a b c i j)))	          
+  :hints (("Goal" :use (fmatp-fmat12 fmatp-fmat21
+                        (:instance fmat-entry-diff-lemma (a (fmat21 a b c i j)) (b (transpose-mat (fmat12 a b c i j))) (m p))
+                        (:instance fmatp-transpose (a (fmat12 a b c i j)) (m n) (n p))
+			(:instance fmat12-transpose-fmat21-entry
+			            (r (car (entry-diff (fmat21 a b c i j) (transpose-mat (fmat12 a b c i j)))))
+				    (s (cdr (entry-diff (fmat21 a b c i j) (transpose-mat (fmat12 a b c i j))))))))))
 
-;; By sum-mat-transpose, (entry i j (fmat* a (fmat* b c))) = (entry i j (fmat* (fmat* a b) c)),
-;; and the result follows:
+;; By sum-fmat-transpose, (entry i j (fmat* a (fmat* b c))) = (entry i j (fmat* (fmat* a b) c)),
+;; and the result rollows:
 
-(local-defthmd fmat-sum-mat12-mat21
+(local-defthmd fmat-sum-fmat12-fmat21
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
-           (equal (fmat-sum (mat12 a b c i j))
-	          (fmat-sum (mat21 a b c i j))))          
-  :hints (("Goal" :use (mat12-transpose-mat21 fmatp-mat12
-                        (:instance sum-mat-transpose (a (mat12 a b c i j)) (m n) (n p))))))
+           (equal (fmat-sum (fmat12 a b c i j))
+	          (fmat-sum (fmat21 a b c i j))))          
+  :hints (("Goal" :use (fmat12-transpose-fmat21 fmatp-fmat12
+                        (:instance sum-fmat-transpose (a (fmat12 a b c i j)) (m n) (n p))))))
 
 (local-defthmd fmat*-assoc-entry
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
                 (natp i) (< i m) (natp j) (< j q))
            (equal (entry i j (fmat* a (fmat* b c)))
 	          (entry i j (fmat* (fmat* a b) c))))
-  :hints (("Goal" :use (mat12-transpose-mat21 fmatp-mat12
-                        (:instance sum-mat-transpose (a (mat12 a b c i j)) (m n) (n p))))))
+  :hints (("Goal" :use (fmat12-transpose-fmat21 fmatp-fmat12
+                        (:instance sum-fmat-transpose (a (fmat12 a b c i j)) (m n) (n p))))))
 
 (defthmd fmat*-assoc
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q))
@@ -1324,10 +1394,9 @@
                         (:instance fmatp-fmat* (a b) (b c) (m n) (n p) (p q))
                         (:instance fmatp-fmat* (b (fmat* b c)) (p q))
                         (:instance fmatp-fmat* (a (fmat* a b)) (b c) (n p) (p q))
-			(:instance entry-diff-lemma (a (fmat* a (fmat* b c))) (b (fmat* (fmat* a b) c)) (n q))
+			(:instance fmat-entry-diff-lemma (a (fmat* a (fmat* b c))) (b (fmat* (fmat* a b) c)) (n q))
 			(:instance fmat*-assoc-entry (i (car (entry-diff (fmat* a (fmat* b c)) (fmat* (fmat* a b) c))))
 			                             (j (cdr (entry-diff (fmat* a (fmat* b c)) (fmat* (fmat* a b) c)))))))))
-
 
 ;;----------------------------------------------------------------------------------------
 ;; Row Reduction
@@ -1345,7 +1414,7 @@
     ()))
 
 (defthmd first-nonzero-nonzero
-  (implies (and (flistp x n) (not (flist0p x)))
+  (implies (and (flistnp x n) (not (flist0p x)))
            (let ((i (first-nonzero x)))
 	     (and (natp i)
 	          (< i n)
@@ -1353,7 +1422,7 @@
 		  (not (= (nth i x) (f0)))))))
 
 (defthmd first-nonzero-first
-  (implies (and (flistp x n) (not (flist0p x))
+  (implies (and (flistnp x n) (not (flist0p x))
                 (natp i) (< i (first-nonzero x)))
            (equal (nth i x) (f0))))
 
@@ -1403,7 +1472,7 @@
   (implies (and (fmatp a m n) (natp m) (natp n)
                 (natp i) (< i m) (not (flist0p (nth i a))))
 	   (natp (first-nonzero (nth i a))))
-  :hints (("Goal" :use (flistp-row
+  :hints (("Goal" :use (flistnp-row
                         (:instance first-nonzero-nonzero (x (nth i a))))))
   :rule-classes (:rewrite :type-prescription))
 
@@ -1513,7 +1582,7 @@
   :hints (("Goal" :use ((:instance row-with-nonzero-at-least-index-nil (k (1- k)) (j (1- k)))
                         (:instance row-with-nonzero-at-least-index-non-nil (k (1- k)))
 			(:instance column-clear-p-entry (k (1- k)) (i (1- k)) (j (first-nonzero (nth (1- k) a))))
-			(:instance flistp-row (i (1- k)))))))
+			(:instance flistnp-row (i (1- k)))))))
 
 (local-defthmd row-echelon-p-aux-first-nonzero-min
   (implies (and (fmatp a m n) (natp m) (natp n)
@@ -1526,30 +1595,13 @@
                         (:instance row-with-nonzero-at-least-index-non-nil (j q) (k (1- k)))
 			(:instance column-clear-p-entry (k (1- k)) (i q) (j (first-nonzero (nth (1- k) a))))
 			(:instance first-nonzero-nonzero (x (nth q a)))
-			(:instance flistp-row (i q))))))
+			(:instance flistnp-row (i q))))))
 
 (defund row-echelon-p (a)
   (row-echelon-p-aux a (len a) (len a)))
 
 ;; Next, we define a process that converts a matrix to row-echelon form by applying
-;; a sequence of "elementary row operations".  These are based on the following
-;; function, which replaces row k of a with r:
-
-(defun replace-row (a k r)
-  (if (zp k)
-      (cons r (cdr a))
-    (cons (car a) (replace-row (cdr a) (1- k) r))))
-
-(defthm fmatp-replace-row
-  (implies (and (fmatp a m n) (natp m) (natp n) (natp k) (< k m) (flistp r n))
-           (fmatp (replace-row a k r) m n)))
-
-(defthmd nth-replace-row
-  (implies (and (natp k) (< k (len a)) (natp j) (< j (len a)))
-           (equal (nth j (replace-row a k r))
-	          (if (= j k)
-		      r
-		    (nth j a)))))
+;; a sequence of "elementary row operations".
 
 ;; 3 types of elementary row operations:
 
@@ -1580,8 +1632,8 @@
   (implies (and (fmatp a m n) (natp m) (natp n) (natp j) (< j m) (natp k) (< k m) (fp c))
            (fmatp (ero2 a c j k) m n))
   :hints (("Goal" :in-theory (enable ero2)
-                  :use ((:instance flistp-row (i k))
-			(:instance flistp-row (i j))))))
+                  :use ((:instance flistnp-row (i k))
+			(:instance flistnp-row (i j))))))
 
 (defthmd nth-ero2
   (implies (and (natp k) (< k (len a)) (natp i) (< i (len a)))
@@ -1600,8 +1652,8 @@
   (implies (and (fmatp a m n) (natp m) (natp n) (natp j) (< j m) (natp k) (< k m))
            (fmatp (ero3 a j k) m n))
   :hints (("Goal" :in-theory (enable ero3)
-                  :use ((:instance flistp-row (i k))
-			(:instance flistp-row (i j))))))
+                  :use ((:instance flistnp-row (i k))
+			(:instance flistnp-row (i j))))))
 
 (defthmd nth-ero3
   (implies (and (natp j) (< j (len a)) (natp k) (< k (len a)) (natp i) (< i (len a)))
@@ -1655,13 +1707,13 @@
   :hints (("Goal" :use ((:instance fmatp-clear-column-1 (m0 m))))))
 
 (local-defthmd first-nonzero-flist-add-1
-  (implies (and (flistp x n) (flistp y n)
+  (implies (and (flistnp x n) (flistnp y n)
                 (>= (first-nonzero x) (first-nonzero y)))
            (>= (first-nonzero (flist-add x y))
 	       (first-nonzero y))))
 
 (local-defthmd first-nonzero-scalar-mul
-  (implies (and (fp c) (flistp x n))
+  (implies (and (fp c) (flistnp x n))
            (>= (first-nonzero (flist-scalar-mul c x))
 	       (first-nonzero x))))
 
@@ -1672,7 +1724,7 @@
 		(> (first-nonzero (nth k a)) r))
 	   (> (first-nonzero (nth i (clear-column a k j m))) r))
   :hints (("Goal" :in-theory (e/d (nth-clear-column) (flist-add-flist0p))
-                  :use (fp-entry flistp-row
+                  :use (fp-entry flistnp-row
 		        (:instance flist-add-flist0p (x (flist-scalar-mul (f- (nth j (nth i a))) (nth k a)))
 		                                     (y (nth i a)))
 		        (:instance first-nonzero-flist-add-1 (x (flist-scalar-mul (f- (nth j (nth i a))) (nth k a)))
@@ -1680,12 +1732,12 @@
 			(:instance first-nonzero-flist-add-1 (y (flist-scalar-mul (f- (nth j (nth i a))) (nth k a)))
 		                                             (x (nth i a)))
 			(:instance first-nonzero-scalar-mul (c (f- (nth j (nth i a)))) (x (nth k a)))
-			(:instance flistp-row (i k))
+			(:instance flistnp-row (i k))
 			(:instance flist-add-comm (x (flist-scalar-mul (f- (nth j (nth i a))) (nth k a)))
 		                                  (y (nth i a)))))))
 
 (local-defthmd first-nonzero-flist-add-2
-  (implies (and (flistp x n) (flistp y n)
+  (implies (and (flistnp x n) (flistnp y n)
                 (natp j) (< j n) (> (first-nonzero x) j)) 
            (equal (nth j (flist-add x y))
 	          (nth j y))))
@@ -1698,15 +1750,15 @@
 	   (equal (nth r (nth i (clear-column a k j m)))
 	          (nth r (nth i a))))
   :hints (("Goal" :in-theory (enable nth-clear-column)
-                  :use (flistp-row
+                  :use (flistnp-row
 		        (:instance first-nonzero-flist-add-2 (x (flist-scalar-mul (f- (nth j (nth i a))) (nth k a)))
 		                                             (y (nth i a))
 							     (j r))
 			(:instance first-nonzero-scalar-mul (c (f- (nth j (nth i a)))) (x (nth k a)))
-			(:instance flistp-row (i k))))))
+			(:instance flistnp-row (i k))))))
 
 (local-defthmd first-nonzero-flist-add-3
-  (implies (and (flistp x n) (flistp y n)
+  (implies (and (flistnp x n) (flistnp y n)
                 (or (flist0p x)
 		    (> (first-nonzero x) (first-nonzero y))))
            (equal (first-nonzero (flist-add x y))
@@ -1721,8 +1773,8 @@
 	   (equal (first-nonzero (nth i (clear-column a k j m)))
 	          (first-nonzero (nth i a))))
   :hints (("Goal" :in-theory (enable nth-clear-column)
-                  :use (flistp-row
-		        (:instance flistp-row (i k))
+                  :use (flistnp-row
+		        (:instance flistnp-row (i k))
 			(:instance first-nonzero-scalar-mul (c (f- (nth j (nth i a)))) (x (nth k a)))
 			(:instance first-nonzero-flist-add-3 (x (FLIST-SCALAR-MUL (F- (NTH J (NTH I A))) (NTH K A)))
 		                                             (y (nth i a)))))))
@@ -1734,10 +1786,10 @@
 		(natp i) (< i m))
 	   (equal (nth j (nth i (clear-column a k j m)))
 	          (if (= i k) (f1) (f0))))
-  :hints (("Goal" :in-theory (e/d (nth-clear-column) (flistp-flist-scalar-mul))
-                  :use (flistp-row
-		        (:instance flistp-row (i k))
-			(:instance flistp-flist-scalar-mul (c (F- (NTH J (NTH I A)))) (x (NTH K A)))))))
+  :hints (("Goal" :in-theory (e/d (nth-clear-column) (flistnp-flist-scalar-mul))
+                  :use (flistnp-row
+		        (:instance flistnp-row (i k))
+			(:instance flistnp-flist-scalar-mul (c (F- (NTH J (NTH I A)))) (x (NTH K A)))))))
 
 (defthmd column-clear-p-clear-column
   (implies (and (fmatp a m n) (natp m ) (natp n)
@@ -1775,7 +1827,7 @@
   (row-reduce-aux a (len a) 0))
 
 (local-defthmd first-nonzero-flist-scalar-mul-equal-1
-  (implies (and (flistp x n) (fp c) (not (= c (f0)))
+  (implies (and (flistnp x n) (fp c) (not (= c (f0)))
                 (not (flist0p x)))
 	   (and (not (flist0p (flist-scalar-mul c x)))
 	        (equal (first-nonzero (flist-scalar-mul c x))
@@ -1783,7 +1835,7 @@
   :hints (("Subgoal *1/1" :use ((:instance f*f0 (x c) (y (car x)))))))
 
 (local-defthmd first-nonzero-flist-scalar-mul-equal-2
-  (implies (and (flistp x n) (not (flist0p x)))
+  (implies (and (flistnp x n) (not (flist0p x)))
 	   (let ((c (nth (first-nonzero x) x)))
 	     (and (fp c)
 	          (not (equal c (f0)))
@@ -1793,7 +1845,7 @@
 		         (f1))))))
 
 (local-defthmd first-nonzero-flist-scalar-mul-equal
-  (implies (and (flistp x n) 
+  (implies (and (flistnp x n) 
                 (not (flist0p x)))
 	   (let* ((c (f/ (nth (first-nonzero x) x)))
 	          (y (flist-scalar-mul c x)))
@@ -1838,7 +1890,7 @@
   :hints (("Goal" :use (row-with-nonzero-at-least-index-non-nil
 		        (:instance first-nonzero-nonzero (x (nth (i$ a m k) a)))
 			(:instance f/f0 (x (nth (j$ a m k) (nth (i$ a m k) a))))
-			(:instance flistp-row (i (i$ a m k)))
+			(:instance flistnp-row (i (i$ a m k)))
 			(:instance first-nonzero-flist-scalar-mul-equal (x (nth (i$ a m k) a)))
 			(:instance fmatp-ero1 (c (c$ a m k))
 					      (k (i$ a m k)))))))
@@ -1856,7 +1908,7 @@
   :hints (("Goal" :in-theory (enable nth-ero1)
                   :use (reduce-step-6 row-with-nonzero-at-least-index-non-nil
 			(:instance first-nonzero-flist-scalar-mul-equal (x (nth (i$ a m k) a)))
-			(:instance flistp-row (i (i$ a m k)))))))
+			(:instance flistnp-row (i (i$ a m k)))))))
 
 (local-defthmd reduce-step-11
   (implies (and (fmatp a m n) (natp m) (natp n)
@@ -1872,7 +1924,7 @@
                   :use (reduce-step-6 reduce-step-10
 		        (:instance reduce-step-10 (j k))
 			(:instance first-nonzero-flist-scalar-mul-equal (x (nth (i$ a m k) a)))
-			(:instance flistp-row (i (i$ a m k)))))))
+			(:instance flistnp-row (i (i$ a m k)))))))
 
 (local-defthmd reduce-step-1
   (implies (and (fmatp a m n) (natp m) (natp n)
@@ -1895,7 +1947,7 @@
                         (:instance row-with-nonzero-at-least-index-non-nil (k (1- r)))
                         (:instance row-with-nonzero-at-least-index-nil (k (1- r)) (j (i$ a m k)))
 			(:instance first-nonzero-nonzero (x (nth (1- r) a)))
-			(:instance flistp-row (i (1- r)))
+			(:instance flistnp-row (i (1- r)))
                         (:instance row-echelon-p-aux (k r))))))
 
 (local-defthmd reduce-step-3
@@ -1919,8 +1971,8 @@
 	            (first-nonzero (nth (1- r) (a1$ a m k))))))
   :hints (("Goal" :use (reduce-step-1 row-with-nonzero-at-least-index-non-nil
                         (:instance first-nonzero-flist-scalar-mul-equal (x (nth (i$ a m k) a)))
-			(:instance flistp-row (i (i$ a m k)))
-			(:instance flistp-row (i q))
+			(:instance flistnp-row (i (i$ a m k)))
+			(:instance flistnp-row (i q))
 			(:instance nth-ero1 (c (c$ a m k))
 					    (k (i$ a m k))
 					    (i q))
@@ -1940,8 +1992,8 @@
 	                        (if (= q (1- r)) (f1) (f0))))))
   :hints (("Goal" :use (reduce-step-2 reduce-step-3 row-with-nonzero-at-least-index-non-nil
                         (:instance first-nonzero-flist-scalar-mul-equal (x (nth (i$ a m k) a)))
-			(:instance flistp-row (i (i$ a m k)))
-			(:instance flistp-row (i q))
+			(:instance flistnp-row (i (i$ a m k)))
+			(:instance flistnp-row (i q))
 			(:instance nth-ero1 (c (c$ a m k)) (k (i$ a m k)) (i q))
 			(:instance nth-ero1 (c (c$ a m k))
 					    (k (i$ a m k))
@@ -1989,7 +2041,7 @@
                   :use (reduce-step-6 row-with-nonzero-at-least-index-non-nil
 		        (:instance reduce-step-7 (q k))
 		        (:instance first-nonzero-clear-column-3 (a (a2$ a m k)) (i (1- r)) (j (j$ a m k)))
-			(:instance flistp-row (i (i$ a m k)))
+			(:instance flistnp-row (i (i$ a m k)))
 			(:instance first-nonzero-nonzero (x (nth (i$ a m k) a)))))))
 
 (local-defthmd reduce-step-12
@@ -2007,7 +2059,7 @@
 		        (:instance first-nonzero-clear-column-3 (a (a2$ a m k)) (i (1- r)) (j (j$ a m k)))
 			(:instance first-nonzero-nonzero (x (nth (i$ a m k) a)))
 			(:instance first-nonzero-nonzero (x (nth (1- r) (a2$ a m k))))
-			(:instance flistp-row (i (i$ a m k)))
+			(:instance flistnp-row (i (i$ a m k)))
                         (:instance first-nonzero-clear-column-1 (a (a2$ a m k))
 			                                        (j (j$ a m k))
 			                                        (i q)
@@ -2027,8 +2079,8 @@
 		        row-with-nonzero-at-least-index-non-nil
 		        (:instance reduce-step-7 (q k))
 			(:instance first-nonzero-nonzero (x (nth (i$ a m k) a)))
-			(:instance flistp-row (i (i$ a m k)))
-			(:instance flistp-row (i (1- r)) (a (a2$ a m k)))
+			(:instance flistnp-row (i (i$ a m k)))
+			(:instance flistnp-row (i (1- r)) (a (a2$ a m k)))
                         (:instance first-nonzero-clear-column-2 (a (a2$ a m k))
 			                                        (j (j$ a m k))
 			                                        (i q)
@@ -2054,7 +2106,7 @@
 	        (< (j$ a m k) n)))
   :hints (("Goal" :use (row-with-nonzero-at-least-index-non-nil
                         (:instance first-nonzero-nonzero (x (nth (i$ a m k) a)))
-			(:instance flistp-row (i (i$ a m k)))))))
+			(:instance flistnp-row (i (i$ a m k)))))))
 
 (local-defthm fmatp-a3
   (implies (and (fmatp a m n) (natp m) (natp n)
@@ -2073,7 +2125,7 @@
 	          (f0)))
   :hints (("Goal" :in-theory (disable a3$)
                   :use (reduce-step-6 reduce-step-12 reduce-step-14
-		        (:instance flistp-row (i q) (a (a3$ a m k)))
+		        (:instance flistnp-row (i q) (a (a3$ a m k)))
 			(:instance first-nonzero-first (i (first-nonzero (nth (1- r) (a3$ a m k)))) (x (nth q (a3$ a m k))))))))
 
 (local-defthmd reduce-step-17
@@ -2108,7 +2160,7 @@
 	   (not (flist0p (nth (1- r) (a3$ a m k)))))
   :hints (("Goal" :in-theory (disable a3$)
                   :use ((:instance reduce-step-17 (q (1- r)))
-		        (:instance flistp-row (a (a3$ a m k)) (i (1- r)))
+		        (:instance flistnp-row (a (a3$ a m k)) (i (1- r)))
 		        (:instance nth-flist0p (x (nth (1- r) (a3$ a m k))) (i (first-nonzero (nth (1- r) (a3$ a m k)))))))))
 
 (local-defthmd reduce-step-20
@@ -2178,7 +2230,7 @@
   :hints (("Goal" :in-theory (disable a3$)
                   :use (reduce-step-24 reduce-step-25 fmatp-a3
 		        (:instance first-nonzero-nonzero (x (nth j (a3$ a m k))))
-			(:instance flistp-row (a (a3$ a m k)) (i j))
+			(:instance flistnp-row (a (a3$ a m k)) (i j))
 		        (:instance column-clear-p-entry (a (a3$ a m k)) (j (j$ a m k)) (i j))))))
 
 (local-defthmd reduce-step-27
@@ -2193,7 +2245,7 @@
 		        (:instance column-clear-p-entry (a (a3$ a m k)) (i k) (j (j$ a m k)))
 		        (:instance row-with-nonzero-at-least-index-non-nil (a (a3$ a m k)) (j k))
 		        (:instance first-nonzero-first (x (nth k (a3$ a m k))) (i (j$ a m k)))
-			(:instance flistp-row (i k) (a (a3$ a m k)))
+			(:instance flistnp-row (i k) (a (a3$ a m k)))
 		        (:instance reduce-step-26 (j (row-with-nonzero-at-least-index (a3$ a m k) m k)))))))
 
 (local-defthmd reduce-step-28
@@ -2209,7 +2261,7 @@
 		        (:instance column-clear-p-entry (a (a3$ a m k)) (i k) (j (j$ a m k)))
 		        (:instance row-with-nonzero-at-least-index-non-nil (a (a3$ a m k)) (j k))
 		        (:instance first-nonzero-first (x (nth k (a3$ a m k))) (i (j$ a m k)))
-			(:instance flistp-row (i k) (a (a3$ a m k)))
+			(:instance flistnp-row (i k) (a (a3$ a m k)))
 		        (:instance reduce-step-26 (j (row-with-nonzero-at-least-index (a3$ a m k) m k)))))))
 
 (local-defthmd reduce-step-29
@@ -2324,7 +2376,7 @@
 	   (and (natp (first-nonzero (nth k a)))
 	        (< (first-nonzero (nth k a)) n)))
   :hints (("Goal" :use ((:instance first-nonzero-nonzero (x (nth k a)))
-                        (:instance flistp-row (i k))))))
+                        (:instance flistnp-row (i k))))))
 
 (defthmd not-flist0p-row
   (implies (and (fmatp a m n) (natp m) (natp n) (row-echelon-p a)
@@ -2341,7 +2393,7 @@
                 (natp i) (< i m))
 	   (equal (nth (first-nonzero (nth k a))
 	               (nth i a))
-		  (delta i k)))
+		  (fdelta i k)))
   :hints (("Goal" :use (row-echelon-p-aux-first-nonzero
                         (:instance row-echelon-p-aux-first-nonzero (i k))
                         (:instance row-echelon-p-row-echelon-p-aux (k (1+ k)))
@@ -2370,7 +2422,7 @@
   :hints (("Goal" :use ((:instance nth-first-nonzero (i k))))))
 
 (local-defthm flist-scalar-mul-f1
-  (implies (flistp x n)
+  (implies (flistnp x n)
            (equal (flist-scalar-mul (f1) x)
 	          x)))
 		  
@@ -2381,7 +2433,7 @@
 	   (equal (nth i (a1$ a m k))
 	          (nth i a)))
   :hints (("Goal" :in-theory (enable nth-ero1)
-                  :use (flistp-row))))
+                  :use (flistnp-row))))
 
 (local-defthm rrrr-5
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
@@ -2390,7 +2442,7 @@
 	          a))
   :hints (("Goal" :in-theory (disable a1$)
                   :use (reduce-step-6
-                        (:instance entry-diff-lemma (b (a1$ a m k)))))))
+                        (:instance fmat-entry-diff-lemma (b (a1$ a m k)))))))
 
 (local-defthm rrrr-6
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
@@ -2399,7 +2451,7 @@
 	   (equal (nth i (a2$ a m k))
 	          (nth i a)))
   :hints (("Goal" :in-theory (enable nth-ero3)
-                  :use (flistp-row))))
+                  :use (flistnp-row))))
 
 (local-defthm rrrr-7
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
@@ -2408,7 +2460,7 @@
 	          a))
   :hints (("Goal" :in-theory (disable a2$)
                   :use (reduce-step-6
-                        (:instance entry-diff-lemma (b (a2$ a m k)))))))
+                        (:instance fmat-entry-diff-lemma (b (a2$ a m k)))))))
 
 (local-defthm rrrr-8
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
@@ -2417,8 +2469,8 @@
 	   (equal (nth i (a3$ a m k))
 	          (nth i a)))
   :hints (("Goal" :in-theory (enable nth-first-nonzero nth-clear-column)
-                  :use (first-nonzero-row-bound flistp-row
-		        (:instance flistp-row (i k))))))
+                  :use (first-nonzero-row-bound flistnp-row
+		        (:instance flistnp-row (i k))))))
 
 (local-defthmd rrrr-9
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
@@ -2427,7 +2479,7 @@
 	          a))
   :hints (("Goal" :in-theory (disable a3$)
                   :use (fmatp-a3
-                        (:instance entry-diff-lemma (b (a3$ a m k)))))))
+                        (:instance fmat-entry-diff-lemma (b (a3$ a m k)))))))
 
 (local-defthm rrrr-10
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
@@ -2796,7 +2848,7 @@
                 (natp k) (< k m) (natp j) (< j n))
            (equal (apply-row-ops (clear-column-ops a k j m) a)
 	          (clear-column a k j m)))
-  :hints (("Goal" :use ((:instance entry-diff-lemma (a (apply-row-ops (clear-column-ops a k j m) a))
+  :hints (("Goal" :use ((:instance fmat-entry-diff-lemma (a (apply-row-ops (clear-column-ops a k j m) a))
                                                     (b (clear-column a k j m))))
 		  :in-theory (enable apply-clear-column-ops-3))))
 
@@ -2847,7 +2899,7 @@
 	     (and (natp i) (< i m) (natp j) (< j n)
 	          (not (equal (entry i j a) (f0))))))
   :hints (("Goal" :use (row-with-nonzero-at-least-index-non-nil
-                        (:instance flistp-row (i (row-with-nonzero-at-least-index a m k)))
+                        (:instance flistnp-row (i (row-with-nonzero-at-least-index a m k)))
                         (:instance first-nonzero-nonzero (x (nth (row-with-nonzero-at-least-index a m k) a)))))))
 		
 (in-theory (disable fmatp))
@@ -2896,7 +2948,7 @@
 ;; The nxn elementary matrix corresponding to a row operation:
 
 (defund elem-mat (op m)
-  (apply-row-op op (id-mat m)))
+  (apply-row-op op (id-fmat m)))
 
 (defthm fmatp-elem-mat
   (implies (and (row-op-p op m) (natp m))
@@ -2908,40 +2960,40 @@
 	   (equal (entry i j (fmat* (elem-mat op m) a))
 		  (entry i j (apply-row-op op a))))
   :hints (("Goal" :in-theory (e/d (nth-ero1 row-op-p apply-row-op nth-fmat* elem-mat fdot-flist-scalar-mul nth-col)
-                                  (flistp-unit fmatp-id-mat flistp-col))
-                  :use (fmatp-elem-mat fmatp-transpose flistp-col
-		        (:instance flistp-unit (j (caddr op)) (n m))
-			(:instance flistp-row (i (caddr op)))
-		        (:instance fmatp-id-mat (n m))))))
+                                  (flistnp-funit fmatp-id-fmat flistnp-col))
+                  :use (fmatp-elem-mat fmatp-transpose flistnp-col
+		        (:instance flistnp-funit (j (caddr op)) (n m))
+			(:instance flistnp-row (i (caddr op)))
+		        (:instance fmatp-id-fmat (n m))))))
 
 (local-defthmd elem-mat-row-op-2
   (implies (and (fmatp a m n) (row-op-p op m) (posp m) (posp n) (natp i) (< i m) (natp j) (< j n) (= (car op) 2))
 	   (equal (entry i j (fmat* (elem-mat op m) a))
 		  (entry i j (apply-row-op op a))))
   :hints (("Goal" :in-theory (e/d (nth-ero2 row-op-p apply-row-op nth-fmat* elem-mat fdot-flist-scalar-mul nth-col)
-                                  (flistp-unit fmatp-id-mat flistp-col nth-flist-add ))
-                  :use (fmatp-elem-mat fmatp-transpose flistp-col
-		        (:instance flistp-unit (j (caddr op)) (n m))
-		        (:instance flistp-unit (j (cadddr op)) (n m))
-			(:instance flistp-row (i (caddr op)))
-			(:instance flistp-row (i (cadddr op)))
+                                  (flistnp-funit fmatp-id-fmat flistnp-col nth-flist-add ))
+                  :use (fmatp-elem-mat fmatp-transpose flistnp-col
+		        (:instance flistnp-funit (j (caddr op)) (n m))
+		        (:instance flistnp-funit (j (cadddr op)) (n m))
+			(:instance flistnp-row (i (caddr op)))
+			(:instance flistnp-row (i (cadddr op)))
 			(:instance fdot-flist-add (n m)
-			                          (x (FLIST-SCALAR-MUL (CADR OP) (UNIT (CADDR OP) M)))
-			                          (y (UNIT (CADDDR OP) M))
+			                          (x (FLIST-SCALAR-MUL (CADR OP) (FUNIT (CADDR OP) M)))
+			                          (y (FUNIT (CADDDR OP) M))
 						  (z (col j a)))
 			(:instance nth-flist-add (i j) (x (FLIST-SCALAR-MUL (CADR OP) (NTH (CADDR OP) A))) (y (nth (cadddr op) a)))
-		        (:instance fmatp-id-mat (n m))))))
+		        (:instance fmatp-id-fmat (n m))))))
 
 (local-defthmd elem-mat-row-op-3
   (implies (and (fmatp a m n) (row-op-p op m) (posp m) (posp n) (natp i) (< i m) (natp j) (< j n) (= (car op) 3))
 	   (equal (entry i j (fmat* (elem-mat op m) a))
 		  (entry i j (apply-row-op op a))))
   :hints (("Goal" :in-theory (e/d (nth-ero3 row-op-p apply-row-op nth-fmat* elem-mat fdot-flist-scalar-mul nth-col)
-                                  (flistp-unit fmatp-id-mat flistp-col))
-                  :use (fmatp-elem-mat fmatp-transpose flistp-col
-		        (:instance flistp-unit (j (caddr op)) (n m))
-			(:instance flistp-row (i (caddr op)))
-		        (:instance fmatp-id-mat (n m))))))
+                                  (flistnp-funit fmatp-id-fmat flistnp-col))
+                  :use (fmatp-elem-mat fmatp-transpose flistnp-col
+		        (:instance flistnp-funit (j (caddr op)) (n m))
+			(:instance flistnp-row (i (caddr op)))
+		        (:instance fmatp-id-fmat (n m))))))
 
 (local-defthmd elem-mat-row-op-4
   (implies (and (fmatp a m n) (row-op-p op m) (posp m) (posp n) (natp i) (< i m) (natp j) (< j n))
@@ -2954,7 +3006,7 @@
   (implies (and (fmatp a m n) (row-op-p op m) (posp m) (posp n))
 	   (equal (fmat* (elem-mat op m) a)
 		  (apply-row-op op a)))
-  :hints (("Goal" :use ((:instance entry-diff-lemma (a (fmat* (elem-mat op m) a)) (b (apply-row-op op a)))
+  :hints (("Goal" :use ((:instance fmat-entry-diff-lemma (a (fmat* (elem-mat op m) a)) (b (apply-row-op op a)))
                         (:instance fmatp-fmat* (a (elem-mat op m)) (b a) (n m) (p n))
 			(:instance elem-mat-row-op-4 (i (car (entry-diff (fmat* (elem-mat op m) a) (apply-row-op op a))))
 			                             (j (cdr (entry-diff (fmat* (elem-mat op m) a) (apply-row-op op a)))))))))
@@ -2965,7 +3017,7 @@
   (if (consp ops)
       (fmat* (row-ops-mat (cdr ops) m)
              (elem-mat (car ops) m))             
-    (id-mat m)))
+    (id-fmat m)))
 
 (defthm fmatp-row-ops-mat
   (implies (and (row-ops-p ops m) (posp m))
@@ -2976,7 +3028,7 @@
                 (row-ops-p ops m))
 	   (equal (fmat* (row-ops-mat ops m) a)
 	          (apply-row-ops ops a)))
-  :hints (("Goal" :in-theory (enable id-mat-left))
+  :hints (("Goal" :in-theory (enable id-fmat-left))
           ("Subgoal *1/3" :in-theory (enable elem-mat-row-op)
 	                  :use ((:instance fmat*-assoc (a (ROW-OPS-MAT (CDR OPS) M)) (b (ELEM-MAT (CAR OPS) M)) (c a)
 	                                               (n m) (p m) (q n))))))
@@ -2989,7 +3041,7 @@
                                                        (a (ROW-OPS-MAT OPS2 M))
                                                        (b (ROW-OPS-MAT (CDR OPS1) M))
 						       (c (ELEM-MAT (CAR OPS1) M)))))
-	  ("Subgoal *1/1" :in-theory (enable id-mat-right))))
+	  ("Subgoal *1/1" :in-theory (enable id-fmat-right))))
 
 (defund row-reduce-mat (a)
   (row-ops-mat (row-reduce-ops a) (len a)))
@@ -3011,36 +3063,36 @@
 ;;----------------------------------------------------------------------------------------
 
 ;; In this section, we focus on square matrices.  Given an nxn matrix a, we seek an nxn
-;; matrix b such that (fmat* a b) = (fmat* b a) = (id-mat n), which we shall call the
+;; matrix b such that (fmat* a b) = (fmat* b a) = (id-fmat n), which we shall call the
 ;; inverse of a.  If it exists, the inverse of a is unique in the following strong sense:
-;; if (fmat* c a) = (id-mat n), then
+;; if (fmat* c a) = (id-fmat n), then
 
-;;   c = (fmat* c (id-mat n))
+;;   c = (fmat* c (id-fmat n))
 ;;     = (fmat* c (fmat* a b))
 ;;     = (fmat* (fmat* c a) b))
-;;     = (fmat* (id-mat n) b))
+;;     = (fmat* (id-fmat n) b))
 ;;     = b,
 
-;; and if (fmat* a c) = (id-mat n), then
-;;   c = (fmat* (id-mat n) c)
+;; and if (fmat* a c) = (id-fmat n), then
+;;   c = (fmat* (id-fmat n) c)
 ;;     = (fmat* (fmat* b a) c)
 ;;     = (fmat* b (fmat* a c))
-;;     = (fmat* b (id-mat n)))
+;;     = (fmat* b (id-fmat n)))
 ;;     = b.
 
 (defthm inverse-unique
   (implies (and (fmatp a n n) (fmatp b n n) (fmatp c n n) (posp n)
-		(= (fmat* a b) (id-mat n))
-		(= (fmat* b a) (id-mat n))
-		(or (= (fmat* a c) (id-mat n))
-	            (= (fmat* c a) (id-mat n))))
+		(= (fmat* a b) (id-fmat n))
+		(= (fmat* b a) (id-fmat n))
+		(or (= (fmat* a c) (id-fmat n))
+	            (= (fmat* c a) (id-fmat n))))
 	   (equal c b))
-  :hints (("Goal" :use ((:instance id-mat-right (a c) (m n))
+  :hints (("Goal" :use ((:instance id-fmat-right (a c) (m n))
                         (:instance fmat*-assoc (a c) (b a) (c b) (m n) (p n) (q n))
-			(:instance id-mat-left (a b) (m n))
-			(:instance id-mat-left (a c) (m n))
+			(:instance id-fmat-left (a b) (m n))
+			(:instance id-fmat-left (a c) (m n))
                         (:instance fmat*-assoc (a b) (b a) (m n) (p n) (q n))
-			(:instance id-mat-right (a b) (m n)))))
+			(:instance id-fmat-right (a b) (m n)))))
   :rule-classes ())
 
 ;; Every elementary matrix has an inverse:
@@ -3086,14 +3138,14 @@
   :hints (("Goal" :in-theory (enable nth-ero1 nth-ero2 nth-ero3 apply-row-op row-op-p invert-row-op))
           ("Subgoal 3" :in-theory (e/d (nth-ero1) (fmatp-ero1))
 	               :use ((:instance fmatp-ero1 (c (cadr op)) (k (caddr op)) (m n))
-		             (:instance flistp-row (i (caddr op)) (m n))))
+		             (:instance flistnp-row (i (caddr op)) (m n))))
           ("Subgoal 2" :in-theory (e/d (nth-ero3) (fmatp-ero3))
 	               :use ((:instance fmatp-ero3 (j (cadr op)) (k (caddr op)) (m n))
-		             (:instance flistp-row (i (caddr op)) (m n))))
+		             (:instance flistnp-row (i (caddr op)) (m n))))
           ("Subgoal 1" :in-theory (e/d (nth-ero2) (fmatp-ero2 flist-scalar-mul-dist-2))
 	               :use ((:instance fmatp-ero2 (c (cadr op)) (j (caddr op)) (k (cadddr op)) (m n))
-		             (:instance flistp-row (i (caddr op)) (m n))
-		             (:instance flistp-row (i (cadddr op)) (m n))
+		             (:instance flistnp-row (i (caddr op)) (m n))
+		             (:instance flistnp-row (i (cadddr op)) (m n))
 			     (:instance flist-add-assoc (x (flist-scalar-mul (f- (cadr op)) (nth (caddr op) a)))
 			                                (y (flist-scalar-mul (cadr op) (nth (caddr op) a)))
 							(z (nth (cadddr op) a)))
@@ -3106,16 +3158,16 @@
   :hints (("Goal" :use (row-op-p-invert-row-op
                         (:instance nth-compose-invert-row-op
                           (i (car (entry-diff (apply-row-op (invert-row-op op) (apply-row-op op a)) a))))
-			(:instance entry-diff-lemma (m n) (b a) (a (apply-row-op (invert-row-op op) (apply-row-op op a))))))))
+			(:instance fmat-entry-diff-lemma (m n) (b a) (a (apply-row-op (invert-row-op op) (apply-row-op op a))))))))
 
 (local-defthmd fmat*-elem-invert-row-op-1
   (implies (and (row-op-p op n) (posp n))
            (equal (fmat* (elem-mat (invert-row-op op) n)
 			 (elem-mat op n))
-		  (id-mat n)))
+		  (id-fmat n)))
   :hints (("Goal" :use (row-op-p-invert-row-op
                         (:instance elem-mat (m n))
-                        (:instance compose-invert-row-op (a (id-mat n)))
+                        (:instance compose-invert-row-op (a (id-fmat n)))
                         (:instance fmatp-elem-mat (m n))
                         (:instance elem-mat-row-op (m n) (op (invert-row-op op)) (a (elem-mat op n)))))))
 
@@ -3123,10 +3175,10 @@
   (implies (and (row-op-p op n) (posp n))
            (and (equal (fmat* (elem-mat (invert-row-op op) n)
 			      (elem-mat op n))
-		       (id-mat n))
+		       (id-fmat n))
 		(equal (fmat* (elem-mat op n)
 		              (elem-mat (invert-row-op op) n))			      
-		       (id-mat n))))
+		       (id-fmat n))))
   :hints (("Goal" :use (fmat*-elem-invert-row-op-1 row-op-p-invert-row-op
                         (:instance fmat*-elem-invert-row-op-1 (op (invert-row-op op)))))))
 
@@ -3151,7 +3203,7 @@
                 (row-op-p (car ops) n)
                 (equal (fmat* (row-ops-mat (invert-row-ops (cdr ops)) n)
                               (row-ops-mat (cdr ops) n))
-                       (id-mat n))
+                       (id-fmat n))
                 (row-ops-p (cdr ops) n)
                 (integerp n)
                 (< 0 n))
@@ -3164,7 +3216,7 @@
 		                (row-ops-mat (invert-row-ops (cdr ops)) n))
                          (fmat* (row-ops-mat (cdr ops) n)
                                 (elem-mat (car ops) n)))))
-  :hints (("goal" :in-theory (e/d (id-mat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
+  :hints (("goal" :in-theory (e/d (id-fmat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
 	                          (fmatp-elem-mat))
 		  :use ((:instance fmatp-elem-mat (op (invert-row-op (car ops))) (m n))
 		        (:instance row-ops-mat-append (m n)
@@ -3176,7 +3228,7 @@
                 (row-op-p (car ops) n)
                 (equal (fmat* (row-ops-mat (invert-row-ops (cdr ops)) n)
                               (row-ops-mat (cdr ops) n))
-                       (id-mat n))
+                       (id-fmat n))
                 (row-ops-p (cdr ops) n)
                 (integerp n)
                 (< 0 n))
@@ -3188,7 +3240,7 @@
 		         (fmat* (row-ops-mat (invert-row-ops (cdr ops)) n)
                                 (fmat* (row-ops-mat (cdr ops) n)
                                        (elem-mat (car ops) n))))))
-  :hints (("goal" :in-theory (e/d (id-mat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
+  :hints (("goal" :in-theory (e/d (id-fmat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
 	                          (fmatp-elem-mat))
 		  :use ((:instance fmatp-elem-mat (op (invert-row-op (car ops))) (m n))
 		        (:instance fmatp-elem-mat (op (car ops)) (m n))
@@ -3204,7 +3256,7 @@
                 (row-op-p (car ops) n)
                 (equal (fmat* (row-ops-mat (invert-row-ops (cdr ops)) n)
                               (row-ops-mat (cdr ops) n))
-                       (id-mat n))
+                       (id-fmat n))
                 (row-ops-p (cdr ops) n)
                 (integerp n)
                 (< 0 n))
@@ -3212,8 +3264,8 @@
 		         (fmat* (row-ops-mat (invert-row-ops (cdr ops)) n)
                                 (fmat* (row-ops-mat (cdr ops) n)
                                        (elem-mat (car ops) n))))
-		  (id-mat n)))
-  :hints (("goal" :in-theory (e/d (fmat*-elem-invert-row-op id-mat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
+		  (id-fmat n)))
+  :hints (("goal" :in-theory (e/d (fmat*-elem-invert-row-op id-fmat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
 	                          (fmatp-elem-mat))
 		  :use ((:instance fmatp-elem-mat (op (invert-row-op (car ops))) (m n))
 		        (:instance fmatp-elem-mat (op (car ops)) (m n))
@@ -3227,7 +3279,7 @@
                 (row-op-p (car ops) n)
                 (equal (fmat* (row-ops-mat (invert-row-ops (cdr ops)) n)
                               (row-ops-mat (cdr ops) n))
-                       (id-mat n))
+                       (id-fmat n))
                 (row-ops-p (cdr ops) n)
                 (integerp n)
                 (< 0 n))
@@ -3236,15 +3288,15 @@
                                       n)
                          (fmat* (row-ops-mat (cdr ops) n)
                                 (elem-mat (car ops) n)))
-	          (id-mat n)))
+	          (id-fmat n)))
   :hints (("Goal" :use (invert-row-ops-mat-1 invert-row-ops-mat-2 invert-row-ops-mat-3))))
 
 (local-defthmd invert-row-ops-mat-5
   (implies (and (row-ops-p ops n) (posp n))
            (equal (fmat* (row-ops-mat (invert-row-ops ops) n)
 	                 (row-ops-mat ops n))
-		  (id-mat n)))
-  :hints (("Subgoal *1/4" :in-theory (enable id-mat-left))
+		  (id-fmat n)))
+  :hints (("Subgoal *1/4" :in-theory (enable id-fmat-left))
           ("Subgoal *1/2" :use (invert-row-ops-mat-4))))
 
 (local-defthmd invert-row-ops-mat-6
@@ -3253,7 +3305,7 @@
                 (equal (fmat* (row-ops-mat (cdr ops) n)
                               (row-ops-mat (invert-row-ops (cdr ops))
                                            n))
-                       (id-mat n))
+                       (id-fmat n))
                 (row-ops-p (cdr ops) n)
                 (integerp n)
                 (< 0 n))
@@ -3266,7 +3318,7 @@
                                 (elem-mat (car ops) n))
 			 (fmat* (elem-mat (invert-row-op (car ops)) n)
 		                (row-ops-mat (invert-row-ops (cdr ops)) n)))))
-  :hints (("goal" :in-theory (e/d (id-mat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
+  :hints (("goal" :in-theory (e/d (id-fmat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
 	                          (fmatp-elem-mat))
 		  :use ((:instance fmatp-elem-mat (op (invert-row-op (car ops))) (m n))
 		        (:instance row-ops-mat-append (m n)
@@ -3279,7 +3331,7 @@
                 (equal (fmat* (row-ops-mat (cdr ops) n)
                               (row-ops-mat (invert-row-ops (cdr ops))
                                            n))
-                       (id-mat n))
+                       (id-fmat n))
                 (row-ops-p (cdr ops) n)
                 (integerp n)
                 (< 0 n))
@@ -3291,7 +3343,7 @@
 		         (fmat* (elem-mat (car ops) n)
 			        (fmat* (elem-mat (invert-row-op (car ops)) n)
 		                       (row-ops-mat (invert-row-ops (cdr ops)) n))))))
-  :hints (("Goal" :in-theory (e/d (fmat*-elem-invert-row-op id-mat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
+  :hints (("Goal" :in-theory (e/d (fmat*-elem-invert-row-op id-fmat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
 	                          (fmatp-elem-mat))
 		  :use ((:instance fmatp-elem-mat (op (invert-row-op (car ops))) (m n))
 		        (:instance fmatp-elem-mat (op (car ops)) (m n))
@@ -3307,7 +3359,7 @@
                 (equal (fmat* (row-ops-mat (cdr ops) n)
                               (row-ops-mat (invert-row-ops (cdr ops))
                                            n))
-                       (id-mat n))
+                       (id-fmat n))
                 (row-ops-p (cdr ops) n)
                 (integerp n)
                 (< 0 n))
@@ -3315,8 +3367,8 @@
 		         (fmat* (elem-mat (car ops) n)
 			        (fmat* (elem-mat (invert-row-op (car ops)) n)
 		                       (row-ops-mat (invert-row-ops (cdr ops)) n))))
-		  (id-mat n)))
-  :hints (("Goal" :in-theory (e/d (fmat*-elem-invert-row-op id-mat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
+		  (id-fmat n)))
+  :hints (("Goal" :in-theory (e/d (fmat*-elem-invert-row-op id-fmat-left row-op-p-invert-row-op row-ops-p-invert-row-ops)
 	                          (fmatp-elem-mat))
 		  :use ((:instance fmatp-elem-mat (op (invert-row-op (car ops))) (m n))
 		        (:instance fmatp-elem-mat (op (car ops)) (m n))
@@ -3331,7 +3383,7 @@
                 (equal (fmat* (row-ops-mat (cdr ops) n)
                               (row-ops-mat (invert-row-ops (cdr ops))
                                            n))
-                       (id-mat n))
+                       (id-fmat n))
                 (row-ops-p (cdr ops) n)
                 (integerp n)
                 (< 0 n))
@@ -3340,25 +3392,25 @@
                          (row-ops-mat (append (invert-row-ops (cdr ops))
                                               (list (invert-row-op (car ops))))
                                       n))
-		  (id-mat n)))
+		  (id-fmat n)))
   :hints (("goal" :use (invert-row-ops-mat-6 invert-row-ops-mat-7 invert-row-ops-mat-8))))
 
 (local-defthmd invert-row-ops-mat-10
   (implies (and (row-ops-p ops n) (posp n))
            (equal (fmat* (row-ops-mat ops n)
 	                 (row-ops-mat (invert-row-ops ops) n))
-	          (id-mat n)))		  
-  :hints (("Subgoal *1/4" :in-theory (enable id-mat-left))
+	          (id-fmat n)))		  
+  :hints (("Subgoal *1/4" :in-theory (enable id-fmat-left))
           ("Subgoal *1/2" :use (invert-row-ops-mat-9))))
 
 (defthmd invert-row-ops-mat
   (implies (and (row-ops-p ops n) (posp n))
                 (and (equal (fmat* (row-ops-mat (invert-row-ops ops) n)
 	                           (row-ops-mat ops n))
-		            (id-mat n))
+		            (id-fmat n))
                      (equal (fmat* (row-ops-mat ops n)
 			           (row-ops-mat (invert-row-ops ops) n))			      
-		            (id-mat n))))
+		            (id-fmat n))))
   :hints (("Goal" :use (invert-row-ops-mat-5 invert-row-ops-mat-10))))
 
 ;; We shall show that a has an inverse iff (row-rank a) = n and that in this case,
@@ -3371,7 +3423,7 @@
   (row-reduce-mat a))
 
 ;; First we show, as a consequence of lead-inds-ninit,  that if (invertiblep a n),
-;; then (row-reduce a) = (id-mat n):
+;; then (row-reduce a) = (id-fmat n):
 
 (local-defthmd row-echelon-p-no-nonzero-rows-entry
   (implies (and (fmatp a n n)
@@ -3380,7 +3432,7 @@
 		(= (num-nonzero-rows a) n)
 		(natp i) (< i n) (natp j) (< j n))
 	   (equal (entry i j a)
-	          (delta i j)))
+	          (fdelta i j)))
   :hints (("Goal" :in-theory (enable lead-inds-ninit)
                   :use ((:instance num-nonzero-rows<=m (m n))
                         (:instance num-nonzero-rows-nonzero (m n))
@@ -3392,17 +3444,17 @@
 			(:instance nth-lead-inds (k i))
 			(:instance nth-lead-inds (k j))))))
 
-(defthm row-echelon-p-id-mat
+(defthm row-echelon-p-id-fmat
   (implies (and (fmatp a n n)
 		(posp n)
 		(row-echelon-p a)
 		(= (num-nonzero-rows a) n))
-	   (equal a (id-mat n)))
+	   (equal a (id-fmat n)))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance entry-diff-lemma (m n) (b (id-mat n)))
+  :hints (("Goal" :use ((:instance fmat-entry-diff-lemma (m n) (b (id-fmat n)))
                         (:instance row-echelon-p-no-nonzero-rows-entry
-			            (i (car (entry-diff a (id-mat n))))
-			            (j (cdr (entry-diff a (id-mat n)))))))))
+			            (i (car (entry-diff a (id-fmat n))))
+			            (j (cdr (entry-diff a (id-fmat n)))))))))
 
 ;; Now let
 
@@ -3414,8 +3466,8 @@
 
 ;;    r = (fmat* p a) = (row-reduce a).
 
-;; By invert-row-ops-mat, (fmat* p q) = fmat* q p) = (id-mat n).  If (row-rank a) = n,
-;; then (num-nonzero-rows r) = n.  By row-echelon-p-id-mat, (fmat* p a) = r = (id-mat n),
+;; By invert-row-ops-mat, (fmat* p q) = fmat* q p) = (id-fmat n).  If (row-rank a) = n,
+;; then (num-nonzero-rows r) = n.  By row-echelon-p-id-fmat, (fmat* p a) = r = (id-fmat n),
 ;; and by inverse-unique, a = q.  Thus, (invertiblep a n) is a sufficient condition for
 ;; the existence of an inverse:
 
@@ -3423,15 +3475,15 @@
   (implies (and (fmatp a n n) (posp n) (invertiblep a n))
 	   (let ((p (inverse-mat a)))
 	     (and (fmatp p n n)
-		  (equal (fmat* a p) (id-mat n))
-		  (equal (fmat* p a) (id-mat n)))))
+		  (equal (fmat* a p) (id-fmat n))
+		  (equal (fmat* p a) (id-fmat n)))))
   :hints (("Goal" :in-theory (enable row-echelon-p-row-reduce row-ops-p-invert-row-ops row-ops-p-row-reduce-ops
                                      row-reduce-mat invertiblep inverse-mat row-reduce-mat row-rank)
                   :use ((:instance row-ops-mat-row-reduce (m n))
 		        (:instance fmatp-row-reduce (m n))
 		        (:instance fmatp-row-ops-mat (m n) (ops (INVERT-ROW-OPS (ROW-REDUCE-OPS A))))
 		        (:instance invert-row-ops-mat (ops (row-reduce-ops a)))
-		        (:instance row-echelon-p-id-mat (a (row-reduce a)))
+		        (:instance row-echelon-p-id-fmat (a (row-reduce a)))
 			(:instance inverse-unique (a (inverse-mat a))
 			                          (b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n))
 						  (c a))))))
@@ -3442,13 +3494,13 @@
 ;;   (fmat* r (fmat* b q)) = (fmat* (fmt* p a) (fmat* b q))
 ;;                         = (fmat* p (fmat* (fmat* a b) q))
 ;;			   = (fmat* p q)
-;;			   = (id-mat n).
+;;			   = (id-fmat n).
 
 ;; If (invertiblep a n) = NIL, then the last row of r is 0, and by nth-fmat*, the same
-;; must be true of (id-mat n), a contradiction.
+;; must be true of (id-fmat n), a contradiction.
 
 (local-defthmd invertiblep-necessary-1
-  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-mat n)))
+  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-fmat n)))
            (equal (fmat* (row-reduce a) (fmat* b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n)))
 	          (fmat* (row-ops-mat (row-reduce-ops a) n)
 	                 (fmat* a (fmat* b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n))))))
@@ -3467,11 +3519,11 @@
 					       (c (fmat* b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n))))))))
 
 (local-defthmd invertiblep-necessary-2
-  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-mat n)))
+  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-fmat n)))
            (equal (fmat* (row-ops-mat (row-reduce-ops a) n)
 	                 (fmat* a (fmat* b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n))))
-	          (id-mat n)))
-  :hints (("Goal" :in-theory (enable row-reduce-mat id-mat-left)
+	          (id-fmat n)))
+  :hints (("Goal" :in-theory (enable row-reduce-mat id-fmat-left)
                   :use ((:instance row-ops-p-row-reduce-ops (m n))
 		        (:instance row-ops-mat-row-reduce (m n))
 			(:instance row-ops-p-invert-row-ops (ops (row-reduce-ops a)))
@@ -3483,9 +3535,9 @@
 					       (c (row-ops-mat (invert-row-ops (row-reduce-ops a)) n)))))))
 
 (local-defthmd invertiblep-necessary-3
-  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-mat n)))
+  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-fmat n)))
            (equal (fmat* (row-reduce a) (fmat* b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n)))
-	          (id-mat n)))
+	          (id-fmat n)))
   :hints (("Goal" :use (invertiblep-necessary-1 invertiblep-necessary-2))))
 
 (local-defthmd invertiblep-necessary-4
@@ -3500,11 +3552,11 @@
 (local-defthmd invertiblep-necessary-5
   (implies (and (fmatp a n n) (fmatp b n n) (posp n) (not (invertiblep a n)))
            (equal (nth (1- n) (row-reduce a))
-	          (flist0 n)))
+	          (flistn0 n)))
   :hints (("Goal" :use (invertiblep-necessary-4
 			(:instance fmatp-row-reduce (m n))
-			(:instance len-row (m n) (i (1- n)) (a (row-reduce a)))
-			(:instance flist0p-flist0-len (x (nth (1- n) (row-reduce a))))))))
+			(:instance len-fmat-row (m n) (i (1- n)) (a (row-reduce a)))
+			(:instance flist0p-flistn0-len (x (nth (1- n) (row-reduce a))))))))
 
 (local-defthmd invertiblep-necessary-6
   (implies (and (fmatp a n n) (fmatp b n n) (posp n) (not (invertiblep a n)))
@@ -3519,19 +3571,19 @@
 			                       (b (fmat* b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n)))
 					       (i (1- n))
 					       (j (1- n)))
-			(:instance flistp-col (j (1- n)) (m n) (a (fmat* b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n))))
-			(:instance fdot-flist0 (x (col (1- n) (fmat* b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n)))))))))
+			(:instance flistnp-col (j (1- n)) (m n) (a (fmat* b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n))))
+			(:instance fdot-flistn0 (x (col (1- n) (fmat* b (row-ops-mat (invert-row-ops (row-reduce-ops a)) n)))))))))
 
 (local-defthmd invertiblep-necessary-7
-  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-mat n)) (not (invertiblep a n)))
-           (equal (entry (1- n) (1- n) (id-mat n))
+  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-fmat n)) (not (invertiblep a n)))
+           (equal (entry (1- n) (1- n) (id-fmat n))
 	          (f0)))
   :hints (("Goal" :use (invertiblep-necessary-3 invertiblep-necessary-6))))
 
 (defthmd invertiblep-necessary
-  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-mat n)))
+  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-fmat n)))
 	   (invertiblep a n))
-  :hints (("Goal" :in-theory (enable entry-id-mat)
+  :hints (("Goal" :in-theory (enable entry-id-fmat)
                   :use (invertiblep-necessary-7))))
 
 ;; Some consequences of the preceding results:
@@ -3548,8 +3600,8 @@
 
 (defthmd invertiblep-inverse
   (implies (and (fmatp a n n) (fmatp b n n) (posp n)
-		(or (= (fmat* a b) (id-mat n))
-		    (= (fmat* b a) (id-mat n))))
+		(or (= (fmat* a b) (id-fmat n))
+		    (= (fmat* b a) (id-fmat n))))
 	   (and (invertiblep a n)
 		(equal (inverse-mat a) b)))
   :hints (("Goal" :use (invertiblep-sufficient invertiblep-necessary inverse-inverse-mat
@@ -3563,7 +3615,7 @@
   (implies (and (fmatp a m n) (fmatp b m n) (fmatp p m m) (invertiblep p m) (posp m) (posp n))
            (iff (equal (fmat* p a) (fmat* p b))
 	        (equal a b)))
-  :hints (("Goal" :in-theory (enable id-mat-left)
+  :hints (("Goal" :in-theory (enable id-fmat-left)
                   :use ((:instance invertiblep-sufficient (a p) (n m))
                         (:instance fmat*-assoc (n m) (p m) (q n) (a (inverse-mat p)) (b p) (c a))
                         (:instance fmat*-assoc (n m) (p m) (q n) (a (inverse-mat p)) (b p) (c b))))))
@@ -3606,7 +3658,7 @@
 	   (and (invertiblep (fmat* a b) n)
 		(equal (inverse-mat (fmat* a b))
 		       (fmat* (inverse-mat b) (inverse-mat a)))))
-  :hints (("Goal" :in-theory (enable id-mat-right)
+  :hints (("Goal" :in-theory (enable id-fmat-right)
                   :use (invertiblep-sufficient fmatp-fmat*
                         (:instance invertiblep-sufficient (a b))
 			(:instance fmat*-assoc (m n) (p n) (q n) (a (fmat* a b)) (b (inverse-mat b)) (c (inverse-mat a)))
@@ -3634,15 +3686,15 @@
   (list x))
 
 (defund col-mat (x)
-  (transpose (row-mat x)))
+  (transpose-mat (row-mat x)))
 
 (defthm fmatp-row-mat
-  (implies (flistp x n)
+  (implies (flistnp x n)
            (fmatp (row-mat x) 1 n))
   :hints (("Goal" :in-theory (enable fmatp row-mat))))
 
 (defthm fmatp-col-mat
-  (implies (and (posp n) (flistp x n))
+  (implies (and (posp n) (flistnp x n))
            (fmatp (col-mat x) n 1))
   :hints (("Goal" :in-theory (enable col-mat fmatp-transpose))))
 
@@ -3666,7 +3718,7 @@
 ;;   (fmat* ar xc) = br.
 
 (defthmd reduce-linear-equations
-  (implies (and (fmatp a m n) (posp m) (posp n) (flistp b m) (flistp x n))
+  (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n))
            (let* ((bc (col-mat b))
 	          (xc (col-mat x))
 		  (p (row-reduce-mat a))
@@ -3674,7 +3726,7 @@
 		  (br (fmat* p bc)))
              (iff (solutionp x a b)
 	          (equal (fmat* ar xc) br))))
-  :hints (("Goal" :in-theory (enable id-mat-left fmatp-row-reduce-mat solutionp)
+  :hints (("Goal" :in-theory (enable id-fmat-left fmatp-row-reduce-mat solutionp)
                   :use ((:instance fmat*-assoc (n m) (p n) (q 1) (a (row-reduce-mat a)) (b a) (c (col-mat x)))		  
 		        (:instance invertiblep-cancel (n 1) (p (row-reduce-mat a)) (a (fmat* a (col-mat x))) (b (col-mat b)))
 			(:instance fmatp-fmat* (p 1) (b (col-mat x)))))))
@@ -3708,7 +3760,7 @@
 		      m)))
 
 ;; Suppose first that (find-nonzero br q m) = k <> nil, so that (solvablep a b m) = nil.  Then 
-;; (row k ar) = (flist0 n) and (entry k 0 br) <> (f0).  It follows that
+;; (row k ar) = (flistn0 n) and (entry k 0 br) <> (f0).  It follows that
 
 ;;   (entry k 0 (fmat* ar xc)) = (fdot (row k ar) (col 0 xc)) = (f0) <> (nth k 0 br),
 
@@ -3732,14 +3784,14 @@
                   (row-echelon-p ar)
                   k)
 	     (equal (entry k 0 (fmat* ar xc)) (f0))))
-  :hints (("Goal" :in-theory (disable fdot-flist0)
+  :hints (("Goal" :in-theory (disable fdot-flistn0)
                   :use (row-echelon-p-unsolvable-case-1
                         (:instance fmat*-entry (a ar) (b xc) (p 1) (i (find-nonzero br (num-nonzero-rows ar) m)) (j 0))
 			(:instance fmatp-fmat* (p 1) (a ar) (b xc))
-			(:instance flist0p-flist0-len (x (nth (find-nonzero br (num-nonzero-rows ar) m) ar)))
-			(:instance flistp-row (a ar) (i (find-nonzero br (num-nonzero-rows ar) m)))
-			(:instance fdot-flist0 (x (col 0 xc)))
-			(:instance flistp-col (m n) (n 1) (a xc) (j 0))))))
+			(:instance flist0p-flistn0-len (x (nth (find-nonzero br (num-nonzero-rows ar) m) ar)))
+			(:instance flistnp-row (a ar) (i (find-nonzero br (num-nonzero-rows ar) m)))
+			(:instance fdot-flistn0 (x (col 0 xc)))
+			(:instance flistnp-col (m n) (n 1) (a xc) (j 0))))))
 
 (defthmd row-echelon-p-unsolvable-case
   (implies (and (fmatp ar m n) (posp m) (posp n) (fmatp br m 1) (fmatp xc n 1)
@@ -3752,7 +3804,7 @@
 ;; of equations has no solution:
 
 (defthmd linear-equations-unsolvable-case
-  (implies (and (fmatp a m n) (posp m) (posp n) (flistp b m) (flistp x n)
+  (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
                 (not (solvablep a b m)))
 	   (not (solutionp x a b)))
   :hints (("Goal" :in-theory (enable solutionp)
@@ -3913,10 +3965,10 @@
 	          (f0)))
   :hints (("Goal" :use ((:instance fmat*-entry (a ar) (b xc) (p 1) (i k) (j 0))
                         (:instance num-nonzero-rows-nonzero (a ar) (i k))
-			(:instance flistp-col (j 0) (a xc) (m n) (n 1))
-			(:instance fdot-flist0 (x (col 0 xc)))
-			(:instance flist0p-flist0-len (x (nth k ar)))
-			(:instance flistp-row (a ar) (i k))))))
+			(:instance flistnp-col (j 0) (a xc) (m n) (n 1))
+			(:instance fdot-flistn0 (x (col 0 xc)))
+			(:instance flist0p-flistn0-len (x (nth k ar)))
+			(:instance flistnp-row (a ar) (i k))))))
 
 (defthmd null-first-nonzero-fmat*
   (implies (and (fmatp ar m n) (posp m) (posp n) (row-echelon-p ar) (fmatp xc n 1))
@@ -3933,8 +3985,8 @@
 	   (equal (nth i b)
 	          (list (f0))))
   :hints (("Goal" :use ((:instance find-nonzero-nonzero (br b) (j i))
-                        (:instance flistp-row (a b) (n 1)))
-		  :expand ((flistp (nth i b) 1)))))
+                        (:instance flistnp-row (a b) (n 1)))
+		  :expand ((flistnp (nth i b) 1)))))
 
 (local-defthmd first-rows-equal-2
   (implies (and (fmatp b1 m 1) (fmatp b2 m 1) (natp m)
@@ -3956,7 +4008,7 @@
 		(null (find-nonzero b2 q m)))
 	   (iff (equal (first-rows q b1) (first-rows q b2))
 	        (equal b1 b2)))
-  :hints (("Goal" :use ((:instance entry-diff-lemma (n 1) (a b1) (b b2))
+  :hints (("Goal" :use ((:instance fmat-entry-diff-lemma (n 1) (a b1) (b b2))
                         (:instance first-rows-equal-2 (i (car (entry-diff b1 b2))))))))
 
 (defthmd first-rows-linear-equations
@@ -3976,7 +4028,7 @@
 
 ;; Our objective, therefore, is to solve the equation (fmat* aq xc) = bq.			
 
-;; By row-rank<=n, q <= n.  If q = n, then by row-echelon-p-id-mat, aq = (id-mat n) and
+;; By row-rank<=n, q <= n.  If q = n, then by row-echelon-p-id-fmat, aq = (id-fmat n) and
 ;; (fmat* aq xc) = bq iff xc = bq:
 
 (defthmd row-echelon-p-unique-solution-case
@@ -3985,14 +4037,14 @@
 		(= (num-nonzero-rows aq) n))
 	   (iff (equal (fmat* aq xc) bq)
 	        (equal xc bq)))
-  :hints (("Goal" :use ((:instance row-echelon-p-id-mat (a aq))
-                        (:instance id-mat-left (m n) (n 1) (a xc))))))
+  :hints (("Goal" :use ((:instance row-echelon-p-id-fmat (a aq))
+                        (:instance id-fmat-left (m n) (n 1) (a xc))))))
 
 ;; Combine the last 2 results with reduce-linear-equations to conclude that there exists a unique
 ;; solution in this case:
 
 (local-defthmd linear-equations-unique-solution-case-1
-  (implies (and (fmatp a m n) (posp m) (posp n) (flistp b m) (flistp x n)
+  (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
                 (solvablep a b m)
 	        (= (row-rank a) n))
 	   (iff (solutionp x a b)
@@ -4015,25 +4067,25 @@
   :hints (("Goal" :in-theory (enable row-mat))))
 
 (local-defthmd col-0-col-mat
-  (implies (flistp x n)
+  (implies (flistnp x n)
            (equal (col 0 (col-mat x)) x))
   :hints (("Goal" :in-theory (disable fmatp-row-mat)
                   :use (fmatp-row-mat car-row-mat
-                        (:instance col-transpose (j 0) (a (row-mat x)) (m 1)))
+                        (:instance col-transpose-fmat (j 0) (a (row-mat x)) (m 1)))
                   :expand ((col-mat x)))))
 
 (local-defthm linear-equations-unique-solution-case-3
   (implies (and (posp n) (fmatp a n 1) (fmatp b n 1) (= (col 0 a) (col 0 b)))
            (= a b))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance entry-diff-lemma (m n) (n 1))
+  :hints (("Goal" :use ((:instance fmat-entry-diff-lemma (m n) (n 1))
                        (:instance nth-col (j 0) (i (car (entry-diff a b))))
                        (:instance nth-col (j 0) (a b) (i (car (entry-diff a b))))))))
 
 (defthmd linear-equations-unique-solution-case
   (let* ((br (fmat* (row-reduce-mat a) (col-mat b)))
          (bq (first-rows n br)))
-    (implies (and (fmatp a m n) (posp m) (posp n) (flistp b m) (flistp x n)
+    (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
                   (solvablep a b m)
 	          (= (row-rank a) n))
 	     (iff (solutionp x a b)
@@ -4057,15 +4109,15 @@
 ;;   (fdot (row i aq) x) = (car (nth i bq)).
 
 (local-defthmd nth-fmat*-aq-xc-1
-  (implies (and (flistp x n) (posp n))
-           (equal (transpose (col-mat x))
+  (implies (and (flistnp x n) (posp n))
+           (equal (transpose-mat (col-mat x))
 	          (list x)))
   :hints (("Goal" :in-theory (enable col-mat row-mat)
                   :use (fmatp-row-mat
-		        (:instance transpose-transpose (a (list x)) (m 1))))))
+		        (:instance transpose-fmat-2 (a (list x)) (m 1))))))
 
 (local-defthmd nth-fmat*-aq-xc-2
-  (implies (and (fmatp aq q n) (flistp x n) (posp q) (posp n) (natp i) (< i q))
+  (implies (and (fmatp aq q n) (flistnp x n) (posp q) (posp n) (natp i) (< i q))
            (equal (nth i (fmat* aq (col-mat x)))
 	          (list (fdot (nth i aq) x))))
   :hints (("Goal" :in-theory (enable nth-fmat*)
@@ -4074,11 +4126,11 @@
 (local-defthmd nth-fmat*-aq-xc-3
   (implies (and (fmatp bq q 1) (posp q) (natp i) (< i q))
            (equal (nth i bq) (list (car (nth i bq)))))
-  :hints (("Goal" :use ((:instance flistp-row (a bq) (m q) (n 1)))
-                  :expand ((:free (x l) (flistp x l))))))
+  :hints (("Goal" :use ((:instance flistnp-row (a bq) (m q) (n 1)))
+                  :expand ((:free (x l) (flistnp x l))))))
 
 (defthmd nth-fmat*-aq-xc
-  (implies (and (fmatp aq q n) (fmatp bq q 1) (flistp x n) (posp q) (posp n) (natp i) (< i q))
+  (implies (and (fmatp aq q n) (fmatp bq q 1) (flistnp x n) (posp q) (posp n) (natp i) (< i q))
            (iff (equal (nth i (fmat* aq (col-mat x)))
 	               (nth i bq))
 	        (equal (fdot (nth i aq) x)
@@ -4103,7 +4155,7 @@
     (f0)))
 
 (defthm fp-fdot-select
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (sublistp l (ninit n)))
 	   (fp (fdot-select l x y)))
   :hints (("Subgoal *1/2" :use ((:instance member-ninit (x (car l)))))))
@@ -4118,7 +4170,7 @@
 			(:instance f+assoc (x a) (y k) (z r))))))
 
 (local-defthmd fdot-select-delete
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (sublistp l (ninit n))
                 (member k l))
 	   (equal (f+ (f* (nth k x) (nth k y))
@@ -4133,7 +4185,7 @@
 				(:instance sublistp-sublistp (l (remove1-equal k (cdr l))) (m (cdr l)) (n (ninit n)))))))
 
 (defthmd fdot-select-perm
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (sublistp l (ninit n))
                 (sublistp m (ninit n))
 		(permutationp l m))
@@ -4143,7 +4195,7 @@
           ("subgoal *1/2" :use ((:instance sublistp-sublistp (l (remove1-equal (car l) m)) (n (ninit n)))))))
 
 (defthmd fdot-select-append
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (sublistp l (ninit n))
                 (sublistp m (ninit n)))
 	   (equal (fdot-select (append l m) x y)
@@ -4161,14 +4213,14 @@
     (list k n)))
 
 (local-defthmd fdot-select-nthcdr
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (natp k) (<= k n))
 	   (equal (fdot-select (nthcdr k (ninit n)) x y)
 	          (fdot (nthcdr k x) (nthcdr k y))))
   :hints (("Goal" :induct (nthcdr-induct k n))))
 
 (defthmd fdot-select-ninit
-  (implies (and (natp n) (flistp x n) (flistp y n))
+  (implies (and (natp n) (flistnp x n) (flistnp y n))
 	   (equal (fdot-select (ninit n) x y)
 	          (fdot x y)))
   :hints (("Goal" :use ((:instance fdot-select-nthcdr (k 0))))))
@@ -4227,7 +4279,7 @@
 			(:instance dlistp-append-set-difference (m l) (l (ninit n)))))))
 
 (defthmd fdot-select-append-set-difference
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (dlistp l) (sublistp l (ninit n)))
            (equal (fdot-select (append l (set-difference-equal (ninit n) l)) x y)
 	          (fdot x y)))
@@ -4236,7 +4288,7 @@
 			(:instance sublistp-set-difference (l (ninit n)) (m l))))))
 
 (defthmd fdot-split
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (dlistp l) (sublistp l (ninit n)))
 	   (equal (fdot x y)
 	          (f+ (fdot-select l x y)
@@ -4248,7 +4300,7 @@
 ;; The following is a consequence of dlistp-lead-inds and sublistp-lead-inds-ninit
 
 (defthmd fdot-lead-free
-  (implies (and (fmatp aq q n) (posp q) (posp n) (row-echelon-p aq) (flistp x n)
+  (implies (and (fmatp aq q n) (posp q) (posp n) (row-echelon-p aq) (flistnp x n)
                 (natp i) (< i q))
            (equal (fdot (row i aq) x)
 	          (f+ (fdot-select (lead-inds aq) (row i aq) x)
@@ -4257,7 +4309,7 @@
                   :use ((:instance fdot-split (x (row i aq)) (y x) (l (lead-inds aq)))
                         (:instance dlistp-lead-inds (a aq) (m q))
 			(:instance sublistp-lead-inds-ninit (a aq) (m q))
-			(:instance flistp-row (a aq) (m q))))))
+			(:instance flistnp-row (a aq) (m q))))))
 
 ;; The term (fdot-select (lead-inds ar) x) may be simplified according to nth-lead-inds and
 ;; nth-first-nonzero:
@@ -4267,7 +4319,7 @@
                 (= (num-nonzero-rows aq) q)
                 (natp i) (< i q) (natp k) (< k q))
 	   (equal (nth (nth k (lead-inds aq)) (row i aq))
-	          (delta i k)))
+	          (fdelta i k)))
   :hints (("Goal" :in-theory (enable len-lead-inds-num-nonzero-rows)
                   :use ((:instance nth-first-nonzero (a aq) (m q))
                         (:instance num-nonzero-rows-nonzero (a aq) (m q) (i k))
@@ -4290,7 +4342,7 @@
                 (= (num-nonzero-rows aq) q)
 		(natp i) (< i q)
 		(dlistp l) (sublistp l (lead-inds aq))
-		(flistp x n))
+		(flistnp x n))
 	   (equal (fdot-select l (nth i aq) x)
 	          (if (member (nth i (lead-inds aq)) l)
 		      (nth (nth i (lead-inds aq)) x)
@@ -4308,7 +4360,7 @@
   (implies (and (fmatp aq q n) (posp q) (posp n) (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
 		(natp i) (< i q)
-		(flistp x n))
+		(flistnp x n))
 	   (equal (fdot-select (lead-inds aq) (nth i aq) x)
 	          (nth (nth i (lead-inds aq)) x)))
   :hints (("Goal" :use ((:instance len-lead-inds-num-nonzero-rows (a aq))
@@ -4323,7 +4375,7 @@
                 (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
 		(natp i) (< i q)
-		(flistp x n))
+		(flistnp x n))
            (iff (equal (nth i (fmat* aq (col-mat x)))
 	               (nth i bq))
 		(equal (f+ (nth (nth i (lead-inds aq)) x)
@@ -4335,14 +4387,14 @@
   (implies (and (fp x) (fp y) (fp z))
            (iff (equal (f+ x y) z)
 	        (equal x (f+ z (f- y)))))
-  :hints (("Goal" :use ((:instance f+cancel (x (f+ x y)) (y z) (z (f- y)))
+  :hints (("Goal" :use ((:instance f+left-cancel (x (f+ x y)) (y z) (z (f- y)))
                         (:instance f+assoc (z (f- y)))))))
 
 (defthmd equal-rows-lemma
   (implies (and (fmatp aq q n) (fmatp bq q 1) (posp q) (posp n)
                 (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
-		(flistp x n)
+		(flistnp x n)
 		(natp i) (< i q))
            (iff (equal (nth i (fmat* aq (col-mat x)))
 	               (nth i bq))
@@ -4358,7 +4410,7 @@
 			(:instance member-sublist (x (nth i (lead-inds aq))) (l (lead-inds aq)) (m (ninit n)))
 			(:instance fp-entry (a bq) (m q) (n 1) (j 0))
 			(:instance sublistp-set-difference (l (ninit n)) (m (lead-inds aq)))
-			(:instance flistp-row (a aq) (m q))
+			(:instance flistnp-row (a aq) (m q))
  			(:instance f+cancel2 (x (nth (nth i (lead-inds aq)) x))
 			                     (y (fdot-select (free-inds aq n) (row i aq) x))
 					     (z (car (nth i bq))))))))
@@ -4402,7 +4454,7 @@
   (implies (and (fmatp aq q n) (fmatp bq q 1) (natp q) (posp n)
                 (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
-		(flistp x n)
+		(flistnp x n)
                 (solution-test x aq bq (lead-inds aq) (free-inds aq n) q)
 		(natp i) (< i q))
            (equal (nth i (fmat* aq (col-mat x)))
@@ -4414,7 +4466,7 @@
   (implies (and (fmatp aq q n) (fmatp bq q 1) (natp q) (posp n)
                 (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
-		(flistp x n)
+		(flistnp x n)
                 (not (solution-test x aq bq (lead-inds aq) (free-inds aq n) q)))
            (let ((i (solution-test-cex x aq bq (lead-inds aq) (free-inds aq n) q)))
 	     (and (natp i) (< i q)
@@ -4427,7 +4479,7 @@
   (implies (and (fmatp aq q n) (fmatp bq q 1) (posp q) (posp n)
                 (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
-		(flistp x n))
+		(flistnp x n))
 	   (iff (solution-test x aq bq (lead-inds aq) (free-inds aq n) q)
 	        (equal (fmat* aq (col-mat x))
 	               bq)))
@@ -4457,7 +4509,7 @@
 	 (bq (first-rows q br))
 	 (l (lead-inds aq))
 	 (f (free-inds aq n)))
-    (implies (and (fmatp a m n) (posp m) (posp n) (flistp b m) (flistp x n)
+    (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
                   (solvablep a b m))
              (iff (solutionp x a b)
                   (solution-test x aq bq l f q))))
@@ -4493,5 +4545,8 @@
 ;; Otherwise, the entries of x corresponding to the indices in (lead-inds aq) are determined
 ;; by the entries corresponding to (free-inds aq n).  Thus, there is a unique solution
 ;; corresponding to every assignment of values to the latter set of entries, and hence an
-;; infinite number of solutions.  We shall revisit this result later in the vector space of
-;; solutions of a homogeneous system of equations.
+;; infinite number of solutions.  We shall revisit this result later in tconnection with the 
+;; vector space of solutions of a homogeneous system of equations.
+
+
+
