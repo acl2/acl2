@@ -1,10 +1,10 @@
 ; Standard Strings Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17,11 +17,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(str::defcharset ucletter/digit
+(str::defcharset letter/digit/uscore/dash
   (b* ((code (char-code x)))
     (or (and (<= (char-code #\A) code)
              (<= code (char-code #\Z)))
+        (and (<= (char-code #\a) code)
+             (<= code (char-code #\z)))
         (and (<= (char-code #\0) code)
-             (<= code (char-code #\9)))))
+             (<= code (char-code #\9)))
+        (eql x #\_)
+        (eql x #\-)))
   :parents (character-kinds)
-  :short "Recognize uppercase ASCII letters.")
+  :short "Recognize
+          ASCII letters, decimal digits, underscores, and dashes.")

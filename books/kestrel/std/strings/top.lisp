@@ -10,7 +10,6 @@
 
 (in-package "STR")
 
-(include-book "char-kinds")
 (include-book "explode-implode-equalities")
 (include-book "strtok-bang")
 

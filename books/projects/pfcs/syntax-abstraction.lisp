@@ -2,7 +2,7 @@
 ;
 ; Copyright (C) 2022,2024 Provable Inc. (https://www.provable.com)
 ;
-; Authors: Alessandro Coglio (acoglio on GitHub)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -24,10 +24,10 @@
 (include-book "kestrel/fty/natoption-natoptionlist-result" :dir :system)
 (include-book "kestrel/fty/string-result" :dir :system)
 (include-book "kestrel/fty/string-list-result" :dir :system)
-(include-book "kestrel/std/strings/letter-chars" :dir :system)
-(include-book "kestrel/std/strings/letter-digit-uscore-chars" :dir :system)
-(include-book "kestrel/std/strings/ucletter-chars" :dir :system)
-(include-book "kestrel/std/strings/lcletter-chars" :dir :system)
+(include-book "std/strings/letter-chars" :dir :system)
+(include-book "std/strings/letter-digit-uscore-chars" :dir :system)
+(include-book "std/strings/ucletter-chars" :dir :system)
+(include-book "std/strings/lcletter-chars" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,7 +316,7 @@
   :hooks (:fix))
 
 (define abs-*-comma-identifier ((trees abnf::tree-listp))
-  :returns 
+  :returns
   (ids
    string-list-resultp
    :hints
@@ -332,7 +332,7 @@
     (cons id ids))
   :hooks (:fix)
   ///
-  
+
   (defret identifier-listp-of-abs-*-comma-identifier
     (implies (not (reserrp ids))
              (string-listp ids))))
@@ -436,7 +436,7 @@
   :short "Abstract a @('primary-expression')."
   (b* (((okf tree) (check-tree-nonleaf-1-1 tree "primary-expression"))
        ((okf rulename?) (check-tree-nonleaf? tree)))
-    (cond ((equal rulename? "identifier") 
+    (cond ((equal rulename? "identifier")
            (let ((id-or-err (abs-identifier tree)))
              (if (stringp id-or-err)
                  (make-expression-var :name id-or-err)
@@ -536,7 +536,7 @@
 
   ;; The following pattern is needed because the function is recursive,
   ;; and the return type theorem must be proved before guard verification.
-  :verify-guards nil 
+  :verify-guards nil
   ///
   (verify-guards abs-multiplication-expression))
 
@@ -568,7 +568,7 @@
 
   ;; The following pattern is needed because the function is recursive,
   ;; and the return type theorem must be proved before guard verification.
-  :verify-guards nil 
+  :verify-guards nil
   ///
   (verify-guards abs-addition-expression))
 
@@ -610,7 +610,7 @@
 
 (define abs-*-comma-expression ((trees abnf::tree-listp))
   :returns
-  (exprs 
+  (exprs
    expression-list-resultp
    :hints
    (("Goal"
@@ -744,7 +744,7 @@
 
 (define abs-*-constraint ((trees abnf::tree-listp))
   :returns
-  (constraints 
+  (constraints
    constraint-list-resultp
    :hints
    (("Goal"
@@ -779,7 +779,7 @@
 
 (define abs-*-comma-constraint ((trees abnf::tree-listp))
   :returns
-  (constraints 
+  (constraints
    constraint-list-resultp
    :hints
    (("Goal"
@@ -869,7 +869,7 @@
 
 (define abs-*-definition ((trees abnf::tree-listp))
   :returns
-  (definitions 
+  (definitions
    definition-list-resultp
    :hints
    (("Goal"
@@ -906,4 +906,3 @@
     (make-system :definitions defs
                  :constraints constraints))
   :hooks (:fix))
-
