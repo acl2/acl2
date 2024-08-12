@@ -14,7 +14,7 @@
 ;; STATUS: IN-PROGRESS
 
 ;; TODO: Move this material to libraries.
-;; TODO: There are some rules here that are not strictly about BVS (e.g., rules about bv-arrays)
+;; TODO: There are some rules here that are not strictly about BVS
 
 ;(include-book "kestrel/bv/rotate" :dir :system) ;for INTEGERP-OF-LEFTROTATE32
 ;(include-book "kestrel/bv/intro" :dir :system)
@@ -32,7 +32,6 @@
 (include-book "kestrel/bv/bvshl" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
 ;(local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ; drop?
 (local (include-book "kestrel/axe/rules3" :dir :system)) ;drop
@@ -503,31 +502,6 @@
                                    ;BVCHOP-TIGHTEN-WHEN-UNSIGNED-BYTE-P
                                    ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                                    )))))
-
-(defthm BV-ARRAY-READ-of-*-arg3
-  (implies (and (syntaxp (quotep len))
-                (natp len)
-                (integerp i1)
-                (integerp i2)
-                )
-           (equal (bv-array-read ELEMENT-SIZE LEN (* i1 i2) DATA)
-                  (bv-array-read ELEMENT-SIZE LEN (bvmult (acl2::CEILING-OF-LG LEN) i1 i2) DATA)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read bvmult)
-                                  (ACL2::GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ
-                                   ACL2::BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ)))))
-
-(defthm BV-ARRAY-READ-of-+-arg3
-  (implies (and (syntaxp (quotep len))
-                (natp len)
-                (integerp i1)
-                (integerp i2)
-                )
-           (equal (bv-array-read ELEMENT-SIZE LEN (+ i1 i2) DATA)
-                  (bv-array-read ELEMENT-SIZE LEN (bvplus (acl2::CEILING-OF-LG LEN) i1 i2) DATA)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read bvplus)
-                                  (ACL2::GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ
-                                   ACL2::BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ)))))
-
 
 ;; (thm
 ;;  (implies (and (signed-byte-p 48 x)
