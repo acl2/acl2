@@ -56,10 +56,10 @@
 ; above the linear memory limit.
 
 ; The orginal three-level memory model.
-; (include-book "centaur/bigmem/bigmem" :dir :system)
+(include-book "centaur/bigmem/bigmem" :dir :system)
 
 ; Asymmetric memory model; faster for "small" addresses, and otherwise slower.
-(include-book "centaur/bigmem-asymmetric/bigmem-asymmetric" :dir :system)
+; (include-book "centaur/bigmem-asymmetric/bigmem-asymmetric" :dir :system)
 
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
@@ -101,6 +101,55 @@
 ;; ----------------------------------------------------------------------
 ;; x86 state
 ;; ----------------------------------------------------------------------
+
+(defsection physical-memory-model
+            :parents (x86isa-state)
+            :short "The physical memory models we support and when to use which"
+            :long "<p>We support the @(tsee bigmem::bigmem) and @(tsee
+            bigmem-asymmetric::bigmem-asymmetric) memory models for physical
+memory. Both of these are equivalent in reasoning, so for proofs it doesn't
+matter which you use. However, in execution, they have different performance
+characteristics.</p>
+
+<p>@(tsee bigmem::bigmem) provides constant access time for the entire address
+space. However, accessing a byte requires walking a 3 level hierarchy.</p>
+
+<p>@(tsee bigmem-asymmetric::bigmem-asymmetric) provides faster access to the
+lower 6GB of physical memory, because those values are stored in an array, but
+slower access to the rest of the address space, since it stores the rest of the
+values in in an ordered alist.</p>
+
+<p>If you're only going to be using the lower 6GB of memory (or mostly using
+the lower 6 GB) of memory, using the @(tsee
+bigmem-asymmetric::bigmem-asymmetric) makes sense, otherwise use @(tsee
+bigmem::bigmem)</p>
+
+<p>By default, the model uses @(tsee bigmem::bigmem). To switch to @(tsee
+bigmem-asymmetric::bigmem-asymmetric), edit @('machine/state.lisp') and make
+the following change:</p>
+
+<code>
+ ; The orginal three-level memory model.
++; (include-book \"centaur/bigmem/bigmem\" :dir :system)
+-(include-book \"centaur/bigmem/bigmem\" :dir :system)
+ 
+ ; Asymmetric memory model; faster for \"small\" addresses, and otherwise slower.
++(include-book \"centaur/bigmem-asymmetric/bigmem-asymmetric\" :dir :system)
+-; (include-book \"centaur/bigmem-asymmetric/bigmem-asymmetric\" :dir :system)
+...
+
+     (mem   :type (array (unsigned-byte 8) (,*mem-size-in-bytes*)) ;; 2^52
+            :initially 0
+            :fix (acl2::loghead 8 (ifix x))
++           :child-stobj bigmem-asymmetric::mem
++           :child-accessor bigmem-asymmetric::read-mem
++           :child-updater  bigmem-asymmetric::write-mem
+-           :child-stobj bigmem::mem
+-           :child-accessor bigmem::read-mem
+-           :child-updater  bigmem::write-mem
+            :accessor memi
+            :updater !memi)
+</code>")
 
 (defsection environment-field
 
@@ -552,13 +601,13 @@
     (mem   :type (array (unsigned-byte 8) (,*mem-size-in-bytes*)) ;; 2^52
            :initially 0
            :fix (acl2::loghead 8 (ifix x))
-           :child-stobj bigmem-asymmetric::mem
-           :child-accessor bigmem-asymmetric::read-mem
-           :child-updater  bigmem-asymmetric::write-mem
+           :child-stobj bigmem::mem
+           :child-accessor bigmem::read-mem
+           :child-updater  bigmem::write-mem
            :accessor memi
            :updater !memi)
-    ;; (mem   :type bigmem-asymmetric::mem
-    ;;        :recognizer bigmem-asymmetric::memp
+    ;; (mem   :type bigmem::mem
+    ;;        :recognizer bigmem::memp
     ;;        :accessor mem
     ;;        :updater !mem)
     (:doc "</li>")
@@ -654,9 +703,9 @@
                   (list fld)))
       :inline t
       :non-memoizable t
-      :enable '(bigmem-asymmetric::read-mem-over-write-mem
-                bigmem-asymmetric::read-mem-from-nil
-                bigmem-asymmetric::loghead-identity-alt)
+      :enable '(bigmem::read-mem-over-write-mem
+                bigmem::read-mem-from-nil
+                bigmem::loghead-identity-alt)
       :accessor xr
       :updater  xw
       :accessor-template ( x)

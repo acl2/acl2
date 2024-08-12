@@ -680,6 +680,11 @@
          <p>Once you've built the kernel and the rootfs, you're ready to run
          Linux.</p>
 
+         <p>While it isn't required, we recommend using the @(tsee
+         bigmem-asymmetric::bigmem-asymmetric) memory model because it gives
+         better performance. See @(tsee physical-memory-model) for more
+         information about the memory models and how to switch.</p>
+
          <p>Run the following in an ACL2 session (assuming you're in the
          @('books/projects/x86isa') directory in the ACL2 source tree):</p>
          <code>
