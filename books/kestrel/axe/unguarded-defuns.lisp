@@ -39,9 +39,12 @@
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
+(include-book "kestrel/bv-lists/array-patterns" :dir :system)
+(include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "unguarded-built-ins") ; for assoc-equal-unguarded
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
@@ -728,3 +731,40 @@
   (equal (logapp-unguarded size i j)
          (logapp size i j))
   :hints (("Goal" :in-theory (enable logapp-unguarded logapp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund every-nth-unguarded (n vals)
+  (declare (xargs :guard t))
+  (if (not (posp n)) ; for termination
+      nil
+    (let ((vals (true-list-fix vals)))
+      (every-nth-exec n vals))))
+
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+
+(local
+  (defthm every-nth-of-true-list-fix
+    (equal (every-nth n (true-list-fix vals))
+           (every-nth n vals))
+    :hints (("Goal" :expand (every-nth n (true-list-fix vals))
+             :induct t
+             :in-theory (enable every-nth)))))
+
+(defthm every-nth-unguarded-correct
+  (equal (every-nth-unguarded n vals)
+         (every-nth n vals))
+  :hints (("Goal" :in-theory (enable every-nth-unguarded
+                                     every-nth
+                                     every-nth-exec))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund negated-elems-listp-unguarded (width lst1 lst2)
+  (declare (xargs :guard t))
+  (negated-elems-listp (nfix width) lst1 lst2))
+
+(defthm negated-elems-listp-unguarded-correct
+  (equal (negated-elems-listp-unguarded width lst1 lst2)
+         (negated-elems-listp width lst1 lst2))
+  :hints (("Goal" :in-theory (enable negated-elems-listp-unguarded))))
