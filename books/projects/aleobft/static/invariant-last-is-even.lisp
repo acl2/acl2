@@ -1,4 +1,4 @@
-; Aleo Library
+; AleoBFT Library
 ;
 ; Copyright (C) 2024 Provable Inc.
 ;
