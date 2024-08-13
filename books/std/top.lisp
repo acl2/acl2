@@ -35,7 +35,7 @@
 (include-book "alists/top")
 (include-book "typed-lists/top")
 (include-book "io/top")
-(include-book "strings/top")
+(include-book "strings/top-doc")
 (include-book "stobjs/top")
 (include-book "obags/top")
 (include-book "osets/top")
