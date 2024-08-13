@@ -4,6 +4,9 @@
 (include-book "projects/groups/symmetric" :dir :system)
 (local (include-book "support/rdet"))
 
+;; The determinant of an nxn matrix a is (rdet a n).  The definitrion is based on the symmetric group,
+;; (sym n), defined in "books/projects/groups/symmetric".
+
 ;; The term contributed by a permutation p in (sym n) to the determinant of an nxn
 ;;  matrix a is computed as follows:
 ;;   (1) select an entry from each row of a, the selection from row i being the one

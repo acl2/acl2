@@ -2621,7 +2621,7 @@
 
 (include-book "projects/groups/groups" :dir :system)
 
-;; By (lead-inds a), (lead-inds a) is a sublist of (ninit n):
+;; (lead-inds a) is a sublist of (ninit n):
 
 (local-defthmd lead-inds-ninit-1
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
@@ -4087,11 +4087,11 @@
          (bq (first-rows n br)))
     (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
                   (solvablep a b m)
-	          (= (row-rank a) n))
+	          (invertiblep a n))
 	     (iff (solutionp x a b)
 	          (equal x (col 0 bq)))))
   :hints (("Goal" :in-theory (enable row-ops-mat-row-reduce fmatp-row-reduce-mat solutionp
-                              row-echelon-p-row-reduce fmatp-row-reduce)
+                              invertiblep row-echelon-p-row-reduce fmatp-row-reduce)
                   :use (linear-equations-unique-solution-case-1 col-0-col-mat
                         (:instance linear-equations-unique-solution-case-3
 			             (a (col-mat x)) (b (first-rows n (fmat* (row-reduce-mat a) (col-mat b)))))
