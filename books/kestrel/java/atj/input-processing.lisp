@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,7 +22,6 @@
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "kestrel/std/strings/letter-digit-chars" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
 (include-book "kestrel/std/system/pure-raw-p" :dir :system)
@@ -35,6 +34,7 @@
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/catpath" :dir :system)
 (include-book "oslib/file-types" :dir :system)
+(include-book "std/strings/letter-digit-chars" :dir :system)
 (include-book "std/typed-alists/symbol-symbollist-alistp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

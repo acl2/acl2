@@ -1,4 +1,4 @@
-; Aleo Library
+; AleoBFT Library
 ;
 ; Copyright (C) 2024 Provable Inc.
 ;
@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-STATIC")
 
 (include-book "messages")
 
@@ -45,7 +45,7 @@
    (xdoc::ol
     (xdoc::li
      "A validator creates a new certificate.
-      Note that the validator includes the author,
+      Note that the certificate includes the author,
       i.e. it indicates the validator.
       This adds the certificate to the DAG of the validator,
       and broadcasts the certificate to all the correct validators

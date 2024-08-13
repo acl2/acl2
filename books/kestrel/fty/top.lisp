@@ -71,6 +71,7 @@
 (include-book "string-set")
 (include-book "string-list-result")
 (include-book "string-result")
+(include-book "strings-decimal-fty")
 (include-book "symbol-set")
 (include-book "dec-digit-char")
 (include-book "hex-digit-char")

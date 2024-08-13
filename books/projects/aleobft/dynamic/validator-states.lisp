@@ -1,4 +1,4 @@
-; Aleo Library
+; AleoBFT Library
 ;
 ; Copyright (C) 2024 Provable Inc.
 ;
@@ -9,13 +9,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-DYNAMIC")
 
 (include-book "blocks")
 (include-book "certificates")
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
-;; (local (include-book "std/lists/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

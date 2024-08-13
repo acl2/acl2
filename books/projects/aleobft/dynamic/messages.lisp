@@ -1,4 +1,4 @@
-; Aleo Library
+; AleoBFT Library
 ;
 ; Copyright (C) 2024 Provable Inc.
 ;
@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-DYNAMIC")
 
 (include-book "certificates")
 
@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ messages
-  :parents (states)
+  :parents (states events)
   :short "Messages."
   :long
   (xdoc::topstring

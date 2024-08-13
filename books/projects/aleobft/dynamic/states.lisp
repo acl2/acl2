@@ -1,4 +1,4 @@
-; Aleo Library
+; AleoBFT Library
 ;
 ; Copyright (C) 2024 Provable Inc.
 ;
@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-DYNAMIC")
 
 (include-book "addresses")
 (include-book "transactions")
@@ -17,6 +17,7 @@
 (include-book "certificates")
 (include-book "validator-states")
 (include-book "messages")
+(include-book "system-states")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,10 +28,13 @@
   (xdoc::topstring
    (xdoc::p
     "We introduce fixtypes for the states, and their components,
-     that the AleoBFT system may be in at any given time."))
+     that the AleoBFT system may be in at any given time.
+     Along with the fixtypes,
+     we also introduce some basic operations on some of them."))
   :order-subtopics (addresses
                     transactions
                     blocks
                     certificates
                     validator-states
-                    messages))
+                    messages
+                    system-states))

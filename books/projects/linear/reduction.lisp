@@ -1,625 +1,8 @@
 (in-package "DM")
 
-(include-book "field")
-(include-book "projects/groups/groups" :dir :system)
-(local (include-book "support/matrices"))
-
-;;----------------------------------------------------------------------------------------
-;; Matrices of Field Elements
-;;----------------------------------------------------------------------------------------
-
-;; mxn matrix over F:
-
-(defun fmatp (a m n)
-  (declare (xargs :measure (nfix m)))
-  (if (zp m)
-      (null a)
-    (and (consp a)
-	 (flistp (car a) n)
-	 (fmatp (cdr a) (1- m) n))))
-
-(defthm len-fmatp
-  (implies (and (natp m) (fmatp a m n))
-	   (equal (len a) m)))
-
-(defthm true-listp-fmatp
-  (implies (fmatp a m n)
-	   (true-listp a)))
-
-;; ith row of a:
-
-(defun row (i a)
-  (nth i a))
-
-(defthm flistp-row
-  (implies (and (natp m) (natp n) (fmatp a m n)
-	        (natp i) (< i m))
-           (flistp (row i a) n)))  
-
-(defthm len-row
-  (implies (and (natp m) (natp n) (fmatp a m n)
-	        (natp i) (< i m))
-	   (equal (len (row i a))
-		  n)))
-
-;; jth column of a:
-
-(defun col (j a)
-  (if (consp a)
-      (cons (nth j (car a))
-            (col j (cdr a)))
-    ()))
-
-(defthm flistp-col
-  (implies (and (natp m) (natp n) (fmatp a m n)
-		(natp j) (< j n))
-	   (flistp (col j a) m)))
-
-(defthm len-col
-  (implies (and (natp m) (natp n) (fmatp a m n))
-	   (equal (len (col j a))
-		  m)))
-
-;; The entry of a matrix in row i and column j:
-
-(defun entry (i j a)
-  (nth j (nth i a)))
-
-(defthmd fp-entry
-  (implies (and (natp m) (natp n) (fmatp a m n)
-	        (natp i) (< i m) (natp j) (< j n))
-           (fp (entry i j a))))
-
-(defthmd nth-row
-  (equal (nth j (row i a))
-	 (entry i j a)))
-
-(defthmd nth-col
-  (equal (nth i (col j a))
-         (entry i j a)))
-
-;; To show that 2 matrices of the same dimensions are equal, it suffices to show that
-;; corresponding entries are equal.  That is, if 2 mxn matrices are not equal, then some
-;; pair of corresponding entries are not equal:
-
-(defund entry-diff (a b)
-  (let* ((i (nth-diff a b))
-	 (j (nth-diff (row i a) (row i b))))
-    (cons i j)))
-
-(defthmd entry-diff-lemma
-  (implies (and (posp m) (posp n) (fmatp a m n) (fmatp b m n) (not (equal a b)))
-	   (let* ((pair (entry-diff a b))
-		  (i (car pair))
-		  (j (cdr pair)))
-	     (and (natp i) (< i m)
-		  (natp j) (< j n)
-		  (not (equal (entry i j a) (entry i j b)))))))
-
-;; Addition of mxn matrices:
-
-(defun fmat-add (a b)
-  (if (consp a)
-      (cons (flist-add (car a) (car b))
-	    (fmat-add (cdr a) (cdr b)))
-    ()))
-
-(defthm fmatp-fmat-add
-  (implies (and (fmatp a m n) (fmatp b m n))
-           (fmatp (fmat-add a b) m n)))
-
-(defthmd fmat-add-comm
-  (implies (and (fmatp a m n) (fmatp b m n))
-           (equal (fmat-add a b)
-		  (fmat-add b a))))
-
-(defthmd fmat-add-assoc
-  (implies (and (fmatp a m n) (fmatp b m n) (fmatp c m n))
-           (equal (fmat-add a (fmat-add b c))
-		  (fmat-add (fmat-add a b) c))))
-
-(defthmd row-fmat-add
-  (implies (and (fmatp a m n) (fmatp b m n) (natp m) (natp n) (natp i) (< i m))
-           (equal (row i (fmat-add a b))
-		  (flist-add (row i a) (row i b)))))
-
-(defthmd col-fmat-add
-  (implies (and (fmatp a m n) (fmatp b m n) (natp m) (natp n) (natp j) (< j n))
-           (equal (col j(fmat-add a b))
-		  (flist-add (col j a) (col j b)))))
-
-(defthmd fmat-add-entry
-  (implies (and (fmatp a m n) (fmatp b m n) (natp m) (natp n) (natp i) (< i m) (natp j) (< j n))
-           (equal (entry i j (fmat-add a b))
-	          (f+ (entry i j a) (entry i j b)))))
-
-;; Multiply each entry of a by c:
-
-(defun fmat-scalar-mul (c a)
-  (if (consp a)
-      (cons (flist-scalar-mul c (car a))
-	    (fmat-scalar-mul c (cdr a)))
-    ()))
-
-(defthmd fmatp-fmat-scalar-mul
-  (implies (and (fp c) (fmatp a m n))
-	   (fmatp (fmat-scalar-mul c a) m n)))
-
-(defthmd fmat-scalar-mul-assoc
-  (implies (and (fp c) (fp d) (fmatp a m n))
-	   (equal (fmat-scalar-mul c (fmat-scalar-mul d a))
-		  (fmat-scalar-mul (f* c d) a))))
-
-(defthmd fmat-scalar-mul-dist-1
-  (implies (and (fp c) (fmatp a m n) (fmatp b m n))
-	   (equal (fmat-scalar-mul c (fmat-add a b))
-		  (fmat-add (fmat-scalar-mul c a) (fmat-scalar-mul c b)))))
- 
-(defthmd fmat-scalar-mul-dist-2
-  (implies (and (fp c) (fp d) (fmatp a m n))
-	   (equal (fmat-scalar-mul (f+ c d) a)
-		  (fmat-add (fmat-scalar-mul c a) (fmat-scalar-mul d a)))))
-
-(defthmd row-fmat-scalar-mul
-  (implies (and (fp c) (fmatp a m n) (natp m) (natp n) (natp i) (< i m))
-	   (equal (row i (fmat-scalar-mul c a))
-		  (flist-scalar-mul c (row i a)))))
-
-(defthmd col-fmat-scalar-mul
-  (implies (and (fp c) (fmatp a m n) (natp m) (natp n) (natp j) (< j n))
-	   (equal (col j (fmat-scalar-mul c a))
-		  (flist-scalar-mul c (col j a)))))
-
-(defthmd fmat-scalar-mul-entry
-  (implies (and (fp c) (fmatp a m n) (natp m) (natp n) (natp i) (< i m) (natp j) (< j n))
-	   (equal (entry i j (fmat-scalar-mul c a))
-		  (f* c (entry i j a)))))
-
-;; Sum of all entries of a:
-
-(defun fmat-sum (a)
-  (if (consp a)
-      (f+ (flist-sum (car a))
-	  (fmat-sum (cdr a)))
-    (f0)))
-
-(in-theory (disable (fmat-sum)))
-
-(defthm fp-fmat-sum
-  (implies (fmatp a m n)
-           (fp (fmat-sum a))))
-
-;;----------------------------------------------------------------------------------------
-;; Transpose of a Matrix
-;;----------------------------------------------------------------------------------------
-
-;; The transpose of a matrix is the list of its columns:
-
-(defun transpose-aux (a j n)
-  (declare (xargs :measure (nfix (- n j))))
-  (if (and (natp j) (natp n) (< j n))
-      (cons (col j a) (transpose-aux a (1+ j) n))
-    ()))
-
-(defund transpose (a)
-  (transpose-aux a 0 (len (car a))))
-
-(defthmd fmatp-transpose
-  (implies (and (posp m) (posp n) (fmatp a m n))
-	   (fmatp (transpose a) n m)))
-
-(defthm nth-transpose
-  (implies (and (posp m) (posp n) (fmatp a m n)
-                (natp i) (< i n))
-	   (equal (nth i (transpose a))
-		  (col i a))))
-
-(defthm transpose-entry
-  (implies (and (posp m) (posp n) (fmatp a m n)
-		(natp j) (< j n) (natp i) (< i m))
-	   (equal (entry j i (transpose a))
-		  (entry i j a))))
-
-(defthm transpose-transpose
-  (implies (and (posp m) (posp n) (fmatp a m n))
-           (equal (transpose (transpose a))
-	          a)))
-
-(defthmd col-transpose
-  (implies (and (posp m) (posp n) (fmatp a m n)
-                (natp j) (< j m))
-	   (equal (col j (transpose a))
-	          (row j a))))
-
-;; An important lemma in the proof of associativity of matrix multiplication:
-;; If (fmatp a m n), then (fmat-sum (transpose a)) = (fmat-sum a).
-;; This holds trivially if either m = 0 or n = 0:
-
-(defthm fmat-sum-0
-  (implies (and (natp m) (natp n) (or (= m 0) (= n 0)) (fmatp a m n))
-           (equal (fmat-sum a) (f0))))
-
-(defthm fmat-sum-transpose-0
-  (implies (and (natp m) (natp n) (or (= m 0) (= n 0)) (fmatp a m n))
-           (equal (fmat-sum (transpose a))
-	          (f0))))
-		        
-;; In the inductive step, we assume that the claim holds when a is replaced by
-;; (strip-mat a), which is the result of deleting its first row and first column:
-
-(defun cdrs (l)
-  (if (consp l)
-      (cons (cdr (car l))
-	    (cdrs (cdr l)))
-    ()))
-
-(defun cars (l)
-  (if (consp l)
-      (cons (car (car l))
-	    (cars (cdr l)))
-    ()))
-
-(defund strip-mat (a)
-  (cdrs (cdr a)))
-
-(defthmd fmatp-strip-mat
-  (implies (and (posp m) (posp n) (fmatp a m n))
-           (fmatp (strip-mat a) (1- m) (1- n))))
-
-(defthmd sum-mat-strip-mat
-  (implies (and (posp m) (posp n) (fmatp a m n))
-	   (equal (fmat-sum a)
-		  (f+ (entry 0 0 a)
-		      (f+ (f+ (flist-sum (cdr (row 0 a)))
-			      (flist-sum (cdr (col 0 a))))
-			  (fmat-sum (strip-mat a)))))))
-
-;; Since (row 0 a) = (col 0 (transpose a)) and (col 0 a) = (row 0 (transpose a)), we have
-;; the following:
-
-(defthmd sum-mat-strip-mat-equal
-  (implies (and (posp m) (posp n) (fmatp a m n)
-                (equal (fmat-sum (strip-mat a)) (fmat-sum (strip-mat (transpose a)))))
-	   (equal (fmat-sum (transpose a))
-		  (fmat-sum a))))
-
-;; If either m = 0 or n = 0, then the hypothesis of sum-mat-strip-mat-equal holds trivially:
-
-(defthm fmat-sum-strip-mat-0
-  (implies (and (posp m) (posp n) (or (= m 1) (= n 1)) (fmatp a m n))
-           (and (equal (fmat-sum (strip-mat a)) (f0))
-	        (equal (fmat-sum (strip-mat (transpose a))) (f0)))))
-
-(defthmd strip-mat-entry
-  (implies (and (posp m) (posp n) (fmatp a m n)
-		(natp i) (natp j) (< i (1- m)) (< j (1- n)))
-	   (equal (entry i j (strip-mat a))
-		  (entry (1+ i) (1+ j) a))))
-
-;; In the remaining case, we have the following:
-
-(defthmd transpose-strip-mat
-  (implies (and (posp m) (posp n) (> m 1) (> n 1) (fmatp a m n))
-	   (equal (transpose (strip-mat a))
-		  (strip-mat (transpose a)))))
-
-;; The result follows by induction:
-
-(defthmd sum-mat-transpose
-  (implies (and (natp m) (natp n) (fmatp a m n))
-	   (equal (fmat-sum (transpose a))
-		  (fmat-sum a))))
-
-
-;;----------------------------------------------------------------------------------------
-;; Matrix Multiplication
-;;----------------------------------------------------------------------------------------
-
-;; Dot product of 2 lists of field elements of the same length:
-
-(defun fdot (x y)
-  (if (consp x)
-      (f+ (f* (car x) (car y))
-          (fdot (cdr x) (cdr y)))
-    (f0)))
-
-(defthm fp-fdot
-  (implies (and (flistp x n) (flistp y n))
-           (fp (fdot x y))))
-
-(defthm fdot-flist0
-  (implies (and (natp n) (flistp x n))
-           (equal (fdot (flist0 n) x)
-	          (f0))))
-
-(defthmd fdot-comm
-  (implies (and (flistp x n) (flistp y n))
-           (equal (fdot x y) (fdot y x))))
-
-(defthmd fdot-flist-add
-  (implies (and (flistp x n) (flistp y n) (flistp z n))
-	   (equal (fdot (flist-add x y) z)
-		  (f+ (fdot x z) (fdot y z)))))
-
-(defthmd fdot-flist-add-comm
-  (implies (and (flistp x n) (flistp y n) (flistp z n))
-	   (equal (fdot z (flist-add x y))
-		  (f+ (fdot z x) (fdot z y)))))
-					   
-(defthmd fdot-flist-scalar-mul
-  (implies (and (flistp x n) (flistp y n) (fp c))
-	   (equal (fdot (flist-scalar-mul c x) y)
-		  (f* c (fdot x y)))))
-
-;; List of dot products of an flist x with the elements of a list of flists l:
-
-(defun fdot-list (x l)
-  (if (consp l)
-      (cons (fdot x (car l))
-            (fdot-list x (cdr l)))
-    ()))
-
-(defthm flistp-fdot-list
-  (implies (and (fmatp l m n) (flistp x n))
-           (flistp (fdot-list x l) m)))
-
-(defthm nth-fdot-list
-  (implies (and (natp j) (< j (len l)))
-           (equal (nth j (fdot-list x l))
-	          (fdot x (nth j l)))))
-
-;; Product of mxn matrix a and nxp matrix b:
-
-(defund fmat* (a b)
-  (if (consp a)
-      (cons (fdot-list (car a) (transpose b))
-            (fmat* (cdr a) b))
-    ()))
-
-(defthm fmatp-fmat*
-  (implies (and (fmatp a m n) (fmatp b n p) (posp m) (posp n) (posp p) )
-           (fmatp (fmat* a b) m p)))
-
-(defthmd nth-fmat*
-  (implies (and (natp m) (fmatp a m n) (natp i) (< i m))
-           (equal (nth i (fmat* a b))
-	          (fdot-list (nth i a) (transpose b)))))
-
-(defthmd fmat*-entry
-  (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p)
-                (natp i) (< i m) (natp j) (< j p))
-	   (equal (entry i j (fmat* a b))
-	          (fdot (row i a) (col j b)))))
-
-;; Some algebraic properties:
-
-(defthmd fmat*-dist-1
-  (implies (and (posp m) (posp n) (posp p) (fmatp a1 m n) (fmatp a2 m n) (fmatp b n p))
-	   (equal (fmat* (fmat-add a1 a2) b)
-		  (fmat-add (fmat* a1 b) (fmat* a2 b)))))
-			
-(defthmd fmat*-dist-2
-  (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b1 n p) (fmatp b2 n p))
-	   (equal (fmat* a (fmat-add b1 b2))
-		  (fmat-add (fmat* a b1) (fmat* a b2)))))
-
-(defthmd fmat*-fmat-scalar-mul-1
-  (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p) (fp c))
-	   (equal (fmat* (fmat-scalar-mul c a) b)
-		  (fmat-scalar-mul c (fmat* a b)))))
-
-(defthmd fmat*-fmat-scalar-mul-2
-  (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p) (fp c))
-	   (equal (fmat* a (fmat-scalar-mul c b))
-		  (fmat-scalar-mul c (fmat* a b)))))
-
-;; Transpose of a product:
-
-(defthmd transpose-fmat*
-  (implies (and (posp m) (posp n) (posp p) (fmatp a m n) (fmatp b n p))
-	   (equal (transpose (fmat* a b))
-	          (fmat* (transpose b) (transpose a)))))
-
-;; The definition of the nxn identify matrix is based on that of an flist of length n
-;; with (f1) at index j and (f0) elsewhere:
-
-(defun unit (j n)
-  (if (zp n)
-      ()
-    (if (zp j)
-        (cons (f1) (flist0 (1- n)))
-      (cons (f0) (unit (1- j) (1- n))))))
-
-(defthm flistp-unit
-  (flistp (unit j n) n))
-
-;; The Kronecker delta function:
-
-(defun delta (i j)
-  (if (= i j) (f1) (f0)))
-
-(defthm nth-unit
-  (implies (and (natp n) (natp j) (< j n) (natp i) (< i n))
-           (equal (nth i (unit j n))
-	          (delta i j))))
-
-;; Dot product of (unit j n) with an flist of length n:
-
-(defthm fdot-unit
-  (implies (and (posp n) (flistp x n) (natp j) (< j n))
-           (equal (fdot (unit j n) x)
-	          (nth j x))))
-
-(defthm fdot-unit-comm
-  (implies (and (posp n) (flistp x n) (natp j) (< j n))
-           (equal (fdot x (unit j n))
-	          (nth j x))))
-
-;; nxn identity matrix:
-
-(defun id-mat-aux (j n)
-  (declare (xargs :measure (nfix (- n j))))
-  (if (and (natp j) (natp n) (< j n))
-      (cons (unit j n) (id-mat-aux (1+ j) n))
-    ()))
-
-(defund id-mat (n)
-  (id-mat-aux 0 n))
-
-(defthm fmatp-id-mat
-  (implies (posp n)
-           (fmatp (id-mat n) n n)))
-
-(defthm nth-id-mat
-  (implies (and (posp n) (natp i) (< i n))
-	   (equal (nth i (id-mat n))
-		  (unit i n))))
-
-(defthmd entry-id-mat
-  (implies (and (natp n) (natp i) (natp j) (< i n) (< j n))
-           (equal (entry i j (id-mat n))
-	          (delta i j))))
-
-(defthmd transpose-id-mat
-  (implies (natp n)
-           (equal (transpose (id-mat n))
-	          (id-mat n))))
-
-(defthm col-id-mat
-  (implies (and (natp n) (natp j) (< j n))
-           (equal (col j (id-mat n))
-	          (unit j n))))
-
-;; (id-mat n) is a right identity:
-
-(defthmd id-mat-right
-  (implies (and (posp m) (posp n) (fmatp a m n))
-           (equal (fmat* a (id-mat n))
-	          a)))
-
-;; (id-mat n) is a left identity:
-
-(defthmd id-mat-left
-  (implies (and (posp m) (posp n) (fmatp a m n))
-           (equal (fmat* (id-mat m) a)
-	          a)))
-							   
-;; Associativity:
-
-;; Let a, b, and c be matrices of dimensions mxn, nxp, and pxq, respectively.  Then
-;; (fmat* a (fmat* b c)) and (fmat* (fmat* a b) c)) are both mxp matrices.  Our
-;; objective is to prove that they are equal.  Let 0 <= i < m and 0 <= j < q.  It will
-;; suffice to show that
-
-;;    (entry i j (fmat* a (fmat* b c))) = (entry i j (fmat* (fmat* a b) c)).
-
-;; Applying fmat*-entry and expanding fdot, we find that both sides of this equation
-;; are sums of n*p 3-way products.
-
-;; We shall construct an nxp matrix of 3-way products, (mat12 a b c i j), such that
-
-;;    (entry i j (fmat* a (fmat* b c))) = (fmat-sum (mat12 a b c i j))
-
-;; and a pxn matrix of 3-way products, (mat21 a b c), such that
-
-;;    (entry i j (fmat* (fmat* a b) c)) = (fmat-sum (mat21 a b c i j)).
-
-;; We shall show that (mat21 a b c i j) = (transpose (mat12 a b c i j)) and apply
-;; fmat-sum-transpose to conclude that
-
-;;    (entry i j (fmat* a (fmat* b c))) = (entry i j (fmat* (fmat* a b) c)).
-
-;; The entry on the left is the dot product of a row of a and a column of (fmat* b c),
-;; and each entry of this column is a dot product of a row of b and a column of c.
-;; This leads to the definition of the nxp matrix of 3-way products, (mat12 a b c i j):
-
-(defun flist-mul-list (x l)
-  (if (consp l)
-      (cons (flist-mul x (car l))
-	    (flist-mul-list x (cdr l)))
-    ()))
-
-(defun flist-scalar-mul-list (x l)
-  (if (consp l)
-      (cons (flist-scalar-mul (car x) (car l))
-            (flist-scalar-mul-list (cdr x) (cdr l)))
-    ()))
-
-(defund mat12 (a b c i j)
-  (flist-scalar-mul-list (row i a)
-	   	         (flist-mul-list (col j c) b)))
-
-(defthmd fmatp-mat12
-  (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
-                (natp i) (< i m) (natp j) (< j q))
-	   (fmatp (mat12 a b c i j) n p)))
-
-;; We derive the following expression for each entry of this matrix:
-
-(defthmd mat12-entry
-  (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
-                (natp i) (< i m) (natp j) (< j q)
-		(natp r) (< r n) (natp s) (< s p))
-           (equal (entry r s (mat12 a b c i j))
-	          (f* (f* (entry i r a) (entry r s b)) (entry s j c)))))
-
-;; The sum of these entries:
-
-(defthm fmat-sum-mat12
-  (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
-                (natp i) (< i m) (natp j) (< j q))
-           (equal (fmat-sum (mat12 a b c i j))
-	          (entry i j (fmat* a (fmat* b c))))))
-
-;; The matrix (mat21 a b c i j) similarly relates to (entry i j (fmat* (fmat* a b) c):
-
-(defund mat21 (a b c i j)
-  (flist-scalar-mul-list (col j c)
-		         (flist-mul-list (row i a) (transpose b))))
-
-(defthmd fmatp-mat21
-  (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
-                (natp i) (< i m) (natp j) (< j q))
-	   (fmatp (mat21 a b c i j) p n)))
-
-(defthmd mat21-entry
-  (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
-                (natp i) (< i m) (natp j) (< j q)
-		(natp r) (< r p) (natp s) (< s n))
-           (equal (entry r s (mat21 a b c i j))
-	          (f* (entry i s a) (f* (entry s r b) (entry r j c))))))
-
-(defthm fmat-sum-mat21
-  (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
-                (natp i) (< i m) (natp j) (< j q))
-           (equal (fmat-sum (mat21 a b c i j))
-	          (entry i j (fmat* (fmat* a b) c)))))
-
-;; Combine mat21-entry and mat12-entry:
-
-(defthmd mat12-mat21-entry
-  (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
-                (natp i) (< i m) (natp j) (< j q)
-		(natp r) (< r p) (natp s) (< s n))
-           (equal (entry r s (mat21 a b c i j))
-	          (entry s r (mat12 a b c i j)))))
-
-;; Apply transpose-entry:
-
-(defthmd mat12-transpose-mat21
-  (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
-                (natp i) (< i m) (natp j) (< j q))
-           (equal (transpose (mat12 a b c i j))
-	          (mat21 a b c i j))))
-
-;; By sum-mat-transpose, (entry i j (fmat* a (fmat* b c))) = (entry i j (fmat* (fmat* a b) c)),
-;; and the result follows:
-
-(defthmd fmat*-assoc
-  (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q))
-           (equal (fmat* a (fmat* b c))
-	          (fmat* (fmat* a b) c))))
-
+(include-book "fdet")
+(local (include-book "support/reduction"))
+(local (include-book "support/cramer"))
 
 ;;----------------------------------------------------------------------------------------
 ;; Row Reduction
@@ -637,7 +20,7 @@
     ()))
 
 (defthmd first-nonzero-nonzero
-  (implies (and (flistp x n) (not (flist0p x)))
+  (implies (and (flistnp x n) (not (flist0p x)))
            (let ((i (first-nonzero x)))
 	     (and (natp i)
 	          (< i n)
@@ -645,7 +28,7 @@
 		  (not (= (nth i x) (f0)))))))
 
 (defthmd first-nonzero-first
-  (implies (and (flistp x n) (not (flist0p x))
+  (implies (and (flistnp x n) (not (flist0p x))
                 (natp i) (< i (first-nonzero x)))
            (equal (nth i x) (f0))))
 
@@ -735,28 +118,11 @@
                 (natp i) (< i m))
 	   (equal (nth (first-nonzero (nth k a))
 	               (nth i a))
-		  (delta i k))))
+		  (fdelta i k))))
 
 
 ;; Next, we define a process that converts a matrix to row-echelon form by applying
-;; a sequence of "elementary row operations".  These are based on the following
-;; function, which replaces row k of a with r:
-
-(defun replace-row (a k r)
-  (if (zp k)
-      (cons r (cdr a))
-    (cons (car a) (replace-row (cdr a) (1- k) r))))
-
-(defthm fmatp-replace-row
-  (implies (and (fmatp a m n) (natp m) (natp n) (natp k) (< k m) (flistp r n))
-           (fmatp (replace-row a k r) m n)))
-
-(defthmd nth-replace-row
-  (implies (and (natp k) (< k (len a)) (natp j) (< j (len a)))
-           (equal (nth j (replace-row a k r))
-	          (if (= j k)
-		      r
-		    (nth j a)))))
+;; a sequence of "elementary row operations".
 
 ;; 3 types of elementary row operations:
 
@@ -852,16 +218,6 @@
 			m (1+ k))
       a)))
 
-(defthmd fmatp-row-reduce-aux
-  (implies (and (fmatp a m n) (natp m) (natp n)
-                (natp k) (<= k m))
-	   (fmatp (row-reduce-aux a m k) m n)))
-
-(defthmd row-echelon-p-aux-row-reduce-aux
-  (implies (and (natp m) (natp n) (fmatp a m n)
-		(natp k) (<= k m) (row-echelon-p-aux a m k))
-	   (row-echelon-p-aux (row-reduce-aux a m k) m m)))
-
 ;; Convert a to row-echelon form:
 
 (defund row-reduce (a)
@@ -949,7 +305,7 @@
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
            (dlistp (lead-inds a))))
 
-;; By (lead-inds a), (lead-inds a) is a sublist of (ninit n):
+;; (lead-inds a) is a sublist of (ninit n):
 
 (defthmd sublistp-lead-inds-ninit
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
@@ -1121,7 +477,7 @@
 ;; The nxn elementary matrix corresponding to a row operation:
 
 (defund elem-mat (op m)
-  (apply-row-op op (id-mat m)))
+  (apply-row-op op (id-fmat m)))
 
 (defthm fmatp-elem-mat
   (implies (and (row-op-p op m) (natp m))
@@ -1141,13 +497,13 @@
   (if (consp ops)
       (fmat* (row-ops-mat (cdr ops) m)
              (elem-mat (car ops) m))             
-    (id-mat m)))
+    (id-fmat m)))
 
 (defthm fmatp-row-ops-mat
   (implies (and (row-ops-p ops m) (posp m))
            (fmatp (row-ops-mat ops m) m m)))
 
-(defthm fmat*-row-ops-mat
+(defthmd fmat*-row-ops-mat
   (implies (and (fmatp a m n) (posp m) (posp n)
                 (row-ops-p ops m))
 	   (equal (fmat* (row-ops-mat ops m) a)
@@ -1161,34 +517,35 @@
 	   (equal (fmat* (row-reduce-mat a) a)
 		  (row-reduce a))))
 
+
 ;;----------------------------------------------------------------------------------------
 ;; Invertibility
 ;;----------------------------------------------------------------------------------------
 
 ;; In this section, we focus on square matrices.  Given an nxn matrix a, we seek an nxn
-;; matrix b such that (fmat* a b) = (fmat* b a) = (id-mat n), which we shall call the
+;; matrix b such that (fmat* a b) = (fmat* b a) = (id-fmat n), which we shall call the
 ;; inverse of a.  If it exists, the inverse of a is unique in the following strong sense:
-;; if (fmat* c a) = (id-mat n), then
+;; if (fmat* c a) = (id-fmat n), then
 
-;;   c = (fmat* c (id-mat n))
+;;   c = (fmat* c (id-fmat n))
 ;;     = (fmat* c (fmat* a b))
 ;;     = (fmat* (fmat* c a) b))
-;;     = (fmat* (id-mat n) b))
+;;     = (fmat* (id-fmat n) b))
 ;;     = b,
 
-;; and if (fmat* a c) = (id-mat n), then
-;;   c = (fmat* (id-mat n) c)
+;; and if (fmat* a c) = (id-fmat n), then
+;;   c = (fmat* (id-fmat n) c)
 ;;     = (fmat* (fmat* b a) c)
 ;;     = (fmat* b (fmat* a c))
-;;     = (fmat* b (id-mat n)))
+;;     = (fmat* b (id-fmat n)))
 ;;     = b.
 
 (defthm inverse-unique
   (implies (and (fmatp a n n) (fmatp b n n) (fmatp c n n) (posp n)
-		(= (fmat* a b) (id-mat n))
-		(= (fmat* b a) (id-mat n))
-		(or (= (fmat* a c) (id-mat n))
-	            (= (fmat* c a) (id-mat n))))
+		(= (fmat* a b) (id-fmat n))
+		(= (fmat* b a) (id-fmat n))
+		(or (= (fmat* a c) (id-fmat n))
+	            (= (fmat* c a) (id-fmat n))))
 	   (equal c b))
   :rule-classes ())
 
@@ -1215,10 +572,10 @@
   (implies (and (row-op-p op n) (posp n))
            (and (equal (fmat* (elem-mat (invert-row-op op) n)
 			      (elem-mat op n))
-		       (id-mat n))
+		       (id-fmat n))
 		(equal (fmat* (elem-mat op n)
 		              (elem-mat (invert-row-op op) n))			      
-		       (id-mat n)))))
+		       (id-fmat n)))))
 
 ;; Every product of elementary matrices has an inverse:
 
@@ -1236,10 +593,10 @@
   (implies (and (row-ops-p ops n) (posp n))
                 (and (equal (fmat* (row-ops-mat (invert-row-ops ops) n)
 	                           (row-ops-mat ops n))
-		            (id-mat n))
+		            (id-fmat n))
                      (equal (fmat* (row-ops-mat ops n)
 			           (row-ops-mat (invert-row-ops ops) n))			      
-		            (id-mat n)))))
+		            (id-fmat n)))))
 
 ;; We shall show that a has an inverse iff (row-rank a) = n and that in this case,
 ;; the inverse of a is (row-reduce-mat a).  Thus, we define
@@ -1251,14 +608,14 @@
   (row-reduce-mat a))
 
 ;; First we show, as a consequence of lead-inds-ninit,  that if (invertiblep a n),
-;; then (row-reduce a) = (id-mat n):
+;; then (row-reduce a) = (id-fmat n):
 
-(defthm row-echelon-p-id-mat
+(defthm row-echelon-p-id-fmat
   (implies (and (fmatp a n n)
 		(posp n)
 		(row-echelon-p a)
 		(= (num-nonzero-rows a) n))
-	   (equal a (id-mat n)))
+	   (equal a (id-fmat n)))
   :rule-classes ())
 
 ;; Now let
@@ -1271,8 +628,8 @@
 
 ;;    r = (fmat* p a) = (row-reduce a).
 
-;; By invert-row-ops-mat, (fmat* p q) = fmat* q p) = (id-mat n).  If (row-rank a) = n,
-;; then (num-nonzero-rows r) = n.  By row-echelon-p-id-mat, (fmat* p a) = r = (id-mat n),
+;; By invert-row-ops-mat, (fmat* p q) = fmat* q p) = (id-fmat n).  If (row-rank a) = n,
+;; then (num-nonzero-rows r) = n.  By row-echelon-p-id-fmat, (fmat* p a) = r = (id-fmat n),
 ;; and by inverse-unique, a = q.  Thus, (invertiblep a n) is a sufficient condition for
 ;; the existence of an inverse:
 
@@ -1280,8 +637,8 @@
   (implies (and (fmatp a n n) (posp n) (invertiblep a n))
 	   (let ((p (inverse-mat a)))
 	     (and (fmatp p n n)
-		  (equal (fmat* a p) (id-mat n))
-		  (equal (fmat* p a) (id-mat n))))))
+		  (equal (fmat* a p) (id-fmat n))
+		  (equal (fmat* p a) (id-fmat n))))))
 
 ;; To prove the necessity of (invertiblep a n), suppose  and let (fmatp b n n).
 ;; If (fmat* a b) 0 (id-nat n), then
@@ -1289,13 +646,13 @@
 ;;   (fmat* r (fmat* b q)) = (fmat* (fmt* p a) (fmat* b q))
 ;;                         = (fmat* p (fmat* (fmat* a b) q))
 ;;			   = (fmat* p q)
-;;			   = (id-mat n).
+;;			   = (id-fmat n).
 
 ;; If (invertiblep a n) = NIL, then the last row of r is 0, and by nth-fmat*, the same
-;; must be true of (id-mat n), a contradiction.
+;; must be true of (id-fmat n), a contradiction.
 
 (defthmd invertiblep-necessary
-  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-mat n)))
+  (implies (and (fmatp a n n) (fmatp b n n) (posp n) (= (fmat* a b) (id-fmat n)))
 	   (invertiblep a n)))
 
 ;; Some consequences of the preceding results:
@@ -1308,10 +665,15 @@
 
 (defthmd invertiblep-inverse
   (implies (and (fmatp a n n) (fmatp b n n) (posp n)
-		(or (= (fmat* a b) (id-mat n))
-		    (= (fmat* b a) (id-mat n))))
+		(or (= (fmat* a b) (id-fmat n))
+		    (= (fmat* b a) (id-fmat n))))
 	   (and (invertiblep a n)
 		(equal (inverse-mat a) b))))
+
+(defthmd invertiblep-cancel
+  (implies (and (fmatp a m n) (fmatp b m n) (fmatp p m m) (invertiblep p m) (posp m) (posp n))
+           (iff (equal (fmat* p a) (fmat* p b))
+	        (equal a b))))
 
 (defthmd invertiblep-row-ops-mat
   (implies (and (row-ops-p ops n) (posp n))
@@ -1334,6 +696,43 @@
 		(equal (inverse-mat (fmat* a b))
 		       (fmat* (inverse-mat b) (inverse-mat a))))))
 
+;; Finally, we shall show that a is invertible iff (fdet a n) <> (f0).
+;; First note that if a is invertible and (fdet a n) = 0, then by fdet-id-fmat, invertiblep-sufficient,
+;; and fdet-multiplicative,
+
+;;    (f1) = (fdet (id-fmat n) n)
+;;         = (fdet (fmat* a (inverse-mat a)) n)
+;;         = (f* (fdet a n) (fdet (inverse-mat a) n))
+;;         = (f* (f0) (fdet (inverse-mat a) n))
+;;         = (f0),
+
+;; a contradiction:
+
+(defthmd invertiblep-fdet-not-zero
+  (implies (and (fmatp a n n) (posp n) (invertiblep a n))
+           (not (equal (fdet a n) (f0)))))
+
+;; On the other hand, assume n > 0 and (fdet a n) <> (f0).  By fmat*-adjoint-fmat,
+
+;;    (fmat* a (adjoint-fmat a n)) = (fmat-scalar-mul (fdet a n) (id-fmat n)),
+
+;; which implies
+
+;;    (fmat* a (fmat-scalar-mul (f/ (fdet a n)) (adjoint-fmat a n)))
+;;      = (fmat-scalar-mul (f/ (fdet a n)) (fmat* a (adjoint-fmat a n)))
+;;      = (fmat-scalar-mul (f/ (fdet a n)) (fmat-scalar-mul (fdet a n) (id-fmat n)))
+;;      = (id-fmat n),
+
+;; and by invertiblep-necessary, a is invertible.  This also establishes an alternative method for
+;; computing the inverse:
+
+(defthmd fdet-not-invertiblep-zero
+  (implies (and (fmatp a n n) (natp n) (> n 1) (not (equal (fdet a n) (f0))))
+	   (and (invertiblep a n)
+		(equal (inverse-mat a)
+		       (fmat-scalar-mul (f/ (fdet a n)) (adjoint-fmat a n))))))
+
+
 ;;----------------------------------------------------------------------------------------
 ;; Systems of Simultaneous Linear Equations
 ;;----------------------------------------------------------------------------------------
@@ -1353,14 +752,14 @@
   (list x))
 
 (defund col-mat (x)
-  (transpose (row-mat x)))
+  (transpose-mat (row-mat x)))
 
 (defthm fmatp-row-mat
-  (implies (flistp x n)
+  (implies (flistnp x n)
            (fmatp (row-mat x) 1 n)))
 
 (defthm fmatp-col-mat
-  (implies (and (posp n) (flistp x n))
+  (implies (and (posp n) (flistnp x n))
            (fmatp (col-mat x) n 1)))
 
 ;; The above system of equations may be expressed as
@@ -1383,7 +782,7 @@
 ;;   (fmat* ar xc) = br.
 
 (defthmd reduce-linear-equations
-  (implies (and (fmatp a m n) (posp m) (posp n) (flistp b m) (flistp x n))
+  (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n))
            (let* ((bc (col-mat b))
 	          (xc (col-mat x))
 		  (p (row-reduce-mat a))
@@ -1420,8 +819,10 @@
                       (row-rank a)
 		      m)))
 
+;;---------------------------------------------
+
 ;; Suppose first that (find-nonzero br q m) = k <> nil, so that (solvablep a b m) = nil.  Then 
-;; (row k ar) = (flist0 n) and (entry k 0 br) <> (f0).  It follows that
+;; (row k ar) = (flistn0 n) and (entry k 0 br) <> (f0).  It follows that
 
 ;;   (entry k 0 (fmat* ar xc)) = (fdot (row k ar) (col 0 xc)) = (f0) <> (nth k 0 br),
 
@@ -1437,9 +838,11 @@
 ;; of equations has no solution:
 
 (defthmd linear-equations-unsolvable-case
-  (implies (and (fmatp a m n) (posp m) (posp n) (flistp b m) (flistp x n)
+  (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
                 (not (solvablep a b m)))
 	   (not (solutionp x a b))))
+
+;;---------------------------------------------
 
 ;; Now suppose (find-nonzero br q m) = nil, i.e., (solvable a b m) = t.  Consider the matrices 
 ;; aq and bq consisting of the first q rows of ar and br, respectively, computed by the following:
@@ -1517,7 +920,9 @@
 
 ;; Our objective, therefore, is to solve the equation (fmat* aq xc) = bq.			
 
-;; By row-rank<=n, q <= n.  If q = n, then by row-echelon-p-id-mat, aq = (id-mat n) and
+;;---------------------------------------------
+
+;; By row-rank<=n, q <= n.  If q = n, then by row-echelon-p-id-fmat, aq = (id-fmat n) and
 ;; (fmat* aq xc) = bq iff xc = bq:
 
 (defthmd row-echelon-p-unique-solution-case
@@ -1533,11 +938,72 @@
 (defthmd linear-equations-unique-solution-case
   (let* ((br (fmat* (row-reduce-mat a) (col-mat b)))
          (bq (first-rows n br)))
-    (implies (and (fmatp a m n) (posp m) (posp n) (flistp b m) (flistp x n)
+    (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
                   (solvablep a b m)
-	          (= (row-rank a) n))
+	          (invertiblep a n))
 	     (iff (solutionp x a b)
 	          (equal x (col 0 bq))))))
+
+;; Our results on cofactor expansion lead to an alternative method of solving a system of linear 
+;; equations in the case of a unique solution, known as Cramer's rule.  Let a be an invertible nxn
+;; matrix, where n > 1, let (flistnp b n), (flistnp x n), and assume that x is  the unique solution of
+
+;;     (fmat* a (col-mat x)) = (col-mat b).
+;; 
+;; Let 0 <= i < n.  We shall substitute a' = (replace-row (transpose-mat a) i b) for a in 
+;; fdot-cofactor-fmat-row-fdet.  By nth-replace-row,
+
+;;    (row i a') = b.
+
+;; By nth-cofactor-fmat and cofactor-fmat-transpose,
+
+;;    (cofactor-fmat-row i a' n) = (cofactor-fmat-row i (transpose-mat a) n)
+;;                               = (row i (cofactor-fmat (transpose-mat a) n))
+;;                               = (row i (adjoint-fmat a n)),
+
+;; and by fdet-transpose,
+
+;;    (fdet a' n) = (fdet (transpose-fmat (replace-col a i b)) n) = (fdet (replace-col a i b) n),
+
+;; Thus, the substitution yields the following:
+
+(defthmd fdot-row-adjoint-fmat
+  (implies (and (fmatp a n n) (natp n) (flistnp b n) (> n 1) (natp i) (< i n))
+           (equal (fdot b (row i (adjoint-fmat a n)))
+                  (fdet (replace-col a i b) n))))
+
+;; Multiplying the equation (fmat* a (col-mat x)) = (col-mat b) by (adjoint-fmat a n) yields
+
+;;    (fmat* (adjoint-fmat a n) (fmat* a (col-mat x))) = (fmat* (adjoint-fmat a n) (col-mat b)).
+
+;; But
+
+;;    (fmat* (adjoint-fmat a n) (fmat* a (col-mat x)))
+;;      = (fmat* (fmat* (adjoint-fmat a n) a) (col-mat x))
+;;      = (fmat* (flist-scalar-mul (fdet a n) (id-fmat n)) (col-mat x))
+;;      = (flist-scalar-mul (fdet a n) (fmat* (id-fmat n) (col-mat x)))	 
+;;      = (flist-scalar-mul (fdet a n) (col-mat x)),
+
+;; and hence
+
+;;    (flist-scalar-mul (fdet a n) (col-mat x)) = (fmat* (adjoint-fmat a n) (col-mat b)).
+
+;; Equating the entry in row i and column 0 of each side of this equation, we have
+
+;;    (f* (fdet a n) (nth i x)) = (fdot b (row i (adjoint-fmat a n)))
+;;                              = (fdet (replace-col a i b) n),
+
+;; which is Cramer's rule:
+
+(defthmd cramer
+  (implies (and (fmatp a n n) (natp n) (> n 1) (invertiblep a n)
+                (flistnp b n) (flistnp x n) (solutionp x a b)
+		(natp i) (< i n))
+           (equal (nth i x)
+	          (f* (f/ (fdet a n))
+		      (fdet (replace-col a i b) n)))))
+	
+;;---------------------------------------------
 
 ;; In the remainder of this section, we treat the general case (solvablep a b m) = t with arbitrary
 ;; row-rank q <= n.  The equation (fmat* aq xc) = bq holds iff for 0 <= i < q,
@@ -1549,7 +1015,7 @@
 ;;   (fdot (row i aq) x) = (car (nth i bq)).
 
 (defthmd nth-fmat*-aq-xc
-  (implies (and (fmatp aq q n) (fmatp bq q 1) (flistp x n) (posp q) (posp n) (natp i) (< i q))
+  (implies (and (fmatp aq q n) (fmatp bq q 1) (flistnp x n) (posp q) (posp n) (natp i) (< i q))
            (iff (equal (nth i (fmat* aq (col-mat x)))
 	               (nth i bq))
 	        (equal (fdot (nth i aq) x)
@@ -1572,12 +1038,12 @@
     (f0)))
 
 (defthm fp-fdot-select
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (sublistp l (ninit n)))
 	   (fp (fdot-select l x y))))
 
 (defthmd fdot-select-perm
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (sublistp l (ninit n))
                 (sublistp m (ninit n))
 		(permutationp l m))
@@ -1585,7 +1051,7 @@
 	          (fdot-select m x y))))
 
 (defthmd fdot-select-append
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (sublistp l (ninit n))
                 (sublistp m (ninit n)))
 	   (equal (fdot-select (append l m) x y)
@@ -1593,7 +1059,7 @@
 		      (fdot-select m x y)))))
 
 (defthmd fdot-select-ninit
-  (implies (and (natp n) (flistp x n) (flistp y n))
+  (implies (and (natp n) (flistnp x n) (flistnp y n))
 	   (equal (fdot-select (ninit n) x y)
 	          (fdot x y))))
 
@@ -1603,13 +1069,13 @@
 	                 (ninit n))))
 
 (defthmd fdot-select-append-set-difference
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (dlistp l) (sublistp l (ninit n)))
            (equal (fdot-select (append l (set-difference-equal (ninit n) l)) x y)
 	          (fdot x y))))
 
 (defthmd fdot-split
-  (implies (and (natp n) (flistp x n) (flistp y n)
+  (implies (and (natp n) (flistnp x n) (flistnp y n)
                 (dlistp l) (sublistp l (ninit n)))
 	   (equal (fdot x y)
 	          (f+ (fdot-select l x y)
@@ -1618,7 +1084,7 @@
 ;; The following is a consequence of dlistp-lead-inds and sublistp-lead-inds-ninit
 
 (defthmd fdot-lead-free
-  (implies (and (fmatp aq q n) (posp q) (posp n) (row-echelon-p aq) (flistp x n)
+  (implies (and (fmatp aq q n) (posp q) (posp n) (row-echelon-p aq) (flistnp x n)
                 (natp i) (< i q))
            (equal (fdot (row i aq) x)
 	          (f+ (fdot-select (lead-inds aq) (row i aq) x)
@@ -1631,18 +1097,18 @@
   (implies (and (fmatp aq q n) (posp q) (posp n) (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
 		(natp i) (< i q)
-		(flistp x n))
+		(flistnp x n))
 	   (equal (fdot-select (lead-inds aq) (nth i aq) x)
 	          (nth (nth i (lead-inds aq)) x))))
 
-;; Combining the lasr result with nth-fmat*-aq-xc, fdot-lead-free, and fdot-select-lead-inds,
+;; Combining the last result with nth-fmat*-aq-xc, fdot-lead-free, and fdot-select-lead-inds,
 ;; we have the following reformulation of the equation (nth i (fmat* aq xc)) = (nth i bq):
 
 (defthmd equal-rows-lemma
   (implies (and (fmatp aq q n) (fmatp bq q 1) (posp q) (posp n)
                 (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
-		(flistp x n)
+		(flistnp x n)
 		(natp i) (< i q))
            (iff (equal (nth i (fmat* aq (col-mat x)))
 	               (nth i bq))
@@ -1665,7 +1131,7 @@
   (implies (and (fmatp aq q n) (fmatp bq q 1) (posp q) (posp n)
                 (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
-		(flistp x n))
+		(flistnp x n))
 	   (iff (solution-test x aq bq (lead-inds aq) (free-inds aq n) q)
 	        (equal (fmat* aq (col-mat x))
 	               bq))))
@@ -1678,7 +1144,7 @@
 	 (bq (first-rows q br))
 	 (l (lead-inds aq))
 	 (f (free-inds aq n)))
-    (implies (and (fmatp a m n) (posp m) (posp n) (flistp b m) (flistp x n)
+    (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
                   (solvablep a b m))
              (iff (solutionp x a b)
                   (solution-test x aq bq l f q)))))                        
@@ -1697,5 +1163,5 @@
 ;; Otherwise, the entries of x corresponding to the indices in (lead-inds aq) are determined
 ;; by the entries corresponding to (free-inds aq n).  Thus, there is a unique solution
 ;; corresponding to every assignment of values to the latter set of entries, and hence an
-;; infinite number of solutions.  We shall revisit this result later in the vector space of
-;; solutions of a homogeneous system of equations.
+;; infinite number of solutions.  We shall revisit this result later in tconnection with the
+;; vector space of solutions of a homogeneous system of equations.

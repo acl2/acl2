@@ -1,4 +1,4 @@
-; Aleo Library
+; AleoBFT Library
 ;
 ; Copyright (C) 2024 Provable Inc.
 ;
@@ -11,8 +11,8 @@
 
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 
-(ld "../package.lsp")
+(ld "package.lsp")
 
 (reset-prehistory)
 
-(in-package "ALEO")
+(in-package "ALEOBFT-DYNAMIC")

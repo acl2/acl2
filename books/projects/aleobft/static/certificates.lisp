@@ -1,4 +1,4 @@
-; Aleo Library
+; AleoBFT Library
 ;
 ; Copyright (C) 2024 Provable Inc.
 ;
@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-STATIC")
 
 (include-book "addresses")
 (include-book "transactions")
@@ -100,13 +100,6 @@
   :pred certificate-setp
 
   ///
-
-  (defrule certificate-setp-of-intersect
-    (implies (and (certificate-setp x)
-                  (certificate-setp y))
-             (certificate-setp (set::intersect x y)))
-    :induct t
-    :enable set::intersect)
 
   (defruled nil-not-in-certificate-set
     (implies (certificate-setp certs)

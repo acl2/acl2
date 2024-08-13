@@ -16,7 +16,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
-(local (include-book "kestrel/std/strings/decimal-fty" :dir :system))
+(local (include-book "kestrel/fty/strings-decimal-fty" :dir :system))
 (local (include-book "kestrel/std/strings/explode-implode-equalities" :dir :system))
 (local (include-book "kestrel/utilities/lists/append-theorems" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))

@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,7 +25,6 @@
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
-(include-book "kestrel/std/strings/letter-digit-uscore-dash-chars" :dir :system)
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
@@ -34,6 +33,7 @@
 (include-book "oslib/catpath" :dir :system)
 (include-book "oslib/dirname" :dir :system :ttags ((:quicklisp) :oslib))
 (include-book "oslib/file-types" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) :oslib))
+(include-book "std/strings/letter-digit-uscore-dash-chars" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 

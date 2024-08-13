@@ -31,8 +31,6 @@
             x86isa::gpr-arith/logic-spec-4 ;; dispatches based on operation
             x86isa::gpr-arith/logic-spec-8 ;; dispatches based on operation
 
-;            x86isa::jcc/cmovcc/setcc-spec ;case dispatch ;;disabling this to produce better results
-
             x86isa::gpr-and-spec-1-alt-def
             x86isa::gpr-and-spec-2-alt-def
             x86isa::gpr-and-spec-4-alt-def
@@ -1668,6 +1666,7 @@
             x86isa::n256-to-i256$inline
             x86isa::n512-to-i512$inline
 
+            ;; x86isa::jcc/cmovcc/setcc-spec ;case dispatch ;;disabling this to produce better results
             ;; These turn jcc/cmovcc/setcc-spec into more specialized forms,
             ;; which can be either opened or, for some, turned into better
             ;; tests.
@@ -1969,9 +1968,11 @@
             jb-condition-of-sub-cf-spec16
             jb-condition-of-sub-cf-spec32
             jb-condition-of-sub-cf-spec64
+            jb-condition-of-cf-spec8
+            jb-condition-of-cf-spec16
             jb-condition-of-cf-spec32
             jb-condition-of-cf-spec64
-            jb-condition-of-getbit ; for when we turn a cf-spec function into getbit
+            ;jb-condition-of-getbit ; for when we turn a cf-spec function into getbit (do we still do that?)
             jnb-condition-of-sub-cf-spec8
             jnb-condition-of-sub-cf-spec16
             jnb-condition-of-sub-cf-spec32
@@ -1988,10 +1989,15 @@
             jl-condition-of-sub-sf-spec16-and-sub-of-spec16
             jl-condition-of-sub-sf-spec32-and-sub-of-spec32
             jl-condition-of-sub-sf-spec64-and-sub-of-spec64
+
+            ;; jnl-condition-of-sf-spec32-and-of-spec32-same
+            ;; jnl-condition-of-sf-spec64-and-of-spec64-same
+            ;; jnl-condition-of-sf-spec64-and-0
             jnl-condition-of-sub-sf-spec8-and-sub-of-spec8-same
             jnl-condition-of-sub-sf-spec16-and-sub-of-spec16-same
             jnl-condition-of-sub-sf-spec32-and-sub-of-spec32-same
             jnl-condition-of-sub-sf-spec64-and-sub-of-spec64-same
+
             jle-condition-of-sub-zf-spec8-and-sub-sf-spec8-and-sub-of-spec8
             jle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
             jle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
@@ -4577,12 +4583,12 @@
             bvdiv-tighten-64-32
             not-bvlt-of-max-when-unsiged-byte-p
             ;x86isa::sf-spec32-rewrite ; trying without...
-            jle-condition-rewrite-1-with-bvif ; this one works on bvif
-            jle-condition-rewrite-1-with-bvif-and-bvchop
-            jle-condition-rewrite-1-with-bvchop
-            jnl-condition-of-getbit-31-and-0
-            jnl-condition-rewrite-16
-            jnl-condition-rewrite-16b
+            ;jle-condition-rewrite-1-with-bvif ; this one works on bvif
+            ;jle-condition-rewrite-1-with-bvif-and-bvchop
+            ;jle-condition-rewrite-1-with-bvchop
+            ;; jnl-condition-of-getbit-31-and-0
+            ;;jnl-condition-rewrite-16
+            ;;jnl-condition-rewrite-16b
             ; acl2::bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
             ;acl2::bvsx-when-sizes-match
             acl2::bvchop-of-bvsx
@@ -4598,9 +4604,6 @@
             acl2::bvchop-numeric-bound
             ;;acl2::bvuminus-of-bvsx-low ; todo: other cases? todo: push back
             sf-spec64-of-bvchop-64
-            jnl-condition-of-sf-spec32-and-of-spec32-same
-            jnl-condition-of-sf-spec64-and-of-spec64-same
-            jnl-condition-of-sf-spec64-and-0
             of-spec64-of-logext-64
             acl2::sbvlt-of-bvsx-arg2
 
