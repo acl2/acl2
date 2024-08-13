@@ -70,6 +70,7 @@
 (include-book "suffixp")
 (include-book "symbols")
 (include-book "strrange-equiv")
+(include-book "explode-implode-equalities")
 
 (defxdoc std/strings
   :parents (std acl2::strings)
