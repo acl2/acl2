@@ -19,12 +19,12 @@ source code were loaded.
 STATUS
 ------
 
-NOTE added 8/2024: We have seen failures on FreeBSD using CCL that we
-have not attempted to fix.  Other platforms may produce failures as
-well.  As noted below, this is a work in progress; it should be viewed
-as experimental.  By default, this directory is skipped during
-regressions.  Only when environment TB_LISP is set will an attempt be
-made to process anything in this directory.
+NOTE added 8/2024: We have seen failures on FreeBSD and Linux using
+CCL that we have not attempted to fix.  Other platforms may produce
+failures as well.  As noted below, this is a work in progress; it
+should be viewed as experimental.  By default, this directory is
+skipped during regressions.  Only when environment TB_LISP is set will
+an attempt be made to process anything in this directory.
 
 This is work in progress.  For example, as of this writing, there is
 no support for applications that use any of the following, though
