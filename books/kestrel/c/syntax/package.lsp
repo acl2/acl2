@@ -24,6 +24,8 @@
                                    read-char
                                    read-files
                                    schar
+                                   type
+                                   typep
                                    unread-char))
               '(any
                 bool
