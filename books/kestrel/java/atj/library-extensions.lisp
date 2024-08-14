@@ -16,7 +16,6 @@
 
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/check-if-call" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/check-mv-let-call" :dir :system)
@@ -25,6 +24,7 @@
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "std/strings/letter-uscore-dollar-chars" :dir :system)
 (include-book "std/strings/letter-digit-uscore-dollar-chars" :dir :system)
+(include-book "std/strings/strtok-bang" :dir :system)
 (include-book "std/typed-lists/pseudo-term-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

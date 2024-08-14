@@ -1548,7 +1548,7 @@
        avoiding explicit modeling of the <i>struct-or-union</i> nonterminal.")
      (xdoc::p
       "We model <i>typedef-name</i>
-       by inlining the type name into the @(':tydef') case of this fixtype."))
+       by inlining the type name into the @(':typedef') case of this fixtype."))
     (:void ())
     (:char ())
     (:short ())
@@ -1564,7 +1564,7 @@
     (:struct ((unwrap strunispec)))
     (:union ((unwrap strunispec)))
     (:enum ((unwrap enumspec)))
-    (:tydef ((name ident)))
+    (:typedef ((name ident)))
     :pred type-specp
     :measure (two-nats-measure (acl2-count x) 0))
 
