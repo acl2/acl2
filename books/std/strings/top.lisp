@@ -65,11 +65,13 @@
 (include-book "strsplit")
 (include-book "strsubst")
 (include-book "strtok")
+(include-book "strtok-bang")
 (include-book "substrp")
 (include-book "subseq")
 (include-book "suffixp")
 (include-book "symbols")
 (include-book "strrange-equiv")
+(include-book "explode-implode-equalities")
 
 (defxdoc std/strings
   :parents (std acl2::strings)

@@ -33,6 +33,8 @@
 (include-book "defaggregate")
 (include-book "defaggrify-defrec")
 (include-book "defalist")
+(include-book "defarbrec")
+(include-book "defarbrec-doc")
 (include-book "defconsts")
 (include-book "defenum")
 (include-book "deflist")
@@ -107,3 +109,5 @@ major macro is typically defined in its own book, e.g., you could do:</p>
 <p>Note that unlike many other @(see std) libraries, these macros are defined
 in the @('STD::') package.  This is mainly to avoid name collisions with older
 macros like @('deflist') from other libraries.</p>")
+
+(xdoc::add-resource-directory "std-util-design-notes" "design-notes")
