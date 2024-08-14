@@ -113,7 +113,21 @@
     " to handle errors in the disambiguator.")
    (xdoc::p
     "The fixtype and functions in the implementation of the disambiguator
-     are prefixed by @('dimb'), which stands for `DIsaMBiguator'."))
+     are prefixed by @('dimb'), which stands for `DIsaMBiguator'.")
+   (xdoc::p
+    "For now we leave the GCC extensions unchanged,
+     i.e. we do not apply the disambiguation to them,
+     even though they may contain expression.
+     Some initial experiments reveal that we will need to
+     treat these GCC extensions in a more dedicated way.
+     For instance, the @('access') attribute may include
+     the arguments @('read_only'), @('write_only'), and @('read_write').
+     Grammatically these are expressions,
+     but it seems that they have just a special meaning, like keywords,
+     in the context of the @('access') attribute,
+     but they are likely not keywords elsewhere.
+     A naive treatment would attempt to resolve those arguments,
+     which are not in the disambiguation table."))
   :order-subtopics t
   :default-parent t)
 
@@ -2250,9 +2264,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Even though GCC attributes may contain expressions,
-     for now we ignore those expressions, and leave attributes unchanged.
-     First we process the declaration specifiers,
+    "First we process the declaration specifiers,
      which, as explained in @(tsee dimb-declspec),
      determine whether the (one or more) identifiers
      introduced by the declarators
