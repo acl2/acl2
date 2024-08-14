@@ -76,7 +76,11 @@
    (xdoc::p
     "Here we define both notions, of bonded and active committee.
      We might need to revise them slightly
-     as we investigate the correctness properties."))
+     as we investigate the correctness properties.")
+   (xdoc::p
+    "Committees are not explicit components of the "
+    (xdoc::seetopic "system-states" "system states")
+    ", but they are in a way derived components of validator states."))
   :order-subtopics t
   :default-parent t)
 
