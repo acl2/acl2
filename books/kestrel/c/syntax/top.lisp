@@ -25,6 +25,7 @@
 (include-book "output-files-doc")
 (include-book "langdef-mapping")
 (include-book "formalized")
+(include-book "implementation-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,4 +144,5 @@
                     input-files
                     output-files
                     mapping-to-language-definition
-                    formalized-subset))
+                    formalized-subset
+                    implementation-environments))
