@@ -1,10 +1,10 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,13 +13,15 @@
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 
 ; (depends-on "design-notes/defarbrec.pdf")
-; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
+; (depends-on "design-notes/notation.pdf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *defarbrec-design-notes*
-  (xdoc::ahref "res/kestrel-std-util-design-notes/defarbrec.pdf"
-               "design notes"))
+  (xdoc::ahref "res/std-util-design-notes/defarbrec.pdf" "design notes"))
+
+(defconst *notation-design-notes*
+  (xdoc::ahref "res/std-util-design-notes/notation.pdf" "notation"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,8 +118,8 @@
       satisfies the same well-formedness constraints.")
 
     (xdoc::p
-     "These " *defarbrec-design-notes* ", which use "
-     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
+     "These " *defarbrec-design-notes*
+     ", which use this " *notation-design-notes*
      ", provide the mathematical concepts and template proofs
       upon which this tool is based.
       These notes should be read alongside this reference documentation,
