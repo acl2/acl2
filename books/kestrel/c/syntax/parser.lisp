@@ -8502,7 +8502,7 @@
        ;; when this function is called, it must be the case that
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
-        (retok (spec/qual-tyspec (type-spec-tydef (token-ident->unwrap token)))
+        (retok (spec/qual-tyspec (type-spec-typedef (token-ident->unwrap token)))
                span
                pstate))
        ;; If token is a type qualifier, which is always a single keyword,
@@ -8748,7 +8748,7 @@
        ;; when this function is called, it must be the case that
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
-        (retok (declspec-tyspec (type-spec-tydef (token-ident->unwrap token)))
+        (retok (declspec-tyspec (type-spec-typedef (token-ident->unwrap token)))
                span
                pstate))
        ;; If token is a type qualifier, which is always a single keyword,

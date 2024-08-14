@@ -1945,7 +1945,7 @@
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enumspec tyspec.unwrap pstate)))
              pstate)
-     :tydef (print-ident tyspec.name pstate))
+     :typedef (print-ident tyspec.name pstate))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -697,8 +697,8 @@
           (declspec (car declspecs))
           ((unless (declspec-case declspec :tyspec)) (mv nil nil))
           (tyspec (declspec-tyspec->unwrap declspec))
-          ((unless (type-spec-case tyspec :tydef)) (mv nil nil))
-          (ident (type-spec-tydef->name tyspec))
+          ((unless (type-spec-case tyspec :typedef)) (mv nil nil))
+          (ident (type-spec-typedef->name tyspec))
           (kind? (dimb-lookup-ident ident table))
           ((when (equal kind? (dimb-kind-typedef))) (mv nil nil))
           ((mv yes/no names) (dimb-params-to-names-loop (cdr params) table))
@@ -1100,26 +1100,26 @@
        :enum (b* (((erp new-enumspec table)
                    (dimb-enumspec tyspec.unwrap table)))
                (retok (type-spec-enum new-enumspec) table))
-       :tydef (b* ((kind (dimb-lookup-ident tyspec.name table))
-                   ((unless kind)
-                    (reterr
-                     (msg "The identifier ~x0 is used as a type specifier ~
+       :typedef (b* ((kind (dimb-lookup-ident tyspec.name table))
+                     ((unless kind)
+                      (reterr
+                       (msg "The identifier ~x0 is used as a type specifier ~
                            but it is not in scope."
-                          tyspec.name))))
-                (dimb-kind-case
-                 kind
-                 :typedef (retok (type-spec-tydef tyspec.name)
-                                 (dimb-table-fix table))
-                 :objfun (reterr
-                          (msg "The identifier ~x0 denotes ~
+                            tyspec.name))))
+                  (dimb-kind-case
+                   kind
+                   :typedef (retok (type-spec-typedef tyspec.name)
+                                   (dimb-table-fix table))
+                   :objfun (reterr
+                            (msg "The identifier ~x0 denotes ~
                                 an object or function ~
                                 but it is used as a typedef name."
-                               tyspec.name))
-                 :enumconst (reterr
-                             (msg "The identifier ~x0 denotes ~
+                                 tyspec.name))
+                   :enumconst (reterr
+                               (msg "The identifier ~x0 denotes ~
                                    an enumeration constant ~
                                    but it is used as a typedef name."
-                                  tyspec.name))))))
+                                    tyspec.name))))))
     :measure (type-spec-count tyspec))
 
   (define dimb-spec/qual ((specqual spec/qual-p) (table dimb-tablep))
