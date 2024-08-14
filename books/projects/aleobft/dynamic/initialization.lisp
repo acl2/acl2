@@ -37,7 +37,7 @@
      the correct and faulty validators in the system,
      and of the genesis committee.")
    (xdoc::p
-    "As explained in @(see genesis-committees),
+    "As explained in @(see committees),
      the genesis committee is modeled via a constrained nullary function.")
    (xdoc::p
     "We could have similarly introduced two constrained nullary functions
@@ -78,7 +78,7 @@
      given the inputs to this functions and a list of events,
      we can calculate the initial state and the successive states
      that the system goes through by way of those events."))
-  :order-subtopics (genesis-committees t)
+  :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -138,7 +138,7 @@
    (xdoc::p
     "Furthermore, the network is initially empty."))
   (and (system-validators-initp systate)
-       (set::subset (genesis-committee)
+       (set::subset (committee->addresses (genesis-committee))
                     (all-addresses systate))
        (set::emptyp (get-network-state systate)))
   :hooks (:fix))
@@ -148,7 +148,7 @@
 (define system-init ((correct-vals address-setp)
                      (faulty-vals address-setp))
   :guard (and (set::emptyp (set::intersect correct-vals faulty-vals))
-              (set::subset (genesis-committee)
+              (set::subset (committee->addresses (genesis-committee))
                            (set::union correct-vals faulty-vals)))
   :returns (systate system-statep)
   :short "Calculate an initial system state."
@@ -160,7 +160,7 @@
      and the addresses of the faulty validators.
      The guard requires
      the disjointness of the addresses of correct and faulty validators
-     and the inclusion of the genesis committee
+     and the inclusion of the genesis committee addresses
      in the union of the addresses."))
   (b* ((vstates nil)
        (vstates (system-init-loop1 correct-vals vstates))
@@ -302,7 +302,7 @@
   (defrule system-initp-of-system-init
     (implies (and (address-setp correct-vals)
                   (address-setp faulty-vals)
-                  (set::subset (genesis-committee)
+                  (set::subset (committee->addresses (genesis-committee))
                                (set::union correct-vals faulty-vals))
                   (not (set::intersect correct-vals faulty-vals)))
              (system-initp (system-init correct-vals faulty-vals)))

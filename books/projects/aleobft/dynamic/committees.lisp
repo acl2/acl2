@@ -39,7 +39,7 @@
     "The genesis committee is arbitrary,
      but fixed for each execution of the protocol.
      Thus, we model the genesis committee via a constrained nullary function
-     that returns the set of addresses of the genesis committee.
+     that returns the genesis committee.
      The genesis committee is globally known to all validators.")
    (xdoc::p
     "Each validator's view of the evolution of the committee
@@ -82,6 +82,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod committee
+  :short "Fixtype of committees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In our model, a committee is just a set of addresses,
+     but we wrap it in a fixtype for greater abstract and extensibility.
+     When we generalize the model with stake,
+     this committee fixtype will need to include the stake of each validator,
+     besides the addresses of the validators."))
+  ((addresses address-set))
+  :pred committeep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection genesis-committee
   :short "Genesis committee."
   :long
@@ -90,20 +105,21 @@
     "As explained in @(see committees),
      there is an arbitrary but fixed genesis committee,
      which we capture via a constrained nullary function.
-     We require the function to return a non-empty set of addresses."))
+     We require the function to return a committee
+     with a non-empty set of addresses."))
 
   (encapsulate
       (((genesis-committee) => *))
 
     (local
      (defun genesis-committee ()
-       (set::insert (address nil) nil)))
+       (make-committee :addresses (set::insert (address nil) nil))))
 
-    (defrule address-setp-of-genesis-committee
-      (address-setp (genesis-committee)))
+    (defrule committeep-of-genesis-committee
+      (committeep (genesis-committee)))
 
-    (defrule not-emptyp-of-genesis-committee
-      (not (set::emptyp (genesis-committee))))))
+    (defrule not-emptyp-of-genesis-committee-addresses
+      (not (set::emptyp (committee->addresses (genesis-committee)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
