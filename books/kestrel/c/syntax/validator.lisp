@@ -14,6 +14,8 @@
 
 (include-book "kestrel/std/util/error-value-tuples" :dir :system)
 
+(local (include-book "std/alists/top" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -312,6 +314,155 @@
      for abstraction and extensibility."))
   ((scopes valid-scope-list))
   :pred valid-tablep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-empty-scope ()
+  :returns (scope valid-scopep)
+  :short "Empty validator scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Scopes always start empty, i.e. with no identifiers.
+     This function returns the empty scope."))
+  (make-valid-scope :ord nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-init-table ()
+  :returns (table valid-tablep)
+  :short "Initial validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This contains one empty scope (the initial file scope)."))
+  (make-valid-table :scopes (list (valid-empty-scope))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-table-num-scopes ((table valid-tablep))
+  :returns (num natp)
+  :short "Number of scopes in a validation table."
+  (len (valid-table->scopes table))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-push-scope ((table valid-tablep))
+  :returns (new-table valid-tablep)
+  :short "Push a scope onto the validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The newly pushed scope is always empty."))
+  (b* ((scopes (valid-table->scopes table))
+       (new-scopes (cons (valid-empty-scope) scopes)))
+    (change-valid-table table :scopes new-scopes))
+  :hooks (:fix)
+  ///
+
+  (defret valid-table-num-scopes-of-valid-push-scope
+    (equal (valid-table-num-scopes new-table)
+           (1+ (valid-table-num-scopes table)))
+    :hints (("Goal" :in-theory (enable valid-table-num-scopes len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-pop-scope ((table valid-tablep))
+  :guard (> (valid-table-num-scopes table) 0)
+  :returns (new-table valid-tablep)
+  :short "Pop a scope from the validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The guard requires that there are is at least one scope.")
+   (xdoc::p
+    "The popped scope is discarded."))
+  (b* ((scopes (valid-table->scopes table))
+       (new-scopes (cdr scopes)))
+    (change-valid-table table :scopes new-scopes))
+  :hooks (:fix)
+  ///
+
+  (defret valid-table-num-scopes-of-valid-pop-scope
+    (equal (valid-table-num-scopes new-table)
+           (1- (valid-table-num-scopes table)))
+    :hyp (> (valid-table-num-scopes table) 0)
+    :hints (("Goal" :in-theory (enable valid-table-num-scopes len max fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-lookup-ord ((ident identp) (table valid-tablep))
+  :returns (mv (info? valid-ord-info-optionp) (currentp booleanp))
+  :short "Look up an ordinary identifier in a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to the visibility and hiding rules [C:6.2.1/2],
+     we look up the identifier starting from the innermost scope.
+     We stop as soon as we find a match.
+     We return @('nil') if we reach the outermost scope
+     without finding a match.")
+   (xdoc::p
+    "We also return a flag saying whether the identifier was found
+     in the current (i.e. innermost) scope or in some other scope.
+     We initialize this flag to @('t'),
+     and we set to @('nil') when we perform the recursive call.
+     The flag is irrelevant if the first result is @('nil'),
+     but in this case the returned flag is @('nil') too."))
+  (valid-lookup-ord-loop ident (valid-table->scopes table) t)
+  :hooks (:fix)
+
+  :prepwork
+  ((define valid-lookup-ord-loop ((ident identp)
+                                  (scopes valid-scope-listp)
+                                  (currentp booleanp))
+     :returns (mv (info? valid-ord-info-optionp) (updated-currentp booleanp))
+     :parents nil
+     (b* (((when (endp scopes)) (mv nil nil))
+          (scope (car scopes))
+          (ord-scope (valid-scope->ord scope))
+          (ident+info (assoc-equal (ident-fix ident) ord-scope))
+          ((when ident+info) (mv (cdr ident+info) (bool-fix currentp))))
+       (valid-lookup-ord-loop ident (cdr scopes) nil))
+     :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-add-ord ((ident identp)
+                       (info valid-ord-infop)
+                       (table valid-tablep))
+  :guard (> (valid-table-num-scopes table) 0)
+  :returns (new-table valid-tablep)
+  :short "Add an ordinary identifier to the validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pass the information to associate to the identifier.")
+   (xdoc::p
+    "The identifier is always added to
+     the first (i.e. innermost, i.e. current) scope.
+     The guard requires the existence of at least one scope;
+     recall that there must be always a file scope.")
+   (xdoc::p
+    "If the identifier is already present in the current scope,
+     its information is overwritten,
+     but we only call this function after checking that
+     this overwriting is acceptable,
+     i.e. when it ``refines'' the validation information for the identifier.
+     We could consider adding a guard to this function
+     that characterizes the acceptable overwriting."))
+  (b* ((scopes (valid-table->scopes table))
+       (scope (car scopes))
+       (ord-scope (valid-scope->ord scope))
+       (new-ord-scope (acons (ident-fix ident)
+                             (valid-ord-info-fix info)
+                             ord-scope))
+       (new-scope (change-valid-scope scope :ord new-ord-scope))
+       (new-scopes (cons new-scope (cdr scopes))))
+    (change-valid-table table :scopes new-scopes))
+  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
