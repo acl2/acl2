@@ -1,10 +1,10 @@
 ; Standard Strings Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,7 +23,7 @@
 
 (define strtok! ((string stringp) (delimiters character-listp))
   :returns (strings string-listp)
-  :parents (std/strings-extensions std/strings)
+  :parents (std/strings)
   :short "Variant of @(tsee strtok)
           that does not treat contiguous delimiters as one."
   :long
