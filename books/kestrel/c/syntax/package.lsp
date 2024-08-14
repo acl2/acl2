@@ -29,6 +29,7 @@
                                    unread-char))
               '(any
                 bool
+                bool-fix
                 bytep
                 byte-list
                 byte-listp
