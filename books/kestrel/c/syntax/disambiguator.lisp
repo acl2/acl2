@@ -2387,6 +2387,8 @@
 (defines dimb-stmts/blocks
   :short "Disambiguate statements, blocks, and related entities."
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-stmt ((stmt stmtp) (table dimb-tablep))
     :returns (mv erp (new-stmt stmtp) (new-table dimb-tablep))
     :parents (disambiguator dimb-stmts/blocks)
@@ -2520,6 +2522,8 @@
          (retok (stmt-return new-expr?) table))))
     :measure (stmt-count stmt))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-block-item ((item block-itemp) (table dimb-tablep))
     :returns (mv erp (new-item block-itemp) (new-table dimb-tablep))
     :parents (disambiguator dimb-stmts/blocks)
@@ -2546,6 +2550,8 @@
           :stmt (retok (block-item-stmt (stmt-expr decl/stmt.unwrap)) table)))))
     :measure (block-item-count item))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-block-item-list ((items block-item-listp) (table dimb-tablep))
     :returns (mv erp (new-items block-item-listp) (new-table dimb-tablep))
     :parents (disambiguator dimb-stmts/blocks)
@@ -2556,6 +2562,8 @@
          ((erp new-items table) (dimb-block-item-list (cdr items) table)))
       (retok (cons new-item new-items) table))
     :measure (block-item-list-count items))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
