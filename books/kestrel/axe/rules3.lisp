@@ -3320,46 +3320,6 @@
                             plus-becomes-bvplus
                             bvminus-becomes-bvplus-of-bvuminus)))))
 
-;; todo: loops with tightening rules?
-(defthmd equal-of-bvchop-extend
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (syntaxp (or (want-to-strengthen (equal k (bvchop size x)))
-                             (want-to-strengthen (equal (bvchop size x) k))))
-                (equal (getbit size x) free) ; not a binding hyp, hope it matches either way
-                ;; ;; try to ensure the equality really appears in the clause
-                ;; ;; (without this, I've seen this rule loop by repeatedly
-                ;; ;; extending the size of the bvchop):
-                ;; (syntaxp (or (want-to-strengthen (equal free (getbit size x)))
-                ;;              (want-to-strengthen (equal (getbit size x) free))))
-                (syntaxp (quotep free))
-                (natp size)
-                (unsigned-byte-p size k)
-                )
-           (equal (equal k (bvchop size x)) ; hope this matches either way
-                  (equal (bvcat 1 free size k) ; gets computed
-                         (bvchop (+ 1 size) x)))))
-
-(defthmd equal-of-bvchop-extend-with-1
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (syntaxp (or (want-to-strengthen (equal k (bvchop size x)))
-                             (want-to-strengthen (equal (bvchop size x) k))))
-                (equal (getbit size x) free) ; not a binding hyp, hope it matches either way
-                ;; ;; try to ensure the equality really appears in the clause
-                ;; ;; (without this, I've seen this rule loop by repeatedly
-                ;; ;; extending the size of the bvchop):
-                ;; (syntaxp (or (want-to-strengthen (equal free (getbit size x)))
-                ;;              (want-to-strengthen (equal (getbit size x) free))))
-                (syntaxp (quotep free))
-                (equal free 1) ; this case
-                (natp size)
-                (unsigned-byte-p size k)
-                )
-           (equal (equal k (bvchop size x)) ; hope this matches either way
-                  (equal (bvcat 1 1 size k) ; gets computed
-                         (bvchop (+ 1 size) x)))))
-
 (in-theory (disable BVCHOP-EQUAL-CONSTANT-REDUCE-WHEN-TOP-BIT-3-2-4)) ;if it's a hyp we don't want to reduce it..
 
 (in-theory (disable NTH-WHEN-all-equal$))

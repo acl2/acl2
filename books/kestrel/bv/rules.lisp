@@ -5606,6 +5606,20 @@
                   (bitxor x y)))
   :hints (("Goal" :cases ((equal 0 x)))))
 
+;rename
+;can loop (maybe when both bits are 0)?
+(defthmd equal-of-bvchops-when-equal-of-getbits-gen
+  (implies (and (syntaxp (want-to-strengthen (equal (bvchop size x) (bvchop size y))))
+                (equal (getbit size x) (getbit size y))
+                (natp size))
+           (equal (equal (bvchop size x) (bvchop size y))
+                  (equal (bvchop (+ 1 size) x) (bvchop (+ 1 size) y))))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil 0 nil)))
+  :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
+
+(theory-invariant (incompatible (:rewrite equal-of-bvchops-when-equal-of-getbits-gen)
+                                (:rewrite acl2::bvchop-when-top-bit-not-1-fake-free)))
+
 (defthm equal-of-bvchops-when-equal-of-getbits
   (implies (and (syntaxp (want-to-strengthen (equal (bvchop 31 x) (bvchop 31 y))))
                 (equal (getbit 31 x) (getbit 31 y)))
@@ -6253,3 +6267,58 @@
 (defthmd bvif-of-if-becomes-bvif-of-boolif-arg2
   (equal (bvif size (if test tp ep) tp2 ep2)
          (bvif size (boolif test tp ep) tp2 ep2)))
+
+(defthm <-of-bvchop-and-bvchop-when-top-bit-equal-1
+  (implies (and (equal 1 (getbit (+ -1 n) x))
+                (posp n))
+           (equal (< (bvchop n x) (bvchop n y))
+                  (and (equal 1 (getbit (+ -1 n) y))
+                       (< (bvchop (+ -1 n) x) (bvchop (+ -1 n) y)))))
+                  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :hints (("Goal" :cases ((and (equal 0 (getbit n-1 y))
+                               (equal 0 (getbit n-1 x)))
+                          (and (equal 1 (getbit n-1 y))
+                               (equal 0 (getbit n-1 x)))
+                          (and (equal 0 (getbit n-1 y))
+                               (equal 1 (getbit n-1 x))))
+           :in-theory (enable bvchop-when-top-bit-1))))
+
+;; todo: loops with tightening rules?
+(defthmd equal-of-bvchop-extend
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (syntaxp (or (want-to-strengthen (equal k (bvchop size x)))
+                             (want-to-strengthen (equal (bvchop size x) k))))
+                (equal (getbit size x) free) ; not a binding hyp, hope it matches either way
+                ;; ;; try to ensure the equality really appears in the clause
+                ;; ;; (without this, I've seen this rule loop by repeatedly
+                ;; ;; extending the size of the bvchop):
+                ;; (syntaxp (or (want-to-strengthen (equal free (getbit size x)))
+                ;;              (want-to-strengthen (equal (getbit size x) free))))
+                (syntaxp (quotep free))
+                (natp size)
+                (unsigned-byte-p size k)
+                )
+           (equal (equal k (bvchop size x)) ; hope this matches either way
+                  (equal (bvcat 1 free size k) ; gets computed
+                         (bvchop (+ 1 size) x)))))
+
+(defthmd equal-of-bvchop-extend-with-1
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (syntaxp (or (want-to-strengthen (equal k (bvchop size x)))
+                             (want-to-strengthen (equal (bvchop size x) k))))
+                (equal (getbit size x) free) ; not a binding hyp, hope it matches either way
+                ;; ;; try to ensure the equality really appears in the clause
+                ;; ;; (without this, I've seen this rule loop by repeatedly
+                ;; ;; extending the size of the bvchop):
+                ;; (syntaxp (or (want-to-strengthen (equal free (getbit size x)))
+                ;;              (want-to-strengthen (equal (getbit size x) free))))
+                (syntaxp (quotep free))
+                (equal free 1) ; this case
+                (natp size)
+                (unsigned-byte-p size k)
+                )
+           (equal (equal k (bvchop size x)) ; hope this matches either way
+                  (equal (bvcat 1 1 size k) ; gets computed
+                         (bvchop (+ 1 size) x)))))
