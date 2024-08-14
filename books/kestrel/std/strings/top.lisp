@@ -10,7 +10,7 @@
 
 (in-package "STR")
 
-(include-book "strtok-bang")
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

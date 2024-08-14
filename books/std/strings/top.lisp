@@ -65,6 +65,7 @@
 (include-book "strsplit")
 (include-book "strsubst")
 (include-book "strtok")
+(include-book "strtok-bang")
 (include-book "substrp")
 (include-book "subseq")
 (include-book "suffixp")
