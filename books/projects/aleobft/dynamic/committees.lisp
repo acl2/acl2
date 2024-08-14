@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "genesis-committees")
+(include-book "addresses")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -21,15 +21,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ committees
-  :parents (transitions)
+  :parents (states)
   :short "Committees."
   :long
   (xdoc::topstring
    (xdoc::p
     "Dynamic committees are one of the most distinctive features of AleoBFT.
-     Starting with a "
-    (xdoc::seetopic "genesis-committees" "genesis committee")
-    ", validators join and leave the committe, by bonding and unbonding,
+     Starting with a genesis (i.e. initial) committee,
+     validators join and leave the committe, by bonding and unbonding,
      which happens via transactions in the blockchain.
      Since every validator has its own view of the blockchain,
      it also has its own view of how the committees evolves.
@@ -37,7 +36,13 @@
      should also provide an agreement on how the committee evolves;
      this is what we are in the progress of formally proving.")
    (xdoc::p
-    "In any case, each validator's view of the evolution of the committee
+    "The genesis committee is arbitrary,
+     but fixed for each execution of the protocol.
+     Thus, we model the genesis committee via a constrained nullary function
+     that returns the set of addresses of the genesis committee.
+     The genesis committee is globally known to all validators.")
+   (xdoc::p
+    "Each validator's view of the evolution of the committee
      is formalized via functions that operate on the blockchain,
      and that, starting with the genesis committee,
      calculate the committee at every block,
@@ -74,6 +79,31 @@
      as we investigate the correctness properties."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection genesis-committee
+  :short "Genesis committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(see committees),
+     there is an arbitrary but fixed genesis committee,
+     which we capture via a constrained nullary function.
+     We require the function to return a non-empty set of addresses."))
+
+  (encapsulate
+      (((genesis-committee) => *))
+
+    (local
+     (defun genesis-committee ()
+       (set::insert (address nil) nil)))
+
+    (defrule address-setp-of-genesis-committee
+      (address-setp (genesis-committee)))
+
+    (defrule not-emptyp-of-genesis-committee
+      (not (set::emptyp (genesis-committee))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
