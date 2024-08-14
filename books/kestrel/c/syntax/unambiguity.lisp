@@ -36,7 +36,12 @@
     "Here we define predicates over the abstract syntax
      that say whether the constructs are unambiguous,
      i.e. there are no ambiguous constructs.
-     The definition is simple, just structural."))
+     The definition is simple, just structural.")
+   (xdoc::p
+    "For now we do not make any checks on GCC extensions,
+     even though they may contain expressions.
+     This mirrors the treatment in the @(see disambiguator):
+     the reason for this (temporary) limitation is explained there."))
   :order-subtopics t
   :default-parent t)
 
@@ -463,8 +468,7 @@
     :short "Check if a structure declaration is unambiguous."
     (structdecl-case structdecl
                      :member (and (spec/qual-list-unambp structdecl.specqual)
-                                  (structdeclor-list-unambp structdecl.declor)
-                                  (attrib-spec-list-unambp structdecl.attrib))
+                                  (structdeclor-list-unambp structdecl.declor))
                      :statassert (statassert-unambp structdecl.unwrap))
     :measure (structdecl-count structdecl))
 
@@ -540,48 +544,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define attrib-unambp ((attrib attribp))
-    :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
-    :short "Check if a GCC attribute is unambiguous."
-    (attrib-case attrib
-                 :name t
-                 :name-param (expr-list-unambp attrib.param))
-    :measure (attrib-count attrib))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define attrib-list-unambp ((attribs attrib-listp))
-    :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
-    :short "Check if a list of GCC attributes is unambiguous."
-    (or (endp attribs)
-        (and (attrib-unambp (car attribs))
-             (attrib-list-unambp (cdr attribs))))
-    :measure (attrib-list-count attribs))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define attrib-spec-unambp ((attrspec attrib-specp))
-    :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
-    :short "Check if a GCC attribute specifier is unambiguous."
-    (attrib-list-unambp (attrib-spec->attribs attrspec))
-    :measure (attrib-spec-count attrspec))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define attrib-spec-list-unambp ((attrspecs attrib-spec-listp))
-    :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
-    :short "Check if a list of GCC attribute specifiers is unambiguous."
-    (or (endp attrspecs)
-        (and (attrib-spec-unambp (car attrspecs))
-             (attrib-spec-list-unambp (cdr attrspecs))))
-    :measure (attrib-spec-list-count attrspecs))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
   ///
@@ -614,8 +576,7 @@
   :short "Check if a declaration is unambiguous."
   (decl-case decl
              :decl (and (declspec-list-unambp decl.specs)
-                        (initdeclor-list-unambp decl.init)
-                        (attrib-spec-list-unambp decl.attrib))
+                        (initdeclor-list-unambp decl.init))
              :statassert (statassert-unambp decl.unwrap))
   :hooks (:fix))
 
