@@ -724,6 +724,8 @@
      in the type name that is part of a cast expression
      extends the disambiguation table with enumeration constants."))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-expr ((expr exprp) (table dimb-tablep))
     :returns (mv erp (new-expr exprp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -972,6 +974,8 @@
            table)))))
     :measure (expr-count expr))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-expr-list ((exprs expr-listp) (table dimb-tablep))
     :returns (mv erp (new-exprs expr-listp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -982,6 +986,8 @@
          ((erp new-exprs table) (dimb-expr-list (cdr exprs) table)))
       (retok (cons new-expr new-exprs) table))
     :measure (expr-list-count exprs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-expr-option ((expr? expr-optionp) (table dimb-tablep))
     :returns (mv erp (new-expr? expr-optionp) (new-table dimb-tablep))
@@ -994,6 +1000,8 @@
        :none (retok nil (dimb-table-fix table))))
     :measure (expr-option-count expr?))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-const-expr ((cexpr const-exprp) (table dimb-tablep))
     :returns (mv erp (new-cexpr const-exprp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1002,6 +1010,8 @@
          ((erp new-expr table) (dimb-expr (const-expr->unwrap cexpr) table)))
       (retok (const-expr new-expr) table))
     :measure (const-expr-count cexpr))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-const-expr-option ((cexpr? const-expr-optionp)
                                   (table dimb-tablep))
@@ -1014,6 +1024,8 @@
        :some (dimb-const-expr cexpr?.val table)
        :none (retok nil (dimb-table-fix table))))
     :measure (const-expr-option-count cexpr?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-genassoc ((assoc genassocp) (table dimb-tablep))
     :returns (mv erp (new-assoc genassocp) (new-table dimb-tablep))
@@ -1031,6 +1043,8 @@
                   (retok (genassoc-default new-expr) table))))
     :measure (genassoc-count assoc))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-genassoc-list ((assocs genassoc-listp) (table dimb-tablep))
     :returns (mv erp (new-assocs genassoc-listp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1041,6 +1055,8 @@
          ((erp new-assocs table) (dimb-genassoc-list (cdr assocs) table)))
       (retok (cons new-assoc new-assocs) table))
     :measure (genassoc-list-count assocs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-type-spec ((tyspec type-specp) (table dimb-tablep))
     :returns (mv erp (new-tyspec type-specp) (new-table dimb-tablep))
@@ -1122,6 +1138,8 @@
                                     tyspec.name))))))
     :measure (type-spec-count tyspec))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-spec/qual ((specqual spec/qual-p) (table dimb-tablep))
     :returns (mv erp (new-specqual spec/qual-p) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1146,6 +1164,8 @@
                            table))))
     :measure (spec/qual-count specqual))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-spec/qual-list ((specquals spec/qual-listp) (table dimb-tablep))
     :returns (mv erp (new-specquals spec/qual-listp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1161,6 +1181,8 @@
          ((erp new-specquals table) (dimb-spec/qual-list (cdr specquals) table)))
       (retok (cons new-specqual new-specquals) table))
     :measure (spec/qual-list-count specquals))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-alignspec ((alignspec alignspecp) (table dimb-tablep))
     :returns (mv erp (new-alignspec alignspecp) (new-table dimb-tablep))
@@ -1192,6 +1214,8 @@
           :tyname (retok (alignspec-alignas-type expr/tyname.unwrap)
                          table)))))
     :measure (alignspec-count alignspec))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-declspec ((declspec declspecp)
                          (kind dimb-kindp)
@@ -1247,6 +1271,8 @@
                            table))))
     :measure (declspec-count declspec))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-declspec-list ((declspecs declspec-listp)
                               (kind dimb-kindp)
                               (table dimb-tablep))
@@ -1272,6 +1298,8 @@
       (retok (cons new-declspec new-declspecs) kind table))
     :measure (declspec-list-count declspecs))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-initer ((initer initerp) (table dimb-tablep))
     :returns (mv erp (new-initer initerp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1288,6 +1316,8 @@
                       table))))
     :measure (initer-count initer))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-initer-option ((initer? initer-optionp) (table dimb-tablep))
     :returns (mv erp (new-initer? initer-optionp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1298,6 +1328,8 @@
        :some (dimb-initer initer?.val table)
        :none (retok nil (dimb-table-fix table))))
     :measure (initer-option-count initer?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-desiniter ((desiniter desiniterp) (table dimb-tablep))
     :returns (mv erp (new-desiniter desiniterp) (new-table dimb-tablep))
@@ -1311,6 +1343,8 @@
              table))
     :measure (desiniter-count desiniter))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-desiniter-list ((desiniters desiniter-listp) (table dimb-tablep))
     :returns (mv erp (new-desiniters desiniter-listp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1322,6 +1356,8 @@
           (dimb-desiniter-list (cdr desiniters) table)))
       (retok (cons new-desiniter new-desiniters) table))
     :measure (desiniter-list-count desiniters))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-designor ((design designorp) (table dimb-tablep))
     :returns (mv erp (new-design designorp) (new-table dimb-tablep))
@@ -1335,6 +1371,8 @@
        :dot (retok (designor-dot design.name) (dimb-table-fix table))))
     :measure (designor-count design))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-designor-list ((designs designor-listp) (table dimb-tablep))
     :returns (mv erp (new-designs designor-listp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1345,6 +1383,8 @@
          ((erp new-designs table) (dimb-designor-list (cdr designs) table)))
       (retok (cons new-design new-designs) table))
     :measure (designor-list-count designs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-declor ((declor declorp) (fundefp booleanp) (table dimb-tablep))
     :returns (mv erp (new-declor declorp) (ident identp) (table dimb-tablep))
@@ -1390,6 +1430,8 @@
              table))
     :measure (declor-count declor))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-declor-option ((declor? declor-optionp) (table dimb-tablep))
     :returns (mv erp
                  (new-declor? declor-optionp)
@@ -1415,6 +1457,8 @@
        :some (dimb-declor declor?.val nil table)
        :none (retok nil nil (dimb-table-fix table))))
     :measure (declor-option-count declor?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-dirdeclor ((dirdeclor dirdeclorp)
                           (fundefp booleanp)
@@ -1550,6 +1594,8 @@
                   table)))))
     :measure (dirdeclor-count dirdeclor))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-absdeclor ((absdeclor absdeclorp) (table dimb-tablep))
     :returns (mv erp (new-absdeclor absdeclorp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1570,6 +1616,8 @@
              table))
     :measure (absdeclor-count absdeclor))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-absdeclor-option ((absdeclor? absdeclor-optionp)
                                  (table dimb-tablep))
     :returns (mv erp (new-absdeclor? absdeclor-optionp) (new-table dimb-tablep))
@@ -1581,6 +1629,8 @@
        :some (dimb-absdeclor absdeclor?.val table)
        :none (retok nil (dimb-table-fix table))))
     :measure (absdeclor-option-count absdeclor?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-dirabsdeclor ((dirabsdeclor dirabsdeclorp) (table dimb-tablep))
     :returns (mv erp (new-dirabsdeclor dirabsdeclorp) (new-table dimb-tablep))
@@ -1647,6 +1697,8 @@
                 table))))
     :measure (dirabsdeclor-count dirabsdeclor))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp)
                                     (table dimb-tablep))
     :returns (mv erp
@@ -1660,6 +1712,8 @@
        :some (dimb-dirabsdeclor dirabsdeclor?.val table)
        :none (retok nil (dimb-table-fix table))))
     :measure (dirabsdeclor-option-count dirabsdeclor?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-paramdecl ((paramdecl paramdeclp) (table dimb-tablep))
     :returns (mv erp (new-paramdecl paramdeclp) (new-table dimb-tablep))
@@ -1688,6 +1742,8 @@
       (retok (make-paramdecl :spec new-spec :decl new-decl) table))
     :measure (paramdecl-count paramdecl))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-paramdecl-list ((paramdecls paramdecl-listp) (table dimb-tablep))
     :returns (mv erp (new-paramdecls paramdecl-listp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1704,6 +1760,8 @@
           (dimb-paramdecl-list (cdr paramdecls) table)))
       (retok (cons new-paramdecl new-paramdecls) table))
     :measure (paramdecl-list-count paramdecls))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-paramdeclor ((paramdeclor paramdeclorp) (table dimb-tablep))
     :returns (mv erp (new-paramdeclor paramdeclorp) (new-table dimb-tablep))
@@ -1763,6 +1821,8 @@
                  (dimb-table-fix table))))))
     :measure (paramdeclor-count paramdeclor))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-tyname ((tyname tynamep) (table dimb-tablep))
     :returns (mv erp (new-tyname tynamep) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1774,6 +1834,8 @@
       (retok (make-tyname :specqual new-specqual :decl? new-decl?)
              table))
     :measure (tyname-count tyname))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-strunispec ((strunispec strunispecp) (table dimb-tablep))
     :returns (mv erp (new-strunispec strunispecp) (new-table dimb-tablep))
@@ -1791,6 +1853,8 @@
       (retok (make-strunispec :name strunispec.name :members new-members)
              table))
     :measure (strunispec-count strunispec))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-structdecl ((structdecl structdeclp) (table dimb-tablep))
     :returns (mv erp (new-structdecl structdeclp) (new-table dimb-tablep))
@@ -1816,6 +1880,8 @@
                 table))))
     :measure (structdecl-count structdecl))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-structdecl-list ((structdecls structdecl-listp)
                                 (table dimb-tablep))
     :returns (mv erp (new-structdecls structdecl-listp) (new-table dimb-tablep))
@@ -1828,6 +1894,8 @@
           (dimb-structdecl-list (cdr structdecls) table)))
       (retok (cons new-structdecl new-structdecls) table))
     :measure (structdecl-list-count structdecls))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-structdeclor ((structdeclor structdeclorp) (table dimb-tablep))
     :returns (mv erp (new-structdeclor structdeclorp) (new-table dimb-tablep))
@@ -1850,6 +1918,8 @@
              table))
     :measure (structdeclor-count structdeclor))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-structdeclor-list ((structdeclors structdeclor-listp)
                                   (table dimb-tablep))
     :returns (mv erp
@@ -1865,6 +1935,8 @@
           (dimb-structdeclor-list (cdr structdeclors) table)))
       (retok (cons new-structdeclor new-structdeclors) table))
     :measure (structdeclor-list-count structdeclors))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-enumspec ((enumspec enumspecp) (table dimb-tablep))
     :returns (mv erp (new-enumspec enumspecp) (new-table dimb-tablep))
@@ -1888,6 +1960,8 @@
              table))
     :measure (enumspec-count enumspec))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-enumer ((enumer enumerp) (table dimb-tablep))
     :returns (mv erp (new-enumer enumerp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1903,6 +1977,8 @@
          (table (dimb-add-ident enumer.name (dimb-kind-enumconst) table)))
       (retok (make-enumer :name enumer.name :value new-value) table))
     :measure (enumer-count enumer))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-enumer-list ((enumers enumer-listp) (table dimb-tablep))
     :returns (mv erp (new-enumers enumer-listp) (new-table dimb-tablep))
@@ -1920,6 +1996,8 @@
       (retok (cons new-enumer new-enumers) table))
     :measure (enumer-list-count enumers))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-statassert ((statassert statassertp) (table dimb-tablep))
     :returns (mv erp (new-statassert statassertp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
@@ -1930,6 +2008,8 @@
       (retok (make-statassert :test new-test :message statassert.message)
              table))
     :measure (statassert-count statassert))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-amb-expr/tyname ((expr/tyname amb-expr/tyname-p)
                                 (table dimb-tablep))
@@ -1985,6 +2065,8 @@
                        (amb-expr/tyname-fix expr/tyname)
                        (dimb-table-fix table))))))
     :measure (amb-expr/tyname-count expr/tyname))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-amb-declor/absdeclor ((declor/absdeclor amb-declor/absdeclor-p)
                                      (table dimb-tablep))
@@ -2093,11 +2175,19 @@
                            ident)))))))
     :measure (amb-declor/absdeclor-count declor/absdeclor))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :hints (("Goal" :in-theory (enable o< o-finp)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual dimb-exprs/decls))
 
