@@ -62,7 +62,7 @@
      i.e. the numbers of bytes of (signed and unsigned)
      @('short'), @('int'), @('long'), and @('long long').
      These correspond to the "
-    (xdoc::seetopic "integer-formats" "integer formats")
+    (xdoc::seetopic "c::integer-formats" "integer formats")
     " of our C formalization:
      see that topic for more information,
      also on the allowed ranges and relative constraints."))
