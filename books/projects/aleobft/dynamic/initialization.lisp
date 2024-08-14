@@ -1,4 +1,4 @@
-; Aleo Library
+; AleoBFT Library
 ;
 ; Copyright (C) 2024 Provable Inc.
 ;
@@ -9,9 +9,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT-DYNAMIC")
 
 (include-book "states")
+(include-book "genesis-committees")
 
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
@@ -36,13 +37,13 @@
      the correct and faulty validators in the system,
      and of the genesis committee.")
    (xdoc::p
-    "Since the genesis committee is arbitrary but fixed,
-     we introduce a constrained nullary function
-     that returns the set of addresses of the genesis committee.")
+    "As explained in @(see genesis-committees),
+     the genesis committee is modeled via a constrained nullary function.")
    (xdoc::p
     "We could have similarly introduced two constrained nullary functions
      that return the set of addresses of the correct validators
-     and the set of addresses of the faulty validators.
+     and the set of addresses of the faulty validators,
+     which are also arbitrary, but fixed during the execution of the protocol.
      Then we could have formalized "
     (xdoc::seetopic "system-states" "system states")
     " a little differently, using just
@@ -77,33 +78,8 @@
      given the inputs to this functions and a list of events,
      we can calculate the initial state and the successive states
      that the system goes through by way of those events."))
-  :order-subtopics t
+  :order-subtopics (genesis-committees t)
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection genesis-committee
-  :short "Genesis committee."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As explained in @(see initialization),
-     there is an arbitrary but fixed genesis committee,
-     which we capture via a constrained nullary function.
-     We require the function to return a non-empty set of addresses."))
-
-  (encapsulate
-      (((genesis-committee) => *))
-
-    (local
-     (defun genesis-committee ()
-       (set::insert (address nil) nil)))
-
-    (defrule address-setp-of-genesis-committee
-      (address-setp (genesis-committee)))
-
-    (defrule not-emptyp-of-genesis-committee
-      (not (set::emptyp (genesis-committee))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

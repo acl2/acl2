@@ -1,10 +1,10 @@
 ; Standard Strings Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17,10 +17,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(str::defcharset printable
+(str::defcharset letter
   (b* ((code (char-code x)))
-    (and (<= #x20 code)
-         (<= code #x7e)))
+    (or (and (<= (char-code #\A) code)
+             (<= code (char-code #\Z)))
+        (and (<= (char-code #\a) code)
+             (<= code (char-code #\z)))))
   :parents (character-kinds)
-  :short "Recognize printable ASCII characters,
-          i.e. spaces and visible ASCII characters.")
+  :short "Recognize ASCII letters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The built-in @(tsee alpha-char-p)
+     has a guard requiring characters.
+     In contrast, this recognizer has guard @('t').")))

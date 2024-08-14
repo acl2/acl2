@@ -181,9 +181,6 @@
 ;; Permutations of Lists
 ;;--------------------------------------------------------------------------------------------------------------
 
-;; This section was developed during the course of a proof of the Fundamental Theorem of Finite Abelian groups,
-;; Which I abandonned in favor of an alternative approach.  I'm keeping it here because it might be useful someday.
-
 ;; If l is a list of length n and p is in (sym n), then p induces a permutation of l:
 
 (defun permute (l p)
@@ -269,8 +266,7 @@
       (cons (val (car l)) (collect-vals (cdr l)))
     ()))
 
-;; The proof of the following is an adaptation of that of permutationp-permute.
-;; We shall apply it in the proof of the Fundamental Theorem of Finite Abelian Groups by functional instantiation:
+;; The proof of the following is an adaptation of that of permutationp-permute:
 
 (defthm permutationp-permute-vals
   (implies (and (true-listp l)
@@ -279,6 +275,10 @@
 	   (permutationp (collect-vals l)
 	                 (collect-vals (permute l p)))))
 
+
+;; The rmeainder of this section was developed during the course of a proof of the Fundamental Theorem of Finite 
+;; Abelian groups, Which I abandoned in favor of an alternative approach.  I'm keeping it here because it might
+;; be useful someday.
 
 ;; Given a total order on the members of l, we construct an ordered permutation  of l.
 ;; We begin with an encapsulated totally ordered set with recognizer tleq-dom, totally ordered by tleq-:

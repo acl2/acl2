@@ -1,4 +1,4 @@
-; Aleo Library
+; AleoBFT Library
 ;
 ; Copyright (C) 2024 Provable Inc.
 ;
@@ -9,9 +9,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEO")
+(in-package "ALEOBFT")
 
 (include-book "static/top")
+(include-book "dynamic/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,4 +85,5 @@
      mainly as state invariants, which we show
      to hold in the initial states
      and to be preserved by state transitions."))
-  :order-subtopics (aleobft-static))
+  :order-subtopics (aleobft-static::aleobft-static
+                    aleobft-dynamic::aleobft-dynamic))

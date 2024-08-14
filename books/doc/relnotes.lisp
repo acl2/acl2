@@ -123,6 +123,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "aleobft::aleobft" "AleoBFT"))
+
+   (xdoc::p
+    "Formal specification and correctness proofs of AleoBFT,
+     a Byzantine-fault-tolerant consensus protocol,
+     used in the "
+    (xdoc::ahref "https://aleo.org" "Aleo blockchain")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Gaussian Elimination Library")
 
    (xdoc::p
