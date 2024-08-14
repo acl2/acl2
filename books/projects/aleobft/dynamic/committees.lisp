@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "addresses")
+(include-book "blocks")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -126,5 +126,32 @@
       (not (set::emptyp (committee->addresses (genesis-committee)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define committee-after-transaction ((trans transactionp)
+                                     (commtt committeep))
+  :returns (new-commtt committeep)
+  :short "Calculate the committee after a transaction."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There are three kinds of transactions:
+     bonding, unbonding, and other.
+     A bonding transaction adds the validator address to the committee;
+     there is no change if the validator is already in the committee.
+     An unbonding transaction removes the validator address from the committee;
+     there is no change if the validator is not in the committee.
+     The other kind of transaction leaves the committee unchanged."))
+  (transaction-case
+   trans
+   :bond (change-committee
+          commtt
+          :addresses (set::insert trans.validator
+                                  (committee->addresses commtt)))
+   :unbond (change-committee
+            commtt
+            :addresses (set::delete trans.validator
+                                    (committee->addresses commtt)))
+   :other (committee-fix commtt))
+  :hooks (:fix))
 
 ; TODO: continue
