@@ -279,7 +279,7 @@ implementations.")
 ; hence also of type (unsigned-byte 29) if it is non-negative.
 
            (pushnew :acl2-small-fixnums *features*))
-          (t 
+          (t
            (error "ACL2 generally assumes that all integers that are
 at least -2^60 but less than 2^60 are Lisp fixnums,
 but that is not the case for this Lisp implementation.
@@ -332,21 +332,6 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
                  (frob :assumed-type)))
      (values))
    ))
-
-; Fix a bug in CMUCL 20D.  It seems sad to test (reverse "") twice, but
-; attempts to avoid that produced warnings about variable *our-old-reverse*
-; being undefined, even when using with-compilation-unit.
-#+cmucl
-(progn
-  (when (null (ignore-errors (reverse "")))
-    (defconstant *our-old-reverse* (symbol-function 'reverse)))
-  (without-package-locks
-   (when (boundp '*our-old-reverse*)
-     (defun reverse (x)
-       (if (equal x "")
-           ""
-         (funcall (symbol-value '*our-old-reverse*) x)))
-     (compile 'reverse))))
 
 ; WARNING: The next form should be an in-package (see in-package form for sbcl
 ; just above).

@@ -281,9 +281,8 @@ is using two characters to indicate a new line?"))
 (dotimes (i 256)
   (let ((ch (code-char i))
         bad)
-    (unless #-cmucl (equal (standard-char-p (char-upcase ch))
-                           (standard-char-p ch))
-            #+cmucl t ; avoid char-upcase; see char-upcase-cmucl
+    (unless (equal (standard-char-p (char-upcase ch))
+                   (standard-char-p ch))
             (setq bad 0))
     (unless (equal (standard-char-p (char-downcase ch))
                    (standard-char-p ch))
@@ -294,15 +293,14 @@ is using two characters to indicate a new line?"))
                        ch))
       (setq bad 2))
     (unless (or (not (lower-case-p ch))
-                #+cmucl (= i 181) ; avoid char-upcase; see char-upcase-cmucl
                 (equal (char-downcase
                         (char-upcase ch))
                        ch))
       (setq bad 3))
     (when bad
       (exit-with-build-error
-       "This Common Lisp is unsuitable for ACL2 because the following test ~%~
-        failed for the character ch = (code-char ~s):~%~s"
+       "This Common Lisp is unsuitable for ACL2 because the~%~
+        following test failed for the character ch = (code-char ~s):~%~s~a"
        i
        (case bad
          (0 '(equal (standard-char-p (char-upcase ch))
@@ -318,7 +316,14 @@ is using two characters to indicate a new line?"))
                          (char-upcase ch))
                         ch)))
          (otherwise
-          "Implementation Error!   Please contact the ACL2 implementors."))))))
+          "Implementation Error!   Please contact the ACL2 implementors."))
+       #-cmucl ""
+       #+cmucl
+       (if (string< (subseq (lisp-implementation-version) 0 16)
+                    "snapshot-2024-08")
+           "
+NOTE: Please update your cmucl to the 8/2024 snapshot or later."
+         "")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                           FEATURES, MISC.

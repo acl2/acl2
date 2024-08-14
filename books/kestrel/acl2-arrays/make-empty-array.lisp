@@ -12,6 +12,11 @@
 
 (in-package "ACL2")
 
+; Added by Matt K. 8/13/2024: 32-bit CMUCL has smaller value of
+; (ARRAY-MAXIMUM-LENGTH-BOUND) than 64-bit Lisps, which causes certification to
+; fail, presumably because that bound affects array2p.
+; cert_param: (non-cmucl)
+
 (include-book "constants")
 (include-book "alen1")
 (local (include-book "array1p"))

@@ -56,6 +56,11 @@ At UW:
   "/home/acl2/acl2-2.8/v2-8-alpha-05-11-03/books/arithmetic/top"))
 |#
 
+; Added by Matt K. 8/13/2024: 32-bit CMUCL has smaller value of
+; (ARRAY-MAXIMUM-LENGTH-BOUND) than 64-bit Lisps, which causes the proof to
+; fail for matrixp-m-0, presumably because that affects array2p.
+; cert_param: (non-cmucl)
+
 (local
  (include-book "../../../../arithmetic/top"))
 

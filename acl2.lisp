@@ -703,55 +703,6 @@
 #+ccl
 (declaim (notinline memq))
 
-; Fix CMUCL bug through April 2024.
-#+cmucl
-(unless (let ((c #.(code-char 181)))
-          (eql (char-upcase c) c))
-
-(defvar *old-char-upcase* (symbol-function 'char-upcase))
-
-(defvar *old-string-upcase* (symbol-function 'string-upcase))
-
-(defun char-upcase-cmucl (x)
-
-; CMUCL as of April 2024 (and perhaps all earlier versions) fails the check for
-; x = 181 that when ch = (code-char x) and (lower-case-p ch), then
-; (char-downcase (char-upcase ch)) = ch.  For justification of that property
-; and the axiom stating it (char-upcase/downcase-non-standard-inverses), see
-; comments in the partial encapsulate introducing char-downcase-non-standard
-; and other xxx-non-standard functions on characters.  If that failure goes
-; away in future versions of CMUCL then we should stop redefining code-char in
-; CMUCL to cause an error as below, and instead change the relevant check in
-; acl2-check.lisp (search there for "char-upcase-cmucl" to print a useful error
-; when encountering a violation for code 181 in CMUCL.
-
-  (declare (type character x)
-           (special *old-char-upcase*))
-  (if (eql x #.(code-char 181))
-      x ; (error "(char-upcase (code-char 181)) is not supported in CMUCL.")
-    (funcall *old-char-upcase* x)))
-
-(ext:without-package-locks
-(defun char-upcase (x)
-  (char-upcase-cmucl x)))
-
-(defun string-upcase-cmucl (x &key (start 0) (end nil))
-  (declare (special *old-string-upcase*))
-  (let* ((x (string x))
-         (p (position #.(code-char 181) x :start start :end end)))
-    (if p
-        (substitute #.(code-char 181)
-                    #.(char-upcase (code-char 181))
-                    x
-                    :start start :end end)
-      (funcall *old-string-upcase* x :start start :end end))))
-
-(ext:without-package-locks
-(defun string-upcase (x &key (start 0) (end nil))
-  (string-upcase-cmucl x :start start :end end)))
-
-)
-
 ; Fix SBCL bug, fixed in SBCL on 6/2/2024.
 #+sbcl
 (unless (= (char-code (char (string-downcase (coerce (list #.(code-char 192))
@@ -771,7 +722,7 @@
 ;   (char-code (char-downcase (code-char 192))) ; was and is 224
 
 ; For another example: The middle character of
-; (string-downcase (string-upcase 
+; (string-downcase (string-upcase
 ;                   (coerce (list #\7 (code-char 224) #\A) 'string)))
 ; should be a lower-case a with a "grave" (`) accent, but without this fix it
 ; was upper-case.
