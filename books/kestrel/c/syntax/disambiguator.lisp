@@ -1299,10 +1299,10 @@
                         table))
        :tyqual (retok (spec/qual-tyqual specqual.unwrap)
                       (dimb-table-fix table))
-       :alignspec (b* (((erp new-alignspec table)
-                        (dimb-alignspec specqual.unwrap table)))
-                    (retok (spec/qual-alignspec new-alignspec)
-                           table))))
+       :align (b* (((erp new-alignspec table)
+                    (dimb-align-spec specqual.unwrap table)))
+                (retok (spec/qual-align new-alignspec)
+                       table))))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1325,8 +1325,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-alignspec ((alignspec alignspecp) (table dimb-tablep))
-    :returns (mv erp (new-alignspec alignspecp) (new-table dimb-tablep))
+  (define dimb-align-spec ((alignspec align-specp) (table dimb-tablep))
+    :returns (mv erp (new-alignspec align-specp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls)
     :short "Disambiguate an alignment specifier."
     :long
@@ -1336,25 +1336,25 @@
        we disambiguate the underlying type name or expression,
        and then return one of the two kinds of
        unambiguous alignment specifiers."))
-    (b* (((reterr) (irr-alignspec) (irr-dimb-table)))
-      (alignspec-case
+    (b* (((reterr) (irr-align-spec) (irr-dimb-table)))
+      (align-spec-case
        alignspec
        :alignas-type
        (b* (((erp new-type table) (dimb-tyname alignspec.type table)))
-         (retok (alignspec-alignas-type new-type) table))
+         (retok (align-spec-alignas-type new-type) table))
        :alignas-expr
        (b* (((erp new-arg table) (dimb-const-expr alignspec.arg table)))
-         (retok (alignspec-alignas-expr new-arg) table))
+         (retok (align-spec-alignas-expr new-arg) table))
        :alignas-ambig
        (b* (((erp expr/tyname table)
              (dimb-amb-expr/tyname alignspec.type/arg table)))
          (expr/tyname-case
           expr/tyname
-          :expr (retok (alignspec-alignas-expr (const-expr expr/tyname.unwrap))
+          :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.unwrap))
                        table)
-          :tyname (retok (alignspec-alignas-type expr/tyname.unwrap)
+          :tyname (retok (align-spec-alignas-type expr/tyname.unwrap)
                          table)))))
-    :measure (alignspec-count alignspec))
+    :measure (align-spec-count alignspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1405,11 +1405,11 @@
        :funspec (retok (declspec-fix declspec)
                        (dimb-kind-fix kind)
                        (dimb-table-fix table))
-       :alignspec (b* (((erp new-alignspec table)
-                        (dimb-alignspec declspec.unwrap table)))
-                    (retok (declspec-alignspec new-alignspec)
-                           (dimb-kind-fix kind)
-                           table))))
+       :align (b* (((erp new-alignspec table)
+                    (dimb-align-spec declspec.unwrap table)))
+                (retok (declspec-align new-alignspec)
+                       (dimb-kind-fix kind)
+                       table))))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2369,10 +2369,10 @@
       (implies (not erp)
                (spec/qual-list-unambp new-specquals))
       :fn dimb-spec/qual-list)
-    (defret alignspec-unambp-of-dimb-alignspec
+    (defret align-spec-unambp-of-dimb-align-spec
       (implies (not erp)
-               (alignspec-unambp new-alignspec))
-      :fn dimb-alignspec)
+               (align-spec-unambp new-alignspec))
+      :fn dimb-align-spec)
     (defret declspec-unambp-of-dimb-declspec
       (implies (not erp)
                (declspec-unambp new-declspec))
@@ -2504,7 +2504,7 @@
                                 type-spec-unambp
                                 spec/qual-unambp
                                 spec/qual-list-unambp
-                                alignspec-unambp
+                                align-spec-unambp
                                 declspec-unambp
                                 declspec-list-unambp
                                 initer-unambp
@@ -2545,7 +2545,7 @@
                                 dimb-type-spec
                                 dimb-spec/qual
                                 dimb-spec/qual-list
-                                dimb-alignspec
+                                dimb-align-spec
                                 dimb-declspec
                                 dimb-declspec-list
                                 dimb-initer

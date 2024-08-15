@@ -116,25 +116,25 @@
     spec/qual-count
     spec/qual-case
     spec/qual-tyspec
-    spec/qual-alignspec
+    spec/qual-align
 
     spec/qual-listp
     spec/qual-list-fix
     spec/qual-list-count
 
-    alignspecp
-    alignspec-fix
-    alignspec-count
-    alignspec-case
-    alignspec-alignas-type
-    alignspec-alignas-expr
+    align-specp
+    align-spec-fix
+    align-spec-count
+    align-spec-case
+    align-spec-alignas-type
+    align-spec-alignas-expr
 
     declspecp
     declspec-fix
     declspec-count
     declspec-case
     declspec-tyspec
-    declspec-alignspec
+    declspec-align
 
     declspec-listp
     declspec-list-fix

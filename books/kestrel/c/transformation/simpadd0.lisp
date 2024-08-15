@@ -234,7 +234,7 @@
      specqual
      :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.unwrap))
      :tyqual (spec/qual-fix specqual)
-     :alignspec (spec/qual-alignspec (simpadd0-alignspec specqual.unwrap)))
+     :align (spec/qual-align (simpadd0-align-spec specqual.unwrap)))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -250,18 +250,18 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-alignspec ((alignspec alignspecp))
-    :returns (new-alignspec alignspecp)
+  (define simpadd0-align-spec ((alignspec align-specp))
+    :returns (new-alignspec align-specp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an alignment specifier."
-    (alignspec-case
+    (align-spec-case
      alignspec
-     :alignas-type (alignspec-alignas-type (simpadd0-tyname alignspec.type))
-     :alignas-expr (alignspec-alignas-expr (simpadd0-const-expr alignspec.arg))
+     :alignas-type (align-spec-alignas-type (simpadd0-tyname alignspec.type))
+     :alignas-expr (align-spec-alignas-expr (simpadd0-const-expr alignspec.arg))
      :alignas-ambig (prog2$
-                     (raise "Misusage error: ~x0." (alignspec-fix alignspec))
-                     (alignspec-fix alignspec)))
-    :measure (alignspec-count alignspec))
+                     (raise "Misusage error: ~x0." (align-spec-fix alignspec))
+                     (align-spec-fix alignspec)))
+    :measure (align-spec-count alignspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,7 +275,7 @@
      :tyspec (declspec-tyspec (simpadd0-type-spec declspec.unwrap))
      :tyqual (declspec-fix declspec)
      :funspec (declspec-fix declspec)
-     :alignspec (declspec-alignspec (simpadd0-alignspec declspec.unwrap)))
+     :align (declspec-align (simpadd0-align-spec declspec.unwrap)))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
