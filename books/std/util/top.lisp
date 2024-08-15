@@ -40,6 +40,7 @@
 (include-book "defconsts")
 (include-book "defenum")
 (include-book "deffixer")
+(include-book "defirrelevant")
 (include-book "deflist")
 (include-book "defmapappend")
 (include-book "defmvtypes")

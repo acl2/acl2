@@ -39,8 +39,6 @@
 (include-book "deftutorial")
 (include-book "deftutorial-doc")
 
-(include-book "defirrelevant")
-
 (include-book "error-value-tuples")
 
 (include-book "tuple")
