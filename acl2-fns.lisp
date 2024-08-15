@@ -1515,7 +1515,7 @@ notation causes an error and (b) the use of ,. is not permitted."
                     (equal num 1D+-0))
           #+cmucl (or (= num #.ext:double-float-positive-infinity)
                       (= num #.ext:double-float-negative-infinity)
-                      (ext:float-nan-p *))
+                      (ext:float-nan-p num))
           #+gcl (or (= num *fp-infinity*)
                     (= num *fp-negative-infinity*))
           #+lispworks (or (= num +1D++0)

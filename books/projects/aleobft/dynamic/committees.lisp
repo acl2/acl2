@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "genesis-committees")
+(include-book "blocks")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -21,15 +21,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ committees
-  :parents (transitions)
+  :parents (states)
   :short "Committees."
   :long
   (xdoc::topstring
    (xdoc::p
     "Dynamic committees are one of the most distinctive features of AleoBFT.
-     Starting with a "
-    (xdoc::seetopic "genesis-committees" "genesis committee")
-    ", validators join and leave the committe, by bonding and unbonding,
+     Starting with a genesis (i.e. initial) committee,
+     validators join and leave the committe, by bonding and unbonding,
      which happens via transactions in the blockchain.
      Since every validator has its own view of the blockchain,
      it also has its own view of how the committees evolves.
@@ -37,7 +36,13 @@
      should also provide an agreement on how the committee evolves;
      this is what we are in the progress of formally proving.")
    (xdoc::p
-    "In any case, each validator's view of the evolution of the committee
+    "The genesis committee is arbitrary,
+     but fixed for each execution of the protocol.
+     Thus, we model the genesis committee via a constrained nullary function
+     that returns the genesis committee.
+     The genesis committee is globally known to all validators.")
+   (xdoc::p
+    "Each validator's view of the evolution of the committee
      is formalized via functions that operate on the blockchain,
      and that, starting with the genesis committee,
      calculate the committee at every block,
@@ -71,10 +76,82 @@
    (xdoc::p
     "Here we define both notions, of bonded and active committee.
      We might need to revise them slightly
-     as we investigate the correctness properties."))
+     as we investigate the correctness properties.")
+   (xdoc::p
+    "Committees are not explicit components of the "
+    (xdoc::seetopic "system-states" "system states")
+    ", but they are in a way derived components of validator states."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod committee
+  :short "Fixtype of committees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In our model, a committee is just a set of addresses,
+     but we wrap it in a fixtype for greater abstract and extensibility.
+     When we generalize the model with stake,
+     this committee fixtype will need to include the stake of each validator,
+     besides the addresses of the validators."))
+  ((addresses address-set))
+  :pred committeep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection genesis-committee
+  :short "Genesis committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(see committees),
+     there is an arbitrary but fixed genesis committee,
+     which we capture via a constrained nullary function.
+     We require the function to return a committee
+     with a non-empty set of addresses."))
+
+  (encapsulate
+      (((genesis-committee) => *))
+
+    (local
+     (defun genesis-committee ()
+       (make-committee :addresses (set::insert (address nil) nil))))
+
+    (defrule committeep-of-genesis-committee
+      (committeep (genesis-committee)))
+
+    (defrule not-emptyp-of-genesis-committee-addresses
+      (not (set::emptyp (committee->addresses (genesis-committee)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define committee-after-transaction ((trans transactionp)
+                                     (commtt committeep))
+  :returns (new-commtt committeep)
+  :short "Calculate the committee after a transaction."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There are three kinds of transactions:
+     bonding, unbonding, and other.
+     A bonding transaction adds the validator address to the committee;
+     there is no change if the validator is already in the committee.
+     An unbonding transaction removes the validator address from the committee;
+     there is no change if the validator is not in the committee.
+     The other kind of transaction leaves the committee unchanged."))
+  (transaction-case
+   trans
+   :bond (change-committee
+          commtt
+          :addresses (set::insert trans.validator
+                                  (committee->addresses commtt)))
+   :unbond (change-committee
+            commtt
+            :addresses (set::delete trans.validator
+                                    (committee->addresses commtt)))
+   :other (committee-fix commtt))
+  :hooks (:fix))
 
 ; TODO: continue
