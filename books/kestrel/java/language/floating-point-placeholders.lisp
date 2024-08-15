@@ -19,8 +19,8 @@
 (include-book "kestrel/fty/sbyte16" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/sbyte64" :dir :system)
-(include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "std/util/defconstrained-recognizer" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

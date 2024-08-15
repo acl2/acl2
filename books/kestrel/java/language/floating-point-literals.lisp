@@ -11,8 +11,8 @@
 (in-package "JAVA")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "std/util/defconstrained-recognizer" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

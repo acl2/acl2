@@ -10,8 +10,6 @@
 
 (in-package "STD")
 
-(include-book "deffixer")
-
 (include-book "definj")
 (include-book "definj-doc")
 

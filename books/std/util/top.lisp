@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STD")
+
 (include-book "add-io-pairs")
 (include-book "defaggregate")
 (include-book "defaggrify-defrec")
@@ -38,6 +39,7 @@
 (include-book "defconstrained-recognizer")
 (include-book "defconsts")
 (include-book "defenum")
+(include-book "deffixer")
 (include-book "deflist")
 (include-book "defmapappend")
 (include-book "defmvtypes")
