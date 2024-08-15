@@ -191,7 +191,7 @@
     (spec/qual-case specqual
                     :tyspec (type-spec-unambp specqual.unwrap)
                     :tyqual t
-                    :alignspec (align-spec-unambp specqual.unwrap))
+                    :align (align-spec-unambp specqual.unwrap))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -228,7 +228,7 @@
                    :tyspec (type-spec-unambp declspec.unwrap)
                    :tyqual t
                    :funspec t
-                   :alignspec t)
+                   :align t)
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

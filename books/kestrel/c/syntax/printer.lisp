@@ -1958,7 +1958,7 @@
      specqual
      :tyspec (print-type-spec specqual.unwrap pstate)
      :tyqual (print-type-qual specqual.unwrap pstate)
-     :alignspec (print-align-spec specqual.unwrap pstate))
+     :align (print-align-spec specqual.unwrap pstate))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2012,7 +2012,7 @@
      :tyspec (print-type-spec declspec.unwrap pstate)
      :tyqual (print-type-qual declspec.unwrap pstate)
      :funspec (print-fun-spec declspec.unwrap pstate)
-     :alignspec (print-align-spec declspec.unwrap pstate))
+     :align (print-align-spec declspec.unwrap pstate))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

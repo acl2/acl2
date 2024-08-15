@@ -1299,10 +1299,10 @@
                         table))
        :tyqual (retok (spec/qual-tyqual specqual.unwrap)
                       (dimb-table-fix table))
-       :alignspec (b* (((erp new-alignspec table)
-                        (dimb-align-spec specqual.unwrap table)))
-                    (retok (spec/qual-alignspec new-alignspec)
-                           table))))
+       :align (b* (((erp new-alignspec table)
+                    (dimb-align-spec specqual.unwrap table)))
+                (retok (spec/qual-align new-alignspec)
+                       table))))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1405,11 +1405,11 @@
        :funspec (retok (declspec-fix declspec)
                        (dimb-kind-fix kind)
                        (dimb-table-fix table))
-       :alignspec (b* (((erp new-alignspec table)
-                        (dimb-align-spec declspec.unwrap table)))
-                    (retok (declspec-alignspec new-alignspec)
-                           (dimb-kind-fix kind)
-                           table))))
+       :align (b* (((erp new-alignspec table)
+                    (dimb-align-spec declspec.unwrap table)))
+                (retok (declspec-align new-alignspec)
+                       (dimb-kind-fix kind)
+                       table))))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

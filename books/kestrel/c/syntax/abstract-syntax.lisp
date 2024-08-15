@@ -1583,7 +1583,7 @@
        see @(tsee spec/qual-list)."))
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
-    (:alignspec ((unwrap align-spec)))
+    (:align ((unwrap align-spec)))
     :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1647,7 +1647,7 @@
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:funspec ((unwrap fun-spec)))
-    (:alignspec ((unwrap align-spec)))
+    (:align ((unwrap align-spec)))
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 

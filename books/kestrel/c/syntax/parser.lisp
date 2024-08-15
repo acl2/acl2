@@ -8516,7 +8516,7 @@
        ((equal token (token-keyword "_Alignas")) ; _Alignas
         (b* (((erp alignspec last-span pstate) ; _Alignas ( ... )
               (parse-alignment-specifier span pstate)))
-          (retok (spec/qual-alignspec alignspec)
+          (retok (spec/qual-align alignspec)
                  (span-join span last-span)
                  pstate)))
        ;; If token is anything else, it is an error.
@@ -8768,7 +8768,7 @@
        ((equal token (token-keyword "_Alignas")) ; _Alignas
         (b* (((erp alignspec last-span pstate) ; _Alignas ( ... )
               (parse-alignment-specifier span pstate)))
-          (retok (declspec-alignspec alignspec)
+          (retok (declspec-align alignspec)
                  (span-join span last-span)
                  pstate)))
        ;; If token is anything else, it is an error.
