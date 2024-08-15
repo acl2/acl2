@@ -201,12 +201,12 @@
     (:linear c$::absdeclor-count-of-dirabsdeclor-paren->unwrap)
     (:linear c$::absdeclor-count-of-paramdeclor-absdeclor->unwrap)
     (:linear c$::absdeclor-option-count-of-tyname->decl?)
-    (:linear c$::alignspec-count-of-declspec-alignspec->unwrap)
-    (:linear c$::alignspec-count-of-spec/qual-alignspec->unwrap)
+    (:linear c$::align-spec-count-of-declspec-alignspec->unwrap)
+    (:linear c$::align-spec-count-of-spec/qual-alignspec->unwrap)
     (:linear c$::block-item-count-of-car)
     (:linear c$::block-item-list-count-of-cdr)
     (:linear c$::block-item-list-count-of-stmt-compound->items)
-    (:linear c$::const-expr-count-of-alignspec-alignas-expr->arg)
+    (:linear c$::const-expr-count-of-align-spec-alignas-expr->arg)
     (:linear c$::const-expr-count-of-const-expr-option-some->val)
     (:linear c$::const-expr-count-of-designor-sub->index)
     (:linear c$::const-expr-count-of-statassert->test)
@@ -307,7 +307,7 @@
     (:linear c$::structdeclor-list-count-of-structdecl-member->declor)
     (:linear c$::strunispec-count-of-type-spec-struct->unwrap)
     (:linear c$::strunispec-count-of-type-spec-union->unwrap)
-    (:linear c$::tyname-count-of-alignspec-alignas-type->type)
+    (:linear c$::tyname-count-of-align-spec-alignas-type->type)
     (:linear c$::tyname-count-of-expr-alignof->type)
     (:linear c$::tyname-count-of-expr-cast->type)
     (:linear c$::tyname-count-of-expr-complit->type)
@@ -321,16 +321,16 @@
   '((:type-prescription absdeclor)
     (:type-prescription absdeclor-count)
     (:type-prescription absdeclor-option-count)
-    (:type-prescription alignspec-alignas-expr)
-    (:type-prescription alignspec-alignas-type)
-    (:type-prescription alignspec-count)
+    (:type-prescription align-spec-alignas-expr)
+    (:type-prescription align-spec-alignas-type)
+    (:type-prescription align-spec-count)
     (:type-prescription block-item-count)
     (:type-prescription block-item-decl)
     (:type-prescription block-item-list-count)
     (:type-prescription block-item-stmt)
-    (:type-prescription c$::alignspec-fix$inline)
+    (:type-prescription c$::align-spec-fix$inline)
     (:type-prescription c$::block-item-fix$inline)
-    (:type-prescription c$::consp-of-alignspec-fix)
+    (:type-prescription c$::consp-of-align-spec-fix)
     (:type-prescription c$::consp-of-block-item-fix)
     (:type-prescription c$::consp-of-declspec-fix)
     (:type-prescription c$::consp-of-designor-fix)
@@ -372,7 +372,7 @@
     (:type-prescription c$::paramdeclor-fix$inline)
     (:type-prescription c$::return-type-of-absdeclor-count.count)
     (:type-prescription c$::return-type-of-absdeclor-option-count.count)
-    (:type-prescription c$::return-type-of-alignspec-count.count)
+    (:type-prescription c$::return-type-of-align-spec-count.count)
     (:type-prescription c$::return-type-of-block-item-count.count)
     (:type-prescription c$::return-type-of-block-item-list-count.count)
     (:type-prescription c$::return-type-of-const-expr-count.count)
@@ -817,7 +817,7 @@
       specqual
       :tyspec (spec/qual-tyspec (,(cdr (assoc-eq 'type-spec names)) specqual.unwrap ,@extra-args-names))
       :tyqual (spec/qual-fix specqual)
-      :alignspec (spec/qual-alignspec (,(cdr (assoc-eq 'alignspec names)) specqual.unwrap ,@extra-args-names)))
+      :alignspec (spec/qual-alignspec (,(cdr (assoc-eq 'align-spec names)) specqual.unwrap ,@extra-args-names)))
    '(:returns (new-specqual spec/qual-p)
      :measure (spec/qual-count specqual))))
 
@@ -839,26 +839,26 @@
    '(:returns (new-specquals spec/qual-listp)
      :measure (spec/qual-list-count specquals))))
 
-(define deftrans-defn-alignspec
+(define deftrans-defn-align-spec
   ((names alistp)
    (bodies alistp)
    (extra-args true-listp)
    (extra-args-names true-listp))
   (deftrans-defn
-   'alignspec
+   'align-spec
    names
    bodies
-   '((alignspec alignspecp))
+   '((alignspec align-specp))
    extra-args
-   `(alignspec-case
+   `(align-spec-case
       alignspec
-      :alignas-type (alignspec-alignas-type (,(cdr (assoc-eq 'tyname names)) alignspec.type ,@extra-args-names))
-      :alignas-expr (alignspec-alignas-expr (,(cdr (assoc-eq 'const-expr names)) alignspec.arg ,@extra-args-names))
+      :alignas-type (align-spec-alignas-type (,(cdr (assoc-eq 'tyname names)) alignspec.type ,@extra-args-names))
+      :alignas-expr (align-spec-alignas-expr (,(cdr (assoc-eq 'const-expr names)) alignspec.arg ,@extra-args-names))
       :alignas-ambig (prog2$
-                       (raise "Misusage error: ~x0." (alignspec-fix alignspec))
-                       (alignspec-fix alignspec)))
-   '(:returns (new-alignspec alignspecp)
-     :measure (alignspec-count alignspec))))
+                       (raise "Misusage error: ~x0." (align-spec-fix alignspec))
+                       (align-spec-fix alignspec)))
+   '(:returns (new-alignspec align-specp)
+     :measure (align-spec-count alignspec))))
 
 (define deftrans-defn-declspec
   ((names alistp)
@@ -877,7 +877,7 @@
       :tyspec (declspec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.unwrap ,@extra-args-names))
       :tyqual (declspec-fix declspec)
       :funspec (declspec-fix declspec)
-      :alignspec (declspec-alignspec (,(cdr (assoc-eq 'alignspec names)) declspec.unwrap ,@extra-args-names)))
+      :alignspec (declspec-alignspec (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names)))
    '(:returns (new-declspec declspecp)
      :measure (declspec-count declspec))))
 
@@ -1696,7 +1696,7 @@
     type-spec
     spec/qual
     spec/qual-list
-    alignspec
+    align-spec
     declspec
     declspec-list
     initer
@@ -1830,7 +1830,7 @@
          ,(deftrans-defn-type-spec           names bodies extra-args extra-args-names)
          ,(deftrans-defn-spec/qual           names bodies extra-args extra-args-names)
          ,(deftrans-defn-spec/qual-list      names bodies extra-args extra-args-names)
-         ,(deftrans-defn-alignspec           names bodies extra-args extra-args-names)
+         ,(deftrans-defn-align-spec          names bodies extra-args extra-args-names)
          ,(deftrans-defn-declspec            names bodies extra-args extra-args-names)
          ,(deftrans-defn-declspec-list       names bodies extra-args extra-args-names)
          ,(deftrans-defn-initer              names bodies extra-args extra-args-names)

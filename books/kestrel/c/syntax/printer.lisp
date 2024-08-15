@@ -1958,7 +1958,7 @@
      specqual
      :tyspec (print-type-spec specqual.unwrap pstate)
      :tyqual (print-type-qual specqual.unwrap pstate)
-     :alignspec (print-alignspec specqual.unwrap pstate))
+     :alignspec (print-align-spec specqual.unwrap pstate))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1978,13 +1978,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-alignspec ((alignspec alignspecp) (pstate pristatep))
+  (define print-align-spec ((alignspec align-specp) (pstate pristatep))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print an alignment specifier."
     (b* ((pstate (print-astring "_Alignas(" pstate))
          (pstate
-          (alignspec-case
+          (align-spec-case
            alignspec
            :alignas-type (print-tyname alignspec.type pstate)
            :alignas-expr (print-const-expr alignspec.arg pstate)
@@ -1998,7 +1998,7 @@
                        pstate)))
          (pstate (print-astring ")" pstate)))
       pstate)
-    :measure (alignspec-count alignspec))
+    :measure (align-spec-count alignspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2012,7 +2012,7 @@
      :tyspec (print-type-spec declspec.unwrap pstate)
      :tyqual (print-type-qual declspec.unwrap pstate)
      :funspec (print-fun-spec declspec.unwrap pstate)
-     :alignspec (print-alignspec declspec.unwrap pstate))
+     :alignspec (print-align-spec declspec.unwrap pstate))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

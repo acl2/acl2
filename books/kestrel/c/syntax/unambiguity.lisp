@@ -191,7 +191,7 @@
     (spec/qual-case specqual
                     :tyspec (type-spec-unambp specqual.unwrap)
                     :tyqual t
-                    :alignspec (alignspec-unambp specqual.unwrap))
+                    :alignspec (align-spec-unambp specqual.unwrap))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -207,15 +207,15 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define alignspec-unambp ((alignspec alignspecp))
+  (define align-spec-unambp ((alignspec align-specp))
     :returns (yes/no booleanp)
     :parents (unambiguity expr-unambps/decls)
     :short "Check if an alignment specifier is unambiguous."
-    (alignspec-case alignspec
-                    :alignas-type (tyname-unambp alignspec.type)
-                    :alignas-expr (const-expr-unambp alignspec.arg)
-                    :alignas-ambig nil)
-    :measure (alignspec-count alignspec))
+    (align-spec-case alignspec
+                     :alignas-type (tyname-unambp alignspec.type)
+                     :alignas-expr (const-expr-unambp alignspec.arg)
+                     :alignas-ambig nil)
+    :measure (align-spec-count alignspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

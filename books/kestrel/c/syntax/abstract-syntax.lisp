@@ -1583,7 +1583,7 @@
        see @(tsee spec/qual-list)."))
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
-    (:alignspec ((unwrap alignspec)))
+    (:alignspec ((unwrap align-spec)))
     :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1607,7 +1607,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum alignspec
+  (fty::deftagsum align-spec
     :parents (abstract-syntax exprs/decls)
     :short "Fixtype of alignment specifiers [C:6.7.5] [C:A.2.2]."
     :long
@@ -1627,7 +1627,7 @@
     (:alignas-type ((type tyname)))
     (:alignas-expr ((arg const-expr)))
     (:alignas-ambig ((type/arg amb-expr/tyname)))
-    :pred alignspecp
+    :pred align-specp
     :base-case-override :alignas-expr
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -1647,7 +1647,7 @@
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:funspec ((unwrap fun-spec)))
-    (:alignspec ((unwrap alignspec)))
+    (:alignspec ((unwrap align-spec)))
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 

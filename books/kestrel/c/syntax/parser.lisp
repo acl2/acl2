@@ -9053,7 +9053,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-alignment-specifier ((first-span spanp) (pstate parstatep))
-    :returns (mv erp (alignspec alignspecp) (span spanp) (new-pstate parstatep))
+    :returns (mv erp (alignspec align-specp) (span spanp) (new-pstate parstatep))
     :parents (parser parse-exprs/decls)
     :short "Parse an alignment specifier."
     :long
@@ -9062,7 +9062,7 @@
       "This is called after parsing the initial @('_Alignas') keyword.")
      (xdoc::p
       "The span of the @('_Alignas') keyword is passed as input here."))
-    (b* (((reterr) (irr-alignspec) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-align-spec) (irr-span) (irr-parstate))
          ;; There must be an open parenthesis.
          ((erp & pstate) (read-punctuator "(" pstate)) ; (
          ;; Next comes a possibly ambiguous expression or type name.
@@ -9075,17 +9075,17 @@
        expr/tyname
        ;; If we parsed an expression,
        ;; we return an @('_Alignas') with an expression.
-       :expr (retok (alignspec-alignas-expr (const-expr expr/tyname.unwrap))
+       :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.unwrap))
                     (span-join first-span last-span)
                     pstate)
        ;; If we parsed a type name,
        ;; we return an @('_Alignas') with a type name.
-       :tyname (retok (alignspec-alignas-type expr/tyname.unwrap)
+       :tyname (retok (align-spec-alignas-type expr/tyname.unwrap)
                       (span-join first-span last-span)
                       pstate)
        ;; If we parsed an ambiguous expression or type name,
        ;; we return an ambiguous @('_Alignas').
-       :ambig (retok (alignspec-alignas-ambig expr/tyname.unwrap)
+       :ambig (retok (align-spec-alignas-ambig expr/tyname.unwrap)
                      (span-join first-span last-span)
                      pstate)))
     :measure (two-nats-measure (parsize pstate) 0))
