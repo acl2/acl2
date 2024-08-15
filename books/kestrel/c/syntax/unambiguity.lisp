@@ -228,7 +228,7 @@
                    :tyspec (type-spec-unambp declspec.unwrap)
                    :tyqual t
                    :funspec t
-                   :align t)
+                   :align (align-spec-unambp declspec.unwrap))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
