@@ -35,6 +35,7 @@
 (include-book "defalist")
 (include-book "defarbrec")
 (include-book "defarbrec-doc")
+(include-book "defconstrained-recognizer")
 (include-book "defconsts")
 (include-book "defenum")
 (include-book "deflist")
