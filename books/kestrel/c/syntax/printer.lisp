@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-operations")
 (include-book "concrete-syntax")
+(include-book "unambiguity")
 
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))
@@ -3352,6 +3353,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-fileset ((tunits transunit-ensemblep) (options prioptp))
+  :guard (transunit-ensemble-unambp tunits)
   :returns (fileset filesetp)
   :short "Print a file set."
   :long
