@@ -15,8 +15,8 @@
 (include-book "kestrel/fty/defbytelist-standard-instances" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
-(include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
 (include-book "bytes")

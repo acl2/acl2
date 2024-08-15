@@ -10,10 +10,6 @@
 
 (in-package "STD")
 
-(include-book "defconstrained-recognizer")
-
-(include-book "deffixer")
-
 (include-book "definj")
 (include-book "definj-doc")
 
@@ -42,8 +38,6 @@
 
 (include-book "deftutorial")
 (include-book "deftutorial-doc")
-
-(include-book "defirrelevant")
 
 (include-book "error-value-tuples")
 
