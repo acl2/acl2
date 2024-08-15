@@ -79,6 +79,8 @@
 (include-book "kestrel/file-io-light/read-file-into-character-list" :dir :system)
 ;(in-theory (disable revappend-removal)) ;caused problems (though this may be a better approach to adopt someday)
 (include-book "kestrel/acl2-arrays/print-array" :dir :system)
+(include-book "kestrel/utilities/real-time-since" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/bv/bvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvmod" :dir :system))
@@ -98,6 +100,7 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
+(local (include-book "kestrel/utilities/read-run-time" :dir :system))
 
 (in-theory (disable open-output-channels open-output-channel-p1)) ; drop?
 
@@ -2347,8 +2350,10 @@
                   :stobjs state))
   (b* ((counterexample-arg (if counterexamplep "y" "n"))
        (max-conflicts-string (if max-conflicts (nat-to-string max-conflicts) "-1")) ; -1 means no max
+       ((mv start-real-time state) (get-real-time state))
        ((mv status state) (call-axe-script "callstp.bash" (list input-filename output-filename max-conflicts-string counterexample-arg) state))
        ;;(- (cw "STP exit status: ~x0~%" status))
+       ((mv elapsed-time state) (real-time-since start-real-time state))
        )
     ;;(prog2$ (cw "sys-call status: ~x0~%" status)
     ;;(STP seems to exit with status 0 for both Valid and Invalid examples and with non-zero status for errors.)
@@ -2370,13 +2375,17 @@
                     (mv *error* state))
           ;; Check whether the output file contains "Valid."
           (if (equal chars '(#\V #\a #\l #\i #\d #\. #\Newline)) ;;Look for "Valid."
-              (prog2$ (and (print-level-at-least-tp print) (cw "  STP said Valid."))
+              (prog2$ (and (print-level-at-least-tp print) (progn$ (cw "  STP said Valid in ")
+                                                                   (print-to-hundredths elapsed-time)
+                                                                   (cw "s.~%" )))
                       (mv *valid* state))
             ;; Test whether chars end with "Invalid.", perhaps preceded by a printed counterexample.
             (if (and (<= 9 (len chars)) ;9 is the length of "Invalid." followed by newline - todo make a function 'char-list-ends-with'
                      (equal (nthcdr (- (len chars) 9) chars)
                             '(#\I #\n #\v #\a #\l #\i #\d #\. #\Newline))) ;;Look for "Invalid."
-                (b* ((- (and (print-level-at-least-tp print) (cw "  STP said Invalid.~%")))
+                (b* ((- (and (print-level-at-least-tp print) (progn$ (cw "  STP said Invalid in ")
+                                                                     (print-to-hundredths elapsed-time)
+                                                                     (cw "s.~%" ))))
                      ;; Print the counterexample (TODO: What if it is huge?):
                      (counterexamplep-chars (butlast chars 9))
 ;(- (and print counterexamplep (cw "~%Counterexample:~%~S0" (coerce counterexamplep-chars 'string))))
@@ -2391,7 +2400,9 @@
                       state))
               (if (or ;(equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\, #\Space  #\e #\x #\i #\t #\i #\n #\g #\.)) ;add newline??
                    (equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\. #\Newline))) ;;Look for "Timed Out."
-                  (prog2$ (and print (cw "  STP timed out."))
+                  (prog2$ (and print (progn$ (cw "  STP timed out (max conflicts) in ")
+                                             (print-to-hundredths elapsed-time)
+                                             (cw "s.~%")))
                           (mv *timedout* state))
                 (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~x0).  Check the .out file: ~x1.~%" chars output-filename)
                         (mv *error* state))))))))))
