@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-operations")
+(include-book "unambiguity")
 
 (include-book "kestrel/std/util/error-value-tuples" :dir :system)
 
@@ -113,7 +114,21 @@
     " to handle errors in the disambiguator.")
    (xdoc::p
     "The fixtype and functions in the implementation of the disambiguator
-     are prefixed by @('dimb'), which stands for `DIsaMBiguator'."))
+     are prefixed by @('dimb'), which stands for `DIsaMBiguator'.")
+   (xdoc::p
+    "For now we leave the GCC extensions unchanged,
+     i.e. we do not apply the disambiguation to them,
+     even though they may contain expression.
+     Some initial experiments reveal that we will need to
+     treat these GCC extensions in a more dedicated way.
+     For instance, the @('access') attribute may include
+     the arguments @('read_only'), @('write_only'), and @('read_write').
+     Grammatically these are expressions,
+     but it seems that they have just a special meaning, like keywords,
+     in the context of the @('access') attribute,
+     but they are likely not keywords elsewhere.
+     A naive treatment would attempt to resolve those arguments,
+     which are not in the disambiguation table."))
   :order-subtopics t
   :default-parent t)
 
@@ -324,6 +339,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule expr-unambp-of-apply-pre-inc/dec-ops
+  :short "Preservation of unambiguity by @(tsee apply-pre-inc/dec-ops)."
+  (implies (expr-unambp expr)
+           (expr-unambp (apply-pre-inc/dec-ops inc/dec expr)))
+  :induct t
+  :enable (apply-pre-inc/dec-ops
+           expr-unambp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule expr-unambp-of-apply-post-inc/dec-ops
+  :short "Preservation of unambiguity by @(tsee apply-post-inc/dec-ops)."
+  (implies (expr-unambp expr)
+           (expr-unambp (apply-post-inc/dec-ops expr inc/dec)))
+  :induct t
+  :enable (apply-post-inc/dec-ops
+           expr-unambp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule expr-list-unambp-of-expr-to-asg-expr-list
+  :short "Preservation of unambiguity by @(tsee expr-to-asg-expr-list)."
+  (implies (expr-unambp expr)
+           (expr-list-unambp (expr-to-asg-expr-list expr)))
+  :induct t
+  :enable (expr-to-asg-expr-list
+           expr-unambp
+           expr-list-unambp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule expr-unambp-of-check-expr-mul
+  :short "Preservation of unambiguity by @(tsee check-expr-mul)."
+  (b* (((mv yes/no arg1 arg2) (check-expr-mul expr)))
+    (implies (and (expr-unambp expr)
+                  yes/no)
+             (and (expr-unambp arg1)
+                  (expr-unambp arg2))))
+  :enable (check-expr-mul expr-unambp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule expr-unambp-of-check-expr-binary
+  :short "Preservation of unambiguity by @(tsee check-expr-binary)."
+  (b* (((mv yes/no & arg1 arg2) (check-expr-binary expr)))
+    (implies (and (expr-unambp expr)
+                  yes/no)
+             (and (expr-unambp arg1)
+                  (expr-unambp arg2))))
+  :enable (check-expr-binary expr-unambp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define dimb-cast/call-to-cast ((tyname tynamep)
                                 (inc/dec inc/dec-op-listp)
                                 (arg exprp))
@@ -355,7 +423,15 @@
      We apply them and we form a cast expression."))
   (make-expr-cast :type tyname
                   :arg (apply-pre-inc/dec-ops inc/dec arg))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/call-to-cast
+    (expr-unambp cast-expr)
+    :hyp (and (tyname-unambp tyname)
+              (expr-unambp arg))
+    :hints (("Goal" :in-theory (enable expr-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -402,6 +478,7 @@
   :hooks (:fix)
 
   :prepwork
+
   ((define dimb-cast/call-to-call-loop ((fun exprp) (rest exprp))
      :returns (new-expr exprp)
      :parents nil
@@ -430,7 +507,23 @@
      :measure (expr-count rest)
      :hints (("Goal" :in-theory (enable o< o-finp)))
      :verify-guards :after-returns
-     :hooks (:fix))))
+     :hooks (:fix)
+
+     ///
+
+     (defret expr-unambp-of-dimb-cast/call-to-call-loop
+       (expr-unambp new-expr)
+       :hyp (and (expr-unambp fun)
+                 (expr-unambp rest))
+       :hints (("Goal" :induct t :in-theory (enable expr-unambp irr-expr))))))
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/call-to-call
+    (expr-unambp call-expr)
+    :hyp (and (expr-unambp fun)
+              (expr-unambp rest))
+    :hints (("Goal" :expand (expr-unambp (expr-paren fun))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -451,7 +544,15 @@
                   :arg (make-expr-unary
                         :op (unop-indir)
                         :arg (apply-pre-inc/dec-ops inc/dec arg)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/mul-to-cast
+    (expr-unambp cast-expr)
+    :hyp (and (tyname-unambp tyname)
+              (expr-unambp arg))
+    :hints (("Goal" :in-theory (enable expr-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -471,7 +572,15 @@
   (make-expr-binary :op (binop-mul)
                     :arg1 (apply-post-inc/dec-ops arg1 inc/dec)
                     :arg2 arg2)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/mul-to-mul
+    (expr-unambp mul-expr)
+    :hyp (and (expr-unambp arg1)
+              (expr-unambp arg2))
+    :hints (("Goal" :in-theory (enable expr-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -532,7 +641,15 @@
   :measure (expr-count arg)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/addsub-to-cast
+    (expr-unambp expr)
+    :hyp (and (tyname-unambp tyname)
+              (expr-unambp arg))
+    :hints (("Goal" :induct t :in-theory (enable expr-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -557,7 +674,15 @@
   (make-expr-binary :op add/sub
                     :arg1 (apply-post-inc/dec-ops arg1 inc/dec)
                     :arg2 arg2)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/addsub-to-addsub
+    (expr-unambp expr)
+    :hyp (and (expr-unambp arg1)
+              (expr-unambp arg2))
+    :hints (("Goal" :in-theory (enable expr-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -594,7 +719,15 @@
   :measure (expr-count arg)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/and-to-cast
+    (expr-unambp expr)
+    :hyp (and (tyname-unambp tyname)
+              (expr-unambp arg))
+    :hints (("Goal" :induct t :in-theory (enable expr-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -614,7 +747,15 @@
   (make-expr-binary :op (binop-bitand)
                     :arg1 (apply-post-inc/dec-ops arg1 inc/dec)
                     :arg2 arg2)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/and-to-and
+    (expr-unambp expr)
+    :hyp (and (expr-unambp arg1)
+              (expr-unambp arg2))
+    :hints (("Goal" :in-theory (enable expr-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2179,17 +2320,305 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   :verify-guards :after-returns
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ///
 
+  (fty::deffixequiv-mutual dimb-exprs/decls)
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deffixequiv-mutual dimb-exprs/decls))
+  (defret-mutual dimb-exprs/decls
+    (defret expr-unambp-of-dimb-expr
+      (implies (not erp)
+               (expr-unambp new-expr))
+      :fn dimb-expr)
+    (defret expr-list-unambp-of-dimb-expr-list
+      (implies (not erp)
+               (expr-list-unambp new-exprs))
+      :fn dimb-expr-list)
+    (defret expr-option-unambp-of-dimb-expr-option
+      (implies (not erp)
+               (expr-option-unambp new-expr?))
+      :fn dimb-expr-option)
+    (defret const-expr-unambp-of-dimb-const-expr
+      (implies (not erp)
+               (const-expr-unambp new-cexpr))
+      :fn dimb-const-expr)
+    (defret const-expr-option-unambp-of-dimb-const-expr-option
+      (implies (not erp)
+               (const-expr-option-unambp new-cexpr?))
+      :fn dimb-const-expr-option)
+    (defret genassoc-unambp-of-dimb-genassoc
+      (implies (not erp)
+               (genassoc-unambp new-assoc))
+      :fn dimb-genassoc)
+    (defret genassoc-list-unambp-of-dimb-genassoc-list
+      (implies (not erp)
+               (genassoc-list-unambp new-assocs))
+      :fn dimb-genassoc-list)
+    (defret type-spec-unambp-of-dimb-type-spec
+      (implies (not erp)
+               (type-spec-unambp new-tyspec))
+      :fn dimb-type-spec)
+    (defret spec/qual-unambp-of-dimb-spec/qual
+      (implies (not erp)
+               (spec/qual-unambp new-specqual))
+      :fn dimb-spec/qual)
+    (defret spec/qual-list-unambp-of-dimb-spec/qual-list
+      (implies (not erp)
+               (spec/qual-list-unambp new-specquals))
+      :fn dimb-spec/qual-list)
+    (defret alignspec-unambp-of-dimb-alignspec
+      (implies (not erp)
+               (alignspec-unambp new-alignspec))
+      :fn dimb-alignspec)
+    (defret declspec-unambp-of-dimb-declspec
+      (implies (not erp)
+               (declspec-unambp new-declspec))
+      :fn dimb-declspec)
+    (defret declspec-list-unambp-of-dimb-declspec-list
+      (implies (not erp)
+               (declspec-list-unambp new-declspecs))
+      :fn dimb-declspec-list)
+    (defret initer-unambp-of-dimb-initer
+      (implies (not erp)
+               (initer-unambp new-initer))
+      :fn dimb-initer)
+    (defret initer-option-unambp-of-dimb-initer-option
+      (implies (not erp)
+               (initer-option-unambp new-initer?))
+      :fn dimb-initer-option)
+    (defret desiniter-unambp-of-dimb-desiniter
+      (implies (not erp)
+               (desiniter-unambp new-desiniter))
+      :fn dimb-desiniter)
+    (defret desiniter-list-unambp-of-dimb-desiniter-list
+      (implies (not erp)
+               (desiniter-list-unambp new-desiniters))
+      :fn dimb-desiniter-list)
+    (defret designor-unambp-of-dimb-designor
+      (implies (not erp)
+               (designor-unambp new-design))
+      :fn dimb-designor)
+    (defret designor-list-unambp-of-dimb-designor-list
+      (implies (not erp)
+               (designor-list-unambp new-designs))
+      :fn dimb-designor-list)
+    (defret declor-unambp-of-dimb-declor
+      (implies (not erp)
+               (declor-unambp new-declor))
+      :fn dimb-declor)
+    (defret declor-option-unambp-of-dimb-declor-option
+      (implies (not erp)
+               (declor-option-unambp new-declor?))
+      :fn dimb-declor-option)
+    (defret dirdeclor-unambp-of-dimb-dirdeclor
+      (implies (not erp)
+               (dirdeclor-unambp new-dirdeclor))
+      :fn dimb-dirdeclor)
+    (defret absdeclor-unambp-of-dimb-absdeclor
+      (implies (not erp)
+               (absdeclor-unambp new-absdeclor))
+      :fn dimb-absdeclor)
+    (defret absdeclor-option-unambp-of-dimb-absdeclor-option
+      (implies (not erp)
+               (absdeclor-option-unambp new-absdeclor?))
+      :fn dimb-absdeclor-option)
+    (defret dirabsdeclor-unambp-of-dimb-dirabsdeclor
+      (implies (not erp)
+               (dirabsdeclor-unambp new-dirabsdeclor))
+      :fn dimb-dirabsdeclor)
+    (defret dirabsdeclor-option-unambp-of-dimb-dirabsdeclor-option
+      (implies (not erp)
+               (dirabsdeclor-option-unambp new-dirabsdeclor?))
+      :fn dimb-dirabsdeclor-option)
+    (defret paramdecl-unambp-of-dimb-paramdecl
+      (implies (not erp)
+               (paramdecl-unambp new-paramdecl))
+      :fn dimb-paramdecl)
+    (defret paramdecl-list-unambp-of-dimb-paramdecl-list
+      (implies (not erp)
+               (paramdecl-list-unambp new-paramdecls))
+      :fn dimb-paramdecl-list)
+    (defret paramdeclor-unambp-of-dimb-paramdeclor
+      (implies (not erp)
+               (paramdeclor-unambp new-paramdeclor))
+      :fn dimb-paramdeclor)
+    (defret tyname-unambp-of-dimb-tyname
+      (implies (not erp)
+               (tyname-unambp new-tyname))
+      :fn dimb-tyname)
+    (defret strunispec-unambp-of-dimb-strunispec
+      (implies (not erp)
+               (strunispec-unambp new-strunispec))
+      :fn dimb-strunispec)
+    (defret structdecl-unambp-of-dimb-structdecl
+      (implies (not erp)
+               (structdecl-unambp new-structdecl))
+      :fn dimb-structdecl)
+    (defret structdecl-list-unambp-of-dimb-structdecl-list
+      (implies (not erp)
+               (structdecl-list-unambp new-structdecls))
+      :fn dimb-structdecl-list)
+    (defret structdeclor-unambp-of-dimb-structdeclor
+      (implies (not erp)
+               (structdeclor-unambp new-structdeclor))
+      :fn dimb-structdeclor)
+    (defret structdeclor-list-unambp-of-dimb-structdeclor-list
+      (implies (not erp)
+               (structdeclor-list-unambp new-structdeclors))
+      :fn dimb-structdeclor-list)
+    (defret enumspec-unambp-of-dimb-enumspec
+      (implies (not erp)
+               (enumspec-unambp new-enumspec))
+      :fn dimb-enumspec)
+    (defret enumer-unambp-of-dimb-enumer
+      (implies (not erp)
+               (enumer-unambp new-enumer))
+      :fn dimb-enumer)
+    (defret enumer-list-unambp-of-dimb-enumer-list
+      (implies (not erp)
+               (enumer-list-unambp new-enumers))
+      :fn dimb-enumer-list)
+    (defret statassert-unambp-of-dimb-statassert
+      (implies (not erp)
+               (statassert-unambp new-statassert))
+      :fn dimb-statassert)
+    (defret expr/tyname-unambp-of-dimb-amb-expr/tyname
+      (implies (not erp)
+               (expr/tyname-unambp expr-or-tyname))
+      :fn dimb-amb-expr/tyname)
+    (defret declor/absdeclor-unambp-of-dimb-amb-declor/absdeclor
+      (implies (not erp)
+               (declor/absdeclor-unambp declor-or-absdeclor))
+      :fn dimb-amb-declor/absdeclor)
+    :hints (("Goal"
+             :in-theory (enable expr-unambp
+                                expr-list-unambp
+                                expr-option-unambp
+                                const-expr-unambp
+                                const-expr-option-unambp
+                                genassoc-unambp
+                                genassoc-list-unambp
+                                type-spec-unambp
+                                spec/qual-unambp
+                                spec/qual-list-unambp
+                                alignspec-unambp
+                                declspec-unambp
+                                declspec-list-unambp
+                                initer-unambp
+                                initer-option-unambp
+                                desiniter-unambp
+                                desiniter-list-unambp
+                                designor-unambp
+                                designor-list-unambp
+                                declor-unambp
+                                declor-option-unambp
+                                dirdeclor-unambp
+                                absdeclor-unambp
+                                absdeclor-option-unambp
+                                dirabsdeclor-unambp
+                                dirabsdeclor-option-unambp
+                                paramdecl-unambp
+                                paramdecl-list-unambp
+                                paramdeclor-unambp
+                                tyname-unambp
+                                strunispec-unambp
+                                structdecl-unambp
+                                structdecl-list-unambp
+                                structdeclor-unambp
+                                structdeclor-list-unambp
+                                enumspec-unambp
+                                enumer-unambp
+                                enumer-list-unambp
+                                statassert-unambp
+                                expr/tyname-unambp
+                                declor/absdeclor-unambp
+                                dimb-expr
+                                dimb-expr-list
+                                dimb-expr-option
+                                dimb-const-expr
+                                dimb-const-expr-option
+                                dimb-genassoc
+                                dimb-genassoc-list
+                                dimb-type-spec
+                                dimb-spec/qual
+                                dimb-spec/qual-list
+                                dimb-alignspec
+                                dimb-declspec
+                                dimb-declspec-list
+                                dimb-initer
+                                dimb-initer-option
+                                dimb-desiniter
+                                dimb-desiniter-list
+                                dimb-designor
+                                dimb-designor-list
+                                dimb-declor
+                                dimb-declor-option
+                                dimb-dirdeclor
+                                dimb-absdeclor
+                                dimb-absdeclor-option
+                                dimb-dirabsdeclor
+                                dimb-dirabsdeclor-option
+                                dimb-paramdecl
+                                dimb-paramdecl-list
+                                dimb-paramdeclor
+                                dimb-tyname
+                                dimb-strunispec
+                                dimb-structdecl
+                                dimb-structdecl-list
+                                dimb-structdeclor
+                                dimb-structdeclor-list
+                                dimb-enumspec
+                                dimb-enumer
+                                dimb-enumer-list
+                                dimb-statassert
+                                dimb-amb-expr/tyname
+                                dimb-amb-declor/absdeclor
+                                expr-option-some->val
+                                const-expr-option-some->val
+                                initer-option-some->val
+                                declor-option-some->val
+                                absdeclor-option-some->val
+                                dirabsdeclor-option-some->val))
+            (cond
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-expr-option)
+                               clause)
+              '(:expand (dimb-expr-option expr? table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-const-expr-option)
+                               clause)
+              '(:expand (dimb-const-expr-option cexpr? table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-initer-option)
+                               clause)
+              '(:expand (dimb-initer-option initer? table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-declor-option)
+                               clause)
+              '(:expand (dimb-declor-option declor? table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-dirdeclor)
+                               clause)
+              '(:expand (dimb-dirdeclor dirdeclor fundefp table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-absdeclor)
+                               clause)
+              '(:expand (dimb-absdeclor absdeclor table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-absdeclor-option)
+                               clause)
+              '(:expand (dimb-absdeclor-option absdeclor? table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-dirabsdeclor-option)
+                               clause)
+              '(:expand (dimb-dirabsdeclor-option dirabsdeclor? table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-dirabsdeclor)
+                               clause)
+              '(:expand (dimb-dirabsdeclor dirabsdeclor table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-tyname)
+                               clause)
+              '(:expand (dimb-tyname tyname table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-structdeclor)
+                               clause)
+              '(:expand (dimb-structdeclor structdeclor table)))
+             ((acl2::occur-lst '(acl2::flag-is 'dimb-enumer)
+                               clause)
+              '(:expand (dimb-enumer enumer table)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2218,7 +2647,14 @@
        (table (dimb-add-ident ident kind table)))
     (retok (make-initdeclor :declor new-declor :init? new-init?)
            table))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret initdeclor-unambp-of-dimb-initdeclor
+    (implies (not erp)
+             (initdeclor-unambp new-ideclor))
+    :hints (("Goal" :in-theory (enable initdeclor-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2240,7 +2676,14 @@
        ((erp new-ideclors table)
         (dimb-initdeclor-list (cdr ideclors) kind table)))
     (retok (cons new-ideclor new-ideclors) table))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret initdeclor-list-unambp-of-dimb-initdeclor-list
+    (implies (not erp)
+             (initdeclor-list-unambp new-ideclors))
+    :hints (("Goal" :induct t :in-theory (enable initdeclor-list-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2250,9 +2693,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Even though GCC attributes may contain expressions,
-     for now we ignore those expressions, and leave attributes unchanged.
-     First we process the declaration specifiers,
+    "First we process the declaration specifiers,
      which, as explained in @(tsee dimb-declspec),
      determine whether the (one or more) identifiers
      introduced by the declarators
@@ -2276,7 +2717,14 @@
      :statassert
      (b* (((erp new-statassert table) (dimb-statassert decl.unwrap table)))
        (retok (decl-statassert new-statassert) table))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret decl-unambp-of-dimb-decl
+    (implies (not erp)
+             (decl-unambp new-decl))
+    :hints (("Goal" :in-theory (enable decl-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2293,7 +2741,14 @@
        ((erp new-decls table) (dimb-decl-list (cdr decls) table)))
     (retok (cons new-decl new-decls) table))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret decl-list-unambp-of-dimb-decl-list
+    (implies (not erp)
+             (decl-list-unambp new-decls))
+    :hints (("Goal" :induct t :in-theory (enable decl-list-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2312,7 +2767,14 @@
      :const (b* (((erp new-cexpr table) (dimb-const-expr label.unwrap table)))
               (retok (label-const new-cexpr) table))
      :default (retok (label-fix label) (dimb-table-fix table))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret label-unambp-of-dimb-label
+    (implies (not erp)
+             (label-unambp new-label))
+    :hints (("Goal" :in-theory (enable label-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2368,12 +2830,21 @@
                       because at most one must succeed."
                      (amb-decl/stmt-fix decl/stmt)
                      (dimb-table-fix table))))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret decl/stmt-unambp-of-dimb-amb-decl/stmt
+    (implies (not erp)
+             (decl/stmt-unambp decl-or-stmt))
+    :hints (("Goal" :in-theory (enable decl/stmt-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines dimb-stmts/blocks
   :short "Disambiguate statements, blocks, and related entities."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-stmt ((stmt stmtp) (table dimb-tablep))
     :returns (mv erp (new-stmt stmtp) (new-table dimb-tablep))
@@ -2508,6 +2979,8 @@
          (retok (stmt-return new-expr?) table))))
     :measure (stmt-count stmt))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-block-item ((item block-itemp) (table dimb-tablep))
     :returns (mv erp (new-item block-itemp) (new-table dimb-tablep))
     :parents (disambiguator dimb-stmts/blocks)
@@ -2534,6 +3007,8 @@
           :stmt (retok (block-item-stmt (stmt-expr decl/stmt.unwrap)) table)))))
     :measure (block-item-count item))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-block-item-list ((items block-item-listp) (table dimb-tablep))
     :returns (mv erp (new-items block-item-listp) (new-table dimb-tablep))
     :parents (disambiguator dimb-stmts/blocks)
@@ -2545,13 +3020,39 @@
       (retok (cons new-item new-items) table))
     :measure (block-item-list-count items))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv-mutual dimb-stmts/blocks))
+  (fty::deffixequiv-mutual dimb-stmts/blocks)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual stmts/blocks-unambp-of-dimb-stmts/blocks
+    (defret stmt-unambp-of-dimb-stmt
+      (implies (not erp)
+               (stmt-unambp new-stmt))
+      :fn dimb-stmt)
+    (defret block-item-unambp-of-dimb-block-item
+      (implies (not erp)
+               (block-item-unambp new-item))
+      :fn dimb-block-item)
+    (defret block-item-list-unambp-of-dimb-block-item-list
+      (implies (not erp)
+               (block-item-list-unambp new-items))
+      :fn dimb-block-item-list)
+    :hints (("Goal" :in-theory (enable stmt-unambp
+                                       block-item-unambp
+                                       block-item-list-unambp
+                                       dimb-stmt
+                                       dimb-block-item
+                                       dimb-block-item-list
+                                       dimb-amb-decl/stmt
+                                       expr-option-unambp-when-expr-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2618,7 +3119,15 @@
                         :decls new-decls
                         :body (stmt-compound new-items))
            table))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret fundef-unambp-of-dimb-fundef
+    (implies (not erp)
+             (fundef-unambp new-fundef))
+    :hints (("Goal" :in-theory (enable fundef-unambp
+                                       stmt-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2634,7 +3143,14 @@
      :decl
      (b* (((erp new-decl table) (dimb-decl extdecl.unwrap table)))
        (retok (extdecl-decl new-decl) table))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret extdecl-unambp-of-dimb-extdecl
+    (implies (not erp)
+             (extdecl-unambp new-extdecl))
+    :hints (("Goal" :in-theory (enable extdecl-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2646,7 +3162,14 @@
        ((erp new-edecl table) (dimb-extdecl (car edecls) table))
        ((erp new-edecls table) (dimb-extdecl-list (cdr edecls) table)))
     (retok (cons new-edecl new-edecls) table))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret extdecl-list-unambp-of-dimb-extdecl-list
+    (implies (not erp)
+             (extdecl-list-unambp new-edecls))
+    :hints (("Goal" :induct t :in-theory (enable extdecl-list-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2692,7 +3215,14 @@
            table))
        ((erp new-edecls &) (dimb-extdecl-list edecls table)))
     (retok (transunit new-edecls)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret transunit-unambp-of-dimb-transunit
+    (implies (not erp)
+             (transunit-unambp new-tunit))
+    :hints (("Goal" :in-theory (enable transunit-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2713,6 +3243,7 @@
   :hooks (:fix)
 
   :prepwork
+
   ((define dimb-transunit-ensemble-loop ((tumap filepath-transunit-mapp)
                                          (gcc booleanp))
      :returns (mv erp (new-tumap filepath-transunit-mapp
@@ -2726,6 +3257,22 @@
            (dimb-transunit-ensemble-loop (omap::tail tumap) gcc)))
        (retok (omap::update path new-tunit new-tumap)))
      :verify-guards :after-returns
+
      ///
+
      (fty::deffixequiv dimb-transunit-ensemble-loop
-       :args ((gcc booleanp))))))
+       :args ((gcc booleanp)))
+
+     (defret transunit-ensemble-unambp-loop-of-dimb-transunit-ensemble-loop
+       (implies (not erp)
+                (transunit-ensemble-unambp-loop new-tumap))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable transunit-ensemble-unambp-loop))))))
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-dimb-transunit-ensemble
+    (implies (not erp)
+             (transunit-ensemble-unambp new-tuens))
+    :hints (("Goal" :in-theory (enable transunit-ensemble-unambp)))))

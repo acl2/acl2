@@ -17,6 +17,7 @@
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")
+(include-book "unambiguity")
 (include-book "validator")
 (include-book "printer")
 (include-book "input-files")
@@ -139,6 +140,7 @@
                     preprocessing
                     parser
                     disambiguator
+                    unambiguity
                     validator
                     printer
                     input-files
