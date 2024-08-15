@@ -167,6 +167,16 @@
                       but instead its value is ~x1."
                      const
                      tunits/files)))
+       ((when (and (eq process :print)
+                   (not (transunit-ensemble-unambp tunits/files))))
+        (reterr (msg "The translation unit that is ~
+                      the value of the ~x0 named constant ~
+                      specified by the :CONST input ~
+                      must be unambiguous, ~
+                      but instead it is ~x1, ~
+                      which contains ambiguities."
+                     const
+                     tunits/files)))
        ;; Process :CONST-FILES input.
        (const-files-option (assoc-eq :const-files options))
        (const-files (if const-files-option
@@ -248,7 +258,8 @@
 
   (defret transunit-ensemblep-of-output-files-process-inputs
     (implies (equal process :print)
-             (transunit-ensemblep tunits/files))
+             (and (transunit-ensemblep tunits/files)
+                  (transunit-ensemble-unambp tunits/files)))
     :hints (("Goal" :in-theory (enable tunitens/fileset-p))))
 
   (defret filesetp-of-output-files-process-inputs
@@ -266,7 +277,8 @@
   :guard (and (implies (equal process :write)
                        (filesetp tunits/files))
               (implies (equal process :print)
-                       (transunit-ensemblep tunits/files)))
+                       (and (transunit-ensemblep tunits/files)
+                            (transunit-ensemble-unambp tunits/files))))
   :returns (mv erp (events pseudo-event-form-listp) state)
   :short "Generate the files and (if any) the events."
   :long

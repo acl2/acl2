@@ -71,7 +71,9 @@
        a fileset
        (i.e. a value of type @(tsee fileset))
        if the @(':process') input (see below) is @(':write'),
-       or a translation unit ensemble
+       or an "
+      (xdoc::seetopic "unambiguity" "unambiguous")
+      " translation unit ensemble
        (i.e. a value of type @(tsee transunit-ensemble))
        if the @(':process') input is @(':print').")
      (xdoc::p
