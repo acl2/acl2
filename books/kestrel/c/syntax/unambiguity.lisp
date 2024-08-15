@@ -548,7 +548,52 @@
 
   ///
 
-  (fty::deffixequiv-mutual exprs/decls-unambp))
+  (fty::deffixequiv-mutual exprs/decls-unambp)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (std::deflist expr-list-unambp (x)
+    :guard (expr-listp x)
+    :parents nil
+    (expr-unambp x))
+
+  (defruled expr-option-unambp-when-expr-unambp
+    (implies (expr-unambp expr)
+             (expr-option-unambp expr))
+    :expand (expr-option-unambp expr)
+    :enable expr-option-some->val))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr/tyname-unambp ((expr/tyname expr/tyname-p))
+  :returns (yes/no booleanp)
+  :short "Check if an expression or type name is unambiguous."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This fixtype does not appear in the abstract syntax trees,
+     but it is the result of @(tsee dimb-amb-expr/tyname),
+     so we need to define this predicate to state and prove, by induction,
+     that the disambiguator returns unambiguous abstract syntax."))
+  (expr/tyname-case expr/tyname
+                    :expr (expr-unambp expr/tyname.unwrap)
+                    :tyname (tyname-unambp expr/tyname.unwrap))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define declor/absdeclor-unambp ((declor/absdeclor declor/absdeclor-p))
+  :returns (yes/no booleanp)
+  :short "Check if a declarator or abstract declarator is unambiguous."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The purpose of this predicate is similar to @(tsee expr/tyname-unambp):
+     see its documentation."))
+  (declor/absdeclor-case declor/absdeclor
+                         :declor (declor-unambp declor/absdeclor.unwrap)
+                         :absdeclor (absdeclor-unambp declor/absdeclor.unwrap))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -603,8 +648,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define decl/stmt-unambp ((decl/stmt decl/stmt-p))
+  :returns (yes/no booleanp)
+  :short "Check if a declaration or statement is unambiguous."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The purpose of this predicate is similar to @(tsee expr/tyname-unambp):
+     see its documentation."))
+  (decl/stmt-case decl/stmt
+                  :decl (decl-unambp decl/stmt.unwrap)
+                  :stmt (expr-unambp decl/stmt.unwrap))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines stmts/blocks-unambp
   :short "Check if statements, blocks, and related entities."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define stmt-unambp ((stmt stmtp))
     :returns (yes/no booleanp)
@@ -641,6 +703,8 @@
                :return (expr-option-unambp stmt.expr?))
     :measure (stmt-count stmt))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define block-item-unambp ((item block-itemp))
     :returns (yes/no booleanp)
     :parents (unambiguity stmts/blocks-unambp)
@@ -651,6 +715,8 @@
                      :ambig nil)
     :measure (block-item-count item))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define block-item-list-unambp ((items block-item-listp))
     :returns (yes/no booleanp)
     :parents (unambiguity stmts/blocks-unambp)
@@ -659,6 +725,8 @@
         (and (block-item-unambp (car items))
              (block-item-list-unambp (cdr items))))
     :measure (block-item-list-count items))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
@@ -712,10 +780,26 @@
   :short "Check if a translation unit ensemble is unambiguous."
   (transunit-ensemble-unambp-loop (transunit-ensemble->unwrap tunits))
   :hooks (:fix)
+
   :prepwork
+
   ((define transunit-ensemble-unambp-loop ((map filepath-transunit-mapp))
      :returns (yes/no booleanp)
      :parents nil
      (or (omap::emptyp map)
          (and (transunit-unambp (omap::head-val map))
-              (transunit-ensemble-unambp-loop (omap::tail map)))))))
+              (transunit-ensemble-unambp-loop (omap::tail map))))
+
+     ///
+
+     (defrule transunit-ensemble-unambp-loop-of-update
+       (implies (and (transunit-unambp tunit)
+                     (transunit-ensemble-unambp-loop tumap))
+                (transunit-ensemble-unambp-loop (omap::update path tunit tumap)))
+       :induct t
+       :enable (omap::update
+                omap::emptyp
+                omap::mfix
+                omap::mapp
+                omap::head
+                omap::tail)))))
