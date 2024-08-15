@@ -1670,17 +1670,7 @@
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
-           ;; We temporarily allow an ambiguous sizeof expression
-           ;; as if its argument is an expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :sizeof-ambig
-           (b* ((pstate (print-astring "sizeof(" pstate))
-                (pstate (print-expr (amb-expr/tyname->expr expr.expr/tyname)
-                                    (expr-priority-expr)
-                                    pstate))
-                (pstate (print-astring ")" pstate)))
-             pstate)
+           :sizeof-ambig (prog2$ (impossible) (pristate-fix pstate))
            :alignof
            (b* ((pstate (if expr.uscores
                             (print-astring "__alignof__(" pstate)
@@ -1725,107 +1715,11 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-expr expr.next (expr-priority-asg) pstate)))
              pstate)
-           ;; We temporarily allow an ambiguous cast/mul expression
-           ;; as if it were a cast expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :cast/call-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/fun)
-                                      pstate))
-                (pstate (print-astring ") " pstate))
-                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
-                (pstate (if expr.inc/dec
-                            (print-astring " " pstate)
-                          pstate))
-                (pstate (print-astring "(" pstate))
-                (pstate (print-expr expr.arg/rest (expr-priority-expr) pstate))
-                (pstate (print-astring ")" pstate)))
-             pstate)
-           ;; We temporarily allow an ambiguous cast/mul expression
-           ;; as if it were a cast expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :cast/mul-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
-                                      pstate))
-                (pstate (print-astring ") " pstate))
-                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
-                (pstate (if expr.inc/dec
-                            (print-astring " " pstate)
-                          pstate))
-                (pstate (print-astring "* " pstate))
-                (pstate (print-expr expr.arg/arg2
-                                    (expr-priority-cast)
-                                    pstate)))
-             pstate)
-           ;; We temporarily allow an ambiguous cast/add expression
-           ;; as if it were a cast expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :cast/add-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
-                                      pstate))
-                (pstate (print-astring ") " pstate))
-                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
-                (pstate (if expr.inc/dec
-                            (print-astring " " pstate)
-                          pstate))
-                (pstate (print-astring "+ " pstate))
-                ;; We keep the expected priority to cast
-                ;; so that it is valid if it is a cast;
-                ;; if it is an addition,
-                ;; it may have harmless extra parentheses.
-                (pstate (print-expr expr.arg/arg2
-                                    (expr-priority-cast)
-                                    pstate)))
-             pstate)
-           ;; We temporarily allow an ambiguous cast/sub expression
-           ;; as if it were a cast expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :cast/sub-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
-                                      pstate))
-                (pstate (print-astring ") " pstate))
-                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
-                (pstate (if expr.inc/dec
-                            (print-astring " " pstate)
-                          pstate))
-                (pstate (print-astring "- " pstate))
-                ;; We keep the expected priority to cast
-                ;; so that it is valid if it is a cast;
-                ;; if it is a subtraction,
-                ;; it may have harmless extra parentheses.
-                (pstate (print-expr expr.arg/arg2
-                                    (expr-priority-cast)
-                                    pstate)))
-             pstate)
-           ;; We temporarily allow an ambiguous cast/and expression
-           ;; as if it were a cast expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :cast/and-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
-                                      pstate))
-                (pstate (print-astring ") " pstate))
-                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
-                (pstate (if expr.inc/dec
-                            (print-astring " " pstate)
-                          pstate))
-                (pstate (print-astring "& " pstate))
-                ;; We keep the expected priority to cast
-                ;; so that it is valid if it is a cast;
-                ;; if it is a conjunction,
-                ;; it may have harmless extra parentheses.
-                (pstate (print-expr expr.arg/arg2
-                                    (expr-priority-cast)
-                                    pstate)))
-             pstate)))
+           :cast/call-ambig (prog2$ (impossible) (pristate-fix pstate))
+           :cast/mul-ambig (prog2$ (impossible) (pristate-fix pstate))
+           :cast/add-ambig (prog2$ (impossible) (pristate-fix pstate))
+           :cast/sub-ambig (prog2$ (impossible) (pristate-fix pstate))
+           :cast/and-ambig (prog2$ (impossible) (pristate-fix pstate))))
          (pstate (if parenp
                      (print-astring ")" pstate)
                    pstate)))
@@ -1998,14 +1892,7 @@
            alignspec
            :alignas-type (print-tyname alignspec.type pstate)
            :alignas-expr (print-const-expr alignspec.arg pstate)
-           ;; We temporarily allow an ambiguous alignment specifier
-           ;; as if its argument is an expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :alignas-ambig
-           (print-expr (amb-expr/tyname->expr alignspec.type/arg)
-                       (expr-priority-expr)
-                       pstate)))
+           :alignas-ambig (prog2$ (impossible) (pristate-fix pstate))))
          (pstate (print-astring ")" pstate)))
       pstate)
     :measure (align-spec-count alignspec))
@@ -2448,15 +2335,7 @@
                      (pstate (print-absdeclor paramdeclor.unwrap pstate)))
                   pstate)
      :none (pristate-fix pstate)
-     ;; We temporarily print an ambiguous parameter declarator
-     ;; as if it were a (non-abstract) declarator.
-     ;; This must go away during static semantic elaboration,
-     ;; which should be normally done prior to printing.
-     :ambig (b* ((pstate (print-astring " " pstate))
-                 (pstate (print-declor
-                          (amb-declor/absdeclor->declor paramdeclor.unwrap)
-                          pstate)))
-              pstate))
+     :ambig (prog2$ (impossible) (pristate-fix pstate)))
     :measure (paramdeclor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3224,12 +3103,7 @@
               (pstate (print-stmt stmt.body pstate))
               (pstate (dec-pristate-indent pstate)))
            pstate)))
-     :for-ambig
-     (prog2$
-      (raise "Misusage error: ~
-              the statement ~x0 is ambiguous."
-             (stmt-fix stmt))
-      (pristate-fix pstate))
+     :for-ambig (prog2$ (impossible) (pristate-fix pstate))
      :goto
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "goto " pstate))
@@ -3275,11 +3149,7 @@
      item
      :decl (print-decl item.unwrap pstate)
      :stmt (print-stmt item.unwrap pstate)
-     ;; We temporarily print an ambiguous block item
-     ;; as if it were a declaration.
-     ;; This must go away during static semantic elaboration,
-     ;; which should be normally done prior to printing.
-     :ambig (print-decl (amb-decl/stmt->decl item.unwrap) pstate))
+     :ambig (prog2$ (impossible) (pristate-fix pstate)))
     :measure (two-nats-measure (block-item-count item) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
