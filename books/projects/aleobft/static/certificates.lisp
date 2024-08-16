@@ -138,7 +138,7 @@
     :induct t
     :enable set::in)
 
-  (defrule certificate-set->author-set-of-union
+  (defruled certificate-set->author-set-of-union
     (implies (certificate-setp certs2)
              (equal (certificate-set->author-set (set::union certs1 certs2))
                     (set::union (certificate-set->author-set certs1)

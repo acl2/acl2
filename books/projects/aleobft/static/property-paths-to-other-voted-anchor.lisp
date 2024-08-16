@@ -125,6 +125,7 @@
            certificate-sets-unequivocalp-when-subsets
            incoming+outgoing-same-round
            certificate-set-unequivocalp-when-subset
+           certificate-set->author-set-of-union
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
             certificate-set->round-set-of-union))
