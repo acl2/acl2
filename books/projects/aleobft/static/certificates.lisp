@@ -18,9 +18,6 @@
 
 (local (include-book "lib-ext"))
 
-(local (include-book "kestrel/utilities/nfix" :dir :system))
-(local (include-book "std/lists/top" :dir :system))
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
