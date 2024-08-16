@@ -3221,8 +3221,7 @@
 
   (defret transunit-unambp-of-dimb-transunit
     (implies (not erp)
-             (transunit-unambp new-tunit))
-    :hints (("Goal" :in-theory (enable transunit-unambp)))))
+             (transunit-unambp new-tunit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3266,13 +3265,10 @@
      (defret transunit-ensemble-unambp-loop-of-dimb-transunit-ensemble-loop
        (implies (not erp)
                 (transunit-ensemble-unambp-loop new-tumap))
-       :hints (("Goal"
-                :induct t
-                :in-theory (enable transunit-ensemble-unambp-loop))))))
+       :hints (("Goal" :induct t)))))
 
   ///
 
   (defret transunit-ensemble-unambp-of-dimb-transunit-ensemble
     (implies (not erp)
-             (transunit-ensemble-unambp new-tuens))
-    :hints (("Goal" :in-theory (enable transunit-ensemble-unambp)))))
+             (transunit-ensemble-unambp new-tuens))))
