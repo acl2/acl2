@@ -40,6 +40,8 @@
 (include-book "defconsts")
 (include-book "defenum")
 (include-book "deffixer")
+(include-book "defmacro-plus")
+(include-book "defmacro-plus-doc")
 (include-book "defirrelevant")
 (include-book "deflist")
 (include-book "defmapappend")

@@ -19,7 +19,7 @@
 
 (defxdoc deffixer
 
-  :parents (std/util-extensions std/util)
+  :parents (std/util)
 
   :short "Introduce a fixer for a predicate."
 
