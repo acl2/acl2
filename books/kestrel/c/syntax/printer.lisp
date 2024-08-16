@@ -2781,9 +2781,6 @@
        (pstate (print-initer (initer-option-some->val initdeclor.init?)
                              pstate)))
     pstate)
-  :guard-hints (("Goal" :in-theory (enable initdeclor-unambp
-                                           initer-option-some->val
-                                           initer-option-unambp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2848,7 +2845,6 @@
      pstate)
    :statassert
    (print-statassert decl.unwrap pstate))
-  :guard-hints (("Goal" :in-theory (enable decl-unambp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2890,7 +2886,6 @@
                (pstate (print-const-expr label.unwrap pstate)))
             pstate)
    :default (print-astring "default" pstate))
-  :guard-hints (("Goal" :in-theory (enable label-unambp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3202,22 +3197,9 @@
 
   :ruler-extenders :all
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :verify-guards nil
+  :verify-guards :after-returns
 
   ///
-
-  (verify-guards print-stmt
-    :hints (("Goal"
-             :expand (stmt-unambp stmt)
-             :in-theory (enable stmt-unambp
-                                block-item-unambp
-                                block-item-list-unambp
-                                expr-option-unambp
-                                expr-option-some->val))))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual print-stmts/blocks))
 
@@ -3264,8 +3246,6 @@
        (pstate (print-block (stmt-compound->items fundef.body) pstate))
        (pstate (print-new-line pstate)))
     pstate)
-  :guard-hints (("Goal" :in-theory (enable fundef-unambp
-                                           stmt-unambp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3278,7 +3258,6 @@
    extdecl
    :fundef (print-fundef extdecl.unwrap pstate)
    :decl (print-decl extdecl.unwrap pstate))
-  :guard-hints (("Goal" :in-theory (enable extdecl-unambp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3312,7 +3291,6 @@
         (raise "Misusage error: empty translation unit.")
         (pristate-fix pstate)))
     (print-extdecl-list tunit.decls pstate))
-  :guard-hints (("Goal" :in-theory (enable transunit-unambp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3354,7 +3332,6 @@
      for the translation unit ensemble and for the file set
      (they are the keys of the maps)."))
   (fileset (print-fileset-loop (transunit-ensemble->unwrap tunits) options))
-  :guard-hints (("Goal" :in-theory (enable transunit-ensemble-unambp)))
   :hooks (:fix)
 
   :prepwork
@@ -3368,12 +3345,9 @@
           (data (print-file tunit options))
           (filemap (print-fileset-loop (omap::tail tunitmap) options)))
        (omap::update (filepath-fix filepath) (filedata data) filemap))
-     :verify-guards nil
+     :verify-guards :after-returns
 
      ///
-
-     (verify-guards print-fileset-loop
-       :hints (("Goal" :in-theory (enable transunit-ensemble-unambp-loop))))
 
      (defret keys-of-print-fileset-loop
        (equal (omap::keys filemap)

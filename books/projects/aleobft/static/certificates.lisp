@@ -14,10 +14,9 @@
 (include-book "addresses")
 (include-book "transactions")
 
-(local (include-book "lib-ext"))
+(include-book "kestrel/fty/pos-set" :dir :system)
 
-(local (include-book "kestrel/utilities/nfix" :dir :system))
-(local (include-book "std/lists/top" :dir :system))
+(local (include-book "lib-ext"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

@@ -12,10 +12,6 @@
 (in-package "ALEOBFT-STATIC")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/fty/pos-set" :dir :system)
-
-(local (include-book "kestrel/utilities/nfix" :dir :system))
-(local (include-book "std/lists/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

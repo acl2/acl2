@@ -604,11 +604,45 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-option-unambp-when-expr-unambp
+  (defrule expr-option-unambp-when-expr-unambp
     (implies (expr-unambp expr)
              (expr-option-unambp expr))
     :expand (expr-option-unambp expr)
-    :enable expr-option-some->val))
+    :enable expr-option-some->val)
+
+  (defrule initer-option-unambp-when-initer-unambp
+    (implies (initer-unambp initer)
+             (initer-option-unambp initer))
+    :expand (initer-option-unambp initer)
+    :enable initer-option-some->val)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defrule expr-unambp-of-expr-option-some->val
+    (implies (and (expr-option-unambp expr?)
+                  (expr-option-case expr? :some))
+             (expr-unambp (expr-option-some->val expr?)))
+    :expand (expr-option-unambp expr?))
+
+  (defrule expr-unambp-when-expr-option-unambp-and-not-nil
+    (implies (and (expr-option-unambp expr?)
+                  expr?)
+             (expr-unambp expr?))
+    :expand (expr-option-unambp expr?)
+    :enable expr-option-some->val)
+
+  (defrule initer-unambp-of-initer-option-some->val
+    (implies (and (initer-option-unambp initer?)
+                  (initer-option-case initer? :some))
+             (initer-unambp (initer-option-some->val initer?)))
+    :expand (initer-option-unambp initer?))
+
+  (defrule initer-unambp-when-initer-option-unambp-and-not-nil
+    (implies (and (initer-option-unambp initer?)
+                  initer?)
+             (initer-unambp initer?))
+    :expand (initer-option-unambp initer?)
+    :enable initer-option-some->val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -649,7 +683,17 @@
   :short "Check if an initializer declarator is unambiguous."
   (and (declor-unambp (initdeclor->declor initdeclor))
        (initer-option-unambp (initdeclor->init? initdeclor)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule declor-unambp-of-initdeclor->declor
+    (implies (initdeclor-unambp initdeclor)
+             (declor-unambp (initdeclor->declor initdeclor))))
+
+  (defrule initer-option-unambp-of-initdeclor->init?
+    (implies (initdeclor-unambp initdeclor)
+             (initer-option-unambp (initdeclor->init? initdeclor)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -670,7 +714,24 @@
              :decl (and (declspec-list-unambp decl.specs)
                         (initdeclor-list-unambp decl.init))
              :statassert (statassert-unambp decl.unwrap))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule declspec-list-unambp-of-decl-decl->specs
+    (implies (and (decl-unambp decl)
+                  (decl-case decl :decl))
+             (declspec-list-unambp (decl-decl->specs decl))))
+
+  (defrule initdeclor-list-unambp-of-decl-decl->init
+    (implies (and (decl-unambp decl)
+                  (decl-case decl :decl))
+             (initdeclor-list-unambp (decl-decl->init decl))))
+
+  (defrule statassert-unambp-of-decl-statassert->unwrap
+    (implies (and (decl-unambp decl)
+                  (decl-case decl :statassert))
+             (statassert-unambp (decl-statassert->unwrap decl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -691,7 +752,14 @@
               :name t
               :const (const-expr-unambp label.unwrap)
               :default t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule const-expr-unambp-of-label-const->unwrap
+    (implies (and (label-unambp label)
+                  (label-case label :const))
+             (const-expr-unambp (label-const->unwrap label)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -788,6 +856,178 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (defrule label-unamb-of-stmt-labeled->label
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :labeled))
+             (label-unambp (stmt-labeled->label stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule stmt-unamb-of-stmt-labeled->stmt
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :labeled))
+             (stmt-unambp (stmt-labeled->stmt stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule stmt-unamb-of-stmt-compound->items
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :compound))
+             (block-item-list-unambp (stmt-compound->items stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-optionp-unamb-of-stmt-expr->expr?
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :expr))
+             (expr-option-unambp (stmt-expr->expr? stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-unamb-of-stmt-if->test
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :if))
+             (expr-unambp (stmt-if->test stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule stmt-unamb-of-stmt-if->then
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :if))
+             (stmt-unambp (stmt-if->then stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-unamb-of-stmt-ifelse->test
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :ifelse))
+             (expr-unambp (stmt-ifelse->test stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule stmt-unamb-of-stmt-ifelse->then
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :ifelse))
+             (stmt-unambp (stmt-ifelse->then stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule stmt-unamb-of-stmt-ifelse->else
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :ifelse))
+             (stmt-unambp (stmt-ifelse->else stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-unamb-of-stmt-switch->target
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :switch))
+             (expr-unambp (stmt-switch->target stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule stmt-unamb-of-stmt-switch->body
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :switch))
+             (stmt-unambp (stmt-switch->body stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-unamb-of-stmt-while->test
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :while))
+             (expr-unambp (stmt-while->test stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule stmt-unamb-of-stmt-while->body
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :while))
+             (stmt-unambp (stmt-while->body stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule stmt-unamb-of-stmt-dowhile->body
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :dowhile))
+             (stmt-unambp (stmt-dowhile->body stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-unamb-of-stmt-dowhile->test
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :dowhile))
+             (expr-unambp (stmt-dowhile->test stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-option-unambp-of-stmt-for-expr->init
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :for-expr))
+             (expr-option-unambp (stmt-for-expr->init stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-option-unambp-of-stmt-for-expr->test
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :for-expr))
+             (expr-option-unambp (stmt-for-expr->test stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-option-unambp-of-stmt-for-expr->next
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :for-expr))
+             (expr-option-unambp (stmt-for-expr->next stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule stmt-unamb-of-stmt-for-expr->body
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :for-expr))
+             (stmt-unambp (stmt-for-expr->body stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule decl-unambp-of-stmt-for-decl->init
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :for-decl))
+             (decl-unambp (stmt-for-decl->init stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-option-unambp-of-stmt-for-decl->test
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :for-decl))
+             (expr-option-unambp (stmt-for-decl->test stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-option-unambp-of-stmt-for-decl->next
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :for-decl))
+             (expr-option-unambp (stmt-for-decl->next stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule stmt-unamb-of-stmt-for-decl->body
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :for-decl))
+             (stmt-unambp (stmt-for-decl->body stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule expr-optionp-unamb-of-stmt-return->expr?
+    (implies (and (stmt-unambp stmt)
+                  (stmt-case stmt :return))
+             (expr-option-unambp (stmt-return->expr? stmt)))
+    :expand (stmt-unambp stmt))
+
+  (defrule not-for-ambig-when-stmt-unambp
+    (implies (stmt-unambp stmt)
+             (not (equal (stmt-kind stmt) :for-ambig)))
+    :rule-classes :forward-chaining
+    :expand (stmt-unambp stmt))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defrule decl-unamb-of-block-item-decl->unwrap
+    (implies (and (block-item-unambp item)
+                  (block-item-case item :decl))
+             (decl-unambp (block-item-decl->unwrap item)))
+    :expand (block-item-unambp item))
+
+  (defrule stmt-unamb-of-block-item-stmt->unwrap
+    (implies (and (block-item-unambp item)
+                  (block-item-case item :stmt))
+             (stmt-unambp (block-item-stmt->unwrap item)))
+    :expand (block-item-unambp item))
+
+  (defrule not-ambig-when-block-item-unambp
+    (implies (block-item-unambp item)
+             (not (equal (block-item-kind item) :ambig)))
+    :rule-classes :forward-chaining
+    :expand (block-item-unambp item))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (fty::deffixequiv-mutual stmts/blocks-unambp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -799,7 +1039,25 @@
        (declor-unambp (fundef->declor fundef))
        (decl-list-unambp (fundef->decls fundef))
        (stmt-unambp (fundef->body fundef)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule declspec-list-unambp-of-fundef->spec
+    (implies (fundef-unambp fundef)
+             (declspec-list-unambp (fundef->spec fundef))))
+
+  (defrule declor-unambp-of-fundef->declor
+    (implies (fundef-unambp fundef)
+             (declor-unambp (fundef->declor fundef))))
+
+  (defrule decl-list-unambp-of-fundef->decls
+    (implies (fundef-unambp fundef)
+             (decl-list-unambp (fundef->decls fundef))))
+
+  (defrule stmt-unambp-of-fundef->body
+    (implies (fundef-unambp fundef)
+             (stmt-unambp (fundef->body fundef)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -809,7 +1067,19 @@
   (extdecl-case edecl
                 :fundef (fundef-unambp edecl.unwrap)
                 :decl (decl-unambp edecl.unwrap))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule fundef-unambp-of-extdecl-fundef->unwrap
+    (implies (and (extdecl-unambp edecl)
+                  (extdecl-case edecl :fundef))
+             (fundef-unambp (extdecl-fundef->unwrap edecl))))
+
+  (defrule decl-unambp-of-extdecl-decl->unwrap
+    (implies (and (extdecl-unambp edecl)
+                  (extdecl-case edecl :decl))
+             (decl-unambp (extdecl-decl->unwrap edecl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -827,7 +1097,17 @@
   :returns (yes/no booleanp)
   :short "Check if a translation unit is unambiguous."
   (extdecl-list-unambp (transunit->decls tunit))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule transunit-unambp-of-transunit
+    (equal (transunit-unambp (transunit edecls))
+           (extdecl-list-unambp edecls)))
+
+  (defrule extdecl-list-unambp-of-transunit->decls
+    (implies (transunit-unambp tunit)
+             (extdecl-list-unambp (transunit->decls tunit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -848,6 +1128,10 @@
 
      ///
 
+     (defrule transunit-ensemble-unambp-loop-of-empty
+       (implies (omap::emptyp tumap)
+                (transunit-ensemble-unambp-loop tumap)))
+
      (defrule transunit-ensemble-unambp-loop-of-update
        (implies (and (transunit-unambp tunit)
                      (transunit-ensemble-unambp-loop tumap))
@@ -858,4 +1142,24 @@
                 omap::mfix
                 omap::mapp
                 omap::head
-                omap::tail)))))
+                omap::tail))
+
+     (defrule transunit-unambp-of-head-when-transunit-ensemble-unambp-loop
+       (implies (and (transunit-ensemble-unambp-loop tumap)
+                     (not (omap::emptyp tumap)))
+                (transunit-unambp (mv-nth 1 (omap::head tumap)))))
+
+     (defrule transunit-ensemble-unambp-loop-of-tail
+       (implies (transunit-ensemble-unambp-loop tumap)
+                (transunit-ensemble-unambp-loop (omap::tail tumap))))))
+
+  ///
+
+  (defrule transunit-ensemble-unambp-of-transunit-ensemble
+    (equal (transunit-ensemble-unambp (transunit-ensemble tumap))
+           (transunit-ensemble-unambp-loop (filepath-transunit-map-fix tumap))))
+
+  (defrule transunit-ensemble-unambp-loop-of-transunit-ensemble->unwrap
+    (implies (transunit-ensemble-unambp tunits)
+             (transunit-ensemble-unambp-loop
+              (transunit-ensemble->unwrap tunits)))))
