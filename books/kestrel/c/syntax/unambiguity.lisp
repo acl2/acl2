@@ -228,7 +228,7 @@
                    :tyspec (type-spec-unambp declspec.unwrap)
                    :tyqual t
                    :funspec t
-                   :align t)
+                   :align (align-spec-unambp declspec.unwrap))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -557,6 +557,53 @@
     :parents nil
     (expr-unambp x))
 
+  (std::deflist genassoc-list-unambp (x)
+    :guard (genassoc-listp x)
+    :parents nil
+    (genassoc-unambp x))
+
+  (std::deflist spec/qual-list-unambp (x)
+    :guard (spec/qual-listp x)
+    :parents nil
+    (spec/qual-unambp x))
+
+  (std::deflist declspec-list-unambp (x)
+    :guard (declspec-listp x)
+    :parents nil
+    (declspec-unambp x))
+
+  (std::deflist desiniter-list-unambp (x)
+    :guard (desiniter-listp x)
+    :parents nil
+    (desiniter-unambp x))
+
+  (std::deflist designor-list-unambp (x)
+    :guard (designor-listp x)
+    :parents nil
+    (designor-unambp x))
+
+  (std::deflist paramdecl-list-unambp (x)
+    :guard (paramdecl-listp x)
+    :parents nil
+    (paramdecl-unambp x))
+
+  (std::deflist structdecl-list-unambp (x)
+    :guard (structdecl-listp x)
+    :parents nil
+    (structdecl-unambp x))
+
+  (std::deflist structdeclor-list-unambp (x)
+    :guard (structdeclor-listp x)
+    :parents nil
+    (structdeclor-unambp x))
+
+  (std::deflist enumer-list-unambp (x)
+    :guard (enumer-listp x)
+    :parents nil
+    (enumer-unambp x))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (defruled expr-option-unambp-when-expr-unambp
     (implies (expr-unambp expr)
              (expr-option-unambp expr))
@@ -606,13 +653,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define initdeclor-list-unambp ((initdeclors initdeclor-listp))
-  :returns (yes/no booleanp)
+(std::deflist initdeclor-list-unambp (x)
+  :guard (initdeclor-listp x)
   :short "Check if a list of initializer declarators is unambiguous."
-  (or (endp initdeclors)
-      (and (initdeclor-unambp (car initdeclors))
-           (initdeclor-list-unambp (cdr initdeclors))))
-  :hooks (:fix))
+  (initdeclor-unambp x)
+  ///
+  (fty::deffixequiv initdeclor-list-unambp
+    :args ((x initdeclor-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -627,13 +674,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-list-unambp ((decls decl-listp))
-  :returns (yes/no booleanp)
+(std::deflist decl-list-unambp (x)
+  :guard (decl-listp x)
   :short "Check if a list of declarations is unambiguous."
-  (or (endp decls)
-      (and (decl-unambp (car decls))
-           (decl-list-unambp (cdr decls))))
-  :hooks (:fix))
+  (decl-unambp x)
+  ///
+  (fty::deffixequiv decl-list-unambp
+    :args ((x decl-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -732,6 +779,15 @@
 
   ///
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (std::deflist block-item-list-unambp (x)
+    :guard (block-item-listp x)
+    :parents nil
+    (block-item-unambp x))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (fty::deffixequiv-mutual stmts/blocks-unambp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -757,13 +813,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define extdecl-list-unambp ((edecls extdecl-listp))
-  :returns (yes/no booleanp)
+(std::deflist extdecl-list-unambp (x)
+  :guard (extdecl-listp x)
   :short "Check if a list of external declarations is unambiguous."
-  (or (endp edecls)
-      (and (extdecl-unambp (car edecls))
-           (extdecl-list-unambp (cdr edecls))))
-  :hooks (:fix))
+  (extdecl-unambp x)
+  ///
+  (fty::deffixequiv extdecl-list-unambp
+    :args ((x extdecl-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

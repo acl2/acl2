@@ -12,7 +12,7 @@
 
 (include-book "primep-def")
 
-(include-book "kestrel/std/util/deffixer" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

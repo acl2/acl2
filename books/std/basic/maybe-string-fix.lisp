@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "std/basic/defs" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
