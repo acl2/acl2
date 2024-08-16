@@ -131,7 +131,7 @@
                       (certificate-set->author-set certs)))
     :induct t)
 
-  (defrule certificate-set->author-set-of-insert
+  (defruled certificate-set->author-set-of-insert
     (equal (certificate-set->author-set (set::insert cert certs))
            (set::insert (certificate->author cert)
                         (certificate-set->author-set certs)))
@@ -144,7 +144,8 @@
                     (set::union (certificate-set->author-set certs1)
                                 (certificate-set->author-set certs2))))
     :induct t
-    :enable set::union)
+    :enable (certificate-set->author-set-of-insert
+             set::union))
 
   (defrule emptyp-of-certificate-set->author-set
     (equal (set::emptyp (certificate-set->author-set certs))
