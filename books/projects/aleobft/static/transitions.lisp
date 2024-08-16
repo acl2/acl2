@@ -51,7 +51,8 @@
                     transitions-store-certificate
                     transitions-advance-round
                     transitions-commit-anchors
-                    transitions-timer-expires)
+                    transitions-timer-expires
+                    t)
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
