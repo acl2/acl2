@@ -35,19 +35,32 @@
 ; Original Author(s):
 ; Yahya Sohail        <ysohail@cs.utexas.edu>
 
-;; Build with nasm -f elf64 hello-user.S && ld hello-user.o -o hello-user
+; This Linux program simply prints a little message and then starts /bin/sh.
+; It has no dependencies.
+; Build with nasm -f elf64 hello-user.S && ld hello-user.o -o hello-user
 
-section .data
+  ; Begin the data section
+  section .data
+  ; This is the string that will be printed out when this program starts
 str:
+  ; 0x0a is an LF (in C: '\n') and 0 is for null termination
   db 'hello from userspace', 0x0a, 0
+  ; Stores the length of the string (current address, $, minus address of str)
+  ;in str_len
   str_len equ $-str
 
+  ; String holding the path of the program to start
 prog:
   db '/bin/sh', 0
 
+  ; String holding the value we will pass as argv[0] to the program we start
 argv0:
   db 'sh', 0
 
+  ; argv and envp as passed to Linux programs are null terminated arrays of
+  ; null terminated C strings. Here, we set argv = {argv0, NULL} We don't want
+  ; to pass any environment variables, so we set envp = {NULL}, but instead of
+  ; constructing a separate array for this values we use argv + 1
 argv:
   dq argv0
 envp:
@@ -56,13 +69,21 @@ envp:
 section .text
 global _start
 _start:
-  mov rax, 1
-  mov rdi, 1
+  ; Linux's 64-bit x86 syscall ABI requires the syscall number to be in rax,
+  ; and the first three arguments to be in RDI, RSI, and RDX in that order. The
+  ; syscall is then triggered using the syscall instruction (unlike, say,
+  ; 32-bit mode where we use int 0x80).
+
+  mov rax, 1 ; write
+  mov rdi, 1 ; stdout
   mov rsi, str
   mov rdx, str_len
+  ;; write(stdout, str, str_len)
   syscall
-  mov rax, 59
+
+  mov rax, 59 ; execve
   mov rdi, prog
   mov rsi, argv
   mov rdx, envp
+  ;; execve(prog, argv, envp)
   syscall

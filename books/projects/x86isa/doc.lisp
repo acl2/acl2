@@ -480,6 +480,10 @@
          build the modified kernel. Then, we setup a root filesystem for the
          machine running under the model. Finally, we load these into the model
          and execute it.</p>
+         
+         <p>For the sections about building Linux and the rootfs, we assume
+         that you're on a Linux system. The rest of the guide should work on
+         any ACL2 compatible system.</p>
 
          <h3>Building the Modified Kernel</h3>
          <p>Rather than distributing the entire modified kernel source tree,
@@ -543,14 +547,6 @@
          is the file we will load into the model.</p>
 
          <h3>Setting up a Root Filesystem</h3>
-         <p>Note: you'll probably need a Unix like system for this step because
-         we deal with Unix device files. In principle, there's no reason why we
-         have to actually create these files in our filesystem and can't
-         directly construct the cpio archive containing them, but I don't know
-         of any tools to do that. If you're on Windows, using WSL is an option.
-         Once you make the rootfs image, you can transfer it to whatever system
-         you wish to use.</p>
-
          <p>Most modern Linux machines boot by first loading an initramfs as
          the filesystem mounted on @('/'). This, as the name suggests, is an
          initial filesystem which resides in RAM. The kernel then starts
@@ -620,10 +616,11 @@
          <p>Busybox is an implementation the standard complement of utilities
          you'd expect to find on Unix like systems, including @('sh'), @('ls'),
          @('mount'), etc., kind of like GNU Coreutils. It is meant to be
-         lightweight and is common in embedded systems. For this reason, Busybox
-         is compiles all these tools into a single @('busybox') executable. If
-         you inspect to contents of @('bin') in your Alpine rootfs, you'll
-         notice that most executables are symlinks to @('/bin/busybox').</p>
+         lightweight and is common in embedded systems. For this reason,
+         Busybox is compiles all these tools into a single @('busybox')
+         executable. If you inspect the contents of @('bin') in your Alpine
+         rootfs, you'll notice that most executables are symlinks to
+         @('/bin/busybox').</p>
 
          <p>When started, Busybox inspects the contents of @('argv[0]') to
          determine which program it should behave like. Thus, the same binary
@@ -660,17 +657,16 @@
          ld hello-user.o -o hello-user
          </code>
 
-         <p>Then copy the @('hello-user') binary into the rootfs, and either
-         call it @('init') or use some other name but symlink @('init') to it.
-         Note: if you symlink to it, make sure the path your symlink points to
-         is absolute, with @('/') referring to your rootfs, not your computer's
-         @('/'). This may result in a symlink that is broken on your computer,
-         but when Linux is running in the model, the rootfs will be mounted at
-         @('/') so it'll work correctly.</p>
-
-         <p>The last step is to create the cpio archive. Use the following command:</p>
+         <p>Then copy the @('hello-user') binary into the rootfs and name it
+         @('init')</p>
          <code>
-         find &lt;alpine rootfs path&gt; | cpio --quiet -H newc -o | gzip -9 -n &lt;archive path&gt;.img
+         cp &lt;path to hello-user&gt; &lt;path to alpine rootfs&gt;/init
+         </code>
+
+         <p>The last step is to create the compressed cpio archive. Run the
+         following command in the alpine rootfs directory:</p>
+         <code>
+         find . | cpio --quiet -H newc -o | gzip -9 -n &gt; &lt;archive path&gt;.img
          </code>
 
          <p>Make sure you aren't saving your cpio archive in the alpine rootfs.</p>
