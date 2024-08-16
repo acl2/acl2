@@ -14,6 +14,8 @@
 (include-book "addresses")
 (include-book "transactions")
 
+(include-book "kestrel/fty/pos-set" :dir :system)
+
 (local (include-book "lib-ext"))
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
