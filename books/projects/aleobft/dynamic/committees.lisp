@@ -108,6 +108,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define committee-memberp ((val addressp) (commtt committeep))
+  :returns (yes/no booleanp)
+  :short "Check if a validator is a member of a committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The validator is identifier by its address.
+     We check whether the address is in the committee."))
+  (set::in (address-fix val) (committee->addresses commtt))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection genesis-committee
   :short "Genesis committee."
   :long
