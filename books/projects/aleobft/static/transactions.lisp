@@ -15,7 +15,6 @@
 (include-book "kestrel/fty/pos-set" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
-(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
