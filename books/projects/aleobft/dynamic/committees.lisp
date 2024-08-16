@@ -120,7 +120,7 @@
      with a non-empty set of addresses."))
 
   (encapsulate
-      (((genesis-committee) => *))
+    (((genesis-committee) => *))
 
     (local
      (defun genesis-committee ()
@@ -306,3 +306,85 @@
            (committee-after-blocks blocks)))
        (bonded-committee-at-round-loop round (cdr blocks)))
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection lookback
+  :short "Lookback amount."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It may seem natural for the committee bonded at a round
+     to be in charge of that round,
+     i.e. proposing and signing certificates for that round, etc.
+     However, validators are not always perfectly in sync;
+     there may be delays,
+     and a validator's blockchain may be
+     ahead of another validator's blockchain.
+     For this reason, AleoBFT uses a lookback approach:
+     the committee in charge of a round is `looked back' by a given amount.
+     That is, the committee in charge for a round @('R')
+     is the committee bonded at round @('R-B'),
+     where @('B') is a fixed globally known positive integer.
+     When @('R <= B'), the genesis committee is used.")
+   (xdoc::p
+    "The idea behind this lookback approach is that,
+     by going sufficiently back in rounds (e.g. @('B = 100'),
+     all validators should have blocks for those rounds,
+     and should be able to calculate (and agree on)
+     the committee bonded at those rounds.
+     This is an assumption, which should be subjected to more formal study,
+     but it is the rationale behind the approach.")
+   (xdoc::p
+    "Since @('B') is fixed and globally known,
+     we introduce a constrained nullary function that returns it.
+     There is no need to pick a specific value in this model;
+     this way, the model is more general.
+     Should the need arise to prove properties that depend on
+     specific values of @('B'), or more generally on @('B') be in certain range,
+     those can be made into hypotheses of such theorems."))
+
+  (encapsulate
+    (((lookback) => *))
+
+    (local (defun lookback () 1))
+
+    (defrule posp-of-lookback
+      (posp (lookback))
+      :rule-classes (:rewrite :type-prescription))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define active-committee-at-round ((round posp) (blocks block-listp))
+  :returns (commtt? committee-optionp)
+  :short "Active committee at a given round."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee lookback),
+     the active committee for a given round,
+     i.e. the one in charge of the round,
+     is the one bonded at the earlier round
+     whose distance is @('B') from the round of interest,
+     or the genesis committee if such earlier round does not exist
+     (i.e. it would be 0 or negative, before round 1).")
+   (xdoc::p
+    "This ACL2 function formalizes this notion of active committee.
+     The exact notion of `being in charge of a round'
+     must of course be formalized, which we are doing in this model.
+     It should make intuitive sense,
+     but there may be subtle details involved.
+     Ultimately, we need certain high-level properties,
+     such as the non-forking of blockchains,
+     to be provable (and proved) in this formal model;
+     those will guide our fleshing out of the necessary details.")
+   (xdoc::p
+    "Note that there is no guarantee that there is a bonded committee
+     at round @('R - B'), where @('R') is the round of interest.
+     Thus, this function returns an optional committee,
+     @('nil') if no committee is available."))
+  (if (> (pos-fix round) (lookback))
+      (bonded-committee-at-round (- (pos-fix round) (lookback)) blocks)
+    (genesis-committee))
+  :guard-hints (("Goal" :in-theory (enable posp)))
+  :hooks (:fix))
