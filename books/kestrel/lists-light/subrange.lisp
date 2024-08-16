@@ -1,7 +1,7 @@
 ; A lightweight book of theorems about subrange.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -144,7 +144,7 @@
                 (natp i))
            (equal (take i (subrange start end lst))
                   (subrange start (+ start i -1) lst)))
-  :hints (("Goal" :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange)))))
+  :hints (("Goal" :in-theory (e/d (subrange) ()))))
 
 ;todo: combine with the regular rule
 (defthm take-of-subrange-too-big
@@ -159,7 +159,7 @@
                     (append (subrange start end lst)
                             (repeat (- i (+ 1 (- end start)))
                                     nil)))))
-  :hints (("Goal" :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange)))))
+  :hints (("Goal" :in-theory (e/d (subrange) ()))))
 
 (defthm subrange-out-of-order-or-singleton
   (implies (and (<= end start)
@@ -187,7 +187,7 @@
                 )
            (equal (subrange start (+ -1 len) lst)
                   (true-list-fix (nthcdr start lst))))
-  :hints (("Goal" :in-theory (e/d (subrange) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+  :hints (("Goal" :in-theory (e/d (subrange) ()))))
 
 (defthmd subrange-up-to-end-becomes-nthcdr-strong
   (implies (and (equal k (+ -1 (len lst)))
@@ -272,7 +272,7 @@
                   (subrange 1 (+ -1 n) lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :expand (subrange 1 (+ -2 n) (cdr lst))
-           :in-theory (e/d (take subrange) (take-of-nthcdr-becomes-subrange)))))
+           :in-theory (e/d (take subrange) ()))))
 
 (theory-invariant (incompatible (:rewrite cdr-of-take-becomes-subrange-better) (:definition subrange)))
 
@@ -280,13 +280,13 @@
   (implies (< start 0)
            (equal (subrange start end lst)
                   (subrange 0 end lst)))
-  :hints (("Goal" :in-theory (e/d (subrange take) (take-of-nthcdr-becomes-subrange)))))
+  :hints (("Goal" :in-theory (e/d (subrange take) ()))))
 
 (defthm subrange-when-end-is-negative
   (implies (< end 0)
            (equal (subrange start end lst)
                   nil))
-  :hints (("Goal" :in-theory (e/d (subrange take) (take-of-nthcdr-becomes-subrange)))))
+  :hints (("Goal" :in-theory (e/d (subrange take) ()))))
 
 (defthm cons-nth-onto-subrange
   (implies (and (equal m (+ 1 k))
@@ -297,7 +297,7 @@
                 (natp n))
            (equal (CONS (NTH k lst) (SUBRANGE m n lst))
                   (SUBRANGE k n lst)))
-  :hints (("Goal" :in-theory (disable TAKE-OF-NTHCDR-BECOMES-SUBRANGE))))
+  :hints (("Goal" :in-theory (disable ))))
 
 (defthm subrange-of-take
   (implies (and (< high n)
@@ -307,7 +307,7 @@
                 (natp n))
            (equal (SUBRANGE low high (TAKE n x))
                   (SUBRANGE low high x)))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+  :hints (("Goal" :in-theory (e/d (SUBRANGE) ()))))
 
 (defthmd subrange-of-cons
   (implies (and (natp low)
@@ -317,7 +317,7 @@
                   (if (zp low)
                       (cons a (subrange 0 (+ -1 high) rest))
                     (subrange (+ -1 low) (+ -1 high) rest))))
-  :hints (("Goal" :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange)))))
+  :hints (("Goal" :in-theory (e/d (subrange) ()))))
 
 ;prevents case splits
 (defthm subrange-of-cons-constant-version
@@ -339,7 +339,7 @@
                 (<= START END))
            (EQUAL (SUBRANGE START END LST)
                   (NTHCDR START LST)))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+  :hints (("Goal" :in-theory (e/d (SUBRANGE) ()))))
 
 (defthm cons-nth-onto-subrange-alt
   (implies (and (equal m (+ 1 k))
@@ -357,9 +357,7 @@
                       (subrange n (+ -1 n2) lst)
                     nil)))
   :hints (("Goal" :in-theory (e/d (subrange)
-                                  (take-of-nthcdr-becomes-subrange
-                                   TAKE-OF-CDR-BECOMES-SUBRANGE
-                                   )))))
+                                  ()))))
 
 (theory-invariant (incompatible (:rewrite NTHCDR-OF-TAKE-BECOMES-SUBRANGE) (:definition subrange)))
 
@@ -396,9 +394,7 @@
            (equal (subrange low high (cdr lst))
                   (subrange (+ 1 (nfix low)) (+ 1 high) lst)))
   :hints (("Goal" :in-theory (e/d (subrange)
-                                  (take-of-nthcdr-becomes-subrange
-                                   nthcdr-of-take-becomes-subrange
-                                   TAKE-OF-CDR-BECOMES-SUBRANGE)))))
+                                  ()))))
 
 (defthm subrange-of-append-irrel
   (implies (and (natp low)
@@ -409,9 +405,7 @@
                   (subrange low high x)))
   :hints (("Goal" :in-theory (e/d (subrange TAKE-OF-NTHCDR)
                                   (NTHCDR-OF-TAKE
-                                   NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                   TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                                   TAKE-OF-CDR-BECOMES-SUBRANGE)))))
+                                   )))))
 
 (defthm subrange-of-append-lemma2
   (implies (and (< m (len x))

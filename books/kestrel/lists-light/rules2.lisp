@@ -1,7 +1,7 @@
 ; Mixed rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -549,12 +549,7 @@
                             TAKE-OF-NTHCDR
                             )
                            (subsetp-equal-nthcdr
-                            TAKE-OF-NTHCDR-BECOMES-SUBRANGE ;looped
-                            NTHCDR-OF-TAKE
-                            )))))
-
-
-
+                            NTHCDR-OF-TAKE)))))
 
 ;; (thm
 ;;  (IMPLIES (AND (NATP N)
@@ -653,7 +648,7 @@
                   (not (equal (nth 1 lst)
                               (nth 2 lst)))))
   :hints (("Goal" :expand (take 3 lst)
-           :in-theory (e/d (subrange take) (take-of-nthcdr-becomes-subrange
+           :in-theory (e/d (subrange take) (
                                                 FIRSTN-OF-ONE-MORE ;bozo looped
                                                 TAKE-OF-CDR
                                                 3-cdrs
@@ -755,7 +750,7 @@
                 (natp end))
            (equal (SUBRANGE start end L)
                   (repeat (+ 1 end (- start)) nil)))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE take nthcdr-of-cdr-combine) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+  :hints (("Goal" :in-theory (e/d (SUBRANGE take nthcdr-of-cdr-combine) ()))))
 
 ;seems expensive
 (defthmd nth-non-nil-rule
@@ -887,8 +882,6 @@
            :in-theory (e/d (take ;list::nth-of-cons
                             )
                            (;update-nth-becomes-update-nth2-extend-gen
-                            take-of-nthcdr-becomes-subrange
-                            ;take-of-cdr-becomes-subrange
                             ;cdr-of-take-becomes-subrange-beter
                             )))))
 
@@ -961,7 +954,7 @@
 (defthm items-have-len-of-firstn
   (implies (items-have-len n lst)
            (items-have-len n (firstn m lst)))
-  :hints (("Goal" :in-theory (e/d (items-have-len firstn) (take-of-nthcdr-becomes-subrange
+  :hints (("Goal" :in-theory (e/d (items-have-len firstn) (
                                                            TAKE-OF-CDR-BECOMES-SUBRANGE
                                                            FIRSTN-BECOMES-TAKE-GEN)))))
 
@@ -977,7 +970,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;           :induct (ind2 start end lst)
            :in-theory (e/d ( subrange ITEMS-HAVE-LEN) (TAKE-OF-CDR-BECOMES-SUBRANGE
-                                                       take-of-nthcdr-becomes-subrange)))))
+                                                       )))))
 
 
 ;; ;bozo gen
@@ -991,7 +984,7 @@
 ;;                                                 lst))))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;; ;           :induct (ind2 start end lst)
-;;            :in-theory (e/d ( subrange ITEMS-HAVE-LEN) (take-of-nthcdr-becomes-subrange)))))
+;;            :in-theory (e/d ( subrange ITEMS-HAVE-LEN) ()))))
 
 ;move
 ;restrict to non-constants?
@@ -1037,8 +1030,8 @@
   :hints (("Goal"
            :in-theory (e/d (subrange TAKE-OF-NTHCDR)
                            (;LIST::EQUAL-APPEND-REDUCTION!
-                            TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                            NTHCDR-OF-TAKE-BECOMES-SUBRANGE
+
+
                             TAKE-OF-CDR-BECOMES-SUBRANGE
                             NTHCDR-OF-TAKE
                             ))
@@ -1057,7 +1050,7 @@
 
 ;what else?!
 (deftheory anti-subrange '(cdr-of-take-becomes-subrange-better
-                           take-of-nthcdr-becomes-subrange
+
                            take-of-cdr-becomes-subrange
                            nthcdr-of-take-becomes-subrange
                            )
@@ -1158,8 +1151,8 @@
                                      NTHCDR-OF-TRUE-LIST-FIX ;LIST::CAR-APPEND
                                      )
                            (;LIST::FIX-OF-NTHCDR
-                            NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                            TAKE-OF-NTHCDR-BECOMES-SUBRANGE
+
+
                             TAKE-OF-CDR-BECOMES-SUBRANGE)))))
 
 (defthm subrange-too-far
@@ -1258,9 +1251,9 @@
   :hints (("Goal"
            :use ((:instance SUBRANGE-OUT-OF-ORDER (start start1))
                  (:instance SUBRANGE-OUT-OF-ORDER (start start2)))
-           :in-theory (e/d (subrange) (nthcdr-of-take-becomes-subrange
+           :in-theory (e/d (subrange) (
                                        TAKE-OF-CDR-BECOMES-SUBRANGE
-                                       take-of-nthcdr-becomes-subrange
+
                                        nthcdr-of-take)))))
 
 
@@ -1419,7 +1412,7 @@
                            (anti-subrange
                             update-nth-of-update-subrange     ;bozo
                             update-nth-of-update-subrange-diff ;bozo
-                            take-of-nthcdr-becomes-subrange
+
                             )))))
 
 ;; (defthm update-subrange-equiv
@@ -1440,7 +1433,7 @@
 ;;                                   (anti-subrange
 ;;                                    update-nth-of-update-subrange     ;bozo
 ;;                                    update-nth-of-update-subrange-diff ;bozo
-;;                                    take-of-nthcdr-becomes-subrange
+;;
 ;;                                    )))))
 
 ;do we need priorities here?
@@ -1546,9 +1539,7 @@
            (equal (subrange start end (update-nth n val lst))
                   (subrange start end lst)))
   :hints (("Goal" :in-theory (e/d (take update-nth-rewrite subrange)
-                                  (NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                   TAKE-OF-CDR-BECOMES-SUBRANGE
-                                   TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+                                  (TAKE-OF-CDR-BECOMES-SUBRANGE)))))
 
 ;; (defun indh2 (n m)
 ;;   (if (zp m)
@@ -1572,9 +1563,7 @@
            (equal (subrange start end (update-nth n val lst))
                   (update-nth (- n start) val (subrange start end lst))))
   :hints (("Goal" :in-theory (e/d (take update-nth-rewrite subrange nthcdr-of-cdr-combine)
-                                  (NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                   TAKE-OF-CDR-BECOMES-SUBRANGE
-                                   TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+                                  (TAKE-OF-CDR-BECOMES-SUBRANGE)))))
 
 ;covers all three cases:
 (defthm subrange-of-update-nth
@@ -1740,7 +1729,7 @@
                                    ;EQUAL-CONS-CASES2
                                    SUBRANGE-OF-CONS
                                    )
-                                  (;anti-subrange; take-of-nthcdr-becomes-subrange
+                                  (;anti-subrange;
                                    ))
            :cases ((equal end (+ start 1)))
            :do-not '(generalize eliminate-destructors)
@@ -1834,7 +1823,7 @@
                                   (lst (true-list-fix lst))
                                   (vals (take (+ 1 end (- start)) vals)))
            :in-theory (e/d (nthcdr-of-true-list-fix equal-of-append)
-                           ( take-of-nthcdr-becomes-subrange
+                           (
                              ;list::fix-of-nthcdr
                              update-subrange-rewrite ;update-subrange-equiv
                              )))))

@@ -1,7 +1,7 @@
 ; Rules about group, group2, etc.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -94,9 +94,9 @@
                             )
                            (;list::equal-append-reduction!
                             ;LIST::EQUAL-APPEND-REDUCTION!-ALT ;disable above
-                            take-of-nthcdr-becomes-subrange
+
                             nthcdr-of-take-becomes-subrange
-                            TAKE-OF-CDR-BECOMES-SUBRANGE
+
                             nthcdr-of-take
                             ))
            :use ((:instance APPEND-OF-TAKE-AND-NTHCDR-2 (l (take (+ 1 free) x)) (n n))
@@ -145,9 +145,9 @@
                             )
                            (;list::equal-append-reduction!
                             ;LIST::EQUAL-APPEND-REDUCTION!-ALT ;disable above
-                            take-of-nthcdr-becomes-subrange
+
                             nthcdr-of-take-becomes-subrange
-                            TAKE-OF-CDR-BECOMES-SUBRANGE
+
                             nthcdr-of-take
                             ))
            :use ((:instance list-split (x x) (n n))
@@ -253,9 +253,7 @@
                 (integerp m2))
            (equal (subrange m m2 (group n x))
                   (group n (subrange (* n m) (+ (* n m) (+ -1 (* n (+ 1 (- m2 m))))) x))))
-  :hints (("Goal" :in-theory (e/d (subrange) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                                              TAKE-OF-CDR-BECOMES-SUBRANGE
-                                              NTHCDR-OF-TAKE-BECOMES-SUBRANGE)))))
+  :hints (("Goal" :in-theory (e/d (subrange) (NTHCDR-OF-TAKE-BECOMES-SUBRANGE)))))
 
 (defthm firstn-of-ungroup
   (implies (and (equal 0 (mod m n))
@@ -275,8 +273,7 @@
                             len-of-cdr
                             consp-of-cdr
                             EQUAL-OF-0-AND-MOD)
-                           (TAKE-OF-CDR-BECOMES-SUBRANGE
-                            NTH-OF-CDR
+                           (NTH-OF-CDR
                             ;; list::NTH-OF-CDR
                             ;; LIST::EQUAL-APPEND-REDUCTION!
                             ;; LIST::LEN-POS-REWRITE
