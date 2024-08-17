@@ -44,7 +44,15 @@
      Currently we do not model proposals, but just certificates,
      because we treat the Narwhal aspects of AleoBFT abstractly here;
      the generation of certificates, and its relation to the ``real'' AleoBFT,
-     is explained in the definition of the state transitions."))
+     is explained in the definition of the state transitions.")
+   (xdoc::p
+    "Beside defining certificates,
+     we also introduce operations on (sets of) certificates,
+     particularly to retrieve certificates from sets
+     according to author and/or round criteria.
+     Since DAGs are represented as sets in "
+    (xdoc::seetopic "validator-states" "validator states")
+    ", these operations are usable (and in fact mainly used) on DAGs."))
   :order-subtopics t
   :default-parent t)
 
@@ -254,3 +262,30 @@
   (b* (((certificate cert) cert))
     (set::insert cert.author cert.endorsers))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-certificate-with-author+round ((author addressp)
+                                           (round posp)
+                                           (certs certificate-setp))
+  :returns (cert? certificate-optionp)
+  :short "Retrieve from a set of certificates
+          a certificate with a given author and round."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no certificate with the given author and round,
+     @('nil') is returned, for no certificate.")
+   (xdoc::p
+    "If there is a certificate with the given author and round,
+     the first one found is returned,
+     according to the total ordering of the set.
+     However, when a certificate set is unequivocal,
+     i.e. has unique author and round combinations,
+     the first certificate found is the only one."))
+  (b* (((when (set::emptyp certs)) nil)
+       ((certificate cert) (set::head certs))
+       ((when (and (equal author cert.author)
+                   (equal round cert.round)))
+        (certificate-fix cert)))
+    (get-certificate-with-author+round author round (set::tail certs))))
