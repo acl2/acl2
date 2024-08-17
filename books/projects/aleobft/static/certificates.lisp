@@ -187,7 +187,7 @@
                       (certificate-set->round-set certs)))
     :induct t)
 
-  (defrule certificate-set->round-set-of-insert
+  (defruled certificate-set->round-set-of-insert
     (equal (certificate-set->round-set (set::insert cert certs))
            (set::insert (certificate->round cert)
                         (certificate-set->round-set certs)))
@@ -200,7 +200,8 @@
                     (set::union (certificate-set->round-set certs1)
                                 (certificate-set->round-set certs2))))
     :induct t
-    :enable set::union)
+    :enable (set::union
+             certificate-set->round-set-of-insert))
 
   (defrule emptyp-of-certificate-set->round-set
     (equal (set::emptyp (certificate-set->round-set certs))

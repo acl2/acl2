@@ -304,7 +304,8 @@
            (if (set::emptyp (get-certificates-with-round round certs))
                nil
              (set::insert round nil)))
-    :induct t)
+    :induct t
+    :enable certificate-set->round-set-of-insert)
 
   (defruled round-set-of-get-certificates-with-round-possibilities
     (or (equal (certificate-set->round-set
@@ -314,7 +315,8 @@
                 (get-certificates-with-round round certs))
                (set::insert round nil)))
     :induct t
-    :enable certificate-set->round-set)
+    :enable (certificate-set->round-set
+             certificate-set->round-set-of-insert))
 
   (defruled cardinality-of-round-set-of-get-certificates-with-round
     (<= (set::cardinality
@@ -429,7 +431,8 @@
                 (get-certificates-with-authors+round authors round certs))
                nil
              (set::insert round nil)))
-    :induct t)
+    :induct t
+    :enable certificate-set->round-set-of-insert)
 
   (defruled certificate-set->round-set-of-get-certificates-with-authors+round
     (b* ((rounds (certificate-set->round-set
@@ -437,7 +440,8 @@
       (implies (not (set::emptyp rounds))
                (equal rounds
                       (set::insert (pos-fix round) nil))))
-    :induct t)
+    :induct t
+    :enable certificate-set->round-set-of-insert)
 
   (defrule in-of-get-certificates-with-authors+round
     (implies (certificate-setp certs)
