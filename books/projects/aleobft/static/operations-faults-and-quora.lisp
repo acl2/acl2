@@ -135,7 +135,7 @@
 
   (in-theory (disable max-faulty-for-total-alt-def))
 
-  (theory-invariant (incompatible (:definition max-faulty)
+  (theory-invariant (incompatible (:definition max-faulty-for-total)
                                   (:rewrite max-faulty-for-total-alt-def)))
 
   (defret max-faulty-for-total-upper-bound
