@@ -104,14 +104,7 @@
      This is to prevent equivocation, i.e. the existence of
      two different certificates with the same author and round.")
    (xdoc::p
-    "The remaining conditions concern the presence and number of
-     the previous certificates referenced by the certificate.
-     If the round of the certificate is 1, there is no previous round,
-     and there are no previous certificates, so there are no further conditions.
-     The following conditions apply only if the certificate round is not 1.")
-   (xdoc::p
-    "The condition about the presence of the previous certificates
-     is that the signer's DAG must include
+    "Another condition is that the signer's DAG must include
      all the previous certificates referenced by the certificate.
      These are the certificates at the round just before the certificate's round
      whose authors are in the @('previous') component of the certificate.
@@ -127,10 +120,15 @@
      before endorsing a certificate from another validator,
      a validator checks it against the predecessors
      (something not explicit in our model),
-     and therefore the validator must have those predecessors in the DAG.")
+     and therefore the validator must have those predecessors in the DAG.
+     If the certificate's round is 1,
+     there is no previous round, and thus no previous certificates,
+     and thus no requirements on they being in the DAG.")
    (xdoc::p
-    "The condition about the number of the previous certificates
-     is that they must form a quorum.
+    "Another condition is that the referenced certificate in the previous round
+     must form a quorum,
+     unless the certificate's round is 1,
+     in which case there must be no references to previous certificates.
      However, note that the active committee of the previous round
      may differ from the one of the certificate's round.
      Since we already checked that the active committee of the certificate round
@@ -151,16 +149,19 @@
        ((when (get-certificate-with-author+round
                cert.author cert.round vstate.dag))
         nil)
-       ((when (= cert.round 1)) t)
-       ((unless (set::subset cert.previous
-                             (certificate-set->author-set
-                              (get-certificates-with-round (1- cert.round)
-                                                           vstate.dag))))
+       ((unless (or (= cert.round 1)
+                    (set::subset cert.previous
+                                 (certificate-set->author-set
+                                  (get-certificates-with-round (1- cert.round)
+                                                               vstate.dag)))))
         nil)
-       (prev-commtt
-        (active-committee-at-round (1- cert.round) vstate.blockchain))
        ((unless (= (set::cardinality cert.previous)
-                   (committee-quorum prev-commtt)))
+                   (if (= cert.round 1)
+                       0
+                     (b* ((prev-commtt
+                           (active-committee-at-round (1- cert.round)
+                                                      vstate.blockchain)))
+                       (committee-quorum prev-commtt)))))
         nil))
     t)
   :guard-hints
