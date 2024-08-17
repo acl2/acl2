@@ -275,7 +275,7 @@
                                            (round posp)
                                            (certs certificate-setp))
   :returns (cert? certificate-optionp)
-  :short "Retrieve from a set of certificates
+  :short "Retrieve, from a set of certificates,
           a certificate with a given author and round."
   :long
   (xdoc::topstring
@@ -295,3 +295,18 @@
                    (equal round cert.round)))
         (certificate-fix cert)))
     (get-certificate-with-author+round author round (set::tail certs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-certificates-with-round ((round posp)
+                                     (certs certificate-setp))
+  :returns (certs-with-round certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with a given round."
+  (b* (((when (set::emptyp certs)) nil)
+       ((certificate cert) (set::head certs)))
+    (if (equal round cert.round)
+        (set::insert (certificate-fix cert)
+                     (get-certificates-with-round round (set::tail certs)))
+      (get-certificates-with-round round (set::tail certs))))
+  :verify-guards :after-returns)
