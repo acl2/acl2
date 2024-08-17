@@ -194,7 +194,7 @@
     :induct t
     :enable set::in)
 
-  (defrule certificate-set->round-set-of-union
+  (defruled certificate-set->round-set-of-union
     (implies (certificate-setp certs2)
              (equal (certificate-set->round-set (set::union certs1 certs2))
                     (set::union (certificate-set->round-set certs1)
