@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "events")
+(include-book "transitions-create-certificate")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -31,7 +32,7 @@
      which new states the events lead to.
      In other words, we define the transitions of
      the state transition system that models AleoBFT."))
-  :order-subtopics t
+  :order-subtopics (transitions-create-certificate)
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
