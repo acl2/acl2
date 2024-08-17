@@ -326,7 +326,15 @@
                     (block->round (car blocks))))
            (committee-after-blocks blocks)))
        (bonded-committee-at-round-loop round (cdr blocks)))
-     :hooks (:fix))))
+     :hooks (:fix)))
+
+  ///
+
+  (defruled bonded-committee-at-earlier-round-when-at-later-round
+    (implies (and (bonded-committee-at-round later blocks)
+                  (< (pos-fix earlier)
+                     (pos-fix later)))
+             (bonded-committee-at-round earlier blocks))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -408,4 +416,14 @@
       (bonded-committee-at-round (- (pos-fix round) (lookback)) blocks)
     (genesis-committee))
   :guard-hints (("Goal" :in-theory (enable posp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled active-committee-at-earlier-round-when-at-later-round
+    (implies (and (active-committee-at-round later blocks)
+                  (< (pos-fix earlier)
+                     (pos-fix later)))
+             (active-committee-at-round earlier blocks))
+    :enable (bonded-committee-at-earlier-round-when-at-later-round
+             posp)))
