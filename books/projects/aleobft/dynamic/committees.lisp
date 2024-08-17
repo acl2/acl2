@@ -36,6 +36,14 @@
      should also provide an agreement on how the committee evolves;
      this is what we are in the progress of formally proving.")
    (xdoc::p
+    "In our model a committee consists of a set of validator addresses,
+     but we introduce a fixtype to wrap that,
+     for greater abstraction and extensibility.")
+   (xdoc::p
+    "Membership in a committee is simply set membership,
+     but we introduce a slightly more abstract operation for that,
+     also for future extensibility.")
+   (xdoc::p
     "The genesis committee is arbitrary,
      but fixed for each execution of the protocol.
      Thus, we model the genesis committee via a constrained nullary function
