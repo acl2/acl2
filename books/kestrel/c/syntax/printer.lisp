@@ -248,7 +248,8 @@
        (new-bytes-rev (append (rev encoding) bytes-rev))
        (new-pstate (change-pristate pstate :bytes-rev new-bytes-rev)))
     new-pstate)
-  :guard-hints (("Goal" :in-theory (enable bytep grammar-character-p
+  :guard-hints (("Goal" :in-theory (enable grammar-character-p
+                                           bytep
                                            unsigned-byte-p
                                            integer-range-p)))
   ///
