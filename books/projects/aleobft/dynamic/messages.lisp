@@ -97,7 +97,11 @@
                                       :destination (set::head dests))
                         (make-certificate-messages cert (set::tail dests)))))
   :verify-guards :after-returns
+
   ///
+
+  (fty::deffixequiv make-certificate-messages
+    :args ((cert certificatep)))
 
   (defruled in-of-make-certificate-messages
     (implies (address-setp dests)
