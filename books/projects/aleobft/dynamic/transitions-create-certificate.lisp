@@ -399,4 +399,189 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: define create-certificate-next
+(define create-certificate-author-next ((vstate validator-statep)
+                                        (cert certificatep))
+  :returns (new-vstate validator-statep)
+  :short "New correct author state
+          resulting from a @('create-certificate') event."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input @('cert') of this function is
+     the certificate in the @('create-certificate') event;
+     see @(tsee event).
+     The input @('vstate') is the state of
+     the validator whose address is the certificate's author.
+     See the (indirect) callers of this function.")
+   (xdoc::p
+    "The certificate is added to the DAG."))
+  (b* ((dag (validator-state->dag vstate))
+       (new-dag (set::insert (certificate-fix cert) dag)))
+    (change-validator-state vstate :dag new-dag))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define create-certificate-endorser-next ((vstate validator-statep)
+                                          (cert certificatep))
+  :returns (new-vstate validator-statep)
+  :short "New correct endorser state
+          resulting from a @('create-certificate') event."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input @('cert') of this function is
+     the certificate in the @('create-certificate') event;
+     see @(tsee event).
+     The input @('vstate') is the state of
+     the validator whose address is @('endorser').
+     See the (indirect) callers of this function.")
+   (xdoc::p
+    "The author-round pair of the certificate
+     is added to the set of endorsed author-round pairs."))
+  (b* (((certificate cert) cert)
+       (endorsed (validator-state->endorsed vstate))
+       (new-endorsed (set::insert (make-address+pos :address cert.author
+                                                    :pos cert.round)
+                                  endorsed)))
+    (change-validator-state vstate :endorsed new-endorsed))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define create-certificate-endorsers-next ((systate system-statep)
+                                           (cert certificatep))
+  :returns (new-systate system-statep)
+  :short "Update, in a system state, to a certificate's endorsers' states
+          resulting from a @('create-certificate') event."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input @('cert') of this function is
+     the certificate in the @('create-certificate') event;
+     see @(tsee event).")
+   (xdoc::p
+    "We update the states of the correct endorsers.
+     The faulty endorsers have no internal state."))
+  (create-certificate-endorsers-next-loop (certificate->endorsers cert)
+                                          systate
+                                          cert)
+  :hooks (:fix)
+
+  :prepwork
+  ((define create-certificate-endorsers-next-loop ((endorsers address-setp)
+                                                   (systate system-statep)
+                                                   (cert certificatep))
+     :returns (new-systate system-statep)
+     :parents nil
+     (b* (((when (set::emptyp endorsers)) (system-state-fix systate))
+          (endorser (set::head endorsers))
+          ((unless (set::in endorser (correct-addresses systate)))
+           (create-certificate-endorsers-next-loop (set::tail endorsers)
+                                                   systate
+                                                   cert))
+          (vstate (get-validator-state endorser systate))
+          (new-vstate (create-certificate-endorser-next vstate cert))
+          (new-systate (update-validator-state endorser new-vstate systate)))
+       (create-certificate-endorsers-next-loop (set::tail endorsers)
+                                               new-systate
+                                               cert))
+     ///
+     (fty::deffixequiv create-certificate-endorsers-next-loop
+       :args ((systate system-statep) (cert certificatep))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define create-certificate-next ((systate system-statep)
+                                 (cert certificatep))
+  :guard (create-certificate-possiblep systate cert)
+  :returns (new-systate system-statep)
+  :short "New system state resulting from a @('create-certificate') event."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input @('cert') of this function is
+     the certificate in the @('create-certificate') event;
+     see @(tsee event).")
+   (xdoc::p
+    "If the author is correct, its state is updated
+     using @(tsee create-certificate-author-next).")
+   (xdoc::p
+    "The states of the correct endorsers are updated
+     using @(tsee create-certificate-endorsers-next).")
+   (xdoc::p
+    "The certificate is broadcast to all the correct validators.
+     This is realized by adding to the network
+     one message for each correct validator as destination,
+     all containing the certificate.")
+   (xdoc::p
+    "It may seems strange that the messages are sent only to correct validators,
+     since a validator does not know which validators are correct or faulty.
+     An AleoBFT implementation would send them to all validators,
+     but faulty validators behave arbitrarily regardless of
+     which messages they receive.
+     Thus, in our model of AleoBFT, we ignore messages sent to faulty validators
+     by only adding to the network messages sent to correct validators.
+     We could easily change our model to add to the network
+     messages to all correct validators,
+     but since faulty validators have no internal state in our model,
+     messages to faulty validators would have no use and purpose.")
+   (xdoc::p
+    "It may also seem strange that the messages are sent to
+     all the validators in the system, and not just the ones in the committee.
+     An AleoBFT implementation would only send them to the committee.
+     However, as explained in @(tsee system-states),
+     our model of AleoBFT implicitly models syncing
+     by including all possible validators in the system,
+     and by having all of them update their internal states
+     based on certificates generated by the active committee.
+     This is way our model adds to the network messages to all validators.")
+   (xdoc::p
+    "In our model, adding a message to the network implies that
+     the message can always be eventually delivered,
+     i.e. it is never lost.
+     This matches the typical assumption, in the BFT literature,
+     of eventually reliable, and authenticated, network connections.
+     The authentication comes from the fact that
+     the certificate in the message includes the author,
+     which is also the sender.
+     There is no event, in our model, to drop or modify messages in the network.
+     They can only be added, and removed when delivered.
+     In an implementation, this kind of network behavior can be realized
+     via encryption and re-transmissions on top of TCP/IP;
+     the extent to which this actually realizes the network assumptions
+     should be subjected to more rigorous study,
+     but for now we accept this assumption as realistic,
+     which is customary in the BFT literature.")
+   (xdoc::p
+    "If a certificate is authored by a faulty validator,
+     the validator may not send the certificate to any validator,
+     but in this case it is as if no certificate creation takes place:
+     we do not model the internal state of faulty validators;
+     we are only concerned with the effects that
+     faulty validator's messages can have on correct validators.")
+   (xdoc::p
+    "If a faulty validator authors a certificate,
+     the validator may only send it to some validators, not all of them.
+     If it only sends it to faulty validators,
+     then again it is as if the certificate creation never happened.
+     If it sends it to at least one correct validator,
+     the correct validator will be able to send it to other correct validators,
+     and eventually all correct validators should have it:
+     this is the underlying reliable broadcast assumption,
+     which in our model is represented simply by
+     the way we model the network and how messages are added and removed."))
+  (b* (((certificate cert) cert)
+       (systate
+        (if (set::in cert.author (correct-addresses systate))
+            (b* ((vstate (get-validator-state cert.author systate))
+                 (new-vstate (create-certificate-author-next vstate cert)))
+              (update-validator-state cert.author new-vstate systate))
+          systate))
+       (systate (create-certificate-endorsers-next systate cert))
+       (network (get-network-state systate))
+       (msgs (make-certificate-messages cert (correct-addresses systate)))
+       (new-network (set::union msgs network))
+       (systate (update-network-state new-network systate)))
+    systate)
+  :hooks (:fix))
