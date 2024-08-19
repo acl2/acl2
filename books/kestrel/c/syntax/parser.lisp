@@ -7749,7 +7749,7 @@
              ((erp last-span pstate) ; _Generic ( expr , genassoc ... )
               (read-punctuator ")" pstate)))
           (retok (make-expr-gensel :control expr
-                                   :assoc genassocs)
+                                   :assocs genassocs)
                  (span-join span last-span)
                  pstate)))
        (t ; other

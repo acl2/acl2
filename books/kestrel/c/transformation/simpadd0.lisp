@@ -68,7 +68,7 @@
      :paren (expr-paren (simpadd0-expr expr.unwrap))
      :gensel (make-expr-gensel
               :control (simpadd0-expr expr.control)
-              :assoc (simpadd0-genassoc-list expr.assoc))
+              :assocs (simpadd0-genassoc-list expr.assocs))
      :arrsub (make-expr-arrsub
               :arg1 (simpadd0-expr expr.arg1)
               :arg2 (simpadd0-expr expr.arg2))

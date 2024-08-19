@@ -931,9 +931,9 @@
          (retok (expr-paren new-expr) table))
        :gensel
        (b* (((erp new-control table) (dimb-expr expr.control table))
-            ((erp new-assoc table) (dimb-genassoc-list expr.assoc table)))
+            ((erp new-assocs table) (dimb-genassoc-list expr.assocs table)))
          (retok (make-expr-gensel :control new-control
-                                  :assoc new-assoc)
+                                  :assocs new-assocs)
                 table))
        :arrsub
        (b* (((erp new-arg1 table) (dimb-expr expr.arg1 table))

@@ -1580,11 +1580,11 @@
            (b* ((pstate (print-astring "_Generic(" pstate))
                 (pstate (print-expr expr.control (expr-priority-asg) pstate))
                 (pstate (print-astring ", " pstate))
-                ((unless expr.assoc)
+                ((unless expr.assocs)
                  (raise "Misusage error: ~
                          empty generic association list.")
                  pstate)
-                (pstate (print-genassoc-list expr.assoc pstate))
+                (pstate (print-genassoc-list expr.assocs pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
            :arrsub

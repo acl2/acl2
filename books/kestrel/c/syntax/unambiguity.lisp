@@ -71,7 +71,7 @@
                :string t
                :paren (expr-unambp expr.unwrap)
                :gensel (and (expr-unambp expr.control)
-                            (genassoc-list-unambp expr.assoc))
+                            (genassoc-list-unambp expr.assocs))
                :arrsub (and (expr-unambp expr.arg1)
                             (expr-unambp expr.arg2))
                :funcall (and (expr-unambp expr.fun)
@@ -1113,10 +1113,10 @@
              (expr-unambp (expr-gensel->control expr)))
     :expand (expr-unambp expr))
 
-  (defrule genassoc-list-unambp-of-expr-gensel->assoc
+  (defrule genassoc-list-unambp-of-expr-gensel->assocs
     (implies (and (expr-unambp expr)
                   (expr-case expr :gensel))
-             (genassoc-list-unambp (expr-gensel->assoc expr)))
+             (genassoc-list-unambp (expr-gensel->assocs expr)))
     :expand (expr-unambp expr))
 
   (defrule expr-unambp-of-expr-arrsub->arg1

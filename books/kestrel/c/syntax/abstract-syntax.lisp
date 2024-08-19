@@ -1393,7 +1393,7 @@
     (:string ((unwrap stringlit)))
     (:paren ((unwrap expr)))
     (:gensel ((control expr)
-              (assoc genassoc-list)))
+              (assocs genassoc-list)))
     (:arrsub ((arg1 expr)
               (arg2 expr)))
     (:funcall ((fun expr)
