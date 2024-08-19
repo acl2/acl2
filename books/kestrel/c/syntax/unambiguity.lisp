@@ -724,6 +724,375 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (defrule expr-unambp-when-ident/const/string
+    ;; The formulation (expr-unambp (expr-... ...))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (member-eq (expr-kind expr) '(:ident :const :string))
+             (expr-unambp expr)))
+
+  (defrule expr-unambp-of-expr-paren
+    (equal (expr-unambp (expr-paren expr))
+           (expr-unambp expr))
+    :expand (expr-unambp (expr-paren expr)))
+
+  (defrule expr-unambp-of-expr-gensel
+    (equal (expr-unambp (expr-gensel control assoc))
+           (and (expr-unambp control)
+                (genassoc-list-unambp assoc)))
+    :expand (expr-unambp (expr-gensel control assoc)))
+
+  (defrule expr-unambp-of-expr-arrsub
+    (equal (expr-unambp (expr-arrsub arg1 arg2))
+           (and (expr-unambp arg1)
+                (expr-unambp arg2)))
+    :expand (expr-unambp (expr-arrsub arg1 arg2)))
+
+  (defrule expr-unambp-of-expr-funcall
+    (equal (expr-unambp (expr-funcall fun args))
+           (and (expr-unambp fun)
+                (expr-list-unambp args)))
+    :expand (expr-unambp (expr-funcall fun args)))
+
+  (defrule expr-unambp-of-expr-member
+    (equal (expr-unambp (expr-member arg name))
+           (expr-unambp arg))
+    :expand (expr-unambp (expr-member arg name)))
+
+  (defrule expr-unambp-of-expr-memberp
+    (equal (expr-unambp (expr-memberp arg name))
+           (expr-unambp arg))
+    :expand (expr-unambp (expr-memberp arg name)))
+
+  (defrule expr-unambp-of-complit
+    (equal (expr-unambp (expr-complit type elems final-comma))
+           (and (tyname-unambp type)
+                (desiniter-list-unambp elems)))
+    :expand (expr-unambp (expr-complit type elems final-comma)))
+
+  (defrule expr-unambp-of-expr-unary
+    (equal (expr-unambp (expr-unary op arg))
+           (expr-unambp arg))
+    :expand (expr-unambp (expr-unary op arg)))
+
+  (defrule expr-unambp-of-expr-sizeof
+    (equal (expr-unambp (expr-sizeof type))
+           (tyname-unambp type))
+    :expand (expr-unambp (expr-sizeof type)))
+
+  (defrule expr-unambp-of-expr-alignof
+    (equal (expr-unambp (expr-alignof type uscores))
+           (tyname-unambp type))
+    :expand (expr-unambp (expr-alignof type uscores)))
+
+  (defrule expr-unambp-of-expr-cast
+    (equal (expr-unambp (expr-cast type arg))
+           (and (tyname-unambp type)
+                (expr-unambp arg)))
+    :expand (expr-unambp (expr-cast type arg)))
+
+  (defrule expr-unambp-of-expr-binary
+    (equal (expr-unambp (expr-binary op arg1 arg2))
+           (and (expr-unambp arg1)
+                (expr-unambp arg2)))
+    :expand (expr-unambp (expr-binary op arg1 arg2)))
+
+  (defrule expr-unambp-of-expr-cond
+    (equal (expr-unambp (expr-cond test then else))
+           (and (expr-unambp test)
+                (expr-unambp then)
+                (expr-unambp else)))
+    :expand (expr-unambp (expr-cond test then else)))
+
+  (defrule expr-unambp-of-expr-comma
+    (equal (expr-unambp (expr-comma first next))
+           (and (expr-unambp first)
+                (expr-unambp next)))
+    :expand (expr-unambp (expr-comma first next)))
+
+  (defrule const-expr-unambp-of-const-expr
+    (equal (const-expr-unambp (const-expr expr))
+           (expr-unambp expr))
+    :expand (const-expr-unambp (const-expr expr)))
+
+  (defrule genassoc-unambp-of-genassoc-type
+    (equal (genassoc-unambp (genassoc-type type expr))
+           (and (tyname-unambp type)
+                (expr-unambp expr)))
+    :expand (genassoc-unambp (genassoc-type type expr)))
+
+  (defrule genassoc-unambp-of-genassoc-default
+    (equal (genassoc-unambp (genassoc-default expr))
+           (expr-unambp expr))
+    :expand (genassoc-unambp (genassoc-default expr)))
+
+  (defrule type-spec-unambp-when-void/.../complex/typedef
+    ;; The formulation (type-spec-unambp (type-spec-... ...))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (member-eq (type-spec-kind tyspec)
+                        '(:void :char :short :int :long :float :double
+                          :signed :unsigned :bool :complex :typedef))
+             (type-spec-unambp tyspec)))
+
+  (defrule type-spec-unambp-of-type-spec-atomic
+    (equal (type-spec-unambp (type-spec-atomic tyname))
+           (tyname-unambp tyname))
+    :expand (type-spec-unambp (type-spec-atomic tyname)))
+
+  (defrule type-spec-unambp-of-type-spec-struct
+    (equal (type-spec-unambp (type-spec-struct strunispec))
+           (strunispec-unambp strunispec))
+    :expand (type-spec-unambp (type-spec-struct strunispec)))
+
+  (defrule type-spec-unambp-of-type-spec-union
+    (equal (type-spec-unambp (type-spec-union strunispec))
+           (strunispec-unambp strunispec))
+    :expand (type-spec-unambp (type-spec-union strunispec)))
+
+  (defrule type-spec-unambp-of-type-spec-enum
+    (equal (type-spec-unambp (type-spec-enum enumspec))
+           (enumspec-unambp enumspec))
+    :expand (type-spec-unambp (type-spec-enum enumspec)))
+
+  (defrule spec/qual-unambp-of-spec/qual-tyspec
+    (equal (spec/qual-unambp (spec/qual-tyspec tyspec))
+           (type-spec-unambp tyspec))
+    :expand (spec/qual-unambp (spec/qual-tyspec tyspec)))
+
+  (defrule spec/qual-unambp-when-tyqual
+    ;; The formulation (spec/qual-unambp (spec/qual-tyqual tyqual))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (spec/qual-case spec/qual :tyqual)
+             (spec/qual-unambp spec/qual)))
+
+  (defrule spec/qual-unambp-of-spec/qual-align
+    (equal (spec/qual-unambp (spec/qual-align alignspec))
+           (align-spec-unambp alignspec))
+    :expand (spec/qual-unambp (spec/qual-align alignspec)))
+
+  (defrule align-spec-unambp-of-align-spec-alignas-type
+    (equal (align-spec-unambp (align-spec-alignas-type tyname))
+           (tyname-unambp tyname))
+    :expand (align-spec-unambp (align-spec-alignas-type tyname)))
+
+  (defrule align-spec-unambp-of-align-spec-alignas-expr
+    (equal (align-spec-unambp (align-spec-alignas-expr cexpr))
+           (const-expr-unambp cexpr))
+    :expand (align-spec-unambp (align-spec-alignas-expr cexpr)))
+
+  (defrule declspec-unambp-of-declspec-tyspec
+    (equal (declspec-unambp (declspec-tyspec tyspec))
+           (type-spec-unambp tyspec))
+    :expand (declspec-unambp (declspec-tyspec tyspec)))
+
+  (defrule declspec-unambp-of-declspec-align
+    (equal (declspec-unambp (declspec-align alignspec))
+           (align-spec-unambp alignspec))
+    :expand (declspec-unambp (declspec-align alignspec)))
+
+  (defrule declspec-unambp-when-stocla/tyqual/funspec
+    ;; The formulation (declspec-unambp (declspec-... ...))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (member-eq (declspec-kind declspec)
+                        '(:stocla :tyqual :funspec))
+             (declspec-unambp declspec)))
+
+  (defrule initer-unambp-of-initer-single
+    (equal (initer-unambp (initer-single expr))
+           (expr-unambp expr))
+    :expand (initer-unambp (initer-single expr)))
+
+  (defrule initer-unambp-of-initer-list
+    (equal (initer-unambp (initer-list elems final-comma))
+           (desiniter-list-unambp elems))
+    :expand (initer-unambp (initer-list elems final-comma)))
+
+  (defrule desiniter-unambp-of-desiniter
+    (equal (desiniter-unambp (desiniter design init))
+           (and (designor-list-unambp design)
+                (initer-unambp init)))
+    :expand (desiniter-unambp (desiniter design init)))
+
+  (defrule designor-unambp-of-designor-sub
+    (equal (designor-unambp (designor-sub index))
+           (const-expr-unambp index))
+    :expand (designor-unambp (designor-sub index)))
+
+  (defrule designor-unambp-of-designor-dot
+    ;; The formulation (designor-unambp (designor-dot ident))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (designor-case designor :dot)
+             (designor-unambp designor)))
+
+  (defrule declor-unambp-of-declor
+    (equal (declor-unambp (declor pointers decl))
+           (dirdeclor-unambp decl))
+    :expand (declor-unambp (declor pointers decl)))
+
+  (defrule dirdeclor-unambp-when-ident
+    ;; The formulation (dirdeclor-unambp (dirdeclor-ident ident))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (dirdeclor-case dirdeclor :ident)
+             (dirdeclor-unambp dirdeclor)))
+
+  (defrule dirdeclor-unambp-of-dirdeclor-paren
+    (equal (dirdeclor-unambp (dirdeclor-paren declor))
+           (declor-unambp declor))
+    :expand (dirdeclor-unambp (dirdeclor-paren declor)))
+
+  (defrule dirdeclor-unambp-of-dirdeclor-array
+    (equal (dirdeclor-unambp (dirdeclor-array decl tyquals expr?))
+           (and (dirdeclor-unambp decl)
+                (expr-option-unambp expr?)))
+    :expand (dirdeclor-unambp (dirdeclor-array decl tyquals expr?)))
+
+  (defrule dirdeclor-unambp-of-dirdeclor-array-static1
+    (equal (dirdeclor-unambp (dirdeclor-array-static1 decl tyquals expr))
+           (and (dirdeclor-unambp decl)
+                (expr-unambp expr)))
+    :expand (dirdeclor-unambp (dirdeclor-array-static1 decl tyquals expr)))
+
+  (defrule dirdeclor-unambp-of-dirdeclor-array-static2
+    (equal (dirdeclor-unambp (dirdeclor-array-static2 decl tyquals expr))
+           (and (dirdeclor-unambp decl)
+                (expr-unambp expr)))
+    :expand (dirdeclor-unambp (dirdeclor-array-static2 decl tyquals expr)))
+
+  (defrule dirdeclor-unambp-of-dirdeclor-array-star
+    (equal (dirdeclor-unambp (dirdeclor-array-star decl tyquals))
+           (dirdeclor-unambp decl))
+    :expand (dirdeclor-unambp (dirdeclor-array-star decl tyquals)))
+
+  (defrule dirdeclor-unambp-of-dirdeclor-function-params
+    (equal (dirdeclor-unambp (dirdeclor-function-params decl params ellipses))
+           (and (dirdeclor-unambp decl)
+                (paramdecl-list-unambp params)))
+    :expand (dirdeclor-unambp (dirdeclor-function-params decl params ellipses)))
+
+  (defrule dirdeclor-unambp-of-dirdeclor-function-names
+    (equal (dirdeclor-unambp (dirdeclor-function-names decl names))
+           (dirdeclor-unambp decl))
+    :expand (dirdeclor-unambp (dirdeclor-function-names decl names)))
+
+  (defrule absdeclor-unambp-of-absdeclor
+    (equal (absdeclor-unambp (absdeclor pointers decl?))
+           (dirabsdeclor-option-unambp decl?))
+    :expand (absdeclor-unambp (absdeclor pointers decl?)))
+
+  (defrule dirabsdeclor-unambp-of-dirabsdeclor-paren
+    (equal (dirabsdeclor-unambp (dirabsdeclor-paren absdeclor))
+           (absdeclor-unambp absdeclor))
+    :expand (dirabsdeclor-unambp (dirabsdeclor-paren absdeclor)))
+
+  (defrule dirabsdeclor-unambp-of-dirabsdeclor-array
+    (equal (dirabsdeclor-unambp (dirabsdeclor-array decl? tyquals expr?))
+           (and (dirabsdeclor-option-unambp decl?)
+                (expr-option-unambp expr?)))
+    :expand (dirabsdeclor-unambp (dirabsdeclor-array decl? tyquals expr?)))
+
+  (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-static1
+    (equal (dirabsdeclor-unambp
+            (dirabsdeclor-array-static1 decl? tyquals expr))
+           (and (dirabsdeclor-option-unambp decl?)
+                (expr-unambp expr)))
+    :expand (dirabsdeclor-unambp
+             (dirabsdeclor-array-static1 decl? tyquals expr)))
+
+  (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-static2
+    (equal (dirabsdeclor-unambp
+            (dirabsdeclor-array-static2 decl? tyquals expr))
+           (and (dirabsdeclor-option-unambp decl?)
+                (expr-unambp expr)))
+    :expand (dirabsdeclor-unambp
+             (dirabsdeclor-array-static2 decl? tyquals expr)))
+
+  (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-star
+    (equal (dirabsdeclor-unambp (dirabsdeclor-array-star decl?))
+           (dirabsdeclor-option-unambp decl?))
+    :expand (dirabsdeclor-unambp
+             (dirabsdeclor-array-star decl?)))
+
+  (defrule dirabsdeclor-unambp-of-dirabsdeclor-function
+    (equal (dirabsdeclor-unambp (dirabsdeclor-function decl? params ellipses))
+           (and (dirabsdeclor-option-unambp decl?)
+                (paramdecl-list-unambp params)))
+    :expand (dirabsdeclor-unambp (dirabsdeclor-function decl? params ellipses)))
+
+  (defrule paramdecl-unambp-of-paramdecl
+    (equal (paramdecl-unambp (paramdecl spec decl))
+           (and (declspec-list-unambp spec)
+                (paramdeclor-unambp decl)))
+    :expand (paramdecl-unambp (paramdecl spec decl)))
+
+  (defrule paramdeclor-unambp-of-paramdeclor-declor
+    (equal (paramdeclor-unambp (paramdeclor-declor declor))
+           (declor-unambp declor))
+    :expand (paramdeclor-unambp (paramdeclor-declor declor)))
+
+  (defrule paramdeclor-unambp-of-paramdeclor-absdeclor
+    (equal (paramdeclor-unambp (paramdeclor-absdeclor absdeclor))
+           (absdeclor-unambp absdeclor))
+    :expand (paramdeclor-unambp (paramdeclor-absdeclor absdeclor)))
+
+  (defrule tyname-unambp-of-tyname
+    (equal (tyname-unambp (tyname specqual decl?))
+           (and (spec/qual-list-unambp specqual)
+                (absdeclor-option-unambp decl?)))
+    :expand (tyname-unambp (tyname specqual decl?)))
+
+  (defrule strunispec-unambp-of-strunispec
+    (equal (strunispec-unambp (strunispec name members))
+           (structdecl-list-unambp members)))
+
+  (defrule structdecl-unambp-of-structdecl-member
+    (equal (structdecl-unambp
+            (structdecl-member extension specqual declor attrib))
+           (and (spec/qual-list-unambp specqual)
+                (structdeclor-list-unambp declor)))
+    :expand (structdecl-unambp
+             (structdecl-member extension specqual declor attrib)))
+
+  (defrule structdecl-unambp-of-structdecl-statassert
+    (equal (structdecl-unambp (structdecl-statassert statassert))
+           (statassert-unambp statassert))
+    :expand (structdecl-unambp (structdecl-statassert statassert)))
+
+  (defrule structdeclor-unambp-of-structdeclor
+    (equal (structdeclor-unambp (structdeclor declor? expr?))
+           (and (declor-option-unambp declor?)
+                (const-expr-option-unambp expr?))))
+
+  (defrule enumspec-unambp-of-enumspec
+    (equal (enumspec-unambp (enumspec name list final-comma))
+           (enumer-list-unambp list)))
+
+  (defrule enumer-unambp-of-enumer
+    (equal (enumer-unambp (enumer name value))
+           (const-expr-option-unambp value)))
+
+  (defrule statassert-unambp-of-statassert
+    (equal (statassert-unambp (statassert test message))
+           (const-expr-unambp test)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (defrule expr-unambp-of-expr-paren->unwrap
     (implies (and (expr-unambp expr)
                   (expr-case expr :paren))
@@ -966,8 +1335,7 @@
   (defrule not-alignas-ambig-when-align-spec-unambp
     (implies (align-spec-unambp alignspec)
              (not (equal (align-spec-kind alignspec) :alignas-ambig)))
-    :rule-classes :forward-chaining
-    :expand (align-spec-unambp alignspec))
+    :rule-classes :forward-chaining)
 
   (defrule type-spec-unambp-of-declspec-tyspec->unwrap
     (implies (and (declspec-unambp declspec)
@@ -1177,8 +1545,7 @@
   (defrule not-ambig-when-paramdeclor-unambp
     (implies (paramdeclor-unambp paramdeclor)
              (not (equal (paramdeclor-kind paramdeclor) :ambig)))
-    :rule-classes :forward-chaining
-    :expand (paramdeclor-unambp paramdeclor))
+    :rule-classes :forward-chaining)
 
   (defrule spec/qual-list-unambp-of-tyname->specqual
     (implies (tyname-unambp tyname)
@@ -1253,7 +1620,27 @@
   (expr/tyname-case expr/tyname
                     :expr (expr-unambp expr/tyname.unwrap)
                     :tyname (tyname-unambp expr/tyname.unwrap))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule expr/tyname-unambp-of-expr/tyname-expr
+    (equal (expr/tyname-unambp (expr/tyname-expr expr))
+           (expr-unambp expr)))
+
+  (defrule expr/tyname-unambp-of-expr/tyname-tyname
+    (equal (expr/tyname-unambp (expr/tyname-tyname tyname))
+           (tyname-unambp tyname)))
+
+  (defrule expr-unambp-of-expr/tyname-expr->unwrap
+    (implies (and (expr/tyname-unambp expr/tyname)
+                  (expr/tyname-case expr/tyname :expr))
+             (expr-unambp (expr/tyname-expr->unwrap expr/tyname))))
+
+  (defrule tyname-unambp-of-expr/tyname-tyname->unwrap
+    (implies (and (expr/tyname-unambp expr/tyname)
+                  (expr/tyname-case expr/tyname :tyname))
+             (tyname-unambp (expr/tyname-tyname->unwrap expr/tyname)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1268,7 +1655,29 @@
   (declor/absdeclor-case declor/absdeclor
                          :declor (declor-unambp declor/absdeclor.unwrap)
                          :absdeclor (absdeclor-unambp declor/absdeclor.unwrap))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule declor/absdeclor-unambp-of-declor/absdeclor-declor
+    (equal (declor/absdeclor-unambp (declor/absdeclor-declor declor))
+           (declor-unambp declor)))
+
+  (defrule declor/absdeclor-unambp-of-declor/absdeclor-absdeclor
+    (equal (declor/absdeclor-unambp (declor/absdeclor-absdeclor absdeclor))
+           (absdeclor-unambp absdeclor)))
+
+  (defrule declor-unambp-of-declor/absdeclor-declor->unwrap
+    (implies (and (declor/absdeclor-unambp declor/absdeclor)
+                  (declor/absdeclor-case declor/absdeclor :declor))
+             (declor-unambp
+              (declor/absdeclor-declor->unwrap declor/absdeclor))))
+
+  (defrule absdeclor-unambp-of-declor/absdeclor-absdeclor->unwrap
+    (implies (and (declor/absdeclor-unambp declor/absdeclor)
+                  (declor/absdeclor-case declor/absdeclor :absdeclor))
+             (absdeclor-unambp
+              (declor/absdeclor-absdeclor->unwrap declor/absdeclor)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1280,6 +1689,11 @@
   :hooks (:fix)
 
   ///
+
+  (defrule initdeclor-unambp-of-initdeclor
+    (equal (initdeclor-unambp (initdeclor declor init?))
+           (and (declor-unambp declor)
+                (initer-option-unambp init?))))
 
   (defrule declor-unambp-of-initdeclor->declor
     (implies (initdeclor-unambp initdeclor)
@@ -1311,6 +1725,15 @@
   :hooks (:fix)
 
   ///
+
+  (defrule decl-unambp-of-decl-decl
+    (equal (decl-unambp (decl-decl extension specs init asm? attrib))
+           (and (declspec-list-unambp specs)
+                (initdeclor-list-unambp init))))
+
+  (defrule decl-unambp-of-decl-statassert
+    (equal (decl-unambp (decl-statassert statassert))
+           (statassert-unambp statassert)))
 
   (defrule declspec-list-unambp-of-decl-decl->specs
     (implies (and (decl-unambp decl)
@@ -1350,6 +1773,22 @@
 
   ///
 
+  (defrule label-unambp-of-label-const
+    (equal (label-unambp (label-const cexpr))
+           (const-expr-unambp cexpr)))
+
+  (defrule label-unambp-when-not-const
+    ;; The formulations (label-unambp (label-... ...))
+    ;; do not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (not (label-case label :const))
+             (label-unambp label)))
+
+  (defrule label-unambp-of-label-default
+    (label-unambp (label-default)))
+
   (defrule const-expr-unambp-of-label-const->unwrap
     (implies (and (label-unambp label)
                   (label-case label :const))
@@ -1368,7 +1807,27 @@
   (decl/stmt-case decl/stmt
                   :decl (decl-unambp decl/stmt.unwrap)
                   :stmt (expr-unambp decl/stmt.unwrap))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule decl/stmt-unambp-of-decl/stmt-decl
+    (equal (decl/stmt-unambp (decl/stmt-decl decl))
+           (decl-unambp decl)))
+
+  (defrule decl/stmt-unambp-of-decl/stmt-stmt
+    (equal (decl/stmt-unambp (decl/stmt-stmt expr))
+           (expr-unambp expr)))
+
+  (defrule decl-unambp-of-decl/stmt-decl->unwrap
+    (implies (and (decl/stmt-unambp decl/stmt)
+                  (decl/stmt-case decl/stmt :decl))
+             (decl-unambp (decl/stmt-decl->unwrap decl/stmt))))
+
+  (defrule stmt-unambp-of-decl/stmt-stmt->unwrap
+    (implies (and (decl/stmt-unambp decl/stmt)
+                  (decl/stmt-case decl/stmt :stmt))
+             (expr-unambp (decl/stmt-stmt->unwrap decl/stmt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1441,12 +1900,111 @@
 
   ///
 
+  (fty::deffixequiv-mutual stmts/blocks-unambp)
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (std::deflist block-item-list-unambp (x)
     :guard (block-item-listp x)
     :parents nil
     (block-item-unambp x))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defrule stmt-unambp-of-stmt-labeled
+    (equal (stmt-unambp (stmt-labeled label stmt))
+           (and (label-unambp label)
+                (stmt-unambp stmt)))
+    :expand (stmt-unambp (stmt-labeled label stmt)))
+
+  (defrule stmt-unambp-of-stmt-compound
+    (equal (stmt-unambp (stmt-compound items))
+           (block-item-list-unambp items))
+    :expand (stmt-unambp (stmt-compound items)))
+
+  (defrule stmt-unambp-of-stmt-expr
+    (equal (stmt-unambp (stmt-expr expr?))
+           (expr-option-unambp expr?))
+    :expand (stmt-unambp (stmt-expr expr?)))
+
+  (defrule stmt-unambp-of-stmt-if
+    (equal (stmt-unambp (stmt-if test then))
+           (and (expr-unambp test)
+                (stmt-unambp then)))
+    :expand (stmt-unambp (stmt-if test then)))
+
+  (defrule stmt-unambp-of-stmt-ifelse
+    (equal (stmt-unambp (stmt-ifelse test then else))
+           (and (expr-unambp test)
+                (stmt-unambp then)
+                (stmt-unambp else)))
+    :expand (stmt-unambp (stmt-ifelse test then else)))
+
+  (defrule stmt-unambp-of-stmt-switch
+    (equal (stmt-unambp (stmt-switch target body))
+           (and (expr-unambp target)
+                (stmt-unambp body)))
+    :expand (stmt-unambp (stmt-switch target body)))
+
+  (defrule stmt-unambp-of-stmt-while
+    (equal (stmt-unambp (stmt-while test body))
+           (and (expr-unambp test)
+                (stmt-unambp body)))
+    :expand (stmt-unambp (stmt-while test body)))
+
+  (defrule stmt-unambp-of-stmt-dowhile
+    (equal (stmt-unambp (stmt-dowhile body test))
+           (and (stmt-unambp body)
+                (expr-unambp test)))
+    :expand (stmt-unambp (stmt-dowhile body test)))
+
+  (defrule stmt-unambp-of-stmt-for-expr
+    (equal (stmt-unambp (stmt-for-expr init test next body))
+           (and (expr-option-unambp init)
+                (expr-option-unambp test)
+                (expr-option-unambp next)
+                (stmt-unambp body)))
+    :expand (stmt-unambp (stmt-for-expr init test next body)))
+
+  (defrule stmt-unambp-of-stmt-for-decl
+    (equal (stmt-unambp (stmt-for-decl init test next body))
+           (and (decl-unambp init)
+                (expr-option-unambp test)
+                (expr-option-unambp next)
+                (stmt-unambp body)))
+    :expand (stmt-unambp (stmt-for-decl init test next body)))
+
+  (defrule stmt-unambp-when-goto
+    ;; The formulation (stmt-unambp (stmt-goto label))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (stmt-case stmt :goto)
+             (stmt-unambp stmt)))
+
+  (defrule stmt-unambp-of-stmt-continue
+    (stmt-unambp (stmt-continue))
+    :expand (stmt-unambp (stmt-continue)))
+
+  (defrule stmt-unambp-of-stmt-break
+    (stmt-unambp (stmt-break))
+    :expand (stmt-unambp (stmt-break)))
+
+  (defrule stmt-unambp-of-stmt-return
+    (equal (stmt-unambp (stmt-return expr?))
+           (expr-option-unambp expr?))
+    :expand (stmt-unambp (stmt-return expr?)))
+
+  (defrule block-item-unambp-of-block-item-decl
+    (equal (block-item-unambp (block-item-decl decl))
+           (decl-unambp decl))
+    :expand (block-item-unambp (block-item-decl decl)))
+
+  (defrule block-item-unambp-of-block-item-stmt
+    (equal (block-item-unambp (block-item-stmt stmt))
+           (stmt-unambp stmt))
+    :expand (block-item-unambp (block-item-stmt stmt)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1597,8 +2155,7 @@
   (defrule not-for-ambig-when-stmt-unambp
     (implies (stmt-unambp stmt)
              (not (equal (stmt-kind stmt) :for-ambig)))
-    :rule-classes :forward-chaining
-    :expand (stmt-unambp stmt))
+    :rule-classes :forward-chaining)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1617,12 +2174,7 @@
   (defrule not-ambig-when-block-item-unambp
     (implies (block-item-unambp item)
              (not (equal (block-item-kind item) :ambig)))
-    :rule-classes :forward-chaining
-    :expand (block-item-unambp item))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (fty::deffixequiv-mutual stmts/blocks-unambp))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1636,6 +2188,13 @@
   :hooks (:fix)
 
   ///
+
+  (defrule fundef-unambp-of-fundef
+    (equal (fundef-unambp (fundef extension spec declor decls body))
+           (and (declspec-list-unambp spec)
+                (declor-unambp declor)
+                (decl-list-unambp decls)
+                (stmt-unambp body))))
 
   (defrule declspec-list-unambp-of-fundef->spec
     (implies (fundef-unambp fundef)
@@ -1664,6 +2223,14 @@
   :hooks (:fix)
 
   ///
+
+  (defrule extdecl-unambp-of-extdecl-fundef
+    (equal (extdecl-unambp (extdecl-fundef fundef))
+           (fundef-unambp fundef)))
+
+  (defrule extdecl-unambp-of-extdecl-decl
+    (equal (extdecl-unambp (extdecl-decl decl))
+           (decl-unambp decl)))
 
   (defrule fundef-unambp-of-extdecl-fundef->unwrap
     (implies (and (extdecl-unambp edecl)
