@@ -13,6 +13,8 @@
 
 (include-book "blocks")
 
+(local (include-book "arithmetic-3/top" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -35,6 +37,14 @@
      The agreement on the blockchains of the validators
      should also provide an agreement on how the committee evolves;
      this is what we are in the progress of formally proving.")
+   (xdoc::p
+    "In our model a committee consists of a set of validator addresses,
+     but we introduce a fixtype to wrap that,
+     for greater abstraction and extensibility.")
+   (xdoc::p
+    "Membership in a committee is simply set membership,
+     but we introduce a slightly more abstract operation for that,
+     also for future extensibility.")
    (xdoc::p
     "The genesis committee is arbitrary,
      but fixed for each execution of the protocol.
@@ -105,6 +115,19 @@
   committee
   :short "Fixtype of optional committees."
   :pred committee-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define committee-memberp ((val addressp) (commtt committeep))
+  :returns (yes/no booleanp)
+  :short "Check if a validator is a member of a committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The validator is identifier by its address.
+     We check whether the address is in the committee."))
+  (set::in (address-fix val) (committee->addresses commtt))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,7 +328,15 @@
                     (block->round (car blocks))))
            (committee-after-blocks blocks)))
        (bonded-committee-at-round-loop round (cdr blocks)))
-     :hooks (:fix))))
+     :hooks (:fix)))
+
+  ///
+
+  (defruled bonded-committee-at-earlier-round-when-at-later-round
+    (implies (and (bonded-committee-at-round later blocks)
+                  (< (pos-fix earlier)
+                     (pos-fix later)))
+             (bonded-committee-at-round earlier blocks))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -387,4 +418,221 @@
       (bonded-committee-at-round (- (pos-fix round) (lookback)) blocks)
     (genesis-committee))
   :guard-hints (("Goal" :in-theory (enable posp)))
+  :hooks (:fix)
+
+  ///
+
+  (defruled active-committee-at-earlier-round-when-at-later-round
+    (implies (and (active-committee-at-round later blocks)
+                  (< (pos-fix earlier)
+                     (pos-fix later)))
+             (active-committee-at-round earlier blocks))
+    :enable (bonded-committee-at-earlier-round-when-at-later-round
+             posp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define max-faulty-for-total ((total natp))
+  :returns (max natp
+                :hints (("Goal" :in-theory (enable natp zp))))
+  :short "Maximum number of faulty validators, out of a total,
+          for the protocol to be fault-tolerant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The classic BFT condition for fault tolerance is that
+     the number of faulty validators is (strictly) less than
+     one third of the total number of validators:
+     @($f < n/3$), using the common symbols
+     @($f$) and @($n$) for the two numbers.
+     This relation works for every positive @($n$),
+     whether it is a multiple of 3 or not.
+     Multiplying both sides by 3, we get @($3f < n$),
+     and taking @($f$) as the maximum value that satisfies the inequality
+     (as opposed to potentially smaller values than the maximum),
+     we get to the sometimes stated condition @($n = 3f + 1$),
+     although this condition is less general for @($n$),
+     because it forces @($n$) to be one more than a multiple of 3.
+     The other possibilities are @($n = 3f + 2$) and @($n = 3f + 3$).")
+   (xdoc::p
+    "The distinction between the maximum @($f$)
+     and possibly smaller values of @($f$)
+     is worth emphasizing,
+     because recent BFT literature
+     does not always state things clearly in this respect.
+     The actual number of faulty validators
+     is not something that validators know.
+     In contrast, the total number @($n$) of validators is known,
+     and thus the maximum @($f$) satisfying @($f < n/3$)
+     can be calculated from @($n$).
+     So when a validator needs to use @($f$) in some computation,
+     it is the maximum such @($f$), calculable from @($n$),
+     not the (unknowable to the validator) number of faulty validators.")
+   (xdoc::p
+    "Some BFT literature uses phrases like
+     ``up to @($f < n/3$) faulty validators'',
+     implying that @($f$) is another parameter of the system, besides @($n$).
+     But when validators need to use @($f$) as part of their computation,
+     as is the case for AleoBFT,
+     it makes more sense for @($f$) to be the maximum value
+     that satisfies the inequality,
+     because it allows for the maximum possible number of faulty validators.
+     So in our model @($f$) is always that maximum,
+     and it is calculable from @($n$).")
+   (xdoc::p
+    "This ACL2 function performs this calculation.
+     The input @('total') is @($n$),
+     and the output is the maximum @($f$) such that @($f < n/3$).
+     We define the function to return 0 if @($n = 0$),
+     although @($n = 0$) does not correspond to a practical situation.
+     So consider the normal case @($n > 0$)
+     (we could strengthen the guard of this function
+     to require a positive integer as input).
+     If @($n$) is a multiple of 3,
+     @($f$) is one less than the integer @($n/3$);
+     if @($n$) is not a multiple of 3,
+     @($f$) is the floor of @($n/3$).
+     We can put the two cases together by noting that
+     the ceiling of an integer is the integer (i.e. a no-op)
+     and that the floor of a non-integer is
+     one less than the ceiling of the non-integer.
+     So we define @($f$) as
+     one less than the ceiling of @($n/3$),
+     or equivalently as the floor of @($(n-1)/3$).
+     We prove the two equivalent, in fact.
+     We also prove that this function returns something below @($n/3$),
+     and one more is not below @($n/3$):
+     that is, we prove that it returns the maximum.
+     We could have alternatively defined this function in terms of maximum,
+     via a recursion to find it, or even in a non-executable way,
+     but instead we pick the definition with ceiling,
+     and prove it equivalent to the other two possible definitions.
+     We also prove that @($n \\geq 3f + 1$).")
+   (xdoc::p
+    "If @($n$) is 1 or 2 or 3, no failures are tolerated:
+     @($f$), and hence @($f$), must be 0.
+     The case @($n = 1$) is a degenerate one,
+     but the protocol could probably still work in a degenerate way.
+     The cases @($n = 2$) and @($n = 3$) could make sense,
+     but since they tolerate no failures,
+     they are not used in practice.
+     If @($n$) is 4 or more, we can tolerate
+     an increasing number of faulty validators,
+     any number less than or equal to $f$,
+     so that is usually the practical minimum for @($n$)."))
+  (if (zp total)
+      0
+    (1- (ceiling total 3)))
+
+  ///
+
+  (fty::deffixequiv max-faulty-for-total
+    :hints (("Goal" :in-theory (enable nfix))))
+
+  (defruled max-faulty-for-total-alt-def
+    (equal (max-faulty-for-total n)
+           (if (zp n)
+               0
+             (floor (1- n) 3))))
+
+  (theory-invariant (incompatible (:definition max-faulty-for-total)
+                                  (:rewrite max-faulty-for-total-alt-def)))
+
+  (defret max-faulty-for-total-upper-bound
+    (< max (/ total 3))
+    :hyp (not (zp total))
+    :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total)))))
+
+  (defret max-faulty-for-total-upper-bound-tight
+    (>= (1+ max) (/ total 3))
+    :hyp (not (zp total))
+    :rule-classes ((:linear
+                    :trigger-terms ((1+ (max-faulty-for-total total))))))
+
+  (defrule total-lower-bound-wrt-max-faulty
+    (implies (not (zp total))
+             (>= total
+                 (1+ (* 3 (max-faulty-for-total total)))))
+    :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total)))))
+
+  (defret max-faulty-for-total-leq-total
+    (<= max (nfix total))
+    :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total))))
+    :hints (("Goal" :in-theory (enable nfix))))
+
+  (assert-event (= (max-faulty-for-total 0) 0))
+  (assert-event (= (max-faulty-for-total 1) 0))
+  (assert-event (= (max-faulty-for-total 2) 0))
+  (assert-event (= (max-faulty-for-total 3) 0))
+  (assert-event (= (max-faulty-for-total 4) 1))
+  (assert-event (= (max-faulty-for-total 5) 1))
+  (assert-event (= (max-faulty-for-total 6) 1))
+  (assert-event (= (max-faulty-for-total 7) 2))
+  (assert-event (= (max-faulty-for-total 8) 2))
+  (assert-event (= (max-faulty-for-total 9) 2))
+  (assert-event (= (max-faulty-for-total 10) 3))
+  (assert-event (= (max-faulty-for-total 11) 3))
+  (assert-event (= (max-faulty-for-total 12) 3))
+  (assert-event (= (max-faulty-for-total 13) 4))
+  (assert-event (= (max-faulty-for-total 14) 4))
+  (assert-event (= (max-faulty-for-total 15) 4))
+  (assert-event (= (max-faulty-for-total 15) 4))
+  (assert-event (= (max-faulty-for-total 16) 5))
+  (assert-event (= (max-faulty-for-total 17) 5))
+  (assert-event (= (max-faulty-for-total 18) 5))
+  (assert-event (= (max-faulty-for-total 19) 6))
+  (assert-event (= (max-faulty-for-total 20) 6))
+  (assert-event (= (max-faulty-for-total 25) 8))
+  (assert-event (= (max-faulty-for-total 100) 33)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define committee-total ((commtt committeep))
+  :returns (total natp)
+  :short "Total number of validators in a committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is just the number of addresses.")
+   (xdoc::p
+    "This is @($n$), using the notation in @(tsee max-faulty-for-total).
+     But note that, unlike typical BFT literature,
+     where there is a fixed set of validators,
+     in AleoBFT we have dynamic committees,
+     and so @($n$) is a function of the committee."))
+  (set::cardinality (committee->addresses commtt))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define committee-max-faulty ((commtt committeep))
+  :returns (maxf natp)
+  :short "Maximum tolerated number of faulty validators in a committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @($f$) discussed in @(tsee max-faulty-for-total)
+     applies to a committee, not to the whole system,
+     in the same way as @($n$)."))
+  (max-faulty-for-total (committee-total commtt))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define committee-quorum ((commtt committeep))
+  :returns (quorum natp
+                   :hints (("Goal" :in-theory (enable natp
+                                                      nfix
+                                                      committee-max-faulty))))
+  :short "Quorum of validators in a committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the BFT literature, the quorum number is @($n - f$),
+     where @($n$) and @($f$) are the numbers explained
+     in @(tsee max-faulty-for-total).
+     As @($n$) and @($f$) are functions of the committee,
+     the quorum number is a function of the committee too."))
+  (- (committee-total commtt)
+     (committee-max-faulty commtt))
   :hooks (:fix))

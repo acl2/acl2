@@ -76,3 +76,40 @@
   :elt-type message
   :elementp-of-nil nil
   :pred message-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-certificate-messages ((cert certificatep)
+                                   (dests address-setp))
+  :returns (msgs message-setp)
+  :short "Create messages for a certificate with given destinations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For each given address,
+     we create a message with the certificate
+     and with the address as destination.")
+   (xdoc::p
+    "These are the messages broadcasted to the network
+     when a certificate is created."))
+  (cond ((set::emptyp dests) nil)
+        (t (set::insert (make-message :certificate cert
+                                      :destination (set::head dests))
+                        (make-certificate-messages cert (set::tail dests)))))
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv make-certificate-messages
+    :args ((cert certificatep)))
+
+  (defruled in-of-make-certificate-messages
+    (implies (address-setp dests)
+             (equal (set::in msg
+                             (make-certificate-messages cert dests))
+                    (and (messagep msg)
+                         (equal (message->certificate msg)
+                                (certificate-fix cert))
+                         (set::in (message->destination msg)
+                                  dests))))
+    :induct t))

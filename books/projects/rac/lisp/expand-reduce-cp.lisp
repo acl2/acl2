@@ -198,18 +198,19 @@
             (pseudo-term-substp (pairlis$ x y)))))
 
 (define expand-reduce-cp ((cl pseudo-term-listp)
-                          fns ;; symbol-listp
+                          fns-hint ;; symbol-listp
                           state)
   :returns (mv (ok booleanp)
                (cl-list pseudo-term-list-listp
                         :hyp
                         (pseudo-term-listp cl))
                state)
-  (if (and (symbol-listp fns)
+  (if (and (symbol-listp fns-hint)
            (equal (len cl) 1)
            (consp (car cl))
            (eql (caar cl) 'equal))
-      (b* ((fns (cons 'mv-list fns))
+      (b* ((debug (car fns-hint))
+           (fns (cons 'mv-list (cdr fns-hint)))
            (lhs (cadar cl))
            (rhs (caddar cl))
            (lhs-vars (simple-term-vars lhs))
@@ -222,8 +223,10 @@
            (rhs (push-mv-nths rhs)))
         (if (hons-equal lhs rhs)
             (mv nil '(('t)) state)
-          (b* ((- (cw "~%expand-reduce clause-processor failed!~%")))
-          (mv nil `(((equal ,lhs ,rhs))) state))))
+          (b* ((- (cw "~%expand-reduce clause-processor failed!~%"))
+               (- (if debug (cw "LHS = ~%~x0~%" lhs) nil))
+               (- (if debug (cw "RHS = ~%~x0~%" rhs) nil)))
+            (mv nil `(((equal ,lhs ,rhs))) state))))
     (mv nil (list cl) state)))
 
 ;; The following is borrowed from clause-processors/unify-substs.lisp. It
@@ -478,17 +481,17 @@
                                   ())
                   :use ((:instance correctness-of-expand-all
                          (term (cadr (car cl)))
-                         (fns (cons 'mv-list fns)))
+                         (fns (cons 'mv-list (cdr fns))))
                         (:instance correctness-of-expand-all
                          (term (caddr (car cl)))
-                         (fns (cons 'mv-list fns)))
+                         (fns (cons 'mv-list (cdr fns))))
                         (:instance correctness-of-push-mv-nth
                          (term (mv-nth
                                 1
                                 (expand-all (cadr (car cl))
                                             (pairlis$ (simple-term-vars (cadr (car cl)))
                                                       (simple-term-vars (cadr (car cl))))
-                                            (cons 'mv-list fns)
+                                            (cons 'mv-list (cdr fns))
                                             state))))
                         (:instance correctness-of-push-mv-nth
                          (term (mv-nth
@@ -496,7 +499,7 @@
                                 (expand-all (caddr (car cl))
                                             (pairlis$ (simple-term-vars (caddr (car cl)))
                                                       (simple-term-vars (caddr (car cl))))
-                                            (cons 'mv-list fns)
+                                            (cons 'mv-list (cdr fns))
                                             state)))))
                   :do-not-induct t))
   :rule-classes :clause-processor)

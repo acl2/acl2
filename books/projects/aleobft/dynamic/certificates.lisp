@@ -44,7 +44,15 @@
      Currently we do not model proposals, but just certificates,
      because we treat the Narwhal aspects of AleoBFT abstractly here;
      the generation of certificates, and its relation to the ``real'' AleoBFT,
-     is explained in the definition of the state transitions."))
+     is explained in the definition of the state transitions.")
+   (xdoc::p
+    "Beside defining certificates,
+     we also introduce operations on (sets of) certificates,
+     particularly to retrieve certificates from sets
+     according to author and/or round criteria.
+     Since DAGs are represented as sets in "
+    (xdoc::seetopic "validator-states" "validator states")
+    ", these operations are usable (and in fact mainly used) on DAGs."))
   :order-subtopics t
   :default-parent t)
 
@@ -125,7 +133,7 @@
   :verify-guards :after-returns
   ///
 
-  (defrule certificate->author-in-certificate-set->author-set
+  (defruled certificate->author-in-certificate-set->author-set
     (implies (set::in cert certs)
              (set::in (certificate->author cert)
                       (certificate-set->author-set certs)))
@@ -136,7 +144,8 @@
            (set::insert (certificate->author cert)
                         (certificate-set->author-set certs)))
     :induct t
-    :enable set::in)
+    :enable (set::in
+             certificate->author-in-certificate-set->author-set))
 
   (defruled certificate-set->author-set-of-union
     (equal (certificate-set->author-set (set::union certs1 certs2))
@@ -146,17 +155,18 @@
     :enable (set::union
              certificate-set->author-set-of-insert))
 
-  (defrule emptyp-of-certificate-set->author-set
+  (defruled emptyp-of-certificate-set->author-set
     (equal (set::emptyp (certificate-set->author-set certs))
            (set::emptyp certs))
     :induct t)
 
-  (defrule certificate-set->author-set-subset
+  (defruled certificate-set->author-set-subset
     (implies (set::subset certs1 certs2)
              (set::subset (certificate-set->author-set certs1)
                           (certificate-set->author-set certs2)))
     :induct t
-    :enable set::subset)
+    :enable (set::subset
+             certificate->author-in-certificate-set->author-set))
 
   (defruled same-certificate-author-when-cardinality-leq-1
     (implies (and (<= (set::cardinality (certificate-set->author-set certs)) 1)
@@ -164,6 +174,7 @@
                   (set::in cert2 certs))
              (equal (certificate->author cert1)
                     (certificate->author cert2)))
+    :enable certificate->author-in-certificate-set->author-set
     :use (:instance set::same-element-when-cardinality-leq-1
                     (elem1 (certificate->author cert1))
                     (elem2 (certificate->author cert2))
@@ -180,7 +191,7 @@
   :verify-guards :after-returns
   ///
 
-  (defrule certificate->round-in-certificate-set->round-set
+  (defruled certificate->round-in-certificate-set->round-set
     (implies (set::in cert certs)
              (set::in (certificate->round cert)
                       (certificate-set->round-set certs)))
@@ -191,7 +202,8 @@
            (set::insert (certificate->round cert)
                         (certificate-set->round-set certs)))
     :induct t
-    :enable set::in)
+    :enable (set::in
+             certificate->round-in-certificate-set->round-set))
 
   (defruled certificate-set->round-set-of-union
     (equal (certificate-set->round-set (set::union certs1 certs2))
@@ -201,17 +213,18 @@
     :enable (set::union
              certificate-set->round-set-of-insert))
 
-  (defrule emptyp-of-certificate-set->round-set
+  (defruled emptyp-of-certificate-set->round-set
     (equal (set::emptyp (certificate-set->round-set certs))
            (set::emptyp certs))
     :induct t)
 
-  (defrule certificate-set->round-set-subset
+  (defruled certificate-set->round-set-subset
     (implies (set::subset certs1 certs2)
              (set::subset (certificate-set->round-set certs1)
                           (certificate-set->round-set certs2)))
     :induct t
-    :enable set::subset)
+    :enable (set::subset
+             certificate->round-in-certificate-set->round-set))
 
   (defruled same-certificate-round-when-cardinality-leq-1
     (implies (and (<= (set::cardinality (certificate-set->round-set certs)) 1)
@@ -219,6 +232,7 @@
                   (set::in cert2 certs))
              (equal (certificate->round cert1)
                     (certificate->round cert2)))
+    :enable certificate->round-in-certificate-set->round-set
     :use (:instance set::same-element-when-cardinality-leq-1
                     (elem1 (certificate->round cert1))
                     (elem2 (certificate->round cert2))
@@ -252,4 +266,47 @@
     "These are the author and the endorsers,
      i.e. all the validators who signed the certificate."))
   (b* (((certificate cert) cert))
-    (set::insert cert.author cert.endorsers)))
+    (set::insert cert.author cert.endorsers))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-certificate-with-author+round ((author addressp)
+                                           (round posp)
+                                           (certs certificate-setp))
+  :returns (cert? certificate-optionp)
+  :short "Retrieve, from a set of certificates,
+          a certificate with a given author and round."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no certificate with the given author and round,
+     @('nil') is returned, for no certificate.")
+   (xdoc::p
+    "If there is a certificate with the given author and round,
+     the first one found is returned,
+     according to the total ordering of the set.
+     However, when a certificate set is unequivocal,
+     i.e. has unique author and round combinations,
+     the first certificate found is the only one."))
+  (b* (((when (set::emptyp certs)) nil)
+       ((certificate cert) (set::head certs))
+       ((when (and (equal author cert.author)
+                   (equal round cert.round)))
+        (certificate-fix cert)))
+    (get-certificate-with-author+round author round (set::tail certs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-certificates-with-round ((round posp)
+                                     (certs certificate-setp))
+  :returns (certs-with-round certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with a given round."
+  (b* (((when (set::emptyp certs)) nil)
+       ((certificate cert) (set::head certs)))
+    (if (equal round cert.round)
+        (set::insert (certificate-fix cert)
+                     (get-certificates-with-round round (set::tail certs)))
+      (get-certificates-with-round round (set::tail certs))))
+  :verify-guards :after-returns)
