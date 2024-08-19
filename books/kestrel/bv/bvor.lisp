@@ -1,7 +1,7 @@
 ; Bitwise or
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -243,20 +243,18 @@
                    (bvor size x (bvchop size y))))
    :hints (("Goal" :in-theory (enable bvor))))
 
+;good
 (defthm slice-of-bvor
-   (implies (and (< highbit size)
-                 (<= lowbit highbit)
-                 (integerp size)
-                 (<= 0 size)
-                 (natp lowbit)
-                 (natp highbit)
-                 (integerp x)
-                 (integerp y))
-            (equal (slice highbit lowbit (bvor size x y))
-                   (bvor (+ 1 highbit (- lowbit))
-                            (slice highbit lowbit x)
-                            (slice highbit lowbit y))))
-  :hints (("Goal" :in-theory (e/d (slice bvor natp bvchop-of-logtail) (bvchop-of-logtail-becomes-slice)))))
+  (implies (and (< highbit size)
+                (integerp size)
+                (natp lowbit)
+                (natp highbit))
+           (equal (slice highbit lowbit (bvor size x y))
+                  (bvor (+ 1 highbit (- lowbit))
+                        (slice highbit lowbit x)
+                        (slice highbit lowbit y))))
+  :hints (("Goal" :cases ((<= lowbit highbit))
+           :in-theory (enable bvor))))
 
 (defthm bvchop-of-bvor
   (implies (and (<= size1 size2)
@@ -328,20 +326,7 @@
            :in-theory (e/d (zip) (unsigned-byte-p-of-bvor-gen
                                   unsigned-byte-p-of-bvor)))))
 
-;good
-;todo: replace the other
-(defthm slice-of-bvor-gen
-  (implies (and (< highbit size)
-                (integerp size)
-                (natp lowbit)
-                (natp highbit)
-                )
-           (equal (slice highbit lowbit (bvor size x y))
-                  (bvor (+ 1 highbit (- lowbit))
-                        (slice highbit lowbit x)
-                        (slice highbit lowbit y))))
-  :hints (("Goal" :cases ((<= lowbit highbit))
-           :in-theory (enable bvor))))
+
 
 ;; We do it when at least one arg is a constant
 (defthm slice-of-bvor-when-constant
@@ -359,7 +344,7 @@
                         ;; at least one of these slices gets computed:
                         (slice highbit lowbit x)
                         (slice highbit lowbit y))))
-  :hints (("Goal" :by slice-of-bvor-gen)))
+  :hints (("Goal" :by slice-of-bvor)))
 
 (defthm <-of-bvor-and-expt
   (implies (and (integerp x)
@@ -430,7 +415,7 @@
                 (integerp z))
            (equal (bvor size (bvor size2 x y) z)
                   (bvor size (bvor size x y) z)))
-  :hints (("Goal" :in-theory (e/d (bvor) ( BVCHOP-1-BECOMES-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (bvor) (bvchop-1-becomes-getbit)))))
 
 ;use trim?
 (defthm bvor-of-bvor-tighten-2
@@ -442,7 +427,7 @@
                 (integerp z))
            (equal (bvor size z (bvor size2 x y))
                   (bvor size z (bvor size x y))))
-  :hints (("Goal" :in-theory (e/d (bvor) ( BVCHOP-1-BECOMES-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (bvor) (bvchop-1-becomes-getbit)))))
 
 (defthm bitp-of-bvor-of-1
   (bitp (bvor 1 x y))
