@@ -56,38 +56,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection type-spec-list-unambp-of-sublists
-  :short "Theorems saying that the sublist of type specifiers
-          extracted via some abstract syntax operations
-          is unambiguous if the initial list is unambiguous."
-
-  (defrule type-spec-list-unambp-of-check-spec/qual-list-all-tyspec
-    (b* (((mv okp tyspecs) (check-spec/qual-list-all-tyspec specquals)))
-      (implies (and (spec/qual-list-unambp specquals)
-                    okp)
-               (type-spec-list-unambp tyspecs)))
-    :induct t
-    :enable check-spec/qual-list-all-tyspec)
-
-  (defrule type-spec-list-unambp-of-check-declspec-list-all-tyspec
-    (b* (((mv okp tyspecs) (check-declspec-list-all-tyspec specquals)))
-      (implies (and (declspec-list-unambp specquals)
-                    okp)
-               (type-spec-list-unambp tyspecs)))
-    :induct t
-    :enable check-declspec-list-all-tyspec)
-
-  (defrule type-spec-list-unambp-of-check-declspec-list-all-tyspec/storspec
-    (b* (((mv okp tyspecs &)
-          (check-declspec-list-all-tyspec/storspec declspecs)))
-      (implies (and (declspec-list-unambp declspecs)
-                    okp)
-               (type-spec-list-unambp tyspecs)))
-    :induct t
-    :enable check-declspec-list-all-tyspec/storspec))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define ldm-ident ((ident identp))
   :returns (mv erp (ident1 c::identp))
   :short "Map an identiifer to an identifier in the language definition."

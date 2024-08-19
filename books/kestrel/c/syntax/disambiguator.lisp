@@ -339,55 +339,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule expr-unambp-of-apply-pre-inc/dec-ops
-  :short "Preservation of unambiguity by @(tsee apply-pre-inc/dec-ops)."
-  (implies (expr-unambp expr)
-           (expr-unambp (apply-pre-inc/dec-ops inc/dec expr)))
-  :induct t
-  :enable apply-pre-inc/dec-ops)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule expr-unambp-of-apply-post-inc/dec-ops
-  :short "Preservation of unambiguity by @(tsee apply-post-inc/dec-ops)."
-  (implies (expr-unambp expr)
-           (expr-unambp (apply-post-inc/dec-ops expr inc/dec)))
-  :induct t
-  :enable apply-post-inc/dec-ops)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule expr-list-unambp-of-expr-to-asg-expr-list
-  :short "Preservation of unambiguity by @(tsee expr-to-asg-expr-list)."
-  (implies (expr-unambp expr)
-           (expr-list-unambp (expr-to-asg-expr-list expr)))
-  :induct t
-  :enable expr-to-asg-expr-list)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule expr-unambp-of-check-expr-mul
-  :short "Preservation of unambiguity by @(tsee check-expr-mul)."
-  (b* (((mv yes/no arg1 arg2) (check-expr-mul expr)))
-    (implies (and (expr-unambp expr)
-                  yes/no)
-             (and (expr-unambp arg1)
-                  (expr-unambp arg2))))
-  :enable check-expr-mul)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule expr-unambp-of-check-expr-binary
-  :short "Preservation of unambiguity by @(tsee check-expr-binary)."
-  (b* (((mv yes/no & arg1 arg2) (check-expr-binary expr)))
-    (implies (and (expr-unambp expr)
-                  yes/no)
-             (and (expr-unambp arg1)
-                  (expr-unambp arg2))))
-  :enable check-expr-binary)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define dimb-cast/call-to-cast ((tyname tynamep)
                                 (inc/dec inc/dec-op-listp)
                                 (arg exprp))
