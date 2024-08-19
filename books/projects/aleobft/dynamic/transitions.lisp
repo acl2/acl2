@@ -14,6 +14,7 @@
 (include-book "events")
 (include-book "transitions-create-certificate")
 (include-book "transitions-receive-certificate")
+(include-book "transitions-store-certificate")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -34,7 +35,8 @@
      In other words, we define the transitions of
      the state transition system that models AleoBFT."))
   :order-subtopics (transitions-create-certificate
-                    transitions-receive-certificate)
+                    transitions-receive-certificate
+                    transitions-store-certificate)
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
