@@ -124,22 +124,41 @@
      which are two or more rounds ahead of the validator
      that is storing the certificate into the DAG,
      it indicates that this validator is behind.
+     Note that, as required in @(tsee store-certificate-possiblep),
+     the DAG must contain all the previous certificates,
+     which must form a quorum because of the way certificates are created
+     (it needs to be proved that there is agreement on the quorum,
+     as we indeed plan to do);
+     thus, if the validator's round is advanced to the certificate's round,
+     the validator can immediately generate its own new certificate
+     for that round in our model (or a proposal in a more detailed model).
      This aspect of the protocol needs further study,
      along with the logic for
      round advancement in @('advance-round') events.")
+   (xdoc::p
+    "If we advance the round, we also reset the timer,
+     by setting it to `running'.
+     Although the timer also needs further study,
+     its purpose appears to be that a validator
+     does not spend excessive time in a round,
+     regardless of certificates received.
+     In that case, it seems appropriate to reset the timer
+     every time the round is advanced.")
    (xdoc::p
     "The network is unaffected."))
   (b* (((certificate cert) cert)
        ((validator-state vstate) (get-validator-state val systate))
        (new-buffer (set::delete (certificate-fix cert) vstate.buffer))
        (new-dag (set::insert (certificate-fix cert) vstate.dag))
-       (new-round (if (> cert.round (1+ vstate.round))
-                      (1- cert.round)
-                    vstate.round))
+       ((mv new-round new-timer)
+        (if (> cert.round (1+ vstate.round))
+            (mv (1- cert.round) (timer-running))
+          (mv vstate.round vstate.timer)))
        (new-vstate (change-validator-state vstate
                                            :buffer new-buffer
                                            :dag new-dag
-                                           :round new-round))
+                                           :round new-round
+                                           :timer new-timer))
        (systate (update-validator-state val new-vstate systate)))
     systate)
   :guard-hints (("Goal" :in-theory (enable store-certificate-possiblep
