@@ -686,10 +686,7 @@
           :postdec (retok (c::expr-postdec arg))
           :sizeof (reterr (msg "Unsupported sizeof operator."))))
        :sizeof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
-       :sizeof-ambig (prog2$
-                      (raise "Misusage error: ambiguous expression ~x0."
-                             (expr-fix expr))
-                      (reterr t))
+       :sizeof-ambig (prog2$ (impossible) (reterr t))
        :alignof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :cast (b* (((erp tyname) (ldm-tyname expr.type))
                   ((erp arg) (ldm-expr expr.arg)))
@@ -703,26 +700,11 @@
                   ((erp else) (ldm-expr expr.else)))
                (retok (c::make-expr-cond :test test :then then :else else)))
        :comma (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
-       :cast/call-ambig (prog2$
-                         (raise "Misusage error: ambiguous expression ~x0."
-                                (expr-fix expr))
-                         (reterr t))
-       :cast/mul-ambig (prog2$
-                        (raise "Misusage error: ambiguous expression ~x0."
-                               (expr-fix expr))
-                        (reterr t))
-       :cast/add-ambig (prog2$
-                        (raise "Misusage error: ambiguous expression ~x0."
-                               (expr-fix expr))
-                        (reterr t))
-       :cast/sub-ambig (prog2$
-                        (raise "Misusage error: ambiguous expression ~x0."
-                               (expr-fix expr))
-                        (reterr t))
-       :cast/and-ambig (prog2$
-                        (raise "Misusage error: ambiguous expression ~x0."
-                               (expr-fix expr))
-                        (reterr t))))
+       :cast/call-ambig (prog2$ (impossible) (reterr t))
+       :cast/mul-ambig (prog2$ (impossible) (reterr t))
+       :cast/add-ambig (prog2$ (impossible) (reterr t))
+       :cast/sub-ambig (prog2$ (impossible) (reterr t))
+       :cast/and-ambig (prog2$ (impossible) (reterr t))))
     :measure (expr-count expr))
 
   (define ldm-expr-list ((exprs expr-listp))
@@ -935,9 +917,7 @@
        ((when (paramdeclor-case paramdeclor :none))
         (reterr (msg "Unsupported absent parameter declarator ~x0.")))
        ((when (paramdeclor-case paramdeclor :ambig))
-        (raise "Misusage error: ambiguous parameter declarator ~x0."
-               (paramdeclor-fix paramdeclor))
-        (reterr t))
+        (prog2$ (impossible) (reterr t)))
        (declor (paramdeclor-declor->unwrap paramdeclor)))
     (ldm-declor-obj declor))
   :hooks (:fix))
@@ -1282,10 +1262,7 @@
        :for-decl (reterr (msg "Unsupported 'for' loop ~x0 ~
                                with initializing declaration."
                               (stmt-fix stmt)))
-       :for-ambig (prog2$
-                   (raise "Misusage error: ambiguous statement ~x0."
-                          (stmt-fix stmt))
-                   (reterr t))
+       :for-ambig (prog2$ (impossible) (reterr t))
        :goto (b* (((erp ident1) (ldm-ident stmt.label)))
                (retok (c::make-stmt-goto :target ident1)))
        :continue (retok (c::stmt-continue))
@@ -1306,10 +1283,7 @@
                (retok (c::block-item-declon objdeclon)))
        :stmt (b* (((erp stmt) (ldm-stmt item.unwrap)))
                (retok (c::block-item-stmt stmt)))
-       :ambig (prog2$
-               (raise "Misusage error: ambiguous block item ~x0."
-                      (block-item-fix item))
-               (reterr t))))
+       :ambig (prog2$ (impossible) (reterr t))))
     :measure (block-item-count item))
 
   (define ldm-block-item-list ((items block-item-listp))
