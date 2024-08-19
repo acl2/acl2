@@ -1780,7 +1780,7 @@
        dirabsdeclor
        :dummy-base
        (prog2$
-        (raise "Misusage error: dummy base case of direct abstract declarator.")
+        (raise "Internal error: dummy base case of direct abstract declarator.")
         (reterr t))
        :paren
        (b* (((erp new-absdeclor table)
