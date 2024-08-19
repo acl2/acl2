@@ -35,7 +35,7 @@
 (include-book "oslib/file-types" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) :oslib))
 (include-book "std/strings/letter-digit-uscore-dash-chars" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
-(include-book "kestrel/std/util/tuple" :dir :system)
+(include-book "std/util/tuple" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))

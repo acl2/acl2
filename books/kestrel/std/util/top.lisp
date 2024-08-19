@@ -36,8 +36,6 @@
 
 (include-book "error-value-tuples")
 
-(include-book "tuple")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc std/util-extensions

@@ -56,6 +56,7 @@
 (include-book "defval")
 (include-book "def-bound-theorems")
 (include-book "defthm-commutative")
+(include-book "tuple")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)
