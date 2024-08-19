@@ -41,7 +41,15 @@
     "For now we do not make any checks on GCC extensions,
      even though they may contain expressions.
      This mirrors the treatment in the @(see disambiguator):
-     the reason for this (temporary) limitation is explained there."))
+     the reason for this (temporary) limitation is explained there.")
+   (xdoc::p
+    "Besides defining the unambiguity predicates,
+     we also provide rules to automate guard and return proofs
+     that involve the unambiguity predicates.
+     The rules about the fixtype deconstructors
+     automate the guard proofs;
+     the rules about the fixtype constructors
+     automate the return proofs."))
   :order-subtopics t
   :default-parent t)
 
