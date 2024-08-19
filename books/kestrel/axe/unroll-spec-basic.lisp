@@ -28,6 +28,7 @@
 ;; for get-non-built-in-supporting-fns-list (todo: reduce):
 (include-book "evaluator") ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
 (include-book "kestrel/utilities/check-boolean" :dir :system)
+;; (include-book "kestrel/lists-light/group-rules" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
@@ -41,39 +42,59 @@
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 
+;move to rule-lists.lisp
 (defun unroll-spec-basic-rules ()
   (set-difference-eq
    (append (base-rules)
            (amazing-rules-bv)
            (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
-           (list-rules)
+           (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
            ;; (introduce-bv-array-rules)
            ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
            (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
            ;; Handle nth of a 2-d array:
            '(nth-becomes-nth-to-unroll-for-2d-array
              nth-to-unroll-opener
-             collect-constants-over-<-2))
+             collect-constants-over-<-2
+             ;; group-base group-unroll ; I guess we get these automatically from calling opener-rules-for-fns
+             len-of-group ;; these are not needed if we unroll group/ungroup
+             consp-of-group
+             nth-of-group
+             ungroup-of-cons)
+           ;; (bv-array-rules-simple)
+           ;; (list-to-bv-array-rules)
+           ;; (set-difference-eq (core-rules-bv)
+           ;;                    ;; these are kind of like trim rules, and can make the result worse:
+           ;;                    '(;BVCHOP-OF-BVPLUS
+           ;;                      BVCHOP-OF-bvuminus
+           ;;                      ))
+           ;; (unsigned-byte-p-forced-rules)
+           )
    ;; can lead to blowup in lifting md5:
    (bvplus-rules)))
 
 (ensure-rules-known (unroll-spec-basic-rules))
 
-(defund filter-function-names (rule-names wrld)
-  (declare (xargs :guard (and (symbol-listp rule-names)
-                              (plist-worldp wrld))))
-  (if (endp rule-names)
-      nil
-    (let ((rule-name (first rule-names)))
-      (if (function-symbolp rule-name wrld)
-          (cons rule-name
-                (filter-function-names (rest rule-names) wrld))
-        (filter-function-names (rest rule-names) wrld)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm symbol-listp-of-filter-function-names
-  (implies (symbol-listp rule-names)
-           (symbol-listp (filter-function-names rule-names wrld)))
-  :hints (("Goal" :in-theory (enable filter-function-names))))
+(defund filter-function-names (names wrld)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (plist-worldp wrld))))
+  (if (endp names)
+      nil
+    (let ((name (first names)))
+      (if (function-symbolp name wrld)
+          (cons name
+                (filter-function-names (rest names) wrld))
+        (filter-function-names (rest names) wrld)))))
+
+(local
+  (defthm symbol-listp-of-filter-function-names
+    (implies (symbol-listp names)
+             (symbol-listp (filter-function-names names wrld)))
+    :hints (("Goal" :in-theory (enable filter-function-names)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Add more options, such as :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
@@ -159,14 +180,29 @@
                         )
                     (fns-supporting-term term
                                          ;; Don't open these functions:
-                                         (append '(leftrotate ; don't open leftrotate
+                                         (append '(leftrotate
                                                    nth update-nth len true-listp
                                                    nthcdr ; opener could loop with nth-of-cdr, etc.
                                                    firstn
                                                    take
+                                                   append
                                                    list-to-bv-array
                                                    ifix nfix
                                                    floor mod
+                                                   mv-nth
+                                                   binary-logand
+                                                   binary-logior
+                                                   lognot
+                                                   logorc1
+                                                   binary-logeqv ; maybe
+                                                   binary-logxor
+                                                   integer-length
+                                                   ;; group ; might as well unroll this
+                                                   ;; ungroup ; might as well unroll this
+                                                   fix
+                                                   expt
+                                                   repeat
+                                                   make-list-ac
                                                    )
                                                  *bv-and-array-fns-we-can-translate*)
                                          (w state)))
@@ -175,20 +211,6 @@
                    (- (cw "Will use the following ~x0 additional opener rules: ~X12~%" (len opener-rule-names) opener-rule-names nil))
                    ;; todo: could loop with the openers (e.g., )?
                    (rule-names (append (unroll-spec-basic-rules)
-                                       ;; '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
-                                       ;;   ;car-cons
-                                       ;;   ;cdr-cons
-                                       ;;   )
-                                       ;; (bv-array-rules-simple)
-                                       ;; (list-to-bv-array-rules)
-                                       ;; (type-rules) ; give us type facts about bv ops
-                                       ;; (set-difference-eq (core-rules-bv)
-                                       ;;                    ;; these are kind of like trim rules, and can make the result worse:
-                                       ;;                    '(;BVCHOP-OF-BVPLUS
-                                       ;;                      BVCHOP-OF-bvuminus
-                                       ;;                      ))
-                                       ;; (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
-                                       ;; (unsigned-byte-p-forced-rules)
                                        opener-rule-names)))
                 (mv opener-events rule-names))
             ;; rules is an explicit list of rules:
