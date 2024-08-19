@@ -79,6 +79,8 @@
    "The alists of information created in the first pass
     are also stored in the @(tsee deftreeops) table,
     via an event generated along with the functions and theorems.
+    The table also stores an alist of the generated events as values
+    with the names of the events as keys.
     This way, the information about the generated functions and theorems
     can be easily accessed, interactively or programmatically.")
   (xdoc::p
