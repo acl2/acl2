@@ -55,7 +55,13 @@
    (xdoc::p
     "This modeling of certificate creation is not ideal, but adequate for now.
      We plan to develop, in the future, a model of AleoBFT that explicates
-     the exchange of proposals, signatures, and certificates."))
+     the exchange of proposals, signatures, and certificates.")
+   (xdoc::p
+    "Because of this atomic modeling of certificate creation,
+     a certificate creation transition involves multiple validators,
+     namely author and endorsers;
+     it also involves the network component of the system state.
+     In contrast, all other events involve just one validator."))
   :order-subtopics t
   :default-parent t)
 
