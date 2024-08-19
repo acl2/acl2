@@ -131,6 +131,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define committee-nonemptyp ((commtt committeep))
+  :returns (yes/no booleanp)
+  :short "Check if a committee is not empty."
+  (not (set::emptyp (committee->addresses commtt)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection genesis-committee
   :short "Genesis committee."
   :long
