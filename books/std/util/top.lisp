@@ -55,6 +55,7 @@
 (include-book "defsum")
 (include-book "defval")
 (include-book "def-bound-theorems")
+(include-book "defthm-commutative")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)

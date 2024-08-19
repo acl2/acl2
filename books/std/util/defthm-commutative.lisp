@@ -18,7 +18,7 @@
 (defmacro+ defthm-commutative (name op &key hints)
   (declare (xargs :guard (and (symbolp name)
                               (symbolp op))))
-  :parents (std::std/util-extensions std/util)
+  :parents (std/util)
   :short "Introduce a commutativity theorem."
   :long
   (xdoc::topstring

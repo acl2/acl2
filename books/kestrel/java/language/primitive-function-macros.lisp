@@ -12,8 +12,8 @@
 
 (include-book "primitive-types")
 
-(include-book "kestrel/std/util/defthm-commutative" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
+(include-book "std/util/defthm-commutative" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
