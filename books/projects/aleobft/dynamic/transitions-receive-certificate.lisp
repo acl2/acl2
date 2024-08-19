@@ -82,7 +82,7 @@
     "The messages must be in the network.")
    (xdoc::p
     "The destination must be a validator in the system.
-     Recall that, as explained in @(tsee create-certificate),
+     Recall that, as explained in @(tsee create-certificate-next),
      in our model certificates are broadcast to all validators,
      not just the ones in the committee.")
    (xdoc::p
@@ -116,8 +116,7 @@
    (xdoc::p
     "Furthermore, if the validator has previously endorsed that certificate,
      the author-round pair is removed from the set of pairs,
-     because the certificate is now in the buffer,
-     and can be checked there in @(tsee signers-do-not-have-author+round-p).
+     because the certificate is now in the buffer.
      The set deletion has no effect if the set does not have the pair,
      so we remove the element unconditionally."))
   (b* (((certificate cert) (message->certificate msg))
