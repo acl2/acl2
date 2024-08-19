@@ -77,7 +77,7 @@
    (xdoc::p
     "The input @('msg') of this function is
      the message in the @('receive-certificate') event;
-     see @(tse event).")
+     see @(tsee event).")
    (xdoc::p
     "The messages must be in the network.")
    (xdoc::p
