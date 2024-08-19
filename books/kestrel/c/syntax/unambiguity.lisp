@@ -1615,6 +1615,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist type-spec-list-unambp (x)
+  :guard (type-spec-listp x)
+  :short "Check if a list of type specifiers is unambiguous."
+  (type-spec-unambp x)
+  ///
+  (fty::deffixequiv type-spec-list-unambp
+    :args ((x type-spec-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr/tyname-unambp ((expr/tyname expr/tyname-p))
   :returns (yes/no booleanp)
   :short "Check if an expression or type name is unambiguous."
