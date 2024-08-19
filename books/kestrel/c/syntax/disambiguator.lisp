@@ -344,8 +344,7 @@
   (implies (expr-unambp expr)
            (expr-unambp (apply-pre-inc/dec-ops inc/dec expr)))
   :induct t
-  :enable (apply-pre-inc/dec-ops
-           expr-unambp))
+  :enable apply-pre-inc/dec-ops)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -354,8 +353,7 @@
   (implies (expr-unambp expr)
            (expr-unambp (apply-post-inc/dec-ops expr inc/dec)))
   :induct t
-  :enable (apply-post-inc/dec-ops
-           expr-unambp))
+  :enable apply-post-inc/dec-ops)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -364,9 +362,7 @@
   (implies (expr-unambp expr)
            (expr-list-unambp (expr-to-asg-expr-list expr)))
   :induct t
-  :enable (expr-to-asg-expr-list
-           expr-unambp
-           expr-list-unambp))
+  :enable expr-to-asg-expr-list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -377,7 +373,7 @@
                   yes/no)
              (and (expr-unambp arg1)
                   (expr-unambp arg2))))
-  :enable (check-expr-mul expr-unambp))
+  :enable check-expr-mul)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -388,7 +384,7 @@
                   yes/no)
              (and (expr-unambp arg1)
                   (expr-unambp arg2))))
-  :enable (check-expr-binary expr-unambp))
+  :enable check-expr-binary)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -430,8 +426,7 @@
   (defret expr-unambp-of-dimb-cast/call-to-cast
     (expr-unambp cast-expr)
     :hyp (and (tyname-unambp tyname)
-              (expr-unambp arg))
-    :hints (("Goal" :in-theory (enable expr-unambp)))))
+              (expr-unambp arg))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -515,15 +510,14 @@
        (expr-unambp new-expr)
        :hyp (and (expr-unambp fun)
                  (expr-unambp rest))
-       :hints (("Goal" :induct t :in-theory (enable expr-unambp irr-expr))))))
+       :hints (("Goal" :induct t :in-theory (enable irr-expr))))))
 
   ///
 
   (defret expr-unambp-of-dimb-cast/call-to-call
     (expr-unambp call-expr)
     :hyp (and (expr-unambp fun)
-              (expr-unambp rest))
-    :hints (("Goal" :expand (expr-unambp (expr-paren fun))))))
+              (expr-unambp rest))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -551,8 +545,7 @@
   (defret expr-unambp-of-dimb-cast/mul-to-cast
     (expr-unambp cast-expr)
     :hyp (and (tyname-unambp tyname)
-              (expr-unambp arg))
-    :hints (("Goal" :in-theory (enable expr-unambp)))))
+              (expr-unambp arg))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -579,8 +572,7 @@
   (defret expr-unambp-of-dimb-cast/mul-to-mul
     (expr-unambp mul-expr)
     :hyp (and (expr-unambp arg1)
-              (expr-unambp arg2))
-    :hints (("Goal" :in-theory (enable expr-unambp)))))
+              (expr-unambp arg2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -649,7 +641,7 @@
     (expr-unambp expr)
     :hyp (and (tyname-unambp tyname)
               (expr-unambp arg))
-    :hints (("Goal" :induct t :in-theory (enable expr-unambp)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -681,8 +673,7 @@
   (defret expr-unambp-of-dimb-cast/addsub-to-addsub
     (expr-unambp expr)
     :hyp (and (expr-unambp arg1)
-              (expr-unambp arg2))
-    :hints (("Goal" :in-theory (enable expr-unambp)))))
+              (expr-unambp arg2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -727,7 +718,7 @@
     (expr-unambp expr)
     :hyp (and (tyname-unambp tyname)
               (expr-unambp arg))
-    :hints (("Goal" :induct t :in-theory (enable expr-unambp)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -754,8 +745,7 @@
   (defret expr-unambp-of-dimb-cast/and-to-and
     (expr-unambp expr)
     :hyp (and (expr-unambp arg1)
-              (expr-unambp arg2))
-    :hints (("Goal" :in-theory (enable expr-unambp)))))
+              (expr-unambp arg2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -832,9 +822,11 @@
      :parents nil
      (b* (((when (endp params)) (mv t nil))
           (param (car params))
-          ((unless (paramdeclor-case (paramdecl->decl param) :none)) (mv nil nil))
+          ((unless (paramdeclor-case (paramdecl->decl param) :none))
+           (mv nil nil))
           (declspecs (paramdecl->spec param))
-          ((unless (and (consp declspecs) (endp (cdr declspecs)))) (mv nil nil))
+          ((unless (and (consp declspecs) (endp (cdr declspecs))))
+           (mv nil nil))
           (declspec (car declspecs))
           ((unless (declspec-case declspec :tyspec)) (mv nil nil))
           (tyspec (declspec-tyspec->unwrap declspec))
@@ -2492,133 +2484,7 @@
     (defret declor/absdeclor-unambp-of-dimb-amb-declor/absdeclor
       (implies (not erp)
                (declor/absdeclor-unambp declor-or-absdeclor))
-      :fn dimb-amb-declor/absdeclor)
-    :hints (("Goal"
-             :in-theory (enable expr-unambp
-                                expr-list-unambp
-                                expr-option-unambp
-                                const-expr-unambp
-                                const-expr-option-unambp
-                                genassoc-unambp
-                                genassoc-list-unambp
-                                type-spec-unambp
-                                spec/qual-unambp
-                                spec/qual-list-unambp
-                                align-spec-unambp
-                                declspec-unambp
-                                declspec-list-unambp
-                                initer-unambp
-                                initer-option-unambp
-                                desiniter-unambp
-                                desiniter-list-unambp
-                                designor-unambp
-                                designor-list-unambp
-                                declor-unambp
-                                declor-option-unambp
-                                dirdeclor-unambp
-                                absdeclor-unambp
-                                absdeclor-option-unambp
-                                dirabsdeclor-unambp
-                                dirabsdeclor-option-unambp
-                                paramdecl-unambp
-                                paramdecl-list-unambp
-                                paramdeclor-unambp
-                                tyname-unambp
-                                strunispec-unambp
-                                structdecl-unambp
-                                structdecl-list-unambp
-                                structdeclor-unambp
-                                structdeclor-list-unambp
-                                enumspec-unambp
-                                enumer-unambp
-                                enumer-list-unambp
-                                statassert-unambp
-                                expr/tyname-unambp
-                                declor/absdeclor-unambp
-                                dimb-expr
-                                dimb-expr-list
-                                dimb-expr-option
-                                dimb-const-expr
-                                dimb-const-expr-option
-                                dimb-genassoc
-                                dimb-genassoc-list
-                                dimb-type-spec
-                                dimb-spec/qual
-                                dimb-spec/qual-list
-                                dimb-align-spec
-                                dimb-declspec
-                                dimb-declspec-list
-                                dimb-initer
-                                dimb-initer-option
-                                dimb-desiniter
-                                dimb-desiniter-list
-                                dimb-designor
-                                dimb-designor-list
-                                dimb-declor
-                                dimb-declor-option
-                                dimb-dirdeclor
-                                dimb-absdeclor
-                                dimb-absdeclor-option
-                                dimb-dirabsdeclor
-                                dimb-dirabsdeclor-option
-                                dimb-paramdecl
-                                dimb-paramdecl-list
-                                dimb-paramdeclor
-                                dimb-tyname
-                                dimb-strunispec
-                                dimb-structdecl
-                                dimb-structdecl-list
-                                dimb-structdeclor
-                                dimb-structdeclor-list
-                                dimb-enumspec
-                                dimb-enumer
-                                dimb-enumer-list
-                                dimb-statassert
-                                dimb-amb-expr/tyname
-                                dimb-amb-declor/absdeclor
-                                expr-option-some->val
-                                const-expr-option-some->val
-                                initer-option-some->val
-                                declor-option-some->val
-                                absdeclor-option-some->val
-                                dirabsdeclor-option-some->val))
-            (cond
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-expr-option)
-                               clause)
-              '(:expand (dimb-expr-option expr? table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-const-expr-option)
-                               clause)
-              '(:expand (dimb-const-expr-option cexpr? table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-initer-option)
-                               clause)
-              '(:expand (dimb-initer-option initer? table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-declor-option)
-                               clause)
-              '(:expand (dimb-declor-option declor? table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-dirdeclor)
-                               clause)
-              '(:expand (dimb-dirdeclor dirdeclor fundefp table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-absdeclor)
-                               clause)
-              '(:expand (dimb-absdeclor absdeclor table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-absdeclor-option)
-                               clause)
-              '(:expand (dimb-absdeclor-option absdeclor? table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-dirabsdeclor-option)
-                               clause)
-              '(:expand (dimb-dirabsdeclor-option dirabsdeclor? table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-dirabsdeclor)
-                               clause)
-              '(:expand (dimb-dirabsdeclor dirabsdeclor table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-tyname)
-                               clause)
-              '(:expand (dimb-tyname tyname table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-structdeclor)
-                               clause)
-              '(:expand (dimb-structdeclor structdeclor table)))
-             ((acl2::occur-lst '(acl2::flag-is 'dimb-enumer)
-                               clause)
-              '(:expand (dimb-enumer enumer table)))))))
+      :fn dimb-amb-declor/absdeclor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2653,8 +2519,7 @@
 
   (defret initdeclor-unambp-of-dimb-initdeclor
     (implies (not erp)
-             (initdeclor-unambp new-ideclor))
-    :hints (("Goal" :in-theory (enable initdeclor-unambp)))))
+             (initdeclor-unambp new-ideclor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2683,7 +2548,7 @@
   (defret initdeclor-list-unambp-of-dimb-initdeclor-list
     (implies (not erp)
              (initdeclor-list-unambp new-ideclors))
-    :hints (("Goal" :induct t :in-theory (enable initdeclor-list-unambp)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2723,8 +2588,7 @@
 
   (defret decl-unambp-of-dimb-decl
     (implies (not erp)
-             (decl-unambp new-decl))
-    :hints (("Goal" :in-theory (enable decl-unambp)))))
+             (decl-unambp new-decl))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2748,7 +2612,7 @@
   (defret decl-list-unambp-of-dimb-decl-list
     (implies (not erp)
              (decl-list-unambp new-decls))
-    :hints (("Goal" :induct t :in-theory (enable decl-list-unambp)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2773,8 +2637,7 @@
 
   (defret label-unambp-of-dimb-label
     (implies (not erp)
-             (label-unambp new-label))
-    :hints (("Goal" :in-theory (enable label-unambp)))))
+             (label-unambp new-label))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2836,8 +2699,7 @@
 
   (defret decl/stmt-unambp-of-dimb-amb-decl/stmt
     (implies (not erp)
-             (decl/stmt-unambp decl-or-stmt))
-    :hints (("Goal" :in-theory (enable decl/stmt-unambp)))))
+             (decl/stmt-unambp decl-or-stmt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3044,15 +2906,7 @@
     (defret block-item-list-unambp-of-dimb-block-item-list
       (implies (not erp)
                (block-item-list-unambp new-items))
-      :fn dimb-block-item-list)
-    :hints (("Goal" :in-theory (enable stmt-unambp
-                                       block-item-unambp
-                                       block-item-list-unambp
-                                       dimb-stmt
-                                       dimb-block-item
-                                       dimb-block-item-list
-                                       dimb-amb-decl/stmt
-                                       expr-option-unambp-when-expr-unambp)))))
+      :fn dimb-block-item-list)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3125,9 +2979,7 @@
 
   (defret fundef-unambp-of-dimb-fundef
     (implies (not erp)
-             (fundef-unambp new-fundef))
-    :hints (("Goal" :in-theory (enable fundef-unambp
-                                       stmt-unambp)))))
+             (fundef-unambp new-fundef))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3149,8 +3001,7 @@
 
   (defret extdecl-unambp-of-dimb-extdecl
     (implies (not erp)
-             (extdecl-unambp new-extdecl))
-    :hints (("Goal" :in-theory (enable extdecl-unambp)))))
+             (extdecl-unambp new-extdecl))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3169,7 +3020,7 @@
   (defret extdecl-list-unambp-of-dimb-extdecl-list
     (implies (not erp)
              (extdecl-list-unambp new-edecls))
-    :hints (("Goal" :induct t :in-theory (enable extdecl-list-unambp)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
