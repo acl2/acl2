@@ -345,8 +345,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is for detecting redundant calls,
-     and for storing the information about the rule names."))
+    "This is for storing information about the generated information and events,
+     and also for detecting redundant calls."))
   :order-subtopics t
   :default-parent t)
 
@@ -357,7 +357,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of:")
+    "A value of this fixtype consists of:")
    (xdoc::ul
     (xdoc::li
      "The alist from rule names to rule name information.")
@@ -369,11 +369,14 @@
     (xdoc::li
      "An alist from symbols to events,
       which consists of all the generated events as values,
-      with the event names as keys of the alist.")))
+      with the event names as keys of the alist.")
+    (xdoc::li
+     "The call of @(tsee deftreeops).")))
   ((rulename-info-alist deftreeops-rulename-info-alist)
    (numrange-info-alist deftreeops-numrange-info-alist)
    (charval-info-alist deftreeops-charval-info-alist)
-   (event-alist symbol-pseudoeventform-alist))
+   (event-alist symbol-pseudoeventform-alist)
+   (call pseudo-event-formp))
   :pred deftreeops-table-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2469,7 +2472,8 @@
                      :rulename-info-alist rulename-infos
                      :numrange-info-alist numrange-infos
                      :charval-info-alist charval-infos
-                     :event-alist event-alist))
+                     :event-alist event-alist
+                     :call call))
        (event `(defsection ,(add-suffix grammar "-TREE-OPERATIONS")
                  :parents (,grammar)
                  :short ,(str::cat
