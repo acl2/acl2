@@ -335,8 +335,7 @@
            :postdec nil
            :sizeof nil)
    :sizeof nil
-   :sizeof-ambig (raise "Misusage error: ambiguous expression ~x0."
-                        (expr-fix expr))
+   :sizeof-ambig (impossible)
    :alignof nil
    :cast (and (tyname-formalp expr.type)
               (expr-pure-formalp expr.arg))
@@ -350,16 +349,11 @@
               (expr-pure-formalp expr.then)
               (expr-pure-formalp expr.else))
    :comma nil
-   :cast/call-ambig (raise "Misusage error: ambiguous expression ~x0."
-                           (expr-fix expr))
-   :cast/mul-ambig (raise "Misusage error: ambiguous expression ~x0."
-                          (expr-fix expr))
-   :cast/add-ambig (raise "Misusage error: ambiguous expression ~x0."
-                          (expr-fix expr))
-   :cast/sub-ambig (raise "Misusage error: ambiguous expression ~x0."
-                          (expr-fix expr))
-   :cast/and-ambig (raise "Misusage error: ambiguous expression ~x0."
-                          (expr-fix expr)))
+   :cast/call-ambig (impossible)
+   :cast/mul-ambig (impossible)
+   :cast/add-ambig (impossible)
+   :cast/sub-ambig (impossible)
+   :cast/and-ambig (impossible))
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
@@ -623,8 +617,7 @@
      :dowhile nil
      :for-expr nil
      :for-decl nil
-     :for-ambig (raise "Misusage error: ambiguous statment ~x0."
-                       (stmt-fix stmt))
+     :for-ambig (impossible)
      :goto nil
      :continue nil
      :break nil
@@ -646,8 +639,7 @@
      item
      :decl (decl-block-formalp item.unwrap)
      :stmt (stmt-formalp item.unwrap)
-     :ambig (raise "Misusage error: ambiguous block item ~x0."
-                   (block-item-fix item)))
+     :ambig (impossible))
     :measure (block-item-count item))
 
   (define block-item-list-formalp ((items block-item-listp))
@@ -894,8 +886,7 @@
    :declor (declor-obj-formalp paramdeclor.unwrap)
    :absdeclor nil
    :none nil
-   :ambig (raise "Misusage error: ambiguous parameter declarator ~x0."
-                 (paramdeclor-fix paramdeclor)))
+   :ambig (impossible))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
