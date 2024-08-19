@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "events")
+(include-book "elections")
 (include-book "transitions-create-certificate")
 (include-book "transitions-receive-certificate")
 (include-book "transitions-store-certificate")
@@ -34,7 +35,8 @@
      which new states the events lead to.
      In other words, we define the transitions of
      the state transition system that models AleoBFT."))
-  :order-subtopics (transitions-create-certificate
+  :order-subtopics (elections
+                    transitions-create-certificate
                     transitions-receive-certificate
                     transitions-store-certificate)
   :default-parent t)
