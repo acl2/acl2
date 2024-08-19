@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-operations")
+(include-book "unambiguity")
 
 (include-book "../language/abstract-syntax")
 
@@ -52,6 +53,38 @@
      the syntax is within the subset of the language definition."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection type-spec-list-unambp-of-sublists
+  :short "Theorems saying that the sublist of type specifiers
+          extracted via some abstract syntax operations
+          is unambiguous if the initial list is unambiguous."
+
+  (defrule type-spec-list-unambp-of-check-spec/qual-list-all-tyspec
+    (b* (((mv okp tyspecs) (check-spec/qual-list-all-tyspec specquals)))
+      (implies (and (spec/qual-list-unambp specquals)
+                    okp)
+               (type-spec-list-unambp tyspecs)))
+    :induct t
+    :enable check-spec/qual-list-all-tyspec)
+
+  (defrule type-spec-list-unambp-of-check-declspec-list-all-tyspec
+    (b* (((mv okp tyspecs) (check-declspec-list-all-tyspec specquals)))
+      (implies (and (declspec-list-unambp specquals)
+                    okp)
+               (type-spec-list-unambp tyspecs)))
+    :induct t
+    :enable check-declspec-list-all-tyspec)
+
+  (defrule type-spec-list-unambp-of-check-declspec-list-all-tyspec/storspec
+    (b* (((mv okp tyspecs &)
+          (check-declspec-list-all-tyspec/storspec declspecs)))
+      (implies (and (declspec-list-unambp declspecs)
+                    okp)
+               (type-spec-list-unambp tyspecs)))
+    :induct t
+    :enable check-declspec-list-all-tyspec/storspec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,6 +195,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-type-spec-list ((tyspecs type-spec-listp))
+  :guard (type-spec-list-unambp tyspecs)
   :returns (mv erp (tyspecseq c::tyspecseqp))
   :short "Map a list of type specifiers to
           a type specifier sequence in the language definition."
@@ -350,6 +384,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-dirdeclor-obj ((dirdeclor dirdeclorp))
+  :guard (dirdeclor-unambp dirdeclor)
   :returns (mv erp (declor1 c::obj-declorp))
   :short "Map a direct declarator to
           an object declarator in the language definition."
@@ -408,6 +443,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-declor-obj ((declor declorp))
+  :guard (declor-unambp declor)
   :returns (mv erp (declor1 c::obj-declorp))
   :short "Map a declarator to
           an object declarator in the language definition."
@@ -444,6 +480,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-dirabsdeclor-obj ((dirabsdeclor dirabsdeclorp))
+  :guard (dirabsdeclor-unambp dirabsdeclor)
   :returns (mv erp (adeclor1 c::obj-adeclorp))
   :short "Map a direct abstract declarator to
           an abstract object declarator in the language definition."
@@ -490,6 +527,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-absdeclor-obj ((absdeclor absdeclorp))
+  :guard (absdeclor-unambp absdeclor)
   :returns (mv erp (adeclor1 c::obj-adeclorp))
   :short "Map an abstract declarator to
           an abstract object declarator in the language definition."
@@ -532,6 +570,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-tyname ((tyname tynamep))
+  :guard (tyname-unambp tyname)
   :returns (mv erp (tyname1 c::tynamep))
   :short "Map a type name to a type name in the language definition."
   :long
@@ -600,6 +639,7 @@
   :short "Map expressions to expressions in the language definition."
 
   (define ldm-expr ((expr exprp))
+    :guard (expr-unambp expr)
     :returns (mv erp (expr1 c::exprp))
     :parents (mapping-to-language-definition ldm-exprs)
     :short "Map an expression to an expression in the language definition."
@@ -686,6 +726,7 @@
     :measure (expr-count expr))
 
   (define ldm-expr-list ((exprs expr-listp))
+    :guard (expr-list-unambp exprs)
     :returns (mv erp (exprs1 c::expr-listp))
     :parents (mapping-to-language-definition ldm-exprs)
     :short "Map a list of expressions to
@@ -706,6 +747,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-expr-option ((expr? expr-optionp))
+  :guard (expr-option-unambp expr?)
   :returns (mv erp (expr?1 c::expr-optionp))
   :short "Map an optional expression to
           an optional expression in the language definition."
@@ -719,6 +761,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-structdecl ((structdecl structdeclp))
+  :guard (structdecl-unambp structdecl)
   :returns (mv erp (structdecl1 c::struct-declonp))
   :short "Map a structure declaration to
           a structure declaration in the language definition."
@@ -765,6 +808,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-structdecl-list ((structdecls structdecl-listp))
+  :guard (structdecl-list-unambp structdecls)
   :returns (mv erp (structdecls1 c::struct-declon-listp))
   :short "Map a list of structure declarations to
           a list of structure declarations in the language definition."
@@ -778,6 +822,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-enumer ((enumer enumerp))
+  :guard (enumer-unambp enumer)
   :returns (mv erp (ident c::identp))
   :short "Map an enumerator to
           an identifier in the language definition."
@@ -796,6 +841,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-enumer-list ((enumers enumer-listp))
+  :guard (enumer-list-unambp enumers)
   :returns (mv erp (idents c::ident-listp))
   :short "Map a list of enumerators to
           a list of identifiers in the language definition."
@@ -809,6 +855,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-decl-tag ((decl declp))
+  :guard (decl-unambp decl)
   :returns (mv erp (tagdeclon c::tag-declonp))
   :short "Map a declaration to
           a tag declaration in the language definition."
@@ -870,6 +917,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-paramdeclor ((paramdeclor paramdeclorp))
+  :guard (paramdeclor-unambp paramdeclor)
   :returns (mv erp (objdeclor c::obj-declorp))
   :short "Map a parameter declarator to
           an object declarator in the language definition."
@@ -897,6 +945,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-paramdecl ((paramdecl paramdeclp))
+  :guard (paramdecl-unambp paramdecl)
   :returns (mv erp (paramdecl1 c::param-declonp))
   :short "Map a parameter declaration to
           a parameter declaration in the language definition."
@@ -925,6 +974,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-paramdecl-list ((paramdecls paramdecl-listp))
+  :guard (paramdecl-list-unambp paramdecls)
   :returns (mv erp (paramdecls1 c::param-declon-listp))
   :short "Map a list of parameter declarations to
           a list of parameter declarations in the language definition."
@@ -938,6 +988,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-dirdeclor-fun ((dirdeclor dirdeclorp))
+  :guard (dirdeclor-unambp dirdeclor)
   :returns (mv erp (fundeclor c::fun-declorp))
   :short "Map a direct declarator to
           a function declarator in the language definition."
@@ -974,6 +1025,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-declor-fun ((declor declorp))
+  :guard (declor-unambp declor)
   :returns (mv erp (fundeclor c::fun-declorp))
   :short "Map a declarator to
           a function declarator in the language definition."
@@ -1010,6 +1062,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-decl-fun ((decl declp))
+  :guard (decl-unambp decl)
   :returns (mv erp (fundeclon c::fun-declonp))
   :short "Map a declaration to
           a function declaration in the language definition."
@@ -1059,6 +1112,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-desiniter ((desiniter desiniterp))
+  :guard (desiniter-unambp desiniter)
   :returns (mv erp (expr c::exprp))
   :short "Map an initializer with optional designations
           to an initializer expression in the language definition."
@@ -1079,6 +1133,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-desiniter-list ((desiniters desiniter-listp))
+  :guard (desiniter-list-unambp desiniters)
   :returns (mv erp (exprs c::expr-listp))
   :short "Map a list of initializers with optional designations to
           a list of initializer expressions in the language definition."
@@ -1092,6 +1147,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-initer ((initer initerp))
+  :guard (initer-unambp initer)
   :returns (mv erp (initer1 c::initerp))
   :short "Map an initializer to
           an initializer in the language definition."
@@ -1107,6 +1163,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-decl-obj ((decl declp))
+  :guard (decl-unambp decl)
   :returns (mv erp (objdeclon c::obj-declonp))
   :short "Map a declaration to
           an object declaration in the language definition."
@@ -1159,6 +1216,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-label ((label labelp))
+  :guard (label-unambp label)
   :returns (mv erp (label1 c::labelp))
   :short "Map a label to a label in the language definition."
   (b* (((reterr) (c::label-default)))
@@ -1178,6 +1236,7 @@
           statements and blocks in the language definition."
 
   (define ldm-stmt ((stmt stmtp))
+    :guard (stmt-unambp stmt)
     :returns (mv erp (stmt1 c::stmtp))
     :parents (mapping-to-language-definition ldm-stmts/blocks)
     :short "Map a statement to a statement in the language definition."
@@ -1236,6 +1295,7 @@
     :measure (stmt-count stmt))
 
   (define ldm-block-item ((item block-itemp))
+    :guard (block-item-unambp item)
     :returns (mv erp (item1 c::block-itemp))
     :parents (mapping-to-language-definition ldm-stmts/blocks)
     :short "Map a block item to a block item in the language definition."
@@ -1253,6 +1313,7 @@
     :measure (block-item-count item))
 
   (define ldm-block-item-list ((items block-item-listp))
+    :guard (block-item-list-unambp items)
     :returns (mv erp (items1 c::block-item-listp))
     :parents (mapping-to-language-definition ldm-stmts/blocks)
     :short "Map a list of block items to
@@ -1273,6 +1334,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-fundef ((fundef fundefp))
+  :guard (fundef-unambp fundef)
   :returns (mv erp (fundef1 c::fundefp))
   :short "Map a function definition to the language definition."
   :long
@@ -1312,6 +1374,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-extdecl ((extdecl extdeclp))
+  :guard (extdecl-unambp extdecl)
   :returns (mv erp (extdecl1 c::ext-declonp))
   :short "Map an external declaration to
           an external declaration in the language definition."
@@ -1348,6 +1411,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-extdecl-list ((extdecls extdecl-listp))
+  :guard (extdecl-list-unambp extdecls)
   :returns (mv erp (extdecls1 c::ext-declon-listp))
   :short "Map a list of external declarations to the language definition."
   (b* (((reterr) nil)
@@ -1360,6 +1424,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-transunit ((tunit transunitp))
+  :guard (transunit-unambp tunit)
   :returns (mv erp (file c::filep))
   :short "Map a translation unit to the language definition."
   :long
@@ -1378,6 +1443,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-transunit-ensemble ((tunits transunit-ensemblep))
+  :guard (transunit-ensemble-unambp tunits)
   :returns (mv erp (fileset c::filesetp))
   :short "Map a translation unit ensemble to the language definition."
   :long
