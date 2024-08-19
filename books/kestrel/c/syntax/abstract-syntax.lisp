@@ -2597,7 +2597,11 @@
   (:name ((unwrap ident)))
   (:const ((unwrap const-expr)))
   (:default ())
-  :pred labelp)
+  :pred labelp
+
+  ///
+
+  (in-theory (disable (:e label-default))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2763,7 +2767,12 @@
     :elt-type block-item
     :true-listp t
     :elementp-of-nil nil
-    :pred block-item-listp))
+    :pred block-item-listp)
+
+  ///
+
+  (in-theory (disable (:e stmt-continue)
+                      (:e stmt-break))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
