@@ -1580,10 +1580,14 @@
       "This does not correspond directly
        to any nonterminal in the grammar in [C],
        but it is useful to define <i>specifier-qualifier-list</i>:
-       see @(tsee spec/qual-list)."))
+       see @(tsee spec/qual-list).")
+     (xdoc::p
+      "As a GCC extension, we include attribute specifiers.
+       See our ABNF grammar."))
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:align ((unwrap align-spec)))
+    (:attrib ((unwrap attrib-spec)))
     :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
 

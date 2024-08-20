@@ -1245,7 +1245,9 @@
        :align (b* (((erp new-alignspec table)
                     (dimb-align-spec specqual.unwrap table)))
                 (retok (spec/qual-align new-alignspec)
-                       table))))
+                       table))
+       :attrib (retok (spec/qual-attrib specqual.unwrap)
+                      (dimb-table-fix table))))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

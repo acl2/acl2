@@ -1861,7 +1861,8 @@
      specqual
      :tyspec (print-type-spec specqual.unwrap pstate)
      :tyqual (print-type-qual specqual.unwrap pstate)
-     :align (print-align-spec specqual.unwrap pstate))
+     :align (print-align-spec specqual.unwrap pstate)
+     :attrib (print-attrib-spec specqual.unwrap pstate))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -953,10 +953,11 @@ asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
 
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a (member) structure declaration
-; and at the start of a (non-static-assert) declaration.
+; and at the start of a (non-static-assertion) declaration.
 
 ; As a GCC extension,
-; we allow declaration specifiers to include attribute specifiers;
+; we allow declaration specifiers, as well as specifier and qualifier lists,
+; to include attribute specifiers;
 ; these can be easily distinguished from other declaration specifiers
 ; by the starting '__attribute__' GCC keyword.
 
@@ -1043,6 +1044,7 @@ struct-declaration = [ %s"__extension__" ]
 specifier-qualifier-list = type-specifier [ specifier-qualifier-list ]
                          / type-qualifier [ specifier-qualifier-list ]
                          / alignment-specifier [ specifier-qualifier-list ]
+                         / attribute-specifier [ specifier-qualifier-list ]
 
 struct-declarator-list = struct-declarator
                        / struct-declarator-list "," struct-declarator

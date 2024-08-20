@@ -199,7 +199,8 @@
     (spec/qual-case specqual
                     :tyspec (type-spec-unambp specqual.unwrap)
                     :tyqual t
-                    :align (align-spec-unambp specqual.unwrap))
+                    :align (align-spec-unambp specqual.unwrap)
+                    :attrib t)
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -873,13 +874,14 @@
            (type-spec-unambp tyspec))
     :expand (spec/qual-unambp (spec/qual-tyspec tyspec)))
 
-  (defrule spec/qual-unambp-when-tyqual
-    ;; The formulation (spec/qual-unambp (spec/qual-tyqual tyqual))
+  (defrule spec/qual-unambp-when-tyqual/attrib
+    ;; The formulation (spec/qual-unambp (spec/qual-... ...))
     ;; does not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by
     ;; the formulation we give here,
     ;; which is not ideal because the conclusion is quite generic.
-    (implies (spec/qual-case spec/qual :tyqual)
+    (implies (member-eq (spec/qual-kind spec/qual)
+                        '(:tyqual :attrib))
              (spec/qual-unambp spec/qual)))
 
   (defrule spec/qual-unambp-of-spec/qual-align

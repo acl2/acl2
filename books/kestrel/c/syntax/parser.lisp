@@ -5378,10 +5378,14 @@
     "There is an overlap between the starts of type specifiers and qualifiers,
      namely the @('_Atomic') keyword,
      but this does not matter as far as we are looking at
-     the starts of type names."))
+     the starts specifiers or qualifiers.")
+   (xdoc::p
+    "We also include @('__attribute__'), for attribute specifiers.
+     This is a keyword only if GCC extensions are supported."))
   (or (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
-      (equal token? (token-keyword "_Alignas")))
+      (equal token? (token-keyword "_Alignas"))
+      (equal token? (token-keyword "__attribute__")))
   ///
 
   (defrule non-nil-when-token-specifier/qualifier-start-p
@@ -5465,9 +5469,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A type name always starts with a (non-empty) sequence of
-     type specifiers, type qualifiers, or alignment specifiers.
-     So it has the same starts of a specifier or qualifier."))
+    "A type name always starts with
+     a (non-empty) sequence of specifiers and qualifiers."))
   (token-specifier/qualifier-start-p token?)
   ///
 
@@ -8521,6 +8524,15 @@
         (b* (((erp alignspec last-span pstate) ; _Alignas ( ... )
               (parse-alignment-specifier span pstate)))
           (retok (spec/qual-align alignspec)
+                 (span-join span last-span)
+                 pstate)))
+       ;; If token is the keyword __attribute__,
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we must have an attribute specifier.
+       ((equal token (token-keyword "__attribute__")) ; __attribute__
+        (b* (((erp attrspec last-span pstate) ; attrspec
+              (parse-attribute-specifier span pstate)))
+          (retok (spec/qual-attrib attrspec)
                  (span-join span last-span)
                  pstate)))
        ;; If token is anything else, it is an error.
