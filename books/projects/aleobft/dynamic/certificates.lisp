@@ -310,3 +310,25 @@
                      (get-certificates-with-round round (set::tail certs)))
       (get-certificates-with-round round (set::tail certs))))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-certificates-with-authors+round ((authors address-setp)
+                                             (round posp)
+                                             (certs certificate-setp))
+  :returns (certs-with-authors-and-round certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates
+          with author in a given set and with a given round."
+  (b* (((when (set::emptyp certs)) nil)
+       ((certificate cert) (set::head certs)))
+    (if (and (set::in cert.author authors)
+             (equal cert.round round))
+        (set::insert (certificate-fix cert)
+                     (get-certificates-with-authors+round authors
+                                                          round
+                                                          (set::tail certs)))
+      (get-certificates-with-authors+round authors
+                                           round
+                                           (set::tail certs))))
+  :verify-guards :after-returns)
