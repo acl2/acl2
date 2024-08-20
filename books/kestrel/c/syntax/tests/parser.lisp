@@ -1615,3 +1615,12 @@ struct bar
  "void foo() {
   for (size_t bar; ; ) {}
 }")
+
+(test-parse
+ parse-external-declaration-list
+ "static int func_1(void)
+{
+   int i;
+lbl_15:
+   return 2;
+}")
