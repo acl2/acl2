@@ -13,6 +13,7 @@
 
 (include-book "events")
 (include-book "elections")
+(include-book "dags")
 (include-book "transitions-create-certificate")
 (include-book "transitions-receive-certificate")
 (include-book "transitions-store-certificate")
@@ -37,6 +38,7 @@
      In other words, we define the transitions of
      the state transition system that models AleoBFT."))
   :order-subtopics (elections
+                    dags
                     transitions-create-certificate
                     transitions-receive-certificate
                     transitions-store-certificate
