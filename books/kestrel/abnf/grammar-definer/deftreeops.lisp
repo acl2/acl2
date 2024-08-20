@@ -393,32 +393,28 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use the calls themselves as keys."))
+    "We use the grammar constant names as keys."))
 
   (table deftreeops-table nil nil
-    :guard (and (pseudo-event-formp acl2::key)
+    :guard (and (acl2::symbolp acl2::key)
                 (deftreeops-table-valuep acl2::val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-table-lookup ((call pseudo-event-formp) (wrld plist-worldp))
+(define deftreeops-table-lookup ((grammar acl2::symbolp) (wrld plist-worldp))
   :returns (info? deftreeops-table-value-optionp)
-  :short "Look up a @(tsee deftreeops) call in the table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Returns a boolean, saying whether the call is in the table or not."))
-  (b* ((info? (cdr (assoc-equal call (table-alist+ 'deftreeops-table wrld)))))
+  :short "Look up a @(tsee deftreeops) in the table."
+  (b* ((info?
+        (cdr (assoc-equal grammar (table-alist+ 'deftreeops-table wrld)))))
     (and (deftreeops-table-valuep info?)
          info?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-table-add ((call pseudo-event-formp)
-                              (info deftreeops-table-valuep))
+(define deftreeops-table-add ((grammar acl2::symbolp) (info deftreeops-table-valuep))
   :returns (event pseudo-event-formp)
-  :short "Event to record a @(tsee deftreeops) call in the table."
-  `(table deftreeops-table ',call ',info))
+  :short "Event to record a @(tsee deftreeops) in the table."
+  `(table deftreeops-table ',grammar ',info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,15 +422,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-process-grammar (grammar (wrld plist-worldp))
+(define deftreeops-process-grammar (grammar
+                                    (call pseudo-event-formp)
+                                    (wrld plist-worldp))
   :returns (mv erp
+               (redundantp booleanp)
                (grammar acl2::symbolp)
                (rules rulelistp))
   :short "Process the @('*grammar*') input."
-  (b* (((reterr) nil nil)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the @('redundantp') result is @('t'),
+     the @('grammar') and @('rules') results are irrelevant."))
+  (b* (((reterr) nil nil nil)
        ((unless (constant-namep grammar wrld))
         (reterr (msg "The *GRAMMAR* input ~x0 must be the name of a constant."
                      grammar)))
+       (info (deftreeops-table-lookup grammar wrld))
+       ((when info)
+        (if (equal call (deftreeops-table-value->call info))
+            (retok t nil nil)
+          (reterr (msg "DEFTREEOPS has been already called on ~x0, ~
+                        but the previous call ~x1 differs ~
+                        from the new call ~x2, ~
+                        which is therefore not redundant."
+                       grammar (deftreeops-table-value->call info) call))))
        (rules (constant-value grammar wrld))
        ((unless (and (rulelistp rules)
                      (consp rules)))
@@ -449,7 +462,7 @@
         (reterr (msg "The *GRAMMAR* input denotes an ABNF grammar, ~
                       but the grammar is not closed
                       (see :DOC ABNF::CLOSURE)."))))
-    (retok grammar rules)))
+    (retok nil grammar rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -472,13 +485,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-process-inputs ((args true-listp) (wrld plist-worldp))
+(define deftreeops-process-inputs ((args true-listp)
+                                   (call pseudo-event-formp)
+                                   (wrld plist-worldp))
   :returns (mv erp
+               (redundantp booleanp)
                (grammar acl2::symbolp)
                (rules rulelistp)
                (prefix acl2::symbolp))
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the @('redundantp') result is @('t'),
+     the @('grammar'), @('rules'), and @('prefix') results are irrelevant."))
+  (b* (((reterr) nil nil nil nil)
        ((mv erp grammar options)
         (partition-rest-and-keyword-args args *deftreeops-allowed-options*))
        ((when (or erp
@@ -488,13 +509,15 @@
                       followed by the options ~&0."
                      *deftreeops-allowed-options*)))
        (grammar (car grammar))
-       ((erp grammar rules) (deftreeops-process-grammar grammar wrld))
+       ((erp redundantp grammar rules)
+        (deftreeops-process-grammar grammar call wrld))
+       ((when redundantp) (retok t nil nil nil))
        (prefix-option (assoc-eq :prefix options))
        ((unless (consp prefix-option))
         (reterr (msg "The :PREFIX input must be supplied.")))
        (prefix (cdr prefix-option))
        ((erp prefix) (deftreeops-process-prefix prefix)))
-    (retok grammar rules prefix))
+    (retok nil grammar rules prefix))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2484,7 +2507,7 @@
                  ,@numrange-events
                  ,@charval-events
                  ,@rulename-events
-                 ,(deftreeops-table-add call table-value))))
+                 ,(deftreeops-table-add grammar table-value))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2496,9 +2519,9 @@
   :parents (deftreeops-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((when (deftreeops-table-lookup call wrld))
-        (retok '(value-triple :redundant)))
-       ((erp grammar rules prefix) (deftreeops-process-inputs args wrld)))
+       ((erp redundantp grammar rules prefix)
+        (deftreeops-process-inputs args call wrld))
+       ((when redundantp) (retok '(value-triple :redundant))))
     (retok (deftreeops-gen-everything grammar rules prefix call))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
