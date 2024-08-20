@@ -28,9 +28,6 @@
 (include-book "defsurj")
 (include-book "defsurj-doc")
 
-(include-book "deftutorial")
-(include-book "deftutorial-doc")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc std/util-extensions

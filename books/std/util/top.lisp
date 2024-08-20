@@ -60,6 +60,8 @@
 (include-book "error-value-tuples")
 (include-book "defund-sk")
 (include-book "defund-sk-doc")
+(include-book "deftutorial")
+(include-book "deftutorial-doc")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)

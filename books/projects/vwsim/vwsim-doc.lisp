@@ -15,7 +15,7 @@
 
 (include-book "constants")
 
-(include-book "kestrel/std/util/deftutorial" :dir :system)
+(include-book "std/util/deftutorial" :dir :system)
 
 ; :DOC Examples may be found here:
 ; books/system/doc/acl2-doc.lisp
