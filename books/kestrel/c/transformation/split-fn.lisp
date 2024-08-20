@@ -17,7 +17,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "centaur/fty/deftypes" :dir :system)
-(include-book "kestrel/std/util/error-value-tuples" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "deftrans")

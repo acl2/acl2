@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,8 +21,8 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
-(include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/untranslate-preprocessing" :dir :system)
+(include-book "std/util/tuple" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
 
