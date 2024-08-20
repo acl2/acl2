@@ -13162,33 +13162,44 @@
     (b* (((reterr) (irr-block-item) (irr-span) (irr-parstate))
          ((erp token & pstate) (read-token pstate)))
       (cond
-       ;; If token is an identifier,
-       ;; we may have a declaration or an expression statement,
-       ;; so we read a possibly ambiguous declaration or statement.
+       ;; If token is an identifier, we need to read another token.
        ((and token (token-case token :ident)) ; ident
-        (b* ((pstate (unread-token pstate)) ;
-             ((erp decl/stmt span pstate) ; decl/stmt
-              (parse-declaration-or-statement pstate)))
-          (amb?-decl/stmt-case
-           decl/stmt
-           ;; If we parse an unambiguous declaration,
-           ;; we return a block item that is a declaration.
-           :decl
-           (retok (block-item-decl decl/stmt.unwrap)
-                  span
-                  pstate)
-           ;; If we parse an unambiguous statement,
-           ;; we return a block item that is a statement.
-           :stmt
-           (retok (block-item-stmt (stmt-expr decl/stmt.unwrap))
-                  span
-                  pstate)
-           ;; If we parse an ambiguous declaration or statement,
-           ;; we return an ambiguous block item.
-           :ambig
-           (retok (block-item-ambig decl/stmt.unwrap)
-                  span
-                  pstate))))
+        (b* (((erp token2 & pstate) (read-token pstate)))
+          (cond
+           ;; If token2 is a colon, we must have a labeled statement.
+           ;; We put back colon and label, and parse a statement.
+           ((equal token2 (token-punctuator ":")) ; ident :
+            (b* ((pstate (unread-token pstate)) ; ident
+                 (pstate (unread-token pstate)) ;
+                 ((erp stmt span pstate) (parse-statement pstate))) ; stmt
+              (retok (block-item-stmt stmt) span pstate)))
+           ;; Otherwise, we may have a declaration or an expression statement,
+           ;; so we read a possibly ambiguous declaration or statement.
+           (t ; ident other
+            (b* ((pstate (if token2 (unread-token pstate) pstate)) ; ident
+                 (pstate (unread-token pstate)) ;
+                 ((erp decl/stmt span pstate) ; decl/stmt
+                  (parse-declaration-or-statement pstate)))
+              (amb?-decl/stmt-case
+               decl/stmt
+               ;; If we parse an unambiguous declaration,
+               ;; we return a block item that is a declaration.
+               :decl
+               (retok (block-item-decl decl/stmt.unwrap)
+                      span
+                      pstate)
+               ;; If we parse an unambiguous statement,
+               ;; we return a block item that is a statement.
+               :stmt
+               (retok (block-item-stmt (stmt-expr decl/stmt.unwrap))
+                      span
+                      pstate)
+               ;; If we parse an ambiguous declaration or statement,
+               ;; we return an ambiguous block item.
+               :ambig
+               (retok (block-item-ambig decl/stmt.unwrap)
+                      span
+                      pstate)))))))
        ;; If token may start a declaration specifier,
        ;; since we have already considered the case of an identifier above,
        ;; we must have a declaration.
