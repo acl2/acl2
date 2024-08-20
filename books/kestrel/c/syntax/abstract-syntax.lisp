@@ -336,7 +336,7 @@
      our fixtypes are factored slightly differently.
      An integer constant consists of a decimal, octal, or hexadecimal constant,
      and of an optional integer suffix."))
-  ((dec/oct/hex dec/oct/hex-const)
+  ((core dec/oct/hex-const)
    (suffix? isuffix-option))
   :pred iconstp)
 

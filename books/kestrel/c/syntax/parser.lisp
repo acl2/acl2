@@ -2875,9 +2875,9 @@
          ((not char) ; 0 x/X hexdigs EOF
           (retok (const-int
                   (make-iconst
-                   :dec/oct/hex (make-dec/oct/hex-const-hex
-                                 :prefix hprefix
-                                 :digits hexdigs)
+                   :core (make-dec/oct/hex-const-hex
+                          :prefix hprefix
+                          :digits hexdigs)
                    :suffix? nil))
                  hexdigs-last-pos
                  pstate))
@@ -2957,9 +2957,9 @@
                                                   pstate)))
             (retok (const-int
                     (make-iconst
-                     :dec/oct/hex (make-dec/oct/hex-const-hex
-                                   :prefix hprefix
-                                   :digits hexdigs)
+                     :core (make-dec/oct/hex-const-hex
+                            :prefix hprefix
+                            :digits hexdigs)
                      :suffix? isuffix?))
                    (cond (isuffix? suffix-last/next-pos)
                          (t hexdigs-last-pos))
@@ -3041,9 +3041,9 @@
      ((not char) ; 1-9 [decdigs] EOF
       (retok (const-int
               (make-iconst
-               :dec/oct/hex (make-dec/oct/hex-const-dec
-                             :value (str::dec-digit-chars-value
-                                     (cons first-digit decdigs)))
+               :core (make-dec/oct/hex-const-dec
+                      :value (str::dec-digit-chars-value
+                              (cons first-digit decdigs)))
                :suffix? nil))
              (cond (decdigs decdigs-last-pos)
                    (t (position-fix first-pos)))
@@ -3121,9 +3121,9 @@
            ((erp pstate) (check-full-ppnumber nil pstate)))
         (retok (const-int
                 (make-iconst
-                 :dec/oct/hex (make-dec/oct/hex-const-dec
-                               :value (str::dec-digit-chars-value
-                                       (cons first-digit decdigs)))
+                 :core (make-dec/oct/hex-const-dec
+                        :value (str::dec-digit-chars-value
+                                (cons first-digit decdigs)))
                  :suffix? isuffix?))
                (cond (isuffix? suffix-last/next-pos)
                      (decdigs decdigs-last-pos)
@@ -3325,10 +3325,9 @@
        ((oct-digit-char-listp digits) ; 0 [octdigs]
         (retok (const-int
                 (make-iconst
-                 :dec/oct/hex
-                 (make-dec/oct/hex-const-oct
-                  :leading-zeros (1+ (oct-iconst-leading-zeros digits))
-                  :value (str::oct-digit-chars-value digits))
+                 :core (make-dec/oct/hex-const-oct
+                        :leading-zeros (1+ (oct-iconst-leading-zeros digits))
+                        :value (str::oct-digit-chars-value digits))
                  :suffix? nil))
                (cond (digits digits-last-pos)
                      (t (position-fix zero-pos)))
@@ -3415,10 +3414,9 @@
              ((erp pstate) (check-full-ppnumber nil pstate)))
           (retok (const-int
                   (make-iconst
-                   :dec/oct/hex
-                   (make-dec/oct/hex-const-oct
-                    :leading-zeros (1+ (oct-iconst-leading-zeros digits))
-                    :value (str::oct-digit-chars-value digits))
+                   :core (make-dec/oct/hex-const-oct
+                          :leading-zeros (1+ (oct-iconst-leading-zeros digits))
+                          :value (str::oct-digit-chars-value digits))
                    :suffix? isuffix?))
                  (cond (isuffix? suffix-last/next-pos)
                        (digits digits-last-pos)
@@ -3484,9 +3482,9 @@
          ((not char) ; 0 EOF
           (retok (const-int
                   (make-iconst
-                   :dec/oct/hex (make-dec/oct/hex-const-oct
-                                 :leading-zeros 1
-                                 :value 0)
+                   :core (make-dec/oct/hex-const-oct
+                          :leading-zeros 1
+                          :value 0)
                    :suffix? nil))
                  (position-fix first-pos)
                  pstate))

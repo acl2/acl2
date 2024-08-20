@@ -620,7 +620,7 @@
   :returns (new-pstate pristatep)
   :short "Print an integer constant."
   (b* (((iconst iconst) iconst)
-       (pstate (print-dec/oct/hex-const iconst.dec/oct/hex pstate))
+       (pstate (print-dec/oct/hex-const iconst.core pstate))
        (pstate (print-isuffix-option iconst.suffix? pstate)))
     pstate)
   :hooks (:fix))
