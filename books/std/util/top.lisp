@@ -58,6 +58,8 @@
 (include-book "defthm-commutative")
 (include-book "tuple")
 (include-book "error-value-tuples")
+(include-book "defund-sk")
+(include-book "defund-sk-doc")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)

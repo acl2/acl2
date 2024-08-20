@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defund-sk
-  :parents (std::std/util-extensions std/util defun-sk)
+  :parents (std/util defun-sk)
   :short "Define a function with quantifier
           and disable it and its associated rewrite rule."
   :long

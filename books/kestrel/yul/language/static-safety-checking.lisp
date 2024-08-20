@@ -16,7 +16,7 @@
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/nat-result" :dir :system)
-(include-book "kestrel/std/util/defund-sk" :dir :system)
+(include-book "std/util/defund-sk" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

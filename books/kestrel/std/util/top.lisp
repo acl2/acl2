@@ -16,9 +16,6 @@
 (include-book "defiso")
 (include-book "defiso-doc")
 
-(include-book "defund-sk")
-(include-book "defund-sk-doc")
-
 (include-book "defmapping")
 (include-book "defmapping-doc")
 
