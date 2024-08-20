@@ -16,6 +16,7 @@
 (include-book "transitions-create-certificate")
 (include-book "transitions-receive-certificate")
 (include-book "transitions-store-certificate")
+(include-book "transitions-advance-round")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -38,7 +39,8 @@
   :order-subtopics (elections
                     transitions-create-certificate
                     transitions-receive-certificate
-                    transitions-store-certificate)
+                    transitions-store-certificate
+                    transitions-advance-round)
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
