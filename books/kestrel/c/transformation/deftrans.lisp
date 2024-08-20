@@ -877,7 +877,8 @@
       :tyspec (declspec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.unwrap ,@extra-args-names))
       :tyqual (declspec-fix declspec)
       :funspec (declspec-fix declspec)
-      :align (declspec-align (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names)))
+      :align (declspec-align (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names))
+      :attrib (declspec-fix declspec))
    '(:returns (new-declspec declspecp)
      :measure (declspec-count declspec))))
 

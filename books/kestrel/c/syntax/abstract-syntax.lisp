@@ -1642,12 +1642,16 @@
       "This does not directly correspond to
        any nonterminal in the grammar in [C],
        but it is useful to define <i>declaration-specifiers</i>
-       (see @(tsee declspec-list))."))
+       (see @(tsee declspec-list)).")
+     (xdoc::p
+      "As a GCC extension, we include attribute specifiers.
+       See our ABNF grammar."))
     (:stocla ((unwrap stor-spec)))
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:funspec ((unwrap fun-spec)))
     (:align ((unwrap align-spec)))
+    (:attrib ((unwrap attrib-spec))) ; GCC extension
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -2071,10 +2075,10 @@
       "As a GCC extension, we include
        a possibly empty list of attribute specifiers,
        which come after the declarator (cf. the grammar)"))
-    (:member ((extension bool)
+    (:member ((extension bool) ; GCC extension
               (specqual spec/qual-list)
               (declor structdeclor-list)
-              (attrib attrib-spec-list)))
+              (attrib attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
     :pred structdeclp
     :base-case-override :statassert
@@ -2790,7 +2794,7 @@
      the function definition starts with the @('__extension__') GCC keyword.
      We model this as a boolean saying whether
      the keyword is present or absent."))
-  ((extension bool)
+  ((extension bool) ; GCC extension
    (spec declspec-list)
    (declor declor)
    (decls decl-list)

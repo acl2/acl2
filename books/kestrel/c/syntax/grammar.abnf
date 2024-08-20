@@ -951,31 +951,33 @@ asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
 
 ; Declarations [C:A.2.2]
 
+; As a GCC extension, we allow the GCC keyword '__extension__'
+; to occur at the start of a (member) structure declaration
+; and at the start of a (non-static-assert) declaration.
+
+; As a GCC extension,
+; we allow declaration specifiers to include attribute specifiers;
+; these can be easily distinguished from other declaration specifiers
+; by the starting '__attribute__' GCC keyword.
+
+; As a GCC extension,
+; we allow one or more attribute specifiers
+; to occur just before the ending semicolon of
+; a declaration and a structure declaration.
+
+; The above may not the only places where attribute specifiers may occur,
+; in the full GCC extensions, but they are places that have been observed.
+; Our purpose in supporting the GCC extensions, for now,
+; is not to be exhaustive,
+; but rather to be able to handle practical C code that
+; does not quite comply with the standard due to the presence of GCC extensions.
+
 ; As a GCC extension, we allow an optional assembler name specifier
 ; just after the initializer declarators, and before the attributes (see below).
 ; The GCC documentation says that an assembler name specifier
 ; comes just after a declarator, so our grammar rule may be more liberal;
 ; but currently our goal is just to handle practical code with GCC extensions,
 ; not to provide a formalization of GCC extensions.
-
-; As a GCC extension, we allow one or more attribute specifiers
-; to occur just before the ending semicolon of
-; a declaration and a structure declaration.
-; The grammar rule allows the absence of such attribute specifiers,
-; for the case in which there happen to be none,
-; and also for the standard language without GCC extensions.
-; These are not the only places where attribute specifiers may occur,
-; in the full GCC extensions,
-; but it is two of the places that have been observed;
-; it is also possible that not all kinds of declarations actually allow that.
-; However, our purpose in supporting the GCC extensions, for now,
-; is not to completely characterize the legal ones,
-; but rather to be able to handle practical C code that
-; does not quite comply with the standard due to the presence of GCC extensions.
-
-; As a GCC extension, we allow the GCC keyword '__extension__'
-; to occur at the start of a (member) structure declaration
-; and at the start of a declaration (not a static assertion declaration).
 
 declaration = [ %s"__extension__" ]
               declaration-specifiers
@@ -990,6 +992,7 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
                        / type-qualifier [ declaration-specifiers ]
                        / function-specifier [ declaration-specifiers ]
                        / alignment-specifier [ declaration-specifiers ]
+                       / attribute-specifier [ declaration-specifiers ]
 
 init-declarator-list = init-declarator
                      / init-declarator-list "," init-declarator

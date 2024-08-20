@@ -140,6 +140,7 @@
     declspec-case
     declspec-tyspec
     declspec-align
+    declspec-attrib
 
     declspec-listp
     declspec-list-fix

@@ -5440,12 +5440,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We put together the five cases that define declaration specifiers."))
+    "We put together the five cases that define declaration specifiers,
+     plus a sixth case for GCC attribute specifiers.
+     Recall that @('__attribute__') can be a keyword
+     only if GCC extensions are supported."))
   (or (token-storage-class-specifier-p token?)
       (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
       (token-function-specifier-p token?)
-      (equal token? (token-keyword "_Alignas")))
+      (equal token? (token-keyword "_Alignas"))
+      (equal token? (token-keyword "__attribute__")))
   ///
 
   (defrule non-nil-when-token-declaration-specifier-start-p
@@ -8642,8 +8646,9 @@
        a storage class specifier,
        a type specifier,
        a type qualifier,
-       a function specifier, or
-       an alignment specifier.")
+       a function specifier,
+       an alignment specifier,
+       or an attribute specifier (the last one is a GCC extension).")
      (xdoc::p
       "A declaration specifier (list) may always be followed by a declarator.
        It may also be followed by an abstract declarator
@@ -8769,6 +8774,15 @@
         (b* (((erp alignspec last-span pstate) ; _Alignas ( ... )
               (parse-alignment-specifier span pstate)))
           (retok (declspec-align alignspec)
+                 (span-join span last-span)
+                 pstate)))
+       ;; If token is the keyword __attribute__,
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we must have an attribute specifier.
+       ((equal token (token-keyword "__attribute__")) ; __attribute__
+        (b* (((erp attrspec last-span pstate) ; attrspec
+              (parse-attribute-specifier span pstate)))
+          (retok (declspec-attrib attrspec)
                  (span-join span last-span)
                  pstate)))
        ;; If token is anything else, it is an error.
