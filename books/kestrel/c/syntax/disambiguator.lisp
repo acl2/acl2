@@ -13,7 +13,7 @@
 (include-book "abstract-syntax-operations")
 (include-book "unambiguity")
 
-(include-book "kestrel/std/util/error-value-tuples" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
 

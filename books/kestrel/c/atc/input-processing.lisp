@@ -29,12 +29,12 @@
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
-(include-book "kestrel/std/util/error-value-tuples" :dir :system)
 (include-book "oslib/catpath" :dir :system)
 (include-book "oslib/dirname" :dir :system :ttags ((:quicklisp) :oslib))
 (include-book "oslib/file-types" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) :oslib))
 (include-book "std/strings/letter-digit-uscore-dash-chars" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
 (include-book "std/util/tuple" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))

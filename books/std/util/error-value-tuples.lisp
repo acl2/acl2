@@ -19,7 +19,7 @@
 
 (defxdoc+ error-value-tuples
 
-  :parents (std/util std::std/util-extensions)
+  :parents (std/util)
 
   :short "Utilities for error-value tuples."
 

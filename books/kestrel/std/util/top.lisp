@@ -34,8 +34,6 @@
 (include-book "deftutorial")
 (include-book "deftutorial-doc")
 
-(include-book "error-value-tuples")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc std/util-extensions

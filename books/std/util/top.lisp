@@ -57,6 +57,7 @@
 (include-book "def-bound-theorems")
 (include-book "defthm-commutative")
 (include-book "tuple")
+(include-book "error-value-tuples")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)
