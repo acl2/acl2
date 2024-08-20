@@ -84,7 +84,7 @@
               (insert expr.unwrap nil))
      :paren (free-vars-expr expr.unwrap bound-vars)
      :gensel (union (free-vars-expr expr.control bound-vars)
-                    (free-vars-genassoc-list expr.assoc bound-vars))
+                    (free-vars-genassoc-list expr.assocs bound-vars))
      :arrsub (union (free-vars-expr expr.arg1 bound-vars)
                     (free-vars-expr expr.arg2 bound-vars))
      :funcall (union (free-vars-expr expr.fun bound-vars)

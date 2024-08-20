@@ -104,7 +104,7 @@
        "            :paren (expr-paren (my-simpadd0-expr expr.unwrap))"
        "            :gensel (make-expr-gensel"
        "                      :control (my-simpadd0-expr expr.control)"
-       "                      :assoc (my-simpadd0-genassoc-list expr.assoc))"
+       "                      :assocs (my-simpadd0-genassoc-list expr.assocs))"
        "            :arrsub (make-expr-arrsub"
        "                      :arg1 (my-simpadd0-expr expr.arg1)"
        "                      :arg2 (my-simpadd0-expr expr.arg2))"
@@ -276,7 +276,7 @@
     (:linear c$::expr-option-count-of-dirdeclor-array->expr?)
     (:linear c$::genassoc-count-of-car)
     (:linear c$::genassoc-list-count-of-cdr)
-    (:linear c$::genassoc-list-count-of-expr-gensel->assoc)
+    (:linear c$::genassoc-list-count-of-expr-gensel->assocs)
     (:linear c$::initer-count-of-desiniter->init)
     (:linear c$::initer-count-of-initer-option-some->val)
     (:linear c$::paramdecl-count-of-car)
@@ -604,7 +604,7 @@
       :paren (expr-paren (,(cdr (assoc-eq 'expr names)) expr.unwrap ,@extra-args-names))
       :gensel (make-expr-gensel
                 :control (,(cdr (assoc-eq 'expr names)) expr.control ,@extra-args-names)
-                :assoc (,(cdr (assoc-eq 'genassoc-list names)) expr.assoc ,@extra-args-names))
+                :assocs (,(cdr (assoc-eq 'genassoc-list names)) expr.assocs ,@extra-args-names))
       :arrsub (make-expr-arrsub
                 :arg1 (,(cdr (assoc-eq 'expr names)) expr.arg1 ,@extra-args-names)
                 :arg2 (,(cdr (assoc-eq 'expr names)) expr.arg2 ,@extra-args-names))

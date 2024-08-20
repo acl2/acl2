@@ -181,6 +181,9 @@
        ((unless (transunit-ensemblep tunits-old))
         (raise "~x0 must be a translation unit ensemble.")
         '(_))
+       ((unless (transunit-ensemble-unambp tunits-old))
+        (raise "~x0 must be an unambiguous translation unit ensemble.")
+        '(_))
        (tunits-new (simpadd0-transunit-ensemble tunits-old))
        (thm-events (and proofs
                         (simpadd0-gen-proofs-for-transunit-ensemble

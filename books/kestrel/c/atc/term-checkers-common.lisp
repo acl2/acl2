@@ -20,10 +20,10 @@
 
 (include-book "fty-pseudo-terms")
 
-(include-book "kestrel/std/util/error-value-tuples" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
-(include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "std/strings/strtok-bang" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
+(include-book "std/util/tuple" :dir :system)
 
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))

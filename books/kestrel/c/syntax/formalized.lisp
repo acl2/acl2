@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-operations")
+(include-book "unambiguity")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -118,6 +119,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-integer-formalp ((tyspecs type-spec-listp))
+  :guard (type-spec-list-unambp tyspecs)
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has formal dynamic semantics,
           when used to denote an integer type."
@@ -196,6 +198,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-formalp ((tyspecs type-spec-listp))
+  :guard (type-spec-list-unambp tyspecs)
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has formal dynamic semantics."
   :long
@@ -243,6 +246,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tyname-formalp ((tyname tynamep))
+  :guard (tyname-unambp tyname)
   :returns (yes/no booleanp)
   :short "Check if a type name has formal dynamic semantics."
   :long
@@ -268,6 +272,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-pure-formalp ((expr exprp))
+  :guard (expr-unambp expr)
   :returns (yes/no booleanp)
   :short "Check if an expression has formal dynamic semantics,
           as a pure expression."
@@ -330,8 +335,7 @@
            :postdec nil
            :sizeof nil)
    :sizeof nil
-   :sizeof-ambig (raise "Misusage error: ambiguous expression ~x0."
-                        (expr-fix expr))
+   :sizeof-ambig (impossible)
    :alignof nil
    :cast (and (tyname-formalp expr.type)
               (expr-pure-formalp expr.arg))
@@ -345,16 +349,11 @@
               (expr-pure-formalp expr.then)
               (expr-pure-formalp expr.else))
    :comma nil
-   :cast/call-ambig (raise "Misusage error: ambiguous expression ~x0."
-                           (expr-fix expr))
-   :cast/mul-ambig (raise "Misusage error: ambiguous expression ~x0."
-                          (expr-fix expr))
-   :cast/add-ambig (raise "Misusage error: ambiguous expression ~x0."
-                          (expr-fix expr))
-   :cast/sub-ambig (raise "Misusage error: ambiguous expression ~x0."
-                          (expr-fix expr))
-   :cast/and-ambig (raise "Misusage error: ambiguous expression ~x0."
-                          (expr-fix expr)))
+   :cast/call-ambig (impossible)
+   :cast/mul-ambig (impossible)
+   :cast/add-ambig (impossible)
+   :cast/sub-ambig (impossible)
+   :cast/and-ambig (impossible))
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
@@ -362,6 +361,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-list-pure-formalp ((exprs expr-listp))
+  :guard (expr-list-unambp exprs)
   :returns (yes/no booleanp)
   :short "Check if all the expressions in a list have formal dynamic semantics,
           as pure expressions."
@@ -373,6 +373,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-call-formalp ((expr exprp))
+  :guard (expr-unambp expr)
   :returns (yes/no booleanp)
   :short "Check if an expression has formal dynamic semantics,
           as a call expression."
@@ -391,6 +392,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-asg-formalp ((expr exprp))
+  :guard (expr-unambp expr)
   :returns (yes/no booleanp)
   :short "Check if an expression has formal dynamic semantics,
           as an assignment expression."
@@ -416,6 +418,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define desiniter-formalp ((desiniter desiniterp))
+  :guard (desiniter-unambp desiniter)
   :returns (yes/no booleanp)
   :short "Check if an initializer with optional designations
           has formal dynamic semantics."
@@ -441,6 +444,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define desiniter-list-formalp ((desiniters desiniter-listp))
+  :guard (desiniter-list-unambp desiniters)
   :returns (yes/no booleanp)
   :short "Check if all the initializers with optional designations in a list
           have formal dynamic semantics."
@@ -452,6 +456,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define initer-formalp ((initer initerp))
+  :guard (initer-unambp initer)
   :returns (yes/no booleanp)
   :short "Check if an initializer has formal dynamic semantics."
   :long
@@ -493,6 +498,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dirdeclor-block-formalp ((dirdeclor dirdeclorp))
+  :guard (dirdeclor-unambp dirdeclor)
   :returns (yes/no booleanp)
   :short "Check if a direct declarator has formal dynamic semantics,
           as part of a block item declaration."
@@ -509,6 +515,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define declor-block-formalp ((declor declorp))
+  :guard (declor-unambp declor)
   :returns (yes/no booleanp)
   :short "Check if a declarator has formal dynamic semantics,
           as part of a block item declaration."
@@ -524,6 +531,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define initdeclor-block-formalp ((initdeclor initdeclorp))
+  :guard (initdeclor-unambp initdeclor)
   :returns (yes/no booleanp)
   :short "Check if an initializer declarator has formal dynamic semantics,
           as part of a block item declaration."
@@ -542,6 +550,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define decl-block-formalp ((decl declp))
+  :guard (decl-unambp decl)
   :returns (yes/no booleanp)
   :short "Check if a declaration has formal dynamic semantics,
           as a block item."
@@ -577,6 +586,7 @@
   :short "Chek if statements and blocks have formal dynamic semantics."
 
   (define stmt-formalp ((stmt stmtp))
+    :guard (stmt-unambp stmt)
     :returns (yes/no booleanp)
     :parents nil
     :short "Check if a statement has formal dynamic semantics."
@@ -607,8 +617,7 @@
      :dowhile nil
      :for-expr nil
      :for-decl nil
-     :for-ambig (raise "Misusage error: ambiguous statment ~x0."
-                       (stmt-fix stmt))
+     :for-ambig (impossible)
      :goto nil
      :continue nil
      :break nil
@@ -618,6 +627,7 @@
     :measure (stmt-count stmt))
 
   (define block-item-formalp ((item block-itemp))
+    :guard (block-item-unambp item)
     :returns (yes/no booleanp)
     :parents nil
     :short "Check if a block item has formal dynamic semantics."
@@ -629,11 +639,11 @@
      item
      :decl (decl-block-formalp item.unwrap)
      :stmt (stmt-formalp item.unwrap)
-     :ambig (raise "Misusage error: ambiguous block item ~x0."
-                   (block-item-fix item)))
+     :ambig (impossible))
     :measure (block-item-count item))
 
   (define block-item-list-formalp ((items block-item-listp))
+    :guard (block-item-list-unambp items)
     :returns (yes/no booleanp)
     :parents nil
     :short "Check if a list of block items have formal dynamic semantics."
@@ -655,6 +665,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dirdeclor-obj-formalp ((dirdeclor dirdeclorp))
+  :guard (dirdeclor-unambp dirdeclor)
   :returns (yes/no booleanp)
   :short "Check if a direct declarator has formal dynamic semantics,
           as part of an object declaration (not in a block)."
@@ -688,6 +699,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define declor-obj-formalp ((declor declorp))
+  :guard (declor-unambp declor)
   :returns (yes/no booleanp)
   :short "Check if a declarator has formal dynamic semantics,
           as part of an object declaration (not in a block)."
@@ -705,6 +717,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define initdeclor-obj-formalp ((initdeclor initdeclorp))
+  :guard (initdeclor-unambp initdeclor)
   :returns (yes/no booleanp)
   :short "Check if an initializer declarator has formal dynamic semantics,
           as part of an object declaration (not in a block)."
@@ -723,6 +736,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define decl-obj-formalp ((decl declp))
+  :guard (decl-unambp decl)
   :returns (yes/no booleanp)
   :short "Check if a declaration has formal dynamic semantics,
           as an object declaration (not in a block)."
@@ -757,6 +771,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define structdeclor-formalp ((structdeclor structdeclorp))
+  :guard (structdeclor-unambp structdeclor)
   :returns (yes/no booleanp)
   :short "Check if a structure declarator has formal dynamic semantics."
   :long
@@ -773,6 +788,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define structdecl-formalp ((structdecl structdeclp))
+  :guard (structdecl-unambp structdecl)
   :returns (yes/no booleanp)
   :short "Check if a structure declaration has formal dynamic semantics."
   :long
@@ -799,6 +815,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define structdecl-list-formalp ((structdecls structdecl-listp))
+  :guard (structdecl-list-unambp structdecls)
   :returns (yes/no booleanp)
   :short "Check if all the structure declarations in a list
           have formal dynamic semantics."
@@ -810,6 +827,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define strunispec-formalp ((strunispec strunispecp))
+  :guard (strunispec-unambp strunispec)
   :returns (yes/no booleanp)
   :short "Check if a structure declaration has formal dynamic semantics."
   :long
@@ -826,6 +844,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define decl-struct-formalp ((decl declp))
+  :guard (decl-unambp decl)
   :returns (yes/no booleanp)
   :short "Check if a declaration has formal dynamic semantics,
           as a declaration for a structure type."
@@ -853,6 +872,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define paramdeclor-formalp ((paramdeclor paramdeclorp))
+  :guard (paramdeclor-unambp paramdeclor)
   :returns (yes/no booleanp)
   :short "Check if a parameter declarator has formal dynamic semantics."
   :long
@@ -866,13 +886,13 @@
    :declor (declor-obj-formalp paramdeclor.unwrap)
    :absdeclor nil
    :none nil
-   :ambig (raise "Misusage error: ambiguous parameter declarator ~x0."
-                 (paramdeclor-fix paramdeclor)))
+   :ambig (impossible))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define paramdecl-formalp ((paramdecl paramdeclp))
+  :guard (paramdecl-unambp paramdecl)
   :returns (yes/no booleanp)
   :short "Check if a parameter declaration has formal dynamic semantics."
   :long
@@ -891,6 +911,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define paramdecl-list-formalp ((paramdecls paramdecl-listp))
+  :guard (paramdecl-list-unambp paramdecls)
   :returns (yes/no booleanp)
   :short "Check if all the parameter declarations in a list
           have formal dynamic semantics."
@@ -902,6 +923,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dirdeclor-fun-formalp ((dirdeclor dirdeclorp))
+  :guard (dirdeclor-unambp dirdeclor)
   :returns (yes/no booleanp)
   :short "Check if a direct declarator has formal dynamic semantics,
           as part of a function declaration."
@@ -922,6 +944,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define declor-fun-formalp ((declor declorp))
+  :guard (declor-unambp declor)
   :returns (yes/no booleanp)
   :short "Check if a declarator has formal dynamic semantics,
           as part of a function declaration."
@@ -938,6 +961,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define initdeclor-fun-formalp ((initdeclor initdeclorp))
+  :guard (initdeclor-unambp initdeclor)
   :returns (yes/no booleanp)
   :short "Check if an initializer declarator has formal dynamic semantics,
           as part of a function declaration."
@@ -954,6 +978,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define decl-fun-formalp ((decl declp))
+  :guard (decl-unambp decl)
   :returns (yes/no booleanp)
   :short "Check if a declaration has dynamic formal semantics,
           as a function declaration."
@@ -982,6 +1007,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fundef-formalp ((fundef fundefp))
+  :guard (fundef-unambp fundef)
   :returns (yes/no booleanp)
   :short "Check if a function definition has dynamic formal semantics."
   :long
@@ -1008,6 +1034,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define extdecl-formalp ((edecl extdeclp))
+  :guard (extdecl-unambp edecl)
   :returns (yes/no booleanp)
   :short "Check if an external declaration has dynamic formal semantics."
   :long
@@ -1042,6 +1069,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define extdecl-list-formalp ((edecls extdecl-listp))
+  :guard (extdecl-list-unambp edecls)
   :returns (yes/no booleanp)
   :short "Check if all the external declarations in a list
           have formal dynamic semantics."
@@ -1053,6 +1081,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define transunit-formalp ((tunit transunitp))
+  :guard (transunit-unambp tunit)
   :returns (yes/no booleanp)
   :short "Check if a translation unit has formal dynamic semantics."
   :long
@@ -1065,6 +1094,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define transunit-ensemble-formalp ((tunits transunit-ensemblep))
+  :guard (transunit-ensemble-unambp tunits)
   :returns (yes/no booleanp)
   :short "Check if a translation unit ensemble has formal dynamic semantics."
   :long

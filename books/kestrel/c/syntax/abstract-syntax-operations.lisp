@@ -225,7 +225,7 @@
 (defirrelevant irr-dirabsdeclor
   :short "An irrelevant direct abstract declarator."
   :type dirabsdeclorp
-  :body (dirabsdeclor-dummy-base))
+  :body (dirabsdeclor-paren (irr-absdeclor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -13,7 +13,7 @@
 (include-book "abstract-syntax-operations")
 (include-book "unambiguity")
 
-(include-book "kestrel/std/util/error-value-tuples" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
 
@@ -336,55 +336,6 @@
     (dimb-table-fix new-table))
   :guard-hints (("Goal" :in-theory (enable acons)))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule expr-unambp-of-apply-pre-inc/dec-ops
-  :short "Preservation of unambiguity by @(tsee apply-pre-inc/dec-ops)."
-  (implies (expr-unambp expr)
-           (expr-unambp (apply-pre-inc/dec-ops inc/dec expr)))
-  :induct t
-  :enable apply-pre-inc/dec-ops)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule expr-unambp-of-apply-post-inc/dec-ops
-  :short "Preservation of unambiguity by @(tsee apply-post-inc/dec-ops)."
-  (implies (expr-unambp expr)
-           (expr-unambp (apply-post-inc/dec-ops expr inc/dec)))
-  :induct t
-  :enable apply-post-inc/dec-ops)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule expr-list-unambp-of-expr-to-asg-expr-list
-  :short "Preservation of unambiguity by @(tsee expr-to-asg-expr-list)."
-  (implies (expr-unambp expr)
-           (expr-list-unambp (expr-to-asg-expr-list expr)))
-  :induct t
-  :enable expr-to-asg-expr-list)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule expr-unambp-of-check-expr-mul
-  :short "Preservation of unambiguity by @(tsee check-expr-mul)."
-  (b* (((mv yes/no arg1 arg2) (check-expr-mul expr)))
-    (implies (and (expr-unambp expr)
-                  yes/no)
-             (and (expr-unambp arg1)
-                  (expr-unambp arg2))))
-  :enable check-expr-mul)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule expr-unambp-of-check-expr-binary
-  :short "Preservation of unambiguity by @(tsee check-expr-binary)."
-  (b* (((mv yes/no & arg1 arg2) (check-expr-binary expr)))
-    (implies (and (expr-unambp expr)
-                  yes/no)
-             (and (expr-unambp arg1)
-                  (expr-unambp arg2))))
-  :enable check-expr-binary)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -931,9 +882,9 @@
          (retok (expr-paren new-expr) table))
        :gensel
        (b* (((erp new-control table) (dimb-expr expr.control table))
-            ((erp new-assoc table) (dimb-genassoc-list expr.assoc table)))
+            ((erp new-assocs table) (dimb-genassoc-list expr.assocs table)))
          (retok (make-expr-gensel :control new-control
-                                  :assoc new-assoc)
+                                  :assocs new-assocs)
                 table))
        :arrsub
        (b* (((erp new-arg1 table) (dimb-expr expr.arg1 table))
@@ -1780,7 +1731,7 @@
        dirabsdeclor
        :dummy-base
        (prog2$
-        (raise "Misusage error: dummy base case of direct abstract declarator.")
+        (raise "Internal error: dummy base case of direct abstract declarator.")
         (reterr t))
        :paren
        (b* (((erp new-absdeclor table)

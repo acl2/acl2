@@ -11,6 +11,7 @@
 (in-package "C2C")
 
 (include-book "../syntax/abstract-syntax-operations")
+(include-book "../syntax/unambiguity")
 
 (include-book "std/lists/index-of" :dir :system)
 
@@ -57,6 +58,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-expr ((expr exprp))
+    :guard (expr-unambp expr)
     :returns (new-expr exprp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an expression."
@@ -68,7 +70,7 @@
      :paren (expr-paren (simpadd0-expr expr.unwrap))
      :gensel (make-expr-gensel
               :control (simpadd0-expr expr.control)
-              :assoc (simpadd0-genassoc-list expr.assoc))
+              :assocs (simpadd0-genassoc-list expr.assocs))
      :arrsub (make-expr-arrsub
               :arg1 (simpadd0-expr expr.arg1)
               :arg2 (simpadd0-expr expr.arg2))
@@ -89,9 +91,7 @@
              :op expr.op
              :arg (simpadd0-expr expr.arg))
      :sizeof (expr-sizeof (simpadd0-tyname expr.type))
-     :sizeof-ambig (prog2$
-                    (raise "Misusage error: ~x0." (expr-fix expr))
-                    (expr-fix expr))
+     :sizeof-ambig (prog2$ (impossible) (irr-expr))
      :alignof (make-expr-alignof :type (simpadd0-tyname expr.type)
                                  :uscores expr.uscores)
      :cast (make-expr-cast
@@ -112,26 +112,17 @@
      :comma (make-expr-comma
              :first (simpadd0-expr expr.first)
              :next (simpadd0-expr expr.next))
-     :cast/call-ambig (prog2$
-                       (raise "Misusage error: ~x0." (expr-fix expr))
-                       (expr-fix expr))
-     :cast/mul-ambig (prog2$
-                      (raise "Misusage error: ~x0." (expr-fix expr))
-                      (expr-fix expr))
-     :cast/add-ambig (prog2$
-                      (raise "Misusage error: ~x0." (expr-fix expr))
-                      (expr-fix expr))
-     :cast/sub-ambig (prog2$
-                      (raise "Misusage error: ~x0." (expr-fix expr))
-                      (expr-fix expr))
-     :cast/and-ambig (prog2$
-                      (raise "Misusage error: ~x0." (expr-fix expr))
-                      (expr-fix expr)))
+     :cast/call-ambig (prog2$ (impossible) (irr-expr))
+     :cast/mul-ambig (prog2$ (impossible) (irr-expr))
+     :cast/add-ambig (prog2$ (impossible) (irr-expr))
+     :cast/sub-ambig (prog2$ (impossible) (irr-expr))
+     :cast/and-ambig (prog2$ (impossible) (irr-expr)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-expr-list ((exprs expr-listp))
+    :guard (expr-list-unambp exprs)
     :returns (new-exprs expr-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of expressions."
@@ -143,6 +134,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-expr-option ((expr? expr-optionp))
+    :guard (expr-option-unambp expr?)
     :returns (new-expr? expr-optionp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an optional expression."
@@ -155,6 +147,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-const-expr ((cexpr const-exprp))
+    :guard (const-expr-unambp cexpr)
     :returns (new-cexpr const-exprp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a constant expression."
@@ -163,19 +156,21 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-const-expr-option ((const-expr? const-expr-optionp))
-    :returns (new-const-expr? const-expr-optionp)
+  (define simpadd0-const-expr-option ((cexpr? const-expr-optionp))
+    :guard (const-expr-option-unambp cexpr?)
+    :returns (new-cexpr? const-expr-optionp)
     :parents (simpadd0 simpadd0-const-exprs/decls)
     :short "Transform an optional constant expression."
     (const-expr-option-case
-     const-expr?
-     :some (simpadd0-const-expr const-expr?.val)
+     cexpr?
+     :some (simpadd0-const-expr cexpr?.val)
      :none nil)
-    :measure (const-expr-option-count const-expr?))
+    :measure (const-expr-option-count cexpr?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-genassoc ((genassoc genassocp))
+    :guard (genassoc-unambp genassoc)
     :returns (new-genassoc genassocp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a generic association."
@@ -190,6 +185,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-genassoc-list ((genassocs genassoc-listp))
+    :guard (genassoc-list-unambp genassocs)
     :returns (new-genassocs genassoc-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of generic associations."
@@ -201,6 +197,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-type-spec ((tyspec type-specp))
+    :guard (type-spec-unambp tyspec)
     :returns (new-tyspec type-specp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a type specifier."
@@ -227,6 +224,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-spec/qual ((specqual spec/qual-p))
+    :guard (spec/qual-unambp specqual)
     :returns (new-specqual spec/qual-p)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a type specifier or qualifier."
@@ -240,6 +238,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-spec/qual-list ((specquals spec/qual-listp))
+    :guard (spec/qual-list-unambp specquals)
     :returns (new-specquals spec/qual-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of type specifiers and qualifiers."
@@ -251,6 +250,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-align-spec ((alignspec align-specp))
+    :guard (align-spec-unambp alignspec)
     :returns (new-alignspec align-specp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an alignment specifier."
@@ -258,14 +258,13 @@
      alignspec
      :alignas-type (align-spec-alignas-type (simpadd0-tyname alignspec.type))
      :alignas-expr (align-spec-alignas-expr (simpadd0-const-expr alignspec.arg))
-     :alignas-ambig (prog2$
-                     (raise "Misusage error: ~x0." (align-spec-fix alignspec))
-                     (align-spec-fix alignspec)))
+     :alignas-ambig (prog2$ (impossible) (irr-align-spec)))
     :measure (align-spec-count alignspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-declspec ((declspec declspecp))
+    :guard (declspec-unambp declspec)
     :returns (new-declspec declspecp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a declaration specifier."
@@ -281,6 +280,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-declspec-list ((declspecs declspec-listp))
+    :guard (declspec-list-unambp declspecs)
     :returns (new-declspecs declspec-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of declaration specifiers."
@@ -292,6 +292,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-initer ((initer initerp))
+    :guard (initer-unambp initer)
     :returns (new-initer initerp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an initializer."
@@ -306,6 +307,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-initer-option ((initer? initer-optionp))
+    :guard (initer-option-unambp initer?)
     :returns (new-initer? initer-optionp)
     :parents (simpadd0 simpadd0-initers/decls)
     :short "Transform an optional initializer."
@@ -318,6 +320,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-desiniter ((desiniter desiniterp))
+    :guard (desiniter-unambp desiniter)
     :returns (new-desiniter desiniterp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an initializer with optional designations."
@@ -330,6 +333,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-desiniter-list ((desiniters desiniter-listp))
+    :guard (desiniter-list-unambp desiniters)
     :returns (new-desiniters desiniter-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of initializers with optional designations."
@@ -341,6 +345,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-designor ((designor designorp))
+    :guard (designor-unambp designor)
     :returns (new-designor designorp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a designator."
@@ -353,6 +358,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-designor-list ((designors designor-listp))
+    :guard (designor-list-unambp designors)
     :returns (new-designors designor-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of designators."
@@ -364,6 +370,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-declor ((declor declorp))
+    :guard (declor-unambp declor)
     :returns (new-declor declorp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a declarator."
@@ -376,6 +383,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-declor-option ((declor? declor-optionp))
+    :guard (declor-option-unambp declor?)
     :returns (new-declor? declor-optionp)
     :parents (simpadd0 simpadd0-declors/decls)
     :short "Transform an optional declarator."
@@ -388,6 +396,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-dirdeclor ((dirdeclor dirdeclorp))
+    :guard (dirdeclor-unambp dirdeclor)
     :returns (new-dirdeclor dirdeclorp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a direct declarator."
@@ -422,6 +431,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-absdeclor ((absdeclor absdeclorp))
+    :guard (absdeclor-unambp absdeclor)
     :returns (new-absdeclor absdeclorp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an abstract declarator."
@@ -434,6 +444,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-absdeclor-option ((absdeclor? absdeclor-optionp))
+    :guard (absdeclor-option-unambp absdeclor?)
     :returns (new-absdeclor? absdeclor-optionp)
     :parents (simpadd0 simpadd0-absdeclors/decls)
     :short "Transform an optional abstract declarator."
@@ -446,6 +457,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-dirabsdeclor ((dirabsdeclor dirabsdeclorp))
+    :guard (dirabsdeclor-unambp dirabsdeclor)
     :returns (new-dirabsdeclor dirabsdeclorp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a direct abstract declarator."
@@ -453,7 +465,7 @@
      dirabsdeclor
      :dummy-base (prog2$
                   (raise "Misusage error: ~x0." (dirabsdeclor-fix dirabsdeclor))
-                  (dirabsdeclor-fix dirabsdeclor))
+                  (irr-dirabsdeclor))
      :paren (dirabsdeclor-paren (simpadd0-absdeclor dirabsdeclor.unwrap))
      :array (make-dirabsdeclor-array
              :decl? (simpadd0-dirabsdeclor-option dirabsdeclor.decl?)
@@ -478,6 +490,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp))
+    :guard (dirabsdeclor-option-unambp dirabsdeclor?)
     :returns (new-dirabsdeclor? dirabsdeclor-optionp)
     :parents (simpadd0 simpadd0-dirabsdeclors/decls)
     :short "Transform an optional direct abstract declarator."
@@ -490,6 +503,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-paramdecl ((paramdecl paramdeclp))
+    :guard (paramdecl-unambp paramdecl)
     :returns (new-paramdecl paramdeclp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a parameter declaration."
@@ -501,6 +515,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-paramdecl-list ((paramdecls paramdecl-listp))
+    :guard (paramdecl-list-unambp paramdecls)
     :returns (new-paramdecls paramdecl-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of parameter declarations."
@@ -512,6 +527,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-paramdeclor ((paramdeclor paramdeclorp))
+    :guard (paramdeclor-unambp paramdeclor)
     :returns (new-paramdeclor paramdeclorp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a parameter declarator."
@@ -520,14 +536,13 @@
      :declor (paramdeclor-declor (simpadd0-declor paramdeclor.unwrap))
      :absdeclor (paramdeclor-absdeclor (simpadd0-absdeclor paramdeclor.unwrap))
      :none (paramdeclor-none)
-     :ambig (prog2$
-             (raise "Misusage error: ~x0." (paramdeclor-fix paramdeclor))
-             (paramdeclor-fix paramdeclor)))
+     :ambig (prog2$ (impossible) (irr-paramdeclor)))
     :measure (paramdeclor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-tyname ((tyname tynamep))
+    :guard (tyname-unambp tyname)
     :returns (new-tyname tynamep)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a type name."
@@ -540,6 +555,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-strunispec ((strunispec strunispecp))
+    :guard (strunispec-unambp strunispec)
     :returns (new-strunispec strunispecp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a structure or union specifier."
@@ -552,6 +568,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-structdecl ((structdecl structdeclp))
+    :guard (structdecl-unambp structdecl)
     :returns (new-structdecl structdeclp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a structure declaration."
@@ -569,6 +586,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-structdecl-list ((structdecls structdecl-listp))
+    :guard (structdecl-list-unambp structdecls)
     :returns (new-structdecls structdecl-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of structure declarations."
@@ -580,6 +598,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-structdeclor ((structdeclor structdeclorp))
+    :guard (structdeclor-unambp structdeclor)
     :returns (new-structdeclor structdeclorp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a structure declarator."
@@ -592,6 +611,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-structdeclor-list ((structdeclors structdeclor-listp))
+    :guard (structdeclor-list-unambp structdeclors)
     :returns (new-structdeclors structdeclor-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of structure declarators."
@@ -603,6 +623,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-enumspec ((enumspec enumspecp))
+    :guard (enumspec-unambp enumspec)
     :returns (new-enumspec enumspecp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an enumeration specifier."
@@ -616,6 +637,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-enumer ((enumer enumerp))
+    :guard (enumer-unambp enumer)
     :returns (new-enumer enumerp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an enumerator."
@@ -628,6 +650,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-enumer-list ((enumers enumer-listp))
+    :guard (enumer-list-unambp enumers)
     :returns (new-enumers enumer-listp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a list of enumerators."
@@ -639,6 +662,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-statassert ((statassert statassertp))
+    :guard (statassert-unambp statassert)
     :returns (new-statassert statassertp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an static assertion declaration."
@@ -650,48 +674,220 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
- :hints (("Goal" :in-theory (enable o< o-finp)))
+  :hints (("Goal" :in-theory (enable o< o-finp)))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :verify-guards nil ; done below
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  :verify-guards :after-returns
 
   ///
 
+  (local (in-theory (enable irr-absdeclor
+                            irr-dirabsdeclor)))
+
+  (fty::deffixequiv-mutual simpadd0-exprs/decls)
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards simpadd0-expr)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (fty::deffixequiv-mutual simpadd0-exprs/decls))
+  (defret-mutual exprs/decls-unambp-of-simpadd0-exprs/decls
+    (defret expr-unambp-of-simpadd0-expr
+      (expr-unambp new-expr)
+      :fn simpadd0-expr)
+    (defret expr-list-unambp-of-simpadd0-expr-list
+      (expr-list-unambp new-exprs)
+      :fn simpadd0-expr-list)
+    (defret expr-option-unambp-of-simpadd0-expr-option
+      (expr-option-unambp new-expr?)
+      :fn simpadd0-expr-option)
+    (defret const-expr-unambp-of-simpadd0-const-expr
+      (const-expr-unambp new-cexpr)
+      :fn simpadd0-const-expr)
+    (defret const-expr-option-unambp-of-simpadd0-const-expr-option
+      (const-expr-option-unambp new-cexpr?)
+      :fn simpadd0-const-expr-option)
+    (defret genassoc-unambp-of-simpadd0-genassoc
+      (genassoc-unambp new-genassoc)
+      :fn simpadd0-genassoc)
+    (defret genassoc-list-unambp-of-simpadd0-genassoc-list
+      (genassoc-list-unambp new-genassocs)
+      :fn simpadd0-genassoc-list)
+    (defret type-spec-unambp-of-simpadd0-type-spec
+      (type-spec-unambp new-tyspec)
+      :fn simpadd0-type-spec)
+    (defret spec/qual-unambp-of-simpadd0-spec/qual
+      (spec/qual-unambp new-specqual)
+      :fn simpadd0-spec/qual)
+    (defret spec/qual-list-unambp-of-simpadd0-spec/qual-list
+      (spec/qual-list-unambp new-specquals)
+      :fn simpadd0-spec/qual-list)
+    (defret align-spec-unambp-of-simpadd0-align-spec
+      (align-spec-unambp new-alignspec)
+      :fn simpadd0-align-spec)
+    (defret declspec-unambp-of-simpadd0-declspec
+      (declspec-unambp new-declspec)
+      :fn simpadd0-declspec)
+    (defret declspec-list-unambp-of-simpadd0-declspec-list
+      (declspec-list-unambp new-declspecs)
+      :fn simpadd0-declspec-list)
+    (defret initer-unambp-of-simpadd0-initer
+      (initer-unambp new-initer)
+      :fn simpadd0-initer)
+    (defret initer-option-unambp-of-simpadd0-initer-option
+      (initer-option-unambp new-initer?)
+      :fn simpadd0-initer-option)
+    (defret desiniter-unambp-of-simpadd0-desiniter
+      (desiniter-unambp new-desiniter)
+      :fn simpadd0-desiniter)
+    (defret desiniter-list-unambp-of-simpadd0-desiniter-list
+      (desiniter-list-unambp new-desiniters)
+      :fn simpadd0-desiniter-list)
+    (defret designor-unambp-of-simpadd0-designor
+      (designor-unambp new-designor)
+      :fn simpadd0-designor)
+    (defret designor-list-unambp-of-simpadd0-designor-list
+      (designor-list-unambp new-designors)
+      :fn simpadd0-designor-list)
+    (defret declor-unambp-of-simpadd0-declor
+      (declor-unambp new-declor)
+      :fn simpadd0-declor)
+    (defret declor-option-unambp-of-simpadd0-declor-option
+      (declor-option-unambp new-declor?)
+      :fn simpadd0-declor-option)
+    (defret dirdeclor-unambp-of-simpadd0-dirdeclor
+      (dirdeclor-unambp new-dirdeclor)
+      :fn simpadd0-dirdeclor)
+    (defret absdeclor-unambp-of-simpadd0-absdeclor
+      (absdeclor-unambp new-absdeclor)
+      :fn simpadd0-absdeclor)
+    (defret absdeclor-option-unambp-of-simpadd0-absdeclor-option
+      (absdeclor-option-unambp new-absdeclor?)
+      :fn simpadd0-absdeclor-option)
+    (defret dirabsdeclor-unambp-of-simpadd0-dirabsdeclor
+      (dirabsdeclor-unambp new-dirabsdeclor)
+      :fn simpadd0-dirabsdeclor)
+    (defret dirabsdeclor-option-unambp-of-simpadd0-dirabsdeclor-option
+      (dirabsdeclor-option-unambp new-dirabsdeclor?)
+      :fn simpadd0-dirabsdeclor-option)
+    (defret paramdecl-unambp-of-simpadd0-paramdecl
+      (paramdecl-unambp new-paramdecl)
+      :fn simpadd0-paramdecl)
+    (defret paramdecl-list-unambp-of-simpadd0-paramdecl-list
+      (paramdecl-list-unambp new-paramdecls)
+      :fn simpadd0-paramdecl-list)
+    (defret paramdeclor-unambp-of-simpadd0-paramdeclor
+      (paramdeclor-unambp new-paramdeclor)
+      :fn simpadd0-paramdeclor)
+    (defret tyname-unambp-of-simpadd0-tyname
+      (tyname-unambp new-tyname)
+      :fn simpadd0-tyname)
+    (defret strunispec-unambp-of-simpadd0-strunispec
+      (strunispec-unambp new-strunispec)
+      :fn simpadd0-strunispec)
+    (defret structdecl-unambp-of-simpadd0-structdecl
+      (structdecl-unambp new-structdecl)
+      :fn simpadd0-structdecl)
+    (defret structdecl-list-unambp-of-simpadd0-structdecl-list
+      (structdecl-list-unambp new-structdecls)
+      :fn simpadd0-structdecl-list)
+    (defret structdeclor-unambp-of-simpadd0-structdeclor
+      (structdeclor-unambp new-structdeclor)
+      :fn simpadd0-structdeclor)
+    (defret structdeclor-list-unambp-of-simpadd0-structdeclor-list
+      (structdeclor-list-unambp new-structdeclors)
+      :fn simpadd0-structdeclor-list)
+    (defret enumspec-unambp-of-simpadd0-enumspec
+      (enumspec-unambp new-enumspec)
+      :fn simpadd0-enumspec)
+    (defret enumer-unambp-of-simpadd0-enumer
+      (enumer-unambp new-enumer)
+      :fn simpadd0-enumer)
+    (defret enumer-list-unambp-of-simpadd0-enumer-list
+      (enumer-list-unambp new-enumers)
+      :fn simpadd0-enumer-list)
+    (defret statassert-unambp-of-simpadd0-statassert
+      (statassert-unambp new-statassert)
+      :fn simpadd0-statassert)
+    :hints (("Goal" :in-theory (enable simpadd0-expr
+                                       simpadd0-expr-list
+                                       simpadd0-expr-option
+                                       simpadd0-const-expr
+                                       simpadd0-const-expr-option
+                                       simpadd0-genassoc
+                                       simpadd0-genassoc-list
+                                       simpadd0-type-spec
+                                       simpadd0-spec/qual
+                                       simpadd0-spec/qual-list
+                                       simpadd0-align-spec
+                                       simpadd0-declspec
+                                       simpadd0-declspec-list
+                                       simpadd0-initer
+                                       simpadd0-initer-option
+                                       simpadd0-desiniter
+                                       simpadd0-desiniter-list
+                                       simpadd0-designor
+                                       simpadd0-designor-list
+                                       simpadd0-declor
+                                       simpadd0-declor-option
+                                       simpadd0-dirdeclor
+                                       simpadd0-absdeclor
+                                       simpadd0-absdeclor-option
+                                       simpadd0-dirabsdeclor
+                                       simpadd0-dirabsdeclor-option
+                                       simpadd0-paramdecl
+                                       simpadd0-paramdecl-list
+                                       simpadd0-paramdeclor
+                                       simpadd0-tyname
+                                       simpadd0-strunispec
+                                       simpadd0-structdecl
+                                       simpadd0-structdecl-list
+                                       simpadd0-structdeclor
+                                       simpadd0-structdeclor-list
+                                       simpadd0-enumspec
+                                       simpadd0-enumer
+                                       simpadd0-enumer-list
+                                       simpadd0-statassert
+                                       irr-expr
+                                       irr-const-expr
+                                       irr-align-spec
+                                       irr-dirabsdeclor
+                                       irr-paramdeclor)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-initdeclor ((initdeclor initdeclorp))
+  :guard (initdeclor-unambp initdeclor)
   :returns (new-initdeclor initdeclorp)
   :short "Transform an initializer declarator."
   (b* (((initdeclor initdeclor) initdeclor))
     (make-initdeclor
      :declor (simpadd0-declor initdeclor.declor)
      :init? (simpadd0-initer-option initdeclor.init?)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret initdeclor-unambp-of-simpadd0-initdeclor
+    (initdeclor-unambp new-initdeclor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-initdeclor-list ((initdeclors initdeclor-listp))
+  :guard (initdeclor-list-unambp initdeclors)
   :returns (new-initdeclors initdeclor-listp)
   :short "Transform a list of initializer declarators."
   (cond ((endp initdeclors) nil)
         (t (cons (simpadd0-initdeclor (car initdeclors))
                  (simpadd0-initdeclor-list (cdr initdeclors)))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret initdeclor-list-unambp-of-simpadd0-initdeclor-list
+    (initdeclor-list-unambp new-initdeclors)
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-decl ((decl declp))
+  :guard (decl-unambp decl)
   :returns (new-decl declp)
   :short "Transform a declaration."
   (decl-case
@@ -704,21 +900,34 @@
           :attrib decl.attrib)
    :statassert (decl-statassert
                 (simpadd0-statassert decl.unwrap)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret decl-unambp-of-simpadd0-decl
+    (decl-unambp new-decl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-decl-list ((decls decl-listp))
+  :guard (decl-list-unambp decls)
   :returns (new-decls decl-listp)
   :short "Transform a list of declarations."
   (cond ((endp decls) nil)
         (t (cons (simpadd0-decl (car decls))
                  (simpadd0-decl-list (cdr decls)))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret decl-list-unambp-of-simpadd0-decl-list
+    (decl-list-unambp new-decls)
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-label ((label labelp))
+  :guard (label-unambp label)
   :returns (new-label labelp)
   :short "Transform a label."
   (label-case
@@ -726,7 +935,12 @@
    :name (label-fix label)
    :const (label-const (simpadd0-const-expr label.unwrap))
    :default (label-fix label))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret label-unambp-of-simpadd0-label
+    (label-unambp new-label)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -736,6 +950,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-stmt ((stmt stmtp))
+    :guard (stmt-unambp stmt)
     :returns (new-stmt stmtp)
     :parents (simpadd0 simpadd0-stmts/blocks)
     :short "Transform a statement."
@@ -772,9 +987,7 @@
                 :test (simpadd0-expr-option stmt.test)
                 :next (simpadd0-expr-option stmt.next)
                 :body (simpadd0-stmt stmt.body))
-     :for-ambig (prog2$
-                 (raise "Misusage error: ~x0." (stmt-fix stmt))
-                 (stmt-fix stmt))
+     :for-ambig (prog2$ (impossible) (irr-stmt))
      :goto (stmt-fix stmt)
      :continue (stmt-fix stmt)
      :break (stmt-fix stmt)
@@ -784,6 +997,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-block-item ((item block-itemp))
+    :guard (block-item-unambp item)
     :returns (new-item block-itemp)
     :parents (simpadd0 simpadd0-stmts/blocks)
     :short "Transform a block item."
@@ -791,14 +1005,13 @@
      item
      :decl (block-item-decl (simpadd0-decl item.unwrap))
      :stmt (block-item-stmt (simpadd0-stmt item.unwrap))
-     :ambig (prog2$
-             (raise "Misusage error: ~x0." (block-item-fix item))
-             (block-item-fix item)))
+     :ambig (prog2$ (impossible) (irr-block-item)))
     :measure (block-item-count item))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-block-item-list ((items block-item-listp))
+    :guard (block-item-list-unambp items)
     :returns (new-items block-item-listp)
     :parents (simpadd0 simpadd0-stmts/blocks)
     :short "Transform a list of block items."
@@ -811,25 +1024,35 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :verify-guards nil ; done below
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  :verify-guards :after-returns
 
   ///
 
+  (fty::deffixequiv-mutual simpadd0-stmts/blocks
+    :hints (("Goal" :in-theory (enable c$::irr-block-item))))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards simpadd0-stmt)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (fty::deffixequiv-mutual simpadd0-stmts/blocks))
+  (defret-mutual stmts/blocks-unambp-of-simpadd0-stmts/blocks
+    (defret stmt-unambp-of-simpadd0-stmt
+      (stmt-unambp new-stmt)
+      :fn simpadd0-stmt)
+    (defret block-item-unambp-of-simpadd0-block-item
+      (block-item-unambp new-item)
+      :fn simpadd0-block-item)
+    (defret block-item-list-unambp-of-simpadd0-block-item-list
+      (block-item-list-unambp new-items)
+      :fn simpadd0-block-item-list)
+    :hints (("Goal" :in-theory (enable simpadd0-stmt
+                                       simpadd0-block-item
+                                       simpadd0-block-item-list
+                                       irr-stmt
+                                       irr-block-item)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-fundef ((fundef fundefp))
+  :guard (fundef-unambp fundef)
   :returns (new-fundef fundefp)
   :short "Transform a function definition."
   (b* (((fundef fundef) fundef))
@@ -839,37 +1062,61 @@
      :declor (simpadd0-declor fundef.declor)
      :decls (simpadd0-decl-list fundef.decls)
      :body (simpadd0-stmt fundef.body)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret fundef-unambp-of-simpadd0-fundef
+    (fundef-unambp new-fundef)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-extdecl ((extdecl extdeclp))
+  :guard (extdecl-unambp extdecl)
   :returns (new-extdecl extdeclp)
   :short "Transform an external declaration."
   (extdecl-case
    extdecl
    :fundef (extdecl-fundef (simpadd0-fundef extdecl.unwrap))
    :decl (extdecl-decl (simpadd0-decl extdecl.unwrap)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret extdecl-unambp-of-simpadd0-extdecl
+    (extdecl-unambp new-extdecl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-extdecl-list ((extdecls extdecl-listp))
+  :guard (extdecl-list-unambp extdecls)
   :returns (new-extdecls extdecl-listp)
   :short "Transform a list of external declarations."
   (cond ((endp extdecls) nil)
         (t (cons (simpadd0-extdecl (car extdecls))
                  (simpadd0-extdecl-list (cdr extdecls)))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret extdecl-list-unambp-of-simpadd0-extdecl-list
+    (extdecl-list-unambp new-extdecls)
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-transunit ((tunit transunitp))
+  :guard (transunit-unambp tunit)
   :returns (new-tunit transunitp)
   :short "Transform a translation unit."
   (b* (((transunit tunit) tunit))
     (transunit (simpadd0-extdecl-list tunit.decls)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret transunit-unambp-of-simpadd0-transunit
+    (transunit-unambp new-tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -916,6 +1163,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-filepath-transunit-map ((map filepath-transunit-mapp))
+  :guard (transunit-ensemble-unambp-loop map)
   :returns (new-map filepath-transunit-mapp
                     :hyp (filepath-transunit-mapp map))
   :short "Transform a map from file paths to translation units."
@@ -929,13 +1177,25 @@
        (new-tunit (simpadd0-transunit tunit))
        (new-map (simpadd0-filepath-transunit-map (omap::tail map))))
     (omap::update new-path new-tunit new-map))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret transunit-ensemble-unambp-loop-of-simpadd-filepath-transunit-map
+    (transunit-ensemble-unambp-loop new-map)
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-transunit-ensemble ((tunits transunit-ensemblep))
+  :guard (transunit-ensemble-unambp tunits)
   :returns (new-tunits transunit-ensemblep)
   :short "Transform a translation unit ensemble."
   (b* (((transunit-ensemble tunits) tunits))
     (transunit-ensemble (simpadd0-filepath-transunit-map tunits.unwrap)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-simpadd0-transunit-ensemble
+    (transunit-ensemble-unambp new-tunits)))

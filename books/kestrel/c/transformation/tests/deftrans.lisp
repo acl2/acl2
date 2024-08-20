@@ -32,7 +32,7 @@
             :paren (expr-paren (my-simpadd0-expr expr.unwrap))
             :gensel (make-expr-gensel
                       :control (my-simpadd0-expr expr.control)
-                      :assoc (my-simpadd0-genassoc-list expr.assoc))
+                      :assocs (my-simpadd0-genassoc-list expr.assocs))
             :arrsub (make-expr-arrsub
                       :arg1 (my-simpadd0-expr expr.arg1)
                       :arg2 (my-simpadd0-expr expr.arg2))

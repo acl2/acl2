@@ -1,10 +1,10 @@
 ; Isar (Intelligible Semi-Automated Reasoning) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -16,12 +16,12 @@
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
-(include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defalist" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "std/util/tuple" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

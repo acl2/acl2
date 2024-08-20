@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -71,7 +71,7 @@
                :string t
                :paren (expr-unambp expr.unwrap)
                :gensel (and (expr-unambp expr.control)
-                            (genassoc-list-unambp expr.assoc))
+                            (genassoc-list-unambp expr.assocs))
                :arrsub (and (expr-unambp expr.arg1)
                             (expr-unambp expr.arg2))
                :funcall (and (expr-unambp expr.fun)
@@ -1113,10 +1113,10 @@
              (expr-unambp (expr-gensel->control expr)))
     :expand (expr-unambp expr))
 
-  (defrule genassoc-list-unambp-of-expr-gensel->assoc
+  (defrule genassoc-list-unambp-of-expr-gensel->assocs
     (implies (and (expr-unambp expr)
                   (expr-case expr :gensel))
-             (genassoc-list-unambp (expr-gensel->assoc expr)))
+             (genassoc-list-unambp (expr-gensel->assocs expr)))
     :expand (expr-unambp expr))
 
   (defrule expr-unambp-of-expr-arrsub->arg1
@@ -1612,6 +1612,16 @@
     (implies (statassert-unambp statassert)
              (const-expr-unambp (statassert->test statassert)))
     :expand (statassert-unambp statassert)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-spec-list-unambp (x)
+  :guard (type-spec-listp x)
+  :short "Check if a list of type specifiers is unambiguous."
+  (type-spec-unambp x)
+  ///
+  (fty::deffixequiv type-spec-list-unambp
+    :args ((x type-spec-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2334,3 +2344,74 @@
     (implies (transunit-ensemble-unambp tunits)
              (transunit-ensemble-unambp-loop
               (transunit-ensemble->unwrap tunits)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection type-spec-list-unambp-of-sublists
+  :short "Theorems saying that the sublist of type specifiers
+          extracted via some abstract syntax operations
+          is unambiguous if the initial list is unambiguous."
+
+  (defrule type-spec-list-unambp-of-check-spec/qual-list-all-tyspec
+    (b* (((mv okp tyspecs) (check-spec/qual-list-all-tyspec specquals)))
+      (implies (and (spec/qual-list-unambp specquals)
+                    okp)
+               (type-spec-list-unambp tyspecs)))
+    :induct t
+    :enable check-spec/qual-list-all-tyspec)
+
+  (defrule type-spec-list-unambp-of-check-declspec-list-all-tyspec
+    (b* (((mv okp tyspecs) (check-declspec-list-all-tyspec specquals)))
+      (implies (and (declspec-list-unambp specquals)
+                    okp)
+               (type-spec-list-unambp tyspecs)))
+    :induct t
+    :enable check-declspec-list-all-tyspec)
+
+  (defrule type-spec-list-unambp-of-check-declspec-list-all-tyspec/storspec
+    (b* (((mv okp tyspecs &)
+          (check-declspec-list-all-tyspec/storspec declspecs)))
+      (implies (and (declspec-list-unambp declspecs)
+                    okp)
+               (type-spec-list-unambp tyspecs)))
+    :induct t
+    :enable check-declspec-list-all-tyspec/storspec))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection expr-unambp-of-operation-on-expr-unambp
+  :short "Preservation of unambiguity by certain operations on expressions."
+
+  (defrule expr-unambp-of-apply-pre-inc/dec-ops
+    (implies (expr-unambp expr)
+             (expr-unambp (apply-pre-inc/dec-ops inc/dec expr)))
+    :induct t
+    :enable apply-pre-inc/dec-ops)
+
+  (defrule expr-unambp-of-apply-post-inc/dec-ops
+    (implies (expr-unambp expr)
+             (expr-unambp (apply-post-inc/dec-ops expr inc/dec)))
+    :induct t
+    :enable apply-post-inc/dec-ops)
+
+  (defrule expr-list-unambp-of-expr-to-asg-expr-list
+    (implies (expr-unambp expr)
+             (expr-list-unambp (expr-to-asg-expr-list expr)))
+    :induct t
+    :enable expr-to-asg-expr-list)
+
+  (defrule expr-unambp-of-check-expr-mul
+    (b* (((mv yes/no arg1 arg2) (check-expr-mul expr)))
+      (implies (and (expr-unambp expr)
+                    yes/no)
+               (and (expr-unambp arg1)
+                    (expr-unambp arg2))))
+    :enable check-expr-mul)
+
+  (defrule expr-unambp-of-check-expr-binary
+    (b* (((mv yes/no & arg1 arg2) (check-expr-binary expr)))
+      (implies (and (expr-unambp expr)
+                    yes/no)
+               (and (expr-unambp arg1)
+                    (expr-unambp arg2))))
+    :enable check-expr-binary))

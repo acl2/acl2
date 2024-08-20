@@ -19,6 +19,8 @@
 (defconst *abstract-syntax-symbols*
   '(
 
+    ;; fixtypes operations:
+
     identp
     ident
     ident-fix
@@ -71,6 +73,7 @@
     make-expr-binary
     make-expr-cond
     make-expr-comma
+    irr-expr
 
     expr-listp
     expr-list-fix
@@ -85,6 +88,7 @@
     const-expr-count
     const-expr
     const-expr->unwrap
+    irr-const-expr
 
     const-expr-optionp
     const-expr-option-fix
@@ -128,6 +132,7 @@
     align-spec-case
     align-spec-alignas-type
     align-spec-alignas-expr
+    irr-align-spec
 
     declspecp
     declspec-fix
@@ -203,6 +208,7 @@
     absdeclor-count
     absdeclor
     make-absdeclor
+    irr-absdeclor
 
     absdeclor-optionp
     absdeclor-option-fix
@@ -224,6 +230,7 @@
     dirabsdeclor-option-fix
     dirabsdeclor-option-count
     dirabsdeclor-option-case
+    irr-dirabsdeclor
 
     paramdecl
     paramdeclp
@@ -242,6 +249,7 @@
     paramdeclor-declor
     paramdeclor-absdeclor
     paramdeclor-none
+    irr-paramdeclor
 
     tynamep
     tyname-fix
@@ -335,6 +343,7 @@
     make-stmt-for-expr
     make-stmt-for-decl
     stmt-return
+    irr-stmt
 
     block-itemp
     block-item-fix
@@ -342,6 +351,7 @@
     block-item-case
     block-item-decl
     block-item-stmt
+    irr-block-item
 
     block-item-listp
     block-item-list-fix
@@ -387,5 +397,62 @@
     filesetp
     fileset
     fileset->unwrap
+
+    ;; unambiguity predicates:
+
+    expr-unambp
+    expr-list-unambp
+    expr-option-unambp
+    const-expr-unambp
+    const-expr-option-unambp
+    genassoc-unambp
+    genassoc-list-unambp
+    type-spec-unambp
+    type-spec-list-unambp
+    spec/qual-unambp
+    spec/qual-list-unambp
+    align-spec-unambp
+    declspec-unambp
+    declspec-list-unambp
+    initer-unambp
+    initer-option-unambp
+    desiniter-unambp
+    desiniter-list-unambp
+    designor-unambp
+    designor-list-unambp
+    declor-unambp
+    declor-option-unambp
+    dirdeclor-unambp
+    absdeclor-unambp
+    absdeclor-option-unambp
+    dirabsdeclor-unambp
+    dirabsdeclor-option-unambp
+    paramdecl-unambp
+    paramdecl-list-unambp
+    paramdeclor-unambp
+    tyname-unambp
+    strunispec-unambp
+    structdecl-unambp
+    structdecl-list-unambp
+    structdeclor-unambp
+    structdeclor-list-unambp
+    enumspec-unambp
+    enumer-unambp
+    enumer-list-unambp
+    statassert-unambp
+    initdeclor-unambp
+    initdeclor-list-unambp
+    decl-unambp
+    decl-list-unambp
+    label-unambp
+    stmt-unambp
+    block-item-unambp
+    block-item-list-unambp
+    fundef-unambp
+    extdecl-unambp
+    extdecl-list-unambp
+    transunit-unambp
+    transunit-ensemble-unambp-loop
+    transunit-ensemble-unambp
 
    ))
