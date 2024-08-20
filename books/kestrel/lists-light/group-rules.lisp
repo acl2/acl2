@@ -17,6 +17,7 @@
 (include-book "ungroup")
 (include-book "group2")
 (include-book "group")
+(include-book "kestrel/utilities/defopeners" :dir :system)
 (local (include-book "take2"))
 (local (include-book "nth"))
 (local (include-book "len"))
@@ -337,3 +338,5 @@
            :expand (GROUP2 (LEN (CAR X))
                         (APPEND (CAR X)
                                 (UNGROUP (LEN (CAR X)) (CDR X)))))))
+
+(defopeners group :disable t)

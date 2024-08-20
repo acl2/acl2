@@ -11,8 +11,9 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-operations")
+(include-book "implementation-environments")
 
-(include-book "kestrel/std/util/error-value-tuples" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
 
@@ -38,10 +39,7 @@
    (xdoc::p
     "Here we provide a validator of C code,
      whose purpose is to check those constraints,
-     i.e. to check whether the C code is valid and compilable.
-     This work has just started:
-     we may start with a partial validator,
-     which we will extend to a full validator.")
+     i.e. to check whether the C code is valid and compilable.")
    (xdoc::p
     "We start with an approximate validator
      that should accept all valid C code
@@ -462,6 +460,37 @@
        (new-scopes (cons new-scope (cdr scopes))))
     (change-valid-table table :scopes new-scopes))
   :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-dec/oct/hex-const ((const dec/oct/hex-constp))
+  :returns (value natp)
+  :short "Validate a decimal, octal, or hexadecimal constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This kind of constant is always valid,
+     but for this function we use the naming scheme @('valid-...')
+     for uniformity with the other validator's functions.")
+   (xdoc::p
+    "This function actually evaluates the constant, to a natural number.
+     This is needed by the validator in order to assign
+     types to integer constants.
+     This function returns a natural number,
+     which can be arbitrarily large;
+     whether an integer constant is too large is checked elsewhere.")
+   (xdoc::p
+    "For a decimal or octal constant, the value is a component of the fixtype.
+     For a hexadecimal constant, we use a library function
+     to convert the digits into a value;
+     the digits are as they appear in the concrete syntax,
+     i.e. in big-endian order."))
+  (dec/oct/hex-const-case
+   const
+   :dec const.value
+   :oct const.value
+   :hex (str::hex-digit-chars-value const.digits))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

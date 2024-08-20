@@ -228,12 +228,13 @@
                  (:instance expo-monotone
                   (x (spd f)) (y u))))))
 
-(defun aarch64-post-comp (u fpcr fpsr f)
+(defun aarch64-post-comp-base (u fpcr fpsr f satovfl)
   (declare (xargs :guard (and (real/rationalp u)
                               (not (= u 0))
                               (natp fpcr)
                               (natp fpsr)
-                              (formatp f))
+                              (formatp f)
+                              (bitp satovfl))
                   :guard-hints (("Goal"
                                  :use ((:instance rnd-monotone
                                         (x (lpn f))
@@ -267,7 +268,8 @@
         (let ((fpsr (set-flag *ofc* (set-flag *ixc* fpsr))))
           (if (or (and (eql rmode 'rdn) (> r 0))
                   (and (eql rmode 'rup) (< r 0))
-                  (eql rmode 'rtz))
+                  (eql rmode 'rtz)
+                  (and (= satovfl 1) (eql rmode 'rne)))
               (mv (nencode (* (sgn r) (lpn f)) f)
                   fpsr)
             (mv (iencode sgn f) fpsr)))
@@ -303,6 +305,11 @@
           (mv (nencode r f)
               (if (= r u) fpsr (set-flag *ixc* fpsr))))))))
 
+(defmacro aarch64-post-comp (u fpcr fpsr f &optional (satovfl ''0))
+  `(aarch64-post-comp-base ,u ,fpcr ,fpsr ,f ,satovfl))
+
+(add-macro-alias aarch64-post-comp aarch64-post-comp-base)
+  
 (defthm ieee-rounding-mode-p-of-fpscr-rc
   (ieee-rounding-mode-p (fpscr-rc x))
   :hints (("Goal" :in-theory (enable fpscr-rc))))

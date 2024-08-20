@@ -14,8 +14,8 @@
 (include-book "abstract-syntax-operations")
 
 (include-book "kestrel/fty/nat-option" :dir :system)
-(include-book "kestrel/std/util/error-value-tuples" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/utilities/strings/char-code-theorems" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -7749,7 +7749,7 @@
              ((erp last-span pstate) ; _Generic ( expr , genassoc ... )
               (read-punctuator ")" pstate)))
           (retok (make-expr-gensel :control expr
-                                   :assoc genassocs)
+                                   :assocs genassocs)
                  (span-join span last-span)
                  pstate)))
        (t ; other

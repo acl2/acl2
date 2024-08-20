@@ -248,7 +248,8 @@
        (new-bytes-rev (append (rev encoding) bytes-rev))
        (new-pstate (change-pristate pstate :bytes-rev new-bytes-rev)))
     new-pstate)
-  :guard-hints (("Goal" :in-theory (enable bytep grammar-character-p
+  :guard-hints (("Goal" :in-theory (enable grammar-character-p
+                                           bytep
                                            unsigned-byte-p
                                            integer-range-p)))
   ///
@@ -1579,11 +1580,11 @@
            (b* ((pstate (print-astring "_Generic(" pstate))
                 (pstate (print-expr expr.control (expr-priority-asg) pstate))
                 (pstate (print-astring ", " pstate))
-                ((unless expr.assoc)
+                ((unless expr.assocs)
                  (raise "Misusage error: ~
                          empty generic association list.")
                  pstate)
-                (pstate (print-genassoc-list expr.assoc pstate))
+                (pstate (print-genassoc-list expr.assocs pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
            :arrsub
@@ -2696,51 +2697,7 @@
   ///
 
   (verify-guards print-expr
-    :hints (("Goal"
-             :expand ((structdeclor-unambp structdeclor)
-                      (dirabsdeclor-unambp dirabsdeclor))
-             :in-theory (e/d (expr-unambp
-                              expr-list-unambp
-                              expr-option-unambp
-                              const-expr-unambp
-                              const-expr-option-unambp
-                              genassoc-unambp
-                              genassoc-list-unambp
-                              type-spec-unambp
-                              spec/qual-unambp
-                              spec/qual-list-unambp
-                              align-spec-unambp
-                              declspec-unambp
-                              declspec-list-unambp
-                              initer-unambp
-                              initer-option-unambp
-                              desiniter-unambp
-                              desiniter-list-unambp
-                              designor-unambp
-                              designor-list-unambp
-                              declor-unambp
-                              declor-option-unambp
-                              dirdeclor-unambp
-                              absdeclor-unambp
-                              absdeclor-option-unambp
-                              dirabsdeclor-unambp
-                              dirabsdeclor-option-unambp
-                              paramdecl-unambp
-                              paramdecl-list-unambp
-                              paramdeclor-unambp
-                              tyname-unambp
-                              strunispec-unambp
-                              structdecl-unambp
-                              structdecl-list-unambp
-                              structdeclor-unambp
-                              structdeclor-list-unambp
-                              enumspec-unambp
-                              enumer-unambp
-                              enumer-list-unambp
-                              statassert-unambp
-                              declor-option-some->val
-                              dirabsdeclor-option-some->val)
-                             ((:e tau-system)))))) ; for speed
+    :hints (("Goal" :in-theory (disable (:e tau-system))))) ; for speed
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

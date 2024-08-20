@@ -28,7 +28,6 @@
 (include-book "kestrel/std/system/rawp" :dir :system)
 (include-book "kestrel/std/system/uguard" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
-(include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -36,6 +35,7 @@
 (include-book "oslib/file-types" :dir :system)
 (include-book "std/strings/letter-digit-chars" :dir :system)
 (include-book "std/typed-alists/symbol-symbollist-alistp" :dir :system)
+(include-book "std/util/tuple" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
