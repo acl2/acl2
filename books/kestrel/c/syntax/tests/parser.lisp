@@ -1624,3 +1624,15 @@ struct bar
 lbl_15:
    return 2;
 }")
+
+(test-parse
+ parse-external-declaration-list
+ "extern __inline __attribute__ ((__always_inline__)) __attribute__ ((__gnu_inline__)) void
+error (int __status, int __errnum, const char *__format, ...)
+{
+ if (__builtin_constant_p (__status) && __status != 0)
+   __error_noreturn (__status, __errnum, __format, __builtin_va_arg_pack ());
+ else
+   __error_alias (__status, __errnum, __format, __builtin_va_arg_pack ());
+}"
+ :gcc t)
