@@ -27,6 +27,7 @@
                c$::*abstract-syntax-symbols*
                '(defxdoc+
                  erp
+                 impossible
                  index-of
                  reterr
                  retok

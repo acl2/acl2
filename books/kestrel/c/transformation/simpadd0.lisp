@@ -91,9 +91,7 @@
              :op expr.op
              :arg (simpadd0-expr expr.arg))
      :sizeof (expr-sizeof (simpadd0-tyname expr.type))
-     :sizeof-ambig (prog2$
-                    (raise "Misusage error: ~x0." (expr-fix expr))
-                    (irr-expr))
+     :sizeof-ambig (prog2$ (impossible) (irr-expr))
      :alignof (make-expr-alignof :type (simpadd0-tyname expr.type)
                                  :uscores expr.uscores)
      :cast (make-expr-cast
@@ -114,21 +112,11 @@
      :comma (make-expr-comma
              :first (simpadd0-expr expr.first)
              :next (simpadd0-expr expr.next))
-     :cast/call-ambig (prog2$
-                       (raise "Misusage error: ~x0." (expr-fix expr))
-                       (irr-expr))
-     :cast/mul-ambig (prog2$
-                      (raise "Misusage error: ~x0." (expr-fix expr))
-                      (irr-expr))
-     :cast/add-ambig (prog2$
-                      (raise "Misusage error: ~x0." (expr-fix expr))
-                      (irr-expr))
-     :cast/sub-ambig (prog2$
-                      (raise "Misusage error: ~x0." (expr-fix expr))
-                      (irr-expr))
-     :cast/and-ambig (prog2$
-                      (raise "Misusage error: ~x0." (expr-fix expr))
-                      (irr-expr)))
+     :cast/call-ambig (prog2$ (impossible) (irr-expr))
+     :cast/mul-ambig (prog2$ (impossible) (irr-expr))
+     :cast/add-ambig (prog2$ (impossible) (irr-expr))
+     :cast/sub-ambig (prog2$ (impossible) (irr-expr))
+     :cast/and-ambig (prog2$ (impossible) (irr-expr)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -270,9 +258,7 @@
      alignspec
      :alignas-type (align-spec-alignas-type (simpadd0-tyname alignspec.type))
      :alignas-expr (align-spec-alignas-expr (simpadd0-const-expr alignspec.arg))
-     :alignas-ambig (prog2$
-                     (raise "Misusage error: ~x0." (align-spec-fix alignspec))
-                     (irr-align-spec)))
+     :alignas-ambig (prog2$ (impossible) (irr-align-spec)))
     :measure (align-spec-count alignspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -550,9 +536,7 @@
      :declor (paramdeclor-declor (simpadd0-declor paramdeclor.unwrap))
      :absdeclor (paramdeclor-absdeclor (simpadd0-absdeclor paramdeclor.unwrap))
      :none (paramdeclor-none)
-     :ambig (prog2$
-             (raise "Misusage error: ~x0." (paramdeclor-fix paramdeclor))
-             (irr-paramdeclor)))
+     :ambig (prog2$ (impossible) (irr-paramdeclor)))
     :measure (paramdeclor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1003,9 +987,7 @@
                 :test (simpadd0-expr-option stmt.test)
                 :next (simpadd0-expr-option stmt.next)
                 :body (simpadd0-stmt stmt.body))
-     :for-ambig (prog2$
-                 (raise "Misusage error: ~x0." (stmt-fix stmt))
-                 (irr-stmt))
+     :for-ambig (prog2$ (impossible) (irr-stmt))
      :goto (stmt-fix stmt)
      :continue (stmt-fix stmt)
      :break (stmt-fix stmt)
@@ -1023,9 +1005,7 @@
      item
      :decl (block-item-decl (simpadd0-decl item.unwrap))
      :stmt (block-item-stmt (simpadd0-stmt item.unwrap))
-     :ambig (prog2$
-             (raise "Misusage error: ~x0." (block-item-fix item))
-             (irr-block-item)))
+     :ambig (prog2$ (impossible) (irr-block-item)))
     :measure (block-item-count item))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
