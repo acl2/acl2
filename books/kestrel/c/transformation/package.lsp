@@ -29,4 +29,5 @@
                  erp
                  index-of
                  reterr
-                 retok)))
+                 retok
+                 std::defret-mutual)))
