@@ -30,6 +30,10 @@
     "Here we define the system state transitions
      caused by @('advance-round') events.")
    (xdoc::p
+    "A round advancement event involves just one correct validator.
+     Since we do not model the internal state of faulty validators,
+     there is no point modeling events that change that internal state.")
+   (xdoc::p
     "This is not the only event that advances the round:
      see @(see transitions-store-certificate),
      where the round may advance to catch up a validator to others.
@@ -50,7 +54,9 @@
      But for now we do not worry about these aspects,
      because they do not affect the properties
      that we are proving in the short term, mainly blockchain non-forking.
-     The exact details of round advancement need further study."))
+     The exact details of round advancement need further study.")
+   (xdoc::p
+    "A round advancement event does not involve the network."))
   :order-subtopics t
   :default-parent t)
 
