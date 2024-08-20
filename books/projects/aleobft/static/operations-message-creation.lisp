@@ -60,12 +60,13 @@
     :induct t)
 
   (defrule in-of-messages-for-certificate
-    (implies (and (certificatep cert)
-                  (address-setp dests))
-             (equal (set::in msg (messages-for-certificate cert dests))
+    (implies (address-setp dests)
+             (equal (set::in msg
+                             (messages-for-certificate cert dests))
                     (and (messagep msg)
-                         (equal (message->certificate msg) cert)
-                         (set::in (message->destination msg) dests))))
+                         (equal (message->certificate msg)
+                                (certificate-fix cert))
+                         (set::in (message->destination msg)
+                                  dests))))
     :induct t
-    :enable (set::in
-             message->certificate-when-in-messages-for-certificate)))
+    :enable message->certificate-when-in-messages-for-certificate))

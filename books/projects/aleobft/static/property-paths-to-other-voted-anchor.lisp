@@ -98,7 +98,8 @@
   :rule-classes :linear
   :enable (set::cardinality
            round-set-of-incoming
-           round-set-of-outgoing))
+           round-set-of-outgoing
+           certificate-set->round-set-of-union))
 
 ; This is similar to the homonymous theorem for the single-DAG property
 ; (in property-paths-to-voted-anchor.lisp), but it involves two DAGs.
@@ -125,6 +126,7 @@
            certificate-sets-unequivocalp-when-subsets
            incoming+outgoing-same-round
            certificate-set-unequivocalp-when-subset
+           certificate-set->author-set-of-union
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
             certificate-set->round-set-of-union))

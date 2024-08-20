@@ -11,6 +11,12 @@
 
 (in-package "ALEOBFT-STATIC")
 
+(include-book "addresses")
+(include-book "transactions")
+(include-book "blocks")
+(include-book "certificates")
+(include-book "validator-states")
+(include-book "messages")
 (include-book "system-states")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

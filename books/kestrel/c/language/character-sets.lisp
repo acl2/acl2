@@ -12,9 +12,9 @@
 (in-package "C")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/std/util/deffixer" :dir :system)
-(include-book "std/util/define-sk" :dir :system)
 (include-book "std/strings/coerce" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

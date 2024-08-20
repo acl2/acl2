@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/util/defmacro-plus" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defmacro-plus" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

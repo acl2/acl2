@@ -1271,7 +1271,10 @@
     take-does-nothing ; introduces true-list-fix
     ;; rules about cdr:
     true-listp-of-cdr
+    ;; rules about cons:
+    car-cons
     cdr-cons
+    consp-of-cons ;also elsewhere?
     ;; mixed rules:
     true-listp-of-cons
     len-update-nth ;pretty aggressive
@@ -1303,11 +1306,9 @@
     consp-of-update-nth
     true-listp-of-true-list-fix2
     len-of-true-list-fix
-    consp-of-cons ;also elsewhere
     true-list-fix-when-true-listp
     true-listp-of-repeat
     len-of-repeat  ;since initializing an array calls repeat
-    car-cons
     len-of-cons
     nth-of-cons-constant-version
     integerp-of-len

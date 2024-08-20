@@ -177,6 +177,9 @@
  (defun convert-var-in-term (var var-alt term pkg-name)
    ;;; Convert var -> var-alt in term.
    (cond ((and (true-listp term)
+               (eql (car term) 'quote))
+          term)
+          ((and (true-listp term)
                (or (eql (car term) 'let)
                    (eql (car term) 'let*)))
           ;; The term is of the form (LET/LET* BINDINGS LET-BODY)
@@ -298,47 +301,6 @@
               ;; Add context of the RHS.
               (p (add-bindings (pterm->context rhs-pterm) p pkg-name)))
            `((mv ,@common-vars) ,p))))))
-
-;;  (defun add-binding (binding pterm pkg-name)
-;; ;;; Add one binding to a pterm. This may update the context of the pterm if
-;; ;;; one of the variables in a binding belongs to the free variables of the
-;; ;;; pterm -- i.e., evaulating the pterm's body under the require the new
-;; ;;; binding in the context. Note: A binding is either of the form (SYMB
-;; ;;; PTERM) or ((MV V1 V2 ...) PTERM).
-;;    (b* (((pterm x) pterm)
-;;         ((list lhs rhs-pterm) binding)
-;;         (lhs-vars (if (consp lhs) (cdr lhs) (list lhs)))
-;;         (common-vars (intersection$ lhs-vars x.free))
-;;         (free-vars (set-difference$ x.free common-vars)))
-;;      (if (null common-vars)
-;;          ;; no common variable -- the bindings is useless
-;;          pterm
-;;        (if (equal (length lhs-vars) 1)
-;;            ;; Simple let bindings -- add to context and update free-vars
-;;            (if (and (symbolp x.body)
-;;                     (symbolp lhs)
-;;                     (eql x.body lhs))
-;;                ;; (let ((x RHS)) x) is just RHS.
-;;                rhs-pterm
-;;              (b* (;; Update context
-;;                   (context (cons binding x.context))
-;;                   (rhs-free-vars (pterm->free rhs-pterm))
-;;                   ;; Update free variables
-;;                   (free-vars (union$ free-vars rhs-free-vars)))
-;;                (pterm x.body context free-vars)))
-;;          ;; And MV-let binding -- select the common vars and simplify RHS
-;;          (b* (;; Simplify (mv-nth n TERM) to reduce number of free variables.
-;;               (binding (simplify-mv-nth-pterm common-vars lhs-vars rhs-pterm pkg-name))
-;;               ((list lhs rhs-pterm) binding))
-;;            (if (and (symbolp x.body)
-;;                     (symbolp lhs)
-;;                     (eql x.body lhs))
-;;                rhs-pterm
-;;              (b* (;; Update context
-;;                   (context (cons binding x.context))
-;;                   ;; Update free-vars
-;;                   (free-vars (union$ free-vars (pterm->free (cadr binding)))))
-;;                (pterm x.body context free-vars))))))))
 
  (defun add-binding (binding pterm pkg-name)
 ;;; Add one binding to a pterm. This may update the context of the pterm if
@@ -562,8 +524,11 @@
                (eql (car term) 'mv-let))
           (extract-fns-from-mv-let term pkg-name))
          ((and (true-listp term)
-              (eql (car term) 'case))
+               (eql (car term) 'case))
           (extract-fns-from-case-expr term pkg-name))
+         ((and (true-listp term)
+               (eql (car term) 'quote))
+          (mv nil (pterm term nil nil)))
          ((and (true-listp term) term)
           (extract-fns-from-fn-app term pkg-name))
          ((and (symbolp term) term (not (eql term 't)))
@@ -670,4 +635,4 @@
                   :in-theory nil
                   :do-not '(preprocess)
                   :clause-processor
-                  (expand-reduce-cp clause '(,@theory-list ,fn-name) state)))))))
+                  (expand-reduce-cp clause '(nil ,@theory-list ,fn-name) state)))))))

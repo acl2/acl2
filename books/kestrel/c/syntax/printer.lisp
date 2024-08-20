@@ -248,7 +248,8 @@
        (new-bytes-rev (append (rev encoding) bytes-rev))
        (new-pstate (change-pristate pstate :bytes-rev new-bytes-rev)))
     new-pstate)
-  :guard-hints (("Goal" :in-theory (enable bytep grammar-character-p
+  :guard-hints (("Goal" :in-theory (enable grammar-character-p
+                                           bytep
                                            unsigned-byte-p
                                            integer-range-p)))
   ///
@@ -1374,6 +1375,7 @@
   (define print-expr ((expr exprp)
                       (expected-prio expr-priorityp)
                       (pstate pristatep))
+    :guard (expr-unambp expr)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print an expression."
@@ -1669,17 +1671,7 @@
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
-           ;; We temporarily allow an ambiguous sizeof expression
-           ;; as if its argument is an expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :sizeof-ambig
-           (b* ((pstate (print-astring "sizeof(" pstate))
-                (pstate (print-expr (amb-expr/tyname->expr expr.expr/tyname)
-                                    (expr-priority-expr)
-                                    pstate))
-                (pstate (print-astring ")" pstate)))
-             pstate)
+           :sizeof-ambig (prog2$ (impossible) (pristate-fix pstate))
            :alignof
            (b* ((pstate (if expr.uscores
                             (print-astring "__alignof__(" pstate)
@@ -1724,107 +1716,11 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-expr expr.next (expr-priority-asg) pstate)))
              pstate)
-           ;; We temporarily allow an ambiguous cast/mul expression
-           ;; as if it were a cast expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :cast/call-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/fun)
-                                      pstate))
-                (pstate (print-astring ") " pstate))
-                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
-                (pstate (if expr.inc/dec
-                            (print-astring " " pstate)
-                          pstate))
-                (pstate (print-astring "(" pstate))
-                (pstate (print-expr expr.arg/rest (expr-priority-expr) pstate))
-                (pstate (print-astring ")" pstate)))
-             pstate)
-           ;; We temporarily allow an ambiguous cast/mul expression
-           ;; as if it were a cast expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :cast/mul-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
-                                      pstate))
-                (pstate (print-astring ") " pstate))
-                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
-                (pstate (if expr.inc/dec
-                            (print-astring " " pstate)
-                          pstate))
-                (pstate (print-astring "* " pstate))
-                (pstate (print-expr expr.arg/arg2
-                                    (expr-priority-cast)
-                                    pstate)))
-             pstate)
-           ;; We temporarily allow an ambiguous cast/add expression
-           ;; as if it were a cast expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :cast/add-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
-                                      pstate))
-                (pstate (print-astring ") " pstate))
-                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
-                (pstate (if expr.inc/dec
-                            (print-astring " " pstate)
-                          pstate))
-                (pstate (print-astring "+ " pstate))
-                ;; We keep the expected priority to cast
-                ;; so that it is valid if it is a cast;
-                ;; if it is an addition,
-                ;; it may have harmless extra parentheses.
-                (pstate (print-expr expr.arg/arg2
-                                    (expr-priority-cast)
-                                    pstate)))
-             pstate)
-           ;; We temporarily allow an ambiguous cast/sub expression
-           ;; as if it were a cast expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :cast/sub-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
-                                      pstate))
-                (pstate (print-astring ") " pstate))
-                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
-                (pstate (if expr.inc/dec
-                            (print-astring " " pstate)
-                          pstate))
-                (pstate (print-astring "- " pstate))
-                ;; We keep the expected priority to cast
-                ;; so that it is valid if it is a cast;
-                ;; if it is a subtraction,
-                ;; it may have harmless extra parentheses.
-                (pstate (print-expr expr.arg/arg2
-                                    (expr-priority-cast)
-                                    pstate)))
-             pstate)
-           ;; We temporarily allow an ambiguous cast/and expression
-           ;; as if it were a cast expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :cast/and-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
-                                      pstate))
-                (pstate (print-astring ") " pstate))
-                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
-                (pstate (if expr.inc/dec
-                            (print-astring " " pstate)
-                          pstate))
-                (pstate (print-astring "& " pstate))
-                ;; We keep the expected priority to cast
-                ;; so that it is valid if it is a cast;
-                ;; if it is a conjunction,
-                ;; it may have harmless extra parentheses.
-                (pstate (print-expr expr.arg/arg2
-                                    (expr-priority-cast)
-                                    pstate)))
-             pstate)))
+           :cast/call-ambig (prog2$ (impossible) (pristate-fix pstate))
+           :cast/mul-ambig (prog2$ (impossible) (pristate-fix pstate))
+           :cast/add-ambig (prog2$ (impossible) (pristate-fix pstate))
+           :cast/sub-ambig (prog2$ (impossible) (pristate-fix pstate))
+           :cast/and-ambig (prog2$ (impossible) (pristate-fix pstate))))
          (pstate (if parenp
                      (print-astring ")" pstate)
                    pstate)))
@@ -1834,7 +1730,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-expr-list ((exprs expr-listp) (pstate pristatep))
-    :guard (consp exprs)
+    :guard (and (consp exprs)
+                (expr-list-unambp exprs))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more expressions, separated by commas."
@@ -1863,6 +1760,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-const-expr ((cexpr const-exprp) (pstate pristatep))
+    :guard (const-expr-unambp cexpr)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a constant expression."
@@ -1878,6 +1776,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-genassoc ((genassoc genassocp) (pstate pristatep))
+    :guard (genassoc-unambp genassoc)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a generic association."
@@ -1897,7 +1796,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-genassoc-list ((genassocs genassoc-listp) (pstate pristatep))
-    :guard (consp genassocs)
+    :guard (and (consp genassocs)
+                (genassoc-list-unambp genassocs))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more generic associations,
@@ -1917,6 +1817,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-type-spec ((tyspec type-specp) (pstate pristatep))
+    :guard (type-spec-unambp tyspec)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a type specifier."
@@ -1952,6 +1853,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-spec/qual ((specqual spec/qual-p) (pstate pristatep))
+    :guard (spec/qual-unambp specqual)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a specifier or qualifier."
@@ -1965,7 +1867,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-spec/qual-list ((specquals spec/qual-listp) (pstate pristatep))
-    :guard (consp specquals)
+    :guard (and (consp specquals)
+                (spec/qual-list-unambp specquals))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more specifiers and qualifiers,
@@ -1980,6 +1883,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-align-spec ((alignspec align-specp) (pstate pristatep))
+    :guard (align-spec-unambp alignspec)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print an alignment specifier."
@@ -1989,14 +1893,7 @@
            alignspec
            :alignas-type (print-tyname alignspec.type pstate)
            :alignas-expr (print-const-expr alignspec.arg pstate)
-           ;; We temporarily allow an ambiguous alignment specifier
-           ;; as if its argument is an expression.
-           ;; This must go away during static semantic elaboration,
-           ;; which should be normally done prior to printing.
-           :alignas-ambig
-           (print-expr (amb-expr/tyname->expr alignspec.type/arg)
-                       (expr-priority-expr)
-                       pstate)))
+           :alignas-ambig (prog2$ (impossible) (pristate-fix pstate))))
          (pstate (print-astring ")" pstate)))
       pstate)
     :measure (align-spec-count alignspec))
@@ -2004,6 +1901,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-declspec ((declspec declspecp) (pstate pristatep))
+    :guard (declspec-unambp declspec)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a declaration specifier."
@@ -2019,7 +1917,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-declspec-list ((declspecs declspec-listp) (pstate pristatep))
-    :guard (consp declspecs)
+    :guard (and (consp declspecs)
+                (declspec-list-unambp declspecs))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more declaration specifiers,
@@ -2034,6 +1933,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-initer ((initer initerp) (pstate pristatep))
+    :guard (initer-unambp initer)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print an initializer."
@@ -2063,6 +1963,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-desiniter ((desiniter desiniterp) (pstate pristatep))
+    :guard (desiniter-unambp desiniter)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print an initializer with optional designations."
@@ -2080,7 +1981,8 @@
 
   (define print-desiniter-list ((desiniters desiniter-listp)
                                 (pstate pristatep))
-    :guard (consp desiniters)
+    :guard (and (consp desiniters)
+                (desiniter-list-unambp desiniters))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more initializers with optional designations,
@@ -2095,6 +1997,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-designor ((designor designorp) (pstate pristatep))
+    :guard (designor-unambp designor)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a designator."
@@ -2113,7 +2016,8 @@
 
   (define print-designor-list ((designors designor-listp)
                                (pstate pristatep))
-    :guard (consp designors)
+    :guard (and (consp designors)
+                (designor-list-unambp designors))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more designators."
@@ -2130,6 +2034,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-declor ((declor declorp) (pstate pristatep))
+    :guard (declor-unambp declor)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a declarator."
@@ -2144,6 +2049,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-dirdeclor ((dirdeclor dirdeclorp) (pstate pristatep))
+    :guard (dirdeclor-unambp dirdeclor)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a direct declarator."
@@ -2246,6 +2152,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-absdeclor ((absdeclor absdeclorp) (pstate pristatep))
+    :guard (absdeclor-unambp absdeclor)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print an abstract declarator."
@@ -2275,6 +2182,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-dirabsdeclor ((dirabsdeclor dirabsdeclorp) (pstate pristatep))
+    :guard (dirabsdeclor-unambp dirabsdeclor)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a direct abstract declarator."
@@ -2371,6 +2279,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-paramdecl ((paramdecl paramdeclp) (pstate pristatep))
+    :guard (paramdecl-unambp paramdecl)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a parameter declaration."
@@ -2390,7 +2299,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-paramdecl-list ((paramdecls paramdecl-listp) (pstate pristatep))
-    :guard (consp paramdecls)
+    :guard (and (consp paramdecls)
+                (paramdecl-list-unambp paramdecls))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more parameter declarations,
@@ -2405,6 +2315,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-paramdeclor ((paramdeclor paramdeclorp) (pstate pristatep))
+    :guard (paramdeclor-unambp paramdeclor)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a parameter declarator."
@@ -2425,20 +2336,13 @@
                      (pstate (print-absdeclor paramdeclor.unwrap pstate)))
                   pstate)
      :none (pristate-fix pstate)
-     ;; We temporarily print an ambiguous parameter declarator
-     ;; as if it were a (non-abstract) declarator.
-     ;; This must go away during static semantic elaboration,
-     ;; which should be normally done prior to printing.
-     :ambig (b* ((pstate (print-astring " " pstate))
-                 (pstate (print-declor
-                          (amb-declor/absdeclor->declor paramdeclor.unwrap)
-                          pstate)))
-              pstate))
+     :ambig (prog2$ (impossible) (pristate-fix pstate)))
     :measure (paramdeclor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-tyname ((tyname tynamep) (pstate pristatep))
+    :guard (tyname-unambp tyname)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a type name."
@@ -2461,6 +2365,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-strunispec ((strunispec strunispecp) (pstate pristatep))
+    :guard (strunispec-unambp strunispec)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a structure or union specifier."
@@ -2508,6 +2413,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-structdecl ((structdecl structdeclp) (pstate pristatep))
+    :guard (structdecl-unambp structdecl)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a structure declaration."
@@ -2548,7 +2454,8 @@
 
   (define print-structdecl-list ((structdecls structdecl-listp)
                                  (pstate pristatep))
-    :guard (consp structdecls)
+    :guard (and (consp structdecls)
+                (structdecl-list-unambp structdecls))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more structure declarations,
@@ -2573,6 +2480,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-structdeclor ((structdeclor structdeclorp) (pstate pristatep))
+    :guard (structdeclor-unambp structdeclor)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a structure declarator."
@@ -2609,7 +2517,8 @@
 
   (define print-structdeclor-list ((structdeclors structdeclor-listp)
                                    (pstate pristatep))
-    :guard (consp structdeclors)
+    :guard (and (consp structdeclors)
+                (structdeclor-list-unambp structdeclors))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more structure declarators,
@@ -2624,6 +2533,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-enumspec ((enumspec enumspecp) (pstate pristatep))
+    :guard (enumspec-unambp enumspec)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print an enueration specifier."
@@ -2657,6 +2567,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-enumer ((enumer enumerp) (pstate pristatep))
+    :guard (enumer-unambp enumer)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print an enumerator."
@@ -2672,7 +2583,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-enumer-list ((enumers enumer-listp) (pstate pristatep))
-    :guard (consp enumers)
+    :guard (and (consp enumers)
+                (enumer-list-unambp enumers))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a list of one or more enumerators, separated by commas."
@@ -2686,6 +2598,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-statassert ((statassert statassertp) (pstate pristatep))
+    :guard (statassert-unambp statassert)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a static assertion declaration."
@@ -2704,12 +2617,21 @@
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print a GCC attribute."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Since our unambiguity predicates currently do not include attributes,
+       here we perform a run-time check on the expressions."))
     (attrib-case
      attr
      :name (print-ident attr.name pstate)
      :name-param
      (b* ((pstate (print-ident attr.name pstate))
           (pstate (print-astring "(" pstate))
+          ((unless (expr-list-unambp attr.param))
+           (raise "Internal error: unambiguous expressions in attribute ~x0."
+                  (attrib-fix attr))
+           pstate)
           (pstate (if attr.param
                       (print-expr-list attr.param pstate)
                     pstate))
@@ -2770,13 +2692,12 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :verify-guards :after-returns
-
-  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  :verify-guards nil
 
   ///
+
+  (verify-guards print-expr
+    :hints (("Goal" :in-theory (disable (:e tau-system))))) ; for speed
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2807,6 +2728,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-initdeclor ((initdeclor initdeclorp) (pstate pristatep))
+  :guard (initdeclor-unambp initdeclor)
   :returns (new-pstate pristatep)
   :short "Print an initializer declarator."
   (b* (((initdeclor initdeclor) initdeclor)
@@ -2822,7 +2744,8 @@
 
 (define print-initdeclor-list ((initdeclors initdeclor-listp)
                                (pstate pristatep))
-  :guard (consp initdeclors)
+  :guard (and (consp initdeclors)
+              (initdeclor-list-unambp initdeclors))
   :returns (new-pstate pristatep)
   :short "Print a list of one or more initializer declarators,
           separated by commas."
@@ -2836,6 +2759,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-decl-inline ((decl declp) (pstate pristatep))
+  :guard (decl-unambp decl)
   :returns (new-pstate pristatep)
   :short "Print a declaration, inline."
   :long
@@ -2883,6 +2807,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-decl ((decl declp) (pstate pristatep))
+  :guard (decl-unambp decl)
   :returns (new-pstate pristatep)
   :short "Print a declaration, in its own indented line."
   (b* ((pstate (print-indent pstate))
@@ -2894,7 +2819,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-decl-list ((decls decl-listp) (pstate pristatep))
-  :guard (consp decls)
+  :guard (and (consp decls)
+              (decl-list-unambp decls))
   :returns (new-pstate pristatep)
   :short "Print a list of one or more declarations,
           one per line, all with the same indentation."
@@ -2907,6 +2833,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-label ((label labelp) (pstate pristatep))
+  :guard (label-unambp label)
   :returns (new-pstate pristatep)
   :short "Print a label."
   (label-case
@@ -2934,6 +2861,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-stmt ((stmt stmtp) (pstate pristatep))
+    :guard (stmt-unambp stmt)
     :returns (new-pstate pristatep)
     :parents (printer print-stmts/blocks)
     :short "Print a statement, in one or more lines, with proper indentation."
@@ -3127,12 +3055,7 @@
               (pstate (print-stmt stmt.body pstate))
               (pstate (dec-pristate-indent pstate)))
            pstate)))
-     :for-ambig
-     (prog2$
-      (raise "Misusage error: ~
-              the statement ~x0 is ambiguous."
-             (stmt-fix stmt))
-      (pristate-fix pstate))
+     :for-ambig (prog2$ (impossible) (pristate-fix pstate))
      :goto
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "goto " pstate))
@@ -3170,6 +3093,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-block-item ((item block-itemp) (pstate pristatep))
+    :guard (block-item-unambp item)
     :returns (new-pstate pristatep)
     :parents (printer print-stmts/blocks)
     :short "Print a block item."
@@ -3177,16 +3101,13 @@
      item
      :decl (print-decl item.unwrap pstate)
      :stmt (print-stmt item.unwrap pstate)
-     ;; We temporarily print an ambiguous block item
-     ;; as if it were a declaration.
-     ;; This must go away during static semantic elaboration,
-     ;; which should be normally done prior to printing.
-     :ambig (print-decl (amb-decl/stmt->decl item.unwrap) pstate))
+     :ambig (prog2$ (impossible) (pristate-fix pstate)))
     :measure (two-nats-measure (block-item-count item) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-block-item-list ((items block-item-listp) (pstate pristatep))
+    :guard (block-item-list-unambp items)
     :returns (new-pstate pristatep)
     :parents (printer print-stmts/blocks)
     :short "Print a list of zero or more block items."
@@ -3198,6 +3119,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-block ((items block-item-listp) (pstate pristatep))
+    :guard (block-item-list-unambp items)
     :returns (new-pstate pristatep)
     :parents (printer print-stmts/blocks)
     :short "Print a block."
@@ -3232,21 +3154,16 @@
 
   :ruler-extenders :all
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   :verify-guards :after-returns
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   ///
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual print-stmts/blocks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-fundef ((fundef fundefp) (pstate pristatep))
+  :guard (fundef-unambp fundef)
   :returns (new-pstate pristatep)
   :short "Print a function definition."
   :long
@@ -3291,6 +3208,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-extdecl ((extdecl extdeclp) (pstate pristatep))
+  :guard (extdecl-unambp extdecl)
   :returns (new-pstate pristatep)
   :short "Print an external declaration."
   (extdecl-case
@@ -3302,6 +3220,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-extdecl-list ((extdecls extdecl-listp) (pstate pristatep))
+  :guard (extdecl-list-unambp extdecls)
   :returns (new-pstate pristatep)
   :short "Print a list of zero or more external declarations."
   :long
@@ -3316,6 +3235,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-transunit ((tunit transunitp) (pstate pristatep))
+  :guard (transunit-unambp tunit)
   :returns (new-pstate pristatep)
   :short "Print a translation unit."
   :long
@@ -3333,6 +3253,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-file ((tunit transunitp) (options prioptp))
+  :guard (transunit-unambp tunit)
   :returns (data byte-listp)
   :short "Print (the data bytes of) a file."
   :long
@@ -3373,6 +3294,7 @@
   :prepwork
   ((define print-fileset-loop ((tunitmap filepath-transunit-mapp)
                                (options prioptp))
+     :guard (transunit-ensemble-unambp-loop tunitmap)
      :returns (filemap filepath-filedata-mapp)
      :parents nil
      (b* (((when (omap::emptyp tunitmap)) nil)

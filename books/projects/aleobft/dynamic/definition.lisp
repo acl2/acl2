@@ -14,7 +14,7 @@
 (include-book "states")
 (include-book "events")
 (include-book "initialization")
-
+(include-book "transitions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,7 +34,8 @@
      (the events `label' the transitions between states)."))
   :order-subtopics (states
                     events
-                    initialization))
+                    initialization
+                    transitions))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -10,10 +10,6 @@
 
 (in-package "STD")
 
-(include-book "defconstrained-recognizer")
-
-(include-book "deffixer")
-
 (include-book "definj")
 (include-book "definj-doc")
 
@@ -22,9 +18,6 @@
 
 (include-book "defund-sk")
 (include-book "defund-sk-doc")
-
-(include-book "defmacro-plus")
-(include-book "defmacro-plus-doc")
 
 (include-book "defmapping")
 (include-book "defmapping-doc")
@@ -42,8 +35,6 @@
 
 (include-book "deftutorial")
 (include-book "deftutorial-doc")
-
-(include-book "defirrelevant")
 
 (include-book "error-value-tuples")
 

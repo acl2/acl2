@@ -113,6 +113,7 @@
                          (set::insert round nil))))
        :induct t
        :enable (certificate-set->round-set
+                certificate-set->round-set-of-insert
                 set::expensive-rules)
        :hints ('(:use (:instance set::emptyp-when-proper-subset-of-singleton
                                  (x (certificate-set->round-set (tail certs)))

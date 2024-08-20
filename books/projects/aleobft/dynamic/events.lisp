@@ -31,7 +31,8 @@
    (xdoc::p
     "In the framework of labeled state transition systems,
      these events are the labels of the transitions."))
-  :order-subtopics (messages)
+  :order-subtopics (messages
+                    t)
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

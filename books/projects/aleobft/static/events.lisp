@@ -30,7 +30,8 @@
      of the state transition system that models AleoBFT.
      In the framework of labeled state transition systems,
      these events are the labels."))
-  :order-subtopics (messages)
+  :order-subtopics (messages
+                    t)
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

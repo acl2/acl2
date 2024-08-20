@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "states")
+(include-book "system-states")
 (include-book "committees")
 
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
