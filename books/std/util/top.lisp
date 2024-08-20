@@ -62,6 +62,8 @@
 (include-book "defund-sk-doc")
 (include-book "deftutorial")
 (include-book "deftutorial-doc")
+(include-book "defmax-nat")
+(include-book "defmax-nat-doc")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)
