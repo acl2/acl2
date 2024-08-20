@@ -331,4 +331,15 @@
       (get-certificates-with-authors+round authors
                                            round
                                            (set::tail certs))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled certificate-set->round-set-of-get-certificates-with-authors+round
+    (b* ((rounds (certificate-set->round-set
+                  (get-certificates-with-authors+round authors round certs))))
+      (implies (not (set::emptyp rounds))
+               (equal rounds
+                      (set::insert (pos-fix round) nil))))
+    :induct t
+    :enable certificate-set->round-set-of-insert))
