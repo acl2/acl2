@@ -62,7 +62,7 @@
   (xdoc::topstring
    (xdoc::p
     "The @('val') input of this function is
-     the address in the @('advance-round') event;
+     the address in the @('commit-anchors') event;
      see @(tsee event).")
    (xdoc::p
     "The validator must be a correct one.
@@ -143,7 +143,7 @@
   (xdoc::topstring
    (xdoc::p
     "The @('val') input of this function is
-     the address in the @('advance-round') event;
+     the address in the @('commit-anchors') event;
      see @(tsee event).")
    (xdoc::p
     "Because of @(tsee commit-anchors-possiblep),
