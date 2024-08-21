@@ -60,7 +60,7 @@
   (xdoc::topstring
    (xdoc::p
     "We introduce a constrained function that,
-     given a round number and a non-empty committee,
+     given a round number and a committee,
      returns an address in the committee.
      This is the chosen leader at that round.")
    (xdoc::p
@@ -77,8 +77,7 @@
     (((leader-at-round * *) => *
       :formals (round commtt)
       :guard (and (posp round)
-                  (committeep commtt)
-                  (committee-nonemptyp commtt))))
+                  (committeep commtt))))
 
     (local
      (defun leader-at-round (round commtt)
@@ -89,10 +88,8 @@
       (addressp (leader-at-round round commtt)))
 
     (defrule leader-in-committee
-      (implies (committee-nonemptyp commtt)
-               (committee-memberp (leader-at-round round commtt) commtt))
-      :enable (committee-nonemptyp
-               committee-memberp))
+      (committee-memberp (leader-at-round round commtt) commtt)
+      :enable committee-memberp)
 
     (defrule leader-at-round-of-pos-fix
       (equal (leader-at-round (pos-fix round) commtt)

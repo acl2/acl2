@@ -67,9 +67,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-signer-possiblep ((signer addressp)
-                                             (vstate validator-statep)
-                                             (cert certificatep))
+(define create-certificate-signer-possiblep ((cert certificatep)
+                                             (signer addressp)
+                                             (vstate validator-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate creation event is possible,
           from the point of view of a correct signer."
@@ -179,15 +179,15 @@
   ///
 
   (defrule active-committee-at-round-when-create-certificate-signer-possiblep
-    (implies (create-certificate-signer-possiblep signer vstate cert)
+    (implies (create-certificate-signer-possiblep cert  signer vstate)
              (active-committee-at-round (certificate->round cert)
                                         (validator-state->blockchain vstate)))
     :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-author-possiblep ((vstate validator-statep)
-                                             (cert certificatep))
+(define create-certificate-author-possiblep ((cert certificatep)
+                                             (vstate validator-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate creation event is possible,
           from the point of view of a correct author."
@@ -233,7 +233,7 @@
      so there is no need to re-check that here."))
   (b* (((certificate cert) cert)
        ((validator-state vstate) vstate)
-       ((unless (create-certificate-signer-possiblep cert.author vstate cert))
+       ((unless (create-certificate-signer-possiblep cert cert.author vstate))
         nil)
        ((unless (= cert.round vstate.round)) nil)
        ((when (set::in cert.author cert.endorsers)) nil)
@@ -246,9 +246,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-endorser-possiblep ((endorser addressp)
-                                               (vstate validator-statep)
-                                               (cert certificatep))
+(define create-certificate-endorser-possiblep ((cert certificatep)
+                                               (endorser addressp)
+                                               (vstate validator-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate creation event is possible,
           from the point of view of a correct endorser."
@@ -296,7 +296,7 @@
      So it suffices to check the DAG for the author."))
   (b* (((certificate cert) cert)
        ((validator-state vstate) vstate)
-       ((unless (create-certificate-signer-possiblep endorser vstate cert))
+       ((unless (create-certificate-signer-possiblep cert endorser vstate))
         nil)
        ((when (get-certificate-with-author+round
                cert.author cert.round vstate.buffer))
@@ -309,8 +309,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-endorsers-possiblep ((systate system-statep)
-                                                (cert certificatep))
+(define create-certificate-endorsers-possiblep ((cert certificatep)
+                                                (systate system-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate creation event is possible,
           from the point of view of all the certificate's endorsers."
@@ -325,39 +325,39 @@
      If it is correct, it must satisfy the conditions
      formalized in @(tsee create-certificate-endorser-possiblep).
      If it is faulty, it is not bound by any condition."))
-  (create-certificate-endorsers-possiblep-loop (certificate->endorsers cert)
-                                               systate
-                                               cert)
+  (create-certificate-endorsers-possiblep-loop cert
+                                               (certificate->endorsers cert)
+                                               systate)
   :hooks (:fix)
 
   :prepwork
-  ((define create-certificate-endorsers-possiblep-loop ((endorsers address-setp)
-                                                        (systate system-statep)
-                                                        (cert certificatep))
+  ((define create-certificate-endorsers-possiblep-loop ((cert certificatep)
+                                                        (endorsers address-setp)
+                                                        (systate system-statep))
      :returns (yes/no booleanp)
      :parents nil
      (b* (((when (set::emptyp endorsers)) t)
           (endorser (set::head endorsers))
           ((unless (set::in endorser (correct-addresses systate)))
-           (create-certificate-endorsers-possiblep-loop (set::tail endorsers)
-                                                        systate
-                                                        cert))
+           (create-certificate-endorsers-possiblep-loop cert
+                                                        (set::tail endorsers)
+                                                        systate))
           ((unless (create-certificate-endorser-possiblep
+                    cert
                     endorser
-                    (get-validator-state endorser systate)
-                    cert))
+                    (get-validator-state endorser systate)))
            nil))
-       (create-certificate-endorsers-possiblep-loop (set::tail endorsers)
-                                                    systate
-                                                    cert))
+       (create-certificate-endorsers-possiblep-loop cert
+                                                    (set::tail endorsers)
+                                                    systate))
      ///
      (fty::deffixequiv create-certificate-endorsers-possiblep-loop
-       :args ((systate system-statep) (cert certificatep))))))
+       :args ((cert certificatep) (systate system-statep))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-possiblep ((systate system-statep)
-                                      (cert certificatep))
+(define create-certificate-possiblep ((cert certificatep)
+                                      (systate system-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate creation event is possible."
   :long
@@ -395,18 +395,18 @@
        ((unless (set::subset cert.endorsers (all-addresses systate))) nil)
        ((unless (or (not (set::in cert.author (correct-addresses systate)))
                     (create-certificate-author-possiblep
-                     (get-validator-state cert.author systate)
-                     cert)))
+                     cert
+                     (get-validator-state cert.author systate))))
         nil)
-       ((unless (create-certificate-endorsers-possiblep systate cert))
+       ((unless (create-certificate-endorsers-possiblep cert systate))
         nil))
     t)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-author-next ((vstate validator-statep)
-                                        (cert certificatep))
+(define create-certificate-author-next ((cert certificatep)
+                                        (vstate validator-statep))
   :returns (new-vstate validator-statep)
   :short "New correct author state
           resulting from a @('create-certificate') event."
@@ -428,8 +428,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-endorser-next ((vstate validator-statep)
-                                          (cert certificatep))
+(define create-certificate-endorser-next ((cert certificatep)
+                                          (vstate validator-statep))
   :returns (new-vstate validator-statep)
   :short "New correct endorser state
           resulting from a @('create-certificate') event."
@@ -455,8 +455,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-endorsers-next ((systate system-statep)
-                                           (cert certificatep))
+(define create-certificate-endorsers-next ((cert certificatep)
+                                           (systate system-statep))
   :returns (new-systate system-statep)
   :short "Update, in a system state, to a certificate's endorsers' states
           resulting from a @('create-certificate') event."
@@ -469,38 +469,38 @@
    (xdoc::p
     "We update the states of the correct endorsers.
      The faulty endorsers have no internal state."))
-  (create-certificate-endorsers-next-loop (certificate->endorsers cert)
-                                          systate
-                                          cert)
+  (create-certificate-endorsers-next-loop cert
+                                          (certificate->endorsers cert)
+                                          systate)
   :hooks (:fix)
 
   :prepwork
-  ((define create-certificate-endorsers-next-loop ((endorsers address-setp)
-                                                   (systate system-statep)
-                                                   (cert certificatep))
+  ((define create-certificate-endorsers-next-loop ((cert certificatep)
+                                                   (endorsers address-setp)
+                                                   (systate system-statep))
      :returns (new-systate system-statep)
      :parents nil
      (b* (((when (set::emptyp endorsers)) (system-state-fix systate))
           (endorser (set::head endorsers))
           ((unless (set::in endorser (correct-addresses systate)))
-           (create-certificate-endorsers-next-loop (set::tail endorsers)
-                                                   systate
-                                                   cert))
+           (create-certificate-endorsers-next-loop cert
+                                                   (set::tail endorsers)
+                                                   systate))
           (vstate (get-validator-state endorser systate))
-          (new-vstate (create-certificate-endorser-next vstate cert))
+          (new-vstate (create-certificate-endorser-next cert vstate))
           (new-systate (update-validator-state endorser new-vstate systate)))
-       (create-certificate-endorsers-next-loop (set::tail endorsers)
-                                               new-systate
-                                               cert))
+       (create-certificate-endorsers-next-loop cert
+                                               (set::tail endorsers)
+                                               new-systate))
      ///
      (fty::deffixequiv create-certificate-endorsers-next-loop
        :args ((systate system-statep) (cert certificatep))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-next ((systate system-statep)
-                                 (cert certificatep))
-  :guard (create-certificate-possiblep systate cert)
+(define create-certificate-next ((cert certificatep)
+                                 (systate system-statep))
+  :guard (create-certificate-possiblep cert systate)
   :returns (new-systate system-statep)
   :short "New system state resulting from a @('create-certificate') event."
   :long
@@ -581,10 +581,10 @@
        (systate
         (if (set::in cert.author (correct-addresses systate))
             (b* ((vstate (get-validator-state cert.author systate))
-                 (new-vstate (create-certificate-author-next vstate cert)))
+                 (new-vstate (create-certificate-author-next cert vstate)))
               (update-validator-state cert.author new-vstate systate))
           systate))
-       (systate (create-certificate-endorsers-next systate cert))
+       (systate (create-certificate-endorsers-next cert systate))
        (network (get-network-state systate))
        (msgs (make-certificate-messages cert (correct-addresses systate)))
        (new-network (set::union msgs network))

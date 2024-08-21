@@ -2875,9 +2875,9 @@
          ((not char) ; 0 x/X hexdigs EOF
           (retok (const-int
                   (make-iconst
-                   :dec/oct/hex (make-dec/oct/hex-const-hex
-                                 :prefix hprefix
-                                 :digits hexdigs)
+                   :core (make-dec/oct/hex-const-hex
+                          :prefix hprefix
+                          :digits hexdigs)
                    :suffix? nil))
                  hexdigs-last-pos
                  pstate))
@@ -2957,9 +2957,9 @@
                                                   pstate)))
             (retok (const-int
                     (make-iconst
-                     :dec/oct/hex (make-dec/oct/hex-const-hex
-                                   :prefix hprefix
-                                   :digits hexdigs)
+                     :core (make-dec/oct/hex-const-hex
+                            :prefix hprefix
+                            :digits hexdigs)
                      :suffix? isuffix?))
                    (cond (isuffix? suffix-last/next-pos)
                          (t hexdigs-last-pos))
@@ -3041,9 +3041,9 @@
      ((not char) ; 1-9 [decdigs] EOF
       (retok (const-int
               (make-iconst
-               :dec/oct/hex (make-dec/oct/hex-const-dec
-                             :value (str::dec-digit-chars-value
-                                     (cons first-digit decdigs)))
+               :core (make-dec/oct/hex-const-dec
+                      :value (str::dec-digit-chars-value
+                              (cons first-digit decdigs)))
                :suffix? nil))
              (cond (decdigs decdigs-last-pos)
                    (t (position-fix first-pos)))
@@ -3121,9 +3121,9 @@
            ((erp pstate) (check-full-ppnumber nil pstate)))
         (retok (const-int
                 (make-iconst
-                 :dec/oct/hex (make-dec/oct/hex-const-dec
-                               :value (str::dec-digit-chars-value
-                                       (cons first-digit decdigs)))
+                 :core (make-dec/oct/hex-const-dec
+                        :value (str::dec-digit-chars-value
+                                (cons first-digit decdigs)))
                  :suffix? isuffix?))
                (cond (isuffix? suffix-last/next-pos)
                      (decdigs decdigs-last-pos)
@@ -3325,10 +3325,9 @@
        ((oct-digit-char-listp digits) ; 0 [octdigs]
         (retok (const-int
                 (make-iconst
-                 :dec/oct/hex
-                 (make-dec/oct/hex-const-oct
-                  :leading-zeros (1+ (oct-iconst-leading-zeros digits))
-                  :value (str::oct-digit-chars-value digits))
+                 :core (make-dec/oct/hex-const-oct
+                        :leading-zeros (1+ (oct-iconst-leading-zeros digits))
+                        :value (str::oct-digit-chars-value digits))
                  :suffix? nil))
                (cond (digits digits-last-pos)
                      (t (position-fix zero-pos)))
@@ -3415,10 +3414,9 @@
              ((erp pstate) (check-full-ppnumber nil pstate)))
           (retok (const-int
                   (make-iconst
-                   :dec/oct/hex
-                   (make-dec/oct/hex-const-oct
-                    :leading-zeros (1+ (oct-iconst-leading-zeros digits))
-                    :value (str::oct-digit-chars-value digits))
+                   :core (make-dec/oct/hex-const-oct
+                          :leading-zeros (1+ (oct-iconst-leading-zeros digits))
+                          :value (str::oct-digit-chars-value digits))
                    :suffix? isuffix?))
                  (cond (isuffix? suffix-last/next-pos)
                        (digits digits-last-pos)
@@ -3484,9 +3482,9 @@
          ((not char) ; 0 EOF
           (retok (const-int
                   (make-iconst
-                   :dec/oct/hex (make-dec/oct/hex-const-oct
-                                 :leading-zeros 1
-                                 :value 0)
+                   :core (make-dec/oct/hex-const-oct
+                          :leading-zeros 1
+                          :value 0)
                    :suffix? nil))
                  (position-fix first-pos)
                  pstate))
@@ -5378,10 +5376,14 @@
     "There is an overlap between the starts of type specifiers and qualifiers,
      namely the @('_Atomic') keyword,
      but this does not matter as far as we are looking at
-     the starts of type names."))
+     the starts specifiers or qualifiers.")
+   (xdoc::p
+    "We also include @('__attribute__'), for attribute specifiers.
+     This is a keyword only if GCC extensions are supported."))
   (or (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
-      (equal token? (token-keyword "_Alignas")))
+      (equal token? (token-keyword "_Alignas"))
+      (equal token? (token-keyword "__attribute__")))
   ///
 
   (defrule non-nil-when-token-specifier/qualifier-start-p
@@ -5440,12 +5442,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We put together the five cases that define declaration specifiers."))
+    "We put together the five cases that define declaration specifiers,
+     plus a sixth case for GCC attribute specifiers.
+     Recall that @('__attribute__') can be a keyword
+     only if GCC extensions are supported."))
   (or (token-storage-class-specifier-p token?)
       (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
       (token-function-specifier-p token?)
-      (equal token? (token-keyword "_Alignas")))
+      (equal token? (token-keyword "_Alignas"))
+      (equal token? (token-keyword "__attribute__")))
   ///
 
   (defrule non-nil-when-token-declaration-specifier-start-p
@@ -5461,9 +5467,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A type name always starts with a (non-empty) sequence of
-     type specifiers, type qualifiers, or alignment specifiers.
-     So it has the same starts of a specifier or qualifier."))
+    "A type name always starts with
+     a (non-empty) sequence of specifiers and qualifiers."))
   (token-specifier/qualifier-start-p token?)
   ///
 
@@ -5671,235 +5676,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum partys/declor/ambig
-  :short "Fixtype of possible classifications of certain constructs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Under certain circumstances,
-     the parser needs to figure out whether
-     what comes next in the input is a parameter type list or a declarator:
-     see the discussion in @(tsee type-spec).
-     However, this cannot be always disambiguated,
-     and so we need a third outcome for this case.
-     This fixtype is the result of @(tsee classify-partys/declor/ambig)."))
-  (:partys ())
-  (:declor ())
-  (:ambig ())
-  :pred partys/declor/ambig-p)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-partys/declor/ambig
-  :short "An irrelevant possible classifications of certain constructs."
-  :type partys/declor/ambig-p
-  :body (partys/declor/ambig-ambig))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define classify-partys/declor/ambig ((pstate parstatep))
+(define parse-*-stringlit ((pstate parstatep))
   :returns (mv erp
-               (classification partys/declor/ambig-p)
-               (num-tokens natp :rule-classes (:rewrite :type-prescription))
+               (strings stringlit-listp)
+               (span spanp)
                (new-pstate parstatep))
-  :short "Attempt to classify what comes next in the input
-          as a parameter type list or a (possibly abstract) declarator."
+  :short "Parse a list of zero or more string literals."
   :long
   (xdoc::topstring
    (xdoc::p
-    "See the discussion in @(tsee type-spec) for background,
-     specifically the part regarding the @('(I1(I2(...(In)...)))') construction.
-     This function is used to explore that construction,
-     after having parsed the open parenthesis just before @('I1').
-     More precisely,
-     this function is called when parsing
-     declaration specifier lists or specifier/qualifier lists,
-     and specifically just after parsing one of the following:")
-   (xdoc::codeblock
-    "_Atomic ( I ) ("
-    "I (")
+    "That is, we parse a @('*stringlit'), in ABNF notation.")
    (xdoc::p
-    "where @('I') is an identifier.
-     If what comes next is an identifier,
-     we may be in the @('(I1(I2(...(In)...)))') situation;
-     this is why this function is recursive.
-     If we are indeed in this situation,
-     we return a result indicating ambiguity.
-     If instead we are not in that situation,
-     we can resolve the ambiguity, and return a non-ambiguous result.
-     As explained in @(tsee type-spec),
-     the resolution propagates backwards,
-     flipping the classifications.
-     See the more detailed comments in the code of this function.")
-   (xdoc::p
-    "If there are no errors,
-     besides returning the (possibly ambiguous) classification,
-     this function also returns the number of tokens it has read
-     so that the caller can put them back into the parsing state.
-     The reason why this function does not put back the tokens itself
-     is that, after it is recursively called,
-     we may need to read more tokens (see code and comments)."))
-  (b* (((reterr) (irr-partys/declor/ambig) 0 (irr-parstate))
-       ;; When we get here, we have already parsed an open parenthesis
-       ;; (
-       ;; following _Atomic(ident) or ident.
-       ((erp token span pstate) (read-token pstate)))
-    (cond
-     ;; If token is an identifier,
-     ;; things are still ambiguous.
-     ((and token (token-case token :ident)) ; ( ident1
-      (b* (((erp token2 span2 pstate) (read-token pstate)))
-        (cond
-         ;; If token2 is an open parenthesis,
-         ;; things are still ambiguous.
-         ((equal token2 (token-punctuator "(")) ; ( ident1 (
-          ;; We recursively call this function to attempt to classify the rest.
-          (b* (((erp classification num-tokens pstate)
-                (classify-partys/declor/ambig pstate)))
-            (partys/declor/ambig-case
-             classification
-             ;; If the rest is a parameter type list,
-             ;; this must be a (function) declarator.
-             :partys ; ( ident1 ( partys...
-             (retok (partys/declor/ambig-declor) (+ num-tokens 2) pstate)
-             ;; If the rest is a (possibly abstract) declarator,
-             ;; this must be a type specifier (typedef name),
-             ;; and thus a parameter type list.
-             :declor ; ( ident1 ( declor/absdeclor...
-             (retok (partys/declor/ambig-partys) (+ num-tokens 2) pstate)
-             ;; If the rest is ambiguous, it is
-             ;; ident2(ident3(...(identN)...))),
-             ;; whose last closed parenthesis matches
-             ;; the open parenthesis just before ident2.
-             ;; So with what we have already parsed
-             ;; we have (ident1(ident2(ident3(...(identN)...))),
-             ;; where we need a closed parenthesis to match
-             ;; the open one just before ident1,
-             ;; otherwise we don't quite have the ambiguous pattern
-             ;; (see details just below).
-             :ambig ; ( ident1 ( ident2 ( ident3 ( ... ( identN ) ... ) ) )
-             (b* (((erp token3 span3 pstate) (read-token pstate)))
-               (cond
-                ;; If token3 is a closed parenthesis,
-                ;; which matches the open one before ident1,
-                ;; we have the complete ambiguous pattern.
-                ((equal token3 (token-punctuator ")"))
-                 ;; ( ident1 ( ident2 ( ident3 ( ... ( identN ) ... ) ) ) )
-                 (retok (partys/declor/ambig-ambig) (+ num-tokens 3) pstate))
-                ;; If token3 is a comma,
-                ;; ident1(ident2(ident3(...(identN)...)))
-                ;; must be a paramter declaration,
-                ;; so we have a parameter type list.
-                ((equal token3 (token-punctuator ","))
-                 ;; ( ident1 ( ident2 ( ident3 ( ... ( identN ) ... ) ) ) ,
-                 (retok (partys/declor/ambig-partys) (+ num-tokens 3) pstate))
-                ;; If token3 is
-                ;; an open parenthesis or an open square bracket,
-                ;; (ident2(ident3(...(identN)...))) must be a declarator,
-                ;; and thus ident1 must be a type specifier,
-                ;; and we have a parameter type list.
-                ((or (equal token3 (token-punctuator "("))
-                     (equal token3 (token-punctuator "[")))
-                 ;; ( ident1 ( ident2 ( ident3 ( ... ( identN ) ... ) ) ) (
-                 ;; ( ident1 ( ident2 ( ident3 ( ... ( identN ) ... ) ) ) [
-                 (retok (partys/declor/ambig-partys) (+ num-tokens 3) pstate))
-                ;; In all other cases, it is an error.
-                (t
-                 (reterr-msg :where (position-to-msg (span->start span3))
-                             :expected "an open parenthesis ~
-                                        or a closed parenthesis ~
-                                        or an open square bracket ~
-                                        or a comma"
-                             :found (token-to-msg token3))))))))
-         ;; If token2 is a closed parenthesis,
-         ;; we have an ambiguity.
-         ;; This is the "base case" of the next of parenthesized identifiers,
-         ;; i.e. N = 1.
-         ((equal token2 (token-punctuator ")")) ; ( ident1 )
-          (retok (partys/declor/ambig-ambig) 2 pstate))
-         ;; If token2 may start a declaration specifier,
-         ;; which includes the case of a specifier or qualifier,
-         ;; we must have a parameter type list.
-         ((token-declaration-specifier-start-p token2) ; ( ident declspec...
-          (retok (partys/declor/ambig-partys) 2 pstate))
-         ;; If token2 is an open square bracket,
-         ;; we must have a declarator.
-         ((equal token2 (token-punctuator "[")) ; ( ident [
-          (retok (partys/declor/ambig-declor) 2 pstate))
-         ;; If token2 is a star,
-         ;; we must have a parameter type declaration.
-         ((equal token2 (token-punctuator "*")) ; ( ident *
-          (retok (partys/declor/ambig-partys) 2 pstate))
-         ;; In all other cases, we have an error.
-         (t ; ( ident other
-          (reterr-msg :where (position-to-msg (span->start span2))
-                      :expected "an identifier ~
-                                 or an open parenthesis ~
-                                 or a closed parenthesis ~
-                                 or an open square bracket ~
-                                 or a keyword in {~
-                                 _Alignas, ~
-                                 _Atomic, ~
-                                 _Bool, ~
-                                 _Complex, ~
-                                 char, ~
-                                 const, ~
-                                 double, ~
-                                 enum, ~
-                                 float, ~
-                                 int, ~
-                                 long, ~
-                                 restrict, ~
-                                 short, ~
-                                 signed, ~
-                                 struct, ~
-                                 union, ~
-                                 unsigned, ~
-                                 void, ~
-                                 volatile~
-                                 }"
-                      :found (token-to-msg token2))))))
-     ;; If token may start a declaration specifier,
-     ;; which includes a specifier or qualifier,
-     ;; we must have a parameter type list.
-     ((token-declaration-specifier-start-p token) ; ( declspec...
-      (retok (partys/declor/ambig-partys) 1 pstate))
-     ;; If token may start a declarator or an abstract declarator
-     ;; we must have a declarator.
-     ((or (token-declarator-start-p token) ; ( declor...
-          (token-abstract-declarator-start-p token)) ; ( absdeclor...
-      (retok (partys/declor/ambig-declor) 1 pstate))
-     ;; If token is a closed parenthesis,
-     ;; it is like the case of having a parameter declaration,
-     ;; even though there are no actual parameter declarations
-     ;; (i.e. we have a function declarator with no arguments).
-     ((equal token (token-punctuator ")")) ; ( )
-      (retok (partys/declor/ambig-partys) 1 pstate))
-     ;; In all other cases, we have an error.
-     (t ; ( other
-      (reterr-msg :where (position-to-msg (span->start span))
-                  :expected "an identifier ~
-                             or an open parenthesis ~
-                             or a closed parenthesis ~
-                             or an open square bracket ~
-                             or a star"
-                  :found (token-to-msg token)))))
+    "If there are no string literals, we return an irrelevant span.
+     When combining the span of the first string literal (if present)
+     with the span of the remaining zero or more string literals,
+     we join spans only if the remaining ones are one or more;
+     if there are zero, the span of the first string literal
+     is also the span of the whole sequence."))
+  (b* (((reterr) nil (irr-span) (irr-parstate))
+       ((erp token span pstate) (read-token pstate))
+       ((unless (and token (token-case token :string)))
+        (b* ((pstate (if token (unread-token pstate) pstate)))
+          (retok nil (irr-span) pstate)))
+       ;; stringlit
+       (string (token-string->unwrap token))
+       ((erp strings last-span pstate) (parse-*-stringlit pstate)))
+    ;; stringlit stringlits
+    (retok (cons string strings)
+           (if strings (span-join span last-span) span)
+           pstate))
   :measure (parsize pstate)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
 
   ///
 
-  (defret parsize-of-classify-partys/declor/ambig-uncond
+  (defret parsize-of-parse-*-stringlit-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret parsize-of-classify-partys/declor/ambig-cond
-    (implies (not erp)
-             (<= (parsize new-pstate)
-                 (- (parsize pstate) num-tokens)))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
@@ -7719,8 +7533,12 @@
         (retok (expr-ident (token-ident->unwrap token)) span pstate))
        ((and token (token-case token :const)) ; constant
         (retok (expr-const (token-const->unwrap token)) span pstate))
-       ((and token (token-case token :string)) ; string literal
-        (retok (expr-string (token-string->unwrap token)) span pstate))
+       ((and token (token-case token :string)) ; stringlit
+        (b* (((erp strings last-span pstate) ; stringlit stringlits
+              (parse-*-stringlit pstate)))
+          (retok (expr-string (cons (token-string->unwrap token) strings))
+                 (if strings (span-join span last-span) span)
+                 pstate)))
        ((equal token (token-punctuator "(")) ; (
         (b* (((erp expr & pstate) ; ( expr
               (parse-expression pstate))
@@ -7950,9 +7768,10 @@
          ((erp cexpr & pstate) (parse-constant-expression pstate))
          ((erp & pstate) (read-punctuator "," pstate))
          ((erp stringlit & pstate) (read-stringlit pstate))
+         ((erp stringlits & pstate) (parse-*-stringlit pstate))
          ((erp & pstate) (read-punctuator ")" pstate))
          ((erp last-span pstate) (read-punctuator ";" pstate)))
-      (retok (make-statassert :test cexpr :message stringlit)
+      (retok (make-statassert :test cexpr :message (cons stringlit stringlits))
              (span-join first-span last-span)
              pstate))
     :measure (two-nats-measure (parsize pstate) 0))
@@ -8519,6 +8338,15 @@
           (retok (spec/qual-align alignspec)
                  (span-join span last-span)
                  pstate)))
+       ;; If token is the keyword __attribute__,
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we must have an attribute specifier.
+       ((equal token (token-keyword "__attribute__")) ; __attribute__
+        (b* (((erp attrspec last-span pstate) ; attrspec
+              (parse-attribute-specifier span pstate)))
+          (retok (spec/qual-attrib attrspec)
+                 (span-join span last-span)
+                 pstate)))
        ;; If token is anything else, it is an error.
        ;; The above cases are all the allowed possibilities for token.
        (t ; other
@@ -8642,8 +8470,9 @@
        a storage class specifier,
        a type specifier,
        a type qualifier,
-       a function specifier, or
-       an alignment specifier.")
+       a function specifier,
+       an alignment specifier,
+       or an attribute specifier (the last one is a GCC extension).")
      (xdoc::p
       "A declaration specifier (list) may always be followed by a declarator.
        It may also be followed by an abstract declarator
@@ -8769,6 +8598,15 @@
         (b* (((erp alignspec last-span pstate) ; _Alignas ( ... )
               (parse-alignment-specifier span pstate)))
           (retok (declspec-align alignspec)
+                 (span-join span last-span)
+                 pstate)))
+       ;; If token is the keyword __attribute__,
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we must have an attribute specifier.
+       ((equal token (token-keyword "__attribute__")) ; __attribute__
+        (b* (((erp attrspec last-span pstate) ; attrspec
+              (parse-attribute-specifier span pstate)))
+          (retok (declspec-attrib attrspec)
                  (span-join span last-span)
                  pstate)))
        ;; If token is anything else, it is an error.
@@ -11846,49 +11684,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-*-stringlit ((pstate parstatep))
-  :returns (mv erp
-               (strings stringlit-listp)
-               (span spanp)
-               (new-pstate parstatep))
-  :short "Parse a list of zero or more string literals."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, we parse a @('*stringlit'), in ABNF notation.")
-   (xdoc::p
-    "If there are no string literals, we return an irrelevant span.
-     When combining the span of the first string literal (if present)
-     with the span of the remaining zero or more string literals,
-     we join spans only if the remaining ones are one or more;
-     if there are zero, the span of the first string literal
-     is also the span of the whole sequence."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
-       ((erp token span pstate) (read-token pstate))
-       ((unless (and token (token-case token :string)))
-        (b* ((pstate (if token (unread-token pstate) pstate)))
-          (retok nil (irr-span) pstate)))
-       ;; stringlit
-       (string (token-string->unwrap token))
-       ((erp strings last-span pstate) (parse-*-stringlit pstate)))
-    ;; stringlit stringlits
-    (retok (cons string strings)
-           (if strings (span-join span last-span) span)
-           pstate))
-  :measure (parsize pstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns
-
-  ///
-
-  (defret parsize-of-parse-*-stringlit-uncond
-    (<= (parsize new-pstate)
-        (parsize pstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define parse-asm-name-specifier ((uscores booleanp)
                                   (first-span spanp)
                                   (pstate parstatep))
@@ -13162,33 +12957,44 @@
     (b* (((reterr) (irr-block-item) (irr-span) (irr-parstate))
          ((erp token & pstate) (read-token pstate)))
       (cond
-       ;; If token is an identifier,
-       ;; we may have a declaration or an expression statement,
-       ;; so we read a possibly ambiguous declaration or statement.
+       ;; If token is an identifier, we need to read another token.
        ((and token (token-case token :ident)) ; ident
-        (b* ((pstate (unread-token pstate)) ;
-             ((erp decl/stmt span pstate) ; decl/stmt
-              (parse-declaration-or-statement pstate)))
-          (amb?-decl/stmt-case
-           decl/stmt
-           ;; If we parse an unambiguous declaration,
-           ;; we return a block item that is a declaration.
-           :decl
-           (retok (block-item-decl decl/stmt.unwrap)
-                  span
-                  pstate)
-           ;; If we parse an unambiguous statement,
-           ;; we return a block item that is a statement.
-           :stmt
-           (retok (block-item-stmt (stmt-expr decl/stmt.unwrap))
-                  span
-                  pstate)
-           ;; If we parse an ambiguous declaration or statement,
-           ;; we return an ambiguous block item.
-           :ambig
-           (retok (block-item-ambig decl/stmt.unwrap)
-                  span
-                  pstate))))
+        (b* (((erp token2 & pstate) (read-token pstate)))
+          (cond
+           ;; If token2 is a colon, we must have a labeled statement.
+           ;; We put back colon and label, and parse a statement.
+           ((equal token2 (token-punctuator ":")) ; ident :
+            (b* ((pstate (unread-token pstate)) ; ident
+                 (pstate (unread-token pstate)) ;
+                 ((erp stmt span pstate) (parse-statement pstate))) ; stmt
+              (retok (block-item-stmt stmt) span pstate)))
+           ;; Otherwise, we may have a declaration or an expression statement,
+           ;; so we read a possibly ambiguous declaration or statement.
+           (t ; ident other
+            (b* ((pstate (if token2 (unread-token pstate) pstate)) ; ident
+                 (pstate (unread-token pstate)) ;
+                 ((erp decl/stmt span pstate) ; decl/stmt
+                  (parse-declaration-or-statement pstate)))
+              (amb?-decl/stmt-case
+               decl/stmt
+               ;; If we parse an unambiguous declaration,
+               ;; we return a block item that is a declaration.
+               :decl
+               (retok (block-item-decl decl/stmt.unwrap)
+                      span
+                      pstate)
+               ;; If we parse an unambiguous statement,
+               ;; we return a block item that is a statement.
+               :stmt
+               (retok (block-item-stmt (stmt-expr decl/stmt.unwrap))
+                      span
+                      pstate)
+               ;; If we parse an ambiguous declaration or statement,
+               ;; we return an ambiguous block item.
+               :ambig
+               (retok (block-item-ambig decl/stmt.unwrap)
+                      span
+                      pstate)))))))
        ;; If token may start a declaration specifier,
        ;; since we have already considered the case of an identifier above,
        ;; we must have a declaration.

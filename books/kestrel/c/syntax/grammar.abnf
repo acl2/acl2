@@ -65,18 +65,13 @@
 ; a non-empty file ends with a new-line character (see phase 3 in [C:5.1.1.2]).
 ; This can be easily enforced outside the grammar as well.
 
-; Another aspect that our grammar does not cover is
-; the concatenation of adjacent string literals (see phase 6 in [C:5.1.1.2]).
+; [C:5.1.1.2/6] requires that adjacent string literals are concatenated.
 ; This does not affect the lexing of the code, since string literals are tokens,
-; but the parser would need to accept adjacent string literals.
-; In the (phrase structure) grammar, this could be accommodated
-; by extending the expression grammar rules to allow adjacent string literals,
-; but [C] has no such rule: only single literals can be expressions.
-; So we keep consistent with [C] and disallow adjacent string literals,
-; in the rules of our ABNF grammar.
-; Note that the concatenation of adjacent string literals
-; could be done on the fly just after lexing,
-; without necessarily including that in the grammar.
+; but the parser needs to accept adjacent string literals.
+; In the (phrase structure) grammar, we accommodate this
+; by allowing one or more string literals where the grammar in [C] allows one
+; (the phrase grammar in [C] corresponds to translation phase 7,
+; which comes after adjacent string literal concatenation in phase 6).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -759,7 +754,7 @@ lexeme = token
 
 primary-expression = identifier
                    / constant
-                   / string-literal
+                   / 1*string-literal
                    / "(" expression ")"
                    / generic-selection
 
@@ -935,11 +930,6 @@ attribute-specifier =
 ; used to specify the assembler name of declared identifiers.
 ; This construct starts with the 'asm' or '__asm__' keyword,
 ; followed by a parenthesized sequence of one or more string literals.
-; Adjacent string literals are concatenated [C:5.1.1.2/6],
-; but in order to capture and preserve the information
-; about multiple adjacent string literals instead of their concatenation,
-; we formulate our grammar rule to allow multiple string literals.
-; (We should do the same for other parts of the grammar.)
 
 ; Although the GCC documentation does not seem to provide
 ; a clear term to describe this construct,
@@ -951,31 +941,34 @@ asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
 
 ; Declarations [C:A.2.2]
 
+; As a GCC extension, we allow the GCC keyword '__extension__'
+; to occur at the start of a (member) structure declaration
+; and at the start of a (non-static-assertion) declaration.
+
+; As a GCC extension,
+; we allow declaration specifiers, as well as specifier and qualifier lists,
+; to include attribute specifiers;
+; these can be easily distinguished from other declaration specifiers
+; by the starting '__attribute__' GCC keyword.
+
+; As a GCC extension,
+; we allow one or more attribute specifiers
+; to occur just before the ending semicolon of
+; a declaration and a structure declaration.
+
+; The above may not the only places where attribute specifiers may occur,
+; in the full GCC extensions, but they are places that have been observed.
+; Our purpose in supporting the GCC extensions, for now,
+; is not to be exhaustive,
+; but rather to be able to handle practical C code that
+; does not quite comply with the standard due to the presence of GCC extensions.
+
 ; As a GCC extension, we allow an optional assembler name specifier
 ; just after the initializer declarators, and before the attributes (see below).
 ; The GCC documentation says that an assembler name specifier
 ; comes just after a declarator, so our grammar rule may be more liberal;
 ; but currently our goal is just to handle practical code with GCC extensions,
 ; not to provide a formalization of GCC extensions.
-
-; As a GCC extension, we allow one or more attribute specifiers
-; to occur just before the ending semicolon of
-; a declaration and a structure declaration.
-; The grammar rule allows the absence of such attribute specifiers,
-; for the case in which there happen to be none,
-; and also for the standard language without GCC extensions.
-; These are not the only places where attribute specifiers may occur,
-; in the full GCC extensions,
-; but it is two of the places that have been observed;
-; it is also possible that not all kinds of declarations actually allow that.
-; However, our purpose in supporting the GCC extensions, for now,
-; is not to completely characterize the legal ones,
-; but rather to be able to handle practical C code that
-; does not quite comply with the standard due to the presence of GCC extensions.
-
-; As a GCC extension, we allow the GCC keyword '__extension__'
-; to occur at the start of a (member) structure declaration
-; and at the start of a declaration (not a static assertion declaration).
 
 declaration = [ %s"__extension__" ]
               declaration-specifiers
@@ -990,6 +983,7 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
                        / type-qualifier [ declaration-specifiers ]
                        / function-specifier [ declaration-specifiers ]
                        / alignment-specifier [ declaration-specifiers ]
+                       / attribute-specifier [ declaration-specifiers ]
 
 init-declarator-list = init-declarator
                      / init-declarator-list "," init-declarator
@@ -1040,6 +1034,7 @@ struct-declaration = [ %s"__extension__" ]
 specifier-qualifier-list = type-specifier [ specifier-qualifier-list ]
                          / type-qualifier [ specifier-qualifier-list ]
                          / alignment-specifier [ specifier-qualifier-list ]
+                         / attribute-specifier [ specifier-qualifier-list ]
 
 struct-declarator-list = struct-declarator
                        / struct-declarator-list "," struct-declarator
@@ -1137,7 +1132,7 @@ designator = "[" constant-expression "]"
            / "." identifier
 
 static-assert-declaration =
-    %s"_Static_assert" "(" constant-expression "," string-literal ")" ";"
+    %s"_Static_assert" "(" constant-expression "," 1*string-literal ")" ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

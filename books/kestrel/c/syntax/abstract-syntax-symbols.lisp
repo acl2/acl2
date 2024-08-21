@@ -121,6 +121,7 @@
     spec/qual-case
     spec/qual-tyspec
     spec/qual-align
+    spec/qual-attrib
 
     spec/qual-listp
     spec/qual-list-fix
@@ -140,6 +141,7 @@
     declspec-case
     declspec-tyspec
     declspec-align
+    declspec-attrib
 
     declspec-listp
     declspec-list-fix

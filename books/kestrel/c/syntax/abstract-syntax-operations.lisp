@@ -291,7 +291,8 @@
 (defirrelevant irr-statassert
   :short "An irrelevant static assertion declaration."
   :type statassertp
-  :body (make-statassert :test (irr-const-expr) :message (irr-stringlit)))
+  :body (make-statassert :test (irr-const-expr)
+                         :message (list (irr-stringlit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -719,8 +720,8 @@
        ((unless (const-case const :int)) nil)
        ((iconst iconst) (const-int->unwrap const))
        ((when iconst.suffix?) nil)
-       ((unless (dec/oct/hex-const-case iconst.dec/oct/hex :oct)) nil)
-       ((dec/oct/hex-const-oct doh) iconst.dec/oct/hex)
+       ((unless (dec/oct/hex-const-case iconst.core :oct)) nil)
+       ((dec/oct/hex-const-oct doh) iconst.core)
        ((unless (= doh.leading-zeros 1)) nil)
        ((unless (= doh.value 0)) nil))
     t)

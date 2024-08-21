@@ -38,9 +38,10 @@
      should also provide an agreement on how the committee evolves;
      this is what we are in the progress of formally proving.")
    (xdoc::p
-    "In our model a committee consists of a set of validator addresses,
-     but we introduce a fixtype to wrap that,
-     for greater abstraction and extensibility.")
+    "In our model a committee consists of
+     a non-empty set of validator addresses.
+     We introduce a fixtype to wrap that, to enforce non-emptiness,
+     and also for greater abstraction and extensibility.")
    (xdoc::p
     "Membership in a committee is simply set membership,
      but we introduce a slightly more abstract operation for that,
@@ -67,7 +68,6 @@
      i.e. the committee resulting from applying
      all the bonding and unbonding transactions up to that round
      to the genesis committee in order.
-     That is, this is the committeed bonded at each round.
      There are actually two possible choices for defining this notion precisely,
      based on whether the committee bonded at an even round that has a block
      includes or excludes the transactions in that block.
@@ -106,7 +106,11 @@
      When we generalize the model with stake,
      this committee fixtype will need to include the stake of each validator,
      besides the addresses of the validators."))
-  ((addresses address-set))
+  ((addresses address-set
+              :reqfix (if (set::emptyp addresses)
+                          (set::insert (address nil) nil)
+                        addresses)))
+  :require (not (set::emptyp addresses))
   :pred committeep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -131,14 +135,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define committee-nonemptyp ((commtt committeep))
-  :returns (yes/no booleanp)
-  :short "Check if a committee is not empty."
-  (not (set::emptyp (committee->addresses commtt)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection genesis-committee
   :short "Genesis committee."
   :long
@@ -158,10 +154,7 @@
        (make-committee :addresses (set::insert (address nil) nil))))
 
     (defrule committeep-of-genesis-committee
-      (committeep (genesis-committee)))
-
-    (defrule not-emptyp-of-genesis-committee-addresses
-      (not (set::emptyp (committee->addresses (genesis-committee)))))))
+      (committeep (genesis-committee)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -176,19 +169,41 @@
      bonding, unbonding, and other.
      A bonding transaction adds the validator address to the committee;
      there is no change if the validator is already in the committee.
-     An unbonding transaction removes the validator address from the committee;
+     An unbonding transaction removes the validator address from the committee
+     (except in a case explained below);
      there is no change if the validator is not in the committee.
-     The other kind of transaction leaves the committee unchanged."))
+     The other kind of transaction leaves the committee unchanged.")
+   (xdoc::p
+    "In order to maintain the non-emptiness of the committee,
+     attempting to remove the only member of the committee
+     does not actually remove it.
+     An implementation of AleoBFT may require larger minimal committees,
+     but for the purposes of our model,
+     it suffices for the committee to be never empty.
+     The protocol works, although in a degenerate way,
+     with just one validator.")
+   (xdoc::p
+    "It is an interesting question whether an AleoBFT implementation
+     should have mechanisms in place to guarantee minimal committee sizes.
+     If it does, our model of unbonding captures that.
+     If it does not, which is plausible since validators
+     should be generally free to bond and unbond as they want,
+     then the whole network could be considered to fail
+     if all validators unbond and there is nobody to run the network.
+     If that is the case, our model of unbonding is still adequate to capture
+     the situation in which the whole network has not failed;
+     as mentioned above, the unbonding transaction that does not unbond
+     can be simply regarded as if it were an @(':other') kind of transaction."))
   (transaction-case
    trans
-   :bond (change-committee
-          commtt
-          :addresses (set::insert trans.validator
-                                  (committee->addresses commtt)))
-   :unbond (change-committee
-            commtt
-            :addresses (set::delete trans.validator
-                                    (committee->addresses commtt)))
+   :bond (b* ((addresses (committee->addresses commtt))
+              (new-addresses (set::insert trans.validator addresses)))
+           (change-committee commtt :addresses new-addresses))
+   :unbond (b* ((addresses (committee->addresses commtt))
+                (new-addresses (set::delete trans.validator addresses)))
+             (if (set::emptyp new-addresses)
+                 (committee-fix commtt)
+               (change-committee commtt :addresses new-addresses)))
    :other (committee-fix commtt))
   :hooks (:fix))
 
@@ -442,6 +457,7 @@
 
 (define max-faulty-for-total ((total natp))
   :returns (max natp
+                :rule-classes (:rewrite :type-prescription)
                 :hints (("Goal" :in-theory (enable natp zp))))
   :short "Maximum number of faulty validators, out of a total,
           for the protocol to be fault-tolerant."
@@ -596,7 +612,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define committee-total ((commtt committeep))
-  :returns (total natp)
+  :returns (total posp
+                  :rule-classes (:rewrite :type-prescription)
+                  :hints (("Goal" :in-theory (enable posp))))
   :short "Total number of validators in a committee."
   :long
   (xdoc::topstring
@@ -614,7 +632,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define committee-max-faulty ((commtt committeep))
-  :returns (maxf natp)
+  :returns (maxf natp :rule-classes (:rewrite :type-prescription))
   :short "Maximum tolerated number of faulty validators in a committee."
   :long
   (xdoc::topstring
@@ -629,6 +647,7 @@
 
 (define committee-quorum ((commtt committeep))
   :returns (quorum natp
+                   :rule-classes (:rewrite :type-prescription)
                    :hints (("Goal" :in-theory (enable natp
                                                       nfix
                                                       committee-max-faulty))))

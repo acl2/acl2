@@ -232,7 +232,8 @@
      specqual
      :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.unwrap))
      :tyqual (spec/qual-fix specqual)
-     :align (spec/qual-align (simpadd0-align-spec specqual.unwrap)))
+     :align (spec/qual-align (simpadd0-align-spec specqual.unwrap))
+     :attrib (spec/qual-fix specqual))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -274,7 +275,8 @@
      :tyspec (declspec-tyspec (simpadd0-type-spec declspec.unwrap))
      :tyqual (declspec-fix declspec)
      :funspec (declspec-fix declspec)
-     :align (declspec-align (simpadd0-align-spec declspec.unwrap)))
+     :align (declspec-align (simpadd0-align-spec declspec.unwrap))
+     :attrib (declspec-fix declspec))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
