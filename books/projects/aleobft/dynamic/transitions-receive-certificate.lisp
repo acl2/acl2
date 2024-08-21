@@ -135,4 +135,24 @@
        (systate (update-network-state new-network systate)))
     systate)
   :guard-hints (("Goal" :in-theory (enable receive-certificate-possiblep)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret all-addresses-of-receive-certificate-next
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hyp (receive-certificate-possiblep msg systate)
+    :hints (("Goal" :in-theory (enable receive-certificate-possiblep))))
+
+  (defret correct-addresses-of-receive-certificate-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (receive-certificate-possiblep msg systate)
+    :hints (("Goal" :in-theory (enable receive-certificate-possiblep))))
+
+  (defret faulty-addresses-of-receive-certificate-next
+    (equal (faulty-addresses new-systate)
+           (faulty-addresses systate))
+    :hyp (receive-certificate-possiblep msg systate)
+    :hints (("Goal" :in-theory (enable receive-certificate-possiblep)))))

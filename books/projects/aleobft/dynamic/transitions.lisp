@@ -99,4 +99,24 @@
    :commit-anchors (commit-anchors-next event.validator systate)
    :timer-expires (timer-expires-next event.validator systate))
   :guard-hints (("Goal" :in-theory (enable event-possiblep)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret all-addresses-of-event-next
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hyp (event-possiblep event systate)
+    :hints (("Goal" :in-theory (enable event-possiblep))))
+
+  (defret correct-addresses-of-event-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (event-possiblep event systate)
+    :hints (("Goal" :in-theory (enable event-possiblep))))
+
+  (defret faulty-addresses-of-event-next
+    (equal (faulty-addresses new-systate)
+           (faulty-addresses systate))
+    :hyp (event-possiblep event systate)
+    :hints (("Goal" :in-theory (enable event-possiblep)))))
