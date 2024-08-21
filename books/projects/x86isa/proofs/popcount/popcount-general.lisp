@@ -739,7 +739,6 @@
                    (:rewrite bitops::unsigned-byte-p-incr)
                    (:linear bitops::upper-bound-of-logand . 1)
                    (:linear bitops::logand->=-0-linear-1)
-                   (:rewrite rb-returns-x86-in-non-marking-view-if-no-error)
                    (:linear acl2::logext-bounds)
                    (:rewrite acl2::natp-when-integerp)
                    (:rewrite acl2::natp-when-gte-0)

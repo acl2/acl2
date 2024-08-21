@@ -464,7 +464,9 @@
                    (equal proc-mode #.*64-bit-mode*))
               (!rgfi-size operand-size
                           (reg-index reg rex-byte #.*r*)
-                          (loghead 32 (rgfi-size operand-size reg rex-byte x86))
+                          (loghead 32 (rgfi-size operand-size
+						 (reg-index reg rex-byte #.*r*)
+						 rex-byte x86))
                           rex-byte
                           x86)
             x86)))

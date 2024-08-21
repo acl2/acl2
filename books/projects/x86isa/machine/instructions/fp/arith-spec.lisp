@@ -67,7 +67,7 @@
                              (exp2 natp)
                              (implicit2 :type (unsigned-byte 1))
                              (frac2 natp)
-                             (operation :type (integer 0 36)))
+                             (operation :type (integer 0 38)))
   :long "<p>This function checks whether the operands are SNaN or
   QNaN. If at least one of them is NaN or both of them are zeros, then
   it returns the second operand.  It also handles infinities.</p>
@@ -141,7 +141,7 @@
              (integerp (sse-max/min-sign rat rat1 sign1 sign2)))
     :rule-classes :type-prescription))
 
-(define sse-max/min ((operation :type (integer 0 36))
+(define sse-max/min ((operation :type (integer 0 38))
                      (op1 natp)
                      (op2 natp)
                      (mxcsr :type (unsigned-byte 32))
@@ -216,7 +216,7 @@
 
 ;; Single-Precision Operations:
 
-(define sp-sse-max/min ((operation :type (integer 0 36))
+(define sp-sse-max/min ((operation :type (integer 0 38))
                         (op1       :type (unsigned-byte 32))
                         (op2       :type (unsigned-byte 32))
                         (mxcsr     :type (unsigned-byte 32)))
@@ -243,7 +243,7 @@
 
 ;; Double-Precision Operations:
 
-(define dp-sse-max/min ((operation :type (integer 0 36))
+(define dp-sse-max/min ((operation :type (integer 0 38))
                         (op1       :type (unsigned-byte 64))
                         (op2       :type (unsigned-byte 64))
                         (mxcsr     :type (unsigned-byte 32)))
@@ -272,7 +272,7 @@
 
 ;; Top-level Single and Double Precision Arithmetic Operations:
 
-(define sp-sse-add/sub/mul/div/max/min ((operation :type (integer 0 36))
+(define sp-sse-add/sub/mul/div/max/min ((operation :type (integer 0 38))
                                         (op1       :type (unsigned-byte 32))
                                         (op2       :type (unsigned-byte 32))
                                         (mxcsr     :type (unsigned-byte 32)))
@@ -294,7 +294,7 @@
     :gen-type t
     :gen-linear t))
 
-(define dp-sse-add/sub/mul/div/max/min ((operation :type (integer 0 36))
+(define dp-sse-add/sub/mul/div/max/min ((operation :type (integer 0 38))
                                         (op1       :type (unsigned-byte 64))
                                         (op2       :type (unsigned-byte 64))
                                         (mxcsr     :type (unsigned-byte 32)))
