@@ -15,9 +15,9 @@
 
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
-(include-book "kestrel/std/util/defund-sk" :dir :system)
 (include-book "std/strings/char-case" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
+(include-book "std/util/defund-sk" :dir :system)
 
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))

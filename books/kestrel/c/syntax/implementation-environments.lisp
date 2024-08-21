@@ -13,6 +13,8 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -56,7 +58,8 @@
      certain characteristics of the integer types.
      We assume that bytes are 8 bits,
      that signed integers use two's complement,
-     and that there are no padding bits.
+     and that there are no padding bits
+     or trap representations.
      Therefore, the characteristics of the integer types
      are defined by four numbers,
      i.e. the numbers of bytes of (signed and unsigned)
@@ -114,3 +117,195 @@
                 (<= 8 long-bytes)
                 (<= 8 llong-bytes))
   :pred ienvp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-min ()
+  :returns (val integerp)
+  :short "Minimum mathematical integer value of type @('signed char')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given the assumptions explained in @(tsee ienv), this is @'-128').")
+   (xdoc::p
+    "We keep this nullary function closed for more abstraction."))
+  -128
+  ///
+  (in-theory (disable (:e schar-min))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-max ()
+  :returns (val natp)
+  :short "Maximum mathematical integer value of type @('signed char')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given the assumptions explained in @(tsee ienv), this is @('+127').")
+   (xdoc::p
+    "We keep this nullary function closed for more abstraction."))
+  +127
+  ///
+  (in-theory (disable (:e schar-max))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uchar-max ()
+  :returns (val natp)
+  :short "Maximum mathematical integer value of type @('unsigned char')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given the assumptions explained in @(tsee ienv), this is @('255').")
+   (xdoc::p
+    "Note that the minimum @('unsigned char') is just 0,
+     so there is no need to introduce a function for it.")
+   (xdoc::p
+    "We keep this nullary function closed for more abstraction."))
+  255
+  ///
+  (in-theory (disable (:e schar-max))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sshort-min ((ienv ienvp))
+  :returns (val integerp :rule-classes (:rewrite :type-prescription))
+  :short "Minimum mathematical integer value of type @('signed short')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment."))
+  (- (expt 2 (1- (* 8 (ienv->short-bytes ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sshort-max ((ienv ienvp))
+  :returns (val natp :rule-classes (:rewrite :type-prescription))
+  :short "Maximum mathematical integer value of type @('signed short')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment."))
+  (1- (expt 2 (1- (* 8 (ienv->short-bytes ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ushort-max ((ienv ienvp))
+  :returns (val natp :rule-classes (:rewrite :type-prescription))
+  :short "Maximum mathematical integer value of type @('unsigned short')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment.")
+   (xdoc::p
+    "Note that the minimum @('unsigned signed') is just 0,
+     so there is no need to introduce a function for it."))
+  (1- (expt 2 (* 8 (ienv->short-bytes ienv)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-min ((ienv ienvp))
+  :returns (val integerp :rule-classes (:rewrite :type-prescription))
+  :short "Minimum mathematical integer value of type @('signed int')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment."))
+  (- (expt 2 (1- (* 8 (ienv->int-bytes ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-max ((ienv ienvp))
+  :returns (val natp :rule-classes (:rewrite :type-prescription))
+  :short "Maximum mathematical integer value of type @('signed int')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment."))
+  (1- (expt 2 (1- (* 8 (ienv->int-bytes ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uint-max ((ienv ienvp))
+  :returns (val natp :rule-classes (:rewrite :type-prescription))
+  :short "Maximum mathematical integer value of type @('unsigned int')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment.")
+   (xdoc::p
+    "Note that the minimum @('unsigned signed') is just 0,
+     so there is no need to introduce a function for it."))
+  (1- (expt 2 (* 8 (ienv->int-bytes ienv)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define slong-min ((ienv ienvp))
+  :returns (val integerp :rule-classes (:rewrite :type-prescription))
+  :short "Minimum mathematical integer value of type @('signed long')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment."))
+  (- (expt 2 (1- (* 8 (ienv->long-bytes ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define slong-max ((ienv ienvp))
+  :returns (val natp :rule-classes (:rewrite :type-prescription))
+  :short "Maximum mathematical integer value of type @('signed long')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment."))
+  (1- (expt 2 (1- (* 8 (ienv->long-bytes ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ulong-max ((ienv ienvp))
+  :returns (val natp :rule-classes (:rewrite :type-prescription))
+  :short "Maximum mathematical integer value of type @('unsigned long')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment.")
+   (xdoc::p
+    "Note that the minimum @('unsigned signed') is just 0,
+     so there is no need to introduce a function for it."))
+  (1- (expt 2 (* 8 (ienv->long-bytes ienv)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sllong-min ((ienv ienvp))
+  :returns (val integerp :rule-classes (:rewrite :type-prescription))
+  :short "Minimum mathematical integer value of type @('signed long long')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment."))
+  (- (expt 2 (1- (* 8 (ienv->llong-bytes ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sllong-max ((ienv ienvp))
+  :returns (val natp :rule-classes (:rewrite :type-prescription))
+  :short "Maximum mathematical integer value of type @('signed long long')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment."))
+  (1- (expt 2 (1- (* 8 (ienv->llong-bytes ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ullong-max ((ienv ienvp))
+  :returns (val natp :rule-classes (:rewrite :type-prescription))
+  :short "Maximum mathematical integer value of type @('unsigned long long')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This depends on the implementation environment.")
+   (xdoc::p
+    "Note that the minimum @('unsigned signed') is just 0,
+     so there is no need to introduce a function for it."))
+  (1- (expt 2 (* 8 (ienv->llong-bytes ienv)))))
