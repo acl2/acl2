@@ -294,7 +294,21 @@
        ((when (and (equal author cert.author)
                    (equal round cert.round)))
         (certificate-fix cert)))
-    (get-certificate-with-author+round author round (set::tail certs))))
+    (get-certificate-with-author+round author round (set::tail certs)))
+
+  ///
+
+  (defret certificate->author-of-get-certificate-with-author+round
+    (implies cert?
+             (equal (certificate->author cert?)
+                    (address-fix author)))
+    :hints (("Goal" :induct t)))
+
+  (defret certificate->round-of-get-certificate-with-author+round
+    (implies cert?
+             (equal (certificate->round cert?)
+                    (pos-fix round)))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
