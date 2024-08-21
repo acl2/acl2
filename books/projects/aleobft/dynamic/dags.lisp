@@ -183,7 +183,33 @@
           (round (1- (certificate->round cert)))
           (certs dag))))
 
-  :flag-local nil)
+  :flag-local nil
+
+  ///
+
+  (defret-mutual certificate->author-of-path-to-author+round
+    (defret certificate->author-of-path-to-author+round
+      (implies previous-cert?
+               (equal (certificate->author previous-cert?)
+                      (address-fix author)))
+      :fn path-to-author+round)
+    (defret certificate->author-of-path-to-author+round-set
+      (implies previous-cert?
+               (equal (certificate->author previous-cert?)
+                      (address-fix author)))
+      :fn path-to-author+round-set))
+
+  (defret-mutual certificate->round-of-path-to-author+round
+    (defret certificate->round-of-path-to-author+round
+      (implies previous-cert?
+               (equal (certificate->round previous-cert?)
+                      (pos-fix round)))
+      :fn path-to-author+round)
+    (defret certificate->round-of-path-to-author+round-set
+      (implies previous-cert?
+               (equal (certificate->round previous-cert?)
+                      (pos-fix round)))
+      :fn path-to-author+round-set)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
