@@ -336,7 +336,7 @@
      our fixtypes are factored slightly differently.
      An integer constant consists of a decimal, octal, or hexadecimal constant,
      and of an optional integer suffix."))
-  ((dec/oct/hex dec/oct/hex-const)
+  ((core dec/oct/hex-const)
    (suffix? isuffix-option))
   :pred iconstp)
 
@@ -1213,6 +1213,12 @@
        and defer a possible re-classification to enumeration constant
        during a post-parsing static semantic analysis.")
      (xdoc::p
+      "Instead of a single string literal, we allow a list of them,
+       which should be non-empty, although we do not capture this constraint.
+       This mirrors the ABNF grammar;
+       we preserve the information about adjacent string literals,
+       as opposed to concatenating them into one.")
+     (xdoc::p
       "The @(':sizeof') case of this fixtype
        captures @('sizeof') applied to a type name.
        The @('sizeof') applied to an expression is instead captured
@@ -1390,7 +1396,7 @@
        possibly ambiguous cast expressions."))
     (:ident ((unwrap ident)))
     (:const ((unwrap const)))
-    (:string ((unwrap stringlit)))
+    (:string ((unwrap stringlit-list)))
     (:paren ((unwrap expr)))
     (:gensel ((control expr)
               (assocs genassoc-list)))
@@ -1580,10 +1586,14 @@
       "This does not correspond directly
        to any nonterminal in the grammar in [C],
        but it is useful to define <i>specifier-qualifier-list</i>:
-       see @(tsee spec/qual-list)."))
+       see @(tsee spec/qual-list).")
+     (xdoc::p
+      "As a GCC extension, we include attribute specifiers.
+       See our ABNF grammar."))
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:align ((unwrap align-spec)))
+    (:attrib ((unwrap attrib-spec)))
     :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1642,12 +1652,16 @@
       "This does not directly correspond to
        any nonterminal in the grammar in [C],
        but it is useful to define <i>declaration-specifiers</i>
-       (see @(tsee declspec-list))."))
+       (see @(tsee declspec-list)).")
+     (xdoc::p
+      "As a GCC extension, we include attribute specifiers.
+       See our ABNF grammar."))
     (:stocla ((unwrap stor-spec)))
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:funspec ((unwrap fun-spec)))
     (:align ((unwrap align-spec)))
+    (:attrib ((unwrap attrib-spec))) ; GCC extension
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -2071,10 +2085,10 @@
       "As a GCC extension, we include
        a possibly empty list of attribute specifiers,
        which come after the declarator (cf. the grammar)"))
-    (:member ((extension bool)
+    (:member ((extension bool) ; GCC extension
               (specqual spec/qual-list)
               (declor structdeclor-list)
-              (attrib attrib-spec-list)))
+              (attrib attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
     :pred structdeclp
     :base-case-override :statassert
@@ -2194,9 +2208,14 @@
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>static_assert-declaration</i>
-       in the grammar in [C]."))
+       in the grammar in [C].")
+     (xdoc::p
+      "We use a list of string literals,
+       which should be non-empty, but we do not capture this constraint.
+       This mirrors the ABNF grammar:
+       this way, we preserve the information about adjacent string literals."))
     ((test const-expr)
-     (message stringlit))
+     (message stringlit-list))
     :pred statassertp
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -2476,7 +2495,11 @@
      Note that this is not the only kind of assembler construct
      in GCC extensions; there are others.
      So we use the term `assembler name specifier' for this construct,
-     since it specifies the assembler name (of an identifier)."))
+     since it specifies the assembler name (of an identifier).")
+   (xdoc::p
+    "We use a list of string literals,
+     which should be non-empty, although we do not capture this constraint.
+     This way, we preserve the information about adjacent string literals."))
   ((strings stringlit-list)
    (uscores bool))
   :pred asm-name-specp)
@@ -2790,7 +2813,7 @@
      the function definition starts with the @('__extension__') GCC keyword.
      We model this as a boolean saying whether
      the keyword is present or absent."))
-  ((extension bool)
+  ((extension bool) ; GCC extension
    (spec declspec-list)
    (declor declor)
    (decls decl-list)

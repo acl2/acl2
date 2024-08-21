@@ -136,7 +136,7 @@
   :short "Map an integer constant to
           an integer constant in the language definition."
   (b* (((iconst iconst) iconst)
-       ((mv value base) (ldm-dec/oct/hex-const iconst.dec/oct/hex))
+       ((mv value base) (ldm-dec/oct/hex-const iconst.core))
        ((mv length unsignedp) (ldm-isuffix-option iconst.suffix?)))
     (c::make-iconst :value value
                     :base base

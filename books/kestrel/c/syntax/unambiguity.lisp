@@ -199,7 +199,8 @@
     (spec/qual-case specqual
                     :tyspec (type-spec-unambp specqual.unwrap)
                     :tyqual t
-                    :align (align-spec-unambp specqual.unwrap))
+                    :align (align-spec-unambp specqual.unwrap)
+                    :attrib t)
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -236,7 +237,8 @@
                    :tyspec (type-spec-unambp declspec.unwrap)
                    :tyqual t
                    :funspec t
-                   :align (align-spec-unambp declspec.unwrap))
+                   :align (align-spec-unambp declspec.unwrap)
+                   :attrib t)
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -872,13 +874,14 @@
            (type-spec-unambp tyspec))
     :expand (spec/qual-unambp (spec/qual-tyspec tyspec)))
 
-  (defrule spec/qual-unambp-when-tyqual
-    ;; The formulation (spec/qual-unambp (spec/qual-tyqual tyqual))
+  (defrule spec/qual-unambp-when-tyqual/attrib
+    ;; The formulation (spec/qual-unambp (spec/qual-... ...))
     ;; does not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by
     ;; the formulation we give here,
     ;; which is not ideal because the conclusion is quite generic.
-    (implies (spec/qual-case spec/qual :tyqual)
+    (implies (member-eq (spec/qual-kind spec/qual)
+                        '(:tyqual :attrib))
              (spec/qual-unambp spec/qual)))
 
   (defrule spec/qual-unambp-of-spec/qual-align
@@ -906,14 +909,14 @@
            (align-spec-unambp alignspec))
     :expand (declspec-unambp (declspec-align alignspec)))
 
-  (defrule declspec-unambp-when-stocla/tyqual/funspec
+  (defrule declspec-unambp-when-stocla/tyqual/funspec/attrib
     ;; The formulation (declspec-unambp (declspec-... ...))
     ;; does not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by
     ;; the formulation we give here,
     ;; which is not ideal because the conclusion is quite generic.
     (implies (member-eq (declspec-kind declspec)
-                        '(:stocla :tyqual :funspec))
+                        '(:stocla :tyqual :funspec :attrib))
              (declspec-unambp declspec)))
 
   (defrule initer-unambp-of-initer-single

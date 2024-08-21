@@ -620,7 +620,7 @@
   :returns (new-pstate pristatep)
   :short "Print an integer constant."
   (b* (((iconst iconst) iconst)
-       (pstate (print-dec/oct/hex-const iconst.dec/oct/hex pstate))
+       (pstate (print-dec/oct/hex-const iconst.core pstate))
        (pstate (print-isuffix-option iconst.suffix? pstate)))
     pstate)
   :hooks (:fix))
@@ -1570,7 +1570,12 @@
            expr
            :ident (print-ident expr.unwrap pstate)
            :const (print-const expr.unwrap pstate)
-           :string (print-stringlit expr.unwrap pstate)
+           :string
+           (b* (((unless expr.unwrap)
+                 (raise "Misusage error: ~
+                         empty list of string literals.")
+                 (pristate-fix pstate)))
+             (print-stringlit-list expr.unwrap pstate))
            :paren
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-expr expr.unwrap (expr-priority-expr) pstate))
@@ -1861,7 +1866,8 @@
      specqual
      :tyspec (print-type-spec specqual.unwrap pstate)
      :tyqual (print-type-qual specqual.unwrap pstate)
-     :align (print-align-spec specqual.unwrap pstate))
+     :align (print-align-spec specqual.unwrap pstate)
+     :attrib (print-attrib-spec specqual.unwrap pstate))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1911,7 +1917,8 @@
      :tyspec (print-type-spec declspec.unwrap pstate)
      :tyqual (print-type-qual declspec.unwrap pstate)
      :funspec (print-fun-spec declspec.unwrap pstate)
-     :align (print-align-spec declspec.unwrap pstate))
+     :align (print-align-spec declspec.unwrap pstate)
+     :attrib (print-attrib-spec declspec.unwrap pstate))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2606,7 +2613,11 @@
          (pstate (print-astring "_Static_assert(" pstate))
          (pstate (print-const-expr statassert.test pstate))
          (pstate (print-astring ", " pstate))
-         (pstate (print-stringlit statassert.message pstate))
+         ((unless statassert.message)
+          (raise "Misusage error: ~
+                  empty message in static assertion declaration.")
+          pstate)
+         (pstate (print-stringlit-list statassert.message pstate))
          (pstate (print-astring ");" pstate)))
       pstate)
     :measure (statassert-count statassert))

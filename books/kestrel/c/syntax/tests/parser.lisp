@@ -1415,6 +1415,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-statement
+
+(test-parse
+ parse-statement
+ "   printf(\"exploit_read_from_file(): \"
+          \"bytes_read=%zd is supposed to be bytes_expected_to_be_read=%zd, \"
+          \"pre_offset=%ld is supposed to be post_offset=%ld, \"
+          \"pre_offset is supposed to be 1, \"
+          \"post_offset is supposed to be 1.\\n\",
+          ret, exploit_size,
+          pre_offset, post_offset);")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-block-item
 
 (test-parse
@@ -1615,3 +1629,24 @@ struct bar
  "void foo() {
   for (size_t bar; ; ) {}
 }")
+
+(test-parse
+ parse-external-declaration-list
+ "static int func_1(void)
+{
+   int i;
+lbl_15:
+   return 2;
+}")
+
+(test-parse
+ parse-external-declaration-list
+ "extern __inline __attribute__ ((__always_inline__)) __attribute__ ((__gnu_inline__)) void
+error (int __status, int __errnum, const char *__format, ...)
+{
+ if (__builtin_constant_p (__status) && __status != 0)
+   __error_noreturn (__status, __errnum, __format, __builtin_va_arg_pack ());
+ else
+   __error_alias (__status, __errnum, __format, __builtin_va_arg_pack ());
+}"
+ :gcc t)
