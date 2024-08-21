@@ -41,6 +41,7 @@
                           known-packages+
                           legal-constantp
                           lnfix
+                          make-event-terse
                           maybe-msgp
                           maybe-natp
                           msgp

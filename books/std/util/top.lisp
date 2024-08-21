@@ -58,6 +58,14 @@
 (include-book "defthm-commutative")
 (include-book "tuple")
 (include-book "error-value-tuples")
+(include-book "defund-sk")
+(include-book "defund-sk-doc")
+(include-book "deftutorial")
+(include-book "deftutorial-doc")
+(include-book "defmax-nat")
+(include-book "defmax-nat-doc")
+(include-book "defmin-int")
+(include-book "defmin-int-doc")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)

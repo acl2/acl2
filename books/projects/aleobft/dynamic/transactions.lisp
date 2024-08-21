@@ -83,4 +83,5 @@
   :true-listp t
   :elementp-of-nil nil
   :pred transaction-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :prepwork ((local (include-book "std/lists/top" :dir :system))
+             (local (in-theory (enable nfix)))))

@@ -1,10 +1,10 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -18,9 +18,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ defmin-int-implementation
-  :parents (defmin-int)
-  :short "Implementation of @(tsee defmin-int)."
+(defxdoc+ defmax-nat-implementation
+  :parents (defmax-nat)
+  :short "Implementation of @(tsee defmax-nat)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -38,7 +38,7 @@
       @('body'),
       @('guard'), and
       @('verify-guards')
-      are the honomynous inputs to @(tsee defmin-int),
+      are the honomynous inputs to @(tsee defmax-nat),
       where @('x1...xn') is shown as @('(x1 ... xn')) in the documentation.
       They have no types before being processed,
       then they acquire types implied by their validation.")))
@@ -46,9 +46,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ defmin-int-input-processing
-  :parents (defmin-int-implementation)
-  :short "Input processing performed by @(tsee defmin-int)."
+(defxdoc+ defmax-nat-input-processing
+  :parents (defmax-nat-implementation)
+  :short "Input processing performed by @(tsee defmax-nat)."
   :long
   (xdoc::topstring-p
    "Currently this validates the inputs lightly.
@@ -58,7 +58,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defmin-int-process-inputs
+(define defmax-nat-process-inputs
   (f y x1...xn body guard verify-guards ctx state)
   :returns (mv erp (nothing null) state)
   :short "Process all the inputs."
@@ -78,15 +78,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ defmin-int-event-generation
-  :parents (defmin-int-implementation)
-  :short "Event generation performed by @(tsee defmin-int)."
+(defxdoc+ defmax-nat-event-generation
+  :parents (defmax-nat-implementation)
+  :short "Event generation performed by @(tsee defmax-nat)."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defmin-int-gen-everything ((f symbolp)
+(define defmax-nat-gen-everything ((f symbolp)
                                    (y symbolp)
                                    (x1...xn symbol-listp)
                                    body
@@ -108,86 +108,83 @@
        (y1 (genvar y (symbol-name y) 1 (list* y y0 x1...xn)))
        (x1...xn-y (rcons y x1...xn))
        (elementp (add-suffix-to-fn f ".ELEMENTP"))
-       (lboundp (add-suffix-to-fn f ".LBOUNDP"))
+       (uboundp (add-suffix-to-fn f ".UBOUNDP"))
        (existsp (add-suffix-to-fn f ".EXISTSP"))
        (existsp-witness (add-suffix-to-fn existsp "-WITNESS"))
-       (lboundp-witness (add-suffix-to-fn lboundp "-WITNESS"))
-       (lboundp-necc (add-suffix-to-fn lboundp "-NECC"))
+       (uboundp-witness (add-suffix-to-fn uboundp "-WITNESS"))
+       (uboundp-necc (add-suffix-to-fn uboundp "-NECC"))
        (existsp-suff (add-suffix-to-fn existsp "-SUFF"))
        (pkgwit (pkg-witness (symbol-package-name f)))
-       (booleanp-of-lboundp (packn-pos (list 'booleanp-of lboundp) pkgwit))
+       (booleanp-of-uboundp (packn-pos (list 'booleanp-of uboundp) pkgwit))
        (booleanp-of-existsp (packn-pos (list 'booleanp-of existsp) pkgwit))
-       (maybe-integerp-of-f (packn-pos (list 'maybe-integerp-of- f) pkgwit))
-       (integerp-of-f-equal-existsp (packn-pos
-                                     (list 'integerp-of- f '-equal- existsp)
-                                     pkgwit))
-       (integerp-of-f-when-existsp (packn-pos
-                                    (list 'integerp-of- f '-when- existsp)
-                                    pkgwit))
+       (maybe-natp-of-f (packn-pos (list 'maybe-natp-of- f) pkgwit))
+       (natp-of-f-equal-existsp (packn-pos (list 'natp-of- f '-equal- existsp)
+                                           pkgwit))
+       (natp-of-f-when-existsp (packn-pos (list 'natp-of- f '-when- existsp)
+                                          pkgwit))
        (f-iff-existsp (packn-pos (list f '-iff- existsp) pkgwit))
        (not-f-when-not-existsp (packn-pos (list 'not- f '-when-not- existsp)
                                           pkgwit))
        (elementp-of-f-when-existsp (packn-pos
                                     (list elementp '-of- f '-when- existsp)
                                     pkgwit))
-       (lboundp-of-f-when-existsp (packn-pos
-                                   (list lboundp '-of- f '-when-' existsp)
+       (uboundp-of-f-when-existsp (packn-pos
+                                   (list uboundp '-of- f '-when-' existsp)
                                    pkgwit))
-       (f-leq-when-existsp-linear (packn-pos
-                                   (list f '-leq-when- existsp '-linear)
-                                   pkgwit))
-       (f-leq-when-existsp-rewrite (packn-pos
-                                    (list f '-leq-when- existsp '-rewrite)
-                                    pkgwit))
        (f-geq-when-existsp-linear (packn-pos
                                    (list f '-geq-when- existsp '-linear)
                                    pkgwit))
        (f-geq-when-existsp-rewrite (packn-pos
                                     (list f '-geq-when- existsp '-rewrite)
                                     pkgwit))
-       (lbound-leq-member (packn-pos (list f '.lbound-leq-member) pkgwit))
-       (lbound-nonmember-gt-member (packn-pos
-                                    (list f '.lbound-nonmember-gt-member)
+       (f-leq-when-existsp-linear (packn-pos
+                                   (list f '-leq-when- existsp '-linear)
+                                   pkgwit))
+       (f-leq-when-existsp-rewrite (packn-pos
+                                    (list f '-leq-when- existsp '-rewrite)
                                     pkgwit))
-       (find-min (packn-pos (list f '.find-min) pkgwit))
-       (find-min-lboundp-preservation (packn-pos
-                                       (list f '.find-min-lboundp-preservation)
+       (ubound-geq-member (packn-pos (list f '.ubound-geq-member) pkgwit))
+       (ubound-nonmember-gt-member (packn-pos
+                                    (list f '.ubound-nonmember-gt-member)
+                                    pkgwit))
+       (find-max (packn-pos (list f '.find-max) pkgwit))
+       (find-max-uboundp-preservation (packn-pos
+                                       (list f '.find-max-uboundp-preservation)
                                        pkgwit))
-       (elementp-of-find-min (packn-pos (list f '.elementp-of-find-min) pkgwit))
-       (lboundp-of-find-min (packn-pos (list f '.lboundp-of-find-min) pkgwit))
+       (elementp-of-find-max (packn-pos (list f '.elementp-of-find-max) pkgwit))
+       (uboundp-of-find-max (packn-pos (list f '.uboundp-of-find-max) pkgwit))
        (existsp-when-nonempty-and-bounded
         (packn-pos (list f '.existsp-when-nonempty-and-bounded) pkgwit))
-       (equal-when-member-and-lbound
-        (packn-pos (list f '.equal-when-member-and-lbound) pkgwit))
+       (equal-when-member-and-ubound
+        (packn-pos (list f '.equal-when-member-and-ubound) pkgwit))
        (elementp-events
         `((defun ,elementp ,x1...xn-y
-            (declare (xargs :guard (and ,guard (integerp ,y))))
+            (declare (xargs :guard (and ,guard (natp ,y))))
             ,body)
           ,@(and verify-guards `((verify-guards ,elementp)))
           (in-theory (disable ,elementp))))
-       (lboundp-events
-        `((defun-sk ,lboundp ,x1...xn-y
-            (declare (xargs :guard (and ,guard (integerp ,y))
-                            :verify-guards nil))
+       (uboundp-events
+        `((defun-sk ,uboundp ,x1...xn-y
+            (declare (xargs :guard (and ,guard (natp ,y)) :verify-guards nil))
             (forall (,y1)
-                    (impliez (and (integerp ,y1)
+                    (impliez (and (natp ,y1)
                                   (,elementp ,@x1...xn ,y1))
-                             (<= (ifix ,y) ,y1)))
-            :rewrite (implies (and (,lboundp ,@x1...xn-y)
-                                   (integerp ,y1)
+                             (>= (nfix ,y) ,y1)))
+            :rewrite (implies (and (,uboundp ,@x1...xn-y)
+                                   (natp ,y1)
                                    (,elementp ,@x1...xn ,y1))
-                              (<= (ifix ,y) ,y1)))
-          ,@(and verify-guards `((verify-guards ,lboundp)))
-          (defthm ,booleanp-of-lboundp
-            (booleanp (,lboundp ,@x1...xn-y)))
-          (in-theory (disable ,lboundp ,lboundp-necc))))
+                              (>= (nfix ,y) ,y1)))
+          ,@(and verify-guards `((verify-guards ,uboundp)))
+          (defthm ,booleanp-of-uboundp
+            (booleanp (,uboundp ,@x1...xn-y)))
+          (in-theory (disable ,uboundp ,uboundp-necc))))
        (existsp-events
         `((defun-sk ,existsp ,x1...xn
             (declare (xargs :guard ,guard :verify-guards nil))
             (exists (,y)
-                    (and (integerp ,y)
+                    (and (natp ,y)
                          (,elementp ,@x1...xn-y)
-                         (,lboundp ,@x1...xn-y))))
+                         (,uboundp ,@x1...xn-y))))
           ,@(and verify-guards `((verify-guards ,existsp)))
           (defthm ,booleanp-of-existsp
             (booleanp (,existsp ,@x1...xn)))
@@ -201,22 +198,22 @@
           ,@(and verify-guards `((verify-guards ,f)))
           ,@(and (null x1...xn) `((in-theory (disable (:e ,f)))))
           (local
-           (defthm ,maybe-integerp-of-f
-             (maybe-integerp (,f ,@x1...xn))
-             :hints (("Goal" :in-theory (enable maybe-integerp ,existsp)))))
-          (defthm ,maybe-integerp-of-f
-            (maybe-integerp (,f ,@x1...xn)))
+           (defthm ,maybe-natp-of-f
+             (maybe-natp (,f ,@x1...xn))
+             :hints (("Goal" :in-theory (enable maybe-natp ,existsp)))))
+          (defthm ,maybe-natp-of-f
+            (maybe-natp (,f ,@x1...xn)))
           (local
-           (defthm ,integerp-of-f-equal-existsp
-             (equal (integerp (,f ,@x1...xn))
+           (defthm ,natp-of-f-equal-existsp
+             (equal (natp (,f ,@x1...xn))
                     (,existsp ,@x1...xn))
              :hints (("Goal" :in-theory (enable ,existsp)))))
-          (defthm ,integerp-of-f-equal-existsp
-            (equal (integerp (,f ,@x1...xn))
+          (defthm ,natp-of-f-equal-existsp
+            (equal (natp (,f ,@x1...xn))
                    (,existsp ,@x1...xn)))
-          (defthm ,integerp-of-f-when-existsp
+          (defthm ,natp-of-f-when-existsp
             (implies (,existsp ,@x1...xn)
-                     (integerp (,f ,@x1...xn)))
+                     (natp (,f ,@x1...xn)))
             :rule-classes :type-prescription)
           (local
            (defthm ,f-iff-existsp
@@ -239,180 +236,177 @@
             (implies (,existsp ,@x1...xn)
                      (,elementp ,@x1...xn (,f ,@x1...xn))))
           (local
-           (defthm ,lboundp-of-f-when-existsp
+           (defthm ,uboundp-of-f-when-existsp
              (implies (,existsp ,@x1...xn)
-                      (,lboundp ,@x1...xn (,f ,@x1...xn)))
+                      (,uboundp ,@x1...xn (,f ,@x1...xn)))
              :hints (("Goal" :in-theory (enable ,existsp)))))
-          (defthm ,lboundp-of-f-when-existsp
+          (defthm ,uboundp-of-f-when-existsp
             (implies (,existsp ,@x1...xn)
-                     (,lboundp ,@x1...xn (,f ,@x1...xn))))
-          (local
-           (defthm ,f-leq-when-existsp-linear
-             (implies (and (,existsp ,@x1...xn)
-                           (,elementp ,@x1...xn ,y1)
-                           (integerp ,y1))
-                      (<= (,f ,@x1...xn) ,y1))
-             :rule-classes :linear
-             :hints (("Goal"
-                      :in-theory (disable ,f)
-                      :use (,lboundp-of-f-when-existsp
-                            (:instance ,lboundp-necc (,y (,f ,@x1...xn))))))))
-          (defthm ,f-leq-when-existsp-linear
-            (implies (and (,existsp ,@x1...xn)
-                          (,elementp ,@x1...xn ,y1)
-                          (integerp ,y1))
-                     (<= (,f ,@x1...xn) ,y1))
-            :rule-classes :linear)
-          (local
-           (defthm ,f-leq-when-existsp-rewrite
-             (implies (and (,existsp ,@x1...xn)
-                           (,elementp ,@x1...xn ,y1)
-                           (integerp ,y1))
-                      (<= (,f ,@x1...xn) ,y1))
-             :hints (("Goal" :by ,f-leq-when-existsp-linear))))
-          (defthm ,f-leq-when-existsp-rewrite
-            (implies (and (,existsp ,@x1...xn)
-                          (,elementp ,@x1...xn ,y1)
-                          (integerp ,y1))
-                     (<= (,f ,@x1...xn) ,y1)))
+                     (,uboundp ,@x1...xn (,f ,@x1...xn))))
           (local
            (defthm ,f-geq-when-existsp-linear
              (implies (and (,existsp ,@x1...xn)
-                           (,lboundp ,@x1...xn ,y1)
-                           (integerp ,y1))
+                           (,elementp ,@x1...xn ,y1)
+                           (natp ,y1))
                       (>= (,f ,@x1...xn) ,y1))
              :rule-classes :linear
              :hints (("Goal"
-                      :in-theory (disable ,f)
-                      :use (:instance ,lboundp-necc
-                            (,y1 (,f ,@x1...xn)) (,y ,y1))))))
+                      :use (,uboundp-of-f-when-existsp
+                            (:instance ,uboundp-necc (,y (,f ,@x1...xn))))))))
           (defthm ,f-geq-when-existsp-linear
             (implies (and (,existsp ,@x1...xn)
-                          (,lboundp ,@x1...xn ,y1)
-                          (integerp ,y1))
+                          (,elementp ,@x1...xn ,y1)
+                          (natp ,y1))
                      (>= (,f ,@x1...xn) ,y1))
             :rule-classes :linear)
           (local
            (defthm ,f-geq-when-existsp-rewrite
              (implies (and (,existsp ,@x1...xn)
-                           (,lboundp ,@x1...xn ,y1)
-                           (integerp ,y1))
+                           (,elementp ,@x1...xn ,y1)
+                           (natp ,y1))
                       (>= (,f ,@x1...xn) ,y1))
              :hints (("Goal" :by ,f-geq-when-existsp-linear))))
           (defthm ,f-geq-when-existsp-rewrite
             (implies (and (,existsp ,@x1...xn)
-                          (,lboundp ,@x1...xn ,y1)
-                          (integerp ,y1))
+                          (,elementp ,@x1...xn ,y1)
+                          (natp ,y1))
                      (>= (,f ,@x1...xn) ,y1)))
+          (local
+           (defthm ,f-leq-when-existsp-linear
+             (implies (and (,existsp ,@x1...xn)
+                           (,uboundp ,@x1...xn ,y1)
+                           (natp ,y1))
+                      (<= (,f ,@x1...xn) ,y1))
+             :rule-classes :linear
+             :hints (("Goal"
+                      :in-theory (disable ,f)
+                      :use (:instance ,uboundp-necc
+                            (,y1 (,f ,@x1...xn)) (,y ,y1))))))
+          (defthm ,f-leq-when-existsp-linear
+            (implies (and (,existsp ,@x1...xn)
+                          (,uboundp ,@x1...xn ,y1)
+                          (natp ,y1))
+                     (<= (,f ,@x1...xn) ,y1))
+            :rule-classes :linear)
+          (local
+           (defthm ,f-leq-when-existsp-rewrite
+             (implies (and (,existsp ,@x1...xn)
+                           (,uboundp ,@x1...xn ,y1)
+                           (natp ,y1))
+                      (<= (,f ,@x1...xn) ,y1))
+             :hints (("Goal" :by ,f-leq-when-existsp-linear))))
+          (defthm ,f-leq-when-existsp-rewrite
+            (implies (and (,existsp ,@x1...xn)
+                          (,uboundp ,@x1...xn ,y1)
+                          (natp ,y1))
+                     (<= (,f ,@x1...xn) ,y1)))
           (in-theory (disable ,f))))
        (existsp-when-non-empty-and-bounded-events
         `((local
-           (defthm ,lbound-leq-member
-             (implies (and (integerp ,y0)
+           (defthm ,ubound-geq-member
+             (implies (and (natp ,y0)
                            (,elementp ,@x1...xn ,y0)
-                           (integerp ,y1)
-                           (,lboundp ,@x1...xn ,y1))
-                      (<= ,y1 ,y0))
+                           (natp ,y1)
+                           (,uboundp ,@x1...xn ,y1))
+                      (>= ,y1 ,y0))
              :rule-classes nil
-             :hints (("Goal" :use (:instance ,lboundp-necc
+             :hints (("Goal" :use (:instance ,uboundp-necc
                                    (,y ,y1) (,y1 ,y0))))))
           (local
-           (defthm ,lbound-nonmember-gt-member
-             (implies (and (integerp ,y0)
+           (defthm ,ubound-nonmember-gt-member
+             (implies (and (natp ,y0)
                            (,elementp ,@x1...xn ,y0)
-                           (integerp ,y1)
-                           (,lboundp ,@x1...xn ,y1)
+                           (natp ,y1)
+                           (,uboundp ,@x1...xn ,y1)
                            (not (,elementp ,@x1...xn ,y1)))
-                      (< ,y1 ,y0))
+                      (> ,y1 ,y0))
              :rule-classes nil
-             :hints (("Goal" :use ,lbound-leq-member))))
+             :hints (("Goal" :use ,ubound-geq-member))))
           (local
-           (defun ,find-min (,@x1...xn ,y1 ,y0)
-             (declare (xargs
-                       :measure (nfix (- ,y0 ,y1))
-                       :hints (("Goal" :use ,lbound-nonmember-gt-member))))
-             (if (and (integerp ,y0)
+           (defun ,find-max (,@x1...xn ,y1 ,y0)
+             (declare (xargs :hints (("Goal"
+                                      :use ,ubound-nonmember-gt-member))))
+             (if (and (natp ,y0)
                       (,elementp ,@x1...xn ,y0)
-                      (integerp ,y1)
-                      (,lboundp ,@x1...xn ,y1))
+                      (natp ,y1)
+                      (,uboundp ,@x1...xn ,y1))
                  (if (,elementp ,@x1...xn ,y1)
                      ,y1
-                   (,find-min ,@x1...xn (1+ ,y1) ,y0))
+                   (,find-max ,@x1...xn (1- ,y1) ,y0))
                0))) ; irrelevant
           (local
-           (defthm ,find-min-lboundp-preservation
-             (implies (and (integerp ,y0)
+           (defthm ,find-max-uboundp-preservation
+             (implies (and (natp ,y0)
                            (,elementp ,@x1...xn ,y0)
-                           (integerp ,y1)
-                           (,lboundp ,@x1...xn ,y1)
+                           (natp ,y1)
+                           (,uboundp ,@x1...xn ,y1)
                            (not (,elementp ,@x1...xn ,y1)))
-                      (,lboundp ,@x1...xn (1+ ,y1)))
+                      (,uboundp ,@x1...xn (1- ,y1)))
              :hints (("Goal"
-                      :expand ((,lboundp ,@x1...xn (1+ ,y1)))
-                      :use (:instance ,lboundp-necc
+                      :expand ((,uboundp ,@x1...xn (1- ,y1)))
+                      :use (:instance ,uboundp-necc
                             (,y ,y1)
-                            (,y1 (,lboundp-witness ,@x1...xn (1+ ,y1))))))))
+                            (,y1 (,uboundp-witness ,@x1...xn (1- ,y1))))))))
           (local
-           (defthm ,elementp-of-find-min
-             (implies (and (integerp ,y0)
+           (defthm ,elementp-of-find-max
+             (implies (and (natp ,y0)
                            (,elementp ,@x1...xn ,y0)
-                           (integerp ,y1)
-                           (,lboundp ,@x1...xn ,y1))
-                      (,elementp ,@x1...xn (,find-min ,@x1...xn ,y1 ,y0)))
-             :hints ('(:use (:instance ,lboundp-necc (,y ,y1) (,y1 0)))
-                     '(:use (:instance ,lboundp-necc (,y 0) (,y1 ,y0))))))
+                           (natp ,y1)
+                           (,uboundp ,@x1...xn ,y1))
+                      (,elementp ,@x1...xn (,find-max ,@x1...xn ,y1 ,y0)))
+             :hints ('(:use (:instance ,uboundp-necc (,y ,y1) (,y1 0)))
+                     '(:use (:instance ,uboundp-necc (,y 0) (,y1 ,y0))))))
           (local
-           (defthm ,lboundp-of-find-min
-             (implies (and (integerp ,y0)
+           (defthm ,uboundp-of-find-max
+             (implies (and (natp ,y0)
                            (,elementp ,@x1...xn ,y0)
-                           (integerp ,y1)
-                           (,lboundp ,@x1...xn ,y1))
-                      (,lboundp ,@x1...xn (,find-min ,@x1...xn ,y1 ,y0)))
-             :hints ('(:use (:instance ,lboundp-necc (,y ,y1) (,y1 0)))
-                     '(:use (:instance ,lboundp-necc (,y 0) (,y1 ,y0))))))
+                           (natp ,y1)
+                           (,uboundp ,@x1...xn ,y1))
+                      (,uboundp ,@x1...xn (,find-max ,@x1...xn ,y1 ,y0)))
+             :hints ('(:use (:instance ,uboundp-necc (,y ,y1) (,y1 0)))
+                     '(:use (:instance ,uboundp-necc (,y 0) (,y1 ,y0))))))
           (local
            (defthm ,existsp-when-nonempty-and-bounded
-             (implies (and (integerp ,y0)
+             (implies (and (natp ,y0)
                            (,elementp ,@x1...xn ,y0)
-                           (integerp ,y1)
-                           (,lboundp ,@x1...xn ,y1))
+                           (natp ,y1)
+                           (,uboundp ,@x1...xn ,y1))
                       (,existsp ,@x1...xn))
              :rule-classes nil
              :hints (("Goal" :use (:instance ,existsp-suff
-                                   (,y (,find-min ,@x1...xn ,y1 ,y0)))))))
+                                   (,y (,find-max ,@x1...xn ,y1 ,y0)))))))
           (defthm ,existsp-when-nonempty-and-bounded
-            (implies (and (integerp ,y0)
+            (implies (and (natp ,y0)
                           (,elementp ,@x1...xn ,y0)
-                          (integerp ,y1)
-                          (,lboundp ,@x1...xn ,y1))
+                          (natp ,y1)
+                          (,uboundp ,@x1...xn ,y1))
                      (,existsp ,@x1...xn))
             :rule-classes nil)))
        (equal-when-member-and-bound
         `((local
-           (defthm ,equal-when-member-and-lbound
-             (implies (and (integerp ,y)
+           (defthm ,equal-when-member-and-ubound
+             (implies (and (natp ,y)
                            (,elementp ,@x1...xn ,y)
-                           (,lboundp ,@x1...xn ,y))
+                           (,uboundp ,@x1...xn ,y))
                       (equal (,f ,@x1...xn) ,y))
              :rule-classes nil
              :hints (("Goal"
-                      :in-theory (disable ,f-leq-when-existsp-rewrite
-                                          ,f-geq-when-existsp-rewrite)
+                      :in-theory (disable ,f-geq-when-existsp-rewrite)
                       :use ((:instance ,existsp-when-nonempty-and-bounded
                              (,y0 ,y) (,y1 ,y))
-                            (:instance ,f-leq-when-existsp-rewrite (,y1 ,y))
-                            (:instance ,lboundp-necc (,y1 (,f ,@x1...xn))))))))
-          (defthm ,equal-when-member-and-lbound
-            (implies (and (integerp ,y)
+                            (:instance ,f-geq-when-existsp-rewrite (,y1 ,y))
+                            (:instance ,uboundp-necc (,y1 (,f ,@x1...xn))))))))
+          (defthm ,equal-when-member-and-ubound
+            (implies (and (natp ,y)
                           (,elementp ,@x1...xn ,y)
-                          (,lboundp ,@x1...xn ,y))
+                          (,uboundp ,@x1...xn ,y))
                      (equal (,f ,@x1...xn) ,y))
             :rule-classes nil))))
     `(encapsulate
        ()
        (set-verify-guards-eagerness 0)
        ,@elementp-events
-       ,@lboundp-events
+       ,@uboundp-events
        ,@existsp-events
        ,@f-events
        ,@existsp-when-non-empty-and-bounded-events
@@ -420,40 +414,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defmin-int-fn (f y x1...xn body guard verify-guards ctx state)
+(define defmax-nat-fn (f y x1...xn body guard verify-guards ctx state)
   :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
-  :parents (defmin-int-implementation)
+  :parents (defmax-nat-implementation)
   :short "Process the inputs and generate the event to submit."
-  (b* (((er &) (defmin-int-process-inputs
+  (b* (((er &) (defmax-nat-process-inputs
                  f y x1...xn body guard verify-guards ctx state))
-       (event (defmin-int-gen-everything
+       (event (defmax-nat-gen-everything
                 f y x1...xn body guard verify-guards)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection defmin-int-macro-definition
-  :parents (defmin-int-implementation)
-  :short "Definition of the @(tsee defmin-int) macro."
+(defsection defmax-nat-macro-definition
+  :parents (defmax-nat-implementation)
+  :short "Definition of the @(tsee defmax-nat) macro."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Submit the event generated by @(tsee defmin-int-fn).")
-   (xdoc::@def "defmin-int"))
-  (defmacro defmin-int (f
+    "Submit the event generated by @(tsee defmax-nat-fn).")
+   (xdoc::@def "defmax-nat"))
+  (defmacro defmax-nat (f
                         y
                         x1...xn
                         body
                         &key
                         (guard 't)
                         (verify-guards 't))
-    `(make-event (defmin-int-fn
+    `(make-event (defmax-nat-fn
                    ',f
                    ',y
                    ',x1...xn
                    ',body
                    ',guard
                    ',verify-guards
-                   (cons 'defmin-int ',f)
+                   (cons 'defmax-nat ',f)
                    state))))

@@ -294,7 +294,21 @@
        ((when (and (equal author cert.author)
                    (equal round cert.round)))
         (certificate-fix cert)))
-    (get-certificate-with-author+round author round (set::tail certs))))
+    (get-certificate-with-author+round author round (set::tail certs)))
+
+  ///
+
+  (defret certificate->author-of-get-certificate-with-author+round
+    (implies cert?
+             (equal (certificate->author cert?)
+                    (address-fix author)))
+    :hints (("Goal" :induct t)))
+
+  (defret certificate->round-of-get-certificate-with-author+round
+    (implies cert?
+             (equal (certificate->round cert?)
+                    (pos-fix round)))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -310,3 +324,36 @@
                      (get-certificates-with-round round (set::tail certs)))
       (get-certificates-with-round round (set::tail certs))))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-certificates-with-authors+round ((authors address-setp)
+                                             (round posp)
+                                             (certs certificate-setp))
+  :returns (certs-with-authors-and-round certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates
+          with author in a given set and with a given round."
+  (b* (((when (set::emptyp certs)) nil)
+       ((certificate cert) (set::head certs)))
+    (if (and (set::in cert.author authors)
+             (equal cert.round round))
+        (set::insert (certificate-fix cert)
+                     (get-certificates-with-authors+round authors
+                                                          round
+                                                          (set::tail certs)))
+      (get-certificates-with-authors+round authors
+                                           round
+                                           (set::tail certs))))
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled certificate-set->round-set-of-get-certificates-with-authors+round
+    (b* ((rounds (certificate-set->round-set
+                  (get-certificates-with-authors+round authors round certs))))
+      (implies (not (set::emptyp rounds))
+               (equal rounds
+                      (set::insert (pos-fix round) nil))))
+    :induct t
+    :enable certificate-set->round-set-of-insert))

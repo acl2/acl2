@@ -16,23 +16,11 @@
 (include-book "defiso")
 (include-book "defiso-doc")
 
-(include-book "defund-sk")
-(include-book "defund-sk-doc")
-
 (include-book "defmapping")
 (include-book "defmapping-doc")
 
-(include-book "defmax-nat")
-(include-book "defmax-nat-doc")
-
-(include-book "defmin-int")
-(include-book "defmin-int-doc")
-
 (include-book "defsurj")
 (include-book "defsurj-doc")
-
-(include-book "deftutorial")
-(include-book "deftutorial-doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

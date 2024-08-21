@@ -110,8 +110,7 @@
      (2) the timer is expired and
      we have a quorum of certificates in this even round.
      The leader and quorum are calculated over
-     the active committee at the current, even round.
-     That committee must be non-empty.")
+     the active committee at the current, even round.")
    (xdoc::p
     "In an odd round different from 1,
      there are four possible conditions for advancing:
@@ -135,8 +134,7 @@
        ((unless commtt) nil)
        ((when (= vstate.round 1)) t))
     (if (evenp vstate.round)
-        (b* (((unless (committee-nonemptyp commtt)) nil)
-             (leader (leader-at-round vstate.round commtt))
+        (b* ((leader (leader-at-round vstate.round commtt))
              (anchor? (get-certificate-with-author+round leader
                                                          vstate.round
                                                          vstate.dag)))
@@ -147,7 +145,6 @@
                        (committee-quorum commtt)))))
       (b* ((prev-commtt
             (active-committee-at-round (1- vstate.round) vstate.blockchain))
-           ((unless (committee-nonemptyp prev-commtt)) nil)
            (leader (leader-at-round (1- vstate.round) prev-commtt))
            (anchor? (get-certificate-with-author+round leader
                                                        (1- vstate.round)

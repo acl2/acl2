@@ -69,7 +69,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define receive-certificate-possiblep ((systate system-statep) (msg messagep))
+(define receive-certificate-possiblep ((msg messagep) (systate system-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate receipt event is possible."
   :long
@@ -101,8 +101,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define receive-certificate-next ((systate system-statep) (msg messagep))
-  :guard (receive-certificate-possiblep systate msg)
+(define receive-certificate-next ((msg messagep) (systate system-statep))
+  :guard (receive-certificate-possiblep msg systate)
   :returns (new-systate system-statep)
   :short "New system state resulting from a @('receive-certificate') event."
   :long
