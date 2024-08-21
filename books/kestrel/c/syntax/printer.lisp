@@ -1570,7 +1570,12 @@
            expr
            :ident (print-ident expr.unwrap pstate)
            :const (print-const expr.unwrap pstate)
-           :string (print-stringlit expr.unwrap pstate)
+           :string
+           (b* (((unless expr.unwrap)
+                 (raise "Misusage error: ~
+                         empty list of string literals.")
+                 (pristate-fix pstate)))
+             (print-stringlit-list expr.unwrap pstate))
            :paren
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-expr expr.unwrap (expr-priority-expr) pstate))
@@ -2608,7 +2613,11 @@
          (pstate (print-astring "_Static_assert(" pstate))
          (pstate (print-const-expr statassert.test pstate))
          (pstate (print-astring ", " pstate))
-         (pstate (print-stringlit statassert.message pstate))
+         ((unless statassert.message)
+          (raise "Misusage error: ~
+                  empty message in static assertion declaration.")
+          pstate)
+         (pstate (print-stringlit-list statassert.message pstate))
          (pstate (print-astring ");" pstate)))
       pstate)
     :measure (statassert-count statassert))

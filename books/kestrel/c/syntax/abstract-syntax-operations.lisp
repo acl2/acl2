@@ -291,7 +291,8 @@
 (defirrelevant irr-statassert
   :short "An irrelevant static assertion declaration."
   :type statassertp
-  :body (make-statassert :test (irr-const-expr) :message (irr-stringlit)))
+  :body (make-statassert :test (irr-const-expr)
+                         :message (list (irr-stringlit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

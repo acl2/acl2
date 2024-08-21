@@ -5676,6 +5676,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-*-stringlit ((pstate parstatep))
+  :returns (mv erp
+               (strings stringlit-listp)
+               (span spanp)
+               (new-pstate parstatep))
+  :short "Parse a list of zero or more string literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, we parse a @('*stringlit'), in ABNF notation.")
+   (xdoc::p
+    "If there are no string literals, we return an irrelevant span.
+     When combining the span of the first string literal (if present)
+     with the span of the remaining zero or more string literals,
+     we join spans only if the remaining ones are one or more;
+     if there are zero, the span of the first string literal
+     is also the span of the whole sequence."))
+  (b* (((reterr) nil (irr-span) (irr-parstate))
+       ((erp token span pstate) (read-token pstate))
+       ((unless (and token (token-case token :string)))
+        (b* ((pstate (if token (unread-token pstate) pstate)))
+          (retok nil (irr-span) pstate)))
+       ;; stringlit
+       (string (token-string->unwrap token))
+       ((erp strings last-span pstate) (parse-*-stringlit pstate)))
+    ;; stringlit stringlits
+    (retok (cons string strings)
+           (if strings (span-join span last-span) span)
+           pstate))
+  :measure (parsize pstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret parsize-of-parse-*-stringlit-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parse-type-qualifier-list ((pstate parstatep))
   :returns (mv erp (tyquals type-qual-listp) (span spanp) (new-pstate parstatep))
   :parents (parser parse-exprs/decls)
@@ -7490,8 +7533,12 @@
         (retok (expr-ident (token-ident->unwrap token)) span pstate))
        ((and token (token-case token :const)) ; constant
         (retok (expr-const (token-const->unwrap token)) span pstate))
-       ((and token (token-case token :string)) ; string literal
-        (retok (expr-string (token-string->unwrap token)) span pstate))
+       ((and token (token-case token :string)) ; stringlit
+        (b* (((erp strings last-span pstate) ; stringlit stringlits
+              (parse-*-stringlit pstate)))
+          (retok (expr-string (cons (token-string->unwrap token) strings))
+                 (if strings (span-join span last-span) span)
+                 pstate)))
        ((equal token (token-punctuator "(")) ; (
         (b* (((erp expr & pstate) ; ( expr
               (parse-expression pstate))
@@ -7721,9 +7768,10 @@
          ((erp cexpr & pstate) (parse-constant-expression pstate))
          ((erp & pstate) (read-punctuator "," pstate))
          ((erp stringlit & pstate) (read-stringlit pstate))
+         ((erp stringlits & pstate) (parse-*-stringlit pstate))
          ((erp & pstate) (read-punctuator ")" pstate))
          ((erp last-span pstate) (read-punctuator ";" pstate)))
-      (retok (make-statassert :test cexpr :message stringlit)
+      (retok (make-statassert :test cexpr :message (cons stringlit stringlits))
              (span-join first-span last-span)
              pstate))
     :measure (two-nats-measure (parsize pstate) 0))
@@ -11633,49 +11681,6 @@
   (verify-guards parse-expression
     :hints (("Goal" :in-theory (e/d (acl2::member-of-cons)
                                     ((:e tau-system))))))) ; for speed
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-*-stringlit ((pstate parstatep))
-  :returns (mv erp
-               (strings stringlit-listp)
-               (span spanp)
-               (new-pstate parstatep))
-  :short "Parse a list of zero or more string literals."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, we parse a @('*stringlit'), in ABNF notation.")
-   (xdoc::p
-    "If there are no string literals, we return an irrelevant span.
-     When combining the span of the first string literal (if present)
-     with the span of the remaining zero or more string literals,
-     we join spans only if the remaining ones are one or more;
-     if there are zero, the span of the first string literal
-     is also the span of the whole sequence."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
-       ((erp token span pstate) (read-token pstate))
-       ((unless (and token (token-case token :string)))
-        (b* ((pstate (if token (unread-token pstate) pstate)))
-          (retok nil (irr-span) pstate)))
-       ;; stringlit
-       (string (token-string->unwrap token))
-       ((erp strings last-span pstate) (parse-*-stringlit pstate)))
-    ;; stringlit stringlits
-    (retok (cons string strings)
-           (if strings (span-join span last-span) span)
-           pstate))
-  :measure (parsize pstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns
-
-  ///
-
-  (defret parsize-of-parse-*-stringlit-uncond
-    (<= (parsize new-pstate)
-        (parsize pstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

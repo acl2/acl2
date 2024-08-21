@@ -1213,6 +1213,12 @@
        and defer a possible re-classification to enumeration constant
        during a post-parsing static semantic analysis.")
      (xdoc::p
+      "Instead of a single string literal, we allow a list of them,
+       which should be non-empty, although we do not capture this constraint.
+       This mirrors the ABNF grammar;
+       we preserve the information about adjacent string literals,
+       as opposed to concatenating them into one.")
+     (xdoc::p
       "The @(':sizeof') case of this fixtype
        captures @('sizeof') applied to a type name.
        The @('sizeof') applied to an expression is instead captured
@@ -1390,7 +1396,7 @@
        possibly ambiguous cast expressions."))
     (:ident ((unwrap ident)))
     (:const ((unwrap const)))
-    (:string ((unwrap stringlit)))
+    (:string ((unwrap stringlit-list)))
     (:paren ((unwrap expr)))
     (:gensel ((control expr)
               (assocs genassoc-list)))
@@ -2202,9 +2208,14 @@
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>static_assert-declaration</i>
-       in the grammar in [C]."))
+       in the grammar in [C].")
+     (xdoc::p
+      "We use a list of string literals,
+       which should be non-empty, but we do not capture this constraint.
+       This mirrors the ABNF grammar:
+       this way, we preserve the information about adjacent string literals."))
     ((test const-expr)
-     (message stringlit))
+     (message stringlit-list))
     :pred statassertp
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -2484,7 +2495,11 @@
      Note that this is not the only kind of assembler construct
      in GCC extensions; there are others.
      So we use the term `assembler name specifier' for this construct,
-     since it specifies the assembler name (of an identifier)."))
+     since it specifies the assembler name (of an identifier).")
+   (xdoc::p
+    "We use a list of string literals,
+     which should be non-empty, although we do not capture this constraint.
+     This way, we preserve the information about adjacent string literals."))
   ((strings stringlit-list)
    (uscores bool))
   :pred asm-name-specp)
