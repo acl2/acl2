@@ -18,6 +18,7 @@
 (include-book "../operations/numeric-range-retrieval")
 (include-book "../operations/character-value-retrieval")
 
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/fty/symbol-pseudoeventform-alist" :dir :system)
 (include-book "kestrel/std/system/constant-namep" :dir :system)
 (include-book "kestrel/std/system/constant-value" :dir :system)
@@ -405,7 +406,7 @@
   :returns (info? deftreeops-table-value-optionp)
   :short "Look up a @(tsee deftreeops) in the table."
   (b* ((info?
-        (cdr (assoc-equal grammar (table-alist+ 'deftreeops-table wrld)))))
+        (cdr (assoc-eq grammar (table-alist+ 'deftreeops-table wrld)))))
     (and (deftreeops-table-valuep info?)
          info?)))
 
@@ -2545,3 +2546,70 @@
   :short "Definition of @(tsee deftreeops)."
   (defmacro deftreeops (&whole call &rest args)
     `(make-event (deftreeops-fn ',args ',call 'deftreeops state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection deftreeops-show-info
+  :parents (deftreeops)
+  :short "Show the information from the @(tsee deftreeops) table
+          associated to a given grammar constant name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no information in the table
+     for the given grammar constant name,
+     we print a message saying so.")
+   (xdoc::@def "deftreeops-show-info"))
+
+  (define deftreeops-show-info-fn ((grammar acl2::symbolp)
+                                   (wrld plist-worldp))
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* ((info (deftreeops-table-lookup grammar wrld))
+         ((unless info)
+          (cw "~%No entry in DEFTREEOPS table for grammar ~x0.~%" grammar)
+          '(value-triple :invisible))
+         (- (cw "~%~x0.~%" info)))
+      '(value-triple :invisible)))
+
+  (defmacro deftreeops-show-info (grammar)
+    (declare (xargs :guard (acl2::symbolp grammar)))
+    `(make-event-terse (deftreeops-show-info-fn ',grammar (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection deftreeops-show-event
+  :parents (deftreeops)
+  :short "Show the event with a given name from the @(tsee deftreeops) table
+          associated to a given grammar constant name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no information in the table
+     for the given grammar constant name,
+     or if there is no event with the given name,
+     we print a message saying so.")
+   (xdoc::@def "deftreeops-show-event"))
+
+  (define deftreeops-show-event-fn ((grammar acl2::symbolp)
+                                    (name acl2::symbolp)
+                                    (wrld plist-worldp))
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* ((info (deftreeops-table-lookup grammar wrld))
+         ((unless info)
+          (cw "~%No entry in DEFTREEOPS table for grammar ~x0.~%" grammar)
+          '(value-triple :invisible))
+         (event-alist (deftreeops-table-value->event-alist info))
+         (name+event (assoc-eq name event-alist))
+         ((unless name+event)
+          (cw "~%No event with name ~x0 ~
+               in DEFTREEOPS table entry for grammar ~x1.~%"
+              name grammar)
+          '(value-triple :invisible))
+         (- (cw "~%~x0~%" (cdr name+event))))
+      '(value-triple :invisible)))
+
+  (defmacro deftreeops-show-event (grammar name)
+    (declare (xargs :guard (and (acl2::symbolp grammar) (acl2::symbolp name))))
+    `(make-event-terse (deftreeops-show-event-fn ',grammar ',name (w state)))))
