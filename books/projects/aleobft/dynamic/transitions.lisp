@@ -98,4 +98,5 @@
    :advance-round (advance-round-next event.validator systate)
    :commit-anchors (commit-anchors-next event.validator systate)
    :timer-expires (timer-expires-next event.validator systate))
-  :guard-hints (("Goal" :in-theory (enable event-possiblep))))
+  :guard-hints (("Goal" :in-theory (enable event-possiblep)))
+  :hooks (:fix))
