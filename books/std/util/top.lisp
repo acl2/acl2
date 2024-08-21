@@ -64,6 +64,8 @@
 (include-book "deftutorial-doc")
 (include-book "defmax-nat")
 (include-book "defmax-nat-doc")
+(include-book "defmin-int")
+(include-book "defmin-int-doc")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)

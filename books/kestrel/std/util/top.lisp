@@ -19,9 +19,6 @@
 (include-book "defmapping")
 (include-book "defmapping-doc")
 
-(include-book "defmin-int")
-(include-book "defmin-int-doc")
-
 (include-book "defsurj")
 (include-book "defsurj-doc")
 
