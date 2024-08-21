@@ -75,9 +75,7 @@
      and are preserved by every transition.
      There are also some transition invariants,
      i.e. predicates that hold of
-     each pair of old and new states linked by a transition.")
-   (xdoc::p
-    "The formulation and proof of correctness are work in progress."))
+     each pair of old and new states linked by a transition."))
   :order-subtopics (operations-additional
                     properties-certificate-retrieval
                     properties-dags
