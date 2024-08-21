@@ -252,6 +252,50 @@
        :punctuator (msg "the punctuator ~x0" token.unwrap))
     "end of file"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define token-keywordp ((token token-optionp) (keyword stringp))
+  :returns (yes/no booleanp)
+  :short "Check if a token is a given keyword."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This operates on an optional token,
+     since we normally call this function on an optional token."))
+  (and token
+       (token-case token :keyword)
+       (equal (token-keyword->unwrap token)
+              keyword))
+
+  ///
+
+  (defrule non-nil-when-token-keywordp
+    (implies (token-keywordp token keyword)
+             token)
+    :rule-classes :forward-chaining))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define token-punctuatorp ((token token-optionp) (punctuator stringp))
+  :returns (yes/no booleanp)
+  :short "Check if a token is a given punctuator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This operates on an optional token,
+     since we normally call this function on an optional token."))
+  (and token
+       (token-case token :punctuator)
+       (equal (token-punctuator->unwrap token)
+              punctuator))
+
+  ///
+
+  (defrule non-nil-when-token-punctuatorp
+    (implies (token-punctuatorp token punctuator)
+             token)
+    :rule-classes :forward-chaining))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum lexeme
@@ -4562,7 +4606,7 @@
      ensuring it exists and it is that punctuator."))
   (b* (((reterr) (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate))
-       ((unless (equal token (token-punctuator punct))) ; implies non-nil
+       ((unless (token-punctuatorp token punct)) ; implies non-nil
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected (msg "the punctuator ~x0" punct)
                     :found (token-to-msg token))))
@@ -4595,7 +4639,7 @@
      ensuring it exists and it is that keyword."))
   (b* (((reterr) (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate))
-       ((unless (equal token (token-keyword keywd))) ; implies non-nil
+       ((unless (token-keywordp token keywd)) ; implies non-nil
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected (msg "the keyword \"~s0\"" keywd)
                     :found (token-to-msg token))))
@@ -4786,17 +4830,17 @@
 (define token-assignment-operator-p ((token? token-optionp))
   :returns (yes/no booleanp)
   :short "Check if an optional token is an assignment operator."
-  (or (equal token? (token-punctuator "="))
-      (equal token? (token-punctuator "*="))
-      (equal token? (token-punctuator "/="))
-      (equal token? (token-punctuator "%="))
-      (equal token? (token-punctuator "+="))
-      (equal token? (token-punctuator "-="))
-      (equal token? (token-punctuator "<<="))
-      (equal token? (token-punctuator ">>="))
-      (equal token? (token-punctuator "&="))
-      (equal token? (token-punctuator "^="))
-      (equal token? (token-punctuator "|=")))
+  (or (token-punctuatorp token? "=")
+      (token-punctuatorp token? "*=")
+      (token-punctuatorp token? "/=")
+      (token-punctuatorp token? "%=")
+      (token-punctuatorp token? "+=")
+      (token-punctuatorp token? "-=")
+      (token-punctuatorp token? "<<=")
+      (token-punctuatorp token? ">>=")
+      (token-punctuatorp token? "&=")
+      (token-punctuatorp token? "^=")
+      (token-punctuatorp token? "|="))
   ///
 
   (defrule non-nil-when-token-assignment-operator-p
@@ -4811,17 +4855,17 @@
   :returns (op binopp)
   :short "Map a token that is an assignment operator
           to the corresponding assignment operator."
-  (cond ((equal token (token-punctuator "=")) (binop-asg))
-        ((equal token (token-punctuator "*=")) (binop-asg-mul))
-        ((equal token (token-punctuator "/=")) (binop-asg-div))
-        ((equal token (token-punctuator "%=")) (binop-asg-rem))
-        ((equal token (token-punctuator "+=")) (binop-asg-add))
-        ((equal token (token-punctuator "-=")) (binop-asg-sub))
-        ((equal token (token-punctuator "<<=")) (binop-asg-shl))
-        ((equal token (token-punctuator ">>=")) (binop-asg-shr))
-        ((equal token (token-punctuator "&=")) (binop-asg-and))
-        ((equal token (token-punctuator "^=")) (binop-asg-xor))
-        ((equal token (token-punctuator "|=")) (binop-asg-ior))
+  (cond ((token-punctuatorp token "=") (binop-asg))
+        ((token-punctuatorp token "*=") (binop-asg-mul))
+        ((token-punctuatorp token "/=") (binop-asg-div))
+        ((token-punctuatorp token "%=") (binop-asg-rem))
+        ((token-punctuatorp token "+=") (binop-asg-add))
+        ((token-punctuatorp token "-=") (binop-asg-sub))
+        ((token-punctuatorp token "<<=") (binop-asg-shl))
+        ((token-punctuatorp token ">>=") (binop-asg-shr))
+        ((token-punctuatorp token "&=") (binop-asg-and))
+        ((token-punctuatorp token "^=") (binop-asg-xor))
+        ((token-punctuatorp token "|=") (binop-asg-ior))
         (t (prog2$ (impossible) (irr-binop))))
   :guard-hints (("Goal" :in-theory (enable token-assignment-operator-p))))
 
@@ -4830,8 +4874,8 @@
 (define token-equality-operator-p ((token? token-optionp))
   :returns (yes/no booleanp)
   :short "Check if an optional token is an equality operator."
-  (or (equal token? (token-punctuator "=="))
-      (equal token? (token-punctuator "!=")))
+  (or (token-punctuatorp token? "==")
+      (token-punctuatorp token? "!="))
   ///
 
   (defrule non-nil-when-token-equality-operator-p
@@ -4846,8 +4890,8 @@
   :returns (op binopp)
   :short "Map a token that is an equality operator
           to the corresponding equality operator."
-  (cond ((equal token (token-punctuator "==")) (binop-eq))
-        ((equal token (token-punctuator "!=")) (binop-ne))
+  (cond ((token-punctuatorp token "==") (binop-eq))
+        ((token-punctuatorp token "!=") (binop-ne))
         (t (prog2$ (impossible) (irr-binop))))
   :prepwork ((local (in-theory (enable token-equality-operator-p)))))
 
@@ -4856,10 +4900,10 @@
 (define token-relational-operator-p ((token? token-optionp))
   :returns (yes/no booleanp)
   :short "Check if an optional token is a relational operator."
-  (or (equal token? (token-punctuator "<"))
-      (equal token? (token-punctuator ">"))
-      (equal token? (token-punctuator "<="))
-      (equal token? (token-punctuator ">=")))
+  (or (token-punctuatorp token? "<")
+      (token-punctuatorp token? ">")
+      (token-punctuatorp token? "<=")
+      (token-punctuatorp token? ">="))
   ///
 
   (defrule non-nil-when-token-relational-operator-p
@@ -4874,10 +4918,10 @@
   :returns (op binopp)
   :short "Map a token that is a relational operator
           to the corresponding relational operator."
-  (cond ((equal token (token-punctuator "<")) (binop-lt))
-        ((equal token (token-punctuator ">")) (binop-gt))
-        ((equal token (token-punctuator "<=")) (binop-le))
-        ((equal token (token-punctuator ">=")) (binop-ge))
+  (cond ((token-punctuatorp token "<") (binop-lt))
+        ((token-punctuatorp token ">") (binop-gt))
+        ((token-punctuatorp token "<=") (binop-le))
+        ((token-punctuatorp token ">=") (binop-ge))
         (t (prog2$ (impossible) (irr-binop))))
   :prepwork ((local (in-theory (enable token-relational-operator-p)))))
 
@@ -4886,8 +4930,8 @@
 (define token-shift-operator-p ((token? token-optionp))
   :returns (yes/no booleanp)
   :short "Check if an optional token is a shift operator."
-  (or (equal token? (token-punctuator "<<"))
-      (equal token? (token-punctuator ">>")))
+  (or (token-punctuatorp token? "<<")
+      (token-punctuatorp token? ">>"))
   ///
 
   (defrule non-nil-when-token-shift-operator-p
@@ -4902,8 +4946,8 @@
   :returns (op binopp)
   :short "Map a token that is a shift operator
           to the corresponding shift operator."
-  (cond ((equal token (token-punctuator "<<")) (binop-shl))
-        ((equal token (token-punctuator ">>")) (binop-shr))
+  (cond ((token-punctuatorp token "<<") (binop-shl))
+        ((token-punctuatorp token ">>") (binop-shr))
         (t (prog2$ (impossible) (irr-binop))))
   :prepwork ((local (in-theory (enable token-shift-operator-p)))))
 
@@ -4912,8 +4956,8 @@
 (define token-additive-operator-p ((token? token-optionp))
   :returns (yes/no booleanp)
   :short "Check if an optional token is an additive operator."
-  (or (equal token? (token-punctuator "+"))
-      (equal token? (token-punctuator "-")))
+  (or (token-punctuatorp token? "+")
+      (token-punctuatorp token? "-"))
   ///
 
   (defrule non-nil-when-token-additive-operator-p
@@ -4928,8 +4972,8 @@
   :returns (op binopp)
   :short "Map a token that is an additive operator
           to the corresponding additive operator."
-  (cond ((equal token (token-punctuator "+")) (binop-add))
-        ((equal token (token-punctuator "-")) (binop-sub))
+  (cond ((token-punctuatorp token "+") (binop-add))
+        ((token-punctuatorp token "-") (binop-sub))
         (t (prog2$ (impossible) (irr-binop))))
   :prepwork ((local (in-theory (enable token-additive-operator-p)))))
 
@@ -4951,12 +4995,12 @@
      At some point in those functions, based on a parsed additive operator,
      we need to construct two different kinds of
      syntactically ambiguous cast expressions in our abstract syntax."))
-  (cond ((equal plus/minus (token-punctuator "+"))
+  (cond ((token-punctuatorp plus/minus "+")
          (make-expr-cast/add-ambig
           :type/arg1 expr/tyname
           :inc/dec incdec
           :arg/arg2 expr))
-        ((equal plus/minus (token-punctuator "-"))
+        ((token-punctuatorp plus/minus "-")
          (make-expr-cast/sub-ambig
           :type/arg1 expr/tyname
           :inc/dec incdec
@@ -4969,9 +5013,9 @@
 (define token-multiplicative-operator-p ((token? token-optionp))
   :returns (yes/no booleanp)
   :short "Check if an optional token is a multiplicative operator."
-  (or (equal token? (token-punctuator "*"))
-      (equal token? (token-punctuator "/"))
-      (equal token? (token-punctuator "%")))
+  (or (token-punctuatorp token? "*")
+      (token-punctuatorp token? "/")
+      (token-punctuatorp token? "%"))
   ///
 
   (defrule non-nil-when-token-multiplicative-operator-p
@@ -4986,9 +5030,9 @@
   :returns (op binopp)
   :short "Map a token that is a multiplicative operator
           to the corresponding additive operator."
-  (cond ((equal token (token-punctuator "*")) (binop-mul))
-        ((equal token (token-punctuator "/")) (binop-div))
-        ((equal token (token-punctuator "%")) (binop-rem))
+  (cond ((token-punctuatorp token "*") (binop-mul))
+        ((token-punctuatorp token "/") (binop-div))
+        ((token-punctuatorp token "%") (binop-rem))
         (t (prog2$ (impossible) (irr-binop))))
   :prepwork ((local (in-theory (enable token-multiplicative-operator-p)))))
 
@@ -4998,8 +5042,8 @@
   :returns (yes/no booleanp)
   :short "Check if an optional token is
           a preincrement or predecrement operator."
-  (or (equal token? (token-punctuator "++"))
-      (equal token? (token-punctuator "--")))
+  (or (token-punctuatorp token? "++")
+      (token-punctuatorp token? "--"))
   ///
 
   (defrule non-nil-when-token-preinc/predec-operator-p
@@ -5014,8 +5058,8 @@
   :returns (op unopp)
   :short "Map a token that is a preincrement or predecrement operator
           to the corresponding preincrement or predecrement operator."
-  (cond ((equal token (token-punctuator "++")) (unop-preinc))
-        ((equal token (token-punctuator "--")) (unop-predec))
+  (cond ((token-punctuatorp token "++") (unop-preinc))
+        ((token-punctuatorp token "--") (unop-predec))
         (t (prog2$ (impossible) (irr-unop))))
   :prepwork ((local (in-theory (enable token-preinc/predec-operator-p)))))
 
@@ -5029,12 +5073,12 @@
    (xdoc::p
     "By this we mean a unary operator according to the grammar,
      not our abstract syntax, which has a broader notion of unary operator."))
-  (or (equal token? (token-punctuator "&"))
-      (equal token? (token-punctuator "*"))
-      (equal token? (token-punctuator "+"))
-      (equal token? (token-punctuator "-"))
-      (equal token? (token-punctuator "~"))
-      (equal token? (token-punctuator "!")))
+  (or (token-punctuatorp token? "&")
+      (token-punctuatorp token? "*")
+      (token-punctuatorp token? "+")
+      (token-punctuatorp token? "-")
+      (token-punctuatorp token? "~")
+      (token-punctuatorp token? "!"))
   ///
 
   (defrule non-nil-when-token-unary-operator-p
@@ -5054,12 +5098,12 @@
    (xdoc::p
     "By this we mean a unary operator according to the grammar,
      not our abstract syntax, which has a broader notion of unary operator."))
-  (cond ((equal token (token-punctuator "&")) (unop-address))
-        ((equal token (token-punctuator "*")) (unop-indir))
-        ((equal token (token-punctuator "+")) (unop-plus))
-        ((equal token (token-punctuator "-")) (unop-minus))
-        ((equal token (token-punctuator "~")) (unop-bitnot))
-        ((equal token (token-punctuator "!")) (unop-lognot))
+  (cond ((token-punctuatorp token "&") (unop-address))
+        ((token-punctuatorp token "*") (unop-indir))
+        ((token-punctuatorp token "+") (unop-plus))
+        ((token-punctuatorp token "-") (unop-minus))
+        ((token-punctuatorp token "~") (unop-bitnot))
+        ((token-punctuatorp token "!") (unop-lognot))
         (t (prog2$ (impossible) (irr-unop))))
   :prepwork ((local (in-theory (enable token-unary-operator-p)))))
 
@@ -5081,8 +5125,8 @@
        (or (token-case token? :ident)
            (token-case token? :const)
            (token-case token? :string)
-           (equal token? (token-punctuator "("))
-           (equal token? (token-keyword "_Generic"))))
+           (token-punctuatorp token? "(")
+           (token-keywordp token? "_Generic")))
   ///
 
   (defrule non-nil-when-token-primary-expression-start-p
@@ -5119,17 +5163,17 @@
      because in that case both @('__alignof__')
      would be an identifier token, not a keyword token."))
   (or (token-primary-expression-start-p token?)
-      (equal token? (token-punctuator "++"))
-      (equal token? (token-punctuator "--"))
-      (equal token? (token-punctuator "&"))
-      (equal token? (token-punctuator "*"))
-      (equal token? (token-punctuator "+"))
-      (equal token? (token-punctuator "-"))
-      (equal token? (token-punctuator "~"))
-      (equal token? (token-punctuator "!"))
-      (equal token? (token-keyword "sizeof"))
-      (equal token? (token-keyword "_Alignof"))
-      (equal token? (token-keyword "__alignof__")))
+      (token-punctuatorp token? "++")
+      (token-punctuatorp token? "--")
+      (token-punctuatorp token? "&")
+      (token-punctuatorp token? "*")
+      (token-punctuatorp token? "+")
+      (token-punctuatorp token? "-")
+      (token-punctuatorp token? "~")
+      (token-punctuatorp token? "!")
+      (token-keywordp token? "sizeof")
+      (token-keywordp token? "_Alignof")
+      (token-keywordp token? "__alignof__"))
   ///
 
   (defrule non-nil-when-token-unary-expression-start-p
@@ -5190,12 +5234,12 @@
      and continue with a sequence of the constructs listed above.
      This predicate recognizes the tokens that may start
      one of these constructs, after the primary expression."))
-  (or (equal token? (token-punctuator "["))
-      (equal token? (token-punctuator "("))
-      (equal token? (token-punctuator "."))
-      (equal token? (token-punctuator "->"))
-      (equal token? (token-punctuator "++"))
-      (equal token? (token-punctuator "--")))
+  (or (token-punctuatorp token? "[")
+      (token-punctuatorp token? "(")
+      (token-punctuatorp token? ".")
+      (token-punctuatorp token? "->")
+      (token-punctuatorp token? "++")
+      (token-punctuatorp token? "--"))
   ///
 
   (defrule non-nil-when-token-postfix-expression-rest-start-p
@@ -5212,12 +5256,12 @@
   (xdoc::topstring
    (xdoc::p
     "All storage class specifiers consist of single keywords."))
-  (or (equal token? (token-keyword "typedef"))
-      (equal token? (token-keyword "extern"))
-      (equal token? (token-keyword "static"))
-      (equal token? (token-keyword "_Thread_local"))
-      (equal token? (token-keyword "auto"))
-      (equal token? (token-keyword "register")))
+  (or (token-keywordp token? "typedef")
+      (token-keywordp token? "extern")
+      (token-keywordp token? "static")
+      (token-keywordp token? "_Thread_local")
+      (token-keywordp token? "auto")
+      (token-keywordp token? "register"))
   ///
 
   (defrule non-nil-when-token-storage-class-specifier-p
@@ -5232,12 +5276,12 @@
   :returns (stor-spec stor-specp)
   :short "Map a token that is a storage class specifier
           to the correspoding storage class specifier."
-  (cond ((equal token (token-keyword "typedef")) (stor-spec-typedef))
-        ((equal token (token-keyword "extern")) (stor-spec-extern))
-        ((equal token (token-keyword "static")) (stor-spec-static))
-        ((equal token (token-keyword "_Thread_local")) (stor-spec-threadloc))
-        ((equal token (token-keyword "auto")) (stor-spec-auto))
-        ((equal token (token-keyword "register")) (stor-spec-register))
+  (cond ((token-keywordp token "typedef") (stor-spec-typedef))
+        ((token-keywordp token "extern") (stor-spec-extern))
+        ((token-keywordp token "static") (stor-spec-static))
+        ((token-keywordp token "_Thread_local") (stor-spec-threadloc))
+        ((token-keywordp token "auto") (stor-spec-auto))
+        ((token-keywordp token "register") (stor-spec-register))
         (t (prog2$ (impossible) (irr-stor-spec))))
   :prepwork ((local (in-theory (enable token-storage-class-specifier-p)))))
 
@@ -5251,17 +5295,17 @@
   (xdoc::topstring
    (xdoc::p
     "There are a number of type specifiers that consist of single keywords."))
-  (or (equal token? (token-keyword "void"))
-      (equal token? (token-keyword "char"))
-      (equal token? (token-keyword "short"))
-      (equal token? (token-keyword "int"))
-      (equal token? (token-keyword "long"))
-      (equal token? (token-keyword "float"))
-      (equal token? (token-keyword "double"))
-      (equal token? (token-keyword "signed"))
-      (equal token? (token-keyword "unsigned"))
-      (equal token? (token-keyword "_Bool"))
-      (equal token? (token-keyword "_Complex")))
+  (or (token-keywordp token? "void")
+      (token-keywordp token? "char")
+      (token-keywordp token? "short")
+      (token-keywordp token? "int")
+      (token-keywordp token? "long")
+      (token-keywordp token? "float")
+      (token-keywordp token? "double")
+      (token-keywordp token? "signed")
+      (token-keywordp token? "unsigned")
+      (token-keywordp token? "_Bool")
+      (token-keywordp token? "_Complex"))
   ///
 
   (defrule non-nil-when-token-type-specifier-keyword-p
@@ -5276,17 +5320,17 @@
   :returns (tyspec type-specp)
   :short "Map a token that is a type specifier consisting of a single keyword
           to the corresponding type specifier."
-  (cond ((equal token (token-keyword "void")) (type-spec-void))
-        ((equal token (token-keyword "char")) (type-spec-char))
-        ((equal token (token-keyword "short")) (type-spec-short))
-        ((equal token (token-keyword "int")) (type-spec-int))
-        ((equal token (token-keyword "long")) (type-spec-long))
-        ((equal token (token-keyword "float")) (type-spec-float))
-        ((equal token (token-keyword "double")) (type-spec-double))
-        ((equal token (token-keyword "signed")) (type-spec-signed))
-        ((equal token (token-keyword "unsigned")) (type-spec-unsigned))
-        ((equal token (token-keyword "_Bool")) (type-spec-bool))
-        ((equal token (token-keyword "_Complex")) (type-spec-complex))
+  (cond ((token-keywordp token "void") (type-spec-void))
+        ((token-keywordp token "char") (type-spec-char))
+        ((token-keywordp token "short") (type-spec-short))
+        ((token-keywordp token "int") (type-spec-int))
+        ((token-keywordp token "long") (type-spec-long))
+        ((token-keywordp token "float") (type-spec-float))
+        ((token-keywordp token "double") (type-spec-double))
+        ((token-keywordp token "signed") (type-spec-signed))
+        ((token-keywordp token "unsigned") (type-spec-unsigned))
+        ((token-keywordp token "_Bool") (type-spec-bool))
+        ((token-keywordp token "_Complex") (type-spec-complex))
         (t (prog2$ (impossible) (irr-type-spec))))
   :prepwork ((local (in-theory (enable token-type-specifier-keyword-p)))))
 
@@ -5302,10 +5346,10 @@
      a type specifier may start with certain keywords,
      or it could be an identifier."))
   (or (token-type-specifier-keyword-p token?)
-      (equal token? (token-keyword "_Atomic"))
-      (equal token? (token-keyword "struct"))
-      (equal token? (token-keyword "union"))
-      (equal token? (token-keyword "enum"))
+      (token-keywordp token? "_Atomic")
+      (token-keywordp token? "struct")
+      (token-keywordp token? "union")
+      (token-keywordp token? "enum")
       (and token? (token-case token? :ident)))
   ///
 
@@ -5332,12 +5376,12 @@
      will always fail if GCC extensions are not supported,
      because in that case both @('__restrict') and @('__restrict__')
      would be identifier tokens, not keyword tokens."))
-  (or (equal token? (token-keyword "const"))
-      (equal token? (token-keyword "restrict"))
-      (equal token? (token-keyword "volatile"))
-      (equal token? (token-keyword "_Atomic"))
-      (equal token? (token-keyword "__restrict"))
-      (equal token? (token-keyword "__restrict__")))
+  (or (token-keywordp token? "const")
+      (token-keywordp token? "restrict")
+      (token-keywordp token? "volatile")
+      (token-keywordp token? "_Atomic")
+      (token-keywordp token? "__restrict")
+      (token-keywordp token? "__restrict__"))
   ///
 
   (defrule non-nil-when-token-type-qualifier-p
@@ -5352,12 +5396,12 @@
   :returns (tyqual type-qualp)
   :short "Map a token that is a type qualifier
           to the correspoding type qualifier."
-  (cond ((equal token (token-keyword "const")) (type-qual-const))
-        ((equal token (token-keyword "restrict")) (type-qual-restrict))
-        ((equal token (token-keyword "volatile")) (type-qual-volatile))
-        ((equal token (token-keyword "_Atomic")) (type-qual-atomic))
-        ((equal token (token-keyword "__restrict")) (type-qual-__restrict))
-        ((equal token (token-keyword "__restrict__")) (type-qual-__restrict__))
+  (cond ((token-keywordp token "const") (type-qual-const))
+        ((token-keywordp token "restrict") (type-qual-restrict))
+        ((token-keywordp token "volatile") (type-qual-volatile))
+        ((token-keywordp token "_Atomic") (type-qual-atomic))
+        ((token-keywordp token "__restrict") (type-qual-__restrict))
+        ((token-keywordp token "__restrict__") (type-qual-__restrict__))
         (t (prog2$ (impossible) (irr-type-qual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 
@@ -5382,8 +5426,8 @@
      This is a keyword only if GCC extensions are supported."))
   (or (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
-      (equal token? (token-keyword "_Alignas"))
-      (equal token? (token-keyword "__attribute__")))
+      (token-keywordp token? "_Alignas")
+      (token-keywordp token? "__attribute__"))
   ///
 
   (defrule non-nil-when-token-specifier/qualifier-start-p
@@ -5409,10 +5453,10 @@
      will always fail if GCC extensions are not supported,
      because in that case both @('__inline') and @('__inline__')
      would be identifier tokens, not keyword tokens."))
-  (or (equal token? (token-keyword "inline"))
-      (equal token? (token-keyword "_Noreturn"))
-      (equal token? (token-keyword "__inline"))
-      (equal token? (token-keyword "__inline__")))
+  (or (token-keywordp token? "inline")
+      (token-keywordp token? "_Noreturn")
+      (token-keywordp token? "__inline")
+      (token-keywordp token? "__inline__"))
   ///
 
   (defrule non-nil-when-token-function-specifier-p
@@ -5427,10 +5471,10 @@
   :returns (funspec fun-specp)
   :short "Map a token that is a function specifier
           to the corresponding function specifier."
-  (cond ((equal token (token-keyword "inline")) (fun-spec-inline))
-        ((equal token (token-keyword "_Noreturn")) (fun-spec-noreturn))
-        ((equal token (token-keyword "__inline")) (fun-spec-__inline))
-        ((equal token (token-keyword "__inline__")) (fun-spec-__inline__))
+  (cond ((token-keywordp token "inline") (fun-spec-inline))
+        ((token-keywordp token "_Noreturn") (fun-spec-noreturn))
+        ((token-keywordp token "__inline") (fun-spec-__inline))
+        ((token-keywordp token "__inline__") (fun-spec-__inline__))
         (t (prog2$ (impossible) (irr-fun-spec))))
   :prepwork ((local (in-theory (enable token-function-specifier-p)))))
 
@@ -5450,8 +5494,8 @@
       (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
       (token-function-specifier-p token?)
-      (equal token? (token-keyword "_Alignas"))
-      (equal token? (token-keyword "__attribute__")))
+      (token-keywordp token? "_Alignas")
+      (token-keywordp token? "__attribute__"))
   ///
 
   (defrule non-nil-when-token-declaration-specifier-start-p
@@ -5486,8 +5530,8 @@
   (xdoc::topstring
    (xdoc::p
     "This may start with an open parenthesis or an open square bracket."))
-  (or (equal token? (token-punctuator "("))
-      (equal token? (token-punctuator "[")))
+  (or (token-punctuatorp token? "(")
+      (token-punctuatorp token? "["))
   ///
 
   (defrule non-nil-when-token-direct-abstract-declarator-start-p
@@ -5506,7 +5550,7 @@
     "An abstract declarator may start with a pointer,
      which always starts with a star.
      An abstract declarator may also start with a direct abstract declarator."))
-  (or (equal token? (token-punctuator "*"))
+  (or (token-punctuatorp token? "*")
       (token-direct-abstract-declarator-start-p token?))
   ///
 
@@ -5525,7 +5569,7 @@
    (xdoc::p
     "This may start with an identifier or an open parenthesis."))
   (or (and token? (token-case token? :ident))
-      (equal token? (token-punctuator "(")))
+      (token-punctuatorp token? "("))
   ///
 
   (defrule non-nil-when-token-direct-declarator-start-p
@@ -5544,7 +5588,7 @@
     "A declarator may start with a pointer,
      which always starts with a star.
      A declarator may also start with a direct declarator."))
-  (or (equal token? (token-punctuator "*"))
+  (or (token-punctuatorp token? "*")
       (token-direct-declarator-start-p token?))
   ///
 
@@ -5564,7 +5608,7 @@
     "A structure declarator may start with a declarator,
      or with a colon."))
   (or (token-declarator-start-p token?)
-      (equal token? (token-punctuator ":")))
+      (token-punctuatorp token? ":"))
   ///
 
   (defrule non-nil-when-token-strut-declarator-start-p
@@ -5591,8 +5635,8 @@
      and the token is @('__extension__'),
      which must be an identifier if GCC extensions are not supported."))
   (or (token-specifier/qualifier-start-p token?)
-      (equal token? (token-keyword "_Static_assert"))
-      (equal token? (token-keyword "__extension__")))
+      (token-keywordp token? "_Static_assert")
+      (token-keywordp token? "__extension__"))
   ///
 
   (defrule non-nil-when-token-strut-declaration-start-p
@@ -5609,8 +5653,8 @@
   (xdoc::topstring
    (xdoc::p
     "A designator starts with an open square bracket or a dot."))
-  (or (equal token? (token-punctuator "["))
-      (equal token? (token-punctuator ".")))
+  (or (token-punctuatorp token? "[")
+      (token-punctuatorp token? "."))
   ///
 
   (defrule non-nil-when-token-designator-start-p
@@ -5646,7 +5690,7 @@
     "An initializer is either an expression
      or something between curly braces."))
   (or (token-expression-start-p token?)
-      (equal token? (token-punctuator "{")))
+      (token-punctuatorp token? "{"))
   ///
 
   (defrule non-nil-when-token-initializer-start-p
@@ -5814,7 +5858,7 @@
             (parse-type-qualifier-list pstate))
            ((erp token & pstate) (read-token pstate)))
         (cond
-         ((equal token (token-punctuator "*")) ; * tyquals *
+         ((token-punctuatorp token "*") ; * tyquals *
           (b* ((pstate (unread-token pstate)) ; * tyquals
                ((erp tyqualss last-span pstate) ; * tyquals * tyquals ...
                 (parse-pointer pstate)))
@@ -5824,7 +5868,7 @@
          (t ; * tyquals other
           (b* ((pstate (if token (unread-token pstate) pstate))) ; * tyquals
             (retok (list tyquals) (span-join span span2) pstate))))))
-     ((equal token (token-punctuator "*")) ; * *
+     ((token-punctuatorp token "*") ; * *
       (b* ((pstate (unread-token pstate)) ; *
            ((erp tyqualss last-span pstate) ; * * [tyquals] ...
             (parse-pointer pstate)))
@@ -5865,10 +5909,10 @@
      so this function returns no span."))
   (b* (((reterr) nil (irr-parstate))
        ((erp token & pstate) (read-token pstate))
-       ((when (equal token (token-punctuator "++")))
+       ((when (token-punctuatorp token "++"))
         (b* (((erp ops pstate) (parse-*-increment/decrement pstate)))
           (retok (cons (inc/dec-op-inc) ops) pstate)))
-       ((when (equal token (token-punctuator "--")))
+       ((when (token-punctuatorp token "--"))
         (b* (((erp ops pstate) (parse-*-increment/decrement pstate)))
           (retok (cons (inc/dec-op-dec) ops) pstate)))
        (pstate (if token (unread-token pstate) pstate)))
@@ -6021,7 +6065,7 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ;; prev-expr
          ((erp token & pstate) (read-token pstate))
-         ((when (not (equal token (token-punctuator ",")))) ; prev-expr not,
+         ((when (not (token-punctuatorp token ","))) ; prev-expr not,
           (b* ((pstate (if token (unread-token pstate) pstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) pstate)))
          ;; prev-expr ,
@@ -6102,7 +6146,7 @@
          ((erp expr span pstate) (parse-logical-or-expression pstate)) ; expr
          ((unless (mbt (<= (parsize pstate) (1- psize)))) (reterr :impossible))
          ((erp token & pstate) (read-token pstate))
-         ((when (not (equal token (token-punctuator "?")))) ; expr not?
+         ((when (not (token-punctuatorp token "?"))) ; expr not?
           (b* ((pstate (if token (unread-token pstate) pstate))) ; expr
             (retok expr span pstate)))
          ;; expr ?
@@ -6152,7 +6196,7 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ;; prev-expr
          ((erp token & pstate) (read-token pstate))
-         ((when (not (equal token (token-punctuator "||")))) ; prev-expr not||
+         ((when (not (token-punctuatorp token "||"))) ; prev-expr not||
           (b* ((pstate (if token (unread-token pstate) pstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) pstate)))
          ;; prev-expr ||
@@ -6202,7 +6246,7 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ;; prev-expr
          ((erp token & pstate) (read-token pstate))
-         ((when (not (equal token (token-punctuator "&&")))) ; prev-expr not&&
+         ((when (not (token-punctuatorp token "&&"))) ; prev-expr not&&
           (b* ((pstate (if token (unread-token pstate) pstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) pstate)))
          ;; prev-expr &&
@@ -6252,7 +6296,7 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ;; prev-expr
          ((erp token & pstate) (read-token pstate))
-         ((when (not (equal token (token-punctuator "|")))) ; prev-expr not|
+         ((when (not (token-punctuatorp token "|"))) ; prev-expr not|
           (b* ((pstate (if token (unread-token pstate) pstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) pstate)))
          ;; prev-expr |
@@ -6302,7 +6346,7 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ;; prev-expr
          ((erp token & pstate) (read-token pstate))
-         ((when (not (equal token (token-punctuator "^")))) ; prev-expr not^
+         ((when (not (token-punctuatorp token "^"))) ; prev-expr not^
           (b* ((pstate (if token (unread-token pstate) pstate)))
             (retok (expr-fix prev-expr) (span-fix prev-span) pstate)))
          ;; prev-expr ^
@@ -6352,7 +6396,7 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ;; prev-expr
          ((erp token & pstate) (read-token pstate))
-         ((when (not (equal token (token-punctuator "&")))) ; prev-expr not&
+         ((when (not (token-punctuatorp token "&"))) ; prev-expr not&
           (b* ((pstate (if token (unread-token pstate) pstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) pstate)))
          ;; prev-expr &
@@ -6798,7 +6842,7 @@
        ;; and we may also have the ambiguities discussed in :DOC EXPR.
        ;; We try parsing a possibly ambiguous expression or type name,
        ;; after recording a checkpoint for possible backtracking.
-       ((equal token (token-punctuator "(")) ; (
+       ((token-punctuatorp token "(") ; (
         (b* ((pstate (record-checkpoint pstate))
              (psize (parsize pstate))
              ((erp expr/tyname & pstate) ; ( expr/tyname
@@ -6824,7 +6868,7 @@
               ;; we must have a compound literal.
               ;; We put back the open curly brace,
               ;; and we call the function to parse compound literals.
-              ((equal token2 (token-punctuator "{")) ; ( tyname ) {
+              ((token-punctuatorp token2 "{") ; ( tyname ) {
                (b* ((pstate (unread-token pstate)))
                  (parse-compound-literal expr/tyname.unwrap span pstate)))
               ;; If token2 is not an open curly brace,
@@ -6882,7 +6926,7 @@
               ;; (see the first pattern in :DOC EXPR).
               ;; We also clear the checkpoint,
               ;; since we no longer need to backtrack.
-              ((equal token2 (token-punctuator "(")) ; ( expr/tyname ) [ops] (
+              ((token-punctuatorp token2 "(") ; ( expr/tyname ) [ops] (
                (b* ((pstate (clear-checkpoint pstate))
                     (pstate (unread-token pstate)) ; ( expr/tyname ) [ops]
                     ((erp expr last-span pstate) ; ( expr/tyname ) [ops] expr
@@ -6899,7 +6943,7 @@
               ;; whether the star is unary or binary.
               ;; We also clear the checkpoint,
               ;; since we no longer need to backtrack.
-              ((equal token2 (token-punctuator "*")) ; ( expr/tyname ) [ops] *
+              ((token-punctuatorp token2 "*") ; ( expr/tyname ) [ops] *
                (b* ((pstate (clear-checkpoint pstate))
                     ((erp expr last-span pstate) ; ( expr/tyname ) [ops] * expr
                      (parse-cast-expression pstate)))
@@ -6922,10 +6966,8 @@
               ;; than if we had parsed a smaller cast expression.
               ;; We also clear the checkpoint,
               ;; since we no longer need to backtrack.
-              ((or (equal token2
-                          (token-punctuator "+")) ; ( expr/tyname ) [ops] +
-                   (equal token2
-                          (token-punctuator "-"))) ; ( expr/tyname ) [ops] -
+              ((or (token-punctuatorp token2 "+") ; ( expr/tyname ) [ops] +
+                   (token-punctuatorp token2 "-")) ; ( expr/tyname ) [ops] -
                (b* ((pstate (clear-checkpoint pstate))
                     ((erp expr last-span pstate) ; ( expr/tyname ) [ops] +- expr
                      (parse-multiplicative-expression pstate)))
@@ -6946,7 +6988,7 @@
               ;; than if we had parsed a smaller cast expression.
               ;; We also clear the checkpoint,
               ;; since we no longer need to backtrack.
-              ((equal token2 (token-punctuator "&")) ; ( expr/tyname ) [ops] &
+              ((token-punctuatorp token2 "&") ; ( expr/tyname ) [ops] &
                (b* ((pstate (clear-checkpoint pstate))
                     ((erp expr last-span pstate) ; ( expr/tyname ) [ops] & expr
                      (parse-equality-expression pstate)))
@@ -7082,14 +7124,14 @@
                  (span-join span last-span)
                  pstate)))
        ;; If token is 'sizeof', we need to read another token.
-       ((equal token (token-keyword "sizeof")) ; sizeof
+       ((token-keywordp token "sizeof") ; sizeof
         (b* (((erp token2 & pstate) (read-token pstate)))
           (cond
            ;; If token2 is an open parenthesis,
            ;; we are in a potentially ambiguous situation.
            ;; We parse an expression or type name,
            ;; and then the closed parenthesis.
-           ((equal token2 (token-punctuator "(")) ; sizeof (
+           ((token-punctuatorp token2 "(") ; sizeof (
             (b* (((erp expr/tyname & pstate) ; sizeof ( exprtyname
                   (parse-expression-or-type-name pstate))
                  ((erp last-span pstate) ; sizeof ( exprtyname )
@@ -7116,8 +7158,8 @@
        ;; we parse an open parenthesis, a type name, and a closed parenthesis.
        ;; We also allow '__alignof__',
        ;; which can be a keyword only if GCC extensions are supported.
-       ((or (equal token (token-keyword "_Alignof")) ; _Alignof
-            (equal token (token-keyword "__alignof__"))) ; __alignof__
+       ((or (token-keywordp token "_Alignof") ; _Alignof
+            (token-keywordp token "__alignof__")) ; __alignof__
         (b* (((erp & pstate) ; _Alignof (
               (read-punctuator "(" pstate))
              ((erp tyname & pstate) ; _Alignof ( typename
@@ -7126,7 +7168,7 @@
               (read-punctuator ")" pstate)))
           (retok (make-expr-alignof
                   :type tyname
-                  :uscores (equal token (token-keyword "__alignof__")))
+                  :uscores (token-keywordp token "__alignof__"))
                  (span-join span last-span)
                  pstate)))
        ;; If token is anything else, it is an error.
@@ -7256,7 +7298,7 @@
        ;; So we start by parsing a possibly ambiguous type name or expression
        ;; and we decide what to do next based on that result
        ;; (we also parse past the closed parenthesis).
-       ((equal token (token-punctuator "(")) ; (
+       ((token-punctuatorp token "(") ; (
         (b* ((psize (parsize pstate))
              ((erp expr/tyname & pstate) ; ( expr/tyname
               (parse-expression-or-type-name pstate))
@@ -7289,7 +7331,7 @@
               ;; If token2 is an open curly brace,
               ;; we must have a compound literal,
               ;; and the ambiguous expression or type name must be a type name.
-              ((equal token2 (token-punctuator "{")) ; ( expr/tyname ) {
+              ((token-punctuatorp token2 "{") ; ( expr/tyname ) {
                (b* ((pstate (unread-token pstate)) ; ( expr/tyname )
                     (tyname (amb-expr/tyname->tyname expr/tyname.unwrap)))
                  (parse-compound-literal tyname
@@ -7356,7 +7398,7 @@
          ;; prev-expr
          ((erp token span pstate) (read-token pstate)))
       (cond
-       ((equal token (token-punctuator "[")) ; prev-expr [
+       ((token-punctuatorp token "[") ; prev-expr [
         (b* ((psize (parsize pstate))
              ((erp expr & pstate) ; prev-expr [ expr
               (parse-expression pstate))
@@ -7368,7 +7410,7 @@
                                           :arg2 expr))
              (curr-span (span-join prev-span last-span)))
           (parse-postfix-expression-rest curr-expr curr-span pstate)))
-       ((equal token (token-punctuator "(")) ; prev-expr (
+       ((token-punctuatorp token "(") ; prev-expr (
         (b* ((psize (parsize pstate))
              ((erp exprs & pstate) ; prev-expr ( exprs
               (parse-argument-expressions pstate))
@@ -7380,26 +7422,26 @@
                                            :args exprs))
              (curr-span (span-join prev-span last-span)))
           (parse-postfix-expression-rest curr-expr curr-span pstate)))
-       ((equal token (token-punctuator ".")) ; prev-expr .
+       ((token-punctuatorp token ".") ; prev-expr .
         (b* (((erp ident ident-span pstate) ; prev-expr . ident
               (read-identifier pstate))
              (curr-expr (make-expr-member :arg prev-expr
                                           :name ident))
              (curr-span (span-join prev-span ident-span)))
           (parse-postfix-expression-rest curr-expr curr-span pstate)))
-       ((equal token (token-punctuator "->")) ; prev-expr ->
+       ((token-punctuatorp token "->") ; prev-expr ->
         (b* (((erp ident ident-span pstate) ; prev-expr -> ident
               (read-identifier pstate))
              (curr-expr (make-expr-memberp :arg prev-expr
                                            :name ident))
              (curr-span (span-join prev-span ident-span)))
           (parse-postfix-expression-rest curr-expr curr-span pstate)))
-       ((equal token (token-punctuator "++")) ; prev-expr ++
+       ((token-punctuatorp token "++") ; prev-expr ++
         (b* ((curr-expr (make-expr-unary :op (unop-postinc)
                                          :arg prev-expr))
              (curr-span (span-join prev-span span)))
           (parse-postfix-expression-rest curr-expr curr-span pstate)))
-       ((equal token (token-punctuator "--")) ; prev-expr --
+       ((token-punctuatorp token "--") ; prev-expr --
         (b* ((curr-expr (make-expr-unary :op (unop-postdec)
                                          :arg prev-expr))
              (curr-span (span-join prev-span span)))
@@ -7479,7 +7521,7 @@
     (b* (((reterr) nil (irr-span) (irr-parstate))
          ;; prev-exprs
          ((erp token & pstate) (read-token pstate))
-         ((when (not (equal token (token-punctuator ","))))
+         ((when (not (token-punctuatorp token ",")))
           (b* ((pstate (if token (unread-token pstate) pstate)))
             (retok (expr-list-fix prev-exprs)
                    (span-fix prev-span)
@@ -7539,7 +7581,7 @@
           (retok (expr-string (cons (token-string->unwrap token) strings))
                  (if strings (span-join span last-span) span)
                  pstate)))
-       ((equal token (token-punctuator "(")) ; (
+       ((token-punctuatorp token "(") ; (
         (b* (((erp expr & pstate) ; ( expr
               (parse-expression pstate))
              ((erp last-span pstate) ; ( expr )
@@ -7547,7 +7589,7 @@
           (retok (expr-paren expr)
                  (span-join span last-span)
                  pstate)))
-       ((equal token (token-keyword "_Generic")) ; _Generic
+       ((token-keywordp token "_Generic") ; _Generic
         (b* (((erp & pstate) (read-punctuator "(" pstate)) ; _Generic (
              (psize (parsize pstate))
              ((erp expr & pstate) ; _Generic ( expr
@@ -7607,7 +7649,7 @@
        This makes it easier to handle the span calculation."))
     (b* (((reterr) nil (irr-span) (irr-parstate))
          ((erp token & pstate) (read-token pstate))
-         ((when (not (equal token (token-punctuator ","))))
+         ((when (not (token-punctuatorp token ",")))
           (b* ((pstate (if token (unread-token pstate) pstate)))
             (retok (genassoc-list-fix prev-genassocs)
                    (span-fix prev-span)
@@ -7658,7 +7700,7 @@
                                      :expr expr)
                  (span-join span last-span)
                  pstate)))
-       ((equal token (token-keyword "default")) ; default
+       ((token-keywordp token "default") ; default
         (b* (((erp & pstate) (read-punctuator ":" pstate)) ; default :
              ((erp expr last-span pstate) ; default : expr
               (parse-assignment-expression pstate)))
@@ -7790,11 +7832,11 @@
     (b* (((reterr) (irr-designor) (irr-span) (irr-parstate))
          ((erp token span pstate) (read-token pstate)))
       (cond
-       ((equal token (token-punctuator "[")) ; [
+       ((token-punctuatorp token "[") ; [
         (b* (((erp cexpr & pstate) (parse-constant-expression pstate)) ; [ cexpr
              ((erp last-span pstate) (read-punctuator "]" pstate))) ; [ cexpr ]
           (retok (designor-sub cexpr) (span-join span last-span) pstate)))
-       ((equal token (token-punctuator ".")) ; .
+       ((token-punctuatorp token ".") ; .
         (b* (((erp ident last-span pstate) (read-identifier pstate))) ; . ident
           (retok (designor-dot ident) (span-join span last-span) pstate)))
        (t ; other
@@ -7869,7 +7911,7 @@
              ((erp expr span pstate) ; expr
               (parse-assignment-expression pstate)))
           (retok (initer-single expr) span pstate)))
-       ((equal token (token-punctuator "{")) ; {
+       ((token-punctuatorp token "{") ; {
         (b* (((erp desiniters final-comma & pstate) ; { inits [,]
               (parse-initializer-list pstate))
              ((erp last-span pstate) ; { inits [,] }
@@ -8007,10 +8049,10 @@
           (reterr :impossible))
          ((erp token & pstate) (read-token pstate)))
       (cond
-       ((equal token (token-punctuator ",")) ; initializer ,
+       ((token-punctuatorp token ",") ; initializer ,
         (b* (((erp token2 span2 pstate) (read-token pstate)))
           (cond
-           ((equal token2 (token-punctuator "}")) ; initializer , }
+           ((token-punctuatorp token2 "}") ; initializer , }
             (b* ((pstate (unread-token pstate))) ; initializer ,
               (retok (list desiniter)
                      t ; final-comma
@@ -8048,7 +8090,7 @@
                                    \"{\"~
                                    }"
                         :found (token-to-msg token2))))))
-       ((equal token (token-punctuator "}")) ; initializer }
+       ((token-punctuatorp token "}") ; initializer }
         (b* ((pstate (unread-token pstate))) ; initializer
           (retok (list desiniter)
                  nil ; final-comma
@@ -8096,7 +8138,7 @@
       (cond
        ;; If token is an equal sign, the enumerator continues,
        ;; and there must be a constant expression.
-       ((equal token (token-punctuator "=")) ; ident =
+       ((token-punctuatorp token "=") ; ident =
         (b* (((erp cexpr last-span pstate) ; ident = cexpr
               (parse-constant-expression pstate)))
           (retok (make-enumer :name ident :value cexpr)
@@ -8145,7 +8187,7 @@
        ;; there could be another enumerator,
        ;; or it could be just a final comma,
        ;; so we need to read another token.
-       ((equal token (token-punctuator ",")) ; enumer ,
+       ((token-punctuatorp token ",") ; enumer ,
         (b* (((erp token2 span2 pstate) (read-token pstate)))
           (cond
            ;; If token2 is an identifier,
@@ -8166,7 +8208,7 @@
            ;; the list ends, and the comma is a final one.
            ;; We put back the curly brace.
            ;; We return the singleton list of the enumerator parsed above.
-           ((equal token2 (token-punctuator "}")) ; enumer , }
+           ((token-punctuatorp token2 "}") ; enumer , }
             (b* ((pstate (unread-token pstate))) ; enumer ,
               (retok (list enumer)
                      t ; final-comma
@@ -8184,7 +8226,7 @@
        ;; the list ends, and there is no final comma.
        ;; We put back the curly brace.
        ;; We return the singleton list of the enumerator parsed above.
-       ((equal token (token-punctuator "}")) ; enumer }
+       ((token-punctuatorp token "}") ; enumer }
         (b* ((pstate (unread-token pstate))) ; enumer
           (retok (list enumer)
                  nil ; final-comma
@@ -8257,13 +8299,13 @@
        ;; If token is the keyword _Atomic,
        ;; it may be either a type specifier or a type qualifier,
        ;; so we examine more tokens.
-       ((equal token (token-keyword "_Atomic")) ; _Atomic
+       ((token-keywordp token "_Atomic") ; _Atomic
         (b* (((erp token2 & pstate) (read-token pstate)))
           (cond
            ;; If token2 is an open parenthesis,
            ;; we check the TYSPEC-SEENP flag,
            ;; as explained in the documentation.
-           ((equal token2 (token-punctuator "(")) ; _Atomic (
+           ((token-punctuatorp token2 "(") ; _Atomic (
             (if tyspec-seenp
                 ;; If we have already seen a type specifier,
                 ;; this must be a type qualifier.
@@ -8292,7 +8334,7 @@
                      pstate))))))
        ;; If token is the keyword struct,
        ;; we must have a structure type specifier.
-       ((equal token (token-keyword "struct")) ; struct
+       ((token-keywordp token "struct") ; struct
         (b* (((erp strunispec last-span pstate) ; struct strunispec
               (parse-struct-or-union-specifier pstate)))
           (retok (spec/qual-tyspec (type-spec-struct strunispec))
@@ -8300,7 +8342,7 @@
                  pstate)))
        ;; If token is the keyword union
        ;; we must have a union type specifier.
-       ((equal token (token-keyword "union")) ; union
+       ((token-keywordp token "union") ; union
         (b* (((erp strunispec last-span pstate) ; union strunispec
               (parse-struct-or-union-specifier pstate)))
           (retok (spec/qual-tyspec (type-spec-union strunispec))
@@ -8308,7 +8350,7 @@
                  pstate)))
        ;; If token is the keyword enum,
        ;; we must have an enumeration type specifier.
-       ((equal token (token-keyword "enum")) ; enum
+       ((token-keywordp token "enum") ; enum
         (b* (((erp enumspec last-span pstate) ; enum enumspec
               (parse-enum-specifier span pstate)))
           (retok (spec/qual-tyspec (type-spec-enum enumspec))
@@ -8332,7 +8374,7 @@
                pstate))
        ;; If token is the keyword _Alignas,
        ;; we must have an alignment specifier.
-       ((equal token (token-keyword "_Alignas")) ; _Alignas
+       ((token-keywordp token "_Alignas") ; _Alignas
         (b* (((erp alignspec last-span pstate) ; _Alignas ( ... )
               (parse-alignment-specifier span pstate)))
           (retok (spec/qual-align alignspec)
@@ -8341,7 +8383,7 @@
        ;; If token is the keyword __attribute__,
        ;; which can only happen if GCC extensions are enabled,
        ;; we must have an attribute specifier.
-       ((equal token (token-keyword "__attribute__")) ; __attribute__
+       ((token-keywordp token "__attribute__") ; __attribute__
         (b* (((erp attrspec last-span pstate) ; attrspec
               (parse-attribute-specifier span pstate)))
           (retok (spec/qual-attrib attrspec)
@@ -8513,13 +8555,13 @@
        ;; If token is the keyword _Atomic,
        ;; it may be either a type specifier or a type qualifier,
        ;; so we examine more tokens.
-       ((equal token (token-keyword "_Atomic")) ; _Atomic
+       ((token-keywordp token "_Atomic") ; _Atomic
         (b* (((erp token2 & pstate) (read-token pstate)))
           (cond
            ;; If token2 is an open parenthesis,
            ;; we check the TYSPEC-SEENP flag,
            ;; as explained in the documentation.
-           ((equal token2 (token-punctuator "(")) ; _Atomic (
+           ((token-punctuatorp token2 "(") ; _Atomic (
             (if tyspec-seenp
                 ;; If we have already seen a type specifier,
                 ;; this must be a type qualifier.
@@ -8548,7 +8590,7 @@
                      pstate))))))
        ;; If token is the keyword struct,
        ;; we must have a structure type specifier.
-       ((equal token (token-keyword "struct")) ; struct
+       ((token-keywordp token "struct") ; struct
         (b* (((erp strunispec last-span pstate) ; struct strunispec
               (parse-struct-or-union-specifier pstate)))
           (retok (declspec-tyspec (type-spec-struct strunispec))
@@ -8556,7 +8598,7 @@
                  pstate)))
        ;; If token is the keyword union
        ;; we must have a union type specifier.
-       ((equal token (token-keyword "union")) ; union
+       ((token-keywordp token "union") ; union
         (b* (((erp strunispec last-span pstate) ; union strunispec
               (parse-struct-or-union-specifier pstate)))
           (retok (declspec-tyspec (type-spec-union strunispec))
@@ -8564,7 +8606,7 @@
                  pstate)))
        ;; If token is the keyword enum,
        ;; we must have an enumeration type specifier.
-       ((equal token (token-keyword "enum")) ; enum
+       ((token-keywordp token "enum") ; enum
         (b* (((erp enumspec last-span pstate) ; enum enumspec
               (parse-enum-specifier span pstate)))
           (retok (declspec-tyspec (type-spec-enum enumspec))
@@ -8594,7 +8636,7 @@
                pstate))
        ;; If token is the keyword _Alignas,
        ;; we must have an alignment specifier.
-       ((equal token (token-keyword "_Alignas")) ; _Alignas
+       ((token-keywordp token "_Alignas") ; _Alignas
         (b* (((erp alignspec last-span pstate) ; _Alignas ( ... )
               (parse-alignment-specifier span pstate)))
           (retok (declspec-align alignspec)
@@ -8603,7 +8645,7 @@
        ;; If token is the keyword __attribute__,
        ;; which can only happen if GCC extensions are enabled,
        ;; we must have an attribute specifier.
-       ((equal token (token-keyword "__attribute__")) ; __attribute__
+       ((token-keywordp token "__attribute__") ; __attribute__
         (b* (((erp attrspec last-span pstate) ; attrspec
               (parse-attribute-specifier span pstate)))
           (retok (declspec-attrib attrspec)
@@ -8779,7 +8821,7 @@
            ;; we must have a list of structure declarations
            ;; enclosed in curly braces.
            ;; So we parse those.
-           ((equal token2 (token-punctuator "{")) ; ident {
+           ((token-punctuatorp token2 "{") ; ident {
             (b* (((erp structdecls & pstate) ; ident { structdecls
                   (parse-struct-declaration-list pstate))
                  ((erp last-span pstate) ; ident { structdecls }
@@ -8801,7 +8843,7 @@
        ;; we must have a structure or union specifier without identifier
        ;; but with a list of structure declarations between curly braces.
        ;; So we parse those.
-       ((equal token (token-punctuator "{")) ; {
+       ((token-punctuatorp token "{") ; {
         (b* (((erp structdecls & pstate) ; { structdecls
               (parse-struct-declaration-list pstate))
              ((erp last-span pstate) ; { structdecls }
@@ -8846,7 +8888,7 @@
            ;; If token2 is an open curly brace,
            ;; there must be a list of enumerators, which we parse.
            ;; Then we read the closed curly brace.
-           ((equal token2 (token-punctuator "{")) ; ident {
+           ((token-punctuatorp token2 "{") ; ident {
             (b* (((erp enumers final-comma & pstate)
                   (parse-enumerator-list pstate)) ; ident { enumers [,]
                  ((erp last-span pstate) ; ident { enumers [,] }
@@ -8868,7 +8910,7 @@
        ;; If token is an open curly brace,
        ;; we must have an enumeration specifier without identifier.
        ;; We parse the list of enumerators, and the closed curly brace.
-       ((equal token (token-punctuator "{")) ; {
+       ((token-punctuatorp token "{") ; {
         (b* (((erp enumers final-comma & pstate)
               (parse-enumerator-list pstate)) ; { enumers [,]
              ((erp last-span pstate) ; { enumers [,] }
@@ -8950,11 +8992,11 @@
       (cond
        ;; If token is an open square bracket,
        ;; we must have an array abstract declarator.
-       ((equal token (token-punctuator "[")) ; [
+       ((token-punctuatorp token "[") ; [
         (b* (((erp token2 span2 pstate) (read-token pstate)))
           (cond
            ;; If token2 is a closed square bracket, we have a declarator [].
-           ((equal token2 (token-punctuator "]")) ; [ ]
+           ((token-punctuatorp token2 "]") ; [ ]
             (retok (make-dirabsdeclor-array :decl? nil
                                             :tyquals nil
                                             :expr? nil)
@@ -8963,12 +9005,12 @@
            ;; If token2 is a star, it may start an expression,
            ;; or we may have a variable length array declarator.
            ;; So we read another token
-           ((equal token2 (token-punctuator "*")) ; [ *
+           ((token-punctuatorp token2 "*") ; [ *
             (b* (((erp token3 span3 pstate) (read-token pstate)))
               (cond
                ;; If token3 is a closed square bracket,
                ;; we have a variable length array declarator.
-               ((equal token3 (token-punctuator "]")) ; [ * ]
+               ((token-punctuatorp token3 "]") ; [ * ]
                 (retok (make-dirabsdeclor-array-star :decl? nil)
                        (span-join span span3)
                        pstate))
@@ -8989,7 +9031,7 @@
            ;; If token2 is the keyword 'static',
            ;; the keyword may be followed by a list of type qualifiers,
            ;; and then must be followed by an assignment expression.
-           ((equal token2 (token-keyword "static")) ; [ static
+           ((token-keywordp token2 "static") ; [ static
             (b* (((erp token3 & pstate) (read-token pstate)))
               (cond
                ;; If token3 is a type qualifier,
@@ -9037,7 +9079,7 @@
               (cond
                ;; If token3 is the keyword 'static',
                ;; we must have an assignment expression after that.
-               ((equal token3 (token-keyword "static")) ; [ tyquals static
+               ((token-keywordp token3 "static") ; [ tyquals static
                 (b* (((erp expr & pstate) ; [ tyquals static expr
                       (parse-assignment-expression pstate))
                      ((erp last-span pstate) ; [ tyquals static expr ]
@@ -9050,7 +9092,7 @@
                          pstate)))
                ;; If token3 is a closed square bracket,
                ;; there is no expression, and we have determined the variant.
-               ((equal token3 (token-punctuator "]")) ; [ tyquals ]
+               ((token-punctuatorp token3 "]") ; [ tyquals ]
                 (retok (make-dirabsdeclor-array
                         :decl? nil
                         :tyquals tyquals
@@ -9088,12 +9130,12 @@
                      pstate))))))
        ;; If token is an open parenthesis,
        ;; we must have a function abstract declarator.
-       ((equal token (token-punctuator "(")) ; (
+       ((token-punctuatorp token "(") ; (
         (b* (((erp token2 span2 pstate) (read-token pstate)))
           (cond
            ;; If token2 is a closed parenthesis,
            ;; we have no parameters.
-           ((equal token2 (token-punctuator ")")) ; ( )
+           ((token-punctuatorp token2 ")") ; ( )
             (retok (make-dirabsdeclor-function :decl? nil
                                                :params nil
                                                :ellipsis nil)
@@ -9156,7 +9198,7 @@
        ;; If token is an open parenthesis,
        ;; we could have a parenthesized abstract declarator,
        ;; or a function abstract declarator.
-       ((equal token (token-punctuator "(")) ; (
+       ((token-punctuatorp token "(") ; (
         (b* (((erp token2 & pstate) (read-token pstate)))
           (cond
            ;; If token2 may start an abstract declarator,
@@ -9209,7 +9251,7 @@
        ;; and then we use another function to parse
        ;; zero or more subsequent array and function abstract declarators,
        ;; combining into them the one we just read.
-       ((equal token (token-punctuator "[")) ; [
+       ((token-punctuatorp token "[") ; [
         (b* ((pstate (unread-token pstate)) ;
              (psize (parsize pstate))
              ((erp dirabsdeclor span pstate) ; dirabsdeclor
@@ -9266,8 +9308,8 @@
        ;; so when we store the previous declarator there,
        ;; we are not overwriting anything.
        ;; We also join the spans, and we recursively call this function.
-       ((or (equal token (token-punctuator "(")) ; (
-            (equal token (token-punctuator "["))) ; [
+       ((or (token-punctuatorp token "(") ; (
+            (token-punctuatorp token "[")) ; [
         (b* ((pstate (unread-token pstate)) ;
              (psize (parsize pstate))
              ((erp next-dirabsdeclor next-span pstate) ; dirabsdeclor
@@ -9316,7 +9358,7 @@
        ;; so we parse it, after putting back the token.
        ;; Then we read another token,
        ;; to see if we have a direct abstract declarator after the pointer.
-       ((equal token (token-punctuator "*")) ; *
+       ((token-punctuatorp token "*") ; *
         (b* ((pstate (unread-token pstate))
              (psize (parsize pstate))
              ((erp tyqualss tyqualss-span pstate) ; pointer
@@ -9404,7 +9446,7 @@
        ;; If token is an open square bracket,
        ;; we have an array construct, which may be of different variants,
        ;; so we read more tokens.
-       ((equal token (token-punctuator "[")) ; [
+       ((token-punctuatorp token "[") ; [
         (b* (((erp token2 span2 pstate) (read-token pstate)))
           (cond
            ;; If token2 is a type qualifier,
@@ -9420,12 +9462,12 @@
                ;; If token3 is a star, it may start an expression,
                ;; or it may be just a star for a variable length array.
                ;; So we need to read another token to disambiguate.
-               ((equal token3 (token-punctuator "*")) ; [ tyquals *
+               ((token-punctuatorp token3 "*") ; [ tyquals *
                 (b* (((erp token4 span4 pstate) (read-token pstate)))
                   (cond
                    ;; If token4 is a closed square bracket,
                    ;; we have a variable length array declarator.
-                   ((equal token4 (token-punctuator "]")) ; [ tyquals * ]
+                   ((token-punctuatorp token4 "]") ; [ tyquals * ]
                     (retok (make-dirdeclor-array-star :decl prev-dirdeclor
                                                       :tyquals tyquals)
                            (span-join prev-span span4)
@@ -9465,7 +9507,7 @@
                          pstate)))
                ;; If token3 is a closed square bracket,
                ;; we have determined the variant, and we have no expression.
-               ((equal token3 (token-punctuator "]")) ; [ tyquals ]
+               ((token-punctuatorp token3 "]") ; [ tyquals ]
                 (retok (make-dirdeclor-array :decl prev-dirdeclor
                                              :tyquals tyquals
                                              :expr? nil)
@@ -9474,7 +9516,7 @@
                ;; If token3 is the 'static' keyword,
                ;; we have determined the variant,
                ;; and we must have an expression.
-               ((equal token3 (token-keyword "static")) ; [ tyquals static
+               ((token-keywordp token3 "static") ; [ tyquals static
                 (b* (((erp expr & pstate) ; [ tyquals static expr
                       (parse-assignment-expression pstate))
                      ((erp last-span pstate) ; [ tyquals static expr ]
@@ -9494,12 +9536,12 @@
            ;; If token2 is a star, it may start an expression,
            ;; or it may be just a star for a variable length array.
            ;; So we need to read another token to disambiguate.
-           ((equal token2 (token-punctuator "*")) ; [ *
+           ((token-punctuatorp token2 "*") ; [ *
             (b* (((erp token3 span3 pstate) (read-token pstate)))
               (cond
                ;; If token3 is a closed square bracket,
                ;; we have a variable length array declarator.
-               ((equal token3 (token-punctuator "]")) ; [ * ]
+               ((token-punctuatorp token3 "]") ; [ * ]
                 (retok (make-dirdeclor-array-star :decl prev-dirdeclor
                                                   :tyquals nil)
                        (span-join prev-span span3)
@@ -9537,7 +9579,7 @@
            ;; we may have type qualifiers,
            ;; and we must have an expression;
            ;; we have determined the variant.
-           ((equal token2 (token-keyword "static")) ; [ static
+           ((token-keywordp token2 "static") ; [ static
             (b* (((erp token3 & pstate) (read-token pstate)))
               (cond
                ;; If token3 is a type qualifier,
@@ -9571,7 +9613,7 @@
                          pstate))))))
            ;; If token2 is a closed square bracket,
            ;; we have an empty array construct.
-           ((equal token2 (token-punctuator "]")) ; [ ]
+           ((token-punctuatorp token2 "]") ; [ ]
             (retok (make-dirdeclor-array :decl prev-dirdeclor
                                          :tyquals nil
                                          :expr? nil)
@@ -9590,12 +9632,12 @@
        ;; which may be of two variants,
        ;; but we only generate the :FUNCTION-PARAMS variant,
        ;; as explained above.
-       ((equal token (token-punctuator "(")) ; (
+       ((token-punctuatorp token "(") ; (
         (b* (((erp token2 span2 pstate) (read-token pstate)))
           (cond
            ;; If token2 is a closed parenthesis,
            ;; we have no parameter declarations.
-           ((equal token2 (token-punctuator ")")) ; ( )
+           ((token-punctuatorp token2 ")") ; ( )
             (retok (make-dirdeclor-function-params :decl prev-dirdeclor
                                                    :params nil
                                                    :ellipsis nil)
@@ -9655,7 +9697,7 @@
                                       pstate))
        ;; If token is an open parenthesis,
        ;; we must have a parenthesized declarator.
-       ((equal token (token-punctuator "(")) ; (
+       ((token-punctuatorp token "(") ; (
         (b* ((psize (parsize pstate))
              ((erp declor & pstate) (parse-declarator pstate)) ; ( declor
              ((unless (mbt (<= (parsize pstate) (1- psize))))
@@ -9703,8 +9745,8 @@
        ;; obtaining an extended direct declarator
        ;; which we recursively pass to this function
        ;; for possibly further extension.
-       ((or (equal token (token-punctuator "(")) ; (
-            (equal token (token-punctuator "["))) ; [
+       ((or (token-punctuatorp token "(") ; (
+            (token-punctuatorp token "[")) ; [
         (b* ((pstate (unread-token pstate)) ;
              (psize (parsize pstate))
              ((erp curr-dirdeclor curr-span pstate) ; dirdeclor
@@ -9740,7 +9782,7 @@
       (cond
        ;; If token is a star, we must have a pointer,
        ;; so we parse it, and then we parse a direct declarator.
-       ((equal token (token-punctuator "*")) ; *
+       ((token-punctuatorp token "*") ; *
         (b* ((pstate (unread-token pstate)) ;
              ((erp tyqualss & pstate) (parse-pointer pstate)) ; pointer
              ((erp dirdeclor last-span pstate) ; pointer dirdeclor
@@ -9791,7 +9833,7 @@
           (cond
            ;; If token2 is a colon,
            ;; we must have a constant expression after it.
-           ((equal token2 (token-punctuator ":")) ; declor :
+           ((token-punctuatorp token2 ":") ; declor :
             (b* (((erp cexpr last-span pstate) ; declor : expr
                   (parse-constant-expression pstate)))
               (retok (make-structdeclor :declor? declor
@@ -9809,7 +9851,7 @@
        ;; If token is a colon,
        ;; we must be in the case in which there is no declarator
        ;; and there is just the colon and a constant expression.
-       ((equal token (token-punctuator ":")) ; :
+       ((token-punctuatorp token ":") ; :
         (b* (((erp cexpr last-span pstate) ; : expr
               (parse-constant-expression pstate)))
           (retok (make-structdeclor :declor? nil
@@ -9848,7 +9890,7 @@
       (cond
        ;; If token is a comma,
        ;; we must have at least another structure declarator.
-       ((equal token (token-punctuator ",")) ; structdeclor ,
+       ((token-punctuatorp token ",") ; structdeclor ,
         (b* (((erp structdeclors last-span  pstate)
               ;; structdeclor , structdeclors
               (parse-struct-declarator-list pstate)))
@@ -9889,7 +9931,7 @@
       (cond
        ;; If token is the '_Static_assert' keyword,
        ;; we have a static assertion.
-       ((equal token (token-keyword "_Static_assert")) ; _Static_assert
+       ((token-keywordp token "_Static_assert") ; _Static_assert
         (b* (((erp statassert span pstate) ; staticassertion
               (parse-static-assert-declaration span pstate)))
           (retok (structdecl-statassert statassert)
@@ -9900,7 +9942,7 @@
        ;; if GCC extensions are supported.
        (t ; other
         (b* (((mv extension pstate)
-              (if (and (equal token (token-keyword "__extension__"))
+              (if (and (token-keywordp token "__extension__")
                        (parstate->gcc pstate))
                   (mv t pstate)
                 (mv nil (if token (unread-token pstate) pstate))))
@@ -9944,7 +9986,7 @@
            ;; (otherwise '__attribute__' would not be a keyword).
            ;; We parse one or more attribute specifiers,
            ;; and then the final semicolon.
-           ((equal token2 (token-keyword "__attribute__"))
+           ((token-keywordp token2 "__attribute__")
             ;; [__extension__] specquals __attribute__
             (b* ((pstate (unread-token pstate))
                  ;; [__extension__] specquals
@@ -9962,7 +10004,7 @@
                      pstate)))
            ;; If token2 is a semicolon,
            ;; we have reached the end of the structure declaration.
-           ((equal token2 (token-punctuator ";")) ; specquals ;
+           ((token-punctuatorp token2 ";") ; specquals ;
             (retok (make-structdecl-member :extension extension
                                            :specqual specquals
                                            :declor nil
@@ -10048,8 +10090,8 @@
       (cond
        ;; If token is a comma or a closed parenthesis,
        ;; there is no parameter declarator.
-       ((or (equal token (token-punctuator ")")) ; declspecs )
-            (equal token (token-punctuator ","))) ; declspecs ,
+       ((or (token-punctuatorp token ")") ; declspecs )
+            (token-punctuatorp token ",")) ; declspecs ,
         (b* ((pstate (unread-token pstate))) ; declspecs
           (retok (make-paramdecl :spec declspecs
                                  :decl (paramdeclor-none))
@@ -10121,12 +10163,12 @@
       (cond
        ;; If token is a comma, we might have another parameter declaration,
        ;; but we need to check whether we have an ellipsis instead.
-       ((equal token (token-punctuator ",")) ; paramdecl ,
+       ((token-punctuatorp token ",") ; paramdecl ,
         (b* (((erp token2 span2 pstate) (read-token pstate)))
           (cond
            ;; If token2 is an ellipsis,
            ;; we have reached the end of the parameter declaration list.
-           ((equal token2 (token-punctuator "...")) ; paramdecl , ...
+           ((token-punctuatorp token2 "...") ; paramdecl , ...
             (retok (list paramdecl)
                    t
                    (span-join span span2)
@@ -10265,7 +10307,7 @@
         ;; If the parsing of an expression succeeds,
         ;; we read a token to see whether a closed parenthesis follows.
         (b* (((erp token & pstate) (read-token pstate)))
-          (if (equal token (token-punctuator ")"))
+          (if (token-punctuatorp token ")")
               ;; If a closed parenthesis follows,
               ;; the parsing of the expression has succeeded,
               ;; but we must see whether
@@ -10339,7 +10381,7 @@
                   ;; we read a token to see whether
                   ;; a closed parenthesis follows.
                   (b* (((erp token & pstate) (read-token pstate)))
-                    (if (equal token (token-punctuator ")"))
+                    (if (token-punctuatorp token ")")
                         ;; If a closed parenthesis follows,
                         ;; we have an ambiguous expression or type name.
                         ;; We double-check that the two spans are the same;
@@ -10567,8 +10609,8 @@
             ;; as explained in the documentation of the function above.
             ;; So we read a token.
             (b* (((erp token & pstate) (read-token pstate)))
-              (if (or (equal token (token-punctuator ","))
-                      (equal token (token-punctuator ")")))
+              (if (or (token-punctuatorp token ",")
+                      (token-punctuatorp token ")"))
                   ;; If a comma or closed parenthesis follows,
                   ;; the parsing of the abstract declarator has succeeded,
                   ;; we have an ambiguous declarator or abstract declarator.
@@ -10679,7 +10721,7 @@
          ((erp token & pstate) (read-token pstate)))
       (cond
        ;; If token is an open parenthesis, the attribute has parameters.
-       ((equal token (token-punctuator "(")) ; ident (
+       ((token-punctuatorp token "(") ; ident (
         (b* ((pstate (unread-token pstate)) ; ident
              ((erp exprs span pstate) ; ident ( exprs )
               (parse-attribute-parameters pstate)))
@@ -10712,7 +10754,7 @@
        ;; If token is a comma,
        ;; we recursively parse one or more additional attributes,
        ;; and we combine them with the one parsed just above.
-       ((equal token (token-punctuator ",")) ; attr ,
+       ((token-punctuatorp token ",") ; attr ,
         (b* (((erp attrs last-span pstate) ; attr , attrs
               (parse-attribute-list pstate)))
           (retok (cons attr attrs) (span-join span last-span) pstate)))
@@ -10785,7 +10827,7 @@
        only if GCC extensions are supported."))
     (b* (((reterr) nil (irr-span) (irr-parstate))
          ((erp token first-span pstate) (read-token pstate))
-         ((unless (equal token (token-keyword "__attribute__")))
+         ((unless (token-keywordp token "__attribute__"))
           (b* ((pstate (if token (unread-token pstate) pstate)))
             (retok nil (irr-span) pstate)))
          ;; __attribute__
@@ -11679,7 +11721,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (verify-guards parse-expression
-    :hints (("Goal" :in-theory (e/d (acl2::member-of-cons)
+    :hints (("Goal" :in-theory (e/d (acl2::member-of-cons
+                                     token-additive-operator-p)
                                     ((:e tau-system))))))) ; for speed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -11754,9 +11797,9 @@
   (b* (((reterr) nil (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate)))
     (cond
-     ((equal token (token-keyword "asm"))
+     ((token-keywordp token "asm")
       (parse-asm-name-specifier nil span pstate))
-     ((equal token (token-keyword "__asm__"))
+     ((token-keywordp token "__asm__")
       (parse-asm-name-specifier t span pstate))
      (t
       (b* ((pstate (if token (unread-token pstate) pstate)))
@@ -11784,7 +11827,7 @@
        ((erp token & pstate) (read-token pstate)))
     (cond
      ;; If token is an equal sign, there must be an initializer.
-     ((equal token (token-punctuator "=")) ; declor =
+     ((token-punctuatorp token "=") ; declor =
       (b* (((erp initer last-span pstate) ; declor = initer
             (parse-initializer pstate)))
         (retok (make-initdeclor :declor declor :init? initer)
@@ -11832,7 +11875,7 @@
      ;; If token is a comma,
      ;; recursively parse one or more initializer declarators,
      ;; and combine with the one just parsed.
-     ((equal token (token-punctuator ",")) ; initdeclor ,
+     ((token-punctuatorp token ",") ; initdeclor ,
       (b* (((erp initdeclors last-span pstate) ; initdeclor , initdeclors
             (parse-init-declarator-list pstate)))
         (retok (cons initdeclor initdeclors)
@@ -11892,10 +11935,10 @@
      ;; and if token is the '__extension__' keyword,
      ;; we need to take that into account as well.
      ((or (token-declaration-specifier-start-p token) ; declspec...
-          (and (equal token (token-keyword "__extension__")) ; __extension__
+          (and (token-keywordp token "__extension__") ; __extension__
                (parstate->gcc pstate)))
       (b* (((mv extension pstate)
-            (if (and (equal token (token-keyword "__extension__"))
+            (if (and (token-keywordp token "__extension__")
                      (parstate->gcc pstate))
                 (mv t pstate)
               (mv nil (unread-token pstate))))
@@ -11910,11 +11953,11 @@
          ;; parse the assembler name specifier,
          ;; any attribute specifiers after that,
          ;; and the ending semicolon.
-         ((and (or (equal token2 (token-keyword "asm"))
-                   (equal token2 (token-keyword "__asm__")))
+         ((and (or (token-keywordp token2 "asm")
+                   (token-keywordp token2 "__asm__"))
                (parstate->gcc pstate))
           ;; [__extension__] declspecs asm-or__asm__
-          (b* ((uscores (equal token2 (token-keyword "__asm__")))
+          (b* ((uscores (token-keywordp token2 "__asm__"))
                ((erp asmspec & pstate)
                 ;; [__extension__] declspecs asmspec
                 (parse-asm-name-specifier uscores span2 pstate))
@@ -11937,7 +11980,7 @@
          ;; we parse the attribute specifiers,
          ;; and the ending semicolon.
          ;; Note that we have no assembler name specifier in this case.
-         ((and (equal token2 (token-keyword "__attribute__"))
+         ((and (token-keywordp token2 "__attribute__")
                (parstate->gcc pstate))
           ;; [__extension__] declspecs __attribute__
           (b* ((pstate (unread-token pstate))
@@ -11992,7 +12035,7 @@
          ;; we have no initializer declarators.
          ;; If GCC extensions are supported,
          ;; this also means that we have no attribute specifiers.
-         ((equal token2 (token-punctuator ";")) ; [__extension__] declspecs ;
+         ((token-punctuatorp token2 ";") ; [__extension__] declspecs ;
           (retok (make-decl-decl :extension extension
                                  :specs declspecs
                                  :init nil
@@ -12007,7 +12050,7 @@
                       :found (token-to-msg token2))))))
      ;; If token is the keyword @('_Static_assert'),
      ;; we have an assert declaration.
-     ((equal token (token-keyword "_Static_assert")) ; _Static_assert
+     ((token-keywordp token "_Static_assert") ; _Static_assert
       (b* (((erp statassert last-span pstate) ; statassert
             (parse-static-assert-declaration span pstate)))
         (retok (decl-statassert statassert)
@@ -12051,7 +12094,7 @@
        ((erp token & pstate) (read-token pstate)))
     (cond
      ;; If token is an open curly brace, we stop.
-     ((equal token (token-punctuator "{"))  ; decl {
+     ((token-punctuatorp token "{")  ; decl {
       (retok (list decl) span pstate))
      ;; If token is anything else, we parse more declarations.
      (t ; decl other
@@ -12137,7 +12180,7 @@
       ;; must be a declaration, even though x could be an expression.
       (b* (((erp token span-semicolon pstate) (read-token pstate))
            (span-stmt (span-join span-expr span-semicolon)))
-        (if (equal token (token-punctuator ";"))
+        (if (token-punctuatorp token ";")
             ;; If a semicolon follows,
             ;; the parsing of an expression statement has succeeded,
             ;; but we must see whether we can also parse a declaration.
@@ -12325,7 +12368,7 @@
           (cond
            ;; If token2 is a colon,
            ;; we must have a labeled statement.
-           ((equal token2 (token-punctuator ":")) ; ident :
+           ((token-punctuatorp token2 ":") ; ident :
             (b* (((erp stmt last-span pstate) ; ident : stmt
                   (parse-statement pstate)))
               (retok (make-stmt-labeled :label (label-name ident)
@@ -12345,12 +12388,12 @@
                      pstate))))))
        ;; If token is an open curly brace,
        ;; we must have a compound statement.
-       ((equal token (token-punctuator "{")) ; {
+       ((token-punctuatorp token "{") ; {
         (b* (((erp token2 span2 pstate) (read-token pstate)))
           (cond
            ;; If token2 is a closed curly brace,
            ;; we have an empty compound statement.
-           ((equal token2 (token-punctuator "}")) ; { }
+           ((token-punctuatorp token2 "}") ; { }
             (retok (stmt-compound nil)
                    (span-join span span2)
                    pstate))
@@ -12366,11 +12409,11 @@
                      pstate))))))
        ;; If token is a semicolon,
        ;; we have an expression statement without expression.
-       ((equal token (token-punctuator ";")) ; ;
+       ((token-punctuatorp token ";") ; ;
         (retok (stmt-expr nil) span pstate))
        ;; If token is the 'case' keyword,
        ;; we must have a labeled statement.
-       ((equal token (token-keyword "case")) ; case
+       ((token-keywordp token "case") ; case
         (b* (((erp cexpr & pstate) ; case constexpr
               (parse-constant-expression pstate))
              ((erp & pstate) (read-punctuator ":" pstate)) ; case constexpr :
@@ -12382,7 +12425,7 @@
                  pstate)))
        ;; If token is the default keyword,
        ;; we must have a labeled statement.
-       ((equal token (token-keyword "default")) ; default
+       ((token-keywordp token "default") ; default
         (b* (((erp & pstate) (read-punctuator ":" pstate)) ; default :
              ((erp stmt last-span pstate) ; default : stmt
               (parse-statement pstate)))
@@ -12391,7 +12434,7 @@
                  (span-join span last-span)
                  pstate)))
        ;; If token is the 'goto' keyword, we have a jump statement.
-       ((equal token (token-keyword "goto")) ; goto
+       ((token-keywordp token "goto") ; goto
         (b* (((erp ident & pstate) (read-identifier pstate)) ; goto ident
              ((erp last-span pstate) ; goto ident ;
               (read-punctuator ";" pstate)))
@@ -12399,14 +12442,14 @@
                  (span-join span last-span)
                  pstate)))
        ;; If token is the keyword 'continue', we have a jump statement.
-       ((equal token (token-keyword "continue")) ; continue
+       ((token-keywordp token "continue") ; continue
         (b* (((erp last-span pstate) ; continue ;
               (read-punctuator ";" pstate)))
           (retok (stmt-continue)
                  (span-join span last-span)
                  pstate)))
        ;; If token is the keyword 'break', we have a jump statement.
-       ((equal token (token-keyword "break")) ; break
+       ((token-keywordp token "break") ; break
         (b* (((erp last-span pstate) ; break ;
               (read-punctuator ";" pstate)))
           (retok (stmt-break)
@@ -12414,7 +12457,7 @@
                  pstate)))
        ;; If token is the keyword 'return', we have a jump statement.
        ;; There may be an expression or not.
-       ((equal token (token-keyword "return")) ; return
+       ((token-keywordp token "return") ; return
         (b* (((erp token2 span2 pstate) (read-token pstate)))
           (cond
            ;; If token2 may start an expression, we must have an expression.
@@ -12427,7 +12470,7 @@
                      (span-join span last-span)
                      pstate)))
            ;; If token2 is a semicolon, there is no expression.
-           ((equal token2 (token-punctuator ";")) ; return ;
+           ((token-punctuatorp token2 ";") ; return ;
             (retok (stmt-return nil)
                    (span-join span span2)
                    pstate))
@@ -12441,7 +12484,7 @@
        ;; after the parenthesized expression and the statement,
        ;; we continue parsing that as part of the current selection statement
        ;; (see documenttion of this function above).
-       ((equal token (token-keyword "if")) ; if
+       ((token-keywordp token "if") ; if
         (b* (((erp & pstate) (read-punctuator "(" pstate)) ; if (
              ((erp expr & pstate) (parse-expression pstate)) ; if ( expr
              ((erp & pstate) (read-punctuator ")" pstate)) ; if ( expr )
@@ -12454,7 +12497,7 @@
           (cond
            ;; If token2 is the 'else' keyword,
            ;; we continue to parse this selection statement.
-           ((equal token2 (token-keyword "else")) ; if ( expr ) stmt else
+           ((token-keywordp token2 "else") ; if ( expr ) stmt else
             (b* (((erp stmt-else last-span pstate) ; if ( expr ) stmt else stmt
                   (parse-statement pstate)))
               (retok (make-stmt-ifelse :test expr
@@ -12472,7 +12515,7 @@
                      (span-join span stmt-span)
                      pstate))))))
        ;; If token is the 'switch' keyword, we have a selection statement.
-       ((equal token (token-keyword "switch")) ; switch
+       ((token-keywordp token "switch") ; switch
         (b* (((erp & pstate) (read-punctuator "(" pstate)) ; switch (
              ((erp expr & pstate) (parse-expression pstate)) ; switch ( expr
              ((erp & pstate) (read-punctuator ")" pstate)) ; switch ( expr )
@@ -12483,7 +12526,7 @@
                  (span-join span last-span)
                  pstate)))
        ;; If token is the 'while' keyword, we have an iteration statement.
-       ((equal token (token-keyword "while")) ; while
+       ((token-keywordp token "while") ; while
         (b* (((erp & pstate) (read-punctuator "(" pstate)) ; while (
              ((erp expr & pstate) (parse-expression pstate)) ; while ( expr
              ((erp & pstate) (read-punctuator ")" pstate)) ; while ( expr )
@@ -12494,7 +12537,7 @@
                  (span-join span last-span)
                  pstate)))
        ;; If token is the 'do' keyword, we have an iteration statement.
-       ((equal token (token-keyword "do")) ; do
+       ((token-keywordp token "do") ; do
         (b* (((erp stmt & pstate) (parse-statement pstate)) ; do stmt
              ((erp & pstate) (read-keyword "while" pstate)) ; do stmt while
              ((erp & pstate) (read-punctuator "(" pstate)) ; do stmt while (
@@ -12509,13 +12552,13 @@
                  (span-join span last-span)
                  pstate)))
        ;; If token is the 'for' keyword, we have an iteration statement.
-       ((equal token (token-keyword "for")) ; for
+       ((token-keywordp token "for") ; for
         (b* (((erp & pstate) (read-punctuator "(" pstate)) ; for (
              ((erp token2 & pstate) (read-token pstate)))
           (cond
            ;; If token2 is a semicolon,
            ;; we have no initializing expression or declaration.
-           ((equal token2 (token-punctuator ";")) ; for ( ;
+           ((token-punctuatorp token2 ";") ; for ( ;
             (b* (((erp token3 span3 pstate) (read-token pstate)))
               (cond
                ;; If token3 may start an expression,
@@ -12547,7 +12590,7 @@
                              pstate)))
                    ;; If token4 is a closed parenthesis,
                    ;; we have no update expression.
-                   ((equal token4 (token-punctuator ")")) ; for ( ; expr ; )
+                   ((token-punctuatorp token4 ")") ; for ( ; expr ; )
                     (b* (((erp stmt last-span pstate) ; for ( ; expr ; ) stmt
                           (parse-statement pstate)))
                       (retok (make-stmt-for-expr :init nil
@@ -12563,7 +12606,7 @@
                                            or a closed parenthesis"
                                 :found (token-to-msg token4))))))
                ;; If token3 is a semicolon, we have no test expression.
-               ((equal token3 (token-punctuator ";")) ; for ( ; ;
+               ((token-punctuatorp token3 ";") ; for ( ; ;
                 (b* (((erp token4 span4 pstate) (read-token pstate)))
                   (cond
                    ;; If token4 may start an expression,
@@ -12584,7 +12627,7 @@
                              pstate)))
                    ;; If token4 is a closed parenthesis,
                    ;; we have no udpate expression.
-                   ((equal token4 (token-punctuator ")")) ; for ( ; ; )
+                   ((token-punctuatorp token4 ")") ; for ( ; ; )
                     (b* (((erp stmt last-span pstate) ; for ( ; ; ) stmt
                           (parse-statement pstate)))
                       (retok (make-stmt-for-expr :init nil
@@ -12652,7 +12695,7 @@
                                 pstate)))
                       ;; If token4 is a closed parenthesis,
                       ;; we have no update expression.
-                      ((equal token4 (token-punctuator ")")) ; for ( ; expr ; )
+                      ((token-punctuatorp token4 ")") ; for ( ; expr ; )
                        (b* (((erp stmt last-span pstate) ; for ( ; expr ; ) stmt
                              (parse-statement pstate)))
                          (retok (make-stmt-for-decl :init decl
@@ -12668,7 +12711,7 @@
                                            or a closed parenthesis"
                                    :found (token-to-msg token4))))))
                   ;; If token3 is a semicolon, we have no test expression.
-                  ((equal token3 (token-punctuator ";")) ; for ( ; ;
+                  ((token-punctuatorp token3 ";") ; for ( ; ;
                    (b* (((erp token4 span4 pstate) (read-token pstate)))
                      (cond
                       ;; If token4 may start an expression,
@@ -12689,7 +12732,7 @@
                                 pstate)))
                       ;; If token4 is a closed parenthesis,
                       ;; we have no udpate expression.
-                      ((equal token4 (token-punctuator ")")) ; for ( ; ; )
+                      ((token-punctuatorp token4 ")") ; for ( ; ; )
                        (b* (((erp stmt last-span pstate) ; for ( ; ; ) stmt
                              (parse-statement pstate)))
                          (retok (make-stmt-for-decl :init decl
@@ -12745,7 +12788,7 @@
                                 pstate)))
                       ;; If token4 is a closed parenthesis,
                       ;; we have no update expression.
-                      ((equal token4 (token-punctuator ")")) ; for ( ; expr ; )
+                      ((token-punctuatorp token4 ")") ; for ( ; expr ; )
                        (b* (((erp stmt last-span pstate) ; for ( ; expr ; ) stmt
                              (parse-statement pstate)))
                          (retok (make-stmt-for-expr :init expr
@@ -12761,7 +12804,7 @@
                                            or a closed parenthesis"
                                    :found (token-to-msg token4))))))
                   ;; If token3 is a semicolon, we have no test expression.
-                  ((equal token3 (token-punctuator ";")) ; for ( ; ;
+                  ((token-punctuatorp token3 ";") ; for ( ; ;
                    (b* (((erp token4 span4 pstate) (read-token pstate)))
                      (cond
                       ;; If token4 may start an expression,
@@ -12782,7 +12825,7 @@
                                 pstate)))
                       ;; If token4 is a closed parenthesis,
                       ;; we have no udpate expression.
-                      ((equal token4 (token-punctuator ")")) ; for ( ; ; )
+                      ((token-punctuatorp token4 ")") ; for ( ; ; )
                        (b* (((erp stmt last-span pstate) ; for ( ; ; ) stmt
                              (parse-statement pstate)))
                          (retok (make-stmt-for-expr :init expr
@@ -12838,7 +12881,7 @@
                                 pstate)))
                       ;; If token4 is a closed parenthesis,
                       ;; we have no update expression.
-                      ((equal token4 (token-punctuator ")")) ; for ( ; expr ; )
+                      ((token-punctuatorp token4 ")") ; for ( ; expr ; )
                        (b* (((erp stmt last-span pstate) ; for ( ; expr ; ) stmt
                              (parse-statement pstate)))
                          (retok (make-stmt-for-ambig :init decl/expr
@@ -12854,7 +12897,7 @@
                                            or a closed parenthesis"
                                    :found (token-to-msg token4))))))
                   ;; If token3 is a semicolon, we have no test expression.
-                  ((equal token3 (token-punctuator ";")) ; for ( ; ;
+                  ((token-punctuatorp token3 ";") ; for ( ; ;
                    (b* (((erp token4 span4 pstate) (read-token pstate)))
                      (cond
                       ;; If token4 may start an expression,
@@ -12875,7 +12918,7 @@
                                 pstate)))
                       ;; If token4 is a closed parenthesis,
                       ;; we have no udpate expression.
-                      ((equal token4 (token-punctuator ")")) ; for ( ; ; )
+                      ((token-punctuatorp token4 ")") ; for ( ; ; )
                        (b* (((erp stmt last-span pstate) ; for ( ; ; ) stmt
                              (parse-statement pstate)))
                          (retok (make-stmt-for-ambig :init decl/expr
@@ -12963,7 +13006,7 @@
           (cond
            ;; If token2 is a colon, we must have a labeled statement.
            ;; We put back colon and label, and parse a statement.
-           ((equal token2 (token-punctuator ":")) ; ident :
+           ((token-punctuatorp token2 ":") ; ident :
             (b* ((pstate (unread-token pstate)) ; ident
                  (pstate (unread-token pstate)) ;
                  ((erp stmt span pstate) (parse-statement pstate))) ; stmt
@@ -13034,7 +13077,7 @@
          ((erp token & pstate) (read-token pstate)))
       (cond
        ;; If token is a closed curly brace, we have reached the end of the list.
-       ((equal token (token-punctuator "}")) ; item }
+       ((token-punctuatorp token "}") ; item }
         (b* ((pstate (unread-token pstate))) ; item
           (retok (list item) span pstate)))
        ;; Otherwise, we recursively parse more block items,
@@ -13147,7 +13190,7 @@
     (cond
      ;; If token is the keyword '_Static_assert',
      ;; we have a static assertion declaration.
-     ((equal token (token-keyword "_Static_assert")) ; _Static_assert
+     ((token-keywordp token "_Static_assert") ; _Static_assert
       (b* (((erp statassert span pstate) ; statassert
             (parse-static-assert-declaration span pstate)))
         (retok (extdecl-decl (decl-statassert statassert)) span pstate)))
@@ -13156,7 +13199,7 @@
      ;; if GCC extensions are supported.
      (t
       (b* (((mv extension pstate)
-            (if (and (equal token (token-keyword "__extension__"))
+            (if (and (token-keywordp token "__extension__")
                      (parstate->gcc pstate))
                 (mv t pstate)
               (mv nil (if token (unread-token pstate) pstate))))
@@ -13167,7 +13210,7 @@
         (cond
          ;; If token2 is a semicolon,
          ;; we must have a declaration without initialization declarators.
-         ((equal token2 (token-punctuator ";")) ; [__extension__] declspecs ;
+         ((token-punctuatorp token2 ";") ; [__extension__] declspecs ;
           (retok (extdecl-decl (make-decl-decl :extension extension
                                                :specs declspecs
                                                :init nil
@@ -13181,11 +13224,11 @@
          ;; and this external declaration must be a declaration
          ;; (we do not support attributes of function definitions).
          ;; We also conditionally parse any attributes before the semicolon.
-         ((and (or (equal token2 (token-keyword "asm"))
-                   (equal token2 (token-keyword "__asm__")))
+         ((and (or (token-keywordp token2 "asm")
+                   (token-keywordp token2 "__asm__"))
                (parstate->gcc pstate))
           ;; [__extension__] declspecs asm-or-__asm__
-          (b* ((uscores (equal token2 (token-keyword "__asm__")))
+          (b* ((uscores (token-keywordp token2 "__asm__"))
                ((erp asmspec & pstate)
                 ;; [__extension__] declspecs asmspec
                 (parse-asm-name-specifier uscores span2 pstate))
@@ -13207,7 +13250,7 @@
          ;; we parse one or more attribute specifiers,
          ;; and this external declaration must be a declaration
          ;; (we do not support attributes of function definitions).
-         ((and (equal token2 (token-keyword "__attribute__"))
+         ((and (token-keywordp token2 "__attribute__")
                (parstate->gcc pstate))
           ;; [__extension__] declspecs __attribute__
           (b* ((pstate (unread-token pstate)) ; [__extension__] declspecs
@@ -13242,7 +13285,7 @@
              ;; we also parse an optional assembler name specifier
              ;; as well as zero or more attribute specifiers,
              ;; before the ending semicolon.
-             ((equal token3 (token-punctuator "="))
+             ((token-punctuatorp token3 "=")
               ;; [__extension__] declspecs declor =
               (b* (((erp initer & pstate)
                     ;; [__extension__] declspecs declor = initer
@@ -13251,7 +13294,7 @@
                 (cond
                  ;; If token4 is a semicolon,
                  ;; we have reached the end of the declarator.
-                 ((equal token4 (token-punctuator ";"))
+                 ((token-punctuatorp token4 ";")
                   ;; [__extension__] declspecs declor = initer ;
                   (retok (extdecl-decl
                           (make-decl-decl
@@ -13266,7 +13309,7 @@
                          pstate))
                  ;; If token4 is a comma,
                  ;; we must have more initialization declarators.
-                 ((equal token4 (token-punctuator ","))
+                 ((token-punctuatorp token4 ",")
                   ;; [__extension__] declspecs declor = initer ,
                   (b* (((erp initdeclors & pstate)
                         ;; [__extension__] declspecs declor = initer , initdeclors
@@ -13304,11 +13347,11 @@
                  ;; we have just one declarator with the initializer,
                  ;; followed by an assembler name specifier,
                  ;; and possibly by attribute specifiers.
-                 ((and (or (equal token4 (token-keyword "asm"))
-                           (equal token4 (token-keyword "__asm__")))
+                 ((and (or (token-keywordp token4 "asm")
+                           (token-keywordp token4 "__asm__"))
                        (parstate->gcc pstate))
                   ;; [__extension__] declspecs declor = initer asm-or-__asm__
-                  (b* ((uscore (equal token4 (token-keyword "__asm__")))
+                  (b* ((uscore (token-keywordp token4 "__asm__"))
                        ((erp asmspec & pstate)
                         ;; [__extension__] declspecs declor = initer asmspec
                         (parse-asm-name-specifier uscore span4 pstate))
@@ -13335,7 +13378,7 @@
                  ;; and GCC extensions are supported,
                  ;; we have just one declarator with the initializer,
                  ;; followed by attribute specifiers, which we parse.
-                 ((and (equal token4 (token-keyword "__attribute__"))
+                 ((and (token-keywordp token4 "__attribute__")
                        (parstate->gcc pstate))
                   ;; [__extension__] declspecs declor = initer __attribute__
                   (b* ((pstate (unread-token pstate))
@@ -13367,7 +13410,7 @@
              ;; without initializer,
              ;; and the external declaration must be a declaration,
              ;; which the semicolon concludes.
-             ((equal token3 (token-punctuator ";"))
+             ((token-punctuatorp token3 ";")
               ;; [__extension__] declspecs declor ;
               (retok (extdecl-decl
                       (make-decl-decl
@@ -13389,7 +13432,7 @@
              ;; we also parse an optional assembler name specifier
              ;; as well as zero or more attribute specifiers,
              ;; just before the final semicolon.
-             ((equal token3 (token-punctuator ","))
+             ((token-punctuatorp token3 ",")
               ;; [__extension__] declspecs declor ,
               (b* (((erp initdeclors & pstate)
                     ;; [__extension__] declspecs declor , initdeclors
@@ -13425,11 +13468,11 @@
              ;; and we parse the assembler name specifier,
              ;; followed by zero or more attribute specifiers,
              ;; and then the final semicolon.
-             ((and (or (equal token3 (token-keyword "asm"))
-                       (equal token3 (token-keyword "__asm__")))
+             ((and (or (token-keywordp token3 "asm")
+                       (token-keywordp token3 "__asm__"))
                    (parstate->gcc pstate))
               ;; [__extension__] declspecs declor asm-or-__asm__
-              (b* ((uscores (equal token3 (token-keyword "__asm__")))
+              (b* ((uscores (token-keywordp token3 "__asm__"))
                    ((erp asmspec & pstate)
                     ;; [__extension__] declspecs declor asmspec
                     (parse-asm-name-specifier uscores span3 pstate))
@@ -13454,7 +13497,7 @@
              ;; and GCC extensions are supported,
              ;; this external declaration must be a declaration,
              ;; and we parse one or more attribute specifiers.
-             ((and (equal token3 (token-keyword "__attribute__"))
+             ((and (token-keywordp token3 "__attribute__")
                    (parstate->gcc pstate))
               ;; [__extension__] declspecs declor __attribute
               (b* ((pstate (unread-token pstate))
@@ -13487,7 +13530,7 @@
              ;; between the declarator and the function body.
              ;; We put back the token and we parse the statement,
              ;; which must be a compound statement as required by the grammar.
-             ((equal token3 (token-punctuator "{"))
+             ((token-punctuatorp token3 "{")
               ;; [__extension__] declspecs declor {
               (b* ((pstate (unread-token pstate))
                    ;; [__extension__] declspecs declor
@@ -13512,7 +13555,7 @@
                     ;; [__extension__] declspecs declor decls
                     (parse-declaration-list pstate))
                    ((erp token4 span4 pstate) (read-token pstate))
-                   ((unless (equal token4 (token-punctuator "{")))
+                   ((unless (token-punctuatorp token4 "{"))
                     (reterr-msg :where (position-to-msg (span->start span4))
                                 :expected "an open curly brace"
                                 :found (token-to-msg token4)))
