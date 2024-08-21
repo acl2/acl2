@@ -1415,6 +1415,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-statement
+
+(test-parse
+ parse-statement
+ "   printf(\"exploit_read_from_file(): \"
+          \"bytes_read=%zd is supposed to be bytes_expected_to_be_read=%zd, \"
+          \"pre_offset=%ld is supposed to be post_offset=%ld, \"
+          \"pre_offset is supposed to be 1, \"
+          \"post_offset is supposed to be 1.\\n\",
+          ret, exploit_size,
+          pre_offset, post_offset);")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-block-item
 
 (test-parse
