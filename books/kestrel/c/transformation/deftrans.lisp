@@ -817,7 +817,8 @@
       specqual
       :tyspec (spec/qual-tyspec (,(cdr (assoc-eq 'type-spec names)) specqual.unwrap ,@extra-args-names))
       :tyqual (spec/qual-fix specqual)
-      :align (spec/qual-align (,(cdr (assoc-eq 'align-spec names)) specqual.unwrap ,@extra-args-names)))
+      :align (spec/qual-align (,(cdr (assoc-eq 'align-spec names)) specqual.unwrap ,@extra-args-names))
+      :attrib (spec/qual-fix specqual))
    '(:returns (new-specqual spec/qual-p)
      :measure (spec/qual-count specqual))))
 
@@ -877,7 +878,8 @@
       :tyspec (declspec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.unwrap ,@extra-args-names))
       :tyqual (declspec-fix declspec)
       :funspec (declspec-fix declspec)
-      :align (declspec-align (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names)))
+      :align (declspec-align (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names))
+      :attrib (declspec-fix declspec))
    '(:returns (new-declspec declspecp)
      :measure (declspec-count declspec))))
 
