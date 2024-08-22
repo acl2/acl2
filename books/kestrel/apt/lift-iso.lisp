@@ -15,7 +15,7 @@
 (include-book "utilities/deftransformation")
 (include-book "utilities/names")
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
-(include-book "kestrel/std/util/defiso" :dir :system)
+(include-book "std/util/defiso" :dir :system)
 (include-book "kestrel/utilities/negate-form" :dir :system)
 (include-book "kestrel/utilities/reconstruct-macros" :dir :system)
 (include-book "kestrel/utilities/make-or-nice" :dir :system)
@@ -1160,4 +1160,3 @@ Example: int10-map-p-->-int20-map-p
    (iso-pred-name 'nil)
    ;; (hints-map 'nil)
    ))
-

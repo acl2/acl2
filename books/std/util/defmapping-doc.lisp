@@ -1,10 +1,10 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,20 +13,21 @@
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 
 ; (depends-on "design-notes/defmapping.pdf")
-; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
+; (depends-on "design-notes/notation.pdf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *defmapping-design-notes*
-  (xdoc::a
-   :href "res/kestrel-std-util-design-notes/defmapping.pdf"
-   "design notes"))
+  (xdoc::ahref "res/std-util-design-notes/defmapping.pdf" "design notes"))
+
+(defconst *notation-design-notes*
+  (xdoc::ahref "res/std-util-design-notes/notation.pdf" "notation"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defmapping
 
-  :parents (std::std/util-extensions std/util)
+  :parents (std/util)
 
   :short "Establish a mapping between two domains."
 
@@ -44,7 +45,7 @@
       The domains and conversions are illustrated in these "
      *defmapping-design-notes*
      ", which use this "
-     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "notation")
+     *notation-design-notes*
      ". Each of the conversions may be
       injective, surjective, both (i.e. bijective), or neither.")
 

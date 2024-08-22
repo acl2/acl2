@@ -1,10 +1,10 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -19,11 +19,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Template-based tests for n = m = 1.
+; Template-based tests for n = 1 and m = 2.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(definputs-guarded-1-1)
+(definputs-guarded-1-2)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,9 +31,9 @@
 
 (progn
   (defun doma* (a) (doma a))
-  (defun domb* (b) (domb b))
+  (defun domb* (b1 b2) (domb b1 b2))
   (defun alpha* (a) (alpha a))
-  (defun beta* (b) (beta b)))
+  (defun beta* (b1 b2) (beta b1 b2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,7 +42,8 @@
  (must-be-before-defmapping)
  (enable-all)
  (defmapping map doma domb alpha beta)
- (must-be-after-defmapping)
+ (must-be-after-defmapping :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,17 +53,9 @@
  (must-be-before-defmapping :beta-of-alpha-thm t)
  (enable-all)
  (defmapping map doma domb alpha beta :beta-of-alpha-thm t)
- (must-be-after-defmapping :beta-of-alpha-thm t)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (test-title "Injective alpha, unconditional.")
- (must-be-before-defmapping :beta-of-alpha-thm t)
- (enable-all-uncond)
- (defmapping map doma domb alpha beta :beta-of-alpha-thm t :unconditional t)
- (must-be-after-defmapping :beta-of-alpha-thm t :unconditional t)
+ (must-be-after-defmapping :beta-of-alpha-thm t
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,17 +65,9 @@
  (must-be-before-defmapping :alpha-of-beta-thm t)
  (enable-all)
  (defmapping map doma domb alpha beta :alpha-of-beta-thm t)
- (must-be-after-defmapping :alpha-of-beta-thm t)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (test-title "Surjective alpha, unconditional.")
- (must-be-before-defmapping :alpha-of-beta-thm t)
- (enable-all-uncond)
- (defmapping map doma domb alpha beta :alpha-of-beta-thm t :unconditional t)
- (must-be-after-defmapping :alpha-of-beta-thm t :unconditional t)
+ (must-be-after-defmapping :alpha-of-beta-thm t
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -92,20 +77,10 @@
  (must-be-before-defmapping :beta-of-alpha-thm t :alpha-of-beta-thm t)
  (enable-all)
  (defmapping map doma domb alpha beta :beta-of-alpha-thm t :alpha-of-beta-thm t)
- (must-be-after-defmapping :beta-of-alpha-thm t :alpha-of-beta-thm t)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (test-title "Bijective alpha, unconditional.")
- (must-be-before-defmapping :beta-of-alpha-thm t :alpha-of-beta-thm t)
- (enable-all-uncond)
- (defmapping map doma domb alpha beta
-   :beta-of-alpha-thm t :alpha-of-beta-thm t :unconditional t)
  (must-be-after-defmapping :beta-of-alpha-thm t
                            :alpha-of-beta-thm t
-                           :unconditional t)
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,7 +90,9 @@
  (must-be-before-defmapping :guard-thms nil)
  (enable-all)
  (defmapping map doma domb alpha beta :guard-thms nil)
- (must-be-after-defmapping :guard-thms nil)
+ (must-be-after-defmapping :guard-thms nil
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -125,20 +102,10 @@
  (must-be-before-defmapping :beta-of-alpha-thm t :guard-thms nil)
  (enable-all)
  (defmapping map doma domb alpha beta :beta-of-alpha-thm t :guard-thms nil)
- (must-be-after-defmapping :beta-of-alpha-thm t :guard-thms nil)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (test-title "Injective alpha, unconditional, no guard theorems.")
- (must-be-before-defmapping :beta-of-alpha-thm t :guard-thms nil)
- (enable-all-uncond)
- (defmapping map doma domb alpha beta
-   :beta-of-alpha-thm t :guard-thms nil :unconditional t)
  (must-be-after-defmapping :beta-of-alpha-thm t
                            :guard-thms nil
-                           :unconditional t)
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -148,20 +115,10 @@
  (must-be-before-defmapping :alpha-of-beta-thm t :guard-thms nil)
  (enable-all)
  (defmapping map doma domb alpha beta :alpha-of-beta-thm t :guard-thms nil)
- (must-be-after-defmapping :alpha-of-beta-thm t :guard-thms nil)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (test-title "Surjective alpha, unconditional, no guard theorems.")
- (must-be-before-defmapping :alpha-of-beta-thm t :guard-thms nil)
- (enable-all-uncond)
- (defmapping map doma domb alpha beta
-   :alpha-of-beta-thm t :guard-thms nil :unconditional t)
  (must-be-after-defmapping :alpha-of-beta-thm t
                            :guard-thms nil
-                           :unconditional t)
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -176,23 +133,9 @@
    :beta-of-alpha-thm t :alpha-of-beta-thm t :guard-thms nil)
  (must-be-after-defmapping :beta-of-alpha-thm t
                            :alpha-of-beta-thm t
-                           :guard-thms nil)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (test-title "Bijective alpha, unconditional, no guard theorems.")
- (must-be-before-defmapping :beta-of-alpha-thm t
-                            :alpha-of-beta-thm t
-                            :guard-thms nil)
- (enable-all-uncond)
- (defmapping map doma domb alpha beta
-   :beta-of-alpha-thm t :alpha-of-beta-thm t :guard-thms nil :unconditional t)
- (must-be-after-defmapping :beta-of-alpha-thm t
-                           :alpha-of-beta-thm t
                            :guard-thms nil
-                           :unconditional t)
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -206,7 +149,9 @@
    :thm-names (:alpha-image my-alpha-image
                :alpha-guard my-alpha-guard))
  (must-be-after-defmapping :alpha-image my-alpha-image
-                           :alpha-guard my-alpha-guard)
+                           :alpha-guard my-alpha-guard
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -232,7 +177,9 @@
                            :doma-guard my-doma-guard
                            :domb-guard my-domb-guard
                            :alpha-guard my-alpha-guard
-                           :beta-guard my-beta-guard)
+                           :beta-guard my-beta-guard
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -243,7 +190,9 @@
  (enable-all)
  (defmapping map doma domb alpha beta :thm-enable (:alpha-image :domb-guard))
  (must-be-after-defmapping :alpha-image-enable t
-                           :domb-guard-enable t)
+                           :domb-guard-enable t
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -260,7 +209,9 @@
                            :doma-guard-enable t
                            :domb-guard-enable t
                            :alpha-guard-enable t
-                           :beta-guard-enable t)
+                           :beta-guard-enable t
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -357,9 +308,9 @@
  (enable-all)
  (defmapping map
    (lambda (a) (doma a))
-   (lambda (b) (domb b))
+   (lambda (b1 b2) (domb b1 b2))
    (lambda (a) (alpha a))
-   (lambda (b) (beta b)))
+   (lambda (b1 b2) (beta b1 b2)))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -368,9 +319,9 @@
  (test-title "Macros.")
  (enable-all)
  (defmacro doma$ (a) `(doma ,a))
- (defmacro domb$ (b) `(domb ,b))
+ (defmacro domb$ (b1 b2) `(domb ,b1 ,b2))
  (defmacro alpha$ (a) `(alpha ,a))
- (defmacro beta$ (b) `(beta ,b))
+ (defmacro beta$ (b1 b2) `(beta ,b1 ,b2))
  (defmapping map doma$ domb$ alpha$ beta$)
  :with-output-off nil)
 
@@ -386,7 +337,9 @@
                            :doma doma*
                            :domb domb*
                            :alpha alpha*
-                           :beta beta*)
+                           :beta beta*
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

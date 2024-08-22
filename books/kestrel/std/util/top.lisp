@@ -10,17 +10,7 @@
 
 (in-package "STD")
 
-(include-book "definj")
-(include-book "definj-doc")
-
-(include-book "defiso")
-(include-book "defiso-doc")
-
-(include-book "defmapping")
-(include-book "defmapping-doc")
-
-(include-book "defsurj")
-(include-book "defsurj-doc")
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
