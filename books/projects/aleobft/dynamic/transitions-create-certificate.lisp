@@ -547,10 +547,15 @@
     "The states of the correct endorsers are updated
      using @(tsee create-certificate-endorsers-next).")
    (xdoc::p
-    "The certificate is broadcast to all the correct validators.
+    "The certificate is broadcast to all the correct validators,
+     except for the author if correct.
      This is realized by adding to the network
-     one message for each correct validator as destination,
-     all containing the certificate.")
+     one message for each correct validator as destination
+     (except the author if correct),
+     all containing the certificate.
+     The deletion (via @(tsee set::delete)) of the certificate's author
+     from the set of all correct validators has no effect
+     if the certtificate's author is faulty, as appropriate.")
    (xdoc::p
     "It may seems strange that the messages are sent only to correct validators,
      since a validator does not know which validators are correct or faulty.
@@ -617,7 +622,10 @@
           systate))
        (systate (create-certificate-endorsers-next cert systate))
        (network (get-network-state systate))
-       (msgs (make-certificate-messages cert (correct-addresses systate)))
+       (msgs (make-certificate-messages cert
+                                        (set::delete
+                                         cert.author
+                                         (correct-addresses systate))))
        (new-network (set::union msgs network))
        (systate (update-network-state new-network systate)))
     systate)
