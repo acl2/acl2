@@ -113,3 +113,27 @@
                          (set::in (message->destination msg)
                                   dests))))
     :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define message-certificates-with-destination ((dest addressp)
+                                               (msgs message-setp))
+  :returns (certs certificate-setp)
+  :short "Filter the messages with a given destination from a set of messages,
+          and return their certificates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This can be used to obtain, from the network (which is a set of messages),
+     the certificates addressed to a certain validator."))
+  (b* (((when (set::emptyp msgs)) nil)
+       (msg (set::head msgs)))
+    (if (equal (message->destination msg) (address-fix dest))
+        (set::insert (message->certificate msg)
+                     (message-certificates-with-destination dest
+                                                            (set::tail msgs)))
+      (message-certificates-with-destination dest (set::tail msgs))))
+  :verify-guards :after-returns
+  ///
+  (fty::deffixequiv message-certificates-with-destination
+    :args ((dest addressp))))
