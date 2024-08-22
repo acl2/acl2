@@ -134,6 +134,66 @@
                                                             (set::tail msgs)))
       (message-certificates-with-destination dest (set::tail msgs))))
   :verify-guards :after-returns
+
   ///
+
   (fty::deffixequiv message-certificates-with-destination
-    :args ((dest addressp))))
+    :args ((dest addressp)))
+
+  (defruled in-of-message-certificates-with-destination
+    (implies (message-setp msgs)
+             (equal (set::in cert
+                             (message-certificates-with-destination dest msgs))
+                    (and (set::in (message cert dest) msgs)
+                         (certificatep cert))))
+    :induct t
+    :enable set::in)
+
+  (defruled message-certificates-with-destination-when-emptyp
+    (implies (set::emptyp msgs)
+             (equal (message-certificates-with-destination dest msgs)
+                    nil)))
+
+  (defruled message-certificates-with-destination-of-insert
+    (implies (and (messagep msg)
+                  (message-setp msgs))
+             (equal (message-certificates-with-destination
+                     dest (set::insert msg msgs))
+                    (if (equal (message->destination msg) (address-fix dest))
+                        (set::insert (message->certificate msg)
+                                     (message-certificates-with-destination
+                                      dest msgs))
+                      (message-certificates-with-destination dest msgs))))
+    :enable (in-of-message-certificates-with-destination
+             set::expensive-rules
+             set::double-containment-no-backchain-limit)
+    :disable message-certificates-with-destination)
+
+  (defruled message-certificates-with-destination-of-union
+    (implies (and (message-setp msgs1)
+                  (message-setp msgs2))
+             (equal (message-certificates-with-destination
+                     dest (set::union msgs1 msgs2))
+                    (set::union
+                     (message-certificates-with-destination dest msgs1)
+                     (message-certificates-with-destination dest msgs2))))
+    :enable (in-of-message-certificates-with-destination
+             set::expensive-rules
+             set::double-containment-no-backchain-limit)
+    :disable message-certificates-with-destination)
+
+  (defruled message-certificates-with-destination-of-delete
+    (implies (message-setp msgs)
+             (equal (message-certificates-with-destination
+                     dest (set::delete msg msgs))
+                    (if (and (set::in msg msgs)
+                             (equal (message->destination msg)
+                                    (address-fix dest)))
+                        (set::delete (message->certificate msg)
+                                     (message-certificates-with-destination
+                                      dest msgs))
+                      (message-certificates-with-destination dest msgs))))
+    :enable (in-of-message-certificates-with-destination
+             set::expensive-rules
+             set::double-containment-no-backchain-limit)
+    :disable message-certificates-with-destination))
