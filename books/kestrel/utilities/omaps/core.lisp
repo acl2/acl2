@@ -1032,7 +1032,12 @@
        (implies (and (set::in x (keys map))
                      (set::in x keys))
                 (set::in x (keys (restrict keys map))))
-       :enable restrict))))
+       :enable restrict)))
+
+  (defrule head-key-not-in-keys-of-tail
+    (not (set::in (mv-nth 0 (head map))
+                  (keys (tail map))))
+    :enable in-of-keys-to-assoc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1186,7 +1191,19 @@
   ;;              (size m)
   ;;            (1+ (size m)))))
 
-)
+  (defruled size-to-cardinality-of-keys
+    (equal (size map)
+           (set::cardinality (keys map)))
+    :induct t
+    :enable (size keys set::expensive-rules))
+
+  (defruled cardinality-of-keys-to-size
+    (equal (set::cardinality (keys map))
+           (size map))
+    :enable size-to-cardinality-of-keys)
+
+  (theory-invariant (incompatible (:rewrite size-to-cardinality-of-keys)
+                                  (:rewrite cardinality-of-keys-to-size))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

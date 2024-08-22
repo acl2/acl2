@@ -1,1 +1,6 @@
-stdbool-printed.c
+simple-renamed.c
+stdbool-renamed.c
+stdint-renamed.c
+
+simple-renamed-renamed.c
+stdbool-renamed-renamed.c

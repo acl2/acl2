@@ -24,9 +24,12 @@
                                    read-char
                                    read-files
                                    schar
+                                   type
+                                   typep
                                    unread-char))
               '(any
                 bool
+                bool-fix
                 bytep
                 byte-list
                 byte-listp
@@ -37,6 +40,7 @@
                 erp
                 impossible
                 keyword-listp
+                keyword-value-list-to-alist
                 make-event-terse
                 nat
                 nat-list
@@ -44,8 +48,10 @@
                 nats=>string
                 pos
                 pseudo-event-formp
+                pseudo-event-form-listp
                 reterr
                 retok
+                string-optionp
                 unsigned-byte-listp
                 std::defret-mutual
                 str::dec-digit-char

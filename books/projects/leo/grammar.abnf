@@ -1,0 +1,522 @@
+; Leo Library
+;
+; Copyright (C) 2019-2023 Aleo Systems Inc.
+; Copyright (C) 2024 Provable Inc.
+;
+; License: See the LICENSE file distributed with this library.
+;
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This file specifies the grammar of Leo in the ABNF notation,
+; which is defined in:
+; - RFC 5234 (https://www.rfc-editor.org/rfc/rfc5234)
+; - RFC 7405 (https://www.rfc-editor.org/rfc/rfc7405)
+
+; Leo files are written in Unicode, encoded in UTF-8.
+; The grammar in this file applies to the Unicode scalar values
+; that result from the UTF-8 decoding of the files.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Lexical Grammar
+; ---------------
+
+ascii = %x00-7F
+
+safe-nonascii = %x80-2029 / %x202F-2065 / %x206A-D7FF / %xE000-10FFFF
+                ; excludes bidi embeddings/overrides/isolates
+                ; (i.e. %x202A-202E and %x2066-2069)
+                ; and excludes high/low surrogates
+                ; (i.e. %xD800-DFFF )
+
+character = ascii / safe-nonascii
+
+line-terminator = line-feed / carriage-return line-feed
+
+line-feed = %x0A
+
+carriage-return = %x0D
+
+whitespace = space
+           / horizontal-tab
+           / form-feed
+           / line-terminator
+           / carriage-return ; not followed by line feed
+
+space = %x20
+
+horizontal-tab = %x09
+
+form-feed = %x0C
+
+comment = block-comment / line-comment
+
+block-comment = "/*" rest-of-block-comment
+
+rest-of-block-comment =
+      "*" rest-of-block-comment-after-star
+    / not-star-or-line-feed rest-of-block-comment
+    / line-terminator rest-of-block-comment
+
+rest-of-block-comment-after-star =
+      "/"
+    / "*" rest-of-block-comment-after-star
+    / not-star-or-slash-or-line-feed rest-of-block-comment
+    / line-terminator rest-of-block-comment
+
+not-star-or-line-feed = %x00-09
+                      ; no line feed (%x0A)
+                      / %x0B-29
+                      ; no * (%x2A)
+                      / %x2B-7E
+                      / safe-nonascii
+
+not-star-or-slash-or-line-feed = %x00-09
+                               ; no line feed (%x0A)
+                               / %x0B-29
+                               ; no * (%x2A)
+                               / %x2B-2E
+                               ; no / (%x2F)
+                               / %x30-7E
+                               / safe-nonascii
+
+line-comment = "//" *not-line-feed line-terminator
+
+not-line-feed = %x00-09
+              ; no line feed (%x0A)
+              / %x0B-7F
+              / safe-nonascii
+
+keyword = %s"address"
+        / %s"aleo"
+        / %s"as"
+        / %s"assert"
+        / %s"assert_eq"
+        / %s"assert_neq"
+        / %s"async"
+        / %s"block"
+        / %s"bool"
+        / %s"const"
+        / %s"constant"
+        / %s"else"
+        / %s"field"
+        / %s"Fn"
+        / %s"for"
+        / %s"function"
+        / %s"Future"
+        / %s"group"
+        / %s"i8"
+        / %s"i16"
+        / %s"i32"
+        / %s"i64"
+        / %s"i128"
+        / %s"if"
+        / %s"import"
+        / %s"in"
+        / %s"inline"
+        / %s"let"
+        / %s"mapping"
+        / %s"network"
+        / %s"private"
+        / %s"program"
+        / %s"public"
+        / %s"record"
+        / %s"return"
+        / %s"scalar"
+        / %s"self"
+        / %s"signature"
+        / %s"string"
+        / %s"struct"
+        / %s"transition"
+        / %s"u8"
+        / %s"u16"
+        / %s"u32"
+        / %s"u64"
+        / %s"u128"
+
+uppercase-letter = %x41-5A ; A-Z
+
+lowercase-letter = %x61-7A ; a-z
+
+letter = uppercase-letter / lowercase-letter
+
+decimal-digit = %x30-39 ; 0-9
+
+nonzero-decimal-digit = %x31-39 ; 1-9
+
+identifier = letter *( letter / decimal-digit / "_" )
+             ; but not a keyword or a boolean literal or aleo1...
+
+numeral = 1*( decimal-digit *"_" )
+
+tuple-index = "0" / nonzero-decimal-digit *( decimal-digit )
+              ; i.e. numeral without extra leading zeros
+
+unsigned-literal = numeral ( %s"u8" / %s"u16" / %s"u32" / %s"u64" / %s"u128" )
+
+signed-literal = numeral ( %s"i8" / %s"i16" / %s"i32" / %s"i64" / %s"i128" )
+
+integer-literal = unsigned-literal
+                / signed-literal
+
+field-literal = numeral %s"field"
+
+product-group-literal = numeral %s"group"
+
+scalar-literal = numeral %s"scalar"
+
+numeric-literal = integer-literal
+                / field-literal
+                / product-group-literal
+                / scalar-literal
+
+boolean-literal = %s"true" / %s"false"
+
+explicit-address-literal = %s"aleo1" 58( lowercase-letter / decimal-digit )
+
+string-literal = double-quote *string-character double-quote
+
+double-quote = %x22
+
+string-character = not-double-quote-or-line-feed
+                 / line-terminator
+
+not-double-quote-or-line-feed = %x00-09
+                              ; no line feed (%x0A)
+                              / %x0B-21
+                              ; no double quote (%x22)
+                              / %x23-7F
+                              / safe-nonascii
+
+atomic-literal = numeric-literal
+               / boolean-literal
+               / explicit-address-literal
+               / string-literal
+
+annotation = "@" identifier
+
+symbol = "!"
+       / "&&" / "||"
+       / "==" / "!="
+       / "<" / "<=" / ">" / ">="
+       / "&" / "|" / "^"
+       / "<<" / ">>"
+       / "+" / "-" / "*" / "/" / "%" / "**"
+       / "="
+       / "+=" / "-=" / "*=" / "/=" / "%=" / "**="
+       / "<<=" / ">>="
+       / "&=" / "|=" / "^="
+       / "&&=" / "||="
+       / "(" / ")"
+       / "[" / "]"
+       / "{" / "}"
+       / "," / "." / ".." / ";" / ":" / "::" / "?"
+       / "->" / "=>" / "_"
+       / %s")group"
+
+token = keyword
+      / identifier
+      / atomic-literal
+      / numeral
+      / annotation
+      / symbol
+
+lexeme = token / comment / whitespace
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Syntactic Grammar
+; -----------------
+
+program-id = identifier "." network
+
+network = %s"aleo"
+
+locator = program-id "/" identifier
+
+unsigned-type = %s"u8" / %s"u16" / %s"u32" / %s"u64" / %s"u128"
+
+signed-type = %s"i8" / %s"i16" / %s"i32" / %s"i64" / %s"i128"
+
+integer-type = unsigned-type / signed-type
+
+field-type = %s"field"
+
+group-type = %s"group"
+
+scalar-type = %s"scalar"
+
+arithmetic-type = integer-type / field-type / group-type / scalar-type
+
+boolean-type = %s"bool"
+
+address-type = %s"address"
+
+signature-type = %s"signature"
+
+string-type = %s"string"
+
+named-primitive-type = boolean-type
+                     / arithmetic-type
+                     / address-type
+                     / signature-type
+                     / string-type
+
+unit-type = "(" ")"
+
+primitive-type = named-primitive-type / unit-type
+
+untyped-future-type = %s"Future"
+
+typed-future-type =
+    %s"Future" "<" %s"Fn" "(" [ type 1*( "," type ) [ "," ] ] ")" ">"
+
+future-type = untyped-future-type / typed-future-type
+
+tuple-type = "(" type 1*( "," type ) [ "," ] ")"
+
+array-type = "[" type ";" numeral "]"
+
+type = primitive-type
+     / future-type
+     / tuple-type
+     / array-type
+
+named-type = named-primitive-type
+           / untyped-future-type
+           / identifier
+
+group-coordinate = ( [ "-" ] numeral ) / "+" / "-" / "_"
+
+affine-group-literal = "(" group-coordinate "," group-coordinate %s")group"
+
+program-address-literal = program-id
+
+literal = atomic-literal
+        / affine-group-literal
+        / program-address-literal
+
+group-literal = product-group-literal / affine-group-literal
+
+address-literal = explicit-address-literal / program-address-literal
+
+primary-expression = literal
+                   / variable
+                   / locator
+                   / associated-constant
+                   / "(" expression ")"
+                   / free-function-call
+                   / associated-function-call
+                   / unit-expression
+                   / tuple-expression
+                   / array-expression
+                   / struct-expression
+                   / self-expression
+                   / block-expression
+                   / network-expression
+
+variable = identifier
+
+associated-constant = named-type "::" identifier
+
+free-function-call = identifier function-arguments
+                   / locator function-arguments
+
+associated-function-call = named-type "::" identifier function-arguments
+
+function-arguments = "(" [ expression *( "," expression ) [ "," ] ] ")"
+
+unit-expression = "(" ")"
+
+tuple-expression = "(" expression 1*( "," expression ) [ "," ] ")"
+
+array-expression = "[" expression 1*( "," expression ) [ "," ] "]"
+
+struct-expression = identifier "{" struct-component-initializer
+                                   *( "," struct-component-initializer )
+                                   [ "," ] "}"
+
+struct-component-initializer = identifier
+                             / identifier ":" expression
+
+self-expression = %s"self" "." %s"address"
+                / %s"self" "." %s"caller"
+                / %s"self" "." %s"signer"
+
+block-expression = %s"block" "." %s"height"
+
+network-expression = %s"network" "." %s"id"
+
+postfix-expression = primary-expression
+                   / tuple-component-expression
+                   / array-component-expression
+                   / struct-component-expression
+                   / method-call
+
+tuple-component-expression = postfix-expression "." tuple-index
+
+array-component-expression = postfix-expression "[" expression "]"
+
+struct-component-expression = postfix-expression "." identifier
+
+method-call = postfix-expression "." identifier function-arguments
+
+unary-expression = postfix-expression
+                 / "!" unary-expression
+                 / "-" unary-expression
+
+cast-expression = unary-expression %s"as" named-primitive-type
+
+exponential-expression = cast-expression
+                       / cast-expression "**" exponential-expression
+
+multiplicative-expression = exponential-expression
+                          / multiplicative-expression "*" exponential-expression
+                          / multiplicative-expression "/" exponential-expression
+                          / multiplicative-expression "%" exponential-expression
+
+additive-expression = multiplicative-expression
+                    / additive-expression "+" multiplicative-expression
+                    / additive-expression "-" multiplicative-expression
+
+shift-expression = additive-expression
+                 / shift-expression "<<" additive-expression
+                 / shift-expression ">>" additive-expression
+
+conjunctive-expression = shift-expression
+                       / conjunctive-expression "&" shift-expression
+
+inclusive-disjunctive-expression =
+      conjunctive-expression
+    / inclusive-disjunctive-expression "|" conjunctive-expression
+
+exclusive-disjunctive-expression =
+      inclusive-disjunctive-expression
+    / exclusive-disjunctive-expression "^" inclusive-disjunctive-expression
+
+ordering-expression =
+      exclusive-disjunctive-expression
+    / exclusive-disjunctive-expression "<" exclusive-disjunctive-expression
+    / exclusive-disjunctive-expression ">" exclusive-disjunctive-expression
+    / exclusive-disjunctive-expression "<=" exclusive-disjunctive-expression
+    / exclusive-disjunctive-expression ">=" exclusive-disjunctive-expression
+
+equality-expression = ordering-expression
+                    / ordering-expression "==" ordering-expression
+                    / ordering-expression "!=" ordering-expression
+
+conditional-conjunctive-expression =
+      equality-expression
+    / conditional-conjunctive-expression "&&" equality-expression
+
+conditional-disjunctive-expression =
+      conditional-conjunctive-expression
+    / conditional-disjunctive-expression "||" conditional-conjunctive-expression
+
+binary-expression = conditional-disjunctive-expression
+
+conditional-ternary-expression = binary-expression
+                               / binary-expression "?" expression ":" expression
+
+expression = conditional-ternary-expression
+
+statement = expression-statement
+          / return-statement
+          / variable-declaration
+          / constant-declaration
+          / conditional-statement
+          / loop-statement
+          / assignment-statement
+          / block
+
+expression-statement = expression ";"
+
+block = "{" *statement "}"
+
+return-statement = %s"return" [ expression ] ";"
+
+variable-declaration = %s"let" identifier-or-identifiers ":" type
+                       "=" expression ";"
+
+constant-declaration = %s"const" identifier ":" type "=" expression ";"
+
+identifier-or-identifiers = identifier
+                          / "(" identifier 1*( "," identifier ) [ "," ] ")"
+
+branch = %s"if" conditional-ternary-expression block
+
+conditional-statement = branch
+                      / branch %s"else" block
+                      / branch %s"else" conditional-statement
+
+loop-statement = %s"for" identifier ":" type
+                 %s"in" expression ".." expression
+                 block
+
+assignment-operator = "="
+                    / "+="
+                    / "-="
+                    / "*="
+                    / "/="
+                    / "%="
+                    / "**="
+                    / "<<="
+                    / ">>="
+                    / "&="
+                    / "|="
+                    / "^="
+                    / "&&="
+                    / "||="
+
+assignment-statement = expression assignment-operator expression ";"
+
+assert-statement = %s"assert" "(" expression ")" ";"
+                 / %s"assert_eq" "(" expression "," expression ")" ";"
+                 / %s"assert_neq" "(" expression "," expression ")" ";"
+
+function-declaration = *annotation [ %s"async" ] function-kind identifier
+                       "(" [ function-inputs ] ")"
+                       [ "->" function-outputs ]
+                       ( block / ";" )
+
+function-kind = %s"function" / %s"transition" / %s"inline"
+
+function-inputs = function-input *( "," function-input ) [ "," ]
+
+function-input = [ %s"public" / %s"private" / %s"constant" ]
+                 identifier ":" type
+
+function-outputs = function-output
+                 / "(" [ function-output *( "," function-output ) [ "," ] ] ")"
+
+function-output = [ %s"public" / %s"private" / %s"constant" ] type
+
+struct-declaration = %s"struct" identifier
+                     "{" struct-component-declarations "}"
+
+struct-component-declarations = struct-component-declaration
+                                *( "," struct-component-declaration )
+                                [ "," ]
+
+struct-component-declaration =
+    [ %s"public" / %s"private" / %s"constant" ] identifier ":" type
+
+record-declaration = %s"record" identifier
+                     "{" struct-component-declarations "}"
+
+mapping-declaration = %s"mapping" identifier ":" type "=>" type ";"
+
+program-item = function-declaration
+             / struct-declaration
+             / record-declaration
+             / mapping-declaration
+             / constant-declaration
+
+program-declaration = %s"program" program-id "{" *program-item "}"
+
+import-declaration = %s"import" program-id ";"
+
+file = *import-declaration program-declaration

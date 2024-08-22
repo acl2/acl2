@@ -53,7 +53,7 @@
   (equal (<-unguarded x y)
          (< x y))
   :hints (("Goal" :in-theory (enable <-unguarded)
-           :use (:instance completion-of-<))))
+           :use completion-of-<)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

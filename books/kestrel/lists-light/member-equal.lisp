@@ -211,3 +211,8 @@
                 (equal x (first lst))))
   :hints (("Goal" :expand ((member-equal x lst)
                            (len (cdr lst))))))
+
+(defthm member-equal-of-remove-duplicates-equal-iff
+  (iff (member-equal a (remove-duplicates-equal x))
+       (member-equal a x))
+  :hints (("Goal" :in-theory (enable member-equal remove-duplicates-equal))))

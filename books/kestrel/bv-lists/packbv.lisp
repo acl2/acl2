@@ -71,7 +71,7 @@
                 (natp n)
                 (natp num))
            (unsigned-byte-p n (packbv num size items)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-packbv)
+  :hints (("Goal" :use unsigned-byte-p-of-packbv
            :in-theory (disable unsigned-byte-p-of-packbv))))
 
 ;gen the 1
@@ -89,7 +89,7 @@
                 (natp count))
            (equal (bvchop n (packbv count 1 bvs))
                   (packbv n 1 (nthcdr (- count n) bvs))))
-  :hints (("Goal" :use (:instance bvchop-of-packbv-1-helper)
+  :hints (("Goal" :use bvchop-of-packbv-1-helper
            :in-theory (e/d (packbv-base) (bvchop-of-packbv-1-helper)))))
 
 ;gen the 1

@@ -46,7 +46,10 @@
      a specified fixtype for the non-error values
      and the error fixtype.
      This is somewhat analogous to Rust's @('Result') type,
-     but with a fixed type for the error type parameter."))
+     but with a fixed type for the error type parameter.")
+   (xdoc::p
+    "We actually plan to use @(tsee fty::defresult)
+     and to eventually remove this code here."))
   :order-subtopics t
   :default-parent t)
 

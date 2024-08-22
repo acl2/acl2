@@ -61,3 +61,8 @@
            (stringp (reverse x)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm member-equal-of-reverse-iff
+  (iff (member-equal a (reverse x))
+       (member-equal a x))
+  :hints (("Goal" :in-theory (enable reverse))))

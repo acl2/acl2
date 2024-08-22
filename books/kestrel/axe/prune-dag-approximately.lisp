@@ -12,10 +12,10 @@
 
 ;; This utility tries to resolve IF/MYIF/BOOLIF/BVIF tests in the dag, using STP and the contexts of the nodes.
 
-;; TODO: Add the ability to rewrite tests when pruning.
+;; TODO: Add the ability to rewrite IF tests when pruning.
 
 (include-book "prove-with-stp")
-(include-book "rewriter-basic")
+(include-book "rewriter-basic") ; just for the post-rewrite
 (include-book "dag-size-fast")
 (include-book "basic-rules")
 (include-book "rule-lists") ; for unsigned-byte-p-forced-rules
@@ -34,6 +34,7 @@
 (include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove (since this book knows about bool-fix$inline)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (include-book "merge-term-into-dag-array-simple")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "cars-decreasing-by-1"))
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))

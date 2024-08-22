@@ -1,6 +1,6 @@
 ; Applying lookup-equal to a list of keys
 ;
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -53,3 +53,19 @@
          (cons (lookup-equal key alist)
                (map-lookup-equal keys alist)))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
+(defthm map-lookup-equal-of-append
+  (equal (map-lookup-equal (append keys1 keys2) alist)
+         (append (map-lookup-equal keys1 alist)
+                 (map-lookup-equal keys2 alist)))
+  :hints (("Goal" :in-theory (enable map-lookup-equal append))))
+
+(defthm cdr-of-assoc-equal-of-pairlis$-of-map-lookup-equal
+  (implies (member-equal key keys)
+           ;; can we remove the cdrs here?:
+           (equal (cdr (assoc-equal key (pairlis$ keys (map-lookup-equal keys a))))
+                  (cdr (assoc-equal key a))))
+  :hints (("Goal" :in-theory (enable pairlis$
+                                     map-lookup-equal
+                                     lookup-equal ;todo
+                                     ))))

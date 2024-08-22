@@ -83,7 +83,7 @@ you can just use these on @('bitarr2') without reimplementing them.</p>
 <p>On the other hand, it may occasionally be useful for code clarity to rename
 the new functions in some semantically meaningful way.  For instance, if your
 cloned bit array will be used as a seen table, it may be convenient to use
-operations like ('set-seen') instead of @('set-bit').</p>
+operations like @('set-seen') instead of @('set-bit').</p>
 
 <p>To support using such semantically meaningful names, @('defstobj-clone') has
 a variety of options.  Here is a contrived example that uses all of them:</p>

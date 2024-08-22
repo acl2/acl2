@@ -13,7 +13,7 @@
 (include-book "hex-digit-char")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/std/strings/hex-digit-char-listp" :dir :system)
+(include-book "std/strings/hex-digit-char-listp" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

@@ -97,5 +97,5 @@
 (defthm rationalp-of-alen1-when-array1p
   (implies (array1p array-name array)
            (rationalp (alen1 array-name array)))
-  :hints (("Goal" :use (:instance integerp-of-alen1)
+  :hints (("Goal" :use integerp-of-alen1
            :in-theory (disable integerp-of-alen1))))

@@ -1,7 +1,7 @@
 ; A faster version of pairlis$ when reversing the order is ok.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,18 +18,29 @@
 ;; the alist doesn't matter (which it shouldn't if the alist is only used as an
 ;; alist and there are no duplicate keys).
 
+;; To see the time difference, try this:
+;; (er-progn (assign keys (make-list 10000000)) (mv nil nil state))
+;; (er-progn (assign vals (make-list 10000000)) (mv nil nil state))
+;; (time$ (car (pairlis$ (@ keys) (@ vals))))
+;; (time$ (car (pairlis$-fast (@ keys) (@ vals))))
+;; Also, the fast version uses 2/3 the memory.
+
 ;; Make an alist that binds the KEYS to the corresponding VALS.  This version
 ;; of the function is tail recursive and should be faster than pairlis$ since
 ;; pairlis$ reverses the alist at the end.
 (defund pairlis$-fast-aux (keys vals acc)
   (declare (xargs :guard (and (true-listp keys)
-                              (true-listp vals))))
-  (if (endp keys)
+                              (true-listp vals)
+                              ;; (alistp acc) ; todo: consider adding this
+                              )))
+  (if (atom keys) ; may be faster than endp
       acc
     (pairlis$-fast-aux (rest keys)
                        (rest vals)
-                       (cons (cons (first keys) (first vals))
-                             acc))))
+                       (cons (cons (first keys) (first vals)) acc)
+                       ;; acons here seemed much slower:
+                       ;; (acons (first keys) (first vals) acc)
+                       )))
 
 (defmacro pairlis$-fast (keys vals)
   `(pairlis$-fast-aux ,keys ,vals nil))

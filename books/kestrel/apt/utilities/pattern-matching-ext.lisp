@@ -31,8 +31,8 @@
 
 (in-package "ACL2")
 
+(include-book "std/basic/symbol-package-name-non-cl" :dir :system)
 (include-book "std/util/bstar" :dir :system)
-(include-book "kestrel/std/basic/symbol-package-name-non-cl" :dir :system)
 
 (local (include-book "pattern-matching-ext-support"))
 

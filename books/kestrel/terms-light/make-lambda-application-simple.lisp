@@ -13,54 +13,16 @@
 ;; See also make-lambda-term-simple.
 ;; See proof of correctness in make-lambda-application-simple-proof.lisp
 
+;; This does the following to the lambda:
+;; 1. Remove any bindings of variables not free in the body.
+;; 2. Add bindings of any additional free vars in the body, to ensure the lambda is closed.
+;; 3. Replace a trivial lambda (all vars bound to themselves) with its body.
+
 (include-book "free-vars-in-term")
+(include-book "filter-formals-and-actuals")
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
-
-(local (in-theory (disable mv-nth)))
-
-;; Returns (mv new-formals new-actuals) where the NEW-FORMALS returned are
-;; those members of FORMAL that are also in FORMALS-TO-KEEP and the NEW-ACTUALS
-;; returned are their corresponding actuals.  The order of the formals is not
-;; changed.
-(defund filter-formals-and-actuals (formals actuals formals-to-keep)
-  (declare (xargs :guard (and (symbol-listp formals)
-                              (true-listp actuals) ;; actuals is a list of terms (often pseudo-terms)
-                              (equal (len formals) (len actuals))
-                              (symbol-listp formals-to-keep))))
-  (if (endp formals)
-      (mv nil nil)
-    (mv-let (formals-res actuals-res)
-      (filter-formals-and-actuals (rest formals) (rest actuals) formals-to-keep)
-      (if (member-eq (first formals) formals-to-keep)
-          (mv (cons (first formals) formals-res)
-              (cons (first actuals) actuals-res))
-        (mv formals-res
-            actuals-res)))))
-
-(defthm true-listp-of-mv-nth-0-of-filter-formals-and-actuals
-  (true-listp (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep)))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
-(defthm true-listp-of-mv-nth-1-of-filter-formals-and-actuals
-  (true-listp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep)))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
-(defthm symbol-listp-of-mv-nth-0-of-filter-formals-and-actuals
-  (implies (symbol-listp formals)
-           (symbol-listp (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
-(defthm pseudo-term-listp-of-mv-nth-1-of-filter-formals-and-actuals
-  (implies (pseudo-term-listp actuals)
-           (pseudo-term-listp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
-
-(defthm len-of-mv-nth-1-of-filter-formals-and-actuals
-  (equal (len (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep)))
-         (len (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,9 +42,9 @@
       (filter-formals-and-actuals formals actuals free-vars)
       (if (equal reduced-formals reduced-actuals) ; also handles the case where reduced-formals is empty
           body ; no need to make a lambda at all (it would be trivial)
-        ;; Binds the formals to their actuals and the any extra-vars to themselves:
-        (let* (;; These have to be added to ensure the lambda is closed:
-               (extra-vars (set-difference-eq free-vars formals))
+        ;; Binds the formals to their actuals and any extra-vars to themselves
+        ;; (extra vars ensure the lambda is closed):
+        (let* ((extra-vars (set-difference-eq free-vars formals))
                (new-formals (append reduced-formals extra-vars))
                (new-actuals (append reduced-actuals extra-vars)))
           `((lambda ,new-formals ,body) ,@new-actuals))))))

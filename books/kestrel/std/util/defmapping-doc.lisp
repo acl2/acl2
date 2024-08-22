@@ -243,7 +243,7 @@
        do not look like useful rewrite rules,
        while the other theorems generally do.")
      (xdoc::p
-      "If @(':guard-thms') is ('nil'),
+      "If @(':guard-thms') is @('nil'),
        then the @(':all') and @(':all-nonguard') options are equivalent."))
 
     (xdoc::evmac-input-hints)

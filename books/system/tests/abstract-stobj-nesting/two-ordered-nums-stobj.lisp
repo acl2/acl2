@@ -369,7 +369,7 @@
                       (n$2 (update-n$val n2 n$2)))
                  (mv n$ n$2))
                (update-uenvalid t two-ordered-nums))))
-         
+
 (defun fields-of-two-ordered-nums (two-ordered-nums)
   (declare (xargs :stobjs two-ordered-nums))
   (stobj-let ((n$ (uenslot1 two-ordered-nums))
@@ -388,4 +388,3 @@
 
 (assert-event (equal (fields-of-two-ordered-nums two-ordered-nums)
                      '(:N 17 :N2 23 :VALID t)))
-

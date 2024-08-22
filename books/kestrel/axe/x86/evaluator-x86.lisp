@@ -17,8 +17,11 @@
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, etc.
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline
+(include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::get-one-byte-prefix-array-code-unguarded
 (include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
+(local (include-book "kestrel/bv/logapp" :dir :system)) ; for loghead-becomes-bvchop
 
 (local
   (in-theory (disable rational-listp
@@ -315,9 +318,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund x86isa::!prefixes->opr-unguarded (opr x)
+  (declare (xargs :guard t))
+  (x86isa::!prefixes->opr (x86isa::8bits-fix-unguarded opr)
+                          (x86isa::prefixes-fix$inline-unguarded x)))
+
+(defthm x86isa::!prefixes->opr-unguarded-correct
+  (equal (x86isa::!prefixes->opr-unguarded opr x)
+         (x86isa::!prefixes->opr opr x))
+  :hints (("Goal" :in-theory (enable x86isa::!prefixes->opr-unguarded x86isa::!prefixes->opr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::!prefixes->rep-unguarded (rep x)
+  (declare (xargs :guard t))
+  (x86isa::!prefixes->rep (x86isa::8bits-fix-unguarded rep)
+                          (x86isa::prefixes-fix$inline-unguarded x)))
+
+(defthm x86isa::!prefixes->rep-unguarded-correct
+  (equal (x86isa::!prefixes->rep-unguarded rep x)
+         (x86isa::!prefixes->rep rep x))
+  :hints (("Goal" :in-theory (enable x86isa::!prefixes->rep x86isa::!prefixes->rep-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund bitops::part-select-width-low$inline-unguarded (x width low)
   (declare (xargs :guard t))
-  (loghead$inline-unguarded width (logtail-unguarded low x)))
+  (loghead$inline-unguarded width (logtail$inline-unguarded low x)))
 
 (defthm bitops::part-select-width-low$inline-unguarded-correct
   (equal (bitops::part-select-width-low$inline-unguarded x width low)
@@ -546,18 +573,6 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund x86isa::SF-SPEC8$inline-unguarded (result)
-  (declare (xargs :guard t))
-  (ACL2::PART-SELECT (ifix RESULT) :LOW 7 :WIDTH 1))
-
-(local (include-book "kestrel/bv/logapp" :dir :system)) ; for loghead-becomes-bvchop
-(defthm sf-spec8$inline-unguarded-correct
-  (equal (x86isa::sf-spec8$inline-unguarded x)
-         (x86isa::sf-spec8$inline x))
-  :hints (("Goal" :in-theory (enable x86isa::sf-spec8$inline-unguarded x86isa::sf-spec8$inline))))
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defund x86isa::cf-spec32$inline-unguarded (raw-result)
   (declare (xargs :guard t))
   (bool->bit (not (unsigned-byte-p 32 raw-result))))
@@ -566,6 +581,15 @@
   (equal (x86isa::cf-spec32$inline-unguarded x)
          (x86isa::cf-spec32$inline x))
   :hints (("Goal" :in-theory (enable x86isa::cf-spec32$inline-unguarded x86isa::cf-spec32$inline))))
+
+(defund x86isa::cf-spec64$inline-unguarded (raw-result)
+  (declare (xargs :guard t))
+  (bool->bit (not (unsigned-byte-p 64 raw-result))))
+
+(defthm cf-spec64$inline-unguarded-correct
+  (equal (x86isa::cf-spec64$inline-unguarded x)
+         (x86isa::cf-spec64$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::cf-spec64$inline-unguarded x86isa::cf-spec64$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -578,17 +602,52 @@
          (x86isa::pf-spec32$inline x))
   :hints (("Goal" :in-theory (enable x86isa::pf-spec32$inline-unguarded x86isa::pf-spec32$inline))))
 
+(defund x86isa::pf-spec64$inline-unguarded (result)
+  (declare (xargs :guard t))
+  (bool->bit (not (logbitp 0 (logcount (acl2::loghead$inline-unguarded 8 result))))))
+
+(defthm pf-spec64$inline-unguarded-correct
+  (equal (x86isa::pf-spec64$inline-unguarded x)
+         (x86isa::pf-spec64$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::pf-spec64$inline-unguarded x86isa::pf-spec64$inline))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund x86isa::SF-SPEC32$inline-unguarded (result)
+(defund x86isa::sf-spec8$inline-unguarded (result)
+  (declare (xargs :guard t))
+  (acl2::part-select (ifix result) :low 7 :width 1))
+
+(defthm sf-spec8$inline-unguarded-correct
+  (equal (x86isa::sf-spec8$inline-unguarded x)
+         (x86isa::sf-spec8$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::sf-spec8$inline-unguarded x86isa::sf-spec8$inline))))
+
+(defund x86isa::sf-spec16$inline-unguarded (result)
+  (declare (xargs :guard t))
+  (acl2::part-select (ifix result) :low 15 :width 1))
+
+(defthm sf-spec16$inline-unguarded-correct
+  (equal (x86isa::sf-spec16$inline-unguarded x)
+         (x86isa::sf-spec16$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::sf-spec16$inline-unguarded x86isa::sf-spec16$inline))))
+
+(defund x86isa::sf-spec32$inline-unguarded (result)
   (declare (xargs :guard t))
   (acl2::part-select (acl2::loghead$inline-unguarded 32 result) :low 31 :width 1))
 
-;(local (include-book "kestrel/bv/logapp" :dir :system)) ; for loghead-becomes-bvchop
 (defthm sf-spec32$inline-unguarded-correct
   (equal (x86isa::sf-spec32$inline-unguarded x)
          (x86isa::sf-spec32$inline x))
   :hints (("Goal" :in-theory (enable x86isa::sf-spec32$inline-unguarded x86isa::sf-spec32$inline))))
+
+(defund x86isa::sf-spec64$inline-unguarded (result)
+  (declare (xargs :guard t))
+  (acl2::part-select (acl2::loghead$inline-unguarded 64 result) :low 63 :width 1))
+
+(defthm sf-spec64$inline-unguarded-correct
+  (equal (x86isa::sf-spec64$inline-unguarded x)
+         (x86isa::sf-spec64$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::sf-spec64$inline-unguarded x86isa::sf-spec64$inline))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -600,6 +659,15 @@
   (equal (x86isa::of-spec32$inline-unguarded x)
          (x86isa::of-spec32$inline x))
   :hints (("Goal" :in-theory (enable x86isa::of-spec32$inline-unguarded x86isa::of-spec32$inline))))
+
+(defund x86isa::of-spec64$inline-unguarded (signed-raw-result)
+  (declare (xargs :guard t))
+  (bool->bit (not (signed-byte-p 64 signed-raw-result))))
+
+(defthm of-spec64$inline-unguarded-correct
+  (equal (x86isa::of-spec64$inline-unguarded x)
+         (x86isa::of-spec64$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::of-spec64$inline-unguarded x86isa::of-spec64$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -903,8 +971,128 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund x86isa::add-af-spec32$inline-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::add-af-spec32$inline (bvchop 32 (ifix dst)) (bvchop 32 (ifix src))))
+
+(defthm x86isa::add-af-spec32$inline-unguarded-correct
+  (equal (x86isa::add-af-spec32$inline-unguarded dst src)
+         (x86isa::add-af-spec32$inline dst src))
+  :hints (("Goal" :in-theory (enable x86isa::add-af-spec32$inline-unguarded
+                                     x86isa::add-af-spec32$inline))))
+
+(defund x86isa::add-af-spec64$inline-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::add-af-spec64$inline (bvchop 64 (ifix dst)) (bvchop 64 (ifix src))))
+
+(defthm x86isa::add-af-spec64$inline-unguarded-correct
+  (equal (x86isa::add-af-spec64$inline-unguarded dst src)
+         (x86isa::add-af-spec64$inline dst src))
+  :hints (("Goal" :in-theory (enable x86isa::add-af-spec64$inline-unguarded
+                                     x86isa::add-af-spec64$inline))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-af-spec32$inline-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::sub-af-spec32$inline (bvchop 32 (ifix dst)) (bvchop 32 (ifix src))))
+
+(defthm x86isa::sub-af-spec32$inline-unguarded-correct
+  (equal (x86isa::sub-af-spec32$inline-unguarded dst src)
+         (x86isa::sub-af-spec32$inline dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-af-spec32$inline-unguarded
+                                     x86isa::sub-af-spec32$inline))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-cf-spec32-unguarded (dst src)
+  (declare (xargs :guard t))
+  (bool->bit (<-unguarded dst src)))
+
+(defthm x86isa::sub-cf-spec32-unguarded-correct
+  (equal (x86isa::sub-cf-spec32-unguarded dst src)
+         (x86isa::sub-cf-spec32 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-cf-spec32-unguarded
+                                     x86isa::sub-cf-spec32))))
+
+(defund x86isa::sub-cf-spec64-unguarded (dst src)
+  (declare (xargs :guard t))
+  (bool->bit (<-unguarded dst src)))
+
+(defthm x86isa::sub-cf-spec64-unguarded-correct
+  (equal (x86isa::sub-cf-spec64-unguarded dst src)
+         (x86isa::sub-cf-spec64 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-cf-spec64-unguarded
+                                     x86isa::sub-cf-spec64))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-sf-spec32-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::sub-sf-spec32 (bvchop 32 (ifix dst)) (bvchop 32 (ifix src))))
+
+(defthm x86isa::sub-sf-spec32-unguarded-correct
+  (equal (x86isa::sub-sf-spec32-unguarded dst src)
+         (x86isa::sub-sf-spec32 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec32-unguarded
+                                     x86isa::sub-sf-spec32))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-of-spec32-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::sub-of-spec32 (bvchop 32 (ifix dst)) (bvchop 32 (ifix src))))
+
+(defthm x86isa::sub-of-spec32-unguarded-correct
+  (equal (x86isa::sub-of-spec32-unguarded dst src)
+         (x86isa::sub-of-spec32 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-of-spec32-unguarded
+                                     x86isa::sub-of-spec32))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-pf-spec32-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::sub-pf-spec32 (bvchop 32 (ifix dst)) (bvchop 32 (ifix src))))
+
+(defthm x86isa::sub-pf-spec32-unguarded-correct
+  (equal (x86isa::sub-pf-spec32-unguarded dst src)
+         (x86isa::sub-pf-spec32 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-pf-spec32-unguarded
+                                     x86isa::sub-pf-spec32))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-zf-spec32-unguarded (dst src)
+  (declare (xargs :guard t))
+  (bool->bit (equal src dst)))
+
+(defthm x86isa::sub-zf-spec32-unguarded-correct
+  (equal (x86isa::sub-zf-spec32-unguarded dst src)
+         (x86isa::sub-zf-spec32 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32-unguarded
+                                     x86isa::sub-zf-spec32))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::get-one-byte-prefix-array-code-unguarded (byte)
+  (declare (xargs :guard t))
+  (aref1-unguarded 'x86isa::one-byte-prefixes-group-code-info
+                   x86isa::*one-byte-prefixes-group-code-info-ar*
+                   (bvchop-unguarded 8 byte) ; how fast is stuff like this?  make a separate version that is usually applied to something that needs no chopping?
+                   ))
+
+(defthm x86isa::get-one-byte-prefix-array-code-unguarded-correct
+  (equal (x86isa::get-one-byte-prefix-array-code-unguarded byte)
+         (x86isa::get-one-byte-prefix-array-code byte))
+  :hints (("Goal" :in-theory (enable x86isa::get-one-byte-prefix-array-code-unguarded
+                                     x86isa::get-one-byte-prefix-array-code))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *axe-evaluator-x86-fns-and-aliases*
-  (append '((integer-range-p integer-range-p-unguarded)
+  (append '(implies ; push back to basic evaluator?
+            (integer-range-p integer-range-p-unguarded)
             x86isa::canonical-address-p$inline ; unguarded
             (bitops::part-select-width-low$inline bitops::part-select-width-low$inline-unguarded)
             (lookup lookup-equal-unguarded)
@@ -934,12 +1122,16 @@
             (x86isa::reg-index$inline x86isa::reg-index$inline-unguarded)
             (x86isa::!prefixes->num$inline x86isa::!prefixes->num-unguarded)
             (x86isa::!prefixes->nxt$inline x86isa::!prefixes->nxt-unguarded)
+            (x86isa::!prefixes->opr$inline x86isa::!prefixes->opr-unguarded)
+            (x86isa::!prefixes->rep$inline x86isa::!prefixes->rep-unguarded)
+            (x86isa::get-one-byte-prefix-array-code x86isa::get-one-byte-prefix-array-code-unguarded)
             power-of-2p
             logmaskp
             bfix$inline
             bool->bit$inline
             (evenp evenp-unguarded)
             (logcount logcount-unguarded)
+            (logtail$inline logtail$inline-unguarded)
             (zip zip-unguarded)
             (ash ash-unguarded)
             (acl2::firstn acl2::firstn-unguarded)
@@ -959,12 +1151,28 @@
             (x86isa::rflagsbits->of$inline x86isa::rflagsbits->of$inline-unguarded)
             (x86isa::rflagsbits->zf$inline x86isa::rflagsbits->zf$inline-unguarded)
             (x86isa::!rflagsbits->af$inline x86isa::!rflagsbits->af$inline-unguarded)
+            (x86isa::add-af-spec32$inline x86isa::add-af-spec32$inline-unguarded)
+            (x86isa::add-af-spec64$inline x86isa::add-af-spec64$inline-unguarded)
+            (x86isa::sub-af-spec32$inline x86isa::sub-af-spec32$inline-unguarded)
+            (x86isa::sub-cf-spec32 x86isa::sub-cf-spec32-unguarded)
+            (x86isa::sub-cf-spec64 x86isa::sub-cf-spec64-unguarded)
+            (x86isa::sub-of-spec32 x86isa::sub-of-spec32-unguarded)
+            (x86isa::sub-pf-spec32 x86isa::sub-pf-spec32-unguarded)
+            (x86isa::sub-sf-spec32 x86isa::sub-sf-spec32-unguarded)
+            (x86isa::sub-zf-spec32 x86isa::sub-zf-spec32-unguarded)
             (x86isa::pf-spec8$inline x86isa::pf-spec8$inline-unguarded)
             (x86isa::sf-spec8$inline x86isa::sf-spec8$inline-unguarded)
-            (x86isa::cf-spec32$inline x86isa::cf-spec32$inline-unguarded)
-            (x86isa::of-spec32$inline x86isa::of-spec32$inline-unguarded)
-            (x86isa::pf-spec32$inline x86isa::pf-spec32$inline-unguarded)
+            (x86isa::sf-spec16$inline x86isa::sf-spec16$inline-unguarded)
             (x86isa::sf-spec32$inline x86isa::sf-spec32$inline-unguarded)
+            (x86isa::sf-spec64$inline x86isa::sf-spec64$inline-unguarded)
+            (x86isa::cf-spec32$inline x86isa::cf-spec32$inline-unguarded)
+            (x86isa::cf-spec64$inline x86isa::cf-spec64$inline-unguarded)
+            (x86isa::of-spec32$inline x86isa::of-spec32$inline-unguarded)
+            (x86isa::of-spec64$inline x86isa::of-spec64$inline-unguarded)
+            (x86isa::pf-spec32$inline x86isa::pf-spec32$inline-unguarded)
+            (x86isa::pf-spec64$inline x86isa::pf-spec64$inline-unguarded)
+            (x86isa::sf-spec32$inline x86isa::sf-spec32$inline-unguarded)
+            (x86isa::sf-spec64$inline x86isa::sf-spec64$inline-unguarded)
             (x86isa::zf-spec$inline x86isa::zf-spec$inline-unguarded)
             (x86isa::x86-decode-sib-p x86isa::x86-decode-sib-p-unguarded)
             (x86isa::sib-fix$inline x86isa::sib-fix$inline-unguarded)
@@ -977,7 +1185,9 @@
             (x86isa::64-bit-mode-two-byte-opcode-modr/m-p x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded)
             (x86isa::check-instruction-length$inline x86isa::check-instruction-length$inline-unguarded)
             (x86isa::two-byte-opcode-modr/m-p$inline x86isa::two-byte-opcode-modr/m-p$inline-unguarded)
-            (acl2::aref1 acl2::aref1-unguarded))
+            (acl2::aref1 acl2::aref1-unguarded)
+            (acl2::every-nth acl2::every-nth-unguarded)
+            (acl2::negated-elems-listp acl2::negated-elems-listp-unguarded))
           *axe-evaluator-basic-fns-and-aliases*))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):

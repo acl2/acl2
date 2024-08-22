@@ -1,7 +1,7 @@
 ; More theorems about maxelem
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,7 @@
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
-(local (include-book "kestrel/lists-light/len" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
@@ -112,9 +112,3 @@
            (<= (car (car dag)) (maxelem (strip-cars dag))))
   :rule-classes ((:linear :trigger-terms ((car (car dag)))))
   :hints (("Goal" :expand (strip-cars dag))))
-
-(defthm maxelem-of-reverse-list
-  (implies (rational-listp lst)
-           (equal (maxelem (reverse-list lst))
-                  (maxelem lst)))
-  :hints (("Goal" :in-theory (enable reverse-list maxelem))))

@@ -37,6 +37,7 @@
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/separate" :dir :system)
+(include-book "kestrel/x86/support-bv" :dir :system)
 (include-book "rule-lists")
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
@@ -89,6 +90,7 @@
 (acl2::ensure-rules-known (lifter-rules32-all))
 (acl2::ensure-rules-known (lifter-rules64-all))
 (acl2::ensure-rules-known (assumption-simplification-rules))
+(acl2::ensure-rules-known (step-opener-rules))
 
 ;move
 ;; We often want these for ACL2 proofs, but not for 64-bit examples
@@ -330,6 +332,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun remove-assumptions-about (fns-to-remove terms)
+  (declare (xargs :guard (and (symbol-listp fns-to-remove)
+                              (pseudo-term-listp terms))))
+  (if (endp terms)
+      nil
+    (let* ((term (first terms))
+           ;; strip a NOT if present:
+           (term (if (and (consp term)
+                          (eq 'not (ffn-symb term))
+                          (= 1 (len (fargs term))))
+                     (farg1 term)
+                   term)))
+      (if (and (consp term)
+               (member-eq (ffn-symb term) fns-to-remove))
+          (remove-assumptions-about fns-to-remove (rest terms))
+        (cons term (remove-assumptions-about fns-to-remove (rest terms)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: more?
+(defconst *non-stp-assumption-functions*
+  '(canonical-address-p$inline
+    program-at
+    separate
+    x86p
+    cr0bits-p$inline
+    cr4bits-p$inline
+    alignment-checking-enabled-p
+    ))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -363,10 +395,8 @@
          ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
-         (limits nil) ; todo: don't recompute for each small run?
-         ;; todo: just use one of these 2:
-         ;; (limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration limits))
-         (limits (acons 'x86isa::x86-fetch-decode-execute-base-new steps-for-this-iteration limits))
+         (limits nil) ; todo: call this empty-rule-limits?
+         (limits (acl2::add-limit-for-rules (step-opener-rules) steps-for-this-iteration limits)) ; don't recompute for each small run?
          ((mv erp dag-or-quote state)
           (if (eq :legacy rewriter)
               (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
@@ -409,7 +439,7 @@
          (dag dag-or-quote) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely:
          ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag
-                                                                      assumptions
+                                                                      (remove-assumptions-about *non-stp-assumption-functions* assumptions)
                                                                       t ; check-fnsp
                                                                       print state))
          ((when erp) (mv erp nil state))
@@ -484,7 +514,7 @@
                                             t ; normalize-xors
                                             memoizep)
                     (mv erp result state))))
-               (- (cw "Done with final simplification.)~%"))
+               (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
                ((when erp) (mv erp nil state)))
             (mv (erp-nil) dag-or-quote state))
         ;; Continue the symbolic execution:
@@ -524,7 +554,7 @@
 ;; This is also called by the formal unit tester.
 (defun unroll-x86-code-core (target
                              parsed-executable
-                             assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
+                             extra-assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
                              suppress-assumptions
                              stack-slots
                              position-independentp
@@ -546,7 +576,7 @@
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable
-                              ;; assumptions ; untranslated terms
+                              ;; extra-assumptions ; untranslated terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (booleanp position-independentp)
@@ -606,9 +636,8 @@
                         nil ; todo
                       (if (eq :pe-32 executable-type)
                           nil ; todo
-                        ;;todo: add support for :elf-32
-                        (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
-                                assumptions))))))))
+                        ;; todo: add support for :elf-32
+                        (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
        (code-length
          (and 64-bitp ; todo
               (if (eq :mach-o-64 executable-type)
@@ -622,8 +651,7 @@
                       (if (eq :pe-32 executable-type)
                           nil ; todo
                         ;;todo: add support for :elf-32
-                        (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
-                                assumptions))))))))
+                        (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
        (automatic-assumptions
         (if suppress-assumptions
             ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
@@ -652,8 +680,7 @@
                       ;; todo: try without expanding this:
                       (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
                     ;;todo: add support for :elf-32
-                    (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
-                            assumptions))))))))
+                    (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
        (input-assumptions (if (and 64-bitp ; todo
                                    (not (equal inputs :skip)) ; really means generate no assumptions
                                    )
@@ -666,7 +693,7 @@
                                                       text-offset
                                                       code-length)
                             nil))
-       (assumptions (append automatic-assumptions input-assumptions assumptions))
+       (assumptions (append automatic-assumptions input-assumptions extra-assumptions))
        (assumptions-to-return assumptions)
        (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
        (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
@@ -689,7 +716,7 @@
                                  (reader-and-writer-intro-rules)
                                  (assumption-simplification-rules)
                                  (if 32-bitp
-                                     nil
+                                     nil ; todo: why not use (lifter-rules32-new)?
                                    ;; needed to match the normal forms used during lifting:
                                    (lifter-rules64-new))))
        ((mv erp assumption-rule-alist)
@@ -727,9 +754,11 @@
        ;; TODO: Just call simplify-term here?
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil nil state))
-       ;; Do the symbolic execution:
+       ;; Choose the lifter rules to use:
        (lifter-rules (if 32-bitp (lifter-rules32-all) (lifter-rules64-all)))
+       ;; Add any extra-rules:
        (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?
+       ;; Remove any remove-rules:
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules lifter-rules)))
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
@@ -737,6 +766,7 @@
        ((mv erp lifter-rule-alist)
         (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil nil state))
+       ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter 0 state))
        ((when erp) (mv erp nil nil nil nil state))
@@ -757,7 +787,7 @@
 (defun def-unrolled-fn (lifted-name
                         target
                         executable
-                        assumptions
+                        extra-assumptions
                         suppress-assumptions
                         stack-slots
                         position-independent
@@ -786,7 +816,7 @@
   (declare (xargs :guard (and (symbolp lifted-name)
                               (lifter-targetp target)
                               ;; executable
-                              ;; assumptions ; untranslated-terms
+                              ;; extra-assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (member-eq position-independent '(t nil :auto))
@@ -819,6 +849,7 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
@@ -841,7 +872,7 @@
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag assumptions lifter-rules-used assumption-rules-used state)
         (unroll-x86-code-core target parsed-executable
-          assumptions suppress-assumptions stack-slots position-independentp
+          extra-assumptions suppress-assumptions stack-slots position-independentp
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
           step-limit step-increment memoizep monitor print print-base untranslatep rewriter state))
        ((when erp) (mv erp nil state))
@@ -956,10 +987,15 @@
                                  defthm
                                `(skip-proofs ,defthm))))
                 (list defthm))))
-       (event `(progn ,defconst-form
-                      ,@defuns
-                      ,@defthms))
-       (event (acl2::extend-progn event `(table x86-lifter-table ',whole-form ',event))))
+       (events (cons defconst-form (append defuns defthms)))
+       (event-names (acl2::strip-cadrs events))
+       (event `(progn ,@events))
+       (event (acl2::extend-progn event `(table x86-lifter-table ',whole-form ',event)))
+       (event (acl2::extend-progn event `(value-triple '(,@event-names))))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (- (cw " (Unrolling ~x0 took " lifted-name)
+          (acl2::print-to-hundredths elapsed)
+          (cw "s, not including event submission.)~%")))
     (mv nil event state)))
 
 ;TODO: Add show- variant
@@ -971,7 +1007,7 @@
                                   executable
                                   &key
                                   (target ':entry-point)
-                                  (assumptions 'nil) ; (todo: rename to :extra-assumptions)
+                                  (extra-assumptions 'nil)
                                   (suppress-assumptions 'nil)
                                   (stack-slots '100)
                                   (position-independent ':auto)
@@ -996,12 +1032,12 @@
                                   (prove-theorem 'nil)
                                   (restrict-theory 't)       ;todo: deprecate
                                   )
-  `(,(if print 'make-event 'acl2::make-event-quiet)
+  `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
     (def-unrolled-fn
       ',lifted-name
       ,target
       ,executable ; gets evaluated
-      ,assumptions
+      ,extra-assumptions
       ',suppress-assumptions
       ',stack-slots
       ',position-independent
@@ -1032,7 +1068,7 @@
   :args ((lifted-name "The name to use for the generated function and constant (the latter surrounded by stars).")
          (executable "The x86 binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.")
          (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
-         (assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
+         (extra-assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
          (suppress-assumptions "Whether to suppress the standard assumptions.")
          (stack-slots "How much available stack space to assume exists.") ; 4 or 8 bytes each?
          (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
@@ -1042,7 +1078,7 @@
          ;; todo: better name?  only for precise pruning:
          (prune "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing an (exclusive) limit on the maximum size of the DAG if represented as a term.  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
          ;; todo: how do these affect assumption simp:
-         (extra-rules "Rules to use in addition to (lifter-rules32) or (lifter-rules64).")
+         (extra-rules "Rules to use in addition to (lifter-rules32-all) or (lifter-rules64-all).")
          (remove-rules "Rules to turn off.")
          (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
          (step-limit "Limit on the total number of model steps (instruction executions) to allow.")

@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/basic/symbol-package-name-non-cl" :dir :system)
+(include-book "std/basic/symbol-package-name-non-cl" :dir :system)
 
 (defun fn-copy-name (fn)
   (declare (xargs :guard (symbolp fn)))

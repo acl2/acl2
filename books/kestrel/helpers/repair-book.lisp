@@ -44,7 +44,7 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "replay-book-helpers")
 (include-book "find-failed-books")
-(include-book "advice-code-only") ; or make a repair-book-code-only
+(include-book "advice") ; or make a repair-book-code-only
 ;(include-book "system/pseudo-good-worldp" :dir :system) ;for pseudo-runep; reduce?
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)

@@ -15,6 +15,7 @@
 ;; This version does not handle embedded dags, resolve ifs, or evaluate ground terms.
 ;; See also merge-term-into-dag-array-basic.lisp.
 
+(include-book "tools/flag" :dir :system)
 (include-book "dag-array-builders2")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)

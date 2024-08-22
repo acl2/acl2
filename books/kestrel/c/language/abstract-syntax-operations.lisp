@@ -245,7 +245,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The inverse of this is not well-defined for every object declarator,
+    "The inverse of this is not well-defined
+     for every abstract object declarator,
      because the latter may include array declarators,
      which are not allowed in function declarators.
      We could define the inverse on object declarators
@@ -278,7 +279,7 @@
      but the fact that it deals with object declarators
      is implicit in the fact that it returns an identifier and a type name.")
    (xdoc::p
-    "In essence, we turn (the constituents of a) declaration
+    "In essence, we turn (the constituents of) an object declaration
      into its name and type, which are somewhat mixed in the C syntax."))
   (b* (((mv id adeclor) (obj-declor-to-ident+adeclor declor)))
     (mv id (make-tyname :tyspec tyspec :declor adeclor)))
@@ -323,8 +324,8 @@
 (define tyspec+declor-to-ident+params+tyname ((tyspec tyspecseqp)
                                               (declor fun-declorp))
   :returns (mv (id identp) (params param-declon-listp) (tyname tynamep))
-  :short "Turn a type specifier sequence and a function declarator
-          into an identifier,a list of parameter declarations, and a type name."
+  :short "Turn a type specifier sequence and a function declarator into
+          an identifier, a list of parameter declarations, and a type name."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -332,11 +333,11 @@
      and we form a type name with the latter and the type specifier sequence.")
    (xdoc::p
     "The name of this ACL2 function does not mention @('fun') explicitly,
-     but the fact that it deals with object declarators
+     but the fact that it deals with function declarators
      is implicit in the fact that it returns
      an identifier, a list of parameter declarations, and a type name.")
    (xdoc::p
-    "In essence, we turn (the constituents of a) declaration
+    "In essence, we turn (the constituents of) a function declaration
      into its name and parameters and type,
      which are somewhat mixed in the C syntax.")
    (xdoc::p

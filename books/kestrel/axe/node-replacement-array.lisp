@@ -18,6 +18,7 @@
 (include-book "node-replacement-alist")
 (include-book "dargp-less-than")
 (include-book "merge-term-into-dag-array-basic")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/min" :dir :system))
@@ -283,6 +284,7 @@
                                      make-into-array-with-len ;todo
                                      dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
                                      acons
+                                     array1p-of-cons-header
                                      )
                                   ;; for speed:
                                   (bounded-node-replacement-arrayp-aux-beyond-length)))))
@@ -1071,10 +1073,12 @@
              (make-node-replacement-array-and-extend-dag assumptions
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                             known-booleans)
-             (declare (ignore node-replacement-array node-replacement-count dag-array dag-parent-array dag-constant-alist dag-variable-alist))
+             (declare (ignore node-replacement-array node-replacement-count dag-array dag-parent-array  ))
              (implies (not erp)
                       (and (natp new-dag-len)
                            (integerp new-dag-len) ; drop?
+                           (dag-variable-alistp dag-variable-alist)
+                           (dag-constant-alistp dag-constant-alist)
                            ))))
   :hints (("Goal" :use make-node-replacement-array-and-extend-dag-return-type
            :in-theory (disable make-node-replacement-array-and-extend-dag-return-type))))

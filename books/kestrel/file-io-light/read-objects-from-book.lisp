@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; See also read-book-contents
+
 (include-book "kestrel/file-io-light/read-object-from-file" :dir :system)
 (include-book "kestrel/file-io-light/read-objects-from-file-with-pkg" :dir :system)
 

@@ -153,26 +153,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-init-parstate (list)
+(defmacro test-init-parstate (list gcc)
   `(assert-event
-    (equal (init-parstate ,list)
-           (parstate ,list (position-init) nil nil nil nil nil))))
+    (equal (init-parstate ,list ,gcc)
+           (parstate ,list
+                     (position-init)
+                     nil
+                     nil
+                     nil
+                     0
+                     nil
+                     nil
+                     ,gcc
+                     (len ,list)))))
 
-(test-init-parstate nil)
+(test-init-parstate nil nil)
 
-(test-init-parstate (list 1))
+(test-init-parstate nil t)
 
-(test-init-parstate (list 1 2 3))
+(test-init-parstate (list 1) nil)
 
-(test-init-parstate (acl2::string=>nats "abc"))
+(test-init-parstate (list 1) t)
+
+(test-init-parstate (list 1 2 3) nil)
+
+(test-init-parstate (list 1 2 3) t)
+
+(test-init-parstate (acl2::string=>nats "abc") nil)
+
+(test-init-parstate (acl2::string=>nats "abc") t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event
- (equal (parsize (init-parstate nil)) 0))
+ (equal (parsize (init-parstate nil nil)) 0))
 
 (assert-event
- (equal (parsize (init-parstate (list 72 99 21))) 3))
+ (equal (parsize (init-parstate nil t)) 0))
+
+(assert-event
+ (equal (parsize (init-parstate (list 72 99 21) nil)) 3))
+
+(assert-event
+ (equal (parsize (init-parstate (list 72 99 21) t)) 3))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,7 +204,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event ; empty file
- (b* ((pstate0 (init-parstate nil))
+ (b* ((pstate0 (init-parstate nil nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (not char?)
@@ -189,11 +212,12 @@
         (equal pstate pstate0))))
 
 (assert-event ; disallowed character 0
- (b* (((mv erp & & &) (read-char (init-parstate (list 0)))))
+ (b* (((mv erp & & &) (read-char (init-parstate (list 0) nil)))
+      (- (cw "~@0" erp)))
    erp))
 
 (assert-event ; character 32
- (b* ((pstate0 (init-parstate (list 32 1 2 3)))
+ (b* ((pstate0 (init-parstate (list 32 1 2 3) nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? 32)
@@ -203,10 +227,11 @@
                 pstate0
                 :bytes (list 1 2 3)
                 :position (position 1 1)
-                :chars-read (list (char+position 32 (position 1 0))))))))
+                :chars-read (list (char+position 32 (position 1 0)))
+                :size 3)))))
 
 (assert-event ; line feed
- (b* ((pstate0 (init-parstate (list 10 1 2 3)))
+ (b* ((pstate0 (init-parstate (list 10 1 2 3) nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? 10)
@@ -216,10 +241,11 @@
                 pstate0
                 :bytes (list 1 2 3)
                 :position (position 2 0)
-                :chars-read (list (char+position 10 (position 1 0))))))))
+                :chars-read (list (char+position 10 (position 1 0)))
+                :size 3)))))
 
 (assert-event ; carriage return
- (b* ((pstate0 (init-parstate (list 13 1 2 3)))
+ (b* ((pstate0 (init-parstate (list 13 1 2 3) nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? 10)
@@ -229,10 +255,11 @@
                 pstate0
                 :bytes (list 1 2 3)
                 :position (position 2 0)
-                :chars-read (list (char+position 10 (position 1 0))))))))
+                :chars-read (list (char+position 10 (position 1 0)))
+                :size 3)))))
 
 (assert-event ; carriage return + line feed
- (b* ((pstate0 (init-parstate (list 13 10 1 2 3)))
+ (b* ((pstate0 (init-parstate (list 13 10 1 2 3) nil))
       ((mv erp char? pos pstate) (read-char pstate0)))
    (and (not erp)
         (equal char? 10)
@@ -242,12 +269,94 @@
                 pstate0
                 :bytes (list 1 2 3)
                 :position (position 2 0)
-                :chars-read (list (char+position 10 (position 1 0))))))))
+                :chars-read (list (char+position 10 (position 1 0)))
+                :size 3)))))
+
+(assert-event ; disallowed byte 255
+ (b* ((pstate0 (init-parstate (list 255) nil))
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
+
+(assert-event ; 2-byte UTF-8 encoding of Greek capital letter sigma
+ (b* ((pstate0 (init-parstate (acl2::string=>nats "Σ") nil))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (equal char? #x03a3)
+        (equal pos (position 1 0))
+        (equal pstate
+               (change-parstate
+                pstate0
+                :bytes nil
+                :position (position 1 1)
+                :chars-read (list (char+position #x03a3 (position 1 0)))
+                :size 0)))))
+
+(assert-event ; invalid 2-byte UTF-8 encoding of 0
+ (b* ((pstate0 (init-parstate (list #b11000000 #b10000000) nil))
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
+
+(assert-event ; 3-byte UTF-8 encoding of anticlockwise top semicircle arrow
+ (b* ((pstate0 (init-parstate (acl2::string=>nats "↺") nil))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (equal char? #x21ba)
+        (equal pos (position 1 0))
+        (equal pstate
+               (change-parstate
+                pstate0
+                :bytes nil
+                :position (position 1 1)
+                :chars-read (list (char+position #x21ba (position 1 0)))
+                :size 0)))))
+
+(assert-event ; disallowed 3-byte UTF-8 encoding
+ (b* ((pstate0
+       (init-parstate (list #b11100010 #b10000000 #b10101010) nil)) ; 202Ah
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
+
+(assert-event ; invalid 3-byte UTF-8 encoding of 0
+ (b* ((pstate0 (init-parstate (list #b11100000 #b10000000 #b10000000) nil))
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
+
+(assert-event ; 4-byte UTF-8 encoding of musical symbol eighth note
+ (b* ((pstate0 (init-parstate (acl2::string=>nats "𝅘𝅥𝅮") nil))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (equal char? #x1d160)
+        (equal pos (position 1 0))
+        (equal pstate
+               (change-parstate
+                pstate0
+                :bytes nil
+                :position (position 1 1)
+                :chars-read (list (char+position #x1d160 (position 1 0)))
+                :size 0)))))
+
+(assert-event ; invalid 4-byte UTF-8 encoding of 0
+ (b* ((pstate0
+       (init-parstate (list #b11110000 #b10000000 #b10000000 #b10000000) nil))
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
+
+(assert-event ; invalid 4-byte UTF-8 encoding of 1FFFFFh
+ (b* ((pstate0
+       (init-parstate (list #b11110111 #b10111111 #b10111111 #b10111111) nil))
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event
- (b* ((pstate0 (init-parstate (list 65 66 67))) ; A B C
+ (b* ((pstate0 (init-parstate (list 65 66 67) nil)) ; A B C
       ((mv erp1 char-a pos-a pstate1) (read-char pstate0))
       ((mv erp2 char-b pos-b pstate2) (read-char pstate1))
       (pstate3 (unread-char pstate2))
@@ -274,25 +383,29 @@
                 pstate0
                 :bytes (list 66 67)
                 :position (position 1 1)
-                :chars-read (list (char+position 65 (position 1 0)))))
+                :chars-read (list (char+position 65 (position 1 0)))
+                :size 2))
         (equal pstate2
                (change-parstate
                 pstate1
                 :bytes (list 67)
                 :position (position 1 2)
                 :chars-read (list (char+position 66 (position 1 1))
-                                  (char+position 65 (position 1 0)))))
+                                  (char+position 65 (position 1 0)))
+                :size 1))
         (equal pstate3
                (change-parstate
                 pstate2
                 :chars-read (list (char+position 65 (position 1 0)))
-                :chars-unread (list (char+position 66 (position 1 1)))))
+                :chars-unread (list (char+position 66 (position 1 1)))
+                :size 2))
         (equal pstate4
                (change-parstate
                 pstate3
                 :chars-read (list (char+position 66 (position 1 1))
                                   (char+position 65 (position 1 0)))
-                :chars-unread nil))
+                :chars-unread nil
+                :size 1))
         (equal pstate5
                (change-parstate
                 pstate4
@@ -300,12 +413,13 @@
                 :position (position 1 3)
                 :chars-read (list (char+position 67 (position 1 2))
                                   (char+position 66 (position 1 1))
-                                  (char+position 65 (position 1 0)))))
+                                  (char+position 65 (position 1 0)))
+                :size 0))
         (equal pstate6
                pstate5))))
 
 (assert-event
- (b* ((pstate0 (init-parstate (list 65 10 66))) ; A LF B
+ (b* ((pstate0 (init-parstate (list 65 10 66) nil)) ; A LF B
       ((mv erp1 char-a pos-a pstate1) (read-char pstate0))
       ((mv erp2 char-nl pos-nl pstate2) (read-char pstate1))
       (pstate3 (unread-chars 2 pstate2))
@@ -341,42 +455,49 @@
                 pstate0
                 :bytes (list 10 66)
                 :position (position 1 1)
-                :chars-read (list (char+position 65 (position 1 0)))))
+                :chars-read (list (char+position 65 (position 1 0)))
+                :size 2))
         (equal pstate2
                (change-parstate
                 pstate1
                 :bytes (list 66)
                 :position (position 2 0)
                 :chars-read (list (char+position 10 (position 1 1))
-                                  (char+position 65 (position 1 0)))))
+                                  (char+position 65 (position 1 0)))
+                :size 1))
         (equal pstate3
                (change-parstate
                 pstate2
                 :chars-read nil
                 :chars-unread (list (char+position 65 (position 1 0))
-                                    (char+position 10 (position 1 1)))))
+                                    (char+position 10 (position 1 1)))
+                :size 3))
         (equal pstate4
                (change-parstate
                 pstate3
                 :chars-read (list (char+position 65 (position 1 0)))
-                :chars-unread (list (char+position 10 (position 1 1)))))
+                :chars-unread (list (char+position 10 (position 1 1)))
+                :size 2))
         (equal pstate5
                (change-parstate
                 pstate4
                 :chars-read (list (char+position 10 (position 1 1))
                                   (char+position 65 (position 1 0)))
-                :chars-unread nil))
+                :chars-unread nil
+                :size 1))
         (equal pstate6
                (change-parstate
                 pstate5
                 :chars-read (list (char+position 65 (position 1 0)))
-                :chars-unread (list (char+position 10 (position 1 1)))))
+                :chars-unread (list (char+position 10 (position 1 1)))
+                :size 2))
         (equal pstate7
                (change-parstate
                 pstate6
                 :chars-read (list (char+position 10 (position 1 1))
                                   (char+position 65 (position 1 0)))
-                :chars-unread nil))
+                :chars-unread nil
+                :size 1))
         (equal pstate8
                (change-parstate
                 pstate7
@@ -384,7 +505,8 @@
                 :position (position 2 1)
                 :chars-read (list (char+position 66 (position 2 0))
                                   (char+position 10 (position 1 1))
-                                  (char+position 65 (position 1 0)))))
+                                  (char+position 65 (position 1 0)))
+                :size 0))
         (equal pstate9
                pstate8))))
 
@@ -394,29 +516,463 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro test-lex (fn input &key pos more-inputs cond)
+  ;; INPUT is an ACL2 term with the text to lex,
+  ;; where the term evaluates to a string or a list of bytes.
+  ;; Optional POS is the initial position for the parser state.
+  ;; Optional MORE-INPUTS go just before parser state input.
+  ;; Optional COND may be over variables AST, POS/SPAN, PSTATE,
+  ;; and also POS/SPAN2 for LEX-*-DIGIT.
+  `(assert-event
+    (b* ((pstate (init-parstate (if (stringp ,input)
+                                    (acl2::string=>nats ,input)
+                                  ,input)
+                                nil))
+         ,@(and pos
+                `((pstate (change-parstate pstate :position ,pos))))
+         (,(if (member-eq fn '(lex-*-digit
+                               lex-*-hexadecimal-digit))
+               '(mv erp ?ast ?pos/span ?pos/span2 ?pstate)
+             '(mv erp ?ast ?pos/span ?pstate))
+          (,fn ,@more-inputs pstate)))
+      (if erp
+          (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
+        ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
+
+(defmacro test-lex-fail (fn input &key more-inputs)
+  ;; INPUT is an ACL2 string with the text to lex.
+  ;; Optional MORE-INPUTS go just before parser state input.
+  `(assert-event
+    (b* ((,(if (eq fn 'lex-*-digit)
+               '(mv erp & & & &)
+             '(mv erp & & &))
+          (,fn ,@more-inputs (init-parstate (if (stringp ,input)
+                                                (acl2::string=>nats ,input)
+                                              ,input)
+                                            nil))))
+      erp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; lex-identifier/keyword
 
-(assert-event
- (b* ((first-char (char-code #\w))
-      (first-pos (position 8 3))
-      (pstate (init-parstate (acl2::string=>nats " abc")))
-      (pstate (change-parstate pstate :position (position 8 4)))
-      ((mv erp lexeme span &)
-       (lex-identifier/keyword first-char first-pos pstate)))
-   (and (not erp)
-        (equal lexeme (lexeme-token (token-ident (ident "w"))))
-        (equal span (span (position 8 3) (position 8 3))))))
+(test-lex
+ lex-identifier/keyword
+ " abc"
+ :pos (position 8 4)
+ :more-inputs ((char-code #\w) (position 8 3))
+ :cond (and (equal ast (lexeme-token (token-ident (ident "w"))))
+            (equal pos/span (span (position 8 3) (position 8 3)))))
 
-(assert-event
- (b* ((first-char (char-code #\u))
-      (first-pos (position 8 3))
-      (pstate (init-parstate (acl2::string=>nats "abc456")))
-      (pstate (change-parstate pstate :position (position 8 4)))
-      ((mv erp lexeme span &)
-       (lex-identifier/keyword first-char first-pos pstate)))
-   (and (not erp)
-        (equal lexeme (lexeme-token (token-ident (ident "uabc456"))))
-        (equal span (span (position 8 3) (position 8 9))))))
+(test-lex
+ lex-identifier/keyword
+ "abc456"
+ :pos (position 8 4)
+ :more-inputs ((char-code #\u) (position 8 3))
+ :cond (and (equal ast (lexeme-token (token-ident (ident "uabc456"))))
+            (equal pos/span (span (position 8 3) (position 8 9)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-hexadecimal-digit
+
+(test-lex
+ lex-hexadecimal-digit
+ "0"
+ :cond (equal ast #\0))
+
+(test-lex
+ lex-hexadecimal-digit
+ "1"
+ :cond (equal ast #\1))
+
+(test-lex
+ lex-hexadecimal-digit
+ "8"
+ :cond (equal ast #\8))
+
+(test-lex
+ lex-hexadecimal-digit
+ "A"
+ :cond (equal ast #\A))
+
+(test-lex
+ lex-hexadecimal-digit
+ "b"
+ :cond (equal ast #\b))
+
+(test-lex
+ lex-hexadecimal-digit
+ "fy"
+ :cond (and (equal ast #\f)
+            (equal (parstate->bytes pstate) (list (char-code #\y)))))
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ "")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ " ")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ " c")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ "g")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ "@")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-hex-quad
+
+(test-lex
+ lex-hex-quad
+ "0000"
+ :cond (equal ast (hex-quad #\0 #\0 #\0 #\0)))
+
+(test-lex
+ lex-hex-quad
+ "b8F0"
+ :cond (equal ast (hex-quad #\b #\8 #\F #\0)))
+
+(test-lex
+ lex-hex-quad
+ "DeadBeef"
+ :cond (and (equal ast (hex-quad #\D #\e #\a #\d))
+            (equal (parstate->bytes pstate) (acl2::string=>nats "Beef"))))
+
+(test-lex-fail
+ lex-hex-quad
+ "")
+
+(test-lex-fail
+ lex-hex-quad
+ "7aa")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-digit
+
+(test-lex
+ lex-*-digit
+ ""
+ :pos (position 1 1)
+ :more-inputs ((position 1 0))
+ :cond (and (equal ast nil)
+            (equal pos/span (position 1 0))
+            (equal pos/span2 (position 1 1))))
+
+(test-lex
+ lex-*-digit
+ "+"
+ :pos (position 1 1)
+ :more-inputs ((position 1 0))
+ :cond (and (equal ast nil)
+            (equal pos/span (position 1 0))
+            (equal pos/span2 (position 1 1))))
+
+(test-lex
+ lex-*-digit
+ "6"
+ :pos (position 10 10)
+ :more-inputs ((position 10 9))
+ :cond (and (equal ast '(#\6))
+            (equal pos/span (position 10 10))
+            (equal pos/span2 (position 10 11))))
+
+(test-lex
+ lex-*-digit
+ "183a"
+ :pos (position 10 10)
+ :more-inputs ((position 10 9))
+ :cond (and (equal ast '(#\1 #\8 #\3))
+            (equal pos/span (position 10 12))
+            (equal pos/span2 (position 10 13))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-hexadecimal-digit
+
+(test-lex
+ lex-*-hexadecimal-digit
+ ""
+ :pos (position 20 88)
+ :more-inputs ((position 20 87))
+ :cond (and (equal ast nil)
+            (equal pos/span (position 20 87))
+            (equal pos/span2 (position 20 88))))
+
+(test-lex
+ lex-*-hexadecimal-digit
+ "dEadbeFf"
+ :pos (position 1 1)
+ :more-inputs ((position 1 0))
+ :cond (and (equal ast '(#\d #\E #\a #\d #\b #\e #\F #\f))
+            (equal pos/span (position 1 8))
+            (equal pos/span2 (position 1 9))))
+
+(test-lex
+ lex-*-hexadecimal-digit
+ "1"
+ :pos (position 10 10)
+ :more-inputs ((position 10 9))
+ :cond (and (equal ast '(#\1))
+            (equal pos/span (position 10 10))
+            (equal pos/span2 (position 10 11))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-escape-sequence
+
+(test-lex
+ lex-escape-sequence
+ "'"
+ :cond (equal ast (escape-simple (simple-escape-squote))))
+
+(test-lex
+ lex-escape-sequence
+ "\""
+ :cond (equal ast (escape-simple (simple-escape-dquote))))
+
+(test-lex
+ lex-escape-sequence
+ "?"
+ :cond (equal ast (escape-simple (simple-escape-qmark))))
+
+(test-lex
+ lex-escape-sequence
+ "\\"
+ :cond (equal ast (escape-simple (simple-escape-bslash))))
+
+(test-lex
+ lex-escape-sequence
+ "a"
+ :cond (equal ast (escape-simple (simple-escape-a))))
+
+(test-lex
+ lex-escape-sequence
+ "b"
+ :cond (equal ast (escape-simple (simple-escape-b))))
+
+(test-lex
+ lex-escape-sequence
+ "f"
+ :cond (equal ast (escape-simple (simple-escape-f))))
+
+(test-lex
+ lex-escape-sequence
+ "n"
+ :cond (equal ast (escape-simple (simple-escape-n))))
+
+(test-lex
+ lex-escape-sequence
+ "r"
+ :cond (equal ast (escape-simple (simple-escape-r))))
+
+(test-lex
+ lex-escape-sequence
+ "t"
+ :cond (equal ast (escape-simple (simple-escape-t))))
+
+(test-lex
+ lex-escape-sequence
+ "v"
+ :cond (equal ast (escape-simple (simple-escape-v))))
+
+(test-lex
+ lex-escape-sequence
+ "vv"
+ :cond (equal ast (escape-simple (simple-escape-v))))
+
+(test-lex-fail
+ lex-escape-sequence
+ "w")
+
+(test-lex
+ lex-escape-sequence
+ "6"
+ :cond (equal ast (escape-oct (oct-escape-one #\6))))
+
+(test-lex
+ lex-escape-sequence
+ "68"
+ :cond (equal ast (escape-oct (oct-escape-one #\6))))
+
+(test-lex
+ lex-escape-sequence
+ "60"
+ :cond (equal ast (escape-oct (oct-escape-two #\6 #\0))))
+
+(test-lex
+ lex-escape-sequence
+ "601"
+ :cond (equal ast (escape-oct (oct-escape-three #\6 #\0 #\1))))
+
+(test-lex
+ lex-escape-sequence
+ "6011"
+ :cond (equal ast (escape-oct (oct-escape-three #\6 #\0 #\1))))
+
+(test-lex-fail
+ lex-escape-sequence
+ "8")
+
+(test-lex
+ lex-escape-sequence
+ "xf8"
+ :cond (equal ast (escape-hex (list #\f #\8))))
+
+(test-lex
+ lex-escape-sequence
+ "x829s"
+ :cond (equal ast (escape-hex (list #\8 #\2 #\9))))
+
+(test-lex-fail
+ lex-escape-sequence
+ "x")
+
+(test-lex-fail
+ lex-escape-sequence
+ "x+")
+
+(test-lex
+ lex-escape-sequence
+ "uabBA"
+ :cond (equal ast (escape-univ
+                   (univ-char-name-locase-u (hex-quad #\a #\b #\B #\A)))))
+
+(test-lex
+ lex-escape-sequence
+ "U744dD900"
+ :cond (equal ast (escape-univ
+                   (univ-char-name-upcase-u (hex-quad #\7 #\4 #\4 #\d)
+                                            (hex-quad #\D #\9 #\0 #\0)))))
+
+(test-lex-fail
+ lex-escape-sequence
+ "u123")
+
+(test-lex-fail
+ lex-escape-sequence
+ "U0000123")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-c-char
+
+(test-lex
+ lex-*-c-char
+ "a'"
+ :cond (equal ast (list (c-char-char (char-code #\a)))))
+
+(test-lex
+ lex-*-c-char
+ "\\a'"
+ :cond (equal ast (list (c-char-escape (escape-simple (simple-escape-a))))))
+
+(test-lex
+ lex-*-c-char
+ "&\\xf7'"
+ :cond (equal ast (list (c-char-char (char-code #\&))
+                        (c-char-escape (escape-hex (list #\f #\7))))))
+
+(test-lex
+ lex-*-c-char
+ "\\1111'"
+ :cond (equal ast (list (c-char-escape
+                         (escape-oct (oct-escape-three #\1 #\1 #\1)))
+                        (c-char-char (char-code #\1)))))
+
+(test-lex
+ lex-*-c-char
+ "ABC'"
+ :cond (and (equal ast (list (c-char-char (char-code #\A))
+                             (c-char-char (char-code #\B))
+                             (c-char-char (char-code #\C))))
+            (equal pos/span (position 1 3))))
+
+(test-lex
+ lex-*-c-char
+ "d\"q'"
+ :cond (and (equal ast (list (c-char-char (char-code #\d))
+                             (c-char-char (char-code #\"))
+                             (c-char-char (char-code #\q))))
+            (equal pos/span (position 1 3))))
+
+(test-lex-fail
+ lex-*-c-char
+ "")
+
+(test-lex-fail
+ lex-*-c-char
+ "a")
+
+(test-lex-fail
+ lex-*-c-char
+ "a\\'")
+
+(test-lex-fail
+ lex-*-c-char
+ "a\\z'")
+
+(test-lex-fail
+ lex-*-c-char
+ (list (char-code #\a) 10 (char-code #\b) (char-code #\')))
+
+(test-lex-fail
+ lex-*-c-char
+ (list (char-code #\a) 13 10 (char-code #\')))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-c-char
+
+(test-lex
+ lex-*-s-char
+ "p\""
+ :cond (equal ast (list (s-char-char (char-code #\p)))))
+
+(test-lex
+ lex-*-s-char
+ "'\""
+ :cond (equal ast (list (s-char-char (char-code #\')))))
+
+(test-lex
+ lex-*-s-char
+ "\\n\""
+ :cond (equal ast (list (s-char-escape (escape-simple (simple-escape-n))))))
+
+(test-lex
+ lex-*-s-char
+ "12\""
+ :cond (equal ast (list (s-char-char (char-code #\1))
+                        (s-char-char (char-code #\2)))))
+
+(test-lex-fail
+ lex-*-s-char
+ "")
+
+(test-lex-fail
+ lex-*-s-char
+ "noclose")
+
+(test-lex-fail
+ lex-*-s-char
+ "\\k\"")
+
+(test-lex-fail
+ lex-*-s-char
+ (list (char-code #\U) 10 (char-code #\")))
+
+(test-lex-fail
+ lex-*-s-char
+ (list (char-code #\U) 13 (char-code #\")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -424,14 +980,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key cond)
-  ;; optional COND may be over variables AST, SPAN, PSTATE
-  ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST
+(defmacro test-parse (fn input &key cond gcc)
+  ;; Input is an ACL2 term with the text to parse,
+  ;; where the term evaluates to a string or a list of bytes.
+  ;; Optional COND may be over variables AST, SPAN, PSTATE
+  ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST.
   `(assert-event
     (b* ((,(if (eq fn 'parse-external-declaration-list)
                '(mv erp ?ast ?span ?eofpos ?pstate)
              '(mv erp ?ast ?span ?pstate))
-          (,fn (init-parstate (acl2::string=>nats ,input)))))
+          (,fn (init-parstate (acl2::string=>nats ,input) ,gcc))))
       (if erp
           (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
         ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
@@ -719,6 +1277,100 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-abstract-declarator
+
+(test-parse
+ parse-abstract-declarator
+ "[a[3]]"
+ :cond (and (equal (absdeclor->pointers ast) nil)
+            (dirabsdeclor-case (absdeclor->decl? ast) :array)))
+
+(test-parse
+ parse-abstract-declarator
+ "(a)"
+ :cond (and (equal (absdeclor->pointers ast) nil)
+            (dirabsdeclor-case (absdeclor->decl? ast) :function)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-declarator
+
+(test-parse
+ parse-declarator
+ "o")
+
+(test-parse
+ parse-declarator
+ "*o")
+
+(test-parse
+ parse-declarator
+ "*o[15]")
+
+(test-parse
+ parse-declarator
+ "(*o)[15]")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-parameter-declaration
+
+(test-parse
+ parse-parameter-declaration
+ "int x,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :declor))
+
+(test-parse
+ parse-parameter-declaration
+ "int *x,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :declor))
+
+(test-parse
+ parse-parameter-declaration
+ "int *,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :absdeclor))
+
+(test-parse
+ parse-parameter-declaration
+ "int (x)(y))"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-declarator-or-abstract-declarator
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "zzz,"
+ :cond (amb?-declor/absdeclor-case ast :declor))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(*),"
+ :cond (amb?-declor/absdeclor-case ast :absdeclor))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h),"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h)[*],"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h)[*](uint32_t),"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h)[*](uint32_t)(T,T),"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-expression-or-type-name
 
 (test-parse
@@ -750,6 +1402,30 @@
  parse-expression-or-type-name
  "a _Atomic)"
  :cond (amb?-expr/tyname-case ast :tyname))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-declaration
+
+(test-parse
+ parse-declaration
+ "extern int remove (const char *__filename)
+    __attribute__ ((__nothrow__ , __leaf__));"
+ :gcc t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-statement
+
+(test-parse
+ parse-statement
+ "   printf(\"exploit_read_from_file(): \"
+          \"bytes_read=%zd is supposed to be bytes_expected_to_be_read=%zd, \"
+          \"pre_offset=%ld is supposed to be post_offset=%ld, \"
+          \"pre_offset is supposed to be 1, \"
+          \"post_offset is supposed to be 1.\\n\",
+          ret, exploit_size,
+          pre_offset, post_offset);")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -896,3 +1572,81 @@ struct bar
  "void foo () {
  idx = (arr)[3];
 }")
+
+(test-parse
+ parse-external-declaration-list
+ "void test(int i)
+{
+    y[i] = (i ? inv : src)[i];
+}")
+
+(test-parse
+ parse-external-declaration-list
+ "extern char *tmpnam (char[20]);")
+
+(test-parse
+ parse-external-declaration-list
+ "extern int __uflow (FILE *);")
+
+(test-parse
+ parse-external-declaration-list
+ "int c[1][2];")
+
+(test-parse
+ parse-external-declaration-list
+ "struct A
+{
+  int c1, c2;
+};")
+
+(test-parse
+ parse-external-declaration-list
+ "long long foo () {
+  return 1LL;
+}")
+
+(test-parse
+ parse-external-declaration-list
+ "extern int sscanf (const char *__s, const char *__format, ...);")
+
+(test-parse
+ parse-external-declaration-list
+ "extern int remove (const char *__filename) __attribute__ ((__nothrow__ , __leaf__));"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "typedef int register_t __attribute__ ((__mode__ (__word__)));"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "extern int fscanf (FILE *__restrict __stream, const char *__restrict __format, ...) __asm__ (\"\" \"__isoc99_fscanf\") ;"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "void foo() {
+  for (size_t bar; ; ) {}
+}")
+
+(test-parse
+ parse-external-declaration-list
+ "static int func_1(void)
+{
+   int i;
+lbl_15:
+   return 2;
+}")
+
+(test-parse
+ parse-external-declaration-list
+ "extern __inline __attribute__ ((__always_inline__)) __attribute__ ((__gnu_inline__)) void
+error (int __status, int __errnum, const char *__format, ...)
+{
+ if (__builtin_constant_p (__status) && __status != 0)
+   __error_noreturn (__status, __errnum, __format, __builtin_va_arg_pack ());
+ else
+   __error_alias (__status, __errnum, __format, __builtin_va_arg_pack ());
+}"
+ :gcc t)

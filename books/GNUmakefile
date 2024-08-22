@@ -457,6 +457,11 @@ nonstd/workshops/1999/calculus/book/tree/proof-outline: \
 endif # ifneq ($(ACL2_HAS_REALS), )
 
 
+ifneq ($(ACL2_HAS_PARALLEL), )
+$(info Excluding non-ACL2(p) books: [$(CERT_PL_NON_ACL2P)])
+OK_CERTS := $(filter-out $(CERT_PL_NON_ACL2P), $(OK_CERTS))
+endif # ifneq ($(ACL2_HAS_PARALLEL), )
+
 
 # Set up REALLY_USE_QUICKLISP to be 1 if we really want to use Quicklisp or 0
 # otherwise.  REALLY_USE_QUICKLISP is almost the same as USE_QUICKLISP.
@@ -792,6 +797,12 @@ endif
 # cert_pl_exclude file in projects/translators/ (even though there is
 # a cert_pl_exclude in projects/translators/l3-to-acl2/).
 
+# NOTE added 8/13/2024 by Matt K.: The toothbrush appears to have
+# been broken recently, at least for CCL.  As far as I know, nobody
+# uses it; so, I don't intend to fix it.  But I'll leave the code
+# below in case someone wants to do so.  Note that unless one
+# deliberately sets TB_LISP, the toothbrush tests won't be run.
+# -- Legacy comment and code: --
 # It is currently only recommended to test the toothbrush mechanism
 # for Lisps that compile on-the-fly, namely CCL and SBCL, since that
 # mechanism doesn't use (or depend on) compiled files in the main

@@ -1,7 +1,7 @@
 ; An alist that stores equality assumptions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,7 @@
 
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
+(include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
 (include-book "equality-pairs")
 (include-book "term-equal-dag")
 (include-book "axe-trees")

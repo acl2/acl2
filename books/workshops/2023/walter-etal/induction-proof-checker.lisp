@@ -117,7 +117,8 @@ Here is the definition of a pseudo-termp and a pseudo-term-listp.
   (defthm pseudo-termp=>ptermp1
     (and (=> (pseudo-termp x) (pterm1p x))
          (=> (pseudo-term-listp x) (lo-pterm1p x)))
-    :hints (("goal" :induct (pterm-induct x)))))
+    :hints (("goal" :induct (pterm-induct x)
+             :in-theory (disable lo-ptermp cdr-true-listp-sig)))))
 
 (definecd neg (exp :pseudo-term) :pseudo-term
   (if (and (consp exp)
@@ -150,6 +151,7 @@ Here is the definition of a pseudo-termp and a pseudo-term-listp.
              :induct (take n l)))))
 
 (definecd termify-clause (clause :lo-pterm) :pseudo-term
+  :function-contract-hints (("Goal" :induct (lo-ptermp clause)))
   (cond ((endp clause) nil)
         ((endp (cdr clause)) (car clause))
         ((endp (cddr clause)) 

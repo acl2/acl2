@@ -1,4 +1,4 @@
-; Tools to strenghten facts by rewriting
+; Tools to strengthen facts by rewriting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2020 Kestrel Institute

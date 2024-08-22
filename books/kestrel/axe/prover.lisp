@@ -1,7 +1,7 @@
 ; The Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -53,6 +53,7 @@
 (include-book "fixup-context")
 (include-book "kestrel/terms-light/negate-terms" :dir :system)
 (include-book "make-instantiation-code-simple")
+(include-book "kestrel/acl2-arrays/aset1-safe" :dir :system) ; todo: drop once we no longer call aset1-safe below
 ;(local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -1580,7 +1581,7 @@
  ;;       (progn$ (cw "Clause miter literals: ~x0~%" literal-nodenums)
  ;;               (cw "Clause miter case: ~x0~%" (expressions-for-this-case literal-nodenums dag-array dag-len)) ;fixme just print this instead of consing it up?
  ;;               (cw "Clause miter literals:~%")
- ;;               ;; (print-array2 'dag-array dag-array dag-len)
+ ;;               ;; (print-array 'dag-array dag-array dag-len)
  ;;               (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
  ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
  ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
@@ -1802,7 +1803,7 @@
                                  (progn$ (cw "Literals:~%")
                                          (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
 ;(cw "parent array:~%")
-;(print-array2 'dag-parent-array dag-parent-array dag-len)
+;(print-array 'dag-parent-array dag-parent-array dag-len)
                                          ))
                             ;;splitting on nodenum (which is not a call of NOT):
                             ;;instead of proving the clause C, we will prove both (or (not nodenum) C) and (or nodenum C)

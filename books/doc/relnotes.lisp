@@ -123,6 +123,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "aleobft::aleobft" "AleoBFT"))
+
+   (xdoc::p
+    "Formal specification and correctness proofs of AleoBFT,
+     a Byzantine-fault-tolerant consensus protocol,
+     used in the "
+    (xdoc::ahref "https://aleo.org" "Aleo blockchain")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Gaussian Elimination Library")
 
    (xdoc::p
@@ -231,7 +242,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented Syntax"))
+   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
 
    (xdoc::p
     "A new sub-library has been added,
@@ -240,7 +251,8 @@
      intended for use by tools like code generators and transformers.
      This sub-library also includes
      a parser from the concrete to the abstract syntax,
-     as well as an ACL2 tool to invoke an external C preprocessor.")
+     a printer from the abstract syntax to the concrete syntax,
+     and other tools to operate on this syntax.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -279,6 +291,15 @@
      This new approach will co-exist with the current one,
      until the former will replace the latter.")
 
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5
+    (xdoc::seetopic "c2c::transformation-tools" "C Transformation Tools"))
+
+   (xdoc::p
+    "A new sub-library has been added,
+     which contains tools to perform C-to-C transformations.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Demos Library")
@@ -310,6 +331,26 @@
    (xdoc::p
     "A fixtype @(tsee pos-set) for sets of positive integers has been added,
      along with some operations on these sets.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "JVM Models @('models/jvm/')")
+
+   (xdoc::p
+    "A few new example proof files were added to
+     @('models/jvm/guard-verified-m1/m1.lisp') to illustrate reasoning about
+     non-terminating programs.  These files were already included in the
+     unguarded version of @('m1') on the directory @('models/jvm/m1/m1.lisp')
+     so no new proof techniques are demonstrated.")
+
+   (xdoc::p
+    "A new subdirectory, @('models/jvm/m2/'), was added.  @('M2') is like
+     @('m1') but also formalizes versions of the JVM's @('invokevirtual'),
+     @('invokestatic'), @('return'), and the instructions for allocating and
+     manipulating Objects.  No claim is made that @('m2') is exactly compliant
+     with the JVM spec, but the model does show a way to model subroutine call
+     and object manipulation (with inheritance).  The directory also includes
+     example proofs of programs involving these features.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -420,6 +461,14 @@
      has been added,
      so that one can more easily reason about the shallowly embedded form
      and mechanically transfer the reasoning to the deeply embedded form.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
+
+   (xdoc::p
+    "The Std/basic books extensions in @('[books]/kestrel/std/basic')
+     have been integrated into @('[books]/std/basic').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -588,6 +637,17 @@
      "VPADDB, VPADDW, VPADDD, VPADDQ (VEX versions)")
     (xdoc::li
      "VPSUBB, VPSUBW, VPSUBD, VPSUBQ (VEX versions)"))
+
+   (xdoc::p
+    "Support has been added for the following instructions:"
+    (xdoc::li
+     "MOVDQA")
+    (xdoc::li
+     "PADDB, PADDW, PADDD, PADDQ (SSE versions)")
+    (xdoc::li
+     "PSUBB, PSUBW, PSUBD, PSUBQ (SSE versions)")
+    (xdoc::li
+     "PSLLDQ, PSRLDQ (SSE versions)"))
 
    (xdoc::p
     "Some memory accessing functions for larger sizes have been added.")

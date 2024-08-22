@@ -131,6 +131,13 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable axe-bind-free-function-applicationp))))
 
+(defthm axe-bind-free-function-applicationp-forward-to-not-equal-of-quote-and-car
+  (implies (axe-bind-free-function-applicationp expr)
+           (not (equal 'quote (car expr))))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable axe-bind-free-function-applicationp))))
+
+
 ;;;
 ;;; axe-rule-hypp
 ;;;
@@ -538,10 +545,10 @@
          (and (axe-rule-lhsp lhs)
               (pseudo-termp rhs)
               (axe-rule-hyp-listp hyps)
-              (bound-vars-suitable-for-hypsp (free-vars-in-term lhs) hyps)
-              (subsetp-equal (free-vars-in-term rhs)
-                             (bound-vars-after-hyps (free-vars-in-term lhs) hyps))
-              ))))
+              (let ((lhs-vars (free-vars-in-term lhs)))
+                (and (bound-vars-suitable-for-hypsp lhs-vars hyps)
+                     (subsetp-equal (free-vars-in-term rhs)
+                                    (bound-vars-after-hyps lhs-vars hyps))))))))
 
 (defthm pseudo-termp-of-rule-rhs
   (implies (axe-rulep axe-rule)

@@ -60,5 +60,7 @@
 (include-book "projects/pfcs/portcullis" :dir :system)
 (include-book "kestrel/zcash/portcullis" :dir :system)
 (include-book "acl2s/interface/portcullis" :dir :system)
+(include-book "kestrel/c/syntax/portcullis" :dir :system)
+(include-book "kestrel/c/transformation/portcullis" :dir :system)
 
 ; cert-flags: ? t :ttags :all

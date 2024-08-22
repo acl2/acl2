@@ -25,3 +25,7 @@
 ; backward compatibility.
 
 (defpkg "ACL2-PC" nil)
+
+; Added August 2024: In complete analogy, we add the "BIB" package here as well.
+
+(defpkg "BIB" nil)

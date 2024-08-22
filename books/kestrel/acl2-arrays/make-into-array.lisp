@@ -15,7 +15,7 @@
 (include-book "make-into-array-with-len")
 (include-book "make-empty-array")
 (local (include-book "array1p"))
-(local (include-book "acl2-arrays")) ; todo: reducen
+(local (include-book "acl2-arrays")) ; todo: reduce
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;Consider adding an option to reuse an existing array if large enough (well, compress1 now does that internally)?

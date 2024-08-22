@@ -4820,14 +4820,6 @@
                 (finish-error ,instrs)
                 t)))
 
-(defun show-geneqv (x with-runes-p)
-  (cond ((endp x) nil)
-        (t (cons (if with-runes-p
-                     (list (access congruence-rule (car x) :equiv)
-                           (access congruence-rule (car x) :rune))
-                   (access congruence-rule (car x) :equiv))
-                 (show-geneqv (cdr x) with-runes-p)))))
-
 (define-pc-macro geneqv (&optional with-runes-p)
   (value `(print (show-geneqv
                   (geneqv-at-subterm-top (conc)

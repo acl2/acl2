@@ -1,7 +1,7 @@
 ; A function to write a value to an array at several indices
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,8 +13,9 @@
 (in-package "ACL2")
 
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
-(include-book "acl2-arrays")
+(include-book "alen1")
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
+(local (include-book "acl2-arrays"))
 
 ;; There is a built-in function, aset1-lst, that is somewhat similar to this,
 ;; but it takes an alist from keys to values.

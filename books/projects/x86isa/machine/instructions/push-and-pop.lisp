@@ -86,7 +86,7 @@
 ;
 ; The documentation of PUSH in Intel manual, Dec'23, Vol. 2 includes a section
 ; "IA-32 Architecture Compatibiity" describing a slightly different behavior of
-; PUSH ESP in 8086 processors. This is is currently not covered by our formal
+; PUSH ESP in 8086 processors. This is currently not covered by our formal
 ; model below. To cover this, we may need to extend the X86 state with
 ; information about the kind of processor.
 

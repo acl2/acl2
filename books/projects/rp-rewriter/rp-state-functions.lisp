@@ -149,11 +149,11 @@ which submits an event.
   :parents (rp-utilities)
   :short "Number of steps RP-Rewriter can take when rewriting the hypothesis of
  a lemma"
-  :long "<p>  We have a different  step limit than (@see  set-rw-step-limit) when
+  :long "<p>  We have a different  step limit than @(see  set-rw-step-limit) when
  rewriting  hypotheses   of  lemmas  that   may  be  applied  to   the  current
  conjecture. This step limit can be changed with <code> @('(set-backchain-limit
  <number>)')</code>.  It is  recomendeded to  select a  value far  smaller than
- rw-step-limit   (see  (@see   set-rw-step-limit))  or   chose  a   very  large
+ rw-step-limit   (see  @(see   set-rw-step-limit))  or   chose  a   very  large
  rw-step-limit,  otherwise rw-step-limit  might override  it during  rewriting.
  </p>")
 

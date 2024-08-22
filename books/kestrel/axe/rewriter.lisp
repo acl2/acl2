@@ -39,6 +39,8 @@
 (include-book "kestrel/utilities/defconst-computed" :dir :system) ;not strictly needed
 (include-book "jvm/axe-syntaxp-evaluator-jvm") ; JVM-specific
 (include-book "jvm/axe-bind-free-evaluator-jvm") ; JVM-specific
+(include-book "kestrel/acl2-arrays/copy-array-vals" :dir :system)
+(local  (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; Axe contains a sophisticated rewriter capable of efficiently transforming
 ;; large terms by repeatedly applying local ``rewrite rules.''  The rewrite
@@ -219,7 +221,7 @@
                             (progn$ (cw "(Failed to relieve axe-syntaxp hyp: ~x0 for ~x1.)~%" hyp rule-symbol)
                                     ;; (cw "(Alist: ~x0)~%" alist)
                                     ;; (cw "(DAG:~%")
-                                    ;; (print-array2 'dag-array dag-array dag-len)
+                                    ;; (print-array 'dag-array dag-array dag-len)
                                     ;; (cw ")~%")
                                     ))
                        (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))
@@ -420,7 +422,7 @@
                                                ;;print these better?:
                                                ;; (cw "(node equality assumptions: ~x0)~%" node-replacement-alist)
                                                ;; (cw "(DAG:~%")
-                                               ;; (print-array2 'dag-array dag-array dag-len)
+                                               ;; (print-array 'dag-array dag-array dag-len)
                                                ;; (cw ")")
                                                (cw ")~%")))
                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))))))))))))))
@@ -1281,7 +1283,7 @@
        ((when erp) (mv erp nil limits state))
        (- (maybe-print-hit-counts hit-counts))
        (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
-       (- (and print (cw ")~%"))) ; balances "(Simplifying with no internal contexts"
+       (- (and print (cw ")~%"))) ; balances "(Simplifying without using contexts"
        (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
     (if (consp renamed-top-node) ; checks for quotep
         (prog2$ (and print (cw "Result: ~x0)~%" renamed-top-node)) ; balances "(Simplifying DAG ...
@@ -1297,7 +1299,8 @@
              ;;could check here whether nothing changed and not build a new list?
              (dag (drop-non-supporters-array-with-name 'dag-array dag-array renamed-top-node print))
              ((when (not (dag-fns-include-any dag '(if myif boolif bvif)))) ; no benefit from using contexts
-              (mv (erp-nil) dag limits state))
+              (prog2$ (and print (cw "No IFs to provide context info.)~%"))   ; balances "(Simplifying DAG ...
+                      (mv (erp-nil) dag limits state)))
              (- (and print (cw "~%(Simplifying again with internal contexts (~x0 nodes)...~%" dag-len)))
              (dag-len (+ 1 (top-nodenum dag)))
              (initial-array-size (+ (* 2 dag-len) external-context-array-len slack-amount)) ;the array starts out containing the dag; we leave space for another copy, plus the external context nodes, plus some slack

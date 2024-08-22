@@ -727,11 +727,13 @@
   `(progn
      (defmacro ,old (&rest args)
        (prog2$
-        (cw "~%**DEPRECATED** in ACL2 Version ~s0: ~x1.  Use ~x2 instead.~|"
+        (cw "~%**DEPRECATED** after ACL2 Version ~s0: ~x1.  Use ~x2 instead.~|"
             ,version ',old ',new)
         (cons ',new args)))
      (add-macro-alias ,old ,new)
      (value-triple ',old)))
+
+(defdeprecate get-wormhole-status get-persistent-whs "8.5")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End

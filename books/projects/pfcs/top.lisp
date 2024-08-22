@@ -1,7 +1,7 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
 ; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; Copyright (C) 2024 Aleo Systems Inc. (https://www.aleo.org)
+; modifications Copyright (C) 2024 Provable Inc. (https://www.provable.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,7 +12,11 @@
 (in-package "PFCS")
 
 (include-book "concrete-syntax")
+
 (include-book "abstract-syntax")
+(include-book "syntax-abstraction")
+(include-book "parser-interface")
+
 (include-book "abstract-syntax-operations")
 (include-book "indexed-names")
 (include-book "convenience-constructors")
@@ -70,8 +74,10 @@
       verification, analysis, transformation, and synthesis."))
    (xdoc::p
     "Currently this library contains
-     a concrete syntax of PFCSes,
-     an abstract syntax of PFCSes,
+     a concrete syntax of PFCSes and a parser to CSTs (concrete syntax trees),
+     an abstract syntax of PFCSes and an abstractor from CSTs to ASTs (abstract
+     syntax trees),
+     parser interface functions to generate ASTs from strings,
      some operations on the abstract syntax,
      a notion of well-formedness,
      a semantics expressed as a shallow embedding,

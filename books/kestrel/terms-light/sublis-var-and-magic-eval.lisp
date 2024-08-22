@@ -13,7 +13,7 @@
 
 ;; (include-book "all-quotep")
 (include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
-(include-book "kestrel/utilities/quote" :dir :system) ;for unquote-list
+(include-book "kestrel/utilities/unquote-list" :dir :system)
 (include-book "tools/flag" :dir :system)
 
 ;; TODO: Consider getting rid of (if x 't 'nil) when x is boolean.  Or take an iff flag?

@@ -35,7 +35,8 @@
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
-(include-book "kestrel/bv/rules3" :dir :system) ; for ifix-does-nothing
+(include-book "kestrel/bv/rules3" :dir :system) ; for max-constants-lemma
+(include-book "kestrel/arithmetic-light/ifix" :dir :system) ; for ifix-when-integerp
 (include-book "kestrel/bv/adder" :dir :system) ; for RIPPLE-CARRY-ADDER-RECURSIVE -- drop?
 (include-book "kestrel/bv/bvif2" :dir :system) ; for BVLT-OF-BVIF-ARG2-SAFE
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)

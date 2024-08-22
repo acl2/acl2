@@ -101,7 +101,7 @@
      or an (array) element of an object designator.
      For a variable in automatic storage,
      we need not only the name,
-     but also an indication of which scope in which frame the variable is:
+     but also an indication of which scope in which frame the variable is in:
      we use natural numbers for this purpose,
      meant to be indices in the frame stack and scope stack.
      For both frames and scopes, index 0 refers to the bottom of the stack;

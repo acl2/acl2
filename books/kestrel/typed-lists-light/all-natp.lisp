@@ -1,7 +1,7 @@
 ; A function to recognize lists of naturals
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,15 +15,13 @@
 
 (defforall all-natp (lst) (natp lst) :declares ((type t lst)))
 
-;dup
+;; Disable?
 (defthm natp-of-nth-from-all-natp
   (implies (and (all-natp lst)
                 (< i (len lst))
                 (natp i))
            (natp (nth i lst)))
-  :hints (("Goal" :in-theory (e/d (len nth all-natp)
-                                  (;list::len-of-cdr nth-of-cdr
-                                   )))))
+  :hints (("Goal" :in-theory (enable len nth all-natp))))
 
 (defthm all-natp-when-nat-listp-cheap
   (implies (nat-listp lst)

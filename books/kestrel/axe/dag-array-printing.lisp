@@ -1,7 +1,7 @@
 ; Printing DAG arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,8 +17,10 @@
 
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 ;(include-book "kestrel/typed-lists-light/all-natp" :dir :system)
-(include-book "dag-arrays")
+(include-book "dag-arrays") ; order of the include books matters here
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;move
 ;; (local
@@ -39,7 +41,6 @@
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 index))
                               (true-listp node-list))
                   :measure (+ 1 (nfix (+ 1 index)))
-                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
                   :split-types t)
            (type integer index))
   (if (or (< index 0)

@@ -1,7 +1,7 @@
 ; A utility to filter lambda formals that are bound to themselves.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,9 +19,9 @@
                               (pseudo-term-listp args))))
   (if (endp formals)
       nil
-    (let* ((formal (first formals))
-           (arg (first args)))
-      (if (equal formal arg)
+    (let ((formal (first formals))
+          (arg (first args)))
+      (if (eq formal arg)
           ;; keep since trivial:
           (cons formal (trivial-formals (rest formals) (rest args)))
         (trivial-formals (rest formals) (rest args))))))
@@ -34,4 +34,14 @@
 (defthm not-member-equal-of-trivial-formals-when-not-member-equal
   (implies (not (member-equal formal formals))
            (not (member-equal formal (trivial-formals formals args))))
+  :hints (("Goal" :in-theory (enable trivial-formals))))
+
+(defthm subsetp-equal-of-trivial-formals
+  (subsetp-equal (trivial-formals formals args) formals)
+  :hints (("Goal" :in-theory (enable trivial-formals))))
+
+(defthm symbolp-when-member-equal-of-trivial-formals
+  (implies (and (member-equal var (trivial-formals formals args))
+                (symbol-listp formals))
+           (symbolp var))
   :hints (("Goal" :in-theory (enable trivial-formals))))

@@ -27,6 +27,14 @@
          (bvplus size x (bvplus size y z)))
   :hints (("Goal" :in-theory (enable bvplus))))
 
+;; may be less likely to disrupt huge bvplus nests
+;; see also bvplus-commute-constant2
+(defthm bvplus-associative-when-constant-arg1
+  (implies (syntaxp (quotep x))
+           (equal (bvplus size (bvplus size x y) z)
+                  (bvplus size x (bvplus size y z))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
 (defthm bvplus-commutative
   (equal (bvplus size x y)
          (bvplus size y x))

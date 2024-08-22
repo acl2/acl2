@@ -4430,7 +4430,13 @@
                                  state))
       (assert (equal (length stobjs-out) (length vals)))
       (mv nil
-          (cons stobjs-out
+          (cons (if (intersectp-eq stobjs-out *non-executable-user-stobj-lst*)
+                    (loop for x in stobjs-out
+                          collect
+                          (if (member-eq x *non-executable-user-stobj-lst*)
+                              nil
+                            x))
+                  stobjs-out)
                 (if (cdr stobjs-out) vals (car vals)))
           state))))
 
@@ -13607,14 +13613,14 @@
               (t (value t)))))
     (value (and no-errp-1 no-errp-2))))
 
-(defun include-book-process-embedded-events (ev-lst 
+(defun include-book-process-embedded-events (ev-lst
                                              directory-name ttags-info
                                              cert-obj cert-ttags cert-data
                                              behalf-of-certify-flg
                                              full-book-string full-book-name
                                              skip-proofsp expansion-alist
                                              ctx state)
-                                              
+
 ; This function is called by include-book-fn1, to process the events in the
 ; given book, and to return the new value to be installed for state global
 ; ttags-allowed in the case that the book is considered to be certified.  The
@@ -14757,7 +14763,7 @@
         (t
          (subst-by-position-eliding-defconst1 alist (cdr lst) (1+ index)
                                               (cons (car lst) acc)))))
-                                       
+
 
 (defun subst-by-position-eliding-defconst (alist lst index)
 
@@ -14865,7 +14871,7 @@
            (let ((pkg-name (package-entry-name entry)))
              (when (not (member-equal
                          pkg-name ; from initial known-package-alist
-                         '("ACL2-USER" "ACL2-PC"
+                         '("ACL2-USER" "ACL2-PC" "BIB"
                            "ACL2-INPUT-CHANNEL"
                            "ACL2-OUTPUT-CHANNEL"
                            "ACL2" "COMMON-LISP" "KEYWORD")))
@@ -19833,13 +19839,6 @@
                congruent-to
                (if non-memoizable name congruent-to)
                (if non-memoizable congruent-to name)))
-          ((and congruent-to non-executable)
-           (er soft ctx
-               "It is illegal both to specify keyword argument ~
-                :NON-EXECUTABLE T and to use the :CONGRUENT-TO keyword ~
-                argument.  The proposed introduction of stobj ~x0 is thus ~
-                illegal.  See :DOC defstobj."
-               name))
           (t
            (er-progn
 
@@ -20721,48 +20720,46 @@
                           name 'congruent-stobj-rep congruent-stobj-rep
                           (putprop-unless
                            name 'non-memoizable non-memoizable nil
-                           (putprop-unless
-                            name 'non-executablep non-executable nil
-                            (putprop
+                           (putprop
 
 ; Here I declare that name is Common Lisp compliant.  Below I similarly declare
 ; the-live-var.  All elements of the namex list of an event must have the same
 ; symbol-class.
 
-                             name 'symbol-class :common-lisp-compliant
-                             (put-stobjs-in-and-outs
-                              name template
+                            name 'symbol-class :common-lisp-compliant
+                            (put-stobjs-in-and-outs
+                             name template
 
 ; Rockwell Addition: It is convenient for the recognizer to be in a
 ; fixed position in this list, so I can find out its name.
 
-                              (putprop
-                               name 'stobj
-                               (make stobj-property
-                                     :live-var the-live-var
-                                     :recognizer recog-name
-                                     :creator creator-name
-                                     :names
+                             (putprop
+                              name 'stobj
+                              (make stobj-property
+                                    :live-var the-live-var
+                                    :recognizer recog-name
+                                    :creator creator-name
+                                    :names
 ; See the comment in the binding of names above.
-                                     (append (set-difference-eq
-                                              names
-                                              (list recog-name
-                                                    creator-name))
-                                             field-const-names))
+                                    (append (set-difference-eq
+                                             names
+                                             (list recog-name
+                                                   creator-name))
+                                            field-const-names))
+                              (putprop-x-lst1
+                               names 'stobj-function name
                                (putprop-x-lst1
-                                names 'stobj-function name
-                                (putprop-x-lst1
-                                 field-const-names 'stobj-constant name
+                                field-const-names 'stobj-constant name
+                                (putprop
+                                 the-live-var 'stobj-live-var name
                                  (putprop
-                                  the-live-var 'stobj-live-var name
+                                  the-live-var 'symbol-class
+                                  :common-lisp-compliant
                                   (putprop
-                                   the-live-var 'symbol-class
-                                   :common-lisp-compliant
-                                   (putprop
-                                    name
-                                    'accessor-names
-                                    (accessor-array name field-names)
-                                    wrld2)))))))))))))
+                                   name
+                                   'accessor-names
+                                   (accessor-array name field-names)
+                                   wrld2))))))))))))
                        (discriminator
                         (cons 'defstobj
                               (make
@@ -21669,6 +21666,7 @@
                               recognizer creator exports
                               protect-default
                               congruent-to
+                              non-executable
                               &allow-other-keys)
 
 ; Warning: If you change this definition, consider the possibility of making
@@ -21746,7 +21744,8 @@
                                        defstobj-redundant-raw-lisp-discriminator-value
                                        (cdr d)
                                        :event)
-                                      ',event-form))))
+                                      ',event-form)))
+                    (non-executable ',non-executable))
                (cond
                 (ok-p ',name)
                 ((and old-pair (not (raw-mode-p *the-live-state*)))
@@ -21763,15 +21762,27 @@
                                    :congruent-stobj-rep ',congruent-stobj-rep
                                    :non-memoizable
                                    ',(non-memoizable-stobj-raw st$c)
-                                   :non-executable nil)))
-                 (cond (old-pair ; hence raw-mode
+                                   :non-executable non-executable)))
+                 (cond (*hcomp-book-ht*
+; See comment about this case in the raw-Lisp definition of defstobj.
+                        (assert (null old-pair))
+                        nil)
+                       (old-pair ; hence raw-mode
                         (fms "Note:  Redefining and reinitializing (abstract) ~
                               stobj ~x0 in raw mode.~%"
                              (list (cons #\0 ',name))
                              (standard-co *the-live-state*)
                              *the-live-state*
                              nil)
-                        (setf (cdr old-pair) ,init-form))
+                        (if non-executable
+                            (assert$
+                             (not (member-eq ',name
+                                             *non-executable-user-stobj-lst*))
+                             (setq *user-stobj-alist*
+                                   (remove1-assoc-eq ',name *user-stobj-alist*)))
+                          (setf (cdr old-pair) ,init-form)))
+                       (non-executable
+                        (pushnew ',name *non-executable-user-stobj-lst*))
                        (t
                         (setq *user-stobj-alist*
                               (cons (cons ',name ,init-form)
@@ -21785,7 +21796,7 @@
                               foundation
                               recognizer creator corr-fn exports
                               protect-default
-                              congruent-to missing-only)
+                              congruent-to non-executable missing-only)
   (declare (xargs :guard (and (symbolp name)
                               (booleanp protect-default))))
   (list 'defabsstobj-fn
@@ -21797,6 +21808,7 @@
         (list 'quote exports)
         (list 'quote protect-default)
         (list 'quote congruent-to)
+        (list 'quote non-executable)
         (list 'quote missing-only)
         'state
         (list 'quote event-form)))
@@ -21817,7 +21829,7 @@
                                              foundation
                                              recognizer creator
                                              corr-fn exports protect-default
-                                             congruent-to)
+                                             congruent-to non-executable)
   (declare (xargs :guard (symbolp name)))
   (let ((ctx (list 'quote (msg "( DEFABSSTOBJ-MISSING-EVENTS ~x0 ...)" name))))
     (list 'defabsstobj-fn1
@@ -21829,6 +21841,7 @@
           (list 'quote exports)
           (list 'quote protect-default)
           (list 'quote congruent-to)
+          (list 'quote non-executable)
           (list 'quote t) ; missing-only
           ctx
           'state
@@ -23029,8 +23042,8 @@
 
 (defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator
                                         corr-fn exports protect-default
-                                        congruent-to see-doc ctx wrld state
-                                        event-form)
+                                        congruent-to non-executable
+                                        see-doc ctx wrld state event-form)
 
 ; We return an error triple such that when there is no error, the value
 ; component is either 'redundant or is a tuple of the form (missing methods
@@ -23080,6 +23093,10 @@
          the name of an existing abstract stobj, but the value ~x0 is ~
          neither.  ~@1."
         congruent-to see-doc))
+   ((not (booleanp non-executable))
+    (er soft ctx
+        "DEFABSSTOBJ requires the :NON-EXECUTABLE keyword argument to have a ~
+         Boolean value.  See :DOC defabsstobj."))
    (t
     (er-progn
      (chk-all-but-new-name name ctx 'stobj wrld state)
@@ -23494,8 +23511,8 @@
   (congruent-absstobj-tuples-rec tuples1 tuples2 tuples1 tuples2))
 
 (defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
-                                protect-default congruent-to missing-only
-                                ctx state event-form)
+                                protect-default congruent-to non-executable
+                                missing-only ctx state event-form)
   (let* ((wrld0 (w state))
          (see-doc "See :DOC defabsstobj.")
          (st$c (or st$c
@@ -23513,8 +23530,8 @@
               (missing/methods/wrld1
                (chk-acceptable-defabsstobj
                 st-name st$c recognizer st$ap creator corr-fn exports
-                protect-default congruent-to see-doc ctx wrld0 state
-                event-form)))
+                protect-default congruent-to non-executable see-doc ctx wrld0
+                state event-form)))
       (cond
        ((eq missing/methods/wrld1 'redundant)
         (stop-redundant-event ctx state
@@ -23673,21 +23690,23 @@
                                   (putprop-unless
                                    st-name 'non-memoizable
                                    non-memoizable nil
-                                   (putprop
-                                    st-name 'absstobj-info
-                                    (make absstobj-info
-                                          :st$c st$c
-                                          :absstobj-tuples
-                                          absstobj-tuples)
+                                   (putprop-unless
+                                    st-name 'non-executablep non-executable nil
                                     (putprop
-                                     st-name 'symbol-class
-                                     :common-lisp-compliant
-                                     (put-absstobjs-in-and-outs
-                                      st-name methods
-                                      (putprop
-                                       st-name 'stobj
-                                       (make stobj-property
-                                             :live-var the-live-var
+                                     st-name 'absstobj-info
+                                     (make absstobj-info
+                                           :st$c st$c
+                                           :absstobj-tuples
+                                           absstobj-tuples)
+                                     (putprop
+                                      st-name 'symbol-class
+                                      :common-lisp-compliant
+                                      (put-absstobjs-in-and-outs
+                                       st-name methods
+                                       (putprop
+                                        st-name 'stobj
+                                        (make stobj-property
+                                              :live-var the-live-var
 
 ; We know that the first two members of names are the recognizer and creator,
 ; respectively.  The remaining names need to be put into proper order for the
@@ -23696,21 +23715,21 @@
 ; absstobj-field-fn-of-stobj-type-p): each updater must immediately follow the
 ; corresponding accessor in the :names field.
 
-                                             :recognizer (car names)
-                                             :creator (cadr names)
-                                             :names
-                                             (sort-absstobj-names
-                                              (butlast (cddr names) 1)
-                                              accessors
-                                              updaters))
-                                       (putprop-x-lst1
-                                        names 'stobj-function st-name
-                                        (putprop
-                                         the-live-var 'stobj-live-var st-name
+                                              :recognizer (car names)
+                                              :creator (cadr names)
+                                              :names
+                                              (sort-absstobj-names
+                                               (butlast (cddr names) 1)
+                                               accessors
+                                               updaters))
+                                        (putprop-x-lst1
+                                         names 'stobj-function st-name
+                                         (putprop
+                                          the-live-var 'stobj-live-var st-name
                                           (putprop
                                            the-live-var 'symbol-class
                                            :common-lisp-compliant
-                                           wrld2)))))))))))
+                                           wrld2))))))))))))
                                (discriminator
                                 (cons 'defabsstobj
                                       (make
@@ -23720,7 +23739,7 @@
                                        :congruent-stobj-rep
                                        (or congruent-stobj-rep st-name)
                                        :non-memoizable non-memoizable
-                                       :non-executable nil))))
+                                       :non-executable non-executable))))
                           (pprogn
                            (set-w 'extension wrld3 state)
                            (er-progn
@@ -23750,8 +23769,8 @@
                                            state))))))))))))))))))))))
 
 (defun defabsstobj-fn (st-name st$c recognizer creator corr-fn exports
-                               protect-default congruent-to missing-only
-                               state event-form)
+                               protect-default congruent-to non-executable
+                               missing-only state event-form)
 
 ; This definition shares a lot of code and ideas with the definition of
 ; defstobj-fn.  See the comments there for further explanation.  Note that we
@@ -23765,7 +23784,8 @@
   (with-ctx-summarized
    (msg "( DEFABSSTOBJ ~x0 ...)" st-name)
    (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
-     protect-default congruent-to missing-only ctx state event-form)))
+     protect-default congruent-to non-executable missing-only ctx state
+     event-form)))
 
 (defun create-state ()
   (declare (xargs :guard t))
@@ -24467,19 +24487,29 @@
 (defun prettyify-brr-gstack-frame (frame)
 
 ; Keep this in sync with the cw-gframe vis-a-vis the shapes of each possible
-; frame.
+; frame.  Observe that push-gframe actually uses :args `(list* ,@args) to save
+; a cons at the end, i.e., args may be (a b c) but in the frame they're (a b
+; . c).
 
   (case (access gframe frame :sys-fn)
-        ((rewrite-with-lemma
-          rewrite-quoted-constant-with-lemma
-          add-linear-lemma)
-         (let* ((args (access gframe frame :args))
-                (lemma (cdr args)))
-           (change gframe frame
-                   :args
-                   (cons (car args)
-                         (hide-nume-in-rewrite-or-linear-rule lemma)))))
-        (otherwise frame)))
+    ((rewrite-with-lemma
+      rewrite-quoted-constant-with-lemma)
+     (let* ((args (access gframe frame :args))
+            (lemma (cadr args))
+            (geneqv (cddr args)))
+       (change gframe frame
+               :args
+               (list* (car args)
+                      (hide-nume-in-rewrite-or-linear-rule lemma)
+                      geneqv))))
+    (add-linear-lemma
+     (let* ((args (access gframe frame :args))
+            (lemma (cdr args)))
+       (change gframe frame
+               :args
+               (cons (car args)
+                     (hide-nume-in-rewrite-or-linear-rule lemma)))))
+    (otherwise frame)))
 
 (defun prettyify-brr-gstack (gstack)
   (cond
@@ -35735,6 +35765,80 @@
 ; runes-diff-fn) shows one way to get such information.
 
   `(runes-diff-fn ,book-string ,name ,namep ,dir 'runes-diff state))
+
+(defun add-global-stobj (name state)
+  (declare (xargs :guard (symbolp name)
+                  :mode :program
+                  :stobjs state))
+  (let ((user-stobj-alist (user-stobj-alist state))
+        (wrld (w state))
+        (ctx 'add-global-stobj))
+    (cond ((not (stobjp name t wrld))
+           (er soft ctx
+               "~x0 is not the name of a known stobj."
+               name))
+          ((assoc-eq name user-stobj-alist)
+           (er soft ctx
+               "The stobj ~x0 is already global."
+               name))
+          (t
+           (mv-let (erp init-val state)
+             #-acl2-loop-only
+             (let ((creator (access stobj-property
+                                    (getpropc name 'stobj nil wrld)
+                                    :creator)))
+               (assert creator)
+               (assert (member-eq name *non-executable-user-stobj-lst*))
+               (setq *non-executable-user-stobj-lst*
+                     (remove1 name *non-executable-user-stobj-lst*))
+               (value (eval (list creator))))
+             #+acl2-loop-only
+
+; We're perhaps being a bit lazy here.  We might be able to use
+; magic-ev-fncall, ev-fncall, or the like to apply the stobj creator for name,
+; which can be obtained as follows.
+
+;   (access stobj-property
+;           (getpropc name 'stobj nil wrld)
+;           :creator))
+
+; But it is tricky to overcome the problem that the creator is untouchable, so
+; we punt here and use the oracle to represent the value of the creator.  This
+; is just logic-only code that nobody will be reasoning about, since
+; add-global-stobj is in :program mode and the #-acl2-loop-only code above
+; makes it ineligible for conversion to :logic mode.
+
+             (read-acl2-oracle state)
+             (declare (ignore erp))
+             (pprogn (update-user-stobj-alist
+                      (acons name init-val user-stobj-alist)
+                      state)
+                     (value name)))))))
+
+(defun remove-global-stobj (name state)
+  (declare (xargs :guard (symbolp name)
+                  :mode :program
+                  :stobjs state))
+  (let ((user-stobj-alist (user-stobj-alist state))
+        (wrld (w state))
+        (ctx 'add-global-stobj))
+    (cond ((not (stobjp name t wrld))
+           (er soft ctx
+               "~x0 is not the name of a known stobj."
+               name))
+          ((not (assoc-eq name user-stobj-alist))
+           (er soft ctx
+               "The stobj ~x0 is not currently global."
+               name))
+          (t
+           #-acl2-loop-only
+           (progn (assert (not (member-eq name
+                                          *non-executable-user-stobj-lst*)))
+                  (push name *non-executable-user-stobj-lst*))
+           (pprogn (update-user-stobj-alist
+                    (remove-assoc-eq name user-stobj-alist)
+                    state)
+                   (value name))))))
 
 ; Essay on Correctness of Evaluation with Stobjs
 

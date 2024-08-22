@@ -166,6 +166,14 @@
   (:insensitive ((iprefix bool)
                  (get acl2::string))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset char-val-set
+  :short "Fixtype of sets of character value notations."
+  :elt-type char-val
+  :elementp-of-nil nil
+  :pred char-val-setp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod prose-val

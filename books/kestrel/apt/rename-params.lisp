@@ -70,9 +70,8 @@
                                      sublis-var-simple-lst)))))
 
 (local
- (defthm pseudo-termp-of-lookup-equal
-   (implies (and (symbolp x)
-                 (symbol-symbol-alistp alist))
+ (defthm pseudo-termp-of-lookup-equal-when-symbol-symbol-alistp
+   (implies (symbol-symbol-alistp alist)
             (pseudo-termp (lookup-equal x alist)))
    :hints (("Goal" :in-theory (enable symbol-symbol-alistp)))))
 

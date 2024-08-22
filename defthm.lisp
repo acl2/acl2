@@ -11202,7 +11202,7 @@
 (defun preserve-other-brr-criteria (args criteria-alist)
   (cond
    ((endp args) (revappend criteria-alist nil))
-   ((member-eq (car args) '(:condition :depth :abstraction :lambda))
+   ((member-eq (car args) '(:condition :depth :abstraction :lambda :rf))
     (preserve-other-brr-criteria (cddr args) criteria-alist))
    (t (preserve-other-brr-criteria (cddr args)
                                    (cons (cons (car args)
@@ -11251,10 +11251,17 @@
        ((and (keyword-value-listp args)
              (no-duplicatesp-eq (evens args)))
         (let* ((condition-spec (assoc-keyword :condition args))
+               (rf-spec (assoc-keyword :rf args))
                (depth-spec (assoc-keyword :depth args))
                (abstraction-spec (assoc-keyword :abstraction args))
                (lambda-spec (assoc-keyword :lambda args)))
           (cond
+           ((and rf-spec
+                 (not (booleanp (cadr rf-spec))))
+            (er soft 'monitor
+                "When supplied, the :rf value in MONITOR's second argument ~
+                 must be T or NIL and ~x0 is neither!"
+                (cadr rf-spec)))
            ((and depth-spec
                  (not (natp (cadr depth-spec))))
             (er soft 'monitor
@@ -11282,6 +11289,7 @@
                  runes
                  (preserve-other-brr-criteria
                   args
+; The following list is eventually reversed.
                   (append
                    (if lambda-spec
                        (list (cons :lambda (cadr lambda-spec)))
@@ -11291,6 +11299,9 @@
                        nil)
                    (if depth-spec
                        (list (cons :depth (cadr depth-spec)))
+                       nil)
+                   (if rf-spec
+                       (list (cons :rf (cadr rf-spec)))
                        nil)
                    (list (cons :condition condition)))))))))))
        (t (er soft 'monitor
@@ -11515,6 +11526,7 @@
                                           :failure-reason
                                           :lemma
                                           :type-alist
+                                          :geneqv
                                           :ancestors
                                           :initial-ttree
                                           :final-ttree
@@ -11535,6 +11547,7 @@
         (:failure-reason '(get-brr-local 'failure-reason state))
         (:lemma '(get-brr-local 'lemma state))
         (:type-alist '(get-brr-local 'type-alist state))
+        (:geneqv '(get-brr-local 'geneqv state))
         (:ancestors '(get-brr-local 'ancestors state))
         (:initial-ttree '(get-brr-local 'initial-ttree state))
         (:final-ttree '(get-brr-local 'final-ttree state))

@@ -15,6 +15,7 @@
 ;; This book contains context-related material used by the Equivalence Checker but not the Rewriter.
 
 (include-book "contexts")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 

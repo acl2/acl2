@@ -18,9 +18,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "@see('pfield-squarep') is a nonexecutable specification of what it means to
+    "@(tsee pfield-squarep) is a nonexecutable specification of what it means to
      check that a field element is a square of another field element.<br/>
-     @see('primes::has-square-root?') is an executable specification that uses Euler's
+     @(tsee primes::has-square-root?) is an executable specification that uses Euler's
      Criterion to determine if the field element has a square root.<br/>
      In order to use @(see apt::simplify) to refine a use of @('pfield-squarep')
      to @('has-square-root?'), we must show that they are equivalent under

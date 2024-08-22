@@ -21,12 +21,14 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 ;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-weaken
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/bv/defs-arith" :dir :system) ;for bvplus
 (include-book "kestrel/bv/slice-def" :dir :system)
 (include-book "kestrel/bv/bvashr-def" :dir :system)
 (include-book "kestrel/bv/defs" :dir :system) ;for sbvdiv
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
+(local (include-book "support-bv"))
 (local (include-book "kestrel/bv/rules10" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -1180,3 +1182,20 @@
                   (if (canonical-address-p eff-addr)
                       (x86isa::wml-size nbytes eff-addr x86isa::val x86)
                     (list (list :non-canonical-address eff-addr) x86)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm feature-flags-opener
+  (implies (consp features)
+           (equal (feature-flags features)
+                  (if (equal 0 (feature-flag (first features)))
+                      0
+                    (feature-flags (rest features)))))
+  :hints (("Goal" :in-theory (enable feature-flags))))
+
+;; maybe not needed since we have the constant-opener for the call on nil
+(defthm feature-flags-base
+  (implies (not (consp features))
+           (equal (feature-flags features)
+                  1))
+  :hints (("Goal" :in-theory (enable feature-flags))))

@@ -1,3 +1,4 @@
+
 # PDF Parser
 
 As part of DARPA SafeDocs, we built an alternate version of a ABNF PDF parser. This parser serves as a proof-of-concept of a parser combinator library implemented in ACL2. Instead of automatic generation of parsers, this PDF parser is built bottom-up from parser primitives, and then combined with repetition, choice, and sequence operators to form the full PDF parser. This parser assumes newlines and spacing which may not exist in all PDF documents. We include an example hello.pdf from https://blog.idrsolutions.com/make-your-own-pdf-file-part-4-hello-world-pdf/ is of a size that ACL2 can handle and will parse correctly. 
@@ -75,3 +76,8 @@ There are optional Newline and Space characters after "obj". This definition is 
 Finally, the trailer is defined as: "trailer" Space trailer-dictionary "startxref" Newline Number Newline "%%EOF".  
 
 After defining each of the parser funcions for these sections, the final PDF parser is defined simply as a sequence of the individual section parser functions. It is possible to test this function, parse-pdf by reading the contents of a file, with "(parse-pdf (explode  (read-file-into-string "hello.pdf")))" 
+
+
+Copyright (C) 2022, FAST Labs, BA
+Written by Letitia Li
+License: MIT

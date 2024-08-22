@@ -95,5 +95,6 @@
                             ARRAY-ORDER
                             make-into-array-with-len
                             ;;aref1
+                            array1p-of-cons-header
                             ) (aref1 array1p
                                )))))

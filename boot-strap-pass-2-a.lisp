@@ -1448,7 +1448,11 @@
 #-acl2-loop-only
 (defun read-user-stobj-alist-raw (st state)
   (cond ((live-state-p state)
-         (cdr (assoc-eq st *user-stobj-alist*)))
+         (or (cdr (assoc-eq st *user-stobj-alist*))
+             (er hard! 'read-user-stobj-alist
+                 "The name ~x0 does have a global stobj value.  See :DOC ~
+                  with-global-stobj."
+                 st)))
         (t ; should be impossible coming from ACL2 loop evaluation
          (error "Illegal call of read-user-stobj-alist: State argument is not ~
                  the `live' ACL2 state."))))

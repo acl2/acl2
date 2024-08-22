@@ -253,9 +253,9 @@
        ((when (not (equal (evex-byte1->res evex-byte1) 0)))
         (!!fault-fresh :ud :evex-prefixes evex-prefixes :byte1-reserved-bits))
        ((mv evex-0F-map? evex-0F38-map? evex-0F3A-map?)
-        (mv (equal (evex-byte1->mm evex-byte1) #.*v0F*)
-            (equal (evex-byte1->mm evex-byte1) #.*v0F38*)
-            (equal (evex-byte1->mm evex-byte1) #.*v0F3A*)))
+        (mv (equal (evex-byte1->mmm evex-byte1) #.*v0F*)
+            (equal (evex-byte1->mmm evex-byte1) #.*v0F38*)
+            (equal (evex-byte1->mmm evex-byte1) #.*v0F3A*)))
        ((when (not (or evex-0F-map? evex-0F38-map? evex-0F3A-map?)))
         (!!fault-fresh :ud :evex-prefixes evex-prefixes :mm evex-byte1))
 

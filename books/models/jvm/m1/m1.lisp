@@ -269,4 +269,3 @@ but I want to students to see their definitions as warm-up exercises.
 (defthm update-nth-update-nth-2
   (equal (update-nth i v (update-nth i w list))
          (update-nth i v list)))
-

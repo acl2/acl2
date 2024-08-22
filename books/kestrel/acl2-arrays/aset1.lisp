@@ -70,9 +70,8 @@
                 (< index (alen1 array-name array))
                 (array1p array-name array))
            (array1p array-name (aset1 array-name array index val)))
-  :hints (("Goal" :in-theory (e/d (aset1
-                                   maximum-length-intro
-                                   header-intro
-                                   normalize-alen1-name ; todo: be consistent on whether these are enabled
-                                   )
-                                  ()))))
+  :hints (("Goal" :in-theory (enable aset1
+                                     maximum-length-intro
+                                     header-intro
+                                     normalize-alen1-name ; todo: be consistent on whether these are enabled
+                                     ))))

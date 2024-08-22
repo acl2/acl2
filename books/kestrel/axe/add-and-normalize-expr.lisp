@@ -1,7 +1,7 @@
 ; A utility for adding a node but normalizing its xors first.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -69,7 +69,8 @@
                                   (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
                                 (revappend nodenum-leaves-decreasing
                                            (list (enquote accumulated-constant)))))
-           (- (cw "(BVXOR nest with ~x0 leaves.)~%" (len leaves-increasing))))
+           ;; (- (cw "(BVXOR nest with ~x0 leaves.)~%" (len leaves-increasing)))
+           )
         ;; Build the new nest: ;; TODO: handle the constant separately
         (add-bvxor-nest-to-dag-array leaves-increasing ; reverse of the order we want them in
                                      bvxor-width
@@ -93,7 +94,8 @@
                                     (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
                                   (revappend nodenum-leaves-decreasing
                                              (list (enquote accumulated-constant)))))
-             (- (cw "(BITXOR nest with ~x0 leaves.)~%" (len leaves-increasing))))
+             ;; (- (cw "(BITXOR nest with ~x0 leaves.)~%" (len leaves-increasing)))
+             )
           ;; Build the new nest: ;; TODO: handle the constant separately
           (add-bitxor-nest-to-dag-array leaves-increasing ; reverse of the order we want them in
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
@@ -132,6 +134,22 @@
            (dargp-less-than (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                             (mv-nth 3 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :hints (("Goal" :in-theory (enable add-and-normalize-expr))))
+
+(defthmd dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+  (implies (and (symbolp fn)
+                (not (eq 'quote fn))
+                ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                ;; (bounded-darg-listp args dag-len)
+                ;; (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                ;; (dag-constant-alistp dag-constant-alist)
+                ;; (equal (alen1 'dag-array dag-array)
+                ;;        (alen1 'dag-parent-array dag-parent-array)))
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (bounded-darg-listp simplified-args dag-len)
+                (not (mv-nth 0 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (dargp (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+  :hints (("Goal" :use dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+           :in-theory (disable dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr))))
 
 (defthm dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr-gen
   (implies (and (<= (mv-nth 3 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)) bound)
@@ -228,3 +246,35 @@
               bound))
   :hints (("Goal" :use <-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
            :in-theory (disable <-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr))))
+
+(defthm dag-constant-alistp-mv-nth-5-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+  (implies (and (symbolp fn)
+                (not (eq 'quote fn))
+                ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                ;; (bounded-darg-listp args dag-len)
+                ;; (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                ;; (dag-constant-alistp dag-constant-alist)
+                ;; (equal (alen1 'dag-array dag-array)
+                ;;        (alen1 'dag-parent-array dag-parent-array)))
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (bounded-darg-listp simplified-args dag-len)
+                (not (mv-nth 0 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (dag-constant-alistp (mv-nth 5 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+  :hints (("Goal" :use (type-of-add-and-normalize-expr)
+           :in-theory (disable type-of-add-and-normalize-expr))))
+
+(defthm dag-variable-alistp-mv-nth-6-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+  (implies (and (symbolp fn)
+                (not (eq 'quote fn))
+                ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                ;; (bounded-darg-listp args dag-len)
+                ;; (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                ;; (dag-constant-alistp dag-constant-alist)
+                ;; (equal (alen1 'dag-array dag-array)
+                ;;        (alen1 'dag-parent-array dag-parent-array)))
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (bounded-darg-listp simplified-args dag-len)
+                (not (mv-nth 0 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (dag-variable-alistp (mv-nth 6 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+  :hints (("Goal" :use (type-of-add-and-normalize-expr)
+           :in-theory (disable type-of-add-and-normalize-expr))))

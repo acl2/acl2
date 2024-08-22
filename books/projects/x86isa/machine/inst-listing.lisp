@@ -6903,7 +6903,7 @@
     (INST "MOVDQA"
           (OP :OP #xF6F :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          'NIL
+          '(X86-MOVDQA-TO-XMM)
           '((:EX (CHK-EXC :TYPE-1 (:SSE2)))))
     (INST "MOVDQU"
           (OP :OP #xF6F :PFX :F3 :FEAT '(:SSE2))
@@ -7677,7 +7677,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSLLDQ/PSRLDQ)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "PSLLQ"
           (OP :OP #xF73
@@ -7711,7 +7711,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSLLDQ/PSRLDQ)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "VPSRLVQ"
           (OP :OP #xF73
@@ -8552,7 +8552,7 @@
     (INST "MOVDQA"
           (OP :OP #xF7F :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(W X) :OP2 '(V X))
-          'NIL
+          '(X86-MOVDQA-FROM-XMM)
           '((:EX (CHK-EXC :TYPE-1 (:SSE2)))))
     (INST "MOVDQU"
           (OP :OP #xF7F :PFX :F3 :FEAT '(:SSE2))
@@ -10071,12 +10071,12 @@
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
-    (INST "ADDQ"
+    (INST "PADDQ"
           (OP :OP #xFD4 :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PADDB/PADDW/PADDD/PADDQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPADDQ"
           (OP :OP #xFD4
@@ -11895,7 +11895,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSUBB/PSUBW/PSUBD/PSUBQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSUBB"
           (OP :OP #xFF8
@@ -11945,7 +11945,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSUBB/PSUBW/PSUBD/PSUBQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSUBW"
           (OP :OP #xFF9
@@ -11995,7 +11995,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSUBB/PSUBW/PSUBD/PSUBQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSUBD"
           (OP :OP #xFFA
@@ -12045,7 +12045,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSUBB/PSUBW/PSUBD/PSUBQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSUBQ"
           (OP :OP #xFFB
@@ -12095,7 +12095,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PADDB/PADDW/PADDD/PADDQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPADDB"
           (OP :OP #xFFC
@@ -12145,7 +12145,7 @@
           (ARG :OP1 '(V X)
             :OP2 '(H X)
             :OP3 '(W X))
-       'NIL
+       '(X86-PADDB/PADDW/PADDD/PADDQ-SSE)
        '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
  (INST "VPADDW"
        (OP :OP #xFFD
@@ -12195,7 +12195,7 @@
        (ARG :OP1 '(V X)
             :OP2 '(H X)
             :OP3 '(W X))
-       'NIL
+       '(X86-PADDB/PADDW/PADDD/PADDQ-SSE)
        '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
  (INST "VPADDD"
        (OP :OP #xFFE

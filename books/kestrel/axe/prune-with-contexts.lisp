@@ -19,6 +19,7 @@
 (include-book "make-dag-indices")
 (include-book "def-dag-builder-theorems")
 (include-book "supporting-nodes")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; reduce?
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 

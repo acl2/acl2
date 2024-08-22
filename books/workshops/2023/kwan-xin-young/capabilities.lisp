@@ -5,8 +5,9 @@
 ; GCL_MEM_MULTIPLE=0.25 with 16G memory on a 2019 MacBook Pro ran out of memory
 ; during processing of decode-encode-b-bound-len>2^12 ("The storage for
 ; RELOCATABLE-BLOCKS is exhausted. 598817 pages allocated"), so I'm excluding
-; GCL as well.
-; cert_param: (non-allegro , non-gcl)
+; GCL as well.  Finally, a CMUCL regression on 8/14/2024 ran out of space for
+; this book, so I'm excluding cmucl as well.
+; cert_param: (non-allegro , non-gcl , non-cmucl)
 
 (include-book "operations-nbp")
 

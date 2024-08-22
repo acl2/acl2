@@ -1506,6 +1506,3 @@
      (< (expt 10 56) k)
      (< k (expt 10 57))))
   :rule-classes nil)
-
-
-

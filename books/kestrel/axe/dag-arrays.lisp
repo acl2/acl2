@@ -16,12 +16,13 @@
 ;; as is done internally by Axe.
 
 (include-book "dags") ;for pseudo-dagp
-(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system) ; for *max-1d-array-length*
+(include-book "kestrel/acl2-arrays/constants" :dir :system) ; for *max-1d-array-length*
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
 (include-book "kestrel/acl2-arrays/make-into-array" :dir :system)
 (include-book "kestrel/acl2-arrays/array-to-alist" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "rational-lists")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 ;(include-book "kestrel/utilities/polarity" :dir :system) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))

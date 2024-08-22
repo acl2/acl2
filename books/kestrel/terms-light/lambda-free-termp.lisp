@@ -1,7 +1,7 @@
 ; Checking that a term contains no lambdas
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -73,3 +73,16 @@
          (and (lambda-free-termp term)
               (lambda-free-termsp terms)))
   :hints (("Goal" :in-theory (enable lambda-free-termsp))))
+
+(defthmd lambda-free-termp-when-equal-of-car-and-quote
+  (implies (equal 'quote (car term))
+           (lambda-free-termp term)))
+
+(defthm lambda-free-termp-of-cadr
+  (implies (and (pseudo-termp term)
+                (lambda-free-termp term)
+                (not (equal 'quote (car term)))
+                ;(not (consp (car term)))
+                )
+           (lambda-free-termp (cadr term)))
+  :hints (("Goal" :in-theory (enable lambda-free-termp-when-equal-of-car-and-quote))))

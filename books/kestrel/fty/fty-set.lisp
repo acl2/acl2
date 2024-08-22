@@ -310,6 +310,7 @@
        (elt-type-when-in-pred-binds-free-xvar
         (acl2::packn-pos (list x.elt-type '-when-in- x.pred '-binds-free- x.xvar)
                          x.pred))
+       (pred-of-intersect (acl2::packn-pos (list x.pred '-of-intersect) x.pred))
        (pred-of-union (acl2::packn-pos (list x.pred '-of-union) x.pred))
        (pred-of-difference (acl2::packn-pos (list x.pred '-of-difference) x.pred))
        (pred-of-delete (acl2::packn-pos (list x.pred '-of-delete) x.pred))
@@ -371,6 +372,12 @@
                        (,x.pred (set::sfix ,y))))
            :induct t
            :enable (set::union set::emptyp set::setp set::head set::tail))
+         (defrule ,pred-of-intersect
+           (implies (and (,x.pred ,x.xvar)
+                         (,x.pred ,y))
+                    (,x.pred (set::intersect ,x.xvar ,y)))
+           :induct t
+           :enable set::intersect)
          (defrule ,pred-of-difference
            (implies (,x.pred ,x.xvar)
                     (,x.pred (set::difference ,x.xvar ,y)))

@@ -18,6 +18,7 @@
 (include-book "def-dag-builder-theorems")
 (include-book "merge-sort-less-than-and-remove-dups")
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 ;(local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))

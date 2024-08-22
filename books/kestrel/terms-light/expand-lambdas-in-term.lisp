@@ -18,7 +18,6 @@
 (include-book "lambdas-closed-in-termp")
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "../alists-light/pairlis-dollar"))
-(local (include-book "../alists-light/strip-cars"))
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "../typed-lists-light/symbol-listp"))
 
@@ -159,4 +158,4 @@
                                    expand-lambdas-in-terms
                                    lambdas-closed-in-termp)
                                   (subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
-                                   strip-cdrs-of-pairlis$-gen)))))
+                                   strip-cdrs-of-pairlis$)))))

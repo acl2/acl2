@@ -15,7 +15,6 @@
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
-(include-book "kestrel/std/util/defirrelevant" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -32,6 +31,9 @@
      the grammar in [C], which is summarized in [C:A].
      For now we cover all the constructs after preprocessing,
      but we plan to add some preprocessing constructs.")
+   (xdoc::p
+    "We also include fixtypes for certain GCC extensions,
+     as mentioned in @(see syntax-for-tools).")
    (xdoc::p
     "According to the rationale explained in @(see syntax-for-tools),
      here we capture much of the information from the concrete syntax,
@@ -61,7 +63,7 @@
      Including empty lists in our fixtypes makes things a bit simpler,
      partly because currently @(tsee fty::deflist)
      generates conflicting theorems if used
-     both with @(':non-emptyp t') and with @(':non-emptyp nil')
+     both with @(':non-emptyp t') and with (default) @(':non-emptyp nil')
      (although this could be remedied).
      It is fine (and common) for the abstract syntax
      to be more general than the concrete syntax.
@@ -110,24 +112,7 @@
      so that parsing is purely syntactical,
      without the need for any semantic analysis during parsing.
      The exact characterization of these ambiguous constructs
-     is still work in progress; it is currently partial.")
-   (xdoc::p
-    "For instance, a kind of ambiguity has the form")
-   (xdoc::codeblock
-    "I ( I1 ( I2 ( ... ( In ) ... ) ) ) ;")
-   (xdoc::p
-    "where @('I') and @('I1'),...@('In') are identifiers with @('n >= 1').
-     If this occurs as a block item,
-     it may be either a declaration or an (expression) statement.
-     The declaration case is
-     when @('I') is a type specifier (@('typedef') name),
-     and the rest is a parenthesized declarator of @('I1'),
-     which is a function with a parameter @('I2'),
-     which is a function with a parameter @('I3'), and so on;
-     here @('I2'), @('I3'), etc. may be type specifiers (@('typedef') names).
-     Alternatively, @('I') could be a function name,
-     with argument a call of @('I1'), and so on until the variable @('In').
-     This is just an example; there are more complex patterns."))
+     is still work in progress; it is currently partial."))
   :order-subtopics t
   :default-parent t)
 
@@ -146,13 +131,13 @@
     "Allowing arbitrary values as identifiers provides flexibility.
      For instance, a transformation on C code could introduce
      multiple versions of certain identifiers, indexed by numbers,
-     in which case we could use pair consisting of
+     in which case we could use pairs consisting of
      the original identifiers and the indices.")
    (xdoc::p
     "We plan to define, separately,
      predicates that restrict identifiers to certain forms,
-     used for parsing, pretty-printing, transformations, etc.
-     Restrictions are needed to pretty-print this abstract syntax
+     used for parsing, printing, transformations, etc.
+     Restrictions are needed to print this abstract syntax
      into a form where identifiers respect the restrictions in [C];
      in addition, parsing code compliant to [C]
      will result in specific forms of identifiers."))
@@ -174,6 +159,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defset ident-set
+  :short "Fixtype of sets of identifiers."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Identifiers are defined in @(tsee ident)."))
+  :elt-type ident
+  :elementp-of-nil nil
+  :pred ident-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption ident-option
   ident
   :short "Fixtype of optional identifiers."
@@ -182,6 +179,18 @@
    (xdoc::p
     "Identifiers are defined in @(tsee ident)."))
   :pred ident-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset ident-option-set
+  :short "Fixtype of sets of optional identifiers."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Identifiers are defined in @(tsee ident)."))
+  :elt-type ident-option
+  :elementp-of-nil t
+  :pred ident-option-setp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -287,7 +296,7 @@
      its positive integer values.
      Note that @('0') is an octal constant (not a decimal one).
      Decimal constants cannot have leading zeros,
-     and thus there is a unique sequence of digits
+     and thus there is a unique list of digits
      that corresponds to a positive integer.")
    (xdoc::p
     "An octal constant is completely characterized by
@@ -327,8 +336,8 @@
      our fixtypes are factored slightly differently.
      An integer constant consists of a decimal, octal, or hexadecimal constant,
      and of an optional integer suffix."))
-  ((dec/oct/hex dec/oct/hex-const)
-   (suffix isuffix-option))
+  ((core dec/oct/hex-const)
+   (suffix? isuffix-option))
   :pred iconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -566,10 +575,10 @@
      we factor things a bit differently in our fixtypes,
      so here we add the prefixes and suffixes as appropriate."))
   (:dec ((core dec-core-fconst)
-         (suffix fsuffix-option)))
+         (suffix? fsuffix-option)))
   (:hex ((prefix hprefix)
          (core hex-core-fconst)
-         (suffix fsuffix-option)))
+         (suffix? fsuffix-option)))
   :pred fconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -740,7 +749,7 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>character-constant</i> in the grammar in [C]."))
-  ((prefix cprefix-option)
+  ((prefix? cprefix-option)
    (cchars c-char-list))
   :pred cconstp)
 
@@ -834,16 +843,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>string-literal</i> in the grammar in [C].")
-   (xdoc::p
-    "The list of natural numbers corresponds to <i>s-char-sequence</i>.
-     As explained in @(see abstract-syntax),
-     these natural numbers represent Unicode code points.
-     We do not capture here the requirement that these characters
-     are not new-line, backslash, and double quote."))
-  ((prefix eprefix-option)
+    "This corresponds to <i>string-literal</i> in the grammar in [C]."))
+  ((prefix? eprefix-option)
    (schars s-char-list))
   :pred stringlitp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist stringlit-list
+  :short "Fixtype of lists of string literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "String literals are defined in @(tsee stringlit)."))
+  :elt-type stringlit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred stringlit-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -901,7 +917,7 @@
      used to capture certain precedence rules in the grammar itself.
      In our abstract syntax, for better factoring and orthogonality,
      it makes sense to introduce a fixtype for binary operators,
-     and use it to define binary expressions as in @(tsee expr).
+     and use it to define binary expressions as we do in @(tsee expr).
      The binary operators are
      @('*') (binary),
      @('/'),
@@ -917,8 +933,8 @@
      @('=='),
      @('!='),
      @('&') (binary),
-     @('|'),
      @('^'),
+     @('|'),
      @('&&'),
      @('||'),
      @('='),
@@ -930,9 +946,8 @@
      @('<<='),
      @('>>='),
      @('&='),
-     @('^='),
-     @('|='), and
-     @('*=')."))
+     @('^='), and
+     @('|=')."))
   (:mul ())
   (:div ())
   (:rem ())
@@ -976,7 +991,9 @@
      for pre- and post- increment and decrement.
      They are already part of @(tsee unop),
      but we also need a fixtype for just the two of them,
-     so we can form lists in @(tsee inc/dec-op-list)."))
+     so we can form lists in @(tsee inc/dec-op-list),
+     which are used to capture parts of certain ambiguous constructs
+     (see @(tsee expr))."))
   (:inc ())
   (:dec ())
   :pred inc/dec-opp)
@@ -996,7 +1013,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum stoclaspec
+(fty::deftagsum stor-spec
   :short "Fixtype of storage class specifiers [C:6.7.1] [C:A.2.2]."
   :long
   (xdoc::topstring
@@ -1009,30 +1026,30 @@
      @('_Thread_local'),
      @('auto'), and
      @('register')."))
-  (:tydef ())
+  (:typedef ())
   (:extern ())
   (:static ())
   (:threadloc ())
   (:auto ())
   (:register ())
-  :pred stoclaspecp)
+  :pred stor-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist stoclaspec-list
+(fty::deflist stor-spec-list
   :short "Fixtype of lists of storage class specifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Storage class specifiers are defined in @(tsee stoclaspec)."))
-  :elt-type stoclaspec
+    "Storage class specifiers are defined in @(tsee stor-spec)."))
+  :elt-type stor-spec
   :true-listp t
   :elementp-of-nil nil
-  :pred stoclaspec-listp)
+  :pred stor-spec-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum tyqual
+(fty::deftagsum type-qual
   :short "Fixtype of type qualifiers [C:6.7.3] [C:A.2.2]."
   :long
   (xdoc::topstring
@@ -1042,51 +1059,69 @@
      @('const'),
      @('restrict'),
      @('volatile'), and
-     @('_Atomic')."))
+     @('_Atomic').")
+   (xdoc::p
+    "We also include the GCC extension variants
+     @('__restrict') and @('__restrict__') of @('restrict'),
+     only used if GCC extensions are supported.
+     In particular, the parser generates these GCC type qualifiers
+     only if instructed to allow GCC extensions."))
   (:const ())
   (:restrict ())
   (:volatile ())
   (:atomic ())
-  :pred tyqualp)
+  ;; GCC extensions:
+  (:__restrict ())
+  (:__restrict__ ())
+  :pred type-qualp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist tyqual-list
+(fty::deflist type-qual-list
   :short "Fixtype of lists of type qualifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Type qualifiers are defined in @(tsee tyqual)."))
-  :elt-type tyqual
+    "Type qualifiers are defined in @(tsee type-qual)."))
+  :elt-type type-qual
   :true-listp t
   :elementp-of-nil nil
-  :pred tyqual-listp)
+  :pred type-qual-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist tyqual-list-list
+(fty::deflist type-qual-list-list
   :short "Fixtype of lists of lists of type qualifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Type qualifiers are defined in @(tsee tyqual)."))
-  :elt-type tyqual-list
+    "Type qualifiers are defined in @(tsee type-qual)."))
+  :elt-type type-qual-list
   :true-listp t
   :elementp-of-nil t
-  :pred tyqual-list-listp)
+  :pred type-qual-list-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum funspec
+(fty::deftagsum fun-spec
   :short "Fixtype of function specifiers [C:6.7.4] [C:A.2.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>function-specifier</i> in the grammar in [C].
-     The function specifiers are @('inline') and @('_Noreturn')."))
+     The function specifiers are @('inline') and @('_Noreturn').")
+   (xdoc::p
+    "We also include the GCC extension variants
+     @('__inline') and @('__inline__') of @('inline'),
+     only used if GCC extensions are supported.
+     In particular, the parser generates these GCC function specifiers
+     only if instructed to allow GCC extensions."))
   (:inline ())
   (:noreturn ())
-  :pred funspecp)
+  ;; GCC extensions:
+  (:__inline ())
+  (:__inline__ ())
+  :pred fun-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1104,7 +1139,7 @@
     "A few fixtypes related to declarations
      are actually outside this mutual recursion,
      because they are not mutually recursive with others.
-     For instance, the fixtype @(tsee tyqual) for type qualifiers
+     For instance, the fixtype @(tsee type-qual) for type qualifiers
      is defined before these mutually recursive fixtypes,
      and the fixtype @(tsee decl) for (top-level) declarations
      is defined after these mutually recursive fixtypes.")
@@ -1178,6 +1213,12 @@
        and defer a possible re-classification to enumeration constant
        during a post-parsing static semantic analysis.")
      (xdoc::p
+      "Instead of a single string literal, we allow a list of them,
+       which should be non-empty, although we do not capture this constraint.
+       This mirrors the ABNF grammar;
+       we preserve the information about adjacent string literals,
+       as opposed to concatenating them into one.")
+     (xdoc::p
       "The @(':sizeof') case of this fixtype
        captures @('sizeof') applied to a type name.
        The @('sizeof') applied to an expression is instead captured
@@ -1193,6 +1234,11 @@
        there are infinitely many cases.)
        This is captured by the @(':sizeof-ambig') case,
        which contains an @(tsee amb-expr/tyname).")
+     (xdoc::p
+      "The @(':alignof') case of this fixtype
+       includes a flag saying whether the keyword used is
+       the standard @('_Alignof') or the GCC extension @('__alignof__').
+       The latter is allowed only if GCC extensions are enabled.")
      (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
@@ -1227,9 +1273,9 @@
        and @('Pr') is a possibly empty rest of a postfix expression.
        All of this is now explained in detail.")
      (xdoc::p
-      "If @('X') is an ambiguous expression of type name
+      "If @('X') is an ambiguous expression or type name
        (i.e. something captured by @(tsee amb-expr/tyname)),
-       then a @('(X)') could either start a proper cast expression
+       then @('(X)') could either start a proper cast expression
        (if @('X') is a type name)
        or be or start an expression that is or starts with
        a parenthesized primary expression
@@ -1242,7 +1288,7 @@
        there are a number of other tokens that may follow:
        some would let us disambiguate @('X')
        to be either a type name or an expression;
-       but in other cases it is not possibly to disambiguate @('X'),
+       but in other cases it is not possible to disambiguate @('X'),
        and so, similarly to @(':sizeof-ambig'),
        we capture the ambiguous constructs explicitly in our abstract syntax.
        But for these ambiguous casts, the situation is more complex.")
@@ -1260,7 +1306,7 @@
        a function call @('(ab)') where @('ab') is the argument,
        and a postincrement operator @('++').
        In this situation, if @('X') is an expression
-       then @('(E)') is another function call that precedes the array access;
+       then @('(X)(E)') is a function call that precedes the array access;
        but if @('X') is a type name,
        then @('(E)') is the start of a postfix expression.
        Note that in general an expression @('E')
@@ -1350,10 +1396,10 @@
        possibly ambiguous cast expressions."))
     (:ident ((unwrap ident)))
     (:const ((unwrap const)))
-    (:string ((unwrap stringlit)))
+    (:string ((unwrap stringlit-list)))
     (:paren ((unwrap expr)))
     (:gensel ((control expr)
-              (assoc genassoc-list)))
+              (assocs genassoc-list)))
     (:arrsub ((arg1 expr)
               (arg2 expr)))
     (:funcall ((fun expr)
@@ -1369,7 +1415,8 @@
              (arg expr)))
     (:sizeof ((type tyname)))
     (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
-    (:alignof ((type tyname)))
+    (:alignof ((type tyname)
+               (uscores bool)))
     (:cast ((type tyname)
             (arg expr)))
     (:binary ((op binop)
@@ -1492,7 +1539,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum tyspec
+  (fty::deftagsum type-spec
     :parents (abstract-syntax exprs/decls)
     :short "Fixtype of type specifiers [C:6.7.3] [C:A.2.2]."
     :long
@@ -1507,7 +1554,7 @@
        avoiding explicit modeling of the <i>struct-or-union</i> nonterminal.")
      (xdoc::p
       "We model <i>typedef-name</i>
-       by inlining the type name into the @(':tydef') case of this fixtype."))
+       by inlining the type name into the @(':typedef') case of this fixtype."))
     (:void ())
     (:char ())
     (:short ())
@@ -1523,13 +1570,13 @@
     (:struct ((unwrap strunispec)))
     (:union ((unwrap strunispec)))
     (:enum ((unwrap enumspec)))
-    (:tydef ((name ident)))
-    :pred tyspecp
+    (:typedef ((name ident)))
+    :pred type-specp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum specqual
+  (fty::deftagsum spec/qual
     :parents (abstract-syntax exprs/decls)
     :short "Fixtype of type specifiers and type qualifiers
             [C:6.7.2.1] [C:A.2.2]."
@@ -1539,34 +1586,38 @@
       "This does not correspond directly
        to any nonterminal in the grammar in [C],
        but it is useful to define <i>specifier-qualifier-list</i>:
-       see @(tsee specqual-list)."))
-    (:tyspec ((unwrap tyspec)))
-    (:tyqual ((unwrap tyqual)))
-    (:alignspec ((unwrap alignspec)))
-    :pred specqualp
+       see @(tsee spec/qual-list).")
+     (xdoc::p
+      "As a GCC extension, we include attribute specifiers.
+       See our ABNF grammar."))
+    (:tyspec ((unwrap type-spec)))
+    (:tyqual ((unwrap type-qual)))
+    (:align ((unwrap align-spec)))
+    (:attrib ((unwrap attrib-spec)))
+    :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist specqual-list
+  (fty::deflist spec/qual-list
     :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of type specifiers and type qualifiers."
     :long
     (xdoc::topstring
      (xdoc::p
       "The fixtype of type specifiers and type qualifiers
-       is defined in @(tsee specqual).")
+       is defined in @(tsee spec/qual).")
      (xdoc::p
       "This fixtype corresponds to <i>specifier-qualifier-list</i>."))
-    :elt-type specqual
+    :elt-type spec/qual
     :true-listp t
     :elementp-of-nil nil
-    :pred specqual-listp
+    :pred spec/qual-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum alignspec
+  (fty::deftagsum align-spec
     :parents (abstract-syntax exprs/decls)
     :short "Fixtype of alignment specifiers [C:6.7.5] [C:A.2.2]."
     :long
@@ -1586,7 +1637,7 @@
     (:alignas-type ((type tyname)))
     (:alignas-expr ((arg const-expr)))
     (:alignas-ambig ((type/arg amb-expr/tyname)))
-    :pred alignspecp
+    :pred align-specp
     :base-case-override :alignas-expr
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -1601,12 +1652,16 @@
       "This does not directly correspond to
        any nonterminal in the grammar in [C],
        but it is useful to define <i>declaration-specifiers</i>
-       (see @(tsee declspec-list))."))
-    (:stocla ((unwrap stoclaspec)))
-    (:tyspec ((unwrap tyspec)))
-    (:tyqual ((unwrap tyqual)))
-    (:funspec ((unwrap funspec)))
-    (:alignspec ((unwrap alignspec)))
+       (see @(tsee declspec-list)).")
+     (xdoc::p
+      "As a GCC extension, we include attribute specifiers.
+       See our ABNF grammar."))
+    (:stocla ((unwrap stor-spec)))
+    (:tyspec ((unwrap type-spec)))
+    (:tyqual ((unwrap type-qual)))
+    (:funspec ((unwrap fun-spec)))
+    (:align ((unwrap align-spec)))
+    (:attrib ((unwrap attrib-spec))) ; GCC extension
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1745,7 +1800,7 @@
        the outer list corresponds to each star,
        and each inner list corresponds to the type qualifiers
        that immediately follow the star."))
-    ((pointers tyqual-list-list)
+    ((pointers type-qual-list-list)
      (decl dirdeclor))
     :pred declorp
     :measure (two-nats-measure (acl2-count x) 1))
@@ -1803,16 +1858,16 @@
     (:ident ((unwrap ident)))
     (:paren ((unwrap declor)))
     (:array ((decl dirdeclor)
-             (tyquals tyqual-list)
+             (tyquals type-qual-list)
              (expr? expr-option)))
     (:array-static1 ((decl dirdeclor)
-                     (tyquals tyqual-list)
+                     (tyquals type-qual-list)
                      (expr expr)))
     (:array-static2 ((decl dirdeclor)
-                     (tyquals tyqual-list)
+                     (tyquals type-qual-list)
                      (expr expr)))
     (:array-star ((decl dirdeclor)
-                  (tyquals tyqual-list)))
+                  (tyquals type-qual-list)))
     (:function-params ((decl dirdeclor)
                        (params paramdecl-list)
                        (ellipsis bool)))
@@ -1833,8 +1888,13 @@
        This fixtype is similar to @(tsee declor)
        (see that fixtype's documentation in particular
        for an explanation of the modeling of the <i>pointer</i> part),
-       but the abstract direct declarator is optional."))
-    ((pointers tyqual-list-list)
+       but the abstract direct declarator is optional.")
+     (xdoc::p
+      "To match the grammar, we cannot have
+       both an empty list of pointers
+       and an absent direct abstract declarator.
+       This constraint is currently not enforced in this fixtype."))
+    ((pointers type-qual-list-list)
      (decl? dirabsdeclor-option))
     :pred absdeclorp
     :measure (two-nats-measure (acl2-count x) 2))
@@ -1872,13 +1932,13 @@
     (:dummy-base ())
     (:paren ((unwrap absdeclor)))
     (:array ((decl? dirabsdeclor-option)
-             (tyquals tyqual-list)
+             (tyquals type-qual-list)
              (expr? expr-option)))
     (:array-static1 ((decl? dirabsdeclor-option)
-                     (tyquals tyqual-list)
+                     (tyquals type-qual-list)
                      (expr expr)))
     (:array-static2 ((decl? dirabsdeclor-option)
-                     (tyquals tyqual-list)
+                     (tyquals type-qual-list)
                      (expr expr)))
     (:array-star ((decl? dirabsdeclor-option)))
     (:function ((decl? dirabsdeclor-option)
@@ -1971,7 +2031,7 @@
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>type-name</i> in the grammar in [C]."))
-    ((specqual specqual-list)
+    ((specqual spec/qual-list)
      (decl? absdeclor-option))
     :pred tynamep
     :measure (two-nats-measure (acl2-count x) 4))
@@ -1986,7 +2046,7 @@
      (xdoc::p
       "This corresponds to <i>struct-or-union-specifier</i>
        in the grammar in [C], but without the initial <i>struct-or-union</i>.
-       The only use of this fixtype is in @(tsee tyspec),
+       The only use of this fixtype is in @(tsee type-spec),
        where we have two separate cases for structures and unions.")
      (xdoc::p
       "This fixtype is a little broader than the grammar,
@@ -2014,9 +2074,21 @@
        but instead it is a declaration of a member of a structure or union.
        So something like <i>member-declaration</i>
        would be a better name for this grammar nonterminal,
-       but our fixtype name reflects the current grammar."))
-    (:member ((specqual specqual-list)
-              (declor structdeclor-list)))
+       but our fixtype name reflects the current grammar.")
+     (xdoc::p
+      "As a GCC extension, we include the possibility that
+       a member declaration starts with
+       the @('__extension__') GCC keyword.
+       We model that as a boolean that says whether
+       that keyword is present or absent.")
+     (xdoc::p
+      "As a GCC extension, we include
+       a possibly empty list of attribute specifiers,
+       which come after the declarator (cf. the grammar)"))
+    (:member ((extension bool) ; GCC extension
+              (specqual spec/qual-list)
+              (declor structdeclor-list)
+              (attrib attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
     :pred structdeclp
     :base-case-override :statassert
@@ -2136,9 +2208,14 @@
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>static_assert-declaration</i>
-       in the grammar in [C]."))
+       in the grammar in [C].")
+     (xdoc::p
+      "We use a list of string literals,
+       which should be non-empty, but we do not capture this constraint.
+       This mirrors the ABNF grammar:
+       this way, we preserve the information about adjacent string literals."))
     ((test const-expr)
-     (message stringlit))
+     (message stringlit-list))
     :pred statassertp
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -2219,21 +2296,137 @@
     ((declor declor)
      (absdeclor absdeclor))
     :pred amb-declor/absdeclor-p
-    :measure (two-nats-measure (acl2-count x) 3)))
+    :measure (two-nats-measure (acl2-count x) 3))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum attrib
+    :parents (abstract-syntax exprs/decls)
+    :short "Fixtype of GCC attributes."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is part of the "
+      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html"
+                   "GCC extension for attributes")
+      ". For now we only model the older @('__attribute__') syntax.")
+     (xdoc::p
+      "The documentation lists three kinds of attributes:
+       empty, names, and names with parameters.
+       For now we only model the latter two kinds.
+       The documentation lists three kinds of parameters
+       (which presumably refer to the whole collection of parameters
+       of a single attribute with parameters,
+       not to a single parameter,
+       because otherwise it would be unclear what it means,
+       for a single parameter, to be a comma-separated list of things,
+       given that parameters are themselves comma-separated.
+       However, the three kinds of (lists of) parameters overlap syntactically:
+       an instance of the first kind,
+       i.e. an identifier,
+       could be also an expression,
+       and thus could be also an instance of the third kind;
+       an instance of the second kind,
+       i.e. an identifier followed by one or more expressions,
+       could be also just a list of two or more expressions,
+       and thus an instance of the third kind.
+       Thus, we simply define an attribute with parameter as
+       containing a list of zero or more expressions,
+       which covers all three kinds of parameters.")
+     (xdoc::p
+      "Although an attribute name could be an identifier or a keyword,
+       since grammatically keywords are also identifiers,
+       we just use identifiers in this definition of attributes.
+       We can always identify which identifiers are in fact keywords.")
+     (xdoc::p
+      "Note the distinction between an attribute that is just a name,
+       and an attributed that consists of a name and zero parameters:
+       in concrete syntax, the latter would include open and closed parentheses,
+       without anything in between (except white space or comments)."))
+    (:name ((name ident)))
+    (:name-param ((name ident)
+                  (param expr-list)))
+    :pred attribp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist attrib-list
+    :parents (abstract-syntax exprs/decls)
+    :short "Fixtype of lists of GCC attributes."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "GCC attributes are defined in @(tsee attrib)."))
+    :elt-type attrib
+    :true-listp t
+    :elementp-of-nil nil
+    :pred attrib-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod attrib-spec
+    :parents (abstract-syntax exprs/decls)
+    :short "Fixtype of GCC attribute specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is part of the "
+      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html"
+                   "GCC extension for attributes")
+      ". For now we only model the older @('__attribute__') syntax.")
+     (xdoc::p
+      "We wrap a possibly empty list of attributes,
+       leaving the @('__attribute__') part implicit."))
+    ((attribs attrib-list))
+    :pred attrib-specp
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist attrib-spec-list
+    :parents (abstract-syntax exprs/decls)
+    :short "Fixtype of lists of GCC attribute specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "GCC attribute specifiers are defined in @(tsee attrib-spec)."))
+    :elt-type attrib-spec
+    :true-listp t
+    :elementp-of-nil nil
+    :pred attrib-spec-listp
+    :measure (two-nats-measure (acl2-count x) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist tyspec-list
+(fty::deflist type-spec-list
   :parents (abstract-syntax)
   :short "Fixtype of lists of type specifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Type specifiers are defined in @(tsee tyspec)."))
-  :elt-type tyspec
+    "Type specifiers are defined in @(tsee type-spec)."))
+  :elt-type type-spec
   :true-listp t
   :elementp-of-nil nil
-  :pred tyspec-listp)
+  :pred type-spec-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum expr/tyname
+  :short "Fixtype of expressions or type names."
+  (:expr ((unwrap expr)))
+  (:tyname ((unwrap tyname)))
+  :pred expr/tyname-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum declor/absdeclor
+  :short "Fixtype of declarators or abstract declarators."
+  (:declor ((unwrap declor)))
+  (:absdeclor ((unwrap absdeclor)))
+  :pred declor/absdeclor-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2277,6 +2470,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod asm-name-spec
+  :short "Fixtype of GCC assembler name specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This captures the "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html"
+                 "construct to specify assembler names")
+    ". It consists of the keyword @('asm') or @('__asm__')
+     and a parenthesized string literal.
+     Since adjacent string literals may be concatenated [C:5.1.1.2/6],
+     we allow a list of string literals here;
+     this way, we preserve the fact that there were adjacent string literals.
+     Indeed, we have observed multiple (two, to be precise)
+     string literals in this construct in practical code.
+     We also capture whether the plain @('asm') keyword was used
+     or whether the one with underscores, @('__asm__') was used instead.")
+   (xdoc::p
+    "The GCC documentation does not provide a clear term
+     to denote this construct,
+     although the URL suggests that it is an `assembler label';
+     but the text does not mention that term.
+     Note that this is not the only kind of assembler construct
+     in GCC extensions; there are others.
+     So we use the term `assembler name specifier' for this construct,
+     since it specifies the assembler name (of an identifier).")
+   (xdoc::p
+    "We use a list of string literals,
+     which should be non-empty, although we do not capture this constraint.
+     This way, we preserve the information about adjacent string literals."))
+  ((strings stringlit-list)
+   (uscores bool))
+  :pred asm-name-specp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption asm-name-spec-option
+  asm-name-spec
+  :short "Fixtype of optional assembler name specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Assembler name specifiers are defined in @(tsee asm-name-spec)."))
+  :pred asm-name-spec-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod initdeclor
   :short "Fixtype of initializer declarators [C:6.7] [C:A.2.2]."
   :long
@@ -2313,9 +2553,37 @@
    (xdoc::p
     "This corresponds to <i>declaration</i> in the grammar in [C].
      It is the top-level construct for declarations,
-     and it is outside the mutual recursion @(see exprs/decls)."))
-  (:decl ((specs declspec-list)
-          (init initdeclor-list)))
+     and it is outside the mutual recursion @(see exprs/decls).")
+   (xdoc::p
+    "As a GCC extension,
+     we include an optional assembler name specifier.
+     According to the GCC documentation,
+     this should normally follow a declarator,
+     so our placement here is more liberal.
+     However, our current goal with GCC extensions
+     is just to handle code that includes them,
+     not to provide a comprehensive formalization of GCC extensions.
+     The optional assembler name specifier is always absent
+     if GCC extensions are not supported;
+     it may be present or absent otherwise.")
+   (xdoc::p
+    "As a GCC extension,
+     we also include a list of zero or more attribute specifiers
+     as part of a declaration, meant to come after all the declarators.
+     This is not fully general, but it covers a set of cases of interest.
+     The list is empty if there are no attribute specifiers,
+     e.g. when sticking to standard C without GCC extensions.")
+   (xdoc::p
+    "As a GCC extension,
+     we include the possibility that
+     the declaration starts with the @('__extension__') GCC keyword.
+     We model this as a boolean saying whether
+     the keyword is present or absent."))
+  (:decl ((extension bool)
+          (specs declspec-list)
+          (init initdeclor-list)
+          (asm? asm-name-spec-option)
+          (attrib attrib-spec-list)))
   (:statassert ((unwrap statassert)))
   :pred declp)
 
@@ -2352,7 +2620,73 @@
   (:name ((unwrap ident)))
   (:const ((unwrap const-expr)))
   (:default ())
-  :pred labelp)
+  :pred labelp
+
+  ///
+
+  (in-theory (disable (:e label-default))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod amb-decl/stmt
+  :short "Fixtype of ambiguous declarations or statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A block item may be a declaration or a statement,
+     but there is a complex syntactic overlap
+     between declarations and statements, specifically expression statements.
+     For instance, if @('I1'), ..., @('In') are identifiers,
+     @('I1(I2(...(In)...));') could be either a declaration or a statement.
+     It is a declaration if @('I1') is a type specifier (a @('typedef') name)
+     and @('(I2(...(In)...))') is a declarator of @('I2'),
+     which is a function with a parameter @('I3'),
+     which is a function with a parameter @('I4'),
+     and so on;
+     here @('I3'), @('I4'), etc. are type specifiers (@('typedef') names).
+     It is instead an expression statement if
+     @('I1') is a function, called with argument @('I2(...(In)...)'),
+     which is itself a function call, and so on.
+     There are also other, more complex patterns,
+     for example similar to the ones above
+     but with multiple function arguments.")
+   (xdoc::p
+    "So, similarly to
+     @(tsee amb-expr/tyname) and @(tsee amb-declor/absdeclor),
+     here we define a fixtype of ambiguous declarations or statements,
+     which contain both the declaration and the expression
+     (since the only ambiguity is with expression statements).
+     These two components should look the same in concrete syntax,
+     but we do not enforce that in this fixtype definition."))
+  ((decl decl)
+   (stmt expr))
+  :pred amb-decl/stmt-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum amb?-decl/stmt
+  :short "Fixtype of possibly ambiguous declarations or statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to
+     @(tsee amb?-expr/tyname) and @(tsee amb?-declor/absdeclor).
+     It captures the possibilities of
+     a declaration,
+     an (expression) statement,
+     or an ambiguous declaration or statements."))
+  (:decl ((unwrap decl)))
+  (:stmt ((unwrap expr)))
+  (:ambig ((unwrap amb-decl/stmt)))
+  :pred amb?-decl/stmt-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum decl/stmt
+  :short "Fixtype of declarations or (expression) statements."
+  (:decl ((unwrap decl)))
+  (:stmt ((unwrap expr)))
+  :pred decl/stmt-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2382,7 +2716,20 @@
        <i>jump-statement</i>.")
      (xdoc::p
       "For labeled statements,
-       we use @(tsee label) to factor the three kinds of labels."))
+       we use @(tsee label) to factor the three kinds of labels.")
+     (xdoc::p
+      "There are two forms of @('for') loops:
+       one where the initialization part is an (optional) expression,
+       and one where the initialization part is a declaration.
+       There is also a third ambiguous form,
+       which applies when the initialization part could be
+       either an expression or a declaration, syntactically:
+       this is captured exactly by @(tsee amb-decl/stmt),
+       because the statement in an ambiguous declaration or statement
+       is a statement expression,
+       which is exactly what
+       the initialization part of a @('for') looks like,
+       when it is an expression."))
     (:labeled ((label label)
                (stmt stmt)))
     (:compound ((items block-item-list)))
@@ -2398,14 +2745,18 @@
              (body stmt)))
     (:dowhile ((body stmt)
                (test expr)))
-    (:for ((init expr-option)
-           (test expr-option)
-           (next expr-option)
-           (body stmt)))
-    (:fordecl ((init decl)
-               (test expr-option)
-               (next expr-option)
-               (body stmt)))
+    (:for-expr ((init expr-option)
+                (test expr-option)
+                (next expr-option)
+                (body stmt)))
+    (:for-decl ((init decl)
+                (test expr-option)
+                (next expr-option)
+                (body stmt)))
+    (:for-ambig ((init amb-decl/stmt)
+                 (test expr-option)
+                 (next expr-option)
+                 (body stmt)))
     (:goto ((label ident)))
     (:continue ())
     (:break ())
@@ -2418,9 +2769,13 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>block-item</i> in the grammar in [C]."))
+      "This corresponds to <i>block-item</i> in the grammar in [C].")
+     (xdoc::p
+      "We also include a case for an ambiguous declaration or statement;
+       see @(tsee amb-decl/stmt)."))
     (:decl ((unwrap decl)))
     (:stmt ((unwrap stmt)))
+    (:ambig ((unwrap amb-decl/stmt)))
     :pred block-itemp)
 
   (fty::deflist block-item-list
@@ -2435,7 +2790,12 @@
     :elt-type block-item
     :true-listp t
     :elementp-of-nil nil
-    :pred block-item-listp))
+    :pred block-item-listp)
+
+  ///
+
+  (in-theory (disable (:e stmt-continue)
+                      (:e stmt-break))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2446,12 +2806,30 @@
    (xdoc::p
     "This corresponds to <i>function-definition</i> in the grammar in [C].
      Unlike that grammar, we do not constrain the function body
-     to be a compound statement in this fixtype."))
-  ((spec declspec-list)
+     to be a compound statement in this fixtype.")
+   (xdoc::p
+    "As a GCC extension,
+     we include the possibility that
+     the function definition starts with the @('__extension__') GCC keyword.
+     We model this as a boolean saying whether
+     the keyword is present or absent."))
+  ((extension bool) ; GCC extension
+   (spec declspec-list)
    (declor declor)
    (decls decl-list)
    (body stmt))
   :pred fundefp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption fundef-option
+  fundef
+  :short "Fixtype of optional function definitions."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Function definitions are defined in @(tsee fundef)."))
+  :pred fundef-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2500,7 +2878,14 @@
   :short "Fixtype of omaps from file paths to translation units."
   :key-type filepath
   :val-type transunit
-  :pred filepath-transunit-mapp)
+  :pred filepath-transunit-mapp
+  ///
+
+  (defrule filepath-setp-of-keys-when-filepath-transunit-mapp
+    (implies (filepath-transunit-mapp map)
+             (filepath-setp (omap::keys map)))
+    :induct t
+    :enable omap::keys))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

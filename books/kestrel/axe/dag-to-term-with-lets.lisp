@@ -1,7 +1,7 @@
 ; Converting a dag to a term using lets.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,7 @@
 (include-book "dag-parent-array-with-name")
 (include-book "supporting-nodes")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
@@ -269,13 +270,15 @@
             (cons item (nodenums-supported-by-target (rest items) target-nodenum supporters-array))
           (nodenums-supported-by-target (rest items) target-nodenum supporters-array))))))
 
-(defthm all-natp-of-nodenums-supported-by-target
-  (implies (darg-listp items)
-           (all-natp (nodenums-supported-by-target items target-nodenum supporters-array))))
+(local
+ (defthm all-natp-of-nodenums-supported-by-target
+   (implies (darg-listp items)
+            (all-natp (nodenums-supported-by-target items target-nodenum supporters-array)))))
 
-(defthm all-<-of-nodenums-supported-by-target
-  (implies (bounded-darg-listp items bound)
-           (all-< (nodenums-supported-by-target items target-nodenum supporters-array) bound)))
+(local
+ (defthm all-<-of-nodenums-supported-by-target
+   (implies (bounded-darg-listp items bound)
+            (all-< (nodenums-supported-by-target items target-nodenum supporters-array) bound))))
 
 (defthmd not-<-of-0-of-car-when-all-natp
   (implies (all-natp lst)
@@ -357,49 +360,54 @@
               ;;more than one child is supported, so this node is the common ancestor
               nodenum)))))))
 
-(defthm natp-of-smallest-common-ancestor
-  (implies (and (natp nodenum)
-                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
-                (supporters-arrayp 'supporters-array supporters-array (+ 1 nodenum))
-                (natp target-nodenum))
-           (natp (smallest-common-ancestor nodenum target-nodenum dag-array-name dag-array supporters-array)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable smallest-common-ancestor
-                                     not-<-of-+-1-of-car-and-0
-                                     <=-of-+-1-of-car-when-all-<
-                                     integerp-of-car-when-all-natp))))
+(local
+ (defthm natp-of-smallest-common-ancestor
+   (implies (and (natp nodenum)
+                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                 (supporters-arrayp 'supporters-array supporters-array (+ 1 nodenum))
+                 (natp target-nodenum))
+            (natp (smallest-common-ancestor nodenum target-nodenum dag-array-name dag-array supporters-array)))
+   :rule-classes (:rewrite :type-prescription)
+   :hints (("Goal" :in-theory (enable smallest-common-ancestor
+                                      not-<-of-+-1-of-car-and-0
+                                      <=-of-+-1-of-car-when-all-<
+                                      integerp-of-car-when-all-natp)))))
 
-(defthm integerp-of-smallest-common-ancestor
-  (implies (and (natp nodenum)
-                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
-                (supporters-arrayp 'supporters-array supporters-array (+ 1 nodenum))
-                (natp target-nodenum))
-           (integerp (smallest-common-ancestor nodenum target-nodenum dag-array-name dag-array supporters-array))))
+(local
+ (defthm integerp-of-smallest-common-ancestor
+   (implies (and (natp nodenum)
+                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                 (supporters-arrayp 'supporters-array supporters-array (+ 1 nodenum))
+                 (natp target-nodenum))
+            (integerp (smallest-common-ancestor nodenum target-nodenum dag-array-name dag-array supporters-array)))))
 
-(defthm <=-of-0-and-smallest-common-ancestor
-  (implies (and (natp nodenum)
-                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
-                (supporters-arrayp 'supporters-array supporters-array (+ 1 nodenum))
-                (natp target-nodenum))
-           (<= 0 (smallest-common-ancestor nodenum target-nodenum dag-array-name dag-array supporters-array))))
+(local
+ (defthm <=-of-0-and-smallest-common-ancestor
+   (implies (and (natp nodenum)
+                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                 (supporters-arrayp 'supporters-array supporters-array (+ 1 nodenum))
+                 (natp target-nodenum))
+            (<= 0 (smallest-common-ancestor nodenum target-nodenum dag-array-name dag-array supporters-array)))))
 
-(defthm not-equal-header-of-smallest-common-ancestor
-  (implies (and (natp nodenum)
-                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
-                (supporters-arrayp 'supporters-array supporters-array (+ 1 nodenum))
-                (natp target-nodenum))
-           (not (equal :header (smallest-common-ancestor nodenum target-nodenum dag-array-name dag-array supporters-array)))))
+(local
+ (defthm not-equal-header-of-smallest-common-ancestor
+   (implies (and (natp nodenum)
+                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                 (supporters-arrayp 'supporters-array supporters-array (+ 1 nodenum))
+                 (natp target-nodenum))
+            (not (equal :header (smallest-common-ancestor nodenum target-nodenum dag-array-name dag-array supporters-array))))))
 
 ;nested induction
-(defthm smallest-common-ancestor-bound
-  (implies (and (natp nodenum)
+(local
+ (defthm smallest-common-ancestor-bound
+   (implies (and (natp nodenum)
 ;                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
-                (supporters-arrayp 'supporters-array supporters-array (+ 1 nodenum))
-                (natp target-nodenum))
-           (<= (smallest-common-ancestor nodenum target-nodenum dag-array-name dag-array supporters-array)
-               nodenum))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable smallest-common-ancestor))))
+                 (supporters-arrayp 'supporters-array supporters-array (+ 1 nodenum))
+                 (natp target-nodenum))
+            (<= (smallest-common-ancestor nodenum target-nodenum dag-array-name dag-array supporters-array)
+                nodenum))
+   :rule-classes (:rewrite :linear)
+   :hints (("Goal" :in-theory (enable smallest-common-ancestor)))))
 
 ;; (defun make-let-bindings (nodenum args binding-array acc)
 ;;   (if (endp args)
