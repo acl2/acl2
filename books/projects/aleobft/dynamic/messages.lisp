@@ -197,3 +197,19 @@
              set::expensive-rules
              set::double-containment-no-backchain-limit)
     :disable message-certificates-with-destination))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled message-certificates-with-destination-of-make-certificate-message
+  :parents (make-certificate-message
+            message-certificates-with-destination)
+  :short "Relation between message extraction and message creation."
+  (implies (address-setp dests)
+           (equal (message-certificates-with-destination
+                   dest (make-certificate-messages cert dests))
+                  (if (set::in (address-fix dest) dests)
+                      (set::insert (certificate-fix cert) nil)
+                    nil)))
+  :induct t
+  :enable (message-certificates-with-destination-of-insert
+           make-certificate-messages))
