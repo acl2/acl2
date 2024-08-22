@@ -492,9 +492,40 @@
        (create-certificate-endorsers-next-loop cert
                                                (set::tail endorsers)
                                                new-systate))
+
      ///
+
      (fty::deffixequiv create-certificate-endorsers-next-loop
-       :args ((systate system-statep) (cert certificatep))))))
+       :args ((systate system-statep) (cert certificatep)))
+
+     (defret all-addresses-of-create-certificate-endorsers-next-loop
+       (equal (all-addresses new-systate)
+              (all-addresses systate))
+       :hints (("Goal" :induct t)))
+
+     (defret correct-addresses-of-create-certificate-endorsers-next-loop
+       (equal (correct-addresses new-systate)
+              (correct-addresses systate))
+       :hints (("Goal" :induct t)))
+
+     (defret faulty-addresses-of-create-certificate-endorsers-next-loop
+       (equal (faulty-addresses new-systate)
+              (faulty-addresses systate))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret all-addresses-of-create-certificate-endorsers-next
+    (equal (all-addresses new-systate)
+           (all-addresses systate)))
+
+  (defret correct-addresses-of-create-certificate-endorsers-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate)))
+
+  (defret faulty-addresses-of-create-certificate-endorsers-next
+    (equal (faulty-addresses new-systate)
+           (faulty-addresses systate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -590,4 +621,18 @@
        (new-network (set::union msgs network))
        (systate (update-network-state new-network systate)))
     systate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret all-addresses-of-create-certificate-next
+    (equal (all-addresses new-systate)
+           (all-addresses systate)))
+
+  (defret correct-addresses-of-create-certificate-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate)))
+
+  (defret faulty-addresses-of-create-certificate-next
+    (equal (faulty-addresses new-systate)
+           (faulty-addresses systate))))

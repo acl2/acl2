@@ -163,4 +163,24 @@
     systate)
   :guard-hints (("Goal" :in-theory (enable store-certificate-possiblep
                                            posp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret all-addresses-of-store-certificate-next
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hyp (store-certificate-possiblep val cert systate)
+    :hints (("Goal" :in-theory (enable store-certificate-possiblep))))
+
+  (defret correct-addresses-of-store-certificate-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (store-certificate-possiblep val cert systate)
+    :hints (("Goal" :in-theory (enable store-certificate-possiblep))))
+
+  (defret faulty-addresses-of-store-certificate-next
+    (equal (faulty-addresses new-systate)
+           (faulty-addresses systate))
+    :hyp (store-certificate-possiblep val cert systate)
+    :hints (("Goal" :in-theory (enable store-certificate-possiblep)))))
