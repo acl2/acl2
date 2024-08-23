@@ -1009,6 +1009,18 @@
                          (list (c-char-escape (escape-simple (simple-escape-a)))
                                (c-char-char (char-code #\A)))))))))
 
+(test-lex-fail
+ lex-character-constant
+ "''"
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0)))
+
+(test-lex-fail
+ lex-character-constant
+ (list 10 (char-code #\'))
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test parsing functions.
