@@ -34,7 +34,6 @@
 (include-book "kestrel/std/system/recursive-calls" :dir :system)
 (include-book "kestrel/std/system/unwrapped-nonexec-body" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation" :dir :system)
-(include-book "kestrel/std/util/defiso" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
@@ -42,6 +41,7 @@
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 
 (include-book "std/basic/mbt-dollar" :dir :system)
+(include-book "std/util/defiso" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
