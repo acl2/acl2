@@ -50,11 +50,6 @@
 (include-book "invariant-blockchain-redundant")
 (include-book "invariant-blockchain-not-forking")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ correctness
@@ -80,9 +75,7 @@
      and are preserved by every transition.
      There are also some transition invariants,
      i.e. predicates that hold of
-     each pair of old and new states linked by a transition.")
-   (xdoc::p
-    "The formulation and proof of correctness are work in progress."))
+     each pair of old and new states linked by a transition."))
   :order-subtopics (operations-additional
                     properties-certificate-retrieval
                     properties-dags

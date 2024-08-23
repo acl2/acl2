@@ -79,4 +79,24 @@
        (systate (update-validator-state val new-vstate systate)))
     systate)
   :guard-hints (("Goal" :in-theory (enable timer-expires-possiblep)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret all-addresses-of-timer-expires-next
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hyp (timer-expires-possiblep val systate)
+    :hints (("Goal" :in-theory (enable timer-expires-possiblep))))
+
+  (defret correct-addresses-of-timer-expires-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (timer-expires-possiblep val systate)
+    :hints (("Goal" :in-theory (enable timer-expires-possiblep))))
+
+  (defret faulty-addresses-of-timer-expires-next
+    (equal (faulty-addresses new-systate)
+           (faulty-addresses systate))
+    :hyp (timer-expires-possiblep val systate)
+    :hints (("Goal" :in-theory (enable timer-expires-possiblep)))))

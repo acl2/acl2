@@ -15,6 +15,7 @@
 (include-book "transactions")
 
 (include-book "kestrel/fty/pos-set" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 
 (local (include-book "lib-ext"))
 
@@ -357,3 +358,65 @@
                       (set::insert (pos-fix round) nil))))
     :induct t
     :enable certificate-set->round-set-of-insert))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk certificate-set-unequivocalp ((certs certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if a set of certificates is unequivocal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check whether the certificates in the set
+     have unique combinations of author and round.
+     We check that any two certificates in the set
+     with the same author and round
+     are in fact the same certificates.
+     This means that the certificates in the set
+     are uniquely identified by their author and round.")
+   (xdoc::p
+    "This is an invariant on DAGs,
+     and in fact on all the certificates in the system,
+     enforced by the protocol under suitable fault tolerance conditions.
+     Here we formulate the invariant."))
+  (forall (cert1 cert2)
+          (implies (and (set::in cert1 certs)
+                        (set::in cert2 certs)
+                        (equal (certificate->author cert1)
+                               (certificate->author cert2))
+                        (equal (certificate->round cert1)
+                               (certificate->round cert2)))
+                   (equal cert1 cert2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk certificate-sets-unequivocalp ((certs1 certificate-setp)
+                                          (certs2 certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if two sets of certificates are mutually unequivocal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee certificate-set-unequivocalp)
+     (note the singular `set' vs. the plural `sets'),
+     but checks certificates from different sets.
+     It requires that
+     if both sets have certificates with the same author and round,
+     the certificates must be equal.")
+   (xdoc::p
+    "This is an invariant that applies across DAGs of different validators.
+     Here we just formulate that invariant.")
+   (xdoc::p
+    "Note that this invariant does not imply that the two sets are unequivocal:
+     one set may well have multiple different certificates
+     with the same author and round,
+     so long as that combination of author and round
+     does not appear in the other set."))
+  (forall (cert1 cert2)
+          (implies (and (set::in cert1 certs1)
+                        (set::in cert2 certs2)
+                        (equal (certificate->author cert1)
+                               (certificate->author cert2))
+                        (equal (certificate->round cert1)
+                               (certificate->round cert2)))
+                   (equal cert1 cert2))))

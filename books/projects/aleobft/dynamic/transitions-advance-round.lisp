@@ -188,4 +188,24 @@
        (systate (update-validator-state val new-vstate systate)))
     systate)
   :guard-hints (("Goal" :in-theory (enable advance-round-possiblep)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret all-addresses-of-advance-round-next
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hyp (advance-round-possiblep val systate)
+    :hints (("Goal" :in-theory (enable advance-round-possiblep))))
+
+  (defret correct-addresses-of-advance-round-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (advance-round-possiblep val systate)
+    :hints (("Goal" :in-theory (enable advance-round-possiblep))))
+
+  (defret faulty-addresses-of-advance-round-next
+    (equal (faulty-addresses new-systate)
+           (faulty-addresses systate))
+    :hyp (advance-round-possiblep val systate)
+    :hints (("Goal" :in-theory (enable advance-round-possiblep)))))

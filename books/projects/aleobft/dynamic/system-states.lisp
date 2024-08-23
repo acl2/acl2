@@ -316,7 +316,7 @@
   (defret all-addresses-of-update-validator-state
     (equal (all-addresses new-systate)
            (all-addresses systate))
-    :hyp (set::in val (correct-addresses systate))
+    :hyp (set::in (address-fix val) (correct-addresses systate))
     :hints (("Goal" :in-theory (enable* all-addresses
                                         correct-addresses
                                         set::expensive-rules))))
@@ -324,31 +324,31 @@
   (defret correct-addresses-of-update-validator-state
     (equal (correct-addresses new-systate)
            (correct-addresses systate))
-    :hyp (set::in val (correct-addresses systate))
+    :hyp (set::in (address-fix val) (correct-addresses systate))
     :hints (("Goal" :in-theory (enable correct-addresses
                                        correct-addresses-loop-of-update))))
 
   (defret faulty-addresses-of-update-validator-state
     (equal (faulty-addresses new-systate)
            (faulty-addresses systate))
-    :hyp (set::in val (correct-addresses systate))
+    :hyp (set::in (address-fix val) (correct-addresses systate))
     :hints (("Goal" :in-theory (e/d (faulty-addresses)
                                     (update-validator-state)))))
 
   (defruled get-validator-state-of-update-validator-state
-    (implies (set::in val (correct-addresses systate))
+    (implies (set::in (address-fix val) (correct-addresses systate))
              (equal
               (get-validator-state val1
                                    (update-validator-state val
                                                            vstate
                                                            systate))
-              (if (equal (address-fix val1) val)
+              (if (equal (address-fix val1) (address-fix val))
                   (validator-state-fix vstate)
                 (get-validator-state val1 systate))))
     :enable get-validator-state)
 
   (defrule get-validator-state-of-update-validator-state-same
-    (implies (set::in val (correct-addresses systate))
+    (implies (set::in (address-fix val) (correct-addresses systate))
              (equal
               (get-validator-state val
                                    (update-validator-state val
@@ -358,8 +358,8 @@
     :enable get-validator-state)
 
   (defrule get-validator-state-of-update-validator-state-diff
-    (implies (and (set::in val (correct-addresses systate))
-                  (not (equal (address-fix val1) val)))
+    (implies (and (set::in (address-fix val) (correct-addresses systate))
+                  (not (equal (address-fix val1) (address-fix val))))
              (equal
               (get-validator-state val1
                                    (update-validator-state val

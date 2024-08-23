@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "definition")
+(include-book "correctness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,8 +38,5 @@
      (i.e. every validator has the same stake).")
    (xdoc::p
     "This is work in progress."))
-  :order-subtopics (definition))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; TODO: continue
+  :order-subtopics (definition
+                    correctness))
