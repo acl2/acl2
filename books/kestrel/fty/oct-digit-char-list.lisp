@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist oct-digit-char-list
-  :parents (fty::fty-extensions fty::specific-types pos-listp)
+  :parents (fty::fty-extensions fty::specific-types oct-digit-char)
   :short "Fixtype of lists of octal digit characters."
   :elt-type oct-digit-char
   :true-listp t

@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist dec-digit-char-list
-  :parents (fty::fty-extensions fty::specific-types pos-listp)
+  :parents (fty::fty-extensions fty::specific-types dec-digit-char)
   :short "Fixtype of lists of decimal digit characters."
   :elt-type dec-digit-char
   :true-listp t
