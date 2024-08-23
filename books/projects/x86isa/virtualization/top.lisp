@@ -344,5 +344,7 @@ emit those instructions, which can be useful. Of course, if your bug is in the
       (validate-insts (1- n) x86)))
 
 (defttag :virtualization)
+;; The raw file only works with CCL
+; cert_param: (ccl-only)
 ; (depends-on "virtualization-raw.lsp")
 (include-raw "virtualization-raw.lsp")
