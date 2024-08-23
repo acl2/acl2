@@ -974,6 +974,35 @@
  lex-*-s-char
  (list (char-code #\U) 13 (char-code #\")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-character-constant
+
+(test-lex
+ lex-character-constant
+ "e'"
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0))
+ :cond (equal ast
+              (lexeme-token
+               (token-const
+                (const-char
+                 (cconst nil
+                         (list (c-char-char (char-code #\e)))))))))
+
+(test-lex
+ lex-character-constant
+ "\\aA'"
+ :pos (position 1 2)
+ :more-inputs ((cprefix-locase-u) (position 1 2))
+ :cond (equal ast
+              (lexeme-token
+               (token-const
+                (const-char
+                 (cconst (cprefix-locase-u)
+                         (list (c-char-escape (escape-simple (simple-escape-a)))
+                               (c-char-char (char-code #\A)))))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test parsing functions.
