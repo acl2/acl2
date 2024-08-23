@@ -386,7 +386,13 @@
                                (certificate->author cert2))
                         (equal (certificate->round cert1)
                                (certificate->round cert2)))
-                   (equal cert1 cert2))))
+                   (equal cert1 cert2)))
+
+  ///
+
+  (defruled certificate-set-unequivocalp-when-emptyp
+    (implies (set::emptyp certs)
+             (certificate-set-unequivocalp certs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
