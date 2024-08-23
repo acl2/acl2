@@ -13,6 +13,7 @@
 
 (include-book "owned-certificates")
 (include-book "same-owned-certificates")
+(include-book "unequivocal-certificates-def-and-init")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,6 +29,7 @@
      which we have already proved for static committees;
      here we are generalizing it for dynamic committees."))
   :order-subtopics (owned-certificates
-                    same-owned-certificates))
+                    same-owned-certificates
+                    unequivocal-certificates-def-and-init))
 
 ; TODO: continue
