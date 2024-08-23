@@ -464,7 +464,9 @@
              :exec  write-mem$c$inline
              :correspondence write-mem{correspondence}
              :guard-thm write-mem{guard-thm}
-             )))
+             ))
+
+  :non-executable t)
 
 #|
 (defthm integerp-read-mem
