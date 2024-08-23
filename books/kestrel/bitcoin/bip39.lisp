@@ -1,11 +1,11 @@
 ; Bitcoin Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors: Eric McCarthy (mccarthy@kestrel.edu)
-;          Alessandro Coglio (coglio@kestrel.edu)
+;          Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,11 +13,11 @@
 
 (include-book "kestrel/crypto/interfaces/pbkdf2-hmac-sha-512" :dir :system)
 (include-book "kestrel/crypto/interfaces/sha-256" :dir :system)
-(include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "kestrel/utilities/bits-and-bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/bits-and-ubyte11s-as-digits" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/util/defenum" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "bip39-english-words")

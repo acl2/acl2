@@ -1,7 +1,7 @@
 ; A theory of x86 state readers and writers (emphasis on readability of terms)
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Note that RIP is built into the x86 model.
+;; Note that RIP is built into the x86 model and is a 48-bit signed-byte. See x86isa::i48p-xr-rip.
 
 ;; Introduces rip.
 (defthmd xr-becomes-rip

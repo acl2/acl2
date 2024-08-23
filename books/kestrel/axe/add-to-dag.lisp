@@ -1,7 +1,7 @@
 ; Building DAGs, represented as lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,7 @@
 
 (include-book "dags")
 (include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
+(include-book "tools/flag" :dir :system)
 ;todo: reduce?:
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

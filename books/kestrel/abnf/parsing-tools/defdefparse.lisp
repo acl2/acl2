@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,11 +23,11 @@
 (include-book "kestrel/std/system/constant-value" :dir :system)
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
-(include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/defval" :dir :system)
+(include-book "std/util/tuple" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
@@ -853,7 +853,7 @@
      returning as soon as we get a non-error.
      If all the alternatives give an error,
      we return an error that includes all the errors for the alternatives:
-     this is the reason for using and incremnting indices,
+     this is the reason for using and incrementing indices,
      i.e. so that we can combine them in case of error,
      not because we want to combine them in case of success.")
    (xdoc::p

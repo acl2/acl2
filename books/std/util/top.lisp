@@ -29,12 +29,20 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STD")
+
 (include-book "add-io-pairs")
 (include-book "defaggregate")
 (include-book "defaggrify-defrec")
 (include-book "defalist")
+(include-book "defarbrec")
+(include-book "defarbrec-doc")
+(include-book "defconstrained-recognizer")
 (include-book "defconsts")
 (include-book "defenum")
+(include-book "deffixer")
+(include-book "defmacro-plus")
+(include-book "defmacro-plus-doc")
+(include-book "defirrelevant")
 (include-book "deflist")
 (include-book "defmapappend")
 (include-book "defmvtypes")
@@ -47,6 +55,17 @@
 (include-book "defsum")
 (include-book "defval")
 (include-book "def-bound-theorems")
+(include-book "defthm-commutative")
+(include-book "tuple")
+(include-book "error-value-tuples")
+(include-book "defund-sk")
+(include-book "defund-sk-doc")
+(include-book "deftutorial")
+(include-book "deftutorial-doc")
+(include-book "defmax-nat")
+(include-book "defmax-nat-doc")
+(include-book "defmin-int")
+(include-book "defmin-int-doc")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)
@@ -107,3 +126,5 @@ major macro is typically defined in its own book, e.g., you could do:</p>
 <p>Note that unlike many other @(see std) libraries, these macros are defined
 in the @('STD::') package.  This is mainly to avoid name collisions with older
 macros like @('deflist') from other libraries.</p>")
+
+(xdoc::add-resource-directory "std-util-design-notes" "design-notes")

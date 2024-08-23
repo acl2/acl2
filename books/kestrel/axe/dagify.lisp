@@ -24,6 +24,7 @@
 (include-book "def-dag-builder-theorems")
 (include-book "make-dag-indices")
 (include-book "consecutivep2")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))

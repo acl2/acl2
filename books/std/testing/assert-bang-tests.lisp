@@ -51,7 +51,7 @@
 ; certification world, unless an acl2-customization file has been supplied.  It
 ; also succeeds at include-book time even if we include the book after
 ; executing another command, because assert! uses make-event with
-; :check-expansion nil.  See assert-include.lisp.
+; :check-expansion nil.
 ; HOWEVER....
 ; This book is no longer certified in the initial certification world during
 ; regressions, because cert.pl causes LD of books/xdoc/top.port and also, in

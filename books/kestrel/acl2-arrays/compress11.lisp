@@ -114,7 +114,7 @@
                         nil
                       (assoc-equal index l)))))
   :hints (("Goal" :use (assoc-equal-of-compress11-too-high
-                        (:instance assoc-equal-of-compress11))
+                        assoc-equal-of-compress11)
            :in-theory (disable assoc-equal))))
 
 (defthmd normalize-compress11-name

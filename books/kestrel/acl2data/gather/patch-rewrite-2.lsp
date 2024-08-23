@@ -29,7 +29,7 @@
   (the-mv
    4
    #.*fixnum-type*
-   (let ((gstack (push-gframe 'rewrite-with-lemma nil term lemma))
+   (let ((gstack (push-gframe 'rewrite-with-lemma nil term lemma geneqv))
          (rdepth (adjust-rdepth rdepth)))
      (declare (type #.*fixnat-type* rdepth))
      (cond ((zero-depthp rdepth)
@@ -497,7 +497,17 @@
            ((not (geneqv-refinementp (access rewrite-rule lemma :equiv)
                                      geneqv
                                      wrld))
-            (mv step-limit nil term ttree))
+            (progn$
+             (refinement-failure-brkpt1 lemma term type-alist geneqv
+                                        ancestors ttree
+                                        gstack rcnst
+                                        simplify-clause-pot-lst
+                                        state)
+             (brkpt2 nil 'refinement-failure
+                     nil ; unify-subst
+                     gstack nil nil
+                     rcnst ancestors state)
+             (mv step-limit nil term ttree)))
            ((eq (access rewrite-rule lemma :subclass) 'definition)
             (sl-let (rewritten-term ttree)
                     (rewrite-entry (rewrite-fncall lemma term))
@@ -530,7 +540,7 @@
                       (cond
                        ((and unify-ans
                              (null (brkpt1 lemma term unify-subst
-                                           type-alist ancestors
+                                           type-alist geneqv ancestors
                                            ttree
                                            gstack rcnst simplify-clause-pot-lst
                                            state)))
@@ -613,7 +623,7 @@
                                          rcnst ancestors state)
                                  (mv step-limit nil term ttree)))))))))
                        (t (progn$
-                           (near-miss-brkpt1 lemma term type-alist
+                           (near-miss-brkpt1 lemma term type-alist geneqv
                                              ancestors ttree
                                              gstack rcnst
                                              simplify-clause-pot-lst
@@ -664,7 +674,8 @@
   (the-mv
    4
    #.*fixnum-type*
-   (let* ((gstack (push-gframe 'rewrite-quoted-constant-with-lemma nil term lemma))
+   (let* ((gstack (push-gframe 'rewrite-quoted-constant-with-lemma nil term lemma
+                               geneqv))
           (rdepth (adjust-rdepth rdepth))
           (temp (access rewrite-rule lemma :heuristic-info))
           (n (car temp))
@@ -719,7 +730,7 @@
                 (cond
                  ((and unify-ans
                        (null (brkpt1 lemma term unify-subst
-                                     type-alist ancestors
+                                     type-alist geneqv ancestors
                                      ttree
                                      gstack rcnst simplify-clause-pot-lst
                                      state)))

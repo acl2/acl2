@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function realpart.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,7 +22,7 @@
   (equal (realpart x)
          (- x
             (* #C(0 1) (imagpart x))))
-  :hints (("Goal" :use (:instance realpart-imagpart-elim))))
+  :hints (("Goal" :use realpart-imagpart-elim)))
 
 (local
  (defthm complex-split
@@ -31,7 +31,7 @@
                       (* #C(0 1) (imagpart x)))
                    x))
    :rule-classes nil
-   :hints (("Goal" :use (:instance realpart-imagpart-elim)))))
+   :hints (("Goal" :use realpart-imagpart-elim))))
 
 (local
  (defthmd --becomes-*-of--1

@@ -1,7 +1,7 @@
 ; Memoizing the DAG nodes that Axe trees rewrote to.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,6 +25,7 @@
 (include-book "darg-listp")
 (include-book "bounded-darg-listp")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)) ;todo
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))
@@ -34,10 +35,10 @@
 ;; TODO: Consider not memoizing things that didn't take a lot of work to compute.
 ;; TODO: Consider whether to memoize rewrites of lambda applications (but not memoizing them slowed things down?)
 ;; TODO: Consider whether to memoize rewrites of ground terms
-;; TODO: Consider making a separate memoization for tree that are functions applied to simplified args (common).
-;; TODO: Consider using an info world for the memoization (to make it per head symbol)
+;; TODO: Consider making a separate memoization for trees that are functions applied to simplified args (common).
+;; TODO: Consider using a property list world for the memoization (to make it per head symbol)
 ;; TODO: Consider memoizing only destructor trees, not constructor trees
-;; NOTE: For anything we won't memoize, we should avoid consing it onto trees-equal-to-tree in the rewriter
+;; NOTE: For anything we won't memoize, we should avoid consing it onto trees-equal-to-tree in the rewriter.
 
 ;maybe we should think of the memoization as part of the dag (it is just a list of equalities which mention nodenums from the dag)
 
@@ -51,7 +52,7 @@
 (defund tree-to-memoizep (tree)
   (declare (xargs :guard t))
   (and (axe-treep tree)
-       (bounded-axe-treep tree 1152921504606846974) ; because of the type decl in sum-of-nodenums-aux (todo: widen?)
+       (bounded-axe-treep tree 1152921504606846974) ; because of the type decl in axe-tree-hash-aux (todo: widen?)
        (consp tree)
        (not (eq 'quote (ffn-symb tree)))))
 
@@ -170,14 +171,65 @@
 
 (defconst *memoization-size* 1048576) ;todo: allow this to vary (may be best to keep it a power of 2)
 
-;; TODO: Consider using fixnums here (doing the mod [or mask] operation on each addition).
+;; TODO: Do something better, to spread out the values more?
+(defund combine-value-into-hash (val acc)
+  (declare (xargs :guard (and (natp val)
+                              (natp acc)
+                              (<= val 1152921504606846973) ; relax?
+                              (< acc *memoization-size*))
+                  :split-types t)
+           (type (integer 0 1152921504606846973) val)
+           (type (integer 0 1048575) acc))
+  (logand 1048575 ; a mask of 20 ones
+          (+ val (* 3 acc))))
+
+(local
+  (defthm combine-value-into-hash-linear
+    (<= (combine-value-into-hash val acc)
+        1048575)
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable combine-value-into-hash)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Turn a constant into a value that can be combined into a hash.
+;; this is for the value of a quoted constant
+;; must return a natp less than 1152921504606846974
+;; we try to get a nice spread of values
+(defund quick-val-to-hash (val)
+  (declare (xargs :guard t))
+  (if (eq nil val)
+      777
+    (if (eql 0 val)
+        888
+      (if (integerp val)
+          (if (and (< 0 val)
+                   (<= val 1152921504606846973))
+              val ; could add a constant
+            (logand 576460752303423487 ; 2^59-1 ; since it needs to be < 1152921504606846974 (why not < 2^60-1?)
+                    val))
+        999))))
+
+(local
+  (defthm natp-of-quick-val-to-hash
+    (natp (quick-val-to-hash val))
+    :hints (("Goal" :in-theory (enable quick-val-to-hash)))))
+
+(local
+  (defthm quick-val-to-hash-linear
+    (< (quick-val-to-hash val) 1152921504606846974)
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable quick-val-to-hash)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (mutual-recursion
 
  ;; If TREE is a ground-term, this should return ACC (usually 0).
  ;; TODO: Can variables actually occur in this?
- (defun sum-of-nodenums-aux (tree acc)
+ (defun axe-tree-hash-aux (tree acc)
    (declare (xargs :guard (and (axe-treep tree)
-                               (bounded-axe-treep tree 1152921504606846974)
+                               (bounded-axe-treep tree 1152921504606846974) ; todo: not 2^60-1?
                                (natp acc)
                                (< acc *memoization-size*))
                    :split-types t)
@@ -185,16 +237,17 @@
    (if (atom tree)
        (if (symbolp tree)
            acc ;it's a variable
-         ;;it's a nodenum
-         (logand 1048575 ; 20 ones
-                 (+ (the (integer 0 1152921504606846973) tree)
-                    acc)))
+         ;; it's a nodenum:
+         (combine-value-into-hash tree acc))
      (if (eq 'quote (ffn-symb tree))
-         acc ;it's a quoted constant
-       ;;it's a term:
-       (sum-of-nodenums-aux-lst (fargs tree) acc))))
+         ;; it's a quoted constant, so we add it into the hash if convenient:
+         (combine-value-into-hash (quick-val-to-hash (unquote tree)) acc)
+       ;; it's a function-call:
+       ;; todo: hash the lambda-body if present
+       ;; todo: could get info from the fn (if it is a symbol) using something like (fgetprop fn 'acl2::absolute-event-number 0 world)
+       (axe-tree-hash-aux-lst (fargs tree) acc))))
 
- (defun sum-of-nodenums-aux-lst (trees acc)
+ (defun axe-tree-hash-aux-lst (trees acc)
    (declare (xargs :guard (and (bounded-axe-tree-listp trees 1152921504606846974)
                                (natp acc)
                                (< acc *memoization-size*))
@@ -202,79 +255,80 @@
                    ))
    (if (atom trees)
        acc
-     (sum-of-nodenums-aux-lst (cdr trees) (sum-of-nodenums-aux (car trees) acc)))))
+     (axe-tree-hash-aux-lst (cdr trees) (combine-value-into-hash 555 (axe-tree-hash-aux (car trees) acc))))))
 
-(make-flag sum-of-nodenums-aux)
+(make-flag axe-tree-hash-aux)
 
-;; (defthm-flag-sum-of-nodenums-aux
-;;   (defthm integerp-of-sum-of-nodenums-aux-lst
+;; (defthm-flag-axe-tree-hash-aux
+;;   (defthm integerp-of-axe-tree-hash-aux-lst
 ;;     (implies (and (integerp acc)
 ;;                   (axe-tree-listp trees))
-;;              (integerp (sum-of-nodenums-aux-lst trees acc)))
-;;     :flag sum-of-nodenums-aux-lst)
-;;   (defthm integerp-of-sum-of-nodenums-aux
+;;              (integerp (axe-tree-hash-aux-lst trees acc)))
+;;     :flag axe-tree-hash-aux-lst)
+;;   (defthm integerp-of-axe-tree-hash-aux
 ;;     (implies (and (integerp acc)
 ;;                   (axe-treep tree))
-;;              (integerp (sum-of-nodenums-aux tree acc)))
-;;     :flag sum-of-nodenums-aux))
+;;              (integerp (axe-tree-hash-aux tree acc)))
+;;     :flag axe-tree-hash-aux))
 
-(defthm-flag-sum-of-nodenums-aux
-  (defthm natp-of-sum-of-nodenums-aux-lst
+(defthm-flag-axe-tree-hash-aux
+  (defthm natp-of-axe-tree-hash-aux-lst
     (implies (and (natp acc)
                   (axe-tree-listp trees))
-             (natp (sum-of-nodenums-aux-lst trees acc)))
-    :flag sum-of-nodenums-aux-lst)
-  (defthm natp-of-sum-of-nodenums-aux
+             (natp (axe-tree-hash-aux-lst trees acc)))
+    :flag axe-tree-hash-aux-lst)
+  (defthm natp-of-axe-tree-hash-aux
     (implies (and (natp acc)
                   (axe-treep tree))
-             (natp (sum-of-nodenums-aux tree acc)))
-    :flag sum-of-nodenums-aux))
+             (natp (axe-tree-hash-aux tree acc)))
+    :flag axe-tree-hash-aux))
 
-(defthm-flag-sum-of-nodenums-aux
-  (defthm <=-of-sum-of-nodenums-aux-lst
+(defthm-flag-axe-tree-hash-aux
+  (defthm <=-of-axe-tree-hash-aux-lst
     (implies (and (natp acc)
                   (<= ACC 1048575)
                   (axe-tree-listp trees))
-             (<= (sum-of-nodenums-aux-lst trees acc) 1048575))
+             (<= (axe-tree-hash-aux-lst trees acc) 1048575))
     :rule-classes (:rewrite :linear)
-    :flag sum-of-nodenums-aux-lst)
-  (defthm <=-of-sum-of-nodenums-aux
+    :flag axe-tree-hash-aux-lst)
+  (defthm <=-of-axe-tree-hash-aux
     (implies (and (natp acc)
                   (<= ACC 1048575)
                   (axe-treep tree))
-             (<= (sum-of-nodenums-aux tree acc) 1048575))
+             (<= (axe-tree-hash-aux tree acc) 1048575))
     :rule-classes (:rewrite :linear)
-    :flag sum-of-nodenums-aux))
+    :flag axe-tree-hash-aux))
 
-(verify-guards sum-of-nodenums-aux :hints (("Goal" :in-theory (e/d (axe-tree-listp bounded-axe-tree-listp) (natp)))))
-
-
+(verify-guards axe-tree-hash-aux :hints (("Goal" :in-theory (e/d (axe-tree-listp bounded-axe-tree-listp) (natp)))))
 
 ;bozo eventually pass in the memoization length?
-;this will be the memo-key
+;this is the index into the memo array
 ;todo: use logand with a mask instead of mod?
-(defund sum-of-nodenums (tree)
+(defund axe-tree-hash (tree)
   (declare (xargs :guard (tree-to-memoizep tree)
                   :guard-hints (("Goal" :in-theory (enable tree-to-memoizep)))))
-  (sum-of-nodenums-aux tree 0))
+  (axe-tree-hash-aux tree 0))
 
-(defthm natp-of-sum-of-nodenums
-  (implies (tree-to-memoizep tree)
-           (natp (sum-of-nodenums tree)))
-  :hints (("Goal" :in-theory (enable sum-of-nodenums))))
+(local
+  (defthm natp-of-axe-tree-hash
+    (implies (tree-to-memoizep tree)
+             (natp (axe-tree-hash tree)))
+    :hints (("Goal" :in-theory (enable axe-tree-hash)))))
 
-(defthm natp-of-sum-of-nodenums-type
-  (implies (tree-to-memoizep tree)
-           (natp (sum-of-nodenums tree)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable sum-of-nodenums))))
+(local
+  (defthm natp-of-axe-tree-hash-type
+    (implies (tree-to-memoizep tree)
+             (natp (axe-tree-hash tree)))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable axe-tree-hash)))))
 
-(defthm sum-of-nodenums-bound
-  (implies (tree-to-memoizep tree)
-           (<= (sum-of-nodenums tree) 1048575))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable sum-of-nodenums
-                                     tree-to-memoizep))))
+(local
+  (defthm axe-tree-hash-bound
+    (implies (tree-to-memoizep tree)
+             (<= (axe-tree-hash tree) 1048575))
+    :rule-classes (:rewrite :linear)
+    :hints (("Goal" :in-theory (enable axe-tree-hash
+                                       tree-to-memoizep)))))
 
 ;;fixme gross to have this hard-coded
 ;;fixme - use this?
@@ -333,32 +387,31 @@
 (defthmd not-memoizationp-of-nil
   (not (memoizationp nil)))
 
-;;;
-;;; empty-memoization
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund empty-memoization ()
   (declare (xargs :guard t))
   (make-empty-array 'memoization *memoization-size*))
 
+;; Avoid expensive computation during proofs:
 (in-theory (disable (:e empty-memoization)))
 
-(defthm array1p-of-empty-memoization
-  (array1p 'memoization (empty-memoization))
-  :hints (("Goal" :in-theory (enable empty-memoization))))
+(local
+ (defthm array1p-of-empty-memoization
+   (array1p 'memoization (empty-memoization))
+   :hints (("Goal" :in-theory (enable empty-memoization)))))
 
-(defthm alen1-of-empty-memoization
-  (equal (alen1 'memoization (empty-memoization))
-         *memoization-size*)
-  :hints (("Goal" :in-theory (enable empty-memoization))))
+(local
+ (defthm alen1-of-empty-memoization
+   (equal (alen1 'memoization (empty-memoization))
+          *memoization-size*)
+   :hints (("Goal" :in-theory (enable empty-memoization)))))
 
 (defthm memoizationp-of-empty-memoization
   (memoizationp (empty-memoization))
   :hints (("Goal" :in-theory (enable empty-memoization memoizationp))))
 
-;;;
-;;; add-pair-to-memoization
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Record the fact that the TREE rewrote to RESULT.
 ;; RESULT should be a nodenum/quotep.
@@ -372,7 +425,7 @@
                                                            ;;TREES-TO-MEMOIZEP
                                                            )))))
 
-  (b* ((key (sum-of-nodenums tree))
+  (b* ((key (axe-tree-hash tree))
        (alist-for-key (aref1 'memoization memoization key))
        ;; (- (cw "Memoizing ~x0 -> ~x3 (~x1 items for key ~x2).~%"
        ;;        tree
@@ -392,9 +445,7 @@
                                    memoizationp)
                                   (dargp natp)))))
 
-;;;
-;;; add-pairs-to-memoization
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Record the fact that all of the TREES rewrote to RESULT.
 ;; RESULT should be a nodenum/quotep.
@@ -422,9 +473,7 @@
                                                             )
                                   (dargp natp)))))
 
-;;;
-;;; lookup-in-memoization
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a nodenum/quotep (to which the memozation equates TREE), or nil
 ;; (meaning TREE is not equated to anything in the memoization).
@@ -435,7 +484,7 @@
   (declare (xargs :guard (and (tree-to-memoizep tree)
                               (memoizationp memoization))
                   :guard-hints (("Goal" :in-theory (enable memoizationp)))))
-  (let* ((key (sum-of-nodenums tree))
+  (let* ((key (axe-tree-hash tree))
          (alist-for-key (aref1 'memoization memoization key))
          (res (lookup-equal tree alist-for-key)))
     (progn$ ;; (and res (cw "(Memo hit for ~x0.)~%" tree))
@@ -449,44 +498,82 @@
   :hints (("Goal" :in-theory (e/d (lookup-in-memoization memoizationp)
                                   (dargp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recognizes an object that is a memoization or nil (meaning no memoization).
+(defund maybe-memoizationp (memoization)
+  (declare (xargs :guard t))
+  (or (eq nil memoization)
+      (memoizationp memoization)))
+
+(defthm maybe-memoizationp-forward-to-memoizationp
+  (implies (and (maybe-memoizationp memoization)
+                memoization)
+           (memoizationp memoization))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
+
+(defthm maybe-memoizationp-of-add-pairs-to-memoization
+  (implies (and (maybe-memoizationp memoization)
+                memoization
+                (dargp tree)
+                (trees-to-memoizep trees-equal-to-tree))
+           (maybe-memoizationp (add-pairs-to-memoization trees-equal-to-tree tree memoization)))
+  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
+
+(defthmd memoizationp-when-maybe-memoizationp
+  (implies (and (maybe-memoizationp memoization)
+                memoization)
+           (memoizationp memoization))
+  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;
 ;;; bounded memoizations
 ;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bounded-memo-alistp (alist bound)
   (declare (xargs :guard (natp bound)))
   (and (memo-alistp alist)
        (bounded-darg-listp (strip-cdrs alist) bound)))
 
-(defthm bounded-memo-alistp-mono
-  (implies (and (bounded-memo-alistp alist bound2)
-                (<= bound2 bound))
-           (bounded-memo-alistp alist bound))
-  :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
+(local
+ (defthm bounded-memo-alistp-mono
+   (implies (and (bounded-memo-alistp alist bound2)
+                 (<= bound2 bound))
+            (bounded-memo-alistp alist bound))
+   :hints (("Goal" :in-theory (enable bounded-memo-alistp)))))
 
-(defthm bounded-memo-alistp-implies-memo-alistp
-  (implies (bounded-memo-alistp alist bound)
-           (memo-alistp alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
+(local
+ (defthm bounded-memo-alistp-implies-memo-alistp
+   (implies (bounded-memo-alistp alist bound)
+            (memo-alistp alist))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable bounded-memo-alistp)))))
 
-(defthm bounded-memo-alistp-of-cons-of-cons
-  (equal (bounded-memo-alistp (cons (cons tree result) memo-alist) bound)
-         (and (tree-to-memoizep tree)
-              (dargp-less-than result bound)
-              (bounded-memo-alistp memo-alist bound)))
-  :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
+(local
+ (defthm bounded-memo-alistp-of-cons-of-cons
+   (equal (bounded-memo-alistp (cons (cons tree result) memo-alist) bound)
+          (and (tree-to-memoizep tree)
+               (dargp-less-than result bound)
+               (bounded-memo-alistp memo-alist bound)))
+   :hints (("Goal" :in-theory (enable bounded-memo-alistp)))))
 
-(defthm dargp-less-than-of-lookup-equal-when-bounded-memo-alistp
-  (implies (and (bounded-memo-alistp alist bound)
-                (lookup-equal key alist))
-           (dargp-less-than (lookup-equal key alist)
-                            bound))
-  :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
+(local
+ (defthm dargp-less-than-of-lookup-equal-when-bounded-memo-alistp
+   (implies (and (bounded-memo-alistp alist bound)
+                 (lookup-equal key alist))
+            (dargp-less-than (lookup-equal key alist)
+                             bound))
+   :hints (("Goal" :in-theory (enable bounded-memo-alistp)))))
 
-(defthm bounded-memo-alistp-of-nil
-  (bounded-memo-alistp nil bound)
-  :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
+(local
+ (defthm bounded-memo-alistp-of-nil
+   (bounded-memo-alistp nil bound)
+   :hints (("Goal" :in-theory (enable bounded-memo-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -529,8 +616,7 @@
 (defthm dargp-less-than-of-lookup-in-memoization-when-bounded-memoizationp
   (implies (and (bounded-memoizationp memoization bound)
                 (lookup-in-memoization tree memoization) ;there is a match
-                (tree-to-memoizep tree)
-                )
+                (tree-to-memoizep tree))
            (dargp-less-than (lookup-in-memoization tree memoization) bound))
   :hints (("Goal" :in-theory (e/d (lookup-in-memoization bounded-memoizationp)
                                   (dargp-less-than)))))
@@ -541,9 +627,9 @@
                 (posp size)
                 (<= size 1152921504606846974))
            (array-of-bounded-memo-alistsp-aux array-name
-                                         (make-empty-array array-name size)
-                                         index
-                                         bound))
+                                              (make-empty-array array-name size)
+                                              index
+                                              bound))
   :hints (("Goal" :in-theory (enable array-of-bounded-memo-alistsp-aux))))
 
 (defthm bounded-memoizationp-of-empty-memoization
@@ -566,7 +652,7 @@
                 (trees-to-memoizep trees))
            (bounded-memoizationp (add-pairs-to-memoization trees result memoization) bound))
   :hints (("Goal" :in-theory (e/d (add-pairs-to-memoization
-;bounded-memoizationp trees-to-memoizep tree-to-memoizep
+                                   ;;bounded-memoizationp trees-to-memoizep tree-to-memoizep
                                    )
                                   (;dargp-less-than
                                    natp)))))
@@ -587,41 +673,7 @@
   :hints (("Goal" :in-theory (enable bounded-memoizationp
                                      array-of-bounded-memo-alistsp))))
 
-;;;
-;;; maybe-memoizationp
-;;;
-
-;; Recognizes an object that is a memoization or nil (meaning no memoization).
-(defund maybe-memoizationp (memoization)
-  (declare (xargs :guard t))
-  (or (eq nil memoization)
-      (memoizationp memoization)))
-
-(defthm maybe-memoizationp-forward-to-memoizationp
-  (implies (and (maybe-memoizationp memoization)
-                memoization)
-           (memoizationp memoization))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
-
-(defthm maybe-memoizationp-of-add-pairs-to-memoization
-  (implies (and (maybe-memoizationp memoization)
-                memoization
-                (dargp tree)
-                (trees-to-memoizep trees-equal-to-tree))
-           (maybe-memoizationp (add-pairs-to-memoization trees-equal-to-tree tree memoization)))
-  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
-
-(defthmd memoizationp-when-maybe-memoizationp
-  (implies (and (maybe-memoizationp memoization)
-                memoization)
-           (memoizationp memoization))
-  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
-
-
-;;;
-;;; maybe-bounded-memoizationp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognizes an object that is a bounded-memoization or nil (meaning no memoization).
 (defund maybe-bounded-memoizationp (memoization bound)
@@ -688,7 +740,9 @@
   (symbol-listp (head-function-symbols terms))
   :hints (("Goal" :in-theory (enable head-function-symbols))))
 
-(defund print-memo-stats-aux (n memoization total-items longest-slot longest-slot-len last-filled-slot memo-count-world)
+;; TODO: Print the average number of items in the occupied buckets
+;; todo: rename "slot" to "bucket"
+(defund print-memo-stats-aux (n memoization total-items longest-slot longest-slot-len last-filled-slot filled-slots memo-count-world)
   (declare (xargs :measure (nfix (- *memoization-size* n))
                   :hints (("Goal" :in-theory (enable natp)))
                   :guard (and (memoizationp memoization)
@@ -697,6 +751,7 @@
                               (natp longest-slot-len)
                               (natp longest-slot)
                               (< longest-slot *memoization-size*)
+                              (natp filled-slots)
                               (symbol-count-worldp memo-count-world))
                   :guard-hints (("Goal" :in-theory (enable memoizationp)))))
   (if (or (not (mbt (natp n)))
@@ -707,6 +762,7 @@
              (len-of-longest-slot (len contents-of-longest-slot)))
         (progn$ (cw "~%(Memo stats:~%")
                 (cw "Memo items: ~x0.~%" total-items)
+                (cw "Memo slots used: ~x0.~%" filled-slots)
                 (cw "Index with the most items : ~x0 (~x1 items)~%" longest-slot longest-slot-len)
                 (cw "Last used index: ~x0.~%" last-filled-slot)
                 (cw "Items at index 0: ~x0.~%" len-of-slot0)
@@ -739,6 +795,7 @@
                             (if (< 0 num-items)
                                 n
                               last-filled-slot)
+                            (if (< 0 num-items) (+ 1 filled-slots) filled-slots)
                             ;; todo: avoid the strip-cars:
                             (increment-counts-in-symbol-count-world (head-function-symbols (strip-cars slot-items)) 'memo-count-world memo-count-world)))))
 
@@ -759,6 +816,7 @@
                             0            ; longest-slot
                             len-of-slot0 ; longest-slot-len
                             (if contents-of-slot-0 0 -1)
+                            (if contents-of-slot-0 1 0) ; filled-slots
                             (increment-counts-in-symbol-count-world (head-function-symbols (strip-cars contents-of-slot-0))
                                                                     'memo-count-world
                                                                     memo-count-world)))))

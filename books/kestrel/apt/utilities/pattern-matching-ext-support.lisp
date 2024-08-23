@@ -17,8 +17,8 @@
 
 (in-package "ACL2")
 
+(include-book "std/basic/symbol-package-name-non-cl" :dir :system)
 (include-book "std/util/bstar" :dir :system)
-(include-book "kestrel/std/basic/symbol-package-name-non-cl" :dir :system)
 
 (local (in-theory (disable mv-nth)))
 (local (in-theory (disable true-listp))) ;for speed

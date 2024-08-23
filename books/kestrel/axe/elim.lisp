@@ -24,6 +24,7 @@
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

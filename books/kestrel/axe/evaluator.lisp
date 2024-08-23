@@ -43,7 +43,6 @@
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
-(include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
 ;(include-book "kestrel/bv-lists/nth2" :dir :system) ; todo: drop?
 ;(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
 (include-book "kestrel/bv-lists/array-patterns" :dir :system) ; for every-nth
@@ -295,15 +294,6 @@
    (equal (eql x y)
           (equal x y))))
 
-(defund negated-elems-listp-unguarded (width lst1 lst2)
-  (declare (xargs :guard t))
-  (negated-elems-listp (nfix width) lst1 lst2))
-
-(defthm negated-elems-listp-unguarded-correct
-  (equal (negated-elems-listp-unguarded width lst1 lst2)
-         (negated-elems-listp width lst1 lst2))
-  :hints (("Goal" :in-theory (enable negated-elems-listp-unguarded))))
-
 ;; (defund getbit-is-always-0-unguarded (n items)
 ;;   (declare (xargs :guard t))
 ;;   (if (atom items)
@@ -475,7 +465,7 @@
                   (getbit getbit-unguarded arg1 arg2) ;see getbit-unguarded-correct
                   (cons cons arg1 arg2)               ;primitive
                   (bvchop bvchop-unguarded arg1 arg2) ;see bvchop-unguarded-correct
-                  (logtail$inline logtail-unguarded arg1 arg2) ;see logtail-unguarded-correct
+                  (logtail$inline logtail$inline-unguarded arg1 arg2) ;see logtail$inline-unguarded-correct
                   (logext logext-unguarded arg1 arg2) ;see logext-unguarded-correct
                   (nth nth-unguarded arg1 arg2) ;see nth-unguarded-correct
                   (binary-* binary-*-unguarded arg1 arg2) ;see binary-*-unguarded-correct

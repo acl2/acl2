@@ -42,6 +42,12 @@
        (not (subsetp-equal x y)))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
 
+(defthm set-difference-equal-when-subsetp-equal
+  (implies (subsetp-equal x y)
+           (equal (set-difference-equal x y)
+                  nil))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
 (defthm car-of-set-difference-equal-when-not-member-equal-of-car
   (implies (not (member-equal (car x) y))
            (equal (car (set-difference-equal x y))

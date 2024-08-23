@@ -93,6 +93,96 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst x86-psubb/psubw/psubd/psubq-sse
+
+  :parents (two-byte-opcodes)
+
+  :short "Subtract packed integers (SSE variants)."
+
+  :long
+  "<code>
+   PSUBB xmm1, xmm2/m128
+   PSUBW xmm1, xmm2/m128
+   PSUBD xmm1, xmm2/m128
+   PSUBQ xmm1, xmm2/m128
+   </code>"
+
+  :modr/m t
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; The operand size is always 128 bits, i.e. 16 bytes.
+       (operand-size 16)
+
+       ;; The first source operand (Operand 1 in the Intel manual)
+       ;; is the XMM register specified in Reg.
+       ;; This is also the destination operand,
+       ;; and thus we obtain the index for later use.
+       ((the (unsigned-byte 4) src1/dst-index)
+        (reg-index reg rex-byte #.*r*))
+       ((the (unsigned-byte 128) src1)
+        (xmmi-size operand-size src1/dst-index x86))
+
+       ;; The second source operand (Operand 2 in the Intel manual)
+       ;; is the XMM register, or memory operand, specified in Mod and R/M.
+       (inst-ac? t) ; Intel Manual Volume 2 Table 2-21 (Dec 2023)
+       ((mv flg
+            (the (unsigned-byte 128) src2)
+            (the (integer 0 4) increment-rip-by)
+            ?addr
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*xmm-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not a memory operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Calculate the result.
+       (result (case opcode
+                 (#xf8 (simd-sub-spec (* 8 operand-size) 08 src1 src2))
+                 (#xf9 (simd-sub-spec (* 8 operand-size) 16 src1 src2))
+                 (#xfa (simd-sub-spec (* 8 operand-size) 32 src1 src2))
+                 (#xfb (simd-sub-spec (* 8 operand-size) 64 src1 src2))
+                 (t 0))) ; unreachable
+
+       ;; Store the result into the destination register.
+       (x86 (!xmmi-size operand-size src1/dst-index result x86))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst x86-vpsubb/vpsubw/vpsubd/vpsubq-vex
 
   :parents (two-byte-opcodes)

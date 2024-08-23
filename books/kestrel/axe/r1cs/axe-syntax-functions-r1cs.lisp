@@ -1,6 +1,6 @@
 ; Syntactic functions for Axe R1CS prover
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 
 (include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
 (include-book "kestrel/axe/dag-arrays" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 (defun acl2::var-less-than-unquoted-keyp (var-darg key-darg acl2::dag-array)
   (declare (xargs :guard (and (or (acl2::myquotep var-darg)

@@ -1,7 +1,7 @@
 ; Computing information about DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,6 +15,7 @@
 (include-book "dag-info")
 (include-book "dag-arrays")
 ;(include-book "dags")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; ;; todo: optimize by keeping lists sorted and merging
 ;; (defund add-nodenums-to-acc (dargs acc)

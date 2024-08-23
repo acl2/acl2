@@ -14,7 +14,8 @@
 
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
-(include-book "acl2-arrays")
+(include-book "alen1")
+(local (include-book "acl2-arrays"))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 
 ;read from many indices in the array

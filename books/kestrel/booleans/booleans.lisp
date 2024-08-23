@@ -1,7 +1,7 @@
 ; Theorems about boolean operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -195,3 +195,13 @@
   (equal (boolif test c (myif test2 a b))
          (boolif test c (boolif test2 a b)))
   :hints (("Goal" :in-theory (enable boolif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; since we can get better context info from boolif than from boolor?
+(defthmd acl2::boolor-becomes-boolif
+  (equal (boolor x y)
+         (boolif x t y))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+(theory-invariant (incompatible (:rewrite acl2::boolif-when-quotep-arg2) (:rewrite acl2::boolor-becomes-boolif)))

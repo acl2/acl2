@@ -1,6 +1,6 @@
 ; Top book for the alists-light library
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -48,3 +48,4 @@
 (include-book "string-string-alistp")
 (include-book "symbol-symbol-alistp-def")
 (include-book "symbol-symbol-alistp")
+(include-book "term-alists")

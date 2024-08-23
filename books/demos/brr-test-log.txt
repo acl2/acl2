@@ -339,40 +339,52 @@ ACL2 !>>(THM (IMPLIES (EFN X) (AFN X)))
      ((NOT (EFN X)) (AFN X))
 2. Rewriting (to simplify) the atom of the second literal,
      (AFN X),
+   Geneqv: (IFF)
 3. Attempting to apply (:REWRITE A) to
      (AFN X)
+   Preserving: IFF
+   Geneqv: (IFF)
 1 ACL2 >(PRINT-BRR-STATUS T)
-(MAKE BRR-STATUS
-      :ENTRY-CODE ':ENTER
-      :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
-      :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (AFN X)
-                                        REWRITE-RULE (:REWRITE A)
-                                        |some-nume| ((BFN X))
-                                        IFF (AFN X)
-                                        'T
-                                        BACKCHAIN NIL NIL T)
-                    (REWRITE 2 (AFN X) NIL . ?)
-                    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
-                                     (AFN X)))
-      :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
-                                |some-nume| ((BFN X))
-                                IFF (AFN X)
-                                'T
-                                BACKCHAIN NIL NIL T)
-                         (TARGET AFN X)
-                         (UNIFY-SUBST (X . X))
-                         (TYPE-ALIST ((EFN X) -129))
-                         (POT-LIST)
-                         (ANCESTORS)
-                         (RCNST . |some-rewrite-constant|)
-                         (INITIAL-TTREE))
-      :BRR-PREVIOUS-STATUS
-      (MAKE BRR-STATUS
-            :ENTRY-CODE ':ENTER
-            :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
-            :BRR-GSTACK 'NIL
-            :BRR-LOCAL-ALIST 'NIL
-            :BRR-PREVIOUS-STATUS NIL))
+(MAKE
+  BRR-STATUS
+  :ENTRY-CODE ':ENTER
+  :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+  :BRR-GSTACK
+  '((REWRITE-WITH-LEMMA NIL (AFN X)
+                        (REWRITE-RULE (:REWRITE A)
+                                      |some-nume| ((BFN X))
+                                      IFF (AFN X)
+                                      'T
+                                      BACKCHAIN NIL NIL T)
+                        (NIL IFF
+                             :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+    (REWRITE 2 (AFN X)
+             NIL ?
+             (NIL IFF
+                  :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+                     (AFN X)))
+  :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+                            |some-nume| ((BFN X))
+                            IFF (AFN X)
+                            'T
+                            BACKCHAIN NIL NIL T)
+                     (TARGET AFN X)
+                     (UNIFY-SUBST (X . X))
+                     (TYPE-ALIST ((EFN X) -129))
+                     (GENEQV (NIL IFF
+                                  :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+                     (POT-LIST)
+                     (ANCESTORS)
+                     (RCNST . |some-rewrite-constant|)
+                     (INITIAL-TTREE))
+  :BRR-PREVIOUS-STATUS
+  (MAKE BRR-STATUS
+        :ENTRY-CODE ':ENTER
+        :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+        :BRR-GSTACK 'NIL
+        :BRR-LOCAL-ALIST 'NIL
+        :BRR-PREVIOUS-STATUS NIL))
 NIL
 1 ACL2 >(BRR-COHERENTP STATE)
  T
@@ -380,38 +392,47 @@ NIL
 (((:REWRITE B) (:CONDITION QUOTE T))
  ((:REWRITE A) (:CONDITION QUOTE T)))
 1 ACL2 >(PRINT-BRR-STATUS T)
-(MAKE BRR-STATUS
-      :ENTRY-CODE ':ENTER
-      :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
-                             ((:REWRITE A) (:CONDITION QUOTE T)))
-      :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (AFN X)
-                                        REWRITE-RULE (:REWRITE A)
-                                        |some-nume| ((BFN X))
-                                        IFF (AFN X)
-                                        'T
-                                        BACKCHAIN NIL NIL T)
-                    (REWRITE 2 (AFN X) NIL . ?)
-                    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
-                                     (AFN X)))
-      :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
-                                |some-nume| ((BFN X))
-                                IFF (AFN X)
-                                'T
-                                BACKCHAIN NIL NIL T)
-                         (TARGET AFN X)
-                         (UNIFY-SUBST (X . X))
-                         (TYPE-ALIST ((EFN X) -129))
-                         (POT-LIST)
-                         (ANCESTORS)
-                         (RCNST . |some-rewrite-constant|)
-                         (INITIAL-TTREE))
-      :BRR-PREVIOUS-STATUS
-      (MAKE BRR-STATUS
-            :ENTRY-CODE ':ENTER
-            :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
-            :BRR-GSTACK 'NIL
-            :BRR-LOCAL-ALIST 'NIL
-            :BRR-PREVIOUS-STATUS NIL))
+(MAKE
+  BRR-STATUS
+  :ENTRY-CODE ':ENTER
+  :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
+                         ((:REWRITE A) (:CONDITION QUOTE T)))
+  :BRR-GSTACK
+  '((REWRITE-WITH-LEMMA NIL (AFN X)
+                        (REWRITE-RULE (:REWRITE A)
+                                      |some-nume| ((BFN X))
+                                      IFF (AFN X)
+                                      'T
+                                      BACKCHAIN NIL NIL T)
+                        (NIL IFF
+                             :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+    (REWRITE 2 (AFN X)
+             NIL ?
+             (NIL IFF
+                  :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+                     (AFN X)))
+  :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+                            |some-nume| ((BFN X))
+                            IFF (AFN X)
+                            'T
+                            BACKCHAIN NIL NIL T)
+                     (TARGET AFN X)
+                     (UNIFY-SUBST (X . X))
+                     (TYPE-ALIST ((EFN X) -129))
+                     (GENEQV (NIL IFF
+                                  :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+                     (POT-LIST)
+                     (ANCESTORS)
+                     (RCNST . |some-rewrite-constant|)
+                     (INITIAL-TTREE))
+  :BRR-PREVIOUS-STATUS
+  (MAKE BRR-STATUS
+        :ENTRY-CODE ':ENTER
+        :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+        :BRR-GSTACK 'NIL
+        :BRR-LOCAL-ALIST 'NIL
+        :BRR-PREVIOUS-STATUS NIL))
 NIL
 1 ACL2 >(MONITORED-RUNES)
 (((:REWRITE B) (:CONDITION QUOTE T))
@@ -420,76 +441,100 @@ NIL
 
 (2 Breaking (:REWRITE B) on (BFN X):
 2 ACL2 >(PRINT-BRR-STATUS T)
-(MAKE BRR-STATUS
-      :ENTRY-CODE ':ENTER
-      :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
-                             ((:REWRITE A) (:CONDITION QUOTE T)))
-      :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (BFN X)
-                                        REWRITE-RULE (:REWRITE B)
-                                        |some-nume| ((CFN X))
-                                        IFF (BFN X)
-                                        'T
-                                        BACKCHAIN NIL NIL T)
-                    (REWRITE 1 (BFN X) ((X . X)) . T)
-                    (REWRITE-WITH-LEMMA NIL (AFN X)
-                                        REWRITE-RULE (:REWRITE A)
-                                        |some-nume| ((BFN X))
-                                        IFF (AFN X)
-                                        'T
-                                        BACKCHAIN NIL NIL T)
-                    (REWRITE 2 (AFN X) NIL . ?)
-                    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
-                                     (AFN X)))
-      :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE B)
-                                |some-nume| ((CFN X))
-                                IFF (BFN X)
-                                'T
-                                BACKCHAIN NIL NIL T)
-                         (TARGET BFN X)
-                         (UNIFY-SUBST (X . X))
-                         (TYPE-ALIST ((EFN X) -129))
-                         (POT-LIST)
-                         (ANCESTORS ((NOT (BFN X))
-                                     (BFN X)
-                                     1 1 0 ((:REWRITE A))
-                                     . 1))
-                         (RCNST . |some-rewrite-constant|)
-                         (INITIAL-TTREE))
-      :BRR-PREVIOUS-STATUS
-      (MAKE BRR-STATUS
-            :ENTRY-CODE ':ENTER
-            :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
-                                   ((:REWRITE A) (:CONDITION QUOTE T)))
-            :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (AFN X)
-                                              REWRITE-RULE (:REWRITE A)
-                                              |some-nume| ((BFN X))
-                                              IFF (AFN X)
-                                              'T
-                                              BACKCHAIN NIL NIL T)
-                          (REWRITE 2 (AFN X) NIL . ?)
-                          (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
-                                           (AFN X)))
-            :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+(MAKE
+ BRR-STATUS
+ :ENTRY-CODE ':ENTER
+ :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
+                        ((:REWRITE A) (:CONDITION QUOTE T)))
+ :BRR-GSTACK
+ '((REWRITE-WITH-LEMMA NIL (BFN X)
+                       (REWRITE-RULE (:REWRITE B)
+                                     |some-nume| ((CFN X))
+                                     IFF (BFN X)
+                                     'T
+                                     BACKCHAIN NIL NIL T)
+                       (NIL IFF
+                            :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+   (REWRITE 1 (BFN X)
+            ((X . X))
+            T
+            (NIL IFF
+                 :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+   (REWRITE-WITH-LEMMA NIL (AFN X)
+                       (REWRITE-RULE (:REWRITE A)
+                                     |some-nume| ((BFN X))
+                                     IFF (AFN X)
+                                     'T
+                                     BACKCHAIN NIL NIL T)
+                       (NIL IFF
+                            :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+   (REWRITE 2 (AFN X)
+            NIL ?
+            (NIL IFF
+                 :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+   (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+                    (AFN X)))
+ :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE B)
+                           |some-nume| ((CFN X))
+                           IFF (BFN X)
+                           'T
+                           BACKCHAIN NIL NIL T)
+                    (TARGET BFN X)
+                    (UNIFY-SUBST (X . X))
+                    (TYPE-ALIST ((EFN X) -129))
+                    (GENEQV (NIL IFF
+                                 :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+                    (POT-LIST)
+                    (ANCESTORS ((NOT (BFN X))
+                                (BFN X)
+                                1 1 0 ((:REWRITE A))
+                                . 1))
+                    (RCNST . |some-rewrite-constant|)
+                    (INITIAL-TTREE))
+ :BRR-PREVIOUS-STATUS
+ (MAKE
+  BRR-STATUS
+  :ENTRY-CODE ':ENTER
+  :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
+                         ((:REWRITE A) (:CONDITION QUOTE T)))
+  :BRR-GSTACK
+  '((REWRITE-WITH-LEMMA NIL (AFN X)
+                        (REWRITE-RULE (:REWRITE A)
                                       |some-nume| ((BFN X))
                                       IFF (AFN X)
                                       'T
                                       BACKCHAIN NIL NIL T)
-                               (TARGET AFN X)
-                               (UNIFY-SUBST (X . X))
-                               (TYPE-ALIST ((EFN X) -129))
-                               (POT-LIST)
-                               (ANCESTORS)
-                               (RCNST . |some-rewrite-constant|)
-                               (INITIAL-TTREE)
-                               (SAVED-STANDARD-OI . |some-channel|)
-                               (ACTION . BREAK))
-            :BRR-PREVIOUS-STATUS
-            (MAKE BRR-STATUS
-                  :ENTRY-CODE ':ENTER
-                  :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
-                  :BRR-GSTACK 'NIL
-                  :BRR-LOCAL-ALIST 'NIL
-                  :BRR-PREVIOUS-STATUS NIL)))
+                        (NIL IFF
+                             :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+    (REWRITE 2 (AFN X)
+             NIL ?
+             (NIL IFF
+                  :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+                     (AFN X)))
+  :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+                            |some-nume| ((BFN X))
+                            IFF (AFN X)
+                            'T
+                            BACKCHAIN NIL NIL T)
+                     (TARGET AFN X)
+                     (UNIFY-SUBST (X . X))
+                     (TYPE-ALIST ((EFN X) -129))
+                     (GENEQV (NIL IFF
+                                  :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+                     (POT-LIST)
+                     (ANCESTORS)
+                     (RCNST . |some-rewrite-constant|)
+                     (INITIAL-TTREE)
+                     (SAVED-STANDARD-OI . |some-channel|)
+                     (ACTION . BREAK))
+  :BRR-PREVIOUS-STATUS
+  (MAKE BRR-STATUS
+        :ENTRY-CODE ':ENTER
+        :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+        :BRR-GSTACK 'NIL
+        :BRR-LOCAL-ALIST 'NIL
+        :BRR-PREVIOUS-STATUS NIL)))
 NIL
 2 ACL2 >:OK
 2)
@@ -497,46 +542,55 @@ NIL
 1! (:REWRITE A) produced 'T.
 
 1 ACL2 >(PRINT-BRR-STATUS T)
-(MAKE BRR-STATUS
-      :ENTRY-CODE ':ENTER
-      :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
-                             ((:REWRITE A) (:CONDITION QUOTE T)))
-      :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (AFN X)
-                                        REWRITE-RULE (:REWRITE A)
-                                        |some-nume| ((BFN X))
-                                        IFF (AFN X)
-                                        'T
-                                        BACKCHAIN NIL NIL T)
-                    (REWRITE 2 (AFN X) NIL . ?)
-                    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
-                                     (AFN X)))
-      :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
-                                |some-nume| ((BFN X))
-                                IFF (AFN X)
-                                'T
-                                BACKCHAIN NIL NIL T)
-                         (TARGET AFN X)
-                         (UNIFY-SUBST (X . X))
-                         (TYPE-ALIST ((EFN X) -129))
-                         (POT-LIST)
-                         (ANCESTORS)
-                         (RCNST . |some-rewrite-constant|)
-                         (INITIAL-TTREE)
-                         (SAVED-STANDARD-OI . |some-channel|)
-                         (ACTION . BREAK)
-                         (WONP . T)
-                         (FAILURE-REASON)
-                         (BRR-RESULT QUOTE T)
-                         (FINAL-TTREE (LEMMA (:REWRITE B)
-                                             (:REWRITE C)
-                                             (:REWRITE D))))
-      :BRR-PREVIOUS-STATUS
-      (MAKE BRR-STATUS
-            :ENTRY-CODE ':ENTER
-            :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
-            :BRR-GSTACK 'NIL
-            :BRR-LOCAL-ALIST 'NIL
-            :BRR-PREVIOUS-STATUS NIL))
+(MAKE
+  BRR-STATUS
+  :ENTRY-CODE ':ENTER
+  :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
+                         ((:REWRITE A) (:CONDITION QUOTE T)))
+  :BRR-GSTACK
+  '((REWRITE-WITH-LEMMA NIL (AFN X)
+                        (REWRITE-RULE (:REWRITE A)
+                                      |some-nume| ((BFN X))
+                                      IFF (AFN X)
+                                      'T
+                                      BACKCHAIN NIL NIL T)
+                        (NIL IFF
+                             :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+    (REWRITE 2 (AFN X)
+             NIL ?
+             (NIL IFF
+                  :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+                     (AFN X)))
+  :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+                            |some-nume| ((BFN X))
+                            IFF (AFN X)
+                            'T
+                            BACKCHAIN NIL NIL T)
+                     (TARGET AFN X)
+                     (UNIFY-SUBST (X . X))
+                     (TYPE-ALIST ((EFN X) -129))
+                     (GENEQV (NIL IFF
+                                  :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE NIL))
+                     (POT-LIST)
+                     (ANCESTORS)
+                     (RCNST . |some-rewrite-constant|)
+                     (INITIAL-TTREE)
+                     (SAVED-STANDARD-OI . |some-channel|)
+                     (ACTION . BREAK)
+                     (WONP . T)
+                     (FAILURE-REASON)
+                     (BRR-RESULT QUOTE T)
+                     (FINAL-TTREE (LEMMA (:REWRITE B)
+                                         (:REWRITE C)
+                                         (:REWRITE D))))
+  :BRR-PREVIOUS-STATUS
+  (MAKE BRR-STATUS
+        :ENTRY-CODE ':ENTER
+        :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+        :BRR-GSTACK 'NIL
+        :BRR-LOCAL-ALIST 'NIL
+        :BRR-PREVIOUS-STATUS NIL))
 NIL
 1 ACL2 >:OK
 1)

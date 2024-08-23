@@ -43,7 +43,7 @@
 (defthm true-listp-of-mv-nth-1-of-read-file-into-byte-list-type
   (true-listp (mv-nth 1 (read-file-into-byte-list path-to-file state)))
   :rule-classes :type-prescription
-  :hints (("Goal" :use (:instance unsigned-byte-listp-of-mv-nth-1-of-read-file-into-byte-list)
+  :hints (("Goal" :use unsigned-byte-listp-of-mv-nth-1-of-read-file-into-byte-list
            :in-theory (disable unsigned-byte-listp-of-mv-nth-1-of-read-file-into-byte-list))))
 
 (defthm state-p1-of-mv-nth-2-of-read-file-into-byte-list

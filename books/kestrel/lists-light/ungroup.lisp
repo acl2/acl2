@@ -1,7 +1,7 @@
 ; The inverse of the function GROUP
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -136,3 +136,8 @@
                                 x))
                     nil)))
   :hints (("Goal" :in-theory (enable nth-when-<=-len))))
+
+(defthm ungroup-of-cons
+  (equal (ungroup n (cons x y))
+         (append (take n x) (ungroup n y)))
+  :hints (("Goal" :in-theory (enable ungroup))))

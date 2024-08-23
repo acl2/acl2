@@ -1,7 +1,7 @@
 ; Utilities for manipulating terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,7 @@
 (include-book "symbol-term-alistp")
 (include-book "kestrel/terms-light/expand-lambdas-in-term" :dir :system)
 (include-book "tools/flag" :dir :system)
+(local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))

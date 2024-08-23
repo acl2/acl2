@@ -696,7 +696,7 @@
 ; This function's sole purpose is to support get-normalize below, which may be
 ; eliminated; see the comment there.
 
-; This definition is based on that of collect-dcls in the ACl2 sources.  Unlike
+; This definition is based on that of collect-dcls in the ACL2 sources.  Unlike
 ; that function, this function assumes that lst is the cdr of an admitted form
 ; (defun ...); so no errors are expected, but doc strings need to be ignored.
 

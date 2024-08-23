@@ -1,0 +1,11 @@
+Copyright (C) 2024 Carl Kwan
+
+Files supporting the paper "Formalizing the Cholesky Factorization Theorem",
+presented at the Fifteenth Conference on Interactive Theorem Proving (ITP 2024)
+on 2024 September 9-14 in Tbilisi, Georgia
+
+  mout.lisp:    Matrix multiplication via outer products
+  mlayers.lisp: View matrix multiplication via a partition
+  msplice.lisp: Methods for "splicing" matrices
+  msym.lisp:    Some theorems about transpose and symmetric matrices
+  chol.lisp:    Cholesky decomposition algorithm and main result

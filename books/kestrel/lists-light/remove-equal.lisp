@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function remove-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -73,6 +73,10 @@
   (implies (not (member-equal x l))
            (not (member-equal x (remove-equal y l)))))
 
+(defthm not-member-equal-of-remove-equal-same
+  (not (member-equal x (remove-equal x l)))
+  :hints (("Goal" :in-theory (enable remove-equal))))
+
 (defthm member-equal-of-remove-equal-irrel-iff
   (implies (not (equal x y))
            (iff (member-equal x (remove-equal y l))
@@ -82,3 +86,44 @@
   (implies (nat-listp x)
            (nat-listp (remove-equal a x)))
   :hints (("Goal" :in-theory (enable remove-equal nat-listp))))
+
+;; Disabled since this may be slow
+(defthmd remove-equal-when-not-member-equal
+  (implies (not (member-equal a x))
+           (equal (remove-equal a x)
+                  (true-list-fix x))))
+
+(defthm remove-equal-when-not-member-equal-cheap
+  (implies (not (member-equal a x))
+           (equal (remove-equal a x)
+                  (true-list-fix x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(local
+ (defthm not-equal-of-remove-equal
+   (implies (< (len (remove-equal x l)) (len y))
+            (not (equal y (remove-equal x l))))))
+
+(defthm equal-of-remove-equal-same
+  (equal (equal l (remove-equal x l))
+         (and (not (member-equal x l))
+              (true-listp l)))
+  :hints (;("subgoal *1/1" :cases ((> (len l) (remove-equal (car l) (cdr l)))))
+          ("Goal" :in-theory (e/d (remove-equal member-equal)
+                                  (remove-equal-of-car-same ; todo: looped
+                                   )))))
+
+(defthm subsetp-equal-of-remove-equal-arg2
+  (equal (subsetp-equal x (remove-equal a y))
+         (if (member-equal a x)
+             nil
+           (subsetp-equal x y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal remove-equal member-equal))))
+
+(defthm len-of-remove-equal-when-no-duplicatesp-equal
+  (implies (no-duplicatesp-equal x)
+           (equal (len (remove-equal a x))
+                  (if (member-equal a x)
+                      (+ -1 (len x))
+                    (len x))))
+  :hints (("Goal" :in-theory (enable remove-equal))))

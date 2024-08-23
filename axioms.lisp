@@ -14281,6 +14281,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     chk-certificate-file
     get-cert-obj-and-cert-filename
     include-book-raw-error
+    add-global-stobj remove-global-stobj
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -28084,10 +28085,6 @@ Lisp definition."
      (return-from get-persistent-whs
                   (value (cdr (assoc-equal name *wormhole-status-alist*)))))
    (read-acl2-oracle state))
-
-(defun get-wormhole-status (name state)
-  (declare (xargs :guard (state-p state)))
-  (get-persistent-whs name state))
 
 (defun file-write-date$ (file state)
 

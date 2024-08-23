@@ -25,6 +25,8 @@
 (include-book "make-dag-variable-alist")
 (include-book "memoization")
 (include-book "kestrel/utilities/erp" :dir :system)
+(include-book "kestrel/acl2-arrays/print-array" :dir :system) ; could remove the call of print-array below?
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 (defund print-intervalp (print-interval)
   (declare (xargs :guard t))
@@ -452,7 +454,7 @@
           (prog2$ (if (and print
                            print-interval
                            (eql 0 (mod dag-len print-interval)))
-                      (print-array2 'dag-array dag-array dag-len) ;
+                      (print-array 'dag-array dag-array dag-len) ;
                     ;; (cw "Adding node ~x0 to dag: ~x1.~%" dag-len (array-to-alist 'dag-array dag-array dag-len))
                     ;;ffixme also print for adding other kinds of nodes (else, there may be missing multiples of 1000?)
                     (and print ;new

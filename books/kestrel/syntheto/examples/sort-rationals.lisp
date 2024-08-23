@@ -3,7 +3,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/soft/define-sk2" :dir :system)
 (include-book "kestrel/soft/defunvar" :dir :system)
-(include-book "kestrel/std/util/deffixer" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

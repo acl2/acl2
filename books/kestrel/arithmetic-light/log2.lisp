@@ -76,7 +76,11 @@
   :rule-classes :type-prescription
   :hints (("Goal"; :expand (log2 x)
            :induct (log2 x)
-           :in-theory (enable log2))))
+           :in-theory (e/d (log2)
+                           (;; for speed:
+                            <-of-*-and-*-same-linear-4
+                            <-of-*-and-*-linear
+                            commutativity-of-*)))))
 
 ;; Could loop with the definition?
 (defthm log2-of-*-of-2

@@ -29,17 +29,21 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
+
+(include-book "bin-digit-char-listp")
 (include-book "binary")
 (include-book "case-conversion")
 (include-book "cat")
 (include-book "charset")
 (include-book "charset-fns")
+(include-book "dec-digit-char-listp")
 (include-book "decimal")
 (include-book "digit-to-char")
 (include-book "eqv")
 (include-book "firstn-chars")
 (include-book "hexify")
 (include-book "hex")
+(include-book "hex-digit-char-listp")
 (include-book "html-encode")
 (include-book "url-encode")
 (include-book "ieqv")
@@ -50,6 +54,7 @@
 (include-book "istrprefixp")
 (include-book "isubstrp")
 (include-book "strline")
+(include-book "oct-digit-char-listp")
 (include-book "octal")
 (include-book "pad")
 (include-book "prefix-lines")
@@ -60,11 +65,13 @@
 (include-book "strsplit")
 (include-book "strsubst")
 (include-book "strtok")
+(include-book "strtok-bang")
 (include-book "substrp")
 (include-book "subseq")
 (include-book "suffixp")
 (include-book "symbols")
 (include-book "strrange-equiv")
+(include-book "explode-implode-equalities")
 
 (defxdoc std/strings
   :parents (std acl2::strings)

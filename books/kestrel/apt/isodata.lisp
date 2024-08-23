@@ -1,10 +1,10 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Contributing Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -23,7 +23,6 @@
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
-(include-book "kestrel/std/basic/mbt-dollar" :dir :system)
 (include-book "kestrel/std/system/apply-fn-into-ifs" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/ibody" :dir :system)
@@ -41,6 +40,8 @@
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
+
+(include-book "std/basic/mbt-dollar" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
 

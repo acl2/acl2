@@ -182,7 +182,7 @@
                            (cons (mv t (cons arg1 arg2)))
                            (bvchop (mv t (bvchop-unguarded arg1 arg2)))
                            (logtail$inline
-                                (mv t (logtail-unguarded arg1 arg2)))
+                                (mv t (logtail$inline-unguarded arg1 arg2)))
                            (logext (mv t (logext-unguarded arg1 arg2)))
                            (nth (mv t (nth-unguarded arg1 arg2)))
                            (binary-* (mv t (binary-*-unguarded arg1 arg2)))
@@ -784,7 +784,7 @@
                            (cons (mv t (cons arg1 arg2)))
                            (bvchop (mv t (bvchop-unguarded arg1 arg2)))
                            (logtail$inline
-                                (mv t (logtail-unguarded arg1 arg2)))
+                                (mv t (logtail$inline-unguarded arg1 arg2)))
                            (logext (mv t (logext-unguarded arg1 arg2)))
                            (nth (mv t (nth-unguarded arg1 arg2)))
                            (binary-* (mv t (binary-*-unguarded arg1 arg2)))

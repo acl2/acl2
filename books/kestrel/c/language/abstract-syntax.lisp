@@ -14,7 +14,7 @@
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 
-; to generate more typed list theorems:
+; to generate more typed list theorems in FTY::DEFLIST:
 (local (include-book "std/lists/append" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -39,25 +39,30 @@
      (as part of perhaps a larger character set like Unicode).")
    (xdoc::p
     "We plan to generalize and extend this abstract syntax
-     to not make specific assumptions and to cover all the C constructs.
+     to avoid specific assumptions and to cover all the C constructs.
      In particular, we plan to use the formalization of "
     (xdoc::seetopic "character-sets" "character sets")
     " to lift the ASCII assumption.")
    (xdoc::p
-    "We also plan to differentiate this abstract syntax,
-     used as part of our C langauge formalization,
-     from a different abstract syntax
-     that is tailored to being used in tools such as ATC:
-     see @(see atc-abstract-syntax) for a discussion.
-     Currently this abstract syntax plays that role too,
-     and corresponds to the concrete syntax captured in @('grammar.abnf'):
-     see the discussion there as well.
-     Thus, this abstract syntax is meant to capture syntax
-     that is neither before nor after preprocessing,
-     but rather that may include constructs from
-     both before and after preprocessing.
-     For the language formalization, instead we plan
-     to formalize the translation phases [C:5.1.1.2] in detail."))
+    "The purpose of this abstract syntax is to support
+     our formal definition of (a subset of) C.
+     In contrast, the purpose of the more recently added "
+    (xdoc::seetopic "c$::abstract-syntax" "abstract syntax for tools")
+    " is to support the implementation of tools for C in ACL2.
+     Currently "
+    (xdoc::seetopic "atc" "ATC")
+    " uses the abstract syntax defined here and not that one,
+     but we plan to have it use that one instead,
+     leaving the purpose of the one defined here
+     exclusively to formally define the language.
+     Because of its current use in ATC,
+     the abstract syntax defined here
+     captures constructs both before and after preprocessing;
+     however, after ATC no longer uses it,
+     we plan to change it to capture
+     just the constructs after preprocessing,
+     and more broadly we plan to formalize
+     the translation phases [C:5.1.1.2] in detail."))
   :order-subtopics t
   :default-parent t)
 
@@ -99,7 +104,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset ident-set
-  :short "Fixtype of osets of identifiers."
+  :short "Fixtype of sets of identifiers."
   :elt-type ident
   :elementp-of-nil nil
   :pred ident-setp)
@@ -233,14 +238,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum tyspecseq
-  :short "Fixtype of sequences of type specifiers [C:6.7.2]."
+  :short "Fixtype of type specifier sequences [C:6.7.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "A sequence of one or more type specifiers in a declaration
      specifies a type.
      The allowed sequences are described in [C:6.7.2].
-     This fixtype captures (some of) these sequences.")
+     This fixtype captures some of these sequences.")
    (xdoc::p
     "We capture type specifier sequences for
      the @('void') type,
@@ -264,7 +269,7 @@
      But we capture them elsewhere in our abstract syntax.
      We use @('tyspecseq') only for parts of the code
      that reference existing types,
-     not that introduce them.
+     not ones that introduce them.
      In that context, there is a distinction between
      defining a structure type and merely referencing it.")
    (xdoc::p
@@ -280,8 +285,8 @@
     "This @('tyspecseq') fixtype has one constructor
      for each item in the list in [C:6.7.2/2],
      where different items are different types
-     (syntactically speaking,
-     as type definition names may be equal to other types).
+     (only syntactically speaking;
+     more generally, type definition names may be also equal to other types).
      Each item in that list lists one of more sequences,
      meant to represent multisets, i.e. where order does not matter.
      We capture all the possible multisets for each item,
@@ -336,7 +341,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist tyspecseq-list
-  :short "Fixtype of lists of sequences of type specifiers."
+  :short "Fixtype of lists of type specifier sequences."
   :elt-type tyspecseq
   :true-listp t
   :elementp-of-nil nil
@@ -347,13 +352,13 @@
 
 (fty::defoption tyspecseq-option
   tyspecseq
-  :short "Fixtype of optional sequences of type specifiers."
+  :short "Fixtype of optional type specifier sequences."
   :pred tyspecseq-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum scspecseq
-  :short "Fixtype of sequences of storage class specifuers [C:6.7.1]."
+  :short "Fixtype of storage class specifier sequences [C:6.7.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -373,7 +378,8 @@
   (xdoc::topstring
    (xdoc::p
     "These are declarators for objects.
-     [C] does not have a separate syntactic category for them,
+     [C] does not have a separate syntactic category for them
+     (it just has declarators, for objects and other things),
      but in our abstract syntax for now
      we differentiate them from other kinds of declarators.")
    (xdoc::p
@@ -382,7 +388,7 @@
      (ii) a pointer declarator consisting of
      the pointer notation @('*')
      and (recursively) an object declarator; and
-     (iii) an array (direct) declarator consisting of
+     (iii) an array declarator consisting of
      an object declarator (recursively)
      and the array notation @('[]') with
      either nothing in it (i.e. unspecified size)
@@ -410,7 +416,8 @@
   (xdoc::topstring
    (xdoc::p
     "These are abstract declarators for objects.
-     [C] does not have a separate syntactic category for them,
+     [C] does not have a separate syntactic category for them
+     (it just has abstract declarators, for objects and other things),
      but in our abstract syntax it is useful
      to differentiate them from other kinds of abstract declarators.")
    (xdoc::p
@@ -443,7 +450,7 @@
    (xdoc::p
     "For now we only capture type names consisting of
      the type specifier sequences captured by @(tsee tyspecseq)
-     and the abstract object declarators captures by @(tsee obj-adeclor)."))
+     and the abstract object declarators captured by @(tsee obj-adeclor)."))
   ((tyspec tyspecseq)
    (declor obj-adeclor))
   :tag :tyname
@@ -480,7 +487,7 @@
      are considered unary expressions,
      along with others with the @('sizeof') and @('_Alignof') operators,
      and even though the title of [C:6.5.3] is `Unary Operators'.
-     We may include all those operators into this fixtype,
+     We may include all those operators into this fixtype in the future,
      since it makes sense from the point of view of the abstract syntax."))
   (:address ())
   (:indir ())
@@ -507,8 +514,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We capture all of them; they all take and return integers
-     (along with values of other types).
+    "We capture all of them.
      The C grammar does not have a nonterminal for binary operators
      (it has one for unary operators [C:6.5.3]),
      but the grammar rules for binary operations implicitly describe them.")
@@ -584,10 +590,10 @@
      (xdoc::p
       "For now, we only cover some of the primary expressions [C:6.5.1],
        namely identifiers and constants.
-       String literals will be covered later.
-       Generic selections may be covered eventually, if needed.
+       String literals are not covered.
+       Generic selections are not covered.
        Parenthesized expression are implicitly covered in the abstract syntax,
-       whose structure provides the grouping.")
+       whose structure provides grouping.")
      (xdoc::p
       "Of the postfix expressions [C:6.5.2],
        for now we only cover
@@ -599,8 +605,8 @@
        and post-increment/decrement.
        Richer expressions for functions in function calls
        (e.g. function pointers)
-       will be added if/when needed.
-       Compound literals will be added as needed.")
+       are not covered.
+       Compound literals are not covered.")
      (xdoc::p
       "Of the unary expressions [C:6.5.3],
        for now we only cover pre-increment/decrement,
@@ -610,8 +616,7 @@
        e.g. @('++') is not a unary operator grammatically.
        We follow that here, but use @(':unary') as the tag for
        the expressions built with the unary operators in @(tsee unop).
-       We will cover @('sizeof') later.
-       We will cover @('_Alignof') if needed.")
+       Neither @('sizeof') nor @('_Alignof') are covered.")
      (xdoc::p
       "We include cast expressions,
        but only with the currently limited type names
@@ -636,8 +641,7 @@
      (xdoc::p
       "We include ternary conditional expressions.")
      (xdoc::p
-      "We do not include the comma operator.
-       It will be easy to include, if needed."))
+      "We do not include the comma operator."))
     (:ident ((get ident)))
     (:const ((get const)))
     (:arrsub ((arr expr) (sub expr)))
@@ -877,13 +881,14 @@
   (xdoc::topstring
    (xdoc::p
     "These are declarations for objects.
-     [C] does not have a separate syntactic category for them,
+     [C] does not have a separate syntactic category for them
+     (it just has declarations, for objects and other things),
      but in our abstract syntax it is useful
      to differentiate them from other kinds of declarators.")
    (xdoc::p
     "For now we define an object declaration as consisting of
      a storage class specification sequence,
-     a type specification sequence,
+     a type specifier sequence,
      an object declarator,
      and an optional initializer.")
    (xdoc::p
@@ -943,10 +948,10 @@
        compound [C:6.8.2],
        expression and null [C:6.8.3],
        selection [C:6.8.4],
-       iteration [C:6.8.5] (with the limitation explained below),
-       and jump [C:6.8.6].
-       We do not allow declarations in @('for') statements for now;
-       we will add that later."))
+       iteration [C:6.8.5]
+       (except for @('for') statements
+       whose initialization part is a declaration),
+       and jump [C:6.8.6]."))
     (:labeled ((label label)
                (body stmt)))
     (:compound ((items block-item-list)))
@@ -1122,12 +1127,11 @@
      describes their contents after preprocessing
      (which may involve copying contents of included files).
      As discussed in @(see abstract-syntax),
-     the purpose of this abstract syntax is to capture the content of files
-     neither  before nor exactly after preprocessing,
-     but rather that includes construct
-     from both before and after preprocessing.")
+     currently this abstract syntax captures construct
+     both before and after preprocessing
+     (although this will change, as explained in @(see abstract-syntax)).")
    (xdoc::p
-    "A file consists of a list of external declarations currently.
+    "We define a file as consisting of a list of external declarations.
      This is actually the same as a translation unit (see @(tsee transunit)),
      but we plan to extend and change this soon.
      We put the list into a one-field product fixtype
@@ -1180,9 +1184,15 @@
      are (the contents of) the @('.h') and @('.c') files,
      where the first one is optional.")
    (xdoc::p
-    "In the future, we may extend this notion of file ste
+    "In the future, we may extend this notion of file set
      to be something like
-     a finite map from file system paths to (contents of) files."))
+     a finite map from file system paths to (contents of) files.")
+   (xdoc::p
+    "The notion of file set defined here is related to
+     the one defined in @(tsee c$::fileset),
+     where it is actually part of
+     the concrete (not abstract) syntax for tools.
+     We plan to make the overall nomenclature more consistent at some point."))
   ((path-wo-ext string)
    (dot-h file-option)
    (dot-c file))

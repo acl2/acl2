@@ -541,9 +541,7 @@ explication of the unguarded (logical) definition of M1.
 (defthm step-opener
   (implies (consp (next-inst s))
            (equal (step s)
-                  (do-inst (next-inst s) s)))
-
-  :hints (("Goal" :in-theory (enable step))))
+                  (do-inst (next-inst s) s))))
 
 (in-theory (disable step))
 

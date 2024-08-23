@@ -407,4 +407,3 @@ To recertify:
 (in-theory (enable good-statep))
 
 (verify-guards haltedp)
-

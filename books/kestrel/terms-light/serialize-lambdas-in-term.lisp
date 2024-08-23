@@ -136,6 +136,7 @@
                ;; TODO: Make the suffix customizable?  Just add a numeric suffix?
                (first-var-temp (fresh-symbol (pack$ first-var '-temp) (union-eq rest-binding-free-vars names-to-avoid)))
                ;;now fix up the values in later bindings to use first-var-temp instead of first-var:
+               ;; would like to use subst-var-deep here, but that can create an unserialized lambda:
                (new-rest-binding-vals (subst-var-alt-lst first-var first-var-temp rest-binding-vals))
                (new-rest-bindings (pairlis$ rest-binding-vars new-rest-binding-vals)))
           (acons first-var-temp ; bind the temp var to the original value of the var

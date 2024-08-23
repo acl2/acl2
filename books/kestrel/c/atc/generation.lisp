@@ -29,9 +29,9 @@
 (include-book "std/strings/strprefixp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
-(local (include-book "kestrel/std/basic/member-symbol-name" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/basic/member-symbol-name" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))

@@ -1,7 +1,7 @@
 ; More theorems about minelem
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,7 @@
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+;(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
 ;; This book mixes maxelem with other non-built-in functions.
@@ -65,14 +65,11 @@
                       (< (nth i lst) k)
                     (< (minelem (subrange (+ 1 i) end lst)) k))))
   :hints (("Goal" :use (:instance subrange-opener (start i))
-           :in-theory (e/d (;LIST::NTH-0-BECOMES-CAR
-                            subrange
+           :in-theory (e/d (subrange
                             take
                             ;consp-cdr
                             )
-                           (len ;take-of-nthcdr-becomes-subrange
-;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                            ))
+                           (len))
            :do-not '(generalize eliminate-destructors))))
 
 (defthm minelem-of-subrange-peel-off-one
@@ -83,9 +80,5 @@
                 (natp n)
                 (<= k (minelem (subrange (+ 1 n) end lst))))
            (<= k (minelem (subrange n end lst))))
-  :hints (("Goal" :in-theory (e/d (subrange minelem)
-                                  (;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                   ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-;list::equal-cons-cases
-                                   ))
+  :hints (("Goal" :in-theory (enable subrange minelem)
            :use (:instance subrange-opener (start n)))))

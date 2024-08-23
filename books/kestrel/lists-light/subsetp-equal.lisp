@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function subsetp-equal.
 ;
-; Copyright (C) 2016-2022 Kestrel Institute
+; Copyright (C) 2016-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,8 @@
 
 (local (include-book "member-equal"))
 (local (include-book "remove1-equal"))
+(local (include-book "reverse-list"))
+(local (include-book "reverse"))
 
 (in-theory (disable subsetp-equal))
 
@@ -303,6 +305,11 @@
   (implies (subsetp-equal x z)
            (subsetp-equal (set-difference-equal x y) z)))
 
+(defthm subsetp-equal-of-set-difference-equal-and-set-difference-equal-same-arg2-arg2
+  (implies (subsetp-equal x y)
+           (subsetp-equal (set-difference-equal x z) (set-difference-equal y z)))
+  :hints (("Goal" :in-theory (enable set-difference-equal subsetp-equal))))
+
 (defthm subsetp-equal-of-intersection-equal-arg1
   (implies (or (subsetp-equal x z)
                (subsetp-equal y z))
@@ -399,3 +406,31 @@
                   (no-duplicatesp-equal x))
              (<= (len x) (len y)))
     :hints (("Goal" :by <=-of-len-and-len-when-subsetp-equal-and-no-duplicatesp-equal-forward-chaining))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm subsetp-equal-of-reverse-arg1
+  (equal (subsetp-equal (reverse x) y)
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable subsetp-equal reverse-list))))
+
+(defthm subsetp-equal-of-reverse-arg2
+  (equal (subsetp-equal x (reverse y))
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable subsetp-equal reverse-list))))
+
+(defthm subsetp-equal-of-cdr-arg2-when-not-member-equal-of-car
+  (implies (not (member-equal (car x) y))
+           (equal (subsetp-equal y (cdr x))
+                  (subsetp-equal y x)))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))
+
+(defthm subsetp-equal-of-remove-duplicates-equal-arg1
+  (equal (subsetp-equal (remove-duplicates-equal x) y)
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))
+
+(defthm subsetp-equal-of-remove-duplicates-equal-arg2
+  (equal (subsetp-equal x (remove-duplicates-equal y))
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))

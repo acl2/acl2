@@ -311,4 +311,3 @@
 ; running *pi* with (list n d) as input produces a state, sf, that is halted
 ; and which contains (floor n d) on top of the stack.  Note that the algorithm
 ; used by *pi* is not specified or derivable from this formula.
-

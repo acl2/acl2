@@ -28,7 +28,8 @@
                            acl2::|(< 0 (len x))|
                            assoc-keyword ; why are these arising?
                            (:t assoc-keyword)
-                           keyword-value-listp)))
+                           keyword-value-listp
+                           member-of-cons)))
 
 ;; these slow down the proofs below:
 (local (in-theory (disable x86isa::unsigned-byte-p-when-sib-p

@@ -265,7 +265,7 @@
                   "Minimum ratio of conclusion to hyp"
                   :default 10))
   :parents (obs-constprop comb-transform)
-  :short "Configuration object for the @see obs-constprop) aignet transform."
+  :short "Configuration object for the @(see obs-constprop) aignet transform."
   :tag :obs-constprop-config)
 
 

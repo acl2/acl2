@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function pairlis$
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 
 (in-theory (disable pairlis$))
 
@@ -25,6 +26,12 @@
          (symbol-listp (true-list-fix x)))
   :hints (("Goal" :in-theory (enable pairlis$))))
 
+;; Also in strip-cars.lisp.
+(defthm strip-cars-of-pairlis$
+  (equal (strip-cars (pairlis$ x y))
+         (true-list-fix x))
+  :hints (("Goal" :in-theory (enable pairlis$))))
+
 ;see also a version in books/std/alists/strip-cdrs.lisp
 (defthm strip-cdrs-of-pairlis$2
   (implies (and (true-listp y)
@@ -33,22 +40,23 @@
                   y))
   :hints (("Goal" :in-theory (enable pairlis$))))
 
+;; Also in strip-cdrs.lisp.
 ;; this introduces take, which may not always be desirable
-(defthm strip-cdrs-of-pairlis$-gen
+(defthm strip-cdrs-of-pairlis$
   (equal (strip-cdrs (pairlis$ x y))
          (take (len x) y))
   :hints (("Goal" :in-theory (enable pairlis$ take))))
 
 (defthmd pairlis$-opener
-  (implies (not (atom keys))
+  (implies (consp keys)
            (equal (pairlis$ keys vals)
                   (acons (car keys)
                          (car vals)
                          (pairlis$ (cdr keys) (cdr vals)))))
   :hints (("Goal" :in-theory (enable pairlis$))))
 
-(defthmd pairlis$-base
-  (implies (atom keys)
+(defthmd pairlis$-when-not-consp
+  (implies (not (consp keys))
            (equal (pairlis$ keys vals)
                   nil))
   :hints (("Goal" :in-theory (enable pairlis$))))
@@ -74,6 +82,13 @@
   :hints (("Goal" :in-theory (enable pairlis$)
            :induct (double-cdr-induct x z)
            )))
+
+;; less aggressive
+(defthm pairlis$-of-append-and-append
+  (implies (equal (len x1) (len x2))
+           (equal (pairlis$ (append x1 y1) (append x2 y2))
+                  (append (pairlis$ x1 x2)
+                          (pairlis$ y1 y2)))))
 
 (defthm assoc-equal-of-pairlis$-iff
   (iff (assoc-equal key (pairlis$ keys vals))

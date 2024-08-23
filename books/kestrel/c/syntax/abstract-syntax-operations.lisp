@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax")
 
+(include-book "std/util/defirrelevant" :dir :system)
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -90,7 +92,7 @@
 (defirrelevant irr-stringlit
   :short "An irrelevant string literal."
   :type stringlitp
-  :body (make-stringlit :prefix nil :schars nil))
+  :body (make-stringlit :prefix? nil :schars nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,24 +110,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-stoclaspec
+(defirrelevant irr-stor-spec
   :short "An irrelevant storage class specifier."
-  :type stoclaspecp
-  :body (stoclaspec-tydef))
+  :type stor-specp
+  :body (stor-spec-typedef))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-tyqual
+(defirrelevant irr-type-qual
   :short "An irrelevant type qualifier."
-  :type tyqualp
-  :body (tyqual-const))
+  :type type-qualp
+  :body (type-qual-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-funspec
+(defirrelevant irr-fun-spec
   :short "An irrelevant function specifier."
-  :type funspecp
-  :body (funspec-inline))
+  :type fun-specp
+  :body (fun-spec-inline))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -150,31 +152,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-tyspec
+(defirrelevant irr-type-spec
   :short "An irrelevant type specifier."
-  :type tyspecp
-  :body (tyspec-void))
+  :type type-specp
+  :body (type-spec-void))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-specqual
+(defirrelevant irr-spec/qual
   :short "An irrelevant type specifier or type qualifier."
-  :type specqualp
-  :body (specqual-tyspec (irr-tyspec)))
+  :type spec/qual-p
+  :body (spec/qual-tyspec (irr-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-alignspec
+(defirrelevant irr-align-spec
   :short "An irrelevant alignment specifier."
-  :type alignspecp
-  :body (alignspec-alignas-expr (irr-const-expr)))
+  :type align-specp
+  :body (align-spec-alignas-expr (irr-const-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-declspec
   :short "An irrelevant declaration specifier."
   :type declspecp
-  :body (declspec-tyspec (irr-tyspec)))
+  :body (declspec-tyspec (irr-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -223,7 +225,7 @@
 (defirrelevant irr-dirabsdeclor
   :short "An irrelevant direct abstract declarator."
   :type dirabsdeclorp
-  :body (dirabsdeclor-dummy-base))
+  :body (dirabsdeclor-paren (irr-absdeclor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -231,6 +233,13 @@
   :short "An irrelevant parameter declaration."
   :type paramdeclp
   :body (make-paramdecl :spec nil :decl (paramdeclor-none)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-paramdeclor
+  :short "An irrelevant parameter declarator."
+  :type paramdeclorp
+  :body (paramdeclor-none))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -258,7 +267,10 @@
 (defirrelevant irr-structdecl
   :short "An irrelevant structure declaration."
   :type structdeclp
-  :body (make-structdecl-member :specqual nil :declor nil))
+  :body (make-structdecl-member :extension nil
+                                :specqual nil
+                                :declor nil
+                                :attrib nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -279,7 +291,22 @@
 (defirrelevant irr-statassert
   :short "An irrelevant static assertion declaration."
   :type statassertp
-  :body (make-statassert :test (irr-const-expr) :message (irr-stringlit)))
+  :body (make-statassert :test (irr-const-expr)
+                         :message (list (irr-stringlit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-expr/tyname
+  :short "An irrelevant expression or type name."
+  :type expr/tyname-p
+  :body (expr/tyname-expr (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-declor/absdeclor
+  :short "An irrelevant declarator or abstract declarator."
+  :type declor/absdeclor-p
+  :body (declor/absdeclor-declor (irr-declor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -297,6 +324,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-attrib
+  :short "An irrelevant attribute."
+  :type attribp
+  :body (attrib-name (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-attrib-spec
+  :short "An irrelevant attribute specifier."
+  :type attrib-specp
+  :body (attrib-spec nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-asm-name-spec
+  :short "An irrelevant assembler name specifier."
+  :type asm-name-specp
+  :body (asm-name-spec nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-initdeclor
   :short "An irrelevant initializer declarator."
   :type initdeclorp
@@ -307,7 +355,18 @@
 (defirrelevant irr-decl
   :short "An irrelevant declaration."
   :type declp
-  :body (make-decl-decl :specs nil :init nil))
+  :body (make-decl-decl :extension nil
+                        :specs nil
+                        :init nil
+                        :asm? nil
+                        :attrib nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-label
+  :short "An irrelevant label."
+  :type labelp
+  :body (label-default))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,10 +377,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-amb?-decl/stmt
+  :short "An irrelevant possibly ambiguous declaration or statement."
+  :type amb?-decl/stmt-p
+  :body (amb?-decl/stmt-stmt (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-decl/stmt
+  :short "An irrelevant declaration or statement."
+  :type decl/stmt-p
+  :body (decl/stmt-decl (irr-decl)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-block-item
   :short "An irrelevant block item."
   :type block-itemp
   :body (block-item-stmt (irr-stmt)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-fundef
+  :short "An irrelevant function definition."
+  :type fundefp
+  :body (make-fundef :extension nil
+                     :spec nil
+                     :declor (irr-declor)
+                     :decls nil
+                     :body (irr-stmt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,6 +429,34 @@
   :body (transunit-ensemble nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-postfix/primary-p ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is postfix or primary."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to the grammar definition,
+     postfix expressions include primary expressions;
+     the grammar defines expressions hierarchically.
+     So this test, performed on abstract syntax,
+     is equivalent to testing whether the expression
+     is a postfix one according to the grammar."))
+  (and (member-eq (expr-kind expr)
+                  '(:ident
+                    :const
+                    :string
+                    :paren
+                    :gensel
+                    :arrsub
+                    :funcall
+                    :member
+                    :memberp
+                    :complit))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-unary/postfix/primary-p ((expr exprp))
   :returns (yes/no booleanp)
@@ -598,20 +710,18 @@
    (xdoc::p
     "There are syntactically different expressions in C
      that evaluate to ``zero'' in a broad sense.
-     We encapsulate the exact notion of `zero expression',
-     for the purposes of our transformation,
-     in this predicate.")
-   (xdoc::p
-    "For now we only include
+     For now we only include
      the octal integer constant @('0') without suffixes
-     and with just one digit."))
+     and with just one digit.
+     So this operation is very limited in scope,
+     but sufficient for its current usage (elsewhere)."))
   (b* (((unless (expr-case expr :const)) nil)
        (const (expr-const->unwrap expr))
        ((unless (const-case const :int)) nil)
        ((iconst iconst) (const-int->unwrap const))
-       ((when iconst.suffix) nil)
-       ((unless (dec/oct/hex-const-case iconst.dec/oct/hex :oct)) nil)
-       ((dec/oct/hex-const-oct doh) iconst.dec/oct/hex)
+       ((when iconst.suffix?) nil)
+       ((unless (dec/oct/hex-const-case iconst.core :oct)) nil)
+       ((dec/oct/hex-const-oct doh) iconst.core)
        ((unless (= doh.leading-zeros 1)) nil)
        ((unless (= doh.value 0)) nil))
     t)
@@ -736,6 +846,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-expr-binary ((expr exprp))
+  :returns (mv (yes/no booleanp) (op binopp) (arg1 exprp) (arg2 exprp))
+  :short "Check if an expression is a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If it is, return its operator and sub-expressions."))
+  (if (expr-case expr :binary)
+      (mv t
+          (expr-binary->op expr)
+          (expr-binary->arg1 expr)
+          (expr-binary->arg2 expr))
+    (mv nil (irr-binop) (irr-expr) (irr-expr)))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-count-of-check-expr-binary-arg1
+    (implies yes/no
+             (< (expr-count arg1)
+                (expr-count expr)))
+    :rule-classes :linear)
+
+  (defret expr-count-of-check-expr-binary-arg2
+    (implies yes/no
+             (< (expr-count arg2)
+                (expr-count expr)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-expr-mul ((expr exprp))
+  :returns (mv (yes/no booleanp) (arg1 exprp) (arg2 exprp))
+  :short "Check if an expression is a multiplication."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If it is, return its two sub-expressions."))
+  (if (and (expr-case expr :binary)
+           (binop-case (expr-binary->op expr) :mul))
+      (mv t (expr-binary->arg1 expr) (expr-binary->arg2 expr))
+    (mv nil (irr-expr) (irr-expr)))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-count-of-check-expr-mul-arg1
+    (implies yes/no
+             (< (expr-count arg1)
+                (expr-count expr)))
+    :rule-classes :linear)
+
+  (defret expr-count-of-check-expr-mul-arg2
+    (implies yes/no
+             (< (expr-count arg2)
+                (expr-count expr)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-strunispec-no-members ((strunispec strunispecp))
   :returns (ident? ident-optionp)
   :short "Check if a structure or union specifier has no members,
@@ -775,7 +945,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-declspec-list-all-tyspec ((declspecs declspec-listp))
-  :returns (mv (yes/no booleanp) (tyspecs tyspec-listp))
+  :returns (mv (yes/no booleanp) (tyspecs type-spec-listp))
   :short "Check if all the declaration specifiers in a list
           are type specifiers."
   :long
@@ -794,10 +964,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-declspec-list-all-tyspec/stoclaspec ((declspecs declspec-listp))
+(define check-declspec-list-all-tyspec/storspec ((declspecs declspec-listp))
   :returns (mv (yes/no booleanp)
-               (tyspecs tyspec-listp)
-               (stoclaspecs stoclaspec-listp))
+               (tyspecs type-spec-listp)
+               (stor-specs stor-spec-listp))
   :short "Check if all the declaration specifiers in a list
           are type specifiers or storage class specifiers."
   :long
@@ -809,28 +979,28 @@
   (b* (((when (endp declspecs)) (mv t nil nil))
        (declspec (car declspecs))
        ((when (declspec-case declspec :tyspec))
-        (b* (((mv yes/no tyspecs stoclaspecs)
-              (check-declspec-list-all-tyspec/stoclaspec (cdr declspecs))))
+        (b* (((mv yes/no tyspecs stor-specs)
+              (check-declspec-list-all-tyspec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
                   (cons (declspec-tyspec->unwrap declspec) tyspecs)
-                  stoclaspecs)
+                  stor-specs)
             (mv nil nil nil))))
        ((when (declspec-case declspec :stocla))
-        (b* (((mv yes/no tyspecs stoclaspecs)
-              (check-declspec-list-all-tyspec/stoclaspec (cdr declspecs))))
+        (b* (((mv yes/no tyspecs stor-specs)
+              (check-declspec-list-all-tyspec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
                   tyspecs
-                  (cons (declspec-stocla->unwrap declspec) stoclaspecs))
+                  (cons (declspec-stocla->unwrap declspec) stor-specs))
             (mv nil nil nil)))))
     (mv nil nil nil))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-specqual-list-all-tyspec ((specquals specqual-listp))
-  :returns (mv (yes/no booleanp) (tyspecs tyspec-listp))
+(define check-spec/qual-list-all-tyspec ((specquals spec/qual-listp))
+  :returns (mv (yes/no booleanp) (tyspecs type-spec-listp))
   :short "Check if all the specifiers and qualifiers in a list
           are type specifiers."
   :long
@@ -840,17 +1010,17 @@
      also return the list of type specifiers, in the same order."))
   (b* (((when (endp specquals)) (mv t nil))
        (specqual (car specquals))
-       ((unless (specqual-case specqual :tyspec)) (mv nil nil))
-       ((mv yes/no tyspecs) (check-specqual-list-all-tyspec (cdr specquals))))
+       ((unless (spec/qual-case specqual :tyspec)) (mv nil nil))
+       ((mv yes/no tyspecs) (check-spec/qual-list-all-tyspec (cdr specquals))))
     (if yes/no
-        (mv t (cons (specqual-tyspec->unwrap specqual) tyspecs))
+        (mv t (cons (spec/qual-tyspec->unwrap specqual) tyspecs))
       (mv nil nil)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declspec-list-to-tyspec-list ((declspecs declspec-listp))
-  :returns (tyspecs tyspec-listp)
+(define declspec-list-to-type-spec-list ((declspecs declspec-listp))
+  :returns (tyspecs type-spec-listp)
   :short "Extract the list of type specifiers
           from a list of declaration specifiers,
           preserving the order."
@@ -858,14 +1028,14 @@
        (declspec (car declspecs)))
     (if (declspec-case declspec :tyspec)
         (cons (declspec-tyspec->unwrap declspec)
-              (declspec-list-to-tyspec-list (cdr declspecs)))
-      (declspec-list-to-tyspec-list (cdr declspecs))))
+              (declspec-list-to-type-spec-list (cdr declspecs)))
+      (declspec-list-to-type-spec-list (cdr declspecs))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declspec-list-to-stoclaspec-list ((declspecs declspec-listp))
-  :returns (stoclaspecs stoclaspec-listp)
+(define declspec-list-to-stor-spec-list ((declspecs declspec-listp))
+  :returns (stor-specs stor-spec-listp)
   :short "Extract the list of storage class specifiers
           from a list of declaration specifiers,
           preserving the order."
@@ -873,21 +1043,127 @@
        (declspec (car declspecs)))
     (if (declspec-case declspec :stocla)
         (cons (declspec-stocla->unwrap declspec)
-              (declspec-list-to-stoclaspec-list (cdr declspecs)))
-      (declspec-list-to-stoclaspec-list (cdr declspecs))))
+              (declspec-list-to-stor-spec-list (cdr declspecs)))
+      (declspec-list-to-stor-spec-list (cdr declspecs))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define specqual-list-to-tyspec-list ((specquals specqual-listp))
-  :returns (tyspecs tyspec-listp)
+(define spec/qual-list-to-type-spec-list ((specquals spec/qual-listp))
+  :returns (tyspecs type-spec-listp)
   :short "Extract the list of type specifiers
           from a list of type specifiers and qualifiers,
           preserving the order."
   (b* (((when (endp specquals)) nil)
        (specqual (car specquals)))
-    (if (specqual-case specqual :tyspec)
-        (cons (specqual-tyspec->unwrap specqual)
-              (specqual-list-to-tyspec-list (cdr specquals)))
-      (specqual-list-to-tyspec-list (cdr specquals))))
+    (if (spec/qual-case specqual :tyspec)
+        (cons (spec/qual-tyspec->unwrap specqual)
+              (spec/qual-list-to-type-spec-list (cdr specquals)))
+      (spec/qual-list-to-type-spec-list (cdr specquals))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define apply-pre-inc/dec-ops ((ops inc/dec-op-listp) (expr exprp))
+  :returns (new-expr exprp)
+  :short "Apply a sequence of pre-increment and pre-decrement operators
+          to an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first one in the list will be the outermost,
+     and the last one in the list will be the innermost."))
+  (b* (((when (endp ops)) (expr-fix expr))
+       (op (car ops))
+       (expr (apply-pre-inc/dec-ops (cdr ops) expr)))
+    (inc/dec-op-case
+     op
+     :inc (make-expr-unary :op (unop-preinc) :arg expr)
+     :dec (make-expr-unary :op (unop-predec) :arg expr)))
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define apply-post-inc/dec-ops ((expr exprp) (ops inc/dec-op-listp))
+  :returns (new-expr exprp)
+  :short "Apply a sequence of post-increment and post-decrement operators
+          to an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first one in the list will be the innermost,
+     and the last one in the list will be the outermost."))
+  (b* (((when (endp ops)) (expr-fix expr))
+       (op (car ops))
+       (expr (inc/dec-op-case
+              op
+              :inc (make-expr-unary :op (unop-postinc) :arg expr)
+              :dec (make-expr-unary :op (unop-postdec) :arg expr))))
+    (apply-post-inc/dec-ops expr (cdr ops)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-to-asg-expr-list ((expr exprp))
+  :returns (asg-exprs expr-listp)
+  :short "Turn an expression into a list of assignment expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the grammar, an expression is defined as
+     a comma-separated sequence of one or more assignment expressions.
+     If there are no commas, then the expression is an assignment expression.")
+   (xdoc::p
+    "In abstract syntax,
+     we flatten the expression according to the @(':comma')s.
+     We do it for both sub-expressions of each @(':comma'),
+     recursively, regardless of the nesting resulting from the parser."))
+  (if (expr-case expr :comma)
+      (append (expr-to-asg-expr-list (expr-comma->first expr))
+              (expr-to-asg-expr-list (expr-comma->next expr)))
+    (list (expr-fix expr)))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define transunit-ensemble-paths ((tunits transunit-ensemblep))
+  :returns (paths filepath-setp)
+  :short "Set of file paths in a translation unit ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the keys of the map from file paths to translation units.")
+   (xdoc::p
+    "It is more concise, and more abstract,
+     than extracting the map and then the keys.")
+   (xdoc::p
+    "Together with @(tsee transunit-at-path),
+     it can be used as an API to inspect translation unit ensembles."))
+  (omap::keys (transunit-ensemble->unwrap tunits))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define transunit-at-path ((path filepathp) (tunits transunit-ensemblep))
+  :guard (set::in path (transunit-ensemble-paths tunits))
+  :returns (tunit transunitp)
+  :short "Translation unit at a certain path in a translation unit ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the value associated to the key (path) in the map,
+     which the guard requires to be in the translation unit ensemble.")
+   (xdoc::p
+    "It is more concise, and more abstract,
+     than accessing the map and then looking up the path.")
+   (xdoc::p
+    "Together with @(tsee transunit-ensemble-paths),
+     it can be used an as API to inspect a file set."))
+  (transunit-fix
+   (omap::lookup (filepath-fix path) (transunit-ensemble->unwrap tunits)))
+  :guard-hints (("Goal" :in-theory (enable omap::assoc-to-in-of-keys
+                                           transunit-ensemble-paths)))
   :hooks (:fix))

@@ -231,4 +231,3 @@
 ; contains -1, 0, or +1 on top of the stack depending on whether x is negative,
 ; 0, or positive.  Note that the algorithm used by *pi* is not specified or
 ; derivable from this formula.
-

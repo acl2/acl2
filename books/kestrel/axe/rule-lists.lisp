@@ -152,6 +152,7 @@
   '(mv-nth-of-cons-safe ; since mv expands to cons
     mv-nth-of-myif))
 
+;; Basic rules that we very often want.
 (defun base-rules ()
   (declare (xargs :guard t))
   (append '(;axe-rewrite-objective ;fixme investigate why this is needed...
@@ -163,7 +164,7 @@
             not-<-same
             turn-equal-around-axe ; may be dangerous?
 
-            ifix-does-nothing
+            ifix-when-integerp
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
 
             ;; TODO: eventually phase out myif in favor of if
@@ -193,6 +194,9 @@
             eql ; introduces EQUAL ; EQL can arise from CASE
             eq ; introduces EQUAL
             /= ; "not equal"
+
+            null ; opens to EQ, which opens to EQUAL
+            zerop ; opens to EQL, which opens to EQUAL
 
             double-rewrite
             return-last
@@ -469,8 +473,8 @@
 ;; These are needed only when operations like logxor or + may appears
 (defun convert-to-bv-rules ()
   (declare (xargs :guard t))
-  '(bvplus-convert-arg2-to-bv-axe
-    bvplus-convert-arg3-to-bv-axe
+  '(bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
+    bvplus-convert-arg3-to-bv-axe-restricted
     ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
     ;; bvminus-convert-arg3-to-bv-axe
     bvuminus-convert-arg2-to-bv-axe
@@ -1251,7 +1255,12 @@
 
 (defun list-rules ()
   (declare (xargs :guard t))
-  '(;; rules about take:
+  '(
+    ;; simple opener rules:
+    atom ; opens to expose CONSP ;thu mar  4 22:01:54 2010
+    endp ; opens to expore ATOM (todo: go directly?) ;fri dec 24 16:32:13 2010
+    ;; what do we want to do about LISTP (not used very much)?
+    ;; rules about take:
     take-of-0 ;take-when-zp-n ;sun feb 20 00:29:56 2011
     take-of-append
     len-of-take
@@ -1262,7 +1271,10 @@
     take-does-nothing ; introduces true-list-fix
     ;; rules about cdr:
     true-listp-of-cdr
+    ;; rules about cons:
+    car-cons
     cdr-cons
+    consp-of-cons ;also elsewhere?
     ;; mixed rules:
     true-listp-of-cons
     len-update-nth ;pretty aggressive
@@ -1294,13 +1306,9 @@
     consp-of-update-nth
     true-listp-of-true-list-fix2
     len-of-true-list-fix
-    atom ;thu mar  4 22:01:54 2010
-    endp ;fri dec 24 16:32:13 2010
-    consp-of-cons ;also elsewhere
     true-list-fix-when-true-listp
     true-listp-of-repeat
     len-of-repeat  ;since initializing an array calls repeat
-    car-cons
     len-of-cons
     nth-of-cons-constant-version
     integerp-of-len
@@ -1540,14 +1548,6 @@
 ;;   '(
 ;;     ;; SLICE-OF-BVCAT-HACK-GEN-BETTER
 
-;;     ;;trying
-;;     ;; slice-7-0-bvxor-8
-;;     ;; slice-7-0-bvor-8
-;;     ;; slice-7-0-bvand-8
-
-;;     ;; bvchop-8-becomes-slice-7-0 ;bozo do i really want this?  maybe having bvchop is nicer, since fewer rules?
-
-;;     ;; slice-8-0-bvxor-9
 ;; ;    get-rid-of-logtail ;bbozo drop me! we need a more systematic way to get rid of logtail? or does it not appear?
 
 ;;     subrange-rewrite ;fixme rename subrange-unroll? or -opener?
@@ -2168,7 +2168,6 @@
 ;                              cdr-of-get-arg-vals-no-array
      ;; make-alist-base
      ;; make-alist-opener
-     null
      true-listp-of-myif-strong
      unsigned-byte-p-of-myif
      equal-of-t-when-booleanp-arg2 ; todo: drop
@@ -2643,7 +2642,7 @@
      if-of-t
      if-of-nil
      if-same-branches
-     ifix-does-nothing
+     ifix-when-integerp
      bvchop-of-bvchop-same
      bvuminus-of-bvuminus ;just use core-rules-bv?
      consp-of-nthcdr
@@ -2653,7 +2652,9 @@
      bvuminus-of-bvplus
      bvplus-of-bvuminus-same-alt
      bvplus-of-bvuminus-same
+
      endp
+     atom ;new
 
      ;;lots of new stuff:
 
@@ -2708,7 +2709,6 @@
      <-becomes-bvlt-free-alt    ;fri jan 14 04:10:47 2011
      <-becomes-bvlt-free        ;fri jan 14 04:10:49 2011
 
-     atom ;new
      sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger
      sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger-alt
      bvminus-becomes-bvplus-of-bvuminus

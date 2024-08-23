@@ -760,6 +760,3 @@
                   (equal (up s_f)
                          (tmi st tape tm n)))))
   :rule-classes nil)
-
-
-

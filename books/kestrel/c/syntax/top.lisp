@@ -13,15 +13,20 @@
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
 (include-book "concrete-syntax")
+(include-book "abstraction-mapping")
 (include-book "preprocess-file")
 (include-book "parser")
-(include-book "read-files")
-(include-book "parse-files")
-(include-book "print-files")
-(include-book "write-files")
-(include-book "read-and-parse-files")
-(include-book "print-and-write-files")
+(include-book "disambiguator")
+(include-book "unambiguity")
+(include-book "validator")
+(include-book "printer")
+(include-book "input-files")
+(include-book "input-files-doc")
+(include-book "output-files")
+(include-book "output-files-doc")
 (include-book "langdef-mapping")
+(include-book "formalized")
+(include-book "implementation-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,6 +56,16 @@
      We may even add some information about file layout,
      if that turns out to be useful.")
    (xdoc::p
+    "We include some constructs for GCC extensions,
+     which, as mentioned in "
+    (xdoc::seetopic "c::c" "the top-level topic of our library for C")
+    ", are prevalent and important extensions
+     needed for a practical tool.
+     Ideally, eventually we should support all the GCC extensions,
+     but we are adding them piece-wise, as needed.
+     Our documentation will always clearly distinguish
+     between the C standard and the GCC extensions.")
+   (xdoc::p
     "The idea of this tool-oriented abstract syntax is also discussed in
      @(see c::abstract-syntax) and @(see c::atc-abstract-syntax).
      We plan to have ATC use this new tool-oriented abstract syntax.")
@@ -66,13 +81,15 @@
      with preprocessing being a distinguished translation phase
      [C:5.1.1.2].")
    (xdoc::p
-    "We also provide a parser from the concrete syntax to the abstract syntax.
-     The parser is an initial version;
-     it covers all of the C constructs after preprocessing,
-     but has limitations in the handling of
-     certain inherently ambiguous constructs
-     that are notoriously complex in C;
-     we will improve our parser in this respect soon.")
+    "We also provide a parser from the concrete syntax to the abstract syntax,
+     which covers all of the C constructs after preprocessing.
+     The syntax of C is notoriously ambiguous,
+     requiring some semantic analysis to disambiguate it.
+     Instead of performing this semantic analysis during parsing,
+     our parser captures ambiguous constructs as such,
+     and we provide a separate disambiguator
+     that transforms the abstract syntax, after parsing,
+     by disambiguating it via the necessary semantic analysis.")
    (xdoc::p
     "In order to process typical C code,
      we also provide an ACL2 tool to invoke a C preprocessor.
@@ -89,7 +106,8 @@
      in particular by supporting printing options
      (e.g. for right margin).")
    (xdoc::p
-    "We also provide event macros to read, parse, print, and write files.")
+    "We also provide event macros to
+     read, preprocess, parse, disambiguate, print, and write files.")
    (xdoc::p
     "We also plan to add a checker on the abstract syntax
      for the static constraints on C code (i.e. type checker etc.),
@@ -101,7 +119,10 @@
      with the formal language definition in @(see c::language).
      We already provide a (partial) mapping
      from the tool-oriented abstract syntax
-     to the abstract syntax of the formal language definition.")
+     to the abstract syntax of the formal language definition.
+     We also provide predicates to identify which subset of the abstract syntax
+     not only maps to the language definition's abstract syntax,
+     but also that is covered by the formal semantics we have so far.")
    (xdoc::p
     "All the items described above form a sub-library of our ACL2 library for C,
      in the directory @('[books]/kestrel/c/syntax').
@@ -118,11 +139,12 @@
                     concrete-syntax
                     preprocessing
                     parser
+                    disambiguator
+                    unambiguity
+                    validator
                     printer
-                    read-files
-                    parse-files
-                    print-files
-                    write-files
-                    read-and-parse-files
-                    print-and-write-files
-                    mapping-to-language-definition))
+                    input-files
+                    output-files
+                    mapping-to-language-definition
+                    formalized-subset
+                    implementation-environments))

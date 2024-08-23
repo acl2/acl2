@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -16,8 +16,8 @@
 (include-book "../language/boolean-literals")
 (include-book "../language/null-literal")
 
-(include-book "kestrel/std/basic/organize-symbols-by-name" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
+(include-book "std/basic/organize-symbols-by-name" :dir :system)
 (include-book "std/typed-alists/string-string-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "std/strings/decimal" :dir :system)

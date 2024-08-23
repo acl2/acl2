@@ -52,7 +52,7 @@
             pfield::mul-of-ifix-arg1
             pfield::mul-of-ifix-arg2
             acl2::integerp-of-ifix
-            acl2::ifix-does-nothing
+            acl2::ifix-when-integerp
             baby-jubjub-prime
             mimc::mimc-feistel-220-constants
             acl2::pos-fix ;or build in to evaluator

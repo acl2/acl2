@@ -11,10 +11,11 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-operations")
+(include-book "unambiguity")
 
 (include-book "../language/abstract-syntax")
 
-(include-book "kestrel/std/util/error-value-tuples" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -135,8 +136,8 @@
   :short "Map an integer constant to
           an integer constant in the language definition."
   (b* (((iconst iconst) iconst)
-       ((mv value base) (ldm-dec/oct/hex-const iconst.dec/oct/hex))
-       ((mv length unsignedp) (ldm-isuffix-option iconst.suffix)))
+       ((mv value base) (ldm-dec/oct/hex-const iconst.core))
+       ((mv length unsignedp) (ldm-isuffix-option iconst.suffix?)))
     (c::make-iconst :value value
                     :base base
                     :unsignedp unsignedp
@@ -161,7 +162,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-tyspec-list ((tyspecs tyspec-listp))
+(define ldm-type-spec-list ((tyspecs type-spec-listp))
+  :guard (type-spec-list-unambp tyspecs)
   :returns (mv erp (tyspecseq c::tyspecseqp))
   :short "Map a list of type specifiers to
           a type specifier sequence in the language definition."
@@ -172,83 +174,118 @@
      This mapping function recognizes the lists of type specifiers
      that correspond to the ones supported in the language definition."))
   (b* (((reterr) (c::tyspecseq-void))
-       (tyspecs (tyspec-list-fix tyspecs)))
+       (tyspecs (type-spec-list-fix tyspecs)))
     (cond
-     ((equal tyspecs (list (tyspec-void)))
+     ((equal tyspecs (list (type-spec-void)))
       (retok (c::tyspecseq-void)))
-     ((equal tyspecs (list (tyspec-char)))
+     ((equal tyspecs (list (type-spec-char)))
       (retok (c::tyspecseq-char)))
-     ((equal tyspecs (list (tyspec-signed) (tyspec-char)))
+     ((equal tyspecs (list (type-spec-signed)
+                           (type-spec-char)))
       (retok (c::tyspecseq-schar)))
-     ((equal tyspecs (list (tyspec-unsigned) (tyspec-char)))
+     ((equal tyspecs (list (type-spec-unsigned)
+                           (type-spec-char)))
       (retok (c::tyspecseq-uchar)))
-     ((equal tyspecs (list (tyspec-short)))
+     ((equal tyspecs (list (type-spec-short)))
       (retok (c::make-tyspecseq-sshort :signed nil :int nil)))
-     ((equal tyspecs (list (tyspec-signed) (tyspec-short)))
+     ((equal tyspecs (list (type-spec-signed)
+                           (type-spec-short)))
       (retok (c::make-tyspecseq-sshort :signed t :int nil)))
-     ((equal tyspecs (list (tyspec-short) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-short)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-sshort :signed nil :int t)))
-     ((equal tyspecs (list (tyspec-signed) (tyspec-short) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-signed)
+                           (type-spec-short)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-sshort :signed t :int t)))
-     ((equal tyspecs (list (tyspec-unsigned) (tyspec-short)))
+     ((equal tyspecs (list (type-spec-unsigned)
+                           (type-spec-short)))
       (retok (c::make-tyspecseq-ushort :int nil)))
-     ((equal tyspecs (list (tyspec-unsigned) (tyspec-short) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-unsigned)
+                           (type-spec-short)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-ushort :int t)))
-     ((equal tyspecs (list (tyspec-int)))
+     ((equal tyspecs (list (type-spec-int)))
       (retok (c::make-tyspecseq-sint :signed nil :int t)))
-     ((equal tyspecs (list (tyspec-signed)))
+     ((equal tyspecs (list (type-spec-signed)))
       (retok (c::make-tyspecseq-sint :signed t :int nil)))
-     ((equal tyspecs (list (tyspec-signed) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-signed)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-sint :signed t :int t)))
-     ((equal tyspecs (list (tyspec-unsigned)))
+     ((equal tyspecs (list (type-spec-unsigned)))
       (retok (c::make-tyspecseq-uint :int nil)))
-     ((equal tyspecs (list (tyspec-unsigned) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-unsigned)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-uint :int t)))
-     ((equal tyspecs (list (tyspec-long)))
+     ((equal tyspecs (list (type-spec-long)))
       (retok (c::make-tyspecseq-slong :signed nil :int nil)))
-     ((equal tyspecs (list (tyspec-long) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-long)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-slong :signed nil :int t)))
-     ((equal tyspecs (list (tyspec-signed) (tyspec-long)))
+     ((equal tyspecs (list (type-spec-signed)
+                           (type-spec-long)))
       (retok (c::make-tyspecseq-slong :signed t :int nil)))
-     ((equal tyspecs (list (tyspec-signed) (tyspec-long) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-signed)
+                           (type-spec-long)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-slong :signed t :int t)))
-     ((equal tyspecs (list (tyspec-unsigned) (tyspec-long)))
+     ((equal tyspecs (list (type-spec-unsigned)
+                           (type-spec-long)))
       (retok (c::make-tyspecseq-ulong :int nil)))
-     ((equal tyspecs (list (tyspec-unsigned) (tyspec-long) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-unsigned)
+                           (type-spec-long)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-ulong :int t)))
-     ((equal tyspecs (list (tyspec-long) (tyspec-long)))
+     ((equal tyspecs (list (type-spec-long)
+                           (type-spec-long)))
       (retok (c::make-tyspecseq-sllong :signed nil :int nil)))
-     ((equal tyspecs (list (tyspec-long) (tyspec-long) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-long)
+                           (type-spec-long)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-sllong :signed nil :int t)))
-     ((equal tyspecs (list (tyspec-signed) (tyspec-long) (tyspec-long)))
+     ((equal tyspecs (list (type-spec-signed)
+                           (type-spec-long)
+                           (type-spec-long)))
       (retok (c::make-tyspecseq-sllong :signed t :int nil)))
-     ((equal tyspecs
-             (list (tyspec-signed) (tyspec-long) (tyspec-long) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-signed)
+                           (type-spec-long)
+                           (type-spec-long)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-sllong :signed t :int t)))
-     ((equal tyspecs (list (tyspec-unsigned) (tyspec-long) (tyspec-long)))
+     ((equal tyspecs (list (type-spec-unsigned)
+                           (type-spec-long)
+                           (type-spec-long)))
       (retok (c::make-tyspecseq-ullong :int nil)))
-     ((equal tyspecs
-             (list (tyspec-unsigned) (tyspec-long) (tyspec-long) (tyspec-int)))
+     ((equal tyspecs (list (type-spec-unsigned)
+                           (type-spec-long)
+                           (type-spec-long)
+                           (type-spec-int)))
       (retok (c::make-tyspecseq-ullong :int t)))
-     ((equal tyspecs (list (tyspec-bool)))
+     ((equal tyspecs (list (type-spec-bool)))
       (retok (c::tyspecseq-bool)))
-     ((equal tyspecs (list (tyspec-float)))
+     ((equal tyspecs (list (type-spec-float)))
       (retok (c::make-tyspecseq-float :complex nil)))
-     ((equal tyspecs (list (tyspec-float) (tyspec-complex)))
+     ((equal tyspecs (list (type-spec-float)
+                           (type-spec-complex)))
       (retok (c::make-tyspecseq-float :complex t)))
-     ((equal tyspecs (list (tyspec-double)))
+     ((equal tyspecs (list (type-spec-double)))
       (retok (c::make-tyspecseq-double :complex nil)))
-     ((equal tyspecs (list (tyspec-double) (tyspec-complex)))
+     ((equal tyspecs (list (type-spec-double)
+                           (type-spec-complex)))
       (retok (c::make-tyspecseq-double :complex t)))
-     ((equal tyspecs (list (tyspec-long) (tyspec-double)))
+     ((equal tyspecs (list (type-spec-long)
+                           (type-spec-double)))
       (retok (c::make-tyspecseq-ldouble :complex nil)))
-     ((equal tyspecs (list (tyspec-long) (tyspec-double) (tyspec-complex)))
+     ((equal tyspecs (list (type-spec-long)
+                           (type-spec-double)
+                           (type-spec-complex)))
       (retok (c::make-tyspecseq-ldouble :complex t)))
      ((and (consp tyspecs)
            (endp (cdr tyspecs))
-           (tyspec-case (car tyspecs) :struct))
+           (type-spec-case (car tyspecs) :struct))
       (b* ((tyspec (car tyspecs))
-           (ident (check-strunispec-no-members (tyspec-struct->unwrap tyspec)))
+           (ident (check-strunispec-no-members
+                   (type-spec-struct->unwrap tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
                           a structure specifier with members."
@@ -257,9 +294,10 @@
         (retok (c::make-tyspecseq-struct :tag ident1))))
      ((and (consp tyspecs)
            (endp (cdr tyspecs))
-           (tyspec-case (car tyspecs) :union))
+           (type-spec-case (car tyspecs) :union))
       (b* ((tyspec (car tyspecs))
-           (ident (check-strunispec-no-members (tyspec-union->unwrap tyspec)))
+           (ident (check-strunispec-no-members
+                   (type-spec-union->unwrap tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
                           a union specifier with members."
@@ -268,9 +306,10 @@
         (retok (c::make-tyspecseq-union :tag ident1))))
      ((and (consp tyspecs)
            (endp (cdr tyspecs))
-           (tyspec-case (car tyspecs) :enum))
+           (type-spec-case (car tyspecs) :enum))
       (b* ((tyspec (car tyspecs))
-           (ident (check-enumspec-no-list (tyspec-enum->unwrap tyspec)))
+           (ident (check-enumspec-no-list
+                   (type-spec-enum->unwrap tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
                           an enumeration specifier with enumerators."
@@ -279,9 +318,9 @@
         (retok (c::make-tyspecseq-enum :tag ident1))))
      ((and (consp tyspecs)
            (endp (cdr tyspecs))
-           (tyspec-case (car tyspecs) :tydef))
+           (type-spec-case (car tyspecs) :typedef))
       (b* ((tyspec (car tyspecs))
-           (ident (tyspec-tydef->name tyspec))
+           (ident (type-spec-typedef->name tyspec))
            ((erp ident1) (ldm-ident ident)))
         (retok (c::make-tyspecseq-typedef :name ident1))))
      (t (reterr (msg "Unsupported type specifier sequence ~x0." tyspecs)))))
@@ -289,7 +328,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-stoclaspec-list ((stoclaspecs stoclaspec-listp))
+(define ldm-stor-spec-list ((stor-specs stor-spec-listp))
   :returns (mv erp (scspecseq c::scspecseqp))
   :short "Map a list of storage class specifiers to
           a storage class specifier sequence in the language definition."
@@ -299,20 +338,21 @@
     "The list must be empty,
      or a singleton with the @('extern') specifier."))
   (b* (((reterr) (c::scspecseq-none))
-       (stoclaspecs (stoclaspec-list-fix stoclaspecs)))
+       (stor-specs (stor-spec-list-fix stor-specs)))
     (cond
-     ((equal stoclaspecs nil)
+     ((equal stor-specs nil)
       (retok (c::scspecseq-none)))
-     ((equal stoclaspecs (list (stoclaspec-extern)))
+     ((equal stor-specs (list (stor-spec-extern)))
       (retok (c::scspecseq-extern)))
      (t
       (reterr (msg "Unsupported storage class specifier sequence ~x0."
-                   stoclaspecs)))))
+                   stor-specs)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-dirdeclor-obj ((dirdeclor dirdeclorp))
+  :guard (dirdeclor-unambp dirdeclor)
   :returns (mv erp (declor1 c::obj-declorp))
   :short "Map a direct declarator to
           an object declarator in the language definition."
@@ -327,6 +367,11 @@
      square-bracketed optional integer constant expressions.
      These zero or more array declarator constructs
      are handled recursively.")
+   (xdoc::p
+    "For now we disallow parenthesized declarators for simplicity.
+     To allow them, we need to make this function
+     mutually recursive with @(tsee ldm-declor-obj),
+     which we will at some point.")
    (xdoc::p
     "This function will always result in a @(tsee c::obj-declor)
      of the @(':ident') or @(':array') kind;
@@ -366,6 +411,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-declor-obj ((declor declorp))
+  :guard (declor-unambp declor)
   :returns (mv erp (declor1 c::obj-declorp))
   :short "Map a declarator to
           an object declarator in the language definition."
@@ -386,7 +432,7 @@
 
   :prepwork
   ((define ldm-declor-obj-loop ((declor1 c::obj-declorp)
-                                (pointers tyqual-list-listp))
+                                (pointers type-qual-list-listp))
      :returns (mv erp (declor2 c::obj-declorp))
      :parents nil
      (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
@@ -394,7 +440,7 @@
           (tyquals (car pointers))
           ((unless (endp tyquals))
            (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (tyqual-list-fix tyquals))))
+                        (type-qual-list-fix tyquals))))
           ((erp declor2) (ldm-declor-obj-loop declor1 (cdr pointers))))
        (retok (c::obj-declor-pointer declor2)))
      :hooks (:fix))))
@@ -402,6 +448,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-dirabsdeclor-obj ((dirabsdeclor dirabsdeclorp))
+  :guard (dirabsdeclor-unambp dirabsdeclor)
   :returns (mv erp (adeclor1 c::obj-adeclorp))
   :short "Map a direct abstract declarator to
           an abstract object declarator in the language definition."
@@ -448,6 +495,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-absdeclor-obj ((absdeclor absdeclorp))
+  :guard (absdeclor-unambp absdeclor)
   :returns (mv erp (adeclor1 c::obj-adeclorp))
   :short "Map an abstract declarator to
           an abstract object declarator in the language definition."
@@ -474,7 +522,7 @@
 
   :prepwork
   ((define ldm-absdeclor-obj-loop ((adeclor1 c::obj-adeclorp)
-                                   (pointers tyqual-list-listp))
+                                   (pointers type-qual-list-listp))
      :returns (mv erp (adeclor2 c::obj-adeclorp))
      :parents nil
      (b* (((reterr) (c::obj-adeclor-none))
@@ -482,7 +530,7 @@
           (tyquals (car pointers))
           ((unless (endp tyquals))
            (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (tyqual-list-fix tyquals))))
+                        (type-qual-list-fix tyquals))))
           ((erp adeclor2) (ldm-absdeclor-obj-loop adeclor1 (cdr pointers))))
        (retok (c::obj-adeclor-pointer adeclor2)))
      :hooks (:fix))))
@@ -490,6 +538,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-tyname ((tyname tynamep))
+  :guard (tyname-unambp tyname)
   :returns (mv erp (tyname1 c::tynamep))
   :short "Map a type name to a type name in the language definition."
   :long
@@ -499,12 +548,12 @@
      and must form a supported sequence."))
   (b* (((reterr) (c::tyname (c::tyspecseq-void) (c::obj-adeclor-none)))
        ((tyname tyname) tyname)
-       ((mv okp tyspecs) (check-specqual-list-all-tyspec tyname.specqual))
+       ((mv okp tyspecs) (check-spec/qual-list-all-tyspec tyname.specqual))
        ((when (not okp))
         (reterr (msg "Unsupported specifiers and qualifiers ~
                       in type name ~x0."
                      (tyname-fix tyname))))
-       ((erp tyspecseq) (ldm-tyspec-list tyspecs))
+       ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((when (not tyname.decl?))
         (retok (c::make-tyname :tyspec tyspecseq
                                :declor (c::obj-adeclor-none))))
@@ -558,6 +607,7 @@
   :short "Map expressions to expressions in the language definition."
 
   (define ldm-expr ((expr exprp))
+    :guard (expr-unambp expr)
     :returns (mv erp (expr1 c::exprp))
     :parents (mapping-to-language-definition ldm-exprs)
     :short "Map an expression to an expression in the language definition."
@@ -604,10 +654,7 @@
           :postdec (retok (c::expr-postdec arg))
           :sizeof (reterr (msg "Unsupported sizeof operator."))))
        :sizeof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
-       :sizeof-ambig (prog2$
-                      (raise "Misusage error: ambiguous expression ~x0."
-                             (expr-fix expr))
-                      (reterr t))
+       :sizeof-ambig (prog2$ (impossible) (reterr t))
        :alignof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :cast (b* (((erp tyname) (ldm-tyname expr.type))
                   ((erp arg) (ldm-expr expr.arg)))
@@ -621,29 +668,15 @@
                   ((erp else) (ldm-expr expr.else)))
                (retok (c::make-expr-cond :test test :then then :else else)))
        :comma (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
-       :cast/call-ambig (prog2$
-                         (raise "Misusage error: ambiguous expression ~x0."
-                                (expr-fix expr))
-                         (reterr t))
-       :cast/mul-ambig (prog2$
-                        (raise "Misusage error: ambiguous expression ~x0."
-                               (expr-fix expr))
-                        (reterr t))
-       :cast/add-ambig (prog2$
-                        (raise "Misusage error: ambiguous expression ~x0."
-                               (expr-fix expr))
-                        (reterr t))
-       :cast/sub-ambig (prog2$
-                        (raise "Misusage error: ambiguous expression ~x0."
-                               (expr-fix expr))
-                        (reterr t))
-       :cast/and-ambig (prog2$
-                        (raise "Misusage error: ambiguous expression ~x0."
-                               (expr-fix expr))
-                        (reterr t))))
+       :cast/call-ambig (prog2$ (impossible) (reterr t))
+       :cast/mul-ambig (prog2$ (impossible) (reterr t))
+       :cast/add-ambig (prog2$ (impossible) (reterr t))
+       :cast/sub-ambig (prog2$ (impossible) (reterr t))
+       :cast/and-ambig (prog2$ (impossible) (reterr t))))
     :measure (expr-count expr))
 
   (define ldm-expr-list ((exprs expr-listp))
+    :guard (expr-list-unambp exprs)
     :returns (mv erp (exprs1 c::expr-listp))
     :parents (mapping-to-language-definition ldm-exprs)
     :short "Map a list of expressions to
@@ -655,17 +688,16 @@
       (retok (cons expr1 exprs1)))
     :measure (expr-list-count exprs))
 
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
 
   ///
-
-  (verify-guards ldm-expr)
 
   (fty::deffixequiv-mutual ldm-exprs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-expr-option ((expr? expr-optionp))
+  :guard (expr-option-unambp expr?)
   :returns (mv erp (expr?1 c::expr-optionp))
   :short "Map an optional expression to
           an optional expression in the language definition."
@@ -679,6 +711,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-structdecl ((structdecl structdeclp))
+  :guard (structdecl-unambp structdecl)
   :returns (mv erp (structdecl1 c::struct-declonp))
   :short "Map a structure declaration to
           a structure declaration in the language definition."
@@ -698,12 +731,12 @@
                      (structdecl-fix structdecl))))
        (specquals (structdecl-member->specqual structdecl))
        (declors (structdecl-member->declor structdecl))
-       ((mv okp tyspecs) (check-specqual-list-all-tyspec specquals))
+       ((mv okp tyspecs) (check-spec/qual-list-all-tyspec specquals))
        ((unless okp)
         (reterr (msg "Unsupported specifier and qualifier list ~
                       in structure declaration ~x0."
                      (structdecl-fix structdecl))))
-       ((erp tyspecseq) (ldm-tyspec-list tyspecs))
+       ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((unless (and (consp declors)
                      (endp (cdr declors))))
         (reterr (msg "Unsupported number of declarators ~
@@ -725,6 +758,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-structdecl-list ((structdecls structdecl-listp))
+  :guard (structdecl-list-unambp structdecls)
   :returns (mv erp (structdecls1 c::struct-declon-listp))
   :short "Map a list of structure declarations to
           a list of structure declarations in the language definition."
@@ -738,6 +772,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-enumer ((enumer enumerp))
+  :guard (enumer-unambp enumer)
   :returns (mv erp (ident c::identp))
   :short "Map an enumerator to
           an identifier in the language definition."
@@ -756,6 +791,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-enumer-list ((enumers enumer-listp))
+  :guard (enumer-list-unambp enumers)
   :returns (mv erp (idents c::ident-listp))
   :short "Map a list of enumerators to
           a list of identifiers in the language definition."
@@ -769,6 +805,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-decl-tag ((decl declp))
+  :guard (decl-unambp decl)
   :returns (mv erp (tagdeclon c::tag-declonp))
   :short "Map a declaration to
           a tag declaration in the language definition."
@@ -800,24 +837,25 @@
                       for tag (i.e. structure/union/enumeration) declaration."
                      declspec)))
        (tyspec (declspec-tyspec->unwrap declspec))
-       ((when (tyspec-case tyspec :struct))
-        (b* (((strunispec strunispec) (tyspec-struct->unwrap tyspec))
+       ((when (type-spec-case tyspec :struct))
+        (b* (((strunispec strunispec) (type-spec-struct->unwrap tyspec))
              ((unless strunispec.name)
               (reterr (msg "Unsupported structure declaration without name.")))
              ((erp name1) (ldm-ident strunispec.name))
              ((erp members1) (ldm-structdecl-list strunispec.members)))
           (retok (c::make-tag-declon-struct :tag name1 :members members1))))
-       ((when (tyspec-case tyspec :union))
-        (b* (((strunispec strunispec) (tyspec-union->unwrap tyspec))
+       ((when (type-spec-case tyspec :union))
+        (b* (((strunispec strunispec) (type-spec-union->unwrap tyspec))
              ((unless strunispec.name)
               (reterr (msg "Unsupported union declaration without name.")))
              ((erp name1) (ldm-ident strunispec.name))
              ((erp members1) (ldm-structdecl-list strunispec.members)))
           (retok (c::make-tag-declon-union :tag name1 :members members1))))
-       ((when (tyspec-case tyspec :enum))
-        (b* (((enumspec enumspec) (tyspec-enum->unwrap tyspec))
+       ((when (type-spec-case tyspec :enum))
+        (b* (((enumspec enumspec) (type-spec-enum->unwrap tyspec))
              ((unless enumspec.name)
-              (reterr (msg "Unsupported enumeration declaration without name.")))
+              (reterr
+               (msg "Unsupported enumeration declaration without name.")))
              ((erp name1) (ldm-ident enumspec.name))
              ((erp idents1) (ldm-enumer-list enumspec.list)))
           (retok (c::make-tag-declon-enum :tag name1 :enumerators idents1)))))
@@ -829,6 +867,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-paramdeclor ((paramdeclor paramdeclorp))
+  :guard (paramdeclor-unambp paramdeclor)
   :returns (mv erp (objdeclor c::obj-declorp))
   :short "Map a parameter declarator to
           an object declarator in the language definition."
@@ -846,9 +885,7 @@
        ((when (paramdeclor-case paramdeclor :none))
         (reterr (msg "Unsupported absent parameter declarator ~x0.")))
        ((when (paramdeclor-case paramdeclor :ambig))
-        (raise "Misusage error: ambiguous parameter declarator ~x0."
-               (paramdeclor-fix paramdeclor))
-        (reterr t))
+        (prog2$ (impossible) (reterr t)))
        (declor (paramdeclor-declor->unwrap paramdeclor)))
     (ldm-declor-obj declor))
   :hooks (:fix))
@@ -856,6 +893,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-paramdecl ((paramdecl paramdeclp))
+  :guard (paramdecl-unambp paramdecl)
   :returns (mv erp (paramdecl1 c::param-declonp))
   :short "Map a parameter declaration to
           a parameter declaration in the language definition."
@@ -876,7 +914,7 @@
         (reterr (msg "Unsupported declaration specifier list ~
                       in parameter declaration ~x0."
                      (paramdecl-fix paramdecl))))
-       ((erp tyspecseq) (ldm-tyspec-list tyspecs))
+       ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((erp objdeclor) (ldm-paramdeclor declor)))
     (retok (c::make-param-declon :tyspec tyspecseq :declor objdeclor)))
   :hooks (:fix))
@@ -884,6 +922,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-paramdecl-list ((paramdecls paramdecl-listp))
+  :guard (paramdecl-list-unambp paramdecls)
   :returns (mv erp (paramdecls1 c::param-declon-listp))
   :short "Map a list of parameter declarations to
           a list of parameter declarations in the language definition."
@@ -897,6 +936,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-dirdeclor-fun ((dirdeclor dirdeclorp))
+  :guard (dirdeclor-unambp dirdeclor)
   :returns (mv erp (fundeclor c::fun-declorp))
   :short "Map a direct declarator to
           a function declarator in the language definition."
@@ -933,6 +973,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-declor-fun ((declor declorp))
+  :guard (declor-unambp declor)
   :returns (mv erp (fundeclor c::fun-declorp))
   :short "Map a declarator to
           a function declarator in the language definition."
@@ -953,7 +994,7 @@
 
   :prepwork
   ((define ldm-declor-fun-loop ((declor1 c::fun-declorp)
-                                (pointers tyqual-list-listp))
+                                (pointers type-qual-list-listp))
      :returns (mv erp (declor2 c::fun-declorp))
      :parents nil
      (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
@@ -961,7 +1002,7 @@
           (tyquals (car pointers))
           ((unless (endp tyquals))
            (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (tyqual-list-fix tyquals))))
+                        (type-qual-list-fix tyquals))))
           ((erp declor2) (ldm-declor-fun-loop declor1 (cdr pointers))))
        (retok (c::fun-declor-pointer declor2)))
      :hooks (:fix))))
@@ -969,6 +1010,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-decl-fun ((decl declp))
+  :guard (decl-unambp decl)
   :returns (mv erp (fundeclon c::fun-declonp))
   :short "Map a declaration to
           a function declaration in the language definition."
@@ -1000,7 +1042,7 @@
         (reterr (msg "Unsupported declaration specifier list ~
                       in declaration ~x0 for function."
                      (decl-fix decl))))
-       ((erp tyspecseq) (ldm-tyspec-list tyspecs))
+       ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((unless (and (consp initdeclors)
                      (endp (cdr initdeclors))))
         (reterr (msg "Unsupported number of declarators ~x0 ~
@@ -1018,6 +1060,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-desiniter ((desiniter desiniterp))
+  :guard (desiniter-unambp desiniter)
   :returns (mv erp (expr c::exprp))
   :short "Map an initializer with optional designations
           to an initializer expression in the language definition."
@@ -1038,6 +1081,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-desiniter-list ((desiniters desiniter-listp))
+  :guard (desiniter-list-unambp desiniters)
   :returns (mv erp (exprs c::expr-listp))
   :short "Map a list of initializers with optional designations to
           a list of initializer expressions in the language definition."
@@ -1051,6 +1095,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-initer ((initer initerp))
+  :guard (initer-unambp initer)
   :returns (mv erp (initer1 c::initerp))
   :short "Map an initializer to
           an initializer in the language definition."
@@ -1066,6 +1111,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-decl-obj ((decl declp))
+  :guard (decl-unambp decl)
   :returns (mv erp (objdeclon c::obj-declonp))
   :short "Map a declaration to
           an object declaration in the language definition."
@@ -1088,14 +1134,14 @@
                      (decl-fix decl))))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
-       ((mv okp tyspecs stoclaspecs)
-        (check-declspec-list-all-tyspec/stoclaspec declspecs))
+       ((mv okp tyspecs stor-specs)
+        (check-declspec-list-all-tyspec/storspec declspecs))
        ((unless okp)
         (reterr (msg "Unsupported declaration specifiers ~x0 ~
                       for object declaration."
                      declspecs)))
-       ((erp tyspecseq) (ldm-tyspec-list tyspecs))
-       ((erp scspecseq) (ldm-stoclaspec-list stoclaspecs))
+       ((erp tyspecseq) (ldm-type-spec-list tyspecs))
+       ((erp scspecseq) (ldm-stor-spec-list stor-specs))
        ((unless (and (consp initdeclors)
                      (endp (cdr initdeclors))))
         (reterr (msg "Unsupported number of initializer declarators ~x0 ~
@@ -1118,6 +1164,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-label ((label labelp))
+  :guard (label-unambp label)
   :returns (mv erp (label1 c::labelp))
   :short "Map a label to a label in the language definition."
   (b* (((reterr) (c::label-default)))
@@ -1137,6 +1184,7 @@
           statements and blocks in the language definition."
 
   (define ldm-stmt ((stmt stmtp))
+    :guard (stmt-unambp stmt)
     :returns (mv erp (stmt1 c::stmtp))
     :parents (mapping-to-language-definition ldm-stmts/blocks)
     :short "Map a statement to a statement in the language definition."
@@ -1171,17 +1219,18 @@
        :dowhile (b* (((erp body1) (ldm-stmt stmt.body))
                      ((erp test1) (ldm-expr stmt.test)))
                   (retok (c::make-stmt-dowhile :body body1 :test test1)))
-       :for (b* (((erp init1) (ldm-expr-option stmt.init))
-                 ((erp test1) (ldm-expr-option stmt.test))
-                 ((erp next1) (ldm-expr-option stmt.next))
-                 ((erp body1) (ldm-stmt stmt.body)))
-              (retok (c::make-stmt-for :init init1
-                                       :test test1
-                                       :next next1
-                                       :body body1)))
-       :fordecl (reterr (msg "Unsupported 'for' loop ~x0 ~
-                              with initializing declaration."
-                             (stmt-fix stmt)))
+       :for-expr (b* (((erp init1) (ldm-expr-option stmt.init))
+                      ((erp test1) (ldm-expr-option stmt.test))
+                      ((erp next1) (ldm-expr-option stmt.next))
+                      ((erp body1) (ldm-stmt stmt.body)))
+                   (retok (c::make-stmt-for :init init1
+                                            :test test1
+                                            :next next1
+                                            :body body1)))
+       :for-decl (reterr (msg "Unsupported 'for' loop ~x0 ~
+                               with initializing declaration."
+                              (stmt-fix stmt)))
+       :for-ambig (prog2$ (impossible) (reterr t))
        :goto (b* (((erp ident1) (ldm-ident stmt.label)))
                (retok (c::make-stmt-goto :target ident1)))
        :continue (retok (c::stmt-continue))
@@ -1191,6 +1240,7 @@
     :measure (stmt-count stmt))
 
   (define ldm-block-item ((item block-itemp))
+    :guard (block-item-unambp item)
     :returns (mv erp (item1 c::block-itemp))
     :parents (mapping-to-language-definition ldm-stmts/blocks)
     :short "Map a block item to a block item in the language definition."
@@ -1200,10 +1250,12 @@
        :decl (b* (((erp objdeclon) (ldm-decl-obj item.unwrap)))
                (retok (c::block-item-declon objdeclon)))
        :stmt (b* (((erp stmt) (ldm-stmt item.unwrap)))
-               (retok (c::block-item-stmt stmt)))))
+               (retok (c::block-item-stmt stmt)))
+       :ambig (prog2$ (impossible) (reterr t))))
     :measure (block-item-count item))
 
   (define ldm-block-item-list ((items block-item-listp))
+    :guard (block-item-list-unambp items)
     :returns (mv erp (items1 c::block-item-listp))
     :parents (mapping-to-language-definition ldm-stmts/blocks)
     :short "Map a list of block items to
@@ -1215,17 +1267,16 @@
       (retok (cons item1 items1)))
     :measure (block-item-list-count items))
 
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
 
   ///
-
-  (verify-guards ldm-stmt)
 
   (fty::deffixequiv-mutual ldm-stmts/blocks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-fundef ((fundef fundefp))
+  :guard (fundef-unambp fundef)
   :returns (mv erp (fundef1 c::fundefp))
   :short "Map a function definition to the language definition."
   :long
@@ -1246,7 +1297,7 @@
         (reterr (msg "Unsupported declaration specifiers ~
                       in function definition ~x0."
                      (fundef-fix fundef))))
-       ((erp tyspecseq) (ldm-tyspec-list tyspecs))
+       ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((erp fundeclor) (ldm-declor-fun fundef.declor))
        ((when fundef.decls)
         (reterr (msg "Unsupported declarations ~
@@ -1265,6 +1316,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-extdecl ((extdecl extdeclp))
+  :guard (extdecl-unambp extdecl)
   :returns (mv erp (extdecl1 c::ext-declonp))
   :short "Map an external declaration to
           an external declaration in the language definition."
@@ -1301,6 +1353,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-extdecl-list ((extdecls extdecl-listp))
+  :guard (extdecl-list-unambp extdecls)
   :returns (mv erp (extdecls1 c::ext-declon-listp))
   :short "Map a list of external declarations to the language definition."
   (b* (((reterr) nil)
@@ -1313,6 +1366,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-transunit ((tunit transunitp))
+  :guard (transunit-unambp tunit)
   :returns (mv erp (file c::filep))
   :short "Map a translation unit to the language definition."
   :long
@@ -1331,6 +1385,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-transunit-ensemble ((tunits transunit-ensemblep))
+  :guard (transunit-ensemble-unambp tunits)
   :returns (mv erp (fileset c::filesetp))
   :short "Map a translation unit ensemble to the language definition."
   :long

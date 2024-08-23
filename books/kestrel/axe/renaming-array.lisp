@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "dag-arrays")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;; A renaming-array maps all nodes, up to a given node, to nodenums or

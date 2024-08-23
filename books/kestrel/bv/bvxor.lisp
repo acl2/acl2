@@ -13,8 +13,9 @@
 
 ;(include-book "bvchop")
 (include-book "getbit")
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "logxor-b"))
-(local (include-book "../utilities/equal-of-booleans"))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
@@ -560,3 +561,57 @@
   :hints (("Goal" :in-theory (enable bvxor))))
 
 (theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-of-bvchop-becomes-bvxor-arg2)))
+
+;rename
+(defthm equal-of-bvxor-and-bvxor-same-7
+  (equal (equal (bvxor size zw (bvxor size x z)) (bvxor size y (bvxor size x zu)))
+         (equal (bvxor size zw z) (bvxor size y zu))))
+
+;rename
+(defthm equal-of-bvxor-and-bvxor-same-8
+  (equal (equal (bvxor size zw x) (bvxor size y (bvxor size x zu)))
+         (equal (bvchop size zw) (bvxor size y zu))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;We'd like BVNOT to be invisible when commuting BVXOR nests.  But BVNOT is not
+;;unary, so I don't think ACL2's built-in notion of invisible-fns will work.
+;;So we implement our own version here for BVXOR calls.
+
+;TODO: Move to bv-syntax file?
+;fixme should we check the size of the bvnot call?
+(defun strip-off-bvnot-call (term)
+  (declare (xargs :guard t))
+  (if (and (consp term)
+           (eq 'bvnot (car term))
+           (consp (cdr term))
+           (consp (cddr term)))
+      (fargn term 2)
+    term))
+
+;ffixme don't mess up associativity - see should-commute-args and make a non-axe version?
+(defund smaller-bvxor-arg (term1 term2)
+; (declare (xargs :guard t)) ;todo add a guard
+  (smaller-termp (strip-off-bvnot-call term1)
+                 (strip-off-bvnot-call term2)))
+
+(defthm bvxor-commutative-alt
+  (implies (syntaxp (smaller-bvxor-arg b a))
+           (equal (bvxor size a b)
+                  (bvxor size b a)))
+  :rule-classes ((:rewrite :loop-stopper nil ;((a b bvxor))
+                           ))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(in-theory (disable bvxor-commutative))
+(theory-invariant (incompatible (:rewrite bvxor-commutative) (:rewrite bvxor-commutative-alt)))
+
+(defthm bvxor-commutative-2-alt
+  (implies (syntaxp (smaller-bvxor-arg a b))
+           (equal (bvxor size b (bvxor size a c))
+                  (bvxor size a (bvxor size b c))))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(in-theory (disable bvxor-commutative-2))
+(theory-invariant (incompatible (:rewrite bvxor-commutative-2) (:rewrite bvxor-commutative-2-alt)))

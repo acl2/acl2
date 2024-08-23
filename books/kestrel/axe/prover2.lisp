@@ -1,7 +1,7 @@
 ; More Axe Prover material
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -91,7 +91,7 @@
                              t
                              (table-alist 'axe-rule-priorities-table (w state))
                              rule-alist-passed-in))
-         (- (cw "~x0 total rules~%" (rule-count-in-rule-alist rule-alist)))
+         (- (cw "~x0 total rules~%" (count-rules-in-rule-alist rule-alist)))
          ;;  merge all literals into one big dag:
          ((mv erp literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
           (make-terms-into-dag-array clause
@@ -102,7 +102,7 @@
          ;;Process the clause by trying to prove the disjunction of LITERAL-TERMS
          ;;should this return an updated rule-alist?
          (- (and (eq print :verbose) (cw "Initial literals: ~x0. Initial DAG:~%" literal-nodenums-or-quoteps)))
-         (- (and (eq print :verbose) (print-array2 'dag-array dag-array dag-len)))
+         (- (and (eq print :verbose) (print-array 'dag-array dag-array dag-len)))
          ((mv erp result & & & & & ;; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
               hit-counts tries state)
           (prove-disjunction-with-axe-prover literal-nodenums-or-quoteps

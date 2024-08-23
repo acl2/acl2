@@ -1,7 +1,7 @@
 ; Theorems about evenness and oddness
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -86,7 +86,7 @@
                 (integerp y))
            (equal (evenp (+ y x))
                   (not (evenp y))))
-  :hints (("Goal" :use (:instance odd-plus-odd-is-even)
+  :hints (("Goal" :use odd-plus-odd-is-even
            :in-theory (disable odd-plus-odd-is-even))))
 
 (defthm evenp-of-+-when-not-evenp-arg1
@@ -95,7 +95,7 @@
                 (integerp y))
            (equal (evenp (+ x y))
                   (not (evenp y))))
-  :hints (("Goal" :use (:instance evenp-reduce-odd-alt)
+  :hints (("Goal" :use evenp-reduce-odd-alt
            :in-theory (disable evenp-reduce-odd-alt))))
 
 ;FIXME can be expensive?
@@ -109,7 +109,7 @@
   (implies (and (evenp x)
                 (integerp y))
            (evenp (* y x)))
-  :hints (("Goal" :use (:instance evenp-of-*-when-evenp)
+  :hints (("Goal" :use evenp-of-*-when-evenp
            :in-theory (disable evenp-of-*-when-evenp))))
 
 (defthmd odd-times-odd
@@ -130,7 +130,7 @@
                 (integerp y))
            (equal (oddp (* x y))
                   (oddp y)))
-  :hints (("Goal" :use (:instance odd-times-odd))))
+  :hints (("Goal" :use odd-times-odd)))
 
 (defthm evenp-of-*-when-odd-alt
   (implies (and (oddp x)
@@ -138,7 +138,7 @@
                 (integerp y))
            (equal (evenp (* y x))
                   (evenp y)))
-  :hints (("Goal" :use (:instance oddp-of-*-when-odd)
+  :hints (("Goal" :use oddp-of-*-when-odd
            :in-theory (disable oddp-of-*-when-odd))))
 
 ;; (thm

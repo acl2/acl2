@@ -1,7 +1,7 @@
 ; Using the dag-parent-array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,6 +15,7 @@
 (include-book "dag-arrays")
 (include-book "bounded-dag-parent-arrayp")
 (include-book "shorter-list")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; This book deals with populating and using the dag-parent-array.
 ;; See also dag-parent-arrayp.lisp and bounded-dag-parent-arrayp.lisp.
@@ -49,31 +50,34 @@
                                     (rest items)
                                     dag-parent-array))))))
 
-(defthm nat-listp-of-find-shortest-parent-lst
-  (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                (nat-listp current-shortest-lst)
-                (darg-listp items))
-           (nat-listp (find-shortest-parent-lst current-shortest-lst items dag-parent-array)))
-  :hints (("Goal" :in-theory (enable find-shortest-parent-lst))))
+(local
+  (defthm nat-listp-of-find-shortest-parent-lst
+    (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
+                  (nat-listp current-shortest-lst)
+                  (darg-listp items))
+             (nat-listp (find-shortest-parent-lst current-shortest-lst items dag-parent-array)))
+    :hints (("Goal" :in-theory (enable find-shortest-parent-lst)))))
 
-(defthm true-listp-of-find-shortest-parent-lst
-  (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                (true-listp current-shortest-lst)
-                (darg-listp items))
-           (true-listp (find-shortest-parent-lst current-shortest-lst items dag-parent-array)))
-  :hints (("Goal" :in-theory (enable find-shortest-parent-lst))))
+(local
+  (defthm true-listp-of-find-shortest-parent-lst
+    (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
+                  (true-listp current-shortest-lst)
+                  (darg-listp items))
+             (true-listp (find-shortest-parent-lst current-shortest-lst items dag-parent-array)))
+    :hints (("Goal" :in-theory (enable find-shortest-parent-lst)))))
 
-(defthm all-<-of-find-shortest-parent-lst
-  (implies (and ;(dag-parent-arrayp 'dag-parent-array dag-parent-array top-nodenum-to-check)
-            ;; (true-listp items)
-            (bounded-dag-parent-entriesp n 'dag-parent-array dag-parent-array limit)
-            (all-< current-shortest-lst limit)
-            (bounded-darg-listp items (+ 1 n))
-            ;;(darg-listp items)
-            (integerp n))
-           (all-< (find-shortest-parent-lst current-shortest-lst items dag-parent-array)
-                  limit))
-  :hints (("Goal" :in-theory (enable find-shortest-parent-lst dag-parent-arrayp bound-lemma-for-car-when-bounded-darg-listp))))
+(local
+  (defthm all-<-of-find-shortest-parent-lst
+    (implies (and ;(dag-parent-arrayp 'dag-parent-array dag-parent-array top-nodenum-to-check)
+               ;; (true-listp items)
+               (bounded-dag-parent-entriesp n 'dag-parent-array dag-parent-array limit)
+               (all-< current-shortest-lst limit)
+               (bounded-darg-listp items (+ 1 n))
+               ;;(darg-listp items)
+               (integerp n))
+             (all-< (find-shortest-parent-lst current-shortest-lst items dag-parent-array)
+                    limit))
+    :hints (("Goal" :in-theory (enable find-shortest-parent-lst dag-parent-arrayp bound-lemma-for-car-when-bounded-darg-listp)))))
 
 ;;returns (mv first-atom rest)
 (defund first-atom (items)
@@ -174,9 +178,7 @@
                                (+ 1 (largest-non-quotep items))))
   :hints (("Goal" :in-theory (enable largest-non-quotep first-atom all-consp))))
 
-;;;
-;;; find-matching-node
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns the nodenum from NODENUMS at which (cons fn args) exists (if any), otherwise nil
 (defund find-matching-node (fn args nodenums dag-array)
@@ -195,16 +197,18 @@
           nodenum
         (find-matching-node fn args (cdr nodenums) dag-array)))))
 
-(defthm integerp-of-find-matching-node
-  (implies (nat-listp nodenums)
-           (iff (integerp (find-matching-node fn args nodenums dag-array))
-                (find-matching-node fn args nodenums dag-array)))
-  :hints (("Goal" :in-theory (enable find-matching-node))))
+(local
+  (defthm integerp-of-find-matching-node
+    (implies (nat-listp nodenums)
+             (iff (integerp (find-matching-node fn args nodenums dag-array))
+                  (find-matching-node fn args nodenums dag-array)))
+    :hints (("Goal" :in-theory (enable find-matching-node)))))
 
-(defthm nonneg-of-find-matching-node
-  (implies (nat-listp nodenums)
-           (<= 0 (find-matching-node fn args nodenums dag-array)))
-  :hints (("Goal" :in-theory (enable find-matching-node))))
+(local
+  (defthm nonneg-of-find-matching-node
+    (implies (nat-listp nodenums)
+             (<= 0 (find-matching-node fn args nodenums dag-array)))
+    :hints (("Goal" :in-theory (enable find-matching-node)))))
 
 ;;;
 ;;; find-expr-using-parents
@@ -277,8 +281,6 @@
               dag-len))
   :hints (("Goal" :in-theory (enable find-matching-node))))
 
-
-
 ;; (thm
 ;;  (ALL-< (FIND-SHORTEST-PARENT-LST (AREF1 'DAG-PARENT-ARRAY
 ;;                                         DAG-PARENT-ARRAY
@@ -329,9 +331,7 @@
                             ;<-of-find-matching-node
                             )))))
 
-;;;
-;;; add-to-parents-of-atoms
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;add NODENUM to the parent lists for those ITEMS which are not quoteps
 ;; Same as add-to-parents-of-atoms-with-name except this fixes 'dag-parent-array as the dag-parent-array-name.
@@ -353,14 +353,15 @@
                                      (aset1 'dag-parent-array dag-parent-array item new-parents)))
         (add-to-parents-of-atoms (rest items) nodenum dag-parent-array)))))
 
-(defthm array1p-of-add-to-parents-of-atoms
-  (implies (and (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
-                ;(darg-listp items)
-                (natp nodenum)
-                ;(<= nodenum top-nodenum-to-check)
-                (array1p 'dag-parent-array dag-parent-array))
-           (array1p 'dag-parent-array (add-to-parents-of-atoms items nodenum dag-parent-array)))
-  :hints (("Goal" :in-theory (enable dag-parent-arrayp add-to-parents-of-atoms integer-listp))))
+(local
+  (defthm array1p-of-add-to-parents-of-atoms
+    (implies (and (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
+                  ;;(darg-listp items)
+                  (natp nodenum)
+                  ;;(<= nodenum top-nodenum-to-check)
+                  (array1p 'dag-parent-array dag-parent-array))
+             (array1p 'dag-parent-array (add-to-parents-of-atoms items nodenum dag-parent-array)))
+    :hints (("Goal" :in-theory (enable dag-parent-arrayp add-to-parents-of-atoms integer-listp)))))
 
 (defthm default-of-add-to-parents-of-atoms
   (implies (and (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))

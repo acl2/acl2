@@ -1,6 +1,6 @@
 ; Top file for acl2-arrays library
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,3 +31,6 @@
 (include-book "make-into-array-with-len")
 (include-book "make-into-array")
 (include-book "acl2-arrays")
+(include-book "aset1-safe")
+(include-book "print-array")
+(include-book "copy-array-vals")

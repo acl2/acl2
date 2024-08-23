@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc concrete-syntax
+(defxdoc+ concrete-syntax
   :parents (syntax-for-tools)
   :short "A formulation of the concrete syntax of C for use by tools."
   :long
@@ -53,7 +53,9 @@
      However, we are instantiating certain aspects of the concrete syntax
      which [C] leaves open, such as the exact character set used.")
    (xdoc::p
-    "We plan to add a parser and a pretty-printer.")))
+    "We plan to add a parser and a pretty-printer."))
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,7 +69,11 @@
      At some point we should prove that
      this definition is consistent with that ABNF grammar rule."))
   (or (and (<= 9 char) (<= char 13))
-      (and (<= 32 char) (<= char 126))))
+      (and (<= 32 char) (<= char 126))
+      (and (<= #x80 char) (<= char #x2029))
+      (and (<= #x202f char) (<= char #x2065))
+      (and (<= #x206a char) (<= char #xd7ff))
+      (and (<= #xe000 char) (<= char #x10ffff))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,0 +1,8 @@
+(DEFPKG "M2"
+  (set-difference-equal
+   (union-eq '(ASSOC-EQUAL NTH ZP SYNTAXP QUOTEP FIX NFIX)
+             (union-eq *acl2-exports*
+                       *common-lisp-symbols-from-main-lisp-package*))
+   '(PC PROGRAM PUSH POP REVERSE STEP ++)))
+
+(certify-book "m2" ? 1)

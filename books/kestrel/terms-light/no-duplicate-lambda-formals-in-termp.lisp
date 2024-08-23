@@ -1,6 +1,6 @@
 ; A simple utility to check that lambdas never have duplicate formals
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,6 +33,17 @@
      (and (no-duplicate-lambda-formals-in-termp (first terms))
           (no-duplicate-lambda-formals-in-termsp (rest terms))))))
 
+(defthm no-duplicate-lambda-formals-in-termp-of-cons
+  (equal (no-duplicate-lambda-formals-in-termp (cons fn args))
+         (if (equal 'quote fn)
+             t
+           (and (no-duplicate-lambda-formals-in-termsp args)
+                (if (consp fn)
+                    (and (no-duplicatesp-eq (lambda-formals fn))
+                       (no-duplicate-lambda-formals-in-termp (lambda-body fn)))
+                  t))))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp))))
+
 (defthm no-duplicate-lambda-formals-in-termsp-of-cdr
   (implies (no-duplicate-lambda-formals-in-termsp terms)
            (no-duplicate-lambda-formals-in-termsp (cdr terms)))
@@ -48,7 +59,13 @@
            (no-duplicate-lambda-formals-in-termp (car terms)))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp))))
 
-(defthm no-duplicate-lambda-formals-in-termp-of-append
+(defthm no-duplicate-lambda-formals-in-termp-of-lambda-body
+  (implies (and (no-duplicate-lambda-formals-in-termp term)
+                (consp (car term)))
+           (no-duplicate-lambda-formals-in-termp (lambda-body (car term))))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-of-append
   (equal (no-duplicate-lambda-formals-in-termsp (append terms1 terms2))
          (and (no-duplicate-lambda-formals-in-termsp terms1)
               (no-duplicate-lambda-formals-in-termsp terms2)))
@@ -64,6 +81,13 @@
            (no-duplicate-lambda-formals-in-termsp terms))
   :hints (("Goal" :in-theory (enable symbol-listp
                                      no-duplicate-lambda-formals-in-termsp))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-when-quote-listp
+  (implies (quote-listp terms)
+           (no-duplicate-lambda-formals-in-termsp terms))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp
+                                     no-duplicate-lambda-formals-in-termp ; todo
+                                     ))))
 
 (defthm no-duplicate-lambda-formals-in-termsp-of-when-no-duplicate-lambda-formals-in-termp
    (implies (and (no-duplicate-lambda-formals-in-termp term)
@@ -106,3 +130,42 @@
               (no-duplicate-lambda-formals-in-termsp terms2)))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp
                                      union-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Sanity check: termp implies no-duplicate-lambda-formals-in-termp:
+
+(local (make-flag no-duplicate-lambda-formals-in-termp))
+
+(local
+ (defthm-flag-no-duplicate-lambda-formals-in-termp
+   (defthm no-duplicate-lambda-formals-in-termp-when-termp
+     (implies (termp term w)
+              (no-duplicate-lambda-formals-in-termp term))
+     :flag no-duplicate-lambda-formals-in-termp)
+   (defthm no-duplicate-lambda-formals-in-termsp-when-term-listp
+     (implies (term-listp terms w)
+              (no-duplicate-lambda-formals-in-termsp terms))
+     :flag no-duplicate-lambda-formals-in-termsp)
+   :hints (("Goal" :expand (free-vars-in-terms terms)
+            :in-theory (enable free-vars-in-term no-duplicate-lambda-formals-in-termp)))))
+
+;; redundant and non-local
+(defthm no-duplicate-lambda-formals-in-termp-when-termp
+  (implies (termp term w)
+           (no-duplicate-lambda-formals-in-termp term)))
+
+;; redundant and non-local
+(defthm no-duplicate-lambda-formals-in-termsp-when-term-listp
+  (implies (term-listp terms w)
+           (no-duplicate-lambda-formals-in-termsp terms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm no-duplicate-lambda-formals-in-termp-when-logic-termp
+  (implies (logic-termp term w)
+           (no-duplicate-lambda-formals-in-termp term)))
+
+(defthm no-duplicate-lambda-formals-in-termsp-when-logic-term-listp
+  (implies (logic-term-listp terms w)
+           (no-duplicate-lambda-formals-in-termsp terms)))

@@ -1,6 +1,6 @@
 ; A recognizer for true lists of legal variable names
 ;
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 ;; Recognize a true list of legal variable names
+;; TODO: This is the same as the built-in function arglistp1.
 (defund legal-variable-listp (names)
   (declare (xargs :guard t))
   (if (atom names)

@@ -11,10 +11,10 @@
 (in-package "ETHEREUM")
 
 (include-book "kestrel/crypto/interfaces/keccak-256" :dir :system)
-(include-book "kestrel/utilities/defmax-nat/implementation" :dir :system)
 (include-book "kestrel/utilities/lists/take-theorems" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/lists/prefixp" :dir :system)
+(include-book "std/util/defmax-nat" :dir :system)
 
 (include-book "hex-prefix")
 (include-book "rlp/encoding")

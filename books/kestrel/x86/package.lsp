@@ -38,7 +38,10 @@
     x86isa::wb
     x86isa::rb-1
     x86isa::wb-1
+
     x86isa::x86p
+    x86isa::x86$ap
+
     x86isa::rvm08 ;todo more like this
     x86isa::wvm08
     x86isa::flgi
@@ -116,16 +119,20 @@
     x86isa::*ss*
     x86isa::*ds*
 
+    ;; flag functions:
+
     x86isa::zf-spec
     x86isa::zf-spec$inline
+
+    x86isa::cf-spec8
+    x86isa::cf-spec8$inline
+    x86isa::cf-spec16
+    x86isa::cf-spec16$inline
     x86isa::cf-spec32
     x86isa::cf-spec32$inline
     x86isa::cf-spec64
     x86isa::cf-spec64$inline
-    x86isa::pf-spec32
-    x86isa::pf-spec32$inline
-    x86isa::pf-spec64
-    x86isa::pf-spec64$inline
+
     x86isa::of-spec8
     x86isa::of-spec8$inline
     x86isa::of-spec16
@@ -134,6 +141,20 @@
     x86isa::of-spec32$inline
     x86isa::of-spec64
     x86isa::of-spec64$inline
+
+    x86isa::pf-spec8
+    x86isa::pf-spec8$inline
+    x86isa::pf-spec16
+    x86isa::pf-spec16$inline
+    x86isa::pf-spec32
+    x86isa::pf-spec32$inline
+    x86isa::pf-spec64
+    x86isa::pf-spec64$inline
+
+    x86isa::sf-spec8
+    x86isa::sf-spec8$inline
+    x86isa::sf-spec16
+    x86isa::sf-spec16$inline
     x86isa::sf-spec32
     x86isa::sf-spec32$inline
     x86isa::sf-spec64
@@ -156,22 +177,45 @@
     x86isa::sub-af-spec32$inline
     x86isa::sub-af-spec64
     x86isa::sub-af-spec64$inline
+
+    x86isa::adc-af-spec8
+    x86isa::adc-af-spec8$inline
+    x86isa::adc-af-spec16
+    x86isa::adc-af-spec16$inline
+    x86isa::adc-af-spec32
+    x86isa::adc-af-spec32$inline
+    x86isa::adc-af-spec64
+    x86isa::adc-af-spec64$inline
+
+    x86isa::sbb-af-spec8
+    x86isa::sbb-af-spec8$inline
+    x86isa::sbb-af-spec16
+    x86isa::sbb-af-spec16$inline
+    x86isa::sbb-af-spec32
+    x86isa::sbb-af-spec32$inline
+    x86isa::sbb-af-spec64
+    x86isa::sbb-af-spec64$inline
+
     x86isa::sub-cf-spec8
     x86isa::sub-cf-spec16
     x86isa::sub-cf-spec32
     x86isa::sub-cf-spec64
+
     x86isa::sub-of-spec8
     x86isa::sub-of-spec16
     x86isa::sub-of-spec32
     x86isa::sub-of-spec64
+
     x86isa::sub-pf-spec8
     x86isa::sub-pf-spec16
     x86isa::sub-pf-spec32
     x86isa::sub-pf-spec64
+
     x86isa::sub-sf-spec8
     x86isa::sub-sf-spec16
     x86isa::sub-sf-spec32
     x86isa::sub-sf-spec64
+
     x86isa::sub-zf-spec8
     x86isa::sub-zf-spec16
     x86isa::sub-zf-spec32
@@ -189,6 +233,23 @@
     x86isa::rol-spec-32
     x86isa::rol-spec-64
 
+    x86isa::mul-spec$inline
+    x86isa::mul-spec-8
+    x86isa::mul-spec-16
+    x86isa::mul-spec-32
+    x86isa::mul-spec-64
+
+    x86isa::imul-spec$inline
+    x86isa::imul-spec-8
+    x86isa::imul-spec-16
+    x86isa::imul-spec-32
+    x86isa::imul-spec-64
+
+    x86isa::idiv-spec-8
+    x86isa::idiv-spec-16
+    x86isa::idiv-spec-32
+    x86isa::idiv-spec-64
+
     ;; do we want to include stuff like this?
     x86isa::x86-one-byte-opcode-modr/m-p$inline
 
@@ -197,6 +258,8 @@
     x86isa::lift-subroutine-fn
     x86isa::x86-lifter-table
     x86isa::run-until-exit-segment-or-hit-loop-header
+
+    x86isa::segment-selectorbits->rpl$inline
 
     x86isa::text-offset ;variables put in by the lifter
     x86isa::x86_0
@@ -365,6 +428,20 @@
     x86isa::cr0bits->nw
     x86isa::cr0bits->cd
     x86isa::cr0bits->pg
+    x86isa::cr0bits->pe$inline
+    x86isa::cr0bits->mp$inline
+    x86isa::cr0bits->em$inline
+    x86isa::cr0bits->ts$inline
+    x86isa::cr0bits->et$inline
+    x86isa::cr0bits->ne$inline
+    x86isa::cr0bits->res1$inline
+    x86isa::cr0bits->wp$inline
+    x86isa::cr0bits->res2$inline
+    x86isa::cr0bits->am$inline
+    x86isa::cr0bits->res3$inline
+    x86isa::cr0bits->nw$inline
+    x86isa::cr0bits->cd$inline
+    x86isa::cr0bits->pg$inline
 
     x86isa::cr3bits-p$inline
     x86isa::cr3bits->res1
@@ -397,12 +474,35 @@
     x86isa::cr4bits->res2
     x86isa::cr4bits->smep
     x86isa::cr4bits->smap
+    x86isa::cr4bits->vme$inline
+    x86isa::cr4bits->pvi$inline
+    x86isa::cr4bits->tsd$inline
+    x86isa::cr4bits->de$inline
+    x86isa::cr4bits->pse$inline
+    x86isa::cr4bits->pae$inline
+    x86isa::cr4bits->mce$inline
+    x86isa::cr4bits->pge$inline
+    x86isa::cr4bits->pce$inline
+    x86isa::cr4bits->osfxsr$inline
+    x86isa::cr4bits->osxmmexcpt$inline
+    x86isa::cr4bits->umip$inline
+    x86isa::cr4bits->la57$inline
+    x86isa::cr4bits->vmxe$inline
+    x86isa::cr4bits->smxe$inline
+    x86isa::cr4bits->res1$inline
+    x86isa::cr4bits->fsgsbase$inline
+    x86isa::cr4bits->pcide$inline
+    x86isa::cr4bits->osxsave$inline
+    x86isa::cr4bits->res2$inline
+    x86isa::cr4bits->smep$inline
+    x86isa::cr4bits->smap$inline
 
     x86isa::cr8bits-p$inline
     x86isa::cr8bits->cr8-trpl
 
     x86isa::msri
 
+    x86isa::!mxcsr
     x86isa::mxcsrbits-fix
 
     x86isa::mxcsrbits->ie$inline
@@ -503,6 +603,8 @@
     x86isa::*op-comi*
 
     x86isa::undef
+    x86isa::undef$a
+    x86isa::!undef
 
     X86ISA::READ-*IP$INLINE
 
@@ -520,10 +622,64 @@
 
     x86isa::zmmi
     x86isa::!zmmi
-    ))
+
+    x86isa::x86-illegal-instruction
+    x86isa::x86-step-unimplemented
+    x86isa::feature-flags
+
+    x86isa::modr/m->reg$inline
+    x86isa::modr/m->mod$inline
+    x86isa::modr/m->r/m$inline
+
+    x86isa::n08$inline
+    x86isa::n12$inline
+    x86isa::n16$inline
+    x86isa::n32$inline
+    x86isa::n64$inline
+
+
+    ;; more like this:
+    x86isa::prefixes->lck$inline
+    x86isa::prefixes->adr$inline
+    x86isa::prefixes->opr$inline
+    x86isa::prefixes->rep$inline
+
+    ;; more like this:
+    x86isa::!prefixes->nxt$inline
+
+    x86isa::code-segment-descriptor-attributesbits->d$inline
+
+    x86isa::rime-size-opt-error
+
+    x86isa::rime-size$inline
+    x86isa::rr32$inline
+    x86isa::reg-index$inline
+
+    acl2::__function__
+
+    x86isa::x86-general-protection
+    x86isa::x86-device-not-available
+    x86isa::x86-syscall-both-views
+
+    x86isa::wml08
+    x86isa::wml16
+    x86isa::wml32
+    x86isa::wml64
+    x86isa::wml128
+    x86isa::wml256
+
+    x86isa::wiml08
+    x86isa::wiml16
+    x86isa::wiml32
+    x86isa::wiml64
+))
 
 (defconst *symbols-from-acl2-package*
-  '(;loghead$inline
+  '(loghead
+    loghead$inline
+    logapp
+    logmask
+
     bvchop
     logext
     getbit
@@ -559,9 +715,6 @@
     bool-fix
     bool-fix$inline
 
-    loghead
-    logapp
-    logmask
 
     bitxor
     bitnot
@@ -579,6 +732,10 @@
     rightrotate
     leftrotate32
     rightrotate32
+
+    acl2::binary-logand
+    acl2::binary-logxor
+    acl2::binary-logior
 
     unsigned-byte-p-forced
 
@@ -641,6 +798,9 @@
 
     ;; axe-syntaxp and axe-bind-free functions:
     bind-bv-size-axe
+
+    syntactic-call-of
+    term-should-be-trimmed-axe
     heavier-dag-term
 
     prove-equivalence
@@ -709,7 +869,10 @@
 ;; Ideally, these would all be rewritten to BV ops
 (defconst *symbols-from-bitops*
   '(bitops::part-install-width-low$inline
+    bitops::part-select-width-low$inline
     b-xor ; from ihs, via bitops
+    acl2::logbit$inline ; really from ihs
+    acl2::b-xor$inline
     ))
 
 ;; Ideally, these would all be rewritten away
@@ -761,6 +924,10 @@
     x86isa::input-rflags
     x86isa::cf
     x86isa::of
+    x86isa::af
+    x86isa::sf
+    x86isa::zf
+    x86isa::pf
     x86isa::ad x86isa::low x86isa::high
     x86isa::proc-mode
     x86isa::eff-addr
@@ -773,10 +940,28 @@
     x86isa::rex-byte
     x86isa::prefixes
     x86isa::start-rip
+    x86isa::temp-rip
     x86isa::rex?
+    x86isa::lin-addr
+    x86isa::r-x
+    x86isa::7+lin-addr
+    x86isa::modr/m
+    x86isa::fault-var
+    x86isa::mandatory-prefix
+    x86isa::cs-attr
 
-    ;; more like this:
-    x86isa::!prefixes->nxt$inline))
+    x86isa::opcode
+    x86isa::sib
+
+    x86isa::ignore-p3-64?
+    x86isa::p3?
+    x86isa::cs.d
+    x86isa::ignore-rex?
+    x86isa::imm?
+    x86isa::flg0
+    x86isa::dword
+    x86isa::addr
+))
 
 ;; TODO: Think about this...
 (defconst *common-acl2-formals*

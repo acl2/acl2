@@ -1,21 +1,14 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "STD")
-
-(include-book "defconstrained-recognizer")
-
-(include-book "deffixer")
-
-(include-book "defarbrec")
-(include-book "defarbrec-doc")
 
 (include-book "definj")
 (include-book "definj-doc")
@@ -23,34 +16,11 @@
 (include-book "defiso")
 (include-book "defiso-doc")
 
-(include-book "defund-sk")
-(include-book "defund-sk-doc")
-
-(include-book "defmacro-plus")
-(include-book "defmacro-plus-doc")
-
 (include-book "defmapping")
 (include-book "defmapping-doc")
 
-(include-book "defmax-nat")
-(include-book "defmax-nat-doc")
-
-(include-book "defmin-int")
-(include-book "defmin-int-doc")
-
 (include-book "defsurj")
 (include-book "defsurj-doc")
-
-(include-book "defthm-commutative")
-
-(include-book "deftutorial")
-(include-book "deftutorial-doc")
-
-(include-book "defirrelevant")
-
-(include-book "error-value-tuples")
-
-(include-book "tuple")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

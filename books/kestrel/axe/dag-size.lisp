@@ -19,6 +19,7 @@
 
 (include-book "dag-arrays")
 (include-book "dag-size-array")
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/utilities/if-rules" :dir :system))

@@ -1,6 +1,7 @@
 ; Rules (theorems) relied upon by the Formal Unit Tester
 ;
 ; Copyright (C) 2016-2023 Kestrel Technology, LLC
+; Copyright (C) 2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,6 +27,7 @@
 (include-book "kestrel/bv/bvcat2" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 ;(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 ;(include-book "kestrel/x86/read-and-write" :dir :system)
@@ -46,7 +48,9 @@
 
 (in-theory (disable loghead))
 
-(local (in-theory (enable ACL2::LOGTAIL-OF-BVCHOP)))
+(local (in-theory (e/d (ACL2::LOGTAIL-OF-BVCHOP)
+                       ((:e tau-system) ; for speed
+                        ))))
 
 ;; Recognize a NaN
 (defund is-nan (val)
@@ -72,7 +76,7 @@
 (defthmd is-nan-intro-from-boolif
   (equal (boolif (equal 'snan val) 't (boolif (equal 'qnan val) 't (equal 'indef val)))
          (is-nan val))
-  :hints (("Goal" :in-theory (enable boolif))))
+  :hints (("Goal" :in-theory (enable boolif is-nan))))
 
 (theory-invariant (incompatible (:rewrite is-nan-intro) (:definition is-nan)))
 
@@ -231,36 +235,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;slow?
 (defthm not-mv-nth-0-of-sse-cmp
   (implies (and (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->dm$inline mxcsr) 1)
                 (equal (mxcsrbits->im$inline mxcsr) 1))
            (not (mv-nth 0 (sse-cmp operation op1 op2 mxcsr exp-width frac-width))))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (sse-cmp sse-cmp-special sse-daz
-                                                   denormal-exception
-                                                   is-nan)
+  :hints (("Goal" :in-theory (e/d (sse-cmp
+                                   sse-daz
+                                   denormal-exception
+                                   is-nan)
                                   (acl2::loghead-becomes-bvchop)))))
 
 ;gen?
 (defthm mxcsrbits->daz-of-mv-nth-2-of-sse-cmp
   (equal (mxcsrbits->daz (mv-nth 2 (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
          (mxcsrbits->daz mxcsr))
-  :hints (("Goal" :in-theory (e/d (sse-cmp sse-cmp-special denormal-exception)
+  :hints (("Goal" :in-theory (e/d (sse-cmp denormal-exception)
                                   (acl2::loghead-becomes-bvchop)))))
 
 ;gen?
 (defthm mxcsrbits->dm-of-mv-nth-2-of-sse-cmp
   (equal (mxcsrbits->dm (mv-nth 2 (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
          (mxcsrbits->dm mxcsr))
-    :hints (("Goal" :in-theory (e/d (sse-cmp sse-cmp-special denormal-exception)
+    :hints (("Goal" :in-theory (e/d (sse-cmp denormal-exception)
                                   (acl2::loghead-becomes-bvchop)))))
 
 (defthm mxcsrbits->im-of-mv-nth-2-of-sse-cmp
   (equal (mxcsrbits->im (mv-nth 2 (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
          (mxcsrbits->im mxcsr))
-  :hints (("Goal" :in-theory (e/d (sse-cmp sse-cmp-special denormal-exception)
+  :hints (("Goal" :in-theory (e/d (sse-cmp denormal-exception)
                                   (acl2::loghead-becomes-bvchop)))))
 
 (defthm integerp-of-mv-nth-2-of-sse-cmp

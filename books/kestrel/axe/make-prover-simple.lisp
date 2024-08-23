@@ -63,6 +63,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))
 
 ;move
 (defthm symbol-doublet-listp-forward-to-alistp
@@ -337,7 +338,7 @@
     (:REWRITE NAT-listp-OF-CDR)
     (:REWRITE NAT-listP-WHEN-NOT-CONSP-CHEAP)
     (:REWRITE STORED-AXE-RULE-LISTP-OF-CDR)
-    (:REWRITE STORED-AXE-RULE-LISTP-OF-LOOKUP-EQUAL-WHEN-RULE-ALISTP)
+    (:REWRITE stored-axe-rule-listp-of-get-rules-for-fn-when-rule-alistp)
     (:REWRITE AXE-BIND-FREE-RESULT-OKAYP-REWRITE)
     (:REWRITE AXE-RULE-HYP-LISTP-OF-CDR)
     (:REWRITE AXE-RULE-HYP-LISTP-OF-STORED-RULE-HYPS)
@@ -414,7 +415,7 @@
     (:REWRITE SYMBOLP-OF-STORED-RULE-SYMBOL)
     (:REWRITE TRIESP-OF-INCREMENT-TRIES)
     (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP)
-    (:REWRITE TRUE-LISTP-OF-LOOKUP-EQUAL-WHEN-RULE-ALISTP)
+    (:REWRITE TRUE-LISTP-OF-get-rules-for-fn-WHEN-RULE-ALISTP) ; drop?
     (:REWRITE stored-axe-rulep-of-car)
     (:REWRITE WF-DAGP-AFTER-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:TYPE-PRESCRIPTION ACL2-NUMBER-LISTP)
@@ -944,6 +945,7 @@
        (local (include-book "kestrel/utilities/get-cpu-time" :dir :system))
        (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
        (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+       (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; reduce?
 
        (set-inhibit-warnings "double-rewrite") ; todo: think about these
 
@@ -4735,7 +4737,7 @@
        ;;       (progn$ (cw "Clause miter literals: ~x0~%" literal-nodenums)
        ;;               (cw "Clause miter case: ~x0~%" (expressions-for-this-case-simple literal-nodenums dag-array dag-len)) ;fixme just print this instead of consing it up?
        ;;               (cw "Clause miter literals:~%")
-       ;;               ;; (print-array2 'dag-array dag-array dag-len)
+       ;;               ;; (print-array 'dag-array dag-array dag-len)
        ;;               (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
        ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
        ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
@@ -5199,7 +5201,7 @@
                          ;;         (progn$ (cw "Literals:~%")
                          ;;                 (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
                          ;;                 ;;(cw "parent array:~%")
-                         ;;                 ;;(print-array2 'dag-parent-array dag-parent-array dag-len)
+                         ;;                 ;;(print-array 'dag-parent-array dag-parent-array dag-len)
                          ;;                 )))
                          (- (and print (cw ")~%")))
                          ;;can we somehow avoid this saving? copy to a new array? ;change ,rewrite-literals-name to not destroy existing nodes?!

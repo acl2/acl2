@@ -22,6 +22,7 @@
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
 (include-book "kestrel/bv/bvif" :dir :system) ; do not remove
 (include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))

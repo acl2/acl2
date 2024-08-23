@@ -1,10 +1,10 @@
 ; XDOC Documentation System for ACL2
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,13 +28,17 @@
      "@(':order-subtopics'), which must be
       @('t') or @('nil') or a non-empty list of symbols.
       If it is @('t'),
-      a call of @(tsee xdoc::order-subtopics) is generated
-      to order all the subtopics of this topic.
-      If it is a non-empty list of symbols,
-      a call of @(tsee xdoc::order-subtopics) is generated
-      to order the subtopics in the list according to the list.
+      a call @('(xdoc::order-subtopics t)') is generated.
+      If it is a non-empty list @('(sym1 ... symN)') of symbols
+      whose last element is not @('t'),
+      a call @('(xdoc::order-subtopics (sym1 ... symN))') is generated.
+      If it is a non-empty list of symbols @('(sym1 ... symN t)')
+      whose last element is @('t'),
+      a call @('(xdoc::order-subtopics (sym1 ... symN) t)') is generated.
       If it is @('nil') (the default),
-      no call of @(tsee xdoc::order-subtopics) is generated.")
+      no call of @(tsee xdoc::order-subtopics) is generated.
+      See @(tsee xdoc::order-subtopics) for
+      a description of what the generated calls do.")
     (xdoc::li
      "@(':default-parent'), which must be @('t') or @('nil').
       If it is @('t'),
@@ -86,10 +90,18 @@
            :pkg ,pkg
            :no-override ,no-override)
          ,@(cond ((eq order-subtopics t)
-                  `((xdoc::order-subtopics ,name nil t)))
+                  `((xdoc::order-subtopics ,name
+                                           nil
+                                           t)))
                  ((eq order-subtopics nil)
                   nil)
-                 (t `((xdoc::order-subtopics ,name ,order-subtopics nil))))
+                 ((eq (car (last order-subtopics)) t)
+                  `((xdoc::order-subtopics ,name
+                                           ,(butlast order-subtopics 1)
+                                           t)))
+                 (t `((xdoc::order-subtopics ,name
+                                             ,order-subtopics
+                                             nil))))
          ,@(and default-parent
                 `((local (set-default-parents ,name)))))))
 

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function intersection-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -175,3 +175,50 @@
       (len x))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable intersection-equal))))
+
+;; also in subsetp-equal.lisp
+(local
+ (defthm subsetp-equal-when-subsetp-equal-of-cdr-cheap
+   (implies (subsetp-equal x (cdr y))
+            (subsetp-equal x y))
+   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+   :hints (("Goal" :in-theory (enable subsetp-equal)))))
+
+;; also in subsetp-equal.lisp
+(local
+ (defthm subsetp-equal-self
+   (subsetp-equal x x)
+   :hints (("Goal" :in-theory (enable subsetp-equal)))))
+
+(defthm intersection-equal-same
+  (equal (intersection-equal x x)
+         (true-list-fix x))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthm intersection-equal-of-true-list-fix-arg1
+  (equal (intersection-equal (true-list-fix x) y)
+         (intersection-equal x y))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthm intersection-equal-of-true-list-fix-arg2
+  (equal (intersection-equal x (true-list-fix y))
+         (intersection-equal x y))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthm intersection-equal-of-add-to-set-equal-arg1-iff
+  (iff (intersection-equal (add-to-set-equal a x) y)
+       (or (intersection-equal x y)
+           (member-equal a y)))
+  :hints (("Goal" :in-theory (enable intersection-equal member-equal add-to-set-equal))))
+
+(defthm intersection-equal-of-add-to-set-equal-arg2-iff
+  (iff (intersection-equal x (add-to-set-equal a y))
+       (or (intersection-equal x y)
+           (member-equal a x)))
+  :hints (("Goal" :in-theory (enable intersection-equal member-equal add-to-set-equal))))
+
+(defthm intersection-equal-of-remove-equal-arg2-when-not-member-equal-arg1
+  (implies (not (member-equal a x))
+           (equal (intersection-equal x (remove-equal a y))
+                  (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable intersection-equal remove-equal))))

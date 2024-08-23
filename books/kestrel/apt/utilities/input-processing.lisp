@@ -113,7 +113,7 @@
      and the third one specifies whether the wrapper function is generated;
      the second input may be present only if the third input is @('t').
      This utility processes (and validates)
-     the @(':new-name') and (':wrapper-name') inputs,
+     the @(':new-name') and @(':wrapper-name') inputs,
      given the value of the @(':wrapper') input
      that is passed as the @('wrapper-gen') parameter.
      The processing is as described in @(see function-name-generation).")

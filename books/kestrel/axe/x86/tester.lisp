@@ -26,6 +26,7 @@
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/arithmetic-light/types" :dir :system) ; for rationalp-when-integerp
 (include-book "unroll-x86-code")
+(include-book "tester-rules-bv")
 (include-book "tester-rules")
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system) ; todo: combine with bv/intro?
 (include-book "kestrel/bv/intro" :dir :system) ; for BVCHOP-OF-LOGXOR-BECOMES-BVXOR
@@ -358,7 +359,7 @@
            remove-rules
            remove-lift-rules)
           ;; extra-assumption-rules:
-          (append (lifter-rules64-new)
+          (append ;; (lifter-rules64-new)
                   ;; todo: build these in deeper
                   '(section-assumptions-mach-o-64
                     acl2::mach-o-section-presentp-constant-opener
@@ -814,7 +815,7 @@
                           (position-independent ':auto)
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                          (rewriter ':legacy)
+                          (rewriter ':x86)
                           )
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',function-name-strings
@@ -859,7 +860,7 @@
                      (position-independent ':auto)
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                     (rewriter ':legacy)
+                     (rewriter ':x86)
                      )
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',include ; todo: evaluate?

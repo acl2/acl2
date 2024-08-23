@@ -29,43 +29,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The rule-limits is a map from rule names to the number of additional times we can try them
+;; The rule-limits is an alist from rule names (symbols) to the number of
+;; remaining tries allowed for each (natural numbers).  Usually LIMITS will be
+;; nil, or at least a very small alist.
 (defund rule-limitsp (limits)
   (declare (xargs :guard t))
   (and (symbol-alistp limits)
        ;; may go negative if we exhaust the limit when relieving hyps and then decrement once more:
        (all-integerp (strip-cdrs limits))))
 
-(defthm rule-limitsp-forward-to-alistp
-  (implies (rule-limitsp limits)
-           (alistp limits))
-  :hints (("Goal" :in-theory (enable rule-limitsp))))
+(local
+ (defthm rule-limitsp-forward-to-alistp
+   (implies (rule-limitsp limits)
+            (alistp limits))
+   :hints (("Goal" :in-theory (enable rule-limitsp)))))
 
-(defthmd integerp-of-cdr-of-assoc-equal-when-rule-limitsp
-  (implies (and (rule-limitsp limits)
-                (assoc-equal rule limits))
-           (integerp (cdr (assoc-equal rule limits))))
-  :hints (("Goal" :in-theory (enable rule-limitsp assoc-equal))))
+(local
+ (defthmd integerp-of-cdr-of-assoc-equal-when-rule-limitsp
+   (implies (and (rule-limitsp limits)
+                 (assoc-equal rule limits))
+            (integerp (cdr (assoc-equal rule limits))))
+   :hints (("Goal" :in-theory (enable rule-limitsp assoc-equal)))))
 
-(defthmd integerp-of-cdr-of-assoc-equal-when-rule-limitsp-type
-  (implies (and (rule-limitsp limits)
-                (assoc-equal rule limits))
-           (integerp (cdr (assoc-equal rule limits))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable rule-limitsp assoc-equal))))
+(local
+ (defthmd integerp-of-cdr-of-assoc-equal-when-rule-limitsp-type
+   (implies (and (rule-limitsp limits)
+                 (assoc-equal rule limits))
+            (integerp (cdr (assoc-equal rule limits))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable rule-limitsp assoc-equal)))))
 
-(defthm rule-limitsp-of-acons-unique
-  (implies (and (rule-limitsp alist)
-                (symbolp key)
-                (integerp val))
-           (rule-limitsp (acons-unique key val alist)))
-  :hints (("Goal" :in-theory (enable acons-unique rule-limitsp))))
+(local
+ (defthm rule-limitsp-of-acons-unique
+   (implies (and (rule-limitsp alist)
+                 (symbolp key)
+                 (integerp val))
+            (rule-limitsp (acons-unique key val alist)))
+   :hints (("Goal" :in-theory (enable acons-unique rule-limitsp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; LIMITS is an alist that maps rule names to natural numbers (the number of
-;; allowed rule applications remaining). Usually LIMITS will be nil, or at
-;; least a very small alist.
+;; Check whether we can no longer apply the given STORED-RULE.
 (defund limit-reachedp (stored-rule limits print)
   (declare (xargs :guard (and (stored-axe-rulep stored-rule)
                               (rule-limitsp limits))
@@ -77,15 +81,16 @@
     (if (not res)
         nil ;limit not reached since there is no limit for this rule
       (let ((limit (cdr res)))
-        (if (<= limit 0)
+        (if (<= (the integer limit) 0) ; could even make it a fixnum...
             (prog2$ (and print (cw "(NOTE: Limit reached for rule ~x0.)~%" rule-symbol))
                     t)
           nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Decrements the limit for the supplied rule by 1.
-;; TODO: This repeats some work done in limit-reachedp.  But this may be called much less often than limit-reachedp.
+;; Decrements the limit for the supplied STORED-RULE by 1.
+;; TODO: This repeats some work done in limit-reachedp.  But this may be called
+;; much less often than limit-reachedp, since most rules have no limits.
 (defund decrement-rule-limit (stored-rule limits)
   (declare (xargs :guard (and (stored-axe-rulep stored-rule)
                               (rule-limitsp limits))
@@ -108,3 +113,25 @@
            (rule-limitsp (decrement-rule-limit stored-rule limits)))
   :hints (("Goal" :in-theory (enable decrement-rule-limit
                                      integerp-of-cdr-of-assoc-equal-when-rule-limitsp-type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Extend LIMITS by adding the given LIMIT for all of the given RULE-NAMES.
+(defund add-limit-for-rules (rule-names limit limits)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (natp limit)
+                              (rule-limitsp limits))
+                  :verify-guards nil ; done below
+                  ))
+  (if (endp rule-names)
+      limits
+    (add-limit-for-rules (rest rule-names) limit (acons-unique (first rule-names) limit limits))))
+
+(defthm rule-limitsp-of-add-limit-for-rules
+  (implies (and (symbol-listp rule-names)
+                (natp limit)
+                (rule-limitsp limits))
+           (rule-limitsp (add-limit-for-rules rule-names limit limits)))
+  :hints (("Goal" :in-theory (enable add-limit-for-rules rule-limitsp))))
+
+(verify-guards add-limit-for-rules)

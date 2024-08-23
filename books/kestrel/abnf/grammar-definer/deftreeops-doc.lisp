@@ -35,18 +35,37 @@
       Given a grammar,
       one can define tree matching predicates
       that are specialized to the grammar,
-      i.e. that implicitly depend on the grammar.
-      This @('deftreeops') macro automates the generation
-      of these specialized tree matching predicates.")
+      i.e. that implicitly depend on the grammar.")
 
     (xdoc::p
-     "In addition, this @('deftreeops') macro also generates
-      theorems about trees that satisfy
-      the generated grammar-specific matching predicates.")
+     "The ABNF @(see semantics) also includes generic operations on trees,
+      generated as part of the @(tsee tree) fixtype.
+      Given a grammar, trees that match
+      certain rule names and other ABNF syntactic entities
+      have a much more restricted structure than generic trees.
+      For instance, given a grammar rule of the form @('A = B C'),
+      a tree matching @('A') always has two subtrees,
+      one matching @('B') and one matching @('C').
+      Thus, given a grammar, one can define operations on trees
+      that are specialized to the specific rules and structure of the grammar.")
 
     (xdoc::p
-     "We plan to extend this @('deftreeops') macro
-      to generate additional grammar-specific operations on trees."))
+     "This @('deftreeops') macro automates the generation
+      of the aforementioned specialized tree matching predicates and operations,
+      along with theorems about them.
+      Currently we only generate operations (and accompanying theorems)
+      for certain forms of the grammar rules,
+      but we plan to extend this @('deftreeops') macro
+      to generate additional grammar-specific operations on trees,
+      and theorems accompanying them.
+      See the documentation below for details of the current support.")
+
+    (xdoc::p
+     "Each successful call of @('deftreeops') adds an entry to
+      a table called @('abnf::deftreeops-table').
+      With @('deftreeops'), we provide some companion macros
+      to retrieve information from this table.
+      These are documented in the `Companion Macros' section below."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,7 +84,7 @@
      "@('*grammar*')"
      (xdoc::p
       "Name of the constant that contains the grammar
-       that the tree operations are specialized to.")
+       that the generated functions and theorems are specialized to.")
      (xdoc::p
       "This must be a symbol that is a named constant
        whose value is a grammar, i.e. a value of type @(tsee rulelist).
@@ -75,7 +94,13 @@
       (xdoc::seetopic "well-formedness" "well-formed")
       " and "
       (xdoc::seetopic "closure" "closed")
-      "."))
+      ".")
+     (xdoc::p
+      "If there is a previous successful call of @('deftreeops')
+       with the same @('*grammar*') input,
+       this call must be identical to that call,
+       in which case it is redundant.
+       If the calls differ, it is an error."))
 
     (xdoc::desc
      "@(':prefix') &mdash; no default"
@@ -202,9 +227,8 @@
      "@('<prefix>-<rulename>-conc-equivs')"
      (xdoc::p
       "For each rule name defined in the grammar
-       by an alternation of two or more concatenations,
-       such that each concatenation is
-       a singleton of a singleton repetition of a rule name element:
+       by an alternation of two or more concatenations
+       satisfying one of the conditions listed below,
        a theorem stating equivalences between
        (i) the branches (of a tree matching the rule name)
        matching each concatenation and
@@ -213,7 +237,24 @@
        there is an equivalence for each concatenation,
        and the theorem consists of the conjunction of the equivalences.
        This theorem is a conjunction of equivalences,
-       one for each concatenation that defines the rule name."))
+       one for each concatenation that defines the rule name.")
+     (xdoc::p
+      "The aforementioned conditions on
+       the alternation of two or more concatenations are
+       any of the following
+       (if neither are satisfied, this theorem is not generated):")
+     (xdoc::ul
+      (xdoc::li
+       "The alternation consists of two or more concatenations
+        each of which is a singleton,
+        each consisting of a repetition with range 1
+        whose element is a rule name.")
+      (xdoc::li
+       "The alternation consists of exactly two concatenations,
+        one of which is a singleton of a repetition with range 1
+        whose element is a character value notation,
+        and the other is a singleton of a repetition with range 1
+        whose element is a rule name.")))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-conc?')"
@@ -385,8 +426,7 @@
       "For each rule name defined in the grammar by
        an alternation of one concatenation,
        such that the concatenation consists of one repetition,
-       such that the repetition has a range of 1,
-       and such that the element of the repetition is a rule name:
+       such that the repetition has a range of 1:
        a function that, given a tree matching the rule name,
        returns the tree corresponding to the element of the repetition.
        The generated function is accompanied by the following theorems:")
@@ -417,4 +457,71 @@
         which asserts that the result of the function
         matches the rule name of the element.")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function."))))))
+       "@(tsee fty::deffixequiv) theorems for the function.")))
+
+    (xdoc::desc
+     "@('<prefix>-%<b><min>-<max>-nat')"
+     (xdoc::p
+      "For each numeric range notation that appears in the grammar,
+       of the form @('%<b><min>-<max>') where
+       @('<b>') is @('d') or @('x') or @('b') (the base),
+       @('<min>') is the minimum of the range (in base @('<b>')), and
+       @('<max>') is the maximum of the range (in base @('<b>')),
+       a function that, given a tree matching the numeric range,
+       returns the natural number that is the (unique) leaf of the tree.
+       In the name of this generated function,
+       the @('<min>') and @('<max>') part are expressed
+       in digits in the base indicated by @('<b>'),
+       with unnecessary leading zeros.
+       The generated function is accompanied by the following theorem:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<prefix>-%<b><min>-<max>-nat-bounds'),
+        which asserts that the natural number returned by the function
+        has @('<min>') as lower bound and @('<max>') as upper bound.
+        This theorem is generated as a linear rule.")
+      (xdoc::li
+       "@(tsee fty::deffixequiv) theorems for the function.")))
+
+    (xdoc::desc
+     (list
+      "@('<prefix>-|\"<chars>\"|-leafterm')"
+      "@('<prefix>-%i|\"<chars>\"|-leafterm')"
+      "@('<prefix>-%s|\"<chars>\"|-leafterm')")
+     (xdoc::p
+      "For each character value notation that appears in the grammar,
+       of the form @('\"<chars\"') or @('%i\"<chars>\"') or @('%s\"<chars>\"')
+       where @('<chars>') is a sequence of one or more characters,
+       a theorem saying that a tree that matches the character values notation
+       is a terminal leaf tree.")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::section
+    "Companion Macros"
+
+    (xdoc::p
+     "Each successful call of @('deftreeops') adds
+      an entry to the @('abnf::deftreeops-table') table.
+      The table is indexed by the @('*grammar*') inputs of the calls.
+      Each entry stores information calculated from the grammar,
+      including all the events generated.
+      See @(tsee deftreeops-table) in the implementation for details.")
+
+    (xdoc::p
+     "ACL2 already provides facilities to inspect table and their entries.
+      We provide a macro")
+    (xdoc::codeblock
+     "(deftreeops-show-info *grammar*)")
+    (xdoc::p
+     "which prints the value in the table associated to @('*grammar*').
+      Note that this can be a large value.")
+
+    (xdoc::p
+     "We also provide a macro")
+    (xdoc::codeblock
+     "(deftreeops-show-event *grammar* name)")
+    (xdoc::p
+     "which prints the event form with name @('name')
+      generated by a call of @('deftreeops') on @('*grammar*').
+      This may be generally more useful to a user than the previous macro."))))

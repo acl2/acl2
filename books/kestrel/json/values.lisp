@@ -11,8 +11,8 @@
 (in-package "JSON")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/std/util/defirrelevant" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "std/util/defirrelevant" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

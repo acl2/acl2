@@ -145,7 +145,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult var-table-result
-  :short "Fixtype of errors and variable table."
+  :short "Fixtype of errors and variable tables."
   :ok var-table
   :pred var-table-resultp)
 
@@ -345,7 +345,9 @@
      Eventually these may be integrated into
      a broader formalized notion of C types,
      but for now we use
-     a list of zero or more input types and a single output type.")
+     a list of zero or more input types and a single output type.
+     Our current formalization of @(see types)
+     does not include function types.")
    (xdoc::p
     "This static information also includes a flag that says
      whether the function has been defined or not.
@@ -396,7 +398,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult fun-table-result
-  :short "Fixtype of errors and function table."
+  :short "Fixtype of errors and function tables."
   :ok fun-table
   :pred fun-table-resultp)
 
@@ -565,15 +567,15 @@
   (xdoc::topstring
    (xdoc::p
     "Certain C expressions are lvalues [C:6.3.2/1],
-     i.e. they evaluate to object designations rather than values [C:6.5/1].
+     i.e. they evaluate to object designators rather than values [C:6.5/1].
      In many cases, lvalue conversion [C:6.3.2/2]
-     turns an object designation into the value of the designated object,
+     turns an object designator into the value of the designated object,
      but some operators (e.g. assignments) require lvalues.
      Thus, the static semantics must calculate, for each expression,
      not only its type, but also whether it is an lvalue or not.
      This information is captured via a type and an lvalue flag.")
    (xdoc::p
-    "Expressions may also evaluate to function designations [C:6.5/1].
+    "Expressions may also evaluate to function designators [C:6.5/1].
      We do not cover that case for now,
      because our subset of C makes a limited use of functions;
      in particular, it has no function pointers.
@@ -625,7 +627,12 @@
                                     return-types))
    (variables var-table))
   :require (not (set::emptyp return-types))
-  :pred types+vartab-p)
+  :pred types+vartab-p
+  ///
+
+  (defrule not-types+vartab-p-of-error
+    (not (types+vartab-p (reserrf x)))
+    :enable (fty::reserr types+vartab-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -634,12 +641,6 @@
           a non-empty set of types and a variable table."
   :ok types+vartab
   :pred types+vartab-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule not-types+vartab-p-of-error
-  (not (types+vartab-p (reserrf x)))
-  :enable (fty::reserr types+vartab-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1216,7 +1217,7 @@
      but singles out postfix @('[]') expressions and unary @('*') expressions,
      even though those are just special cases of lvalues;
      perhaps this has to do with the restriction about
-     the bit-field and the @('register'),
+     the bit-field and the @('register') modifier,
      but since none of these are covered in our current C model,
      we can just say that, for us, the argument of @('&') must be an lvalue.
      This is why this ACL2 function takes an expression type, not just a type,
@@ -1551,7 +1552,7 @@
     "We do lvalue conversion for both operands,
      via @(tsee expr-type->type).
      According to [C:6.3.2/2],
-     we should not do this for if an operand has an array type;
+     we should not do this if an operand has an array type;
      however, according to [C:6.3.2/3],
      we should convert the array to a pointer
      (which we do via @(tsee apconvert-type)),
@@ -2406,7 +2407,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check type specifier sequence and declarator,
+    "We check the type specifier sequence and declarator,
      obtaining the variable table that includes the parameters.
      Importantly, the block items are checked in this variable table,
      which has the types for the function parameters,

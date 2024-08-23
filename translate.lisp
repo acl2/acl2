@@ -6457,21 +6457,6 @@
                            warranted-fns))
           (mv nil nil nil))))
 
-(defun non-executable-stobjs-msg (vars wrld non-exec-stobjs)
-  (cond ((endp vars)
-         (if non-exec-stobjs
-             (msg "  Note that ~&0 ~#0~[is a non-executable stobj~/are ~
-                   non-executable stobjs~]."
-                  (reverse non-exec-stobjs))
-           ""))
-        (t (non-executable-stobjs-msg
-            (cdr vars)
-            wrld
-            (if (and (stobjp (car vars) t wrld)
-                     (getpropc (car vars) 'non-executablep nil wrld))
-                (cons (car vars) non-exec-stobjs)
-              non-exec-stobjs)))))
-
 (defun scan-to-event (wrld)
 
 ; We roll back wrld to the first (list order traversal) event landmark
@@ -6695,7 +6680,7 @@
                        (mv (fargn pat 1) (kwote name) nil nil) ; (2a)
                      (mv nil nil nil nil)))
                   (t (mv (eq evg nil) nil nil nil)))) ; (2b)
-                (t 
+                (t
 
 ; Finally, here we know that y is not a quoted constant.  We will try to unify
 ; x with the symbol-name of evg and y with 'evg, which is just term.  Good luck
@@ -8127,9 +8112,10 @@
          (let ((pair (assoc-eq form alist)))
            (cond (pair (mv nil (cdr pair) latches))
                  (t (mv t
-                        (msg "Unbound var ~x0.~@1"
+                        (msg "Unbound variable ~x0.~#1~[~/  Note that ~x0 is ~
+                              not a global stobj; see :DOC add-global-stobj.~]"
                              form
-                             (non-executable-stobjs-msg (list form) w nil))
+                             (if (stobjp form t w) 1 0))
                         latches)))))
         ((fquotep form)
          (mv nil (cadr form) latches))
@@ -14685,7 +14671,7 @@
 ; are (as of ACL2 Version_8.1):
 
 ; :DFS - lambda objects automatically tolerate dfs (see ec-call-p case in
-;        logic-code-to-runnable-code) 
+;        logic-code-to-runnable-code)
 ; :GUARD-DEBUG - proof time (see below)
 ; :GUARD-HINTS - proof time
 ; :GUARD-SIMPLIFY - proof time
@@ -22439,7 +22425,7 @@
 ; assume that users of dfs can figure that out.
 
           (let ((stobjs-out-for-form
-                 (stobjs-out-for-form x known-stobjs top-known-dfs 
+                 (stobjs-out-for-form x known-stobjs top-known-dfs
                                       wrld state-vars
                                       bound-stobjs-out))
                 (minimal-known-dfs
@@ -22494,7 +22480,7 @@
                 new-known-dfs))))))))
 
 (defun translate11-mv-let (x tcall0 tbody0 stobjs-out bindings
-                             known-stobjs known-dfs 
+                             known-stobjs known-dfs
                              local-stobj local-stobj-creator flet-alist
                              ctx wrld state-vars)
 
@@ -22961,7 +22947,7 @@
                          bindings known-stobjs known-dfs
                          msg flet-alist form ctx wrld state-vars)
         ""))
-      (t 
+      (t
        (translate11-lst (if (eq fn 'wormhole-eval)
                             (list (nth 0 args) *nil* (nth 2 args))
                           args)
@@ -27525,14 +27511,24 @@
 ; it depends hereditarily on the function ev, which has raw Lisp code and is
 ; thus (as of this writing) prevented from being promoted to :logic mode.
 
-  (let ((vars (all-vars term)))
+  (let* ((vars (all-vars term))
+         (unknown-stobj-names (unknown-stobj-names vars t wrld))
+         (non-global-stobj-names
+          (and (null unknown-stobj-names) ; optimization
+               (remove1 'state
+                        (set-difference-assoc-eq vars
+                                                 (user-stobj-alist state))))))
     (cond
-     ((unknown-stobj-names vars t wrld) ;;; known-stobjs = t
+     (unknown-stobj-names
       (er soft ctx
-          "Global variables, such as ~&0, are not allowed.~@1  See :DOC ASSIGN ~
+          "Global variables, such as ~&0, are not allowed.  See :DOC ASSIGN ~
            and :DOC @."
-          (reverse (unknown-stobj-names vars t wrld)) ;;; known-stobjs = t
-          (non-executable-stobjs-msg vars wrld nil)))
+          (reverse unknown-stobj-names)))
+     (non-global-stobj-names
+      (er soft ctx
+          "Non-global stobj names, such as ~&0, are not allowed.  See :DOC ~
+           add-global-stobj."
+          (reverse non-global-stobj-names)))
      (t (ev-for-trans-eval term stobjs-out ctx state aok
                            user-stobjs-modified-warning)))))
 
