@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "owned-certificates")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,6 +26,6 @@
      is the non-forking of blockchains,
      which we have already proved for static committees;
      here we are generalizing it for dynamic committees."))
-  :order-subtopics ())
+  :order-subtopics (owned-certificates))
 
 ; TODO: continue

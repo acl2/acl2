@@ -539,17 +539,23 @@
           (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
         ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
 
-(defmacro test-lex-fail (fn input &key more-inputs)
-  ;; INPUT is an ACL2 string with the text to lex.
+(defmacro test-lex-fail (fn input &key pos more-inputs)
+  ;; INPUT is an ACL2 term with the text to lex,
+  ;; where the term evaluates to a string or a list of bytes.
+  ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
   `(assert-event
-    (b* ((,(if (eq fn 'lex-*-digit)
+    (b* ((pstate (init-parstate (if (stringp ,input)
+                                    (acl2::string=>nats ,input)
+                                  ,input)
+                                nil))
+         ,@(and pos
+                `((pstate (change-parstate pstate :position ,pos))))
+         (,(if (member-eq fn '(lex-*-digit
+                               lex-*-hexadecimal-digit))
                '(mv erp & & & &)
              '(mv erp & & &))
-          (,fn ,@more-inputs (init-parstate (if (stringp ,input)
-                                                (acl2::string=>nats ,input)
-                                              ,input)
-                                            nil))))
+          (,fn ,@more-inputs pstate)))
       erp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -931,7 +937,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; lex-*-c-char
+; lex-*-s-char
 
 (test-lex
  lex-*-s-char
@@ -973,6 +979,47 @@
 (test-lex-fail
  lex-*-s-char
  (list (char-code #\U) 13 (char-code #\")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-character-constant
+
+(test-lex
+ lex-character-constant
+ "e'"
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0))
+ :cond (equal ast
+              (lexeme-token
+               (token-const
+                (const-char
+                 (cconst nil
+                         (list (c-char-char (char-code #\e)))))))))
+
+(test-lex
+ lex-character-constant
+ "\\aA'"
+ :pos (position 1 2)
+ :more-inputs ((cprefix-locase-u) (position 1 1))
+ :cond (equal ast
+              (lexeme-token
+               (token-const
+                (const-char
+                 (cconst (cprefix-locase-u)
+                         (list (c-char-escape (escape-simple (simple-escape-a)))
+                               (c-char-char (char-code #\A)))))))))
+
+(test-lex-fail
+ lex-character-constant
+ "''"
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0)))
+
+(test-lex-fail
+ lex-character-constant
+ (list 10 (char-code #\'))
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

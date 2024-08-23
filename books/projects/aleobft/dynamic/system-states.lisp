@@ -342,7 +342,7 @@
                                    (update-validator-state val
                                                            vstate
                                                            systate))
-              (if (equal (address-fix val1) (address-fix val))
+              (if (equal (address-fix val) (address-fix val1))
                   (validator-state-fix vstate)
                 (get-validator-state val1 systate))))
     :enable get-validator-state)
@@ -359,7 +359,7 @@
 
   (defrule get-validator-state-of-update-validator-state-diff
     (implies (and (set::in (address-fix val) (correct-addresses systate))
-                  (not (equal (address-fix val1) (address-fix val))))
+                  (not (equal (address-fix val) (address-fix val1))))
              (equal
               (get-validator-state val1
                                    (update-validator-state val

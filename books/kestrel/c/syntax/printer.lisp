@@ -1571,11 +1571,11 @@
            :ident (print-ident expr.unwrap pstate)
            :const (print-const expr.unwrap pstate)
            :string
-           (b* (((unless expr.unwrap)
+           (b* (((unless expr.literals)
                  (raise "Misusage error: ~
                          empty list of string literals.")
                  (pristate-fix pstate)))
-             (print-stringlit-list expr.unwrap pstate))
+             (print-stringlit-list expr.literals pstate))
            :paren
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-expr expr.unwrap (expr-priority-expr) pstate))
