@@ -15,7 +15,7 @@
 (include-book "invariant-signers-have-author-round")
 (include-book "invariant-signers-are-quorum")
 
-(local (include-book "lib-ext"))
+(local (include-book "library-extensions"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

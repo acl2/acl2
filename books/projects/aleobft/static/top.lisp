@@ -11,6 +11,7 @@
 
 (in-package "ALEOBFT-STATIC")
 
+(include-book "library-extensions")
 (include-book "definition")
 (include-book "correctness")
 
@@ -51,5 +52,6 @@
     "Besides defining the formal model.
      we formally prove correctness properties of it,
      most prominently the non-forking of blockchains."))
-  :order-subtopics (definition
+  :order-subtopics (library-extensions
+                    definition
                     correctness))

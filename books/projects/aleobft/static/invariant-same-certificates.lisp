@@ -16,7 +16,7 @@
 
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "lib-ext"))
+(local (include-book "library-extensions"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
