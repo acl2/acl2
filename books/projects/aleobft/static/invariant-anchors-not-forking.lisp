@@ -12,12 +12,13 @@
 (in-package "ALEOBFT-STATIC")
 
 (include-book "operations-anchors")
-(include-book "operations-non-forking")
 (include-book "properties-anchors")
 (include-book "properties-anchors-extension")
 (include-book "invariant-last-is-even")
 (include-book "invariant-last-anchor-present")
 (include-book "invariant-paths-to-other-last-anchor")
+
+(include-book "../library-extensions/lists-nofork-p")
 
 (include-book "std/util/define-sk" :dir :system)
 
