@@ -63,7 +63,7 @@
 
   (define expr-unambp ((expr exprp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an expression is unambiguous."
     (expr-case expr
                :ident t
@@ -104,7 +104,7 @@
 
   (define expr-list-unambp ((exprs expr-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a list of expressions is unambiguous."
     (or (endp exprs)
         (and (expr-unambp (car exprs))
@@ -115,7 +115,7 @@
 
   (define expr-option-unambp ((expr? expr-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an optaional expression is unambiguous."
     (expr-option-case expr?
                       :some (expr-unambp expr?.val)
@@ -126,7 +126,7 @@
 
   (define const-expr-unambp ((cexpr const-exprp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a constant expression is unambiguous."
     (expr-unambp (const-expr->unwrap cexpr))
     :measure (const-expr-count cexpr))
@@ -135,7 +135,7 @@
 
   (define const-expr-option-unambp ((cexpr? const-expr-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an optional constant expression is unambiguous."
     (const-expr-option-case cexpr?
                             :some (const-expr-unambp cexpr?.val)
@@ -146,7 +146,7 @@
 
   (define genassoc-unambp ((assoc genassocp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a generic association is unambiguous."
     (genassoc-case assoc
                    :type (and (tyname-unambp assoc.type)
@@ -158,7 +158,7 @@
 
   (define genassoc-list-unambp ((assocs genassoc-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a list of generic associations is unambiguous."
     (or (endp assocs)
         (and (genassoc-unambp (car assocs))
@@ -169,7 +169,7 @@
 
   (define type-spec-unambp ((tyspec type-specp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a type specifier is unambiguous."
     (type-spec-case tyspec
                     :void t
@@ -194,7 +194,7 @@
 
   (define spec/qual-unambp ((specqual spec/qual-p))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a specifier or qualifier is unambiguous."
     (spec/qual-case specqual
                     :tyspec (type-spec-unambp specqual.unwrap)
@@ -207,7 +207,7 @@
 
   (define spec/qual-list-unambp ((specquals spec/qual-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a list of specifiers and qualifiers is unambiguous."
     (or (endp specquals)
         (and (spec/qual-unambp (car specquals))
@@ -218,7 +218,7 @@
 
   (define align-spec-unambp ((alignspec align-specp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an alignment specifier is unambiguous."
     (align-spec-case alignspec
                      :alignas-type (tyname-unambp alignspec.type)
@@ -230,7 +230,7 @@
 
   (define declspec-unambp ((declspec declspecp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a declaration specifier is unambiguous."
     (declspec-case declspec
                    :stocla t
@@ -245,7 +245,7 @@
 
   (define declspec-list-unambp ((declspecs declspec-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a list of declaration specifiers is unambiguous."
     (or (endp declspecs)
         (and (declspec-unambp (car declspecs))
@@ -256,7 +256,7 @@
 
   (define initer-unambp ((initer initerp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an initializer is unambiguous."
     (initer-case initer
                  :single (expr-unambp initer.expr)
@@ -267,7 +267,7 @@
 
   (define initer-option-unambp ((initer? initer-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an optional initializer is unambiguous."
     (initer-option-case initer?
                         :some (initer-unambp initer?.val)
@@ -278,7 +278,7 @@
 
   (define desiniter-unambp ((desiniter desiniterp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an initializer with optional designations is unambiguous."
     (and (designor-list-unambp (desiniter->design desiniter))
          (initer-unambp (desiniter->init desiniter)))
@@ -288,7 +288,7 @@
 
   (define desiniter-list-unambp ((desiniters desiniter-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a list of initialziers with optional designations
             is unambiguous."
     (or (endp desiniters)
@@ -300,7 +300,7 @@
 
   (define designor-unambp ((designor designorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a designator is unambiguous."
     (designor-case designor
                    :sub (const-expr-unambp designor.index)
@@ -311,7 +311,7 @@
 
   (define designor-list-unambp ((designors designor-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a list of designators is unambiguous."
     (or (endp designors)
         (and (designor-unambp (car designors))
@@ -322,7 +322,7 @@
 
   (define declor-unambp ((declor declorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a declarator is unambiguous."
     (dirdeclor-unambp (declor->decl declor))
     :measure (declor-count declor))
@@ -331,7 +331,7 @@
 
   (define declor-option-unambp ((declor? declor-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an optional declarator is unambiguous."
     (declor-option-case declor?
                         :some (declor-unambp declor?.val)
@@ -342,7 +342,7 @@
 
   (define dirdeclor-unambp ((dirdeclor dirdeclorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a direct declarator is unambiguous."
     (dirdeclor-case
      dirdeclor
@@ -364,7 +364,7 @@
 
   (define absdeclor-unambp ((absdeclor absdeclorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an abstract declarator is unambiguous."
     (dirabsdeclor-option-unambp (absdeclor->decl? absdeclor))
     :measure (absdeclor-count absdeclor))
@@ -373,7 +373,7 @@
 
   (define absdeclor-option-unambp ((absdeclor? absdeclor-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an optional abstract declarator is unambiguous."
     (absdeclor-option-case absdeclor?
                            :some (absdeclor-unambp absdeclor?.val)
@@ -384,7 +384,7 @@
 
   (define dirabsdeclor-unambp ((dirabsdeclor dirabsdeclorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a direct abstract declarator is unambiguous."
     :long
     (xdoc::topstring
@@ -410,7 +410,7 @@
 
   (define dirabsdeclor-option-unambp ((dirabsdeclor? dirabsdeclor-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an optional direct abstract declarator is unambiguous."
     (dirabsdeclor-option-case dirabsdeclor?
                               :some (dirabsdeclor-unambp dirabsdeclor?.val)
@@ -421,7 +421,7 @@
 
   (define paramdecl-unambp ((paramdecl paramdeclp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a parameter declaration is unambiguous."
     (and (declspec-list-unambp (paramdecl->spec paramdecl))
          (paramdeclor-unambp (paramdecl->decl paramdecl)))
@@ -431,7 +431,7 @@
 
   (define paramdecl-list-unambp ((paramdecls paramdecl-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a list parameter declarations is unambiguous."
     (or (endp paramdecls)
         (and (paramdecl-unambp (car paramdecls))
@@ -442,7 +442,7 @@
 
   (define paramdeclor-unambp ((paramdeclor paramdeclorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a parameter declarator is unambiguous."
     (paramdeclor-case paramdeclor
                       :declor (declor-unambp paramdeclor.unwrap)
@@ -455,7 +455,7 @@
 
   (define tyname-unambp ((tyname tynamep))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a type name is unambiguous."
     (and (spec/qual-list-unambp (tyname->specqual tyname))
          (absdeclor-option-unambp (tyname->decl? tyname)))
@@ -465,7 +465,7 @@
 
   (define strunispec-unambp ((strunispec strunispecp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a structure or union specifier is unambiguous."
     (structdecl-list-unambp (strunispec->members strunispec))
     :measure (strunispec-count strunispec))
@@ -474,7 +474,7 @@
 
   (define structdecl-unambp ((structdecl structdeclp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a structure declaration is unambiguous."
     (structdecl-case structdecl
                      :member (and (spec/qual-list-unambp structdecl.specqual)
@@ -486,7 +486,7 @@
 
   (define structdecl-list-unambp ((structdecls structdecl-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a list of structure declarations is unambiguous."
     (or (endp structdecls)
         (and (structdecl-unambp (car structdecls))
@@ -497,7 +497,7 @@
 
   (define structdeclor-unambp ((structdeclor structdeclorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a structure declarator is unambiguous."
     (and (declor-option-unambp (structdeclor->declor? structdeclor))
          (const-expr-option-unambp (structdeclor->expr? structdeclor)))
@@ -507,7 +507,7 @@
 
   (define structdeclor-list-unambp ((structdeclors structdeclor-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a list of structure declarators is unambiguous."
     (or (endp structdeclors)
         (and (structdeclor-unambp (car structdeclors))
@@ -518,7 +518,7 @@
 
   (define enumspec-unambp ((enumspec enumspecp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an enumeration specifier is unambiguous."
     (enumer-list-unambp (enumspec->list enumspec))
     :measure (enumspec-count enumspec))
@@ -527,7 +527,7 @@
 
   (define enumer-unambp ((enumer enumerp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if an enumerator is unambiguous."
     (const-expr-option-unambp (enumer->value enumer))
     :measure (enumer-count enumer))
@@ -536,7 +536,7 @@
 
   (define enumer-list-unambp ((enumers enumer-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a list of enumerators is unambiguous."
     (or (endp enumers)
         (and (enumer-unambp (car enumers))
@@ -547,7 +547,7 @@
 
   (define statassert-unambp ((statassert statassertp))
     :returns (yes/no booleanp)
-    :parents (unambiguity expr-unambps/decls)
+    :parents (unambiguity exprs/decls-unambp)
     :short "Check if a static assertion declaration is unambiguous."
     (const-expr-unambp (statassert->test statassert))
     :measure (statassert-count statassert))

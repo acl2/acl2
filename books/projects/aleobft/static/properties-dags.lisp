@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ properties-dags
-  :parents (correctnes)
+  :parents (correctness)
   :short "Some properties of the operations on DAGs."
   :long
   (xdoc::topstring

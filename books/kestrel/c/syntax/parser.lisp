@@ -2101,9 +2101,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-cconst ((cprefix? cprefix-optionp)
-                    (first-pos positionp)
-                    (pstate parstatep))
+(define lex-character-constant ((cprefix? cprefix-optionp)
+                                (first-pos positionp)
+                                (pstate parstatep))
   :returns (mv erp (lexeme lexemep) (span spanp) (new-pstate parstatep))
   :short "Lex a character constant."
   :long
@@ -2132,12 +2132,12 @@
 
   ///
 
-  (defret parsize-of-lex-cconst-uncond
+  (defret parsize-of-lex-character-constant-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-cconst-cond
+  (defret parsize-of-lex-character-constant-cond
     (implies (not erp)
              (<= (parsize new-pstate)
                  (1- (parsize pstate))))
@@ -3587,7 +3587,6 @@
   :prepwork
 
   ((defines lex-block-comment-loops
-     :parents (none) ; nil causes an error
 
      (define lex-rest-of-block-comment ((first-pos positionp)
                                         (pstate parstatep))
@@ -3903,7 +3902,7 @@
                  (make-span :start first-pos :end first-pos)
                  pstate))
          ((= char2 (char-code #\')) ; u '
-          (lex-cconst (cprefix-locase-u) first-pos pstate))
+          (lex-character-constant (cprefix-locase-u) first-pos pstate))
          ((= char2 (char-code #\")) ; u "
           (lex-stringlit (eprefix-locase-u) first-pos pstate))
          ((= char2 (char-code #\8)) ; u 8
@@ -3931,7 +3930,7 @@
                  (make-span :start first-pos :end first-pos)
                  pstate))
          ((= char2 (char-code #\')) ; U '
-          (lex-cconst (cprefix-upcase-u) first-pos pstate))
+          (lex-character-constant (cprefix-upcase-u) first-pos pstate))
          ((= char2 (char-code #\")) ; U "
           (lex-stringlit (eprefix-upcase-u) first-pos pstate))
          (t ; U other
@@ -3946,7 +3945,7 @@
                  (make-span :start first-pos :end first-pos)
                  pstate))
          ((= char2 (char-code #\')) ; L '
-          (lex-cconst (cprefix-upcase-l) first-pos pstate))
+          (lex-character-constant (cprefix-upcase-l) first-pos pstate))
          ((= char2 (char-code #\")) ; L "
           (lex-stringlit (eprefix-upcase-l) first-pos pstate))
          (t ; L other
@@ -4003,7 +4002,7 @@
                    pstate))))))
 
      ((= char (char-code #\')) ; '
-      (lex-cconst nil first-pos pstate))
+      (lex-character-constant nil first-pos pstate))
 
      ((= char (char-code #\")) ; "
       (lex-stringlit nil first-pos pstate))

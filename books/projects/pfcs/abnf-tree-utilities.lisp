@@ -35,7 +35,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abnf-tree-utilities
-  :parents (abnf) ; this may change
+  :parents (abnf::abnf) ; this may change
   :short "Utilities to manipulate ABNF trees."
   :long
   (xdoc::topstring

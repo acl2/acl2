@@ -30,7 +30,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-arrays
-  :parents (shallow-embedding)
+  :parents (representation)
   :short "A model of shallowly embedded C arrays for ATC."
   :long
   (xdoc::topstring
