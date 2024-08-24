@@ -13,7 +13,7 @@
 
 (include-book "oset-theorems")
 (include-book "omap-theorems")
-(include-book "lists-no-fork-p")
+(include-book "lists-nofork-p")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
