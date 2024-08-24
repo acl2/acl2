@@ -14,6 +14,7 @@
 (include-book "owned-certificates")
 (include-book "same-owned-certificates")
 (include-book "unequivocal-certificates-def-and-init")
+(include-book "nonforking-blockchains-def-and-init")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,6 +31,7 @@
      here we are generalizing it for dynamic committees."))
   :order-subtopics (owned-certificates
                     same-owned-certificates
-                    unequivocal-certificates-def-and-init))
+                    unequivocal-certificates-def-and-init
+                    nonforking-blockchains-def-and-init))
 
 ; TODO: continue
