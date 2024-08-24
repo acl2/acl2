@@ -12,8 +12,8 @@
 
 (include-book "def-error-checker")
 
-(include-book "kestrel/std/system/rawp" :dir :system)
-(include-book "kestrel/std/system/pure-raw-p" :dir :system)
+(include-book "std/system/rawp" :dir :system)
+(include-book "std/system/pure-raw-p" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

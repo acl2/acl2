@@ -13,7 +13,7 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "make-becomes-theorem")
 (include-book "kestrel/utilities/verify-guards-dollar" :dir :system) ; only needed for verify-guards-for-defun?
-(include-book "kestrel/std/system/guard-verified-p" :dir :system)
+(include-book "std/system/guard-verified-p" :dir :system)
 (include-book "becomes-theorem-names")
 (include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
 (include-book "kestrel/terms-light/drop-clearly-implied-conjuncts" :dir :system)

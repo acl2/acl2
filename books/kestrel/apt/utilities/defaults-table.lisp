@@ -11,7 +11,7 @@
 (in-package "APT")
 
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
-(include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
 (include-book "std/util/defval" :dir :system)

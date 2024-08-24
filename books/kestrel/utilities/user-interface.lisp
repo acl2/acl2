@@ -14,7 +14,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
+(include-book "std/system/pseudo-event-formp" :dir :system)
 (include-book "maybe-unquote")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -23,7 +23,7 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
 
-(include-book "kestrel/std/system/theorem-namep" :dir :system)
+(include-book "std/system/theorem-namep" :dir :system)
 
 ; Matt K. mod: Avoid ACL2(p) error from fvmeas-i (clause-processor returns more
 ; than two values).

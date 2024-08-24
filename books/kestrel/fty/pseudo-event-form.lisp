@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/std/system/pseudo-event-form-fix" :dir :system)
+(include-book "std/system/pseudo-event-form-fix" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

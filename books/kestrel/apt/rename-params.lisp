@@ -19,7 +19,7 @@
 (include-book "utilities/deftransformation")
 (include-book "utilities/function-renamingp")
 ;(include-book "utilities/maybe-verify-guards2")
-(include-book "kestrel/std/system/guard-verified-p" :dir :system)
+(include-book "std/system/guard-verified-p" :dir :system)
 (include-book "utilities/names") ; for INCREMENT-NAME-SUFFIX-SAFE
 (include-book "utilities/make-becomes-theorem")
 (include-book "utilities/option-parsing")

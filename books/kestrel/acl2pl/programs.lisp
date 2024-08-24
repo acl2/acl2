@@ -13,7 +13,7 @@
 (include-book "packages")
 (include-book "functions")
 
-(include-book "kestrel/std/system/known-packages-plus" :dir :system)
+(include-book "std/system/known-packages-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
