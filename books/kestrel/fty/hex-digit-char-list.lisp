@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist hex-digit-char-list
-  :parents (fty::fty-extensions fty::specific-types pos-listp)
+  :parents (fty::fty-extensions fty::specific-types hex-digit-char)
   :short "Fixtype of lists of hexadecimal digit characters."
   :elt-type hex-digit-char
   :true-listp t

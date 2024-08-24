@@ -3587,7 +3587,6 @@
   :prepwork
 
   ((defines lex-block-comment-loops
-     :parents (none) ; nil causes an error
 
      (define lex-rest-of-block-comment ((first-pos positionp)
                                         (pstate parstatep))
