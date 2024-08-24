@@ -13,6 +13,7 @@
 
 (include-book "oset-theorems")
 (include-book "omap-theorems")
+(include-book "lists-no-fork-p")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -31,5 +32,6 @@
      so they will be moved to more general libraries.
      This is a convenient place to collect them temporarily."))
   :order-subtopics (oset-theorems
-                    omap-theorems)
+                    omap-theorems
+                    lists-nofork-p)
   :default-parent t)
