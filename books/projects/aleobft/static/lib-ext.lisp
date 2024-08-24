@@ -11,8 +11,8 @@
 
 (in-package "ALEOBFT-STATIC")
 
-(include-book "kestrel/utilities/omaps/core" :dir :system)
 (include-book "std/osets/top" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
