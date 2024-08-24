@@ -1800,7 +1800,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lex-escape-sequence ((parstate parstatep))
-  :returns (mv erp (escape escapep) (last-pos positionp) (new-parstate parstatep))
+  :returns (mv erp
+               (escape escapep)
+               (last-pos positionp)
+               (new-parstate parstatep))
   :short "Lex an escape sequence."
   :long
   (xdoc::topstring
@@ -1884,7 +1887,8 @@
                      parstate))
              (t ; \ octdig \octdig other
               (b* ((parstate
-                    (if char3 (unread-char parstate) parstate))) ; \ octdig octdig
+                    ;; \ octdig octdig
+                    (if char3 (unread-char parstate) parstate)))
                 (retok (escape-oct (oct-escape-two (code-char char)
                                                    (code-char char2)))
                        pos2
@@ -2547,7 +2551,8 @@
            ((erp digits last-pos & parstate)
             (lex-*-digit pos-so-far parstate))
            ((unless digits)
-            (b* ((parstate (if sign? (unread-char parstate) parstate)) ; put back sign
+            (b* ((parstate
+                  (if sign? (unread-char parstate) parstate)) ; put back sign
                  (parstate (unread-char parstate))) ; put back e/E
               (retok nil pos parstate))))
         (retok (make-dec-expo :prefix prefix
@@ -3755,7 +3760,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lex-lexeme ((parstate parstatep))
-  :returns (mv erp (lexeme? lexeme-optionp) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (lexeme? lexeme-optionp)
+               (span spanp)
+               (new-parstate parstatep))
   :short "Lex a lexeme."
   :long
   (xdoc::topstring
@@ -5763,7 +5771,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-type-qualifier-list ((parstate parstatep))
-  :returns (mv erp (tyquals type-qual-listp) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (tyquals type-qual-listp)
+               (span spanp)
+               (new-parstate parstatep))
   :parents (parser parse-exprs/decls)
   :short "Parse a list of one or more type qualifiers."
   :long
@@ -5865,7 +5876,8 @@
                    (span-join span last-span)
                    parstate)))
          (t ; * tyquals other
-          (b* ((parstate (if token (unread-token parstate) parstate))) ; * tyquals
+          (b* ((parstate
+                (if token (unread-token parstate) parstate))) ; * tyquals
             (retok (list tyquals) (span-join span span2) parstate))))))
      ((token-punctuatorp token "*") ; * *
       (b* ((parstate (unread-token parstate)) ; *
@@ -6025,7 +6037,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-assignment-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 16))
 
@@ -6065,13 +6078,15 @@
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token ","))) ; prev-expr not,
-          (b* ((parstate (if token (unread-token parstate) parstate))) ; prev-expr
+          (b* ((parstate
+                (if token (unread-token parstate) parstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) parstate)))
          ;; prev-expr ,
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ; prev-expr , expr
           (parse-assignment-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (curr-expr (make-expr-comma :first prev-expr :next expr))
          (curr-span (span-join prev-span expr-span)))
       (parse-expression-rest curr-expr curr-span parstate))
@@ -6104,8 +6119,10 @@
        but also other kinds of expressions."))
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
-         ((erp expr span parstate) (parse-conditional-expression parstate)) ; expr
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((erp expr span parstate)
+          (parse-conditional-expression parstate)) ; expr
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          ((when (not (expr-unary/postfix/primary-p expr)))
           (retok expr span parstate))
          ((erp token & parstate) (read-token parstate))
@@ -6142,8 +6159,10 @@
        if there is not, it must be a logical disjunction expression."))
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
-         ((erp expr span parstate) (parse-logical-or-expression parstate)) ; expr
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((erp expr span parstate)
+          (parse-logical-or-expression parstate)) ; expr
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token "?"))) ; expr not?
           (b* ((parstate (if token (unread-token parstate) parstate))) ; expr
@@ -6151,7 +6170,8 @@
          ;; expr ?
          (psize (parsize parstate))
          ((erp expr2 & parstate) (parse-expression parstate)) ; expr ? expr2
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          ((erp & parstate) (read-punctuator ":" parstate)) ; expr ? expr2 :
          ((erp expr3 span3 parstate) ; expr ? expr2 : expr3
           (parse-conditional-expression parstate)))
@@ -6175,7 +6195,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-logical-and-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-logical-or-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 13))
 
@@ -6196,13 +6217,15 @@
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token "||"))) ; prev-expr not||
-          (b* ((parstate (if token (unread-token parstate) parstate))) ; prev-expr
+          (b* ((parstate
+                (if token (unread-token parstate) parstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) parstate)))
          ;; prev-expr ||
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ; prev-expr || expr
           (parse-logical-and-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (curr-expr (make-expr-binary :op (binop-logor)
                                       :arg1 prev-expr
                                       :arg2 expr))
@@ -6225,7 +6248,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-inclusive-or-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-logical-and-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 12))
 
@@ -6246,13 +6270,15 @@
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token "&&"))) ; prev-expr not&&
-          (b* ((parstate (if token (unread-token parstate) parstate))) ; prev-expr
+          (b* ((parstate
+                (if token (unread-token parstate) parstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) parstate)))
          ;; prev-expr &&
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ; prev-expr && expr
           (parse-inclusive-or-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (curr-expr (make-expr-binary :op (binop-logand)
                                       :arg1 prev-expr
                                       :arg2 expr))
@@ -6275,7 +6301,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-exclusive-or-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-inclusive-or-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 11))
 
@@ -6296,13 +6323,15 @@
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token "|"))) ; prev-expr not|
-          (b* ((parstate (if token (unread-token parstate) parstate))) ; prev-expr
+          (b* ((parstate
+                (if token (unread-token parstate) parstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) parstate)))
          ;; prev-expr |
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ; prev-expr | expr
           (parse-exclusive-or-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (curr-expr (make-expr-binary :op (binop-bitior)
                                       :arg1 prev-expr
                                       :arg2 expr))
@@ -6325,7 +6354,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-and-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-exclusive-or-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 10))
 
@@ -6352,7 +6382,8 @@
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ; prev-expr ^ expr
           (parse-and-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (curr-expr (make-expr-binary :op (binop-bitxor)
                                       :arg1 prev-expr
                                       :arg2 expr))
@@ -6375,7 +6406,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-equality-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-and-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 9))
 
@@ -6396,13 +6428,15 @@
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token "&"))) ; prev-expr not&
-          (b* ((parstate (if token (unread-token parstate) parstate))) ; prev-expr
+          (b* ((parstate
+                (if token (unread-token parstate) parstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) parstate)))
          ;; prev-expr &
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ; prev-expr & expr
           (parse-equality-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (curr-expr (make-expr-binary :op (binop-bitand)
                                       :arg1 prev-expr
                                       :arg2 expr))
@@ -6425,7 +6459,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-relational-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-equality-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 8))
 
@@ -6446,13 +6481,15 @@
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-equality-operator-p token))) ; prev-expr not-eqop
-          (b* ((parstate (if token (unread-token parstate) parstate))) ; prev-expr
+          (b* ((parstate
+                (if token (unread-token parstate) parstate))) ; prev-expr
             (retok (expr-fix prev-expr) (span-fix prev-span) parstate)))
          ;; prev-expr eqop
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ;; prev-expr eqop expr
           (parse-relational-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (op (token-to-equality-operator token))
          (curr-expr (make-expr-binary :op op
                                       :arg1 prev-expr
@@ -6476,7 +6513,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-shift-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-relational-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 7))
 
@@ -6503,7 +6541,8 @@
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ;; prev-expr relop expr
           (parse-shift-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (op (token-to-relational-operator token))
          (curr-expr (make-expr-binary :op op
                                       :arg1 prev-expr
@@ -6527,7 +6566,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-additive-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-shift-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 6))
 
@@ -6554,7 +6594,8 @@
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ;; prev-expr shiftop expr
           (parse-additive-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (op (token-to-shift-operator token))
          (curr-expr (make-expr-binary :op op
                                       :arg1 prev-expr
@@ -6578,7 +6619,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-multiplicative-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-additive-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 5))
 
@@ -6605,7 +6647,8 @@
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ;; prev-expr addop expr
           (parse-multiplicative-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (op (token-to-additive-operator token))
          (curr-expr (make-expr-binary :op op
                                       :arg1 prev-expr
@@ -6629,7 +6672,8 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-cast-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible)))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible)))
       (parse-multiplicative-expression-rest expr span parstate))
     :measure (two-nats-measure (parsize parstate) 4))
 
@@ -6658,7 +6702,8 @@
          (psize (parsize parstate))
          ((erp expr expr-span parstate) ; prev-expr mulop expr
           (parse-cast-expression parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          (op (token-to-multiplicative-operator token))
          (curr-expr (make-expr-binary :op op
                                       :arg1 prev-expr
@@ -6914,7 +6959,8 @@
            ;; unless we end up with an ambiguous cast.
            ;; First we read any increment and decrement operators that follow.
            :ambig ; ( expr/tyname
-           (b* (((erp & parstate) (read-punctuator ")" parstate)) ; ( expr/tyname )
+           (b* (((erp & parstate)
+                 (read-punctuator ")" parstate)) ; ( expr/tyname )
                 ((erp incdecops parstate) ; ( expr/tyname ) [ops]
                  (parse-*-increment/decrement parstate))
                 ((erp token2 & parstate) (read-token parstate)))
@@ -6944,7 +6990,8 @@
               ;; since we no longer need to backtrack.
               ((token-punctuatorp token2 "*") ; ( expr/tyname ) [ops] *
                (b* ((parstate (clear-checkpoint parstate))
-                    ((erp expr last-span parstate) ; ( expr/tyname ) [ops] * expr
+                    ;; ( expr/tyname ) [ops] * expr
+                    ((erp expr last-span parstate)
                      (parse-cast-expression parstate)))
                  (retok (make-expr-cast/mul-ambig
                          :type/arg1 expr/tyname.unwrap
@@ -6968,7 +7015,8 @@
               ((or (token-punctuatorp token2 "+") ; ( expr/tyname ) [ops] +
                    (token-punctuatorp token2 "-")) ; ( expr/tyname ) [ops] -
                (b* ((parstate (clear-checkpoint parstate))
-                    ((erp expr last-span parstate) ; ( expr/tyname ) [ops] +- expr
+                    ;; ( expr/tyname ) [ops] +- expr
+                    ((erp expr last-span parstate)
                      (parse-multiplicative-expression parstate)))
                  (retok (make-expr-cast/add-or-cast/sub-ambig
                          token2 expr/tyname.unwrap incdecops expr)
@@ -6989,7 +7037,8 @@
               ;; since we no longer need to backtrack.
               ((token-punctuatorp token2 "&") ; ( expr/tyname ) [ops] &
                (b* ((parstate (clear-checkpoint parstate))
-                    ((erp expr last-span parstate) ; ( expr/tyname ) [ops] & expr
+                    ((erp expr last-span parstate)
+                     ;; ( expr/tyname ) [ops] & expr
                      (parse-equality-expression parstate)))
                  (retok (make-expr-cast/and-ambig
                          :type/arg1 expr/tyname.unwrap
@@ -7056,7 +7105,8 @@
                      ;; but we need to return a parser state
                      ;; no larger than the initial one,
                      ;; so we just return the empty parser state.
-                     ;; This is just logical: execution stops at the RAISE above.
+                     ;; This is just logical:
+                     ;; execution stops at the RAISE above.
                      (b* ((parstate (init-parstate nil nil)))
                        (reterr t)))
                     (parstate (unread-token parstate))) ;
@@ -7146,7 +7196,8 @@
            ;; If token2 is not an open parenthesis,
            ;; the operand must be a unary expression.
            (t ; sizeof other
-            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; sizeof
+            (b* ((parstate
+                  (if token2 (unread-token parstate) parstate)) ; sizeof
                  ((erp expr last-span parstate) ; sizeof expr
                   (parse-unary-expression parstate)))
               (retok (make-expr-unary :op (unop-sizeof)
@@ -7347,7 +7398,9 @@
                     (expr (amb-expr/tyname->expr expr/tyname.unwrap))
                     (prev-expr (expr-paren expr))
                     (prev-span (span-join span close-paren-span)))
-                 (parse-postfix-expression-rest prev-expr prev-span parstate))))))))
+                 (parse-postfix-expression-rest prev-expr
+                                                prev-span
+                                                parstate))))))))
        ;; If token is not an open parenthesis,
        ;; we cannot have a compound literal,
        ;; and thus we parse the primary expression
@@ -7595,7 +7648,8 @@
               (parse-assignment-expression parstate))
              ((unless (mbt (<= (parsize parstate) (1- psize))))
               (reterr :impossible))
-             ((erp & parstate) (read-punctuator "," parstate)) ; _Generic ( expr ,
+             ((erp & parstate)
+              (read-punctuator "," parstate)) ; _Generic ( expr ,
              (psize (parsize parstate))
              ((erp genassoc genassoc-span parstate) ; _Generic ( expr , genassoc
               (parse-generic-association parstate))
@@ -7752,7 +7806,8 @@
          ((erp & parstate) (read-punctuator "{" parstate)) ; {
          ((erp desiniters final-comma & parstate) ; { inits [,]
           (parse-initializer-list parstate))
-         ((erp last-span parstate) (read-punctuator "}" parstate))) ; { inits [,] }
+         ((erp last-span parstate)
+          (read-punctuator "}" parstate))) ; { inits [,] }
       (retok (make-expr-complit :type tyname
                                 :elems desiniters
                                 :final-comma final-comma)
@@ -7799,7 +7854,8 @@
       "This is called when we expect a static assert declaration,
        after having read the @('_Static_assert') keyword.
        We pass the span of that keyword to this function,
-       so that we can calculate a span for the whole static assert declaration.")
+       so that we can calculate a span for
+       the whole static assert declaration.")
      (xdoc::p
       "We read the remaining components of the grammar rule,
        one after the other.
@@ -7874,7 +7930,8 @@
           (reterr :impossible))
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-designator-start-p token))) ; designor other
-          (b* ((parstate (if token (unread-token parstate) parstate))) ; designor
+          (b* ((parstate
+                (if token (unread-token parstate) parstate))) ; designor
             (retok (list designor) span parstate)))
          ;; designor [
          ;; designor .
@@ -7946,7 +8003,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-designation?-initializer ((parstate parstatep))
-    :returns (mv erp (desiniter desiniterp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (desiniter desiniterp)
+                 (span spanp)
+                 (new-parstate parstatep))
     :parents (parser parse-exprs/decls)
     :short "Parse an initializer with an optional designation."
     :long
@@ -8061,7 +8121,8 @@
              token2) ; initializer , initializer...
             (b* ((parstate (unread-token parstate)) ; initializer ,
                  ((erp desiniters final-comma last-span parstate)
-                  (parse-initializer-list parstate))) ; initializer , initializers
+                  ;; initializer , initializers
+                  (parse-initializer-list parstate)))
               (retok (cons desiniter desiniters)
                      final-comma
                      (span-join span last-span)
@@ -8175,7 +8236,8 @@
     (b* (((reterr) nil nil (irr-span) (irr-parstate))
          ;; The list must not be empty, so we parse the first enumerator.
          (psize (parsize parstate))
-         ((erp enumer enumer-span parstate) (parse-enumerator parstate)) ; enumer
+         ((erp enumer enumer-span parstate)
+          (parse-enumerator parstate)) ; enumer
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
          ;; To see if there are more enumerators,
@@ -8245,7 +8307,10 @@
 
   (define parse-specifier/qualifier ((tyspec-seenp booleanp)
                                      (parstate parstatep))
-    :returns (mv erp (specqual spec/qual-p) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (specqual spec/qual-p)
+                 (span spanp)
+                 (new-parstate parstatep))
     :parents (parser parse-exprs/decls)
     :short "Parse a specifier or qualifier."
     :long
@@ -8362,7 +8427,8 @@
        ;; when this function is called, it must be the case that
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
-        (retok (spec/qual-tyspec (type-spec-typedef (token-ident->unwrap token)))
+        (retok (spec/qual-tyspec
+                (type-spec-typedef (token-ident->unwrap token)))
                span
                parstate))
        ;; If token is a type qualifier, which is always a single keyword,
@@ -8833,7 +8899,8 @@
            ;; the identifier was the whole structure or union specifier,
            ;; so we put back token2 and return the specifier.
            (t ; ident other
-            (b* ((parstate (if token2 (unread-token parstate) parstate))) ; ident
+            (b* ((parstate
+                  (if token2 (unread-token parstate) parstate))) ; ident
               (retok (make-strunispec :name ident
                                       :members nil)
                      span
@@ -8900,7 +8967,8 @@
            ;; If token2 is not an open curly brace,
            ;; the identifier must be the whole enumeration specifier.
            (t ; ident other
-            (b* ((parstate (if token2 (unread-token parstate) parstate))) ; ident
+            (b* ((parstate
+                  (if token2 (unread-token parstate) parstate))) ; ident
               (retok (make-enumspec :name ident
                                     :list nil
                                     :final-comma nil)
@@ -8932,7 +9000,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-alignment-specifier ((first-span spanp) (parstate parstatep))
-    :returns (mv erp (alignspec align-specp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (alignspec align-specp)
+                 (span spanp)
+                 (new-parstate parstatep))
     :parents (parser parse-exprs/decls)
     :short "Parse an alignment specifier."
     :long
@@ -9016,7 +9087,8 @@
                ;; If token3 is not a closed square bracket,
                ;; the star must start an (assignment) expression.
                (t ; [ * other
-                (b* ((parstate (if token3 (unread-token parstate) parstate)) ; [ *
+                (b* ((parstate
+                      (if token3 (unread-token parstate) parstate)) ; [ *
                      (parstate (unread-token parstate)) ; [
                      ((erp expr & parstate) ; [ expr
                       (parse-assignment-expression parstate))
@@ -9382,7 +9454,8 @@
            ;; If token2 may not start a direct abstract declarator,
            ;; our abstract declarator just consists of the pointer part.
            (t ; pointer other
-            (b* ((parstate (if token2 (unread-token parstate) parstate))) ; pointer
+            (b* ((parstate
+                  (if token2 (unread-token parstate) parstate))) ; pointer
               (retok (make-absdeclor :pointers tyqualss
                                      :decl? nil)
                      tyqualss-span
@@ -9549,7 +9622,8 @@
                ;; we must have an expression,
                ;; and we have determined the array declarator variant.
                (t ; [ * other
-                (b* ((parstate (if token3 (unread-token parstate) parstate)) ; [ *
+                (b* ((parstate
+                      (if token3 (unread-token parstate) parstate)) ; [ *
                      (parstate (unread-token parstate)) ; [
                      ((erp expr & parstate) ; [ expr
                       (parse-assignment-expression parstate))
@@ -9701,7 +9775,8 @@
              ((erp declor & parstate) (parse-declarator parstate)) ; ( declor
              ((unless (mbt (<= (parsize parstate) (1- psize))))
               (reterr :impossible))
-             ((erp last-span parstate) (read-punctuator ")" parstate))) ; ( declor )
+             ((erp last-span parstate)
+              (read-punctuator ")" parstate))) ; ( declor )
           (parse-direct-declarator-rest (dirdeclor-paren declor)
                                         (span-join span last-span)
                                         parstate)))
@@ -9719,7 +9794,10 @@
   (define parse-direct-declarator-rest ((prev-dirdeclor dirdeclorp)
                                         (prev-span spanp)
                                         (parstate parstatep))
-    :returns (mv erp (dirdeclor dirdeclorp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (dirdeclor dirdeclorp)
+                 (span spanp)
+                 (new-parstate parstatep))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of a direct declarator."
     :long
@@ -9749,7 +9827,9 @@
         (b* ((parstate (unread-token parstate)) ;
              (psize (parsize parstate))
              ((erp curr-dirdeclor curr-span parstate) ; dirdeclor
-              (parse-array/function-declarator prev-dirdeclor prev-span parstate))
+              (parse-array/function-declarator prev-dirdeclor
+                                               prev-span
+                                               parstate))
              ((unless (mbt (<= (parsize parstate) (1- psize))))
               (reterr :impossible)))
           (parse-direct-declarator-rest curr-dirdeclor
@@ -10328,7 +10408,8 @@
                     ;; execution stops at the RAISE above.
                     (b* ((parstate (init-parstate nil nil)))
                       (reterr t)))
-                   (parstate (record-checkpoint parstate)) ; we may backtrack again
+                   (parstate
+                    (record-checkpoint parstate)) ; we may backtrack again
                    ((mv erp tyname span-tyname parstate)
                     (parse-type-name parstate)))
                 (if erp
@@ -10410,7 +10491,8 @@
                       ;; So we must have an expression instead,
                       ;; which we have already parsed,
                       ;; but again we need to re-parse it.
-                      (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+                      (b* ((parstate
+                            (backtrack-checkpoint parstate)) ; backtrack
                            ((unless (<= (parsize parstate) psize))
                             (raise "Internal error: ~
                                     size ~x0 after backtracking exceeds ~
@@ -10516,7 +10598,8 @@
     (b* (((reterr) (irr-amb?-declor/absdeclor) (irr-span) (irr-parstate))
          (parstate (record-checkpoint parstate)) ; we will backtrack here
          (psize (parsize parstate))
-         ((mv erp-declor declor span-declor parstate) (parse-declarator parstate)))
+         ((mv erp-declor declor span-declor parstate)
+          (parse-declarator parstate)))
       (if erp-declor
           ;; If the parsing of a declarator fails,
           ;; we must have an abstract declarator.
@@ -10533,7 +10616,8 @@
                 ;; This is just logical: execution stops at the RAISE above.
                 (b* ((parstate (init-parstate nil nil)))
                   (reterr t)))
-               ((erp absdeclor span parstate) (parse-abstract-declarator parstate)))
+               ((erp absdeclor span parstate)
+                (parse-abstract-declarator parstate)))
             (retok (amb?-declor/absdeclor-absdeclor absdeclor) span parstate))
         ;; If the parsing of a declarator succeeds,
         ;; we must see whether the parsing of an abstract declarator
@@ -10747,7 +10831,8 @@
     (b* (((reterr) nil (irr-span) (irr-parstate))
          (psize (parsize parstate))
          ((erp attr span parstate) (parse-attribute parstate)) ; attr
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          ((erp token & parstate) (read-token parstate)))
       (cond
        ;; If token is a comma,
@@ -10767,7 +10852,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-attribute-specifier ((first-span spanp) (parstate parstatep))
-    :returns (mv erp (attrspec attrib-specp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (attrspec attrib-specp)
+                 (span spanp)
+                 (new-parstate parstatep))
     :parents (parser parse-exprs/decls)
     :short "Parse an attribute specifier."
     :long
@@ -10833,7 +10921,8 @@
          (psize (parsize parstate))
          ((erp attrspec span parstate)
           (parse-attribute-specifier first-span parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize)))) (reterr :impossible))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
          ;; __attribute__ ( ( ... ) )
          ((erp attrspecs last-span parstate)
           ;; __attribute__ ( ( ... ) ) [attrspecs]
@@ -11729,7 +11818,10 @@
 (define parse-asm-name-specifier ((uscores booleanp)
                                   (first-span spanp)
                                   (parstate parstatep))
-  :returns (mv erp (asmspec asm-name-specp) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (asmspec asm-name-specp)
+               (span spanp)
+               (new-parstate parstatep))
   :short "Parse an assembler name specifier."
   :long
   (xdoc::topstring
@@ -11814,7 +11906,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-init-declarator ((parstate parstatep))
-  :returns (mv erp (initdeclor initdeclorp) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (initdeclor initdeclorp)
+               (span spanp)
+               (new-parstate parstatep))
   :short "Parse an initializer declarator."
   :long
   (xdoc::topstring
@@ -12198,8 +12293,10 @@
                   ;; execution stops at the RAISE above.
                   (b* ((parstate (init-parstate nil nil)))
                     (reterr t)))
-                 (parstate (record-checkpoint parstate)) ; we may backtrack again
-                 ((mv erp decl span-decl parstate) (parse-declaration parstate)))
+                 (parstate
+                  (record-checkpoint parstate)) ; we may backtrack again
+                 ((mv erp decl span-decl parstate)
+                  (parse-declaration parstate)))
               (if erp
                   ;; If the parsing of a declaration fails,
                   ;; we have an expression statement.
@@ -12378,10 +12475,12 @@
            ;; we put it back along with the previous token,
            ;; and we attempt to parse an expression followed by a semicolon.
            (t ; ident other
-            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; ident
+            (b* ((parstate
+                  (if token2 (unread-token parstate) parstate)) ; ident
                  (parstate (unread-token parstate)) ;
                  ((erp expr span parstate) (parse-expression parstate)) ; expr
-                 ((erp last-span parstate) (read-punctuator ";" parstate))) ; expr ;
+                 ((erp last-span parstate)
+                  (read-punctuator ";" parstate))) ; expr ;
               (retok (stmt-expr expr)
                      (span-join span last-span)
                      parstate))))))
@@ -12415,7 +12514,8 @@
        ((token-keywordp token "case") ; case
         (b* (((erp cexpr & parstate) ; case constexpr
               (parse-constant-expression parstate))
-             ((erp & parstate) (read-punctuator ":" parstate)) ; case constexpr :
+             ((erp & parstate)
+              (read-punctuator ":" parstate)) ; case constexpr :
              ((erp stmt last-span parstate) ; case constexpr : stmt
               (parse-statement parstate)))
           (retok (make-stmt-labeled :label (label-const cexpr)
@@ -12462,7 +12562,8 @@
            ;; If token2 may start an expression, we must have an expression.
            ((token-expression-start-p token2) ; return expr...
             (b* ((parstate (unread-token parstate)) ; return
-                 ((erp expr & parstate) (parse-expression parstate)) ; return expr
+                 ((erp expr & parstate)
+                  (parse-expression parstate)) ; return expr
                  ((erp last-span parstate) ; return expr ;
                   (read-punctuator ";" parstate)))
               (retok (stmt-return expr)
@@ -12497,7 +12598,8 @@
            ;; If token2 is the 'else' keyword,
            ;; we continue to parse this selection statement.
            ((token-keywordp token2 "else") ; if ( expr ) stmt else
-            (b* (((erp stmt-else last-span parstate) ; if ( expr ) stmt else stmt
+            (b* (((erp stmt-else last-span parstate)
+                  ;; if ( expr ) stmt else stmt
                   (parse-statement parstate)))
               (retok (make-stmt-ifelse :test expr
                                        :then stmt
@@ -12677,7 +12779,8 @@
                      (cond
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
-                      ((token-expression-start-p token4) ; for ( ; expr ; expr...
+                      ((token-expression-start-p token4)
+                       ;; for ( ; expr ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                             ((erp next-expr & parstate) ; for ( ; expr ; expr
                              (parse-expression parstate))
@@ -12695,7 +12798,8 @@
                       ;; If token4 is a closed parenthesis,
                       ;; we have no update expression.
                       ((token-punctuatorp token4 ")") ; for ( ; expr ; )
-                       (b* (((erp stmt last-span parstate) ; for ( ; expr ; ) stmt
+                       (b* (((erp stmt last-span parstate)
+                              ;; for ( ; expr ; ) stmt
                              (parse-statement parstate)))
                          (retok (make-stmt-for-decl :init decl
                                                     :test test-expr
@@ -12721,7 +12825,8 @@
                              (parse-expression parstate))
                             ((erp & parstate) ; for ( ; ; expr )
                              (read-punctuator ")" parstate))
-                            ((erp stmt last-span parstate) ; for ( ; ; expr ) stmt
+                            ((erp stmt last-span parstate)
+                              ;; for ( ; ; expr ) stmt
                              (parse-statement parstate)))
                          (retok (make-stmt-for-decl :init decl
                                                     :test nil
@@ -12770,7 +12875,8 @@
                      (cond
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
-                      ((token-expression-start-p token4) ; for ( ; expr ; expr...
+                      ((token-expression-start-p token4)
+                        ;; for ( ; expr ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                             ((erp next-expr & parstate) ; for ( ; expr ; expr
                              (parse-expression parstate))
@@ -12788,7 +12894,8 @@
                       ;; If token4 is a closed parenthesis,
                       ;; we have no update expression.
                       ((token-punctuatorp token4 ")") ; for ( ; expr ; )
-                       (b* (((erp stmt last-span parstate) ; for ( ; expr ; ) stmt
+                       (b* (((erp stmt last-span parstate)
+                              ;; for ( ; expr ; ) stmt
                              (parse-statement parstate)))
                          (retok (make-stmt-for-expr :init expr
                                                     :test test-expr
@@ -12814,7 +12921,8 @@
                              (parse-expression parstate))
                             ((erp & parstate) ; for ( ; ; expr )
                              (read-punctuator ")" parstate))
-                            ((erp stmt last-span parstate) ; for ( ; ; expr ) stmt
+                            ((erp stmt last-span parstate)
+                              ;; for ( ; ; expr ) stmt
                              (parse-statement parstate)))
                          (retok (make-stmt-for-expr :init expr
                                                     :test nil
@@ -12863,7 +12971,8 @@
                      (cond
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
-                      ((token-expression-start-p token4) ; for ( ; expr ; expr...
+                      ((token-expression-start-p token4)
+                        ;; for ( ; expr ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                             ((erp next-expr & parstate) ; for ( ; expr ; expr
                              (parse-expression parstate))
@@ -12881,7 +12990,8 @@
                       ;; If token4 is a closed parenthesis,
                       ;; we have no update expression.
                       ((token-punctuatorp token4 ")") ; for ( ; expr ; )
-                       (b* (((erp stmt last-span parstate) ; for ( ; expr ; ) stmt
+                       (b* (((erp stmt last-span parstate)
+                              ;; for ( ; expr ; ) stmt
                              (parse-statement parstate)))
                          (retok (make-stmt-for-ambig :init decl/expr
                                                      :test test-expr
@@ -12907,7 +13017,8 @@
                              (parse-expression parstate))
                             ((erp & parstate) ; for ( ; ; expr )
                              (read-punctuator ")" parstate))
-                            ((erp stmt last-span parstate) ; for ( ; ; expr ) stmt
+                            ((erp stmt last-span parstate)
+                              ;; for ( ; ; expr ) stmt
                              (parse-statement parstate)))
                          (retok (make-stmt-for-ambig :init decl/expr
                                                      :test nil
@@ -13311,7 +13422,8 @@
                  ((token-punctuatorp token4 ",")
                   ;; [__extension__] declspecs declor = initer ,
                   (b* (((erp initdeclors & parstate)
-                        ;; [__extension__] declspecs declor = initer , initdeclors
+                        ;; [__extension__] declspecs declor =
+                        ;;     initer , initdeclors
                         (parse-init-declarator-list parstate))
                        ((erp asmspec? & parstate)
                         ;; [__extension__] declspecs declor =
