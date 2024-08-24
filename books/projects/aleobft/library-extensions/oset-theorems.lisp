@@ -9,11 +9,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-STATIC")
+(in-package "ALEOBFT")
 
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -22,21 +21,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ library-extensions
-  :parents (aleobft-static)
-  :short "Library extensions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are not specific to AleoBFT,
-     so they will be moved to more general libraries.
-     This is a convenient place to collect them temporarily."))
-  :order-subtopics t
-  :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection oset-theorems
+  :parents (library-extensions)
   :short "Some theorems about osets."
 
   (defruled set::not-emptyp-when-in-of-subset
@@ -125,4 +111,30 @@
              (set::emptyp x))
     :induct t
     :enable (set::subset
-             set::expensive-rules)))
+             set::expensive-rules))
+
+  (defruled set::intersect-mono-subset
+    (implies (set::subset a b)
+             (set::subset (set::intersect a c)
+                          (set::intersect b c)))
+    :enable set::expensive-rules)
+
+  (defruled set::emptyp-to-subset-of-nil
+    (equal (set::emptyp a)
+           (set::subset a nil)))
+
+  (defruled set::not-member-when-member-of-disjoint
+    (implies (and (not (set::intersect a b))
+                  (set::in x a))
+             (not (set::in x b)))
+    :induct t
+    :enable set::intersect)
+
+  (defruled set::emptyp-of-intersect-of-subset-left
+    (implies (and (set::subset a b)
+                  (set::emptyp (set::intersect b c)))
+             (set::emptyp (set::intersect a c)))
+    :enable (set::emptyp-to-subset-of-nil
+             set::intersect-mono-subset
+             set::expensive-rules)
+    :disable set::emptyp-subset-2))

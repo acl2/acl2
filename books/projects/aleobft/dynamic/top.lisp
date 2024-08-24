@@ -11,7 +11,6 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "library-extensions")
 (include-book "definition")
 (include-book "correctness")
 
@@ -39,6 +38,5 @@
      (i.e. every validator has the same stake).")
    (xdoc::p
     "This is work in progress."))
-  :order-subtopics (library-extensions
-                    definition
+  :order-subtopics (definition
                     correctness))

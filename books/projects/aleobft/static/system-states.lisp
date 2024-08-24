@@ -14,7 +14,7 @@
 (include-book "validator-states")
 (include-book "messages")
 
-(local (include-book "library-extensions"))
+(local (include-book "../library-extensions/oset-theorems"))
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
