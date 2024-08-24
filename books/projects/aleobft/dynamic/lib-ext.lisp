@@ -13,6 +13,8 @@
 
 (include-book "../static/lib-ext")
 
+(include-book "kestrel/utilities/omaps/core" :dir :system)
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
