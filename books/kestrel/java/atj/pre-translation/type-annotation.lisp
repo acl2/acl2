@@ -13,8 +13,8 @@
 (include-book "../types")
 (include-book "../java-primitive-arrays")
 
-(include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
-(include-book "kestrel/std/system/unquote-term" :dir :system)
+(include-book "std/system/check-unary-lambda-call" :dir :system)
+(include-book "std/system/unquote-term" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

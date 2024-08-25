@@ -15,7 +15,7 @@
 (include-book "../language/primitive-operations")
 (include-book "../language/primitive-conversions")
 
-(include-book "kestrel/std/system/function-name-listp" :dir :system)
+(include-book "std/system/function-name-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

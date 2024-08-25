@@ -15,7 +15,7 @@
 
 (include-book "../name-translation")
 
-(include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
+(include-book "std/system/all-free-bound-vars" :dir :system)
 (include-book "std/typed-alists/symbol-pos-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 

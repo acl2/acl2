@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/ruler-extenders" :dir :system)
+(include-book "std/system/ruler-extenders" :dir :system)
 
 ;; Merges two values of :ruler-extenders args, conceptually giving the union of the two sets of ruler extenders.
 ;; Each argument is :basic, :lambdas, :all, or a list of symbols (possibly including :lambda)

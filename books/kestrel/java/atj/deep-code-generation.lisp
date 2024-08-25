@@ -14,7 +14,7 @@
 (include-book "pre-translation/top")
 (include-book "java-syntax-operations")
 
-(include-book "kestrel/std/system/pseudo-termfnp" :dir :system)
+(include-book "std/system/pseudo-termfnp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

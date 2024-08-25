@@ -12,7 +12,7 @@
 
 (include-book "abstract-syntax")
 
-(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+(include-book "std/system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 
