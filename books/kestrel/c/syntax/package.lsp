@@ -28,6 +28,7 @@
                                    typep
                                    unread-char))
               '(any
+                assert!-stobj
                 bool
                 bool-fix
                 bytep
