@@ -498,15 +498,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod parstate
+(defsection parstate
   :short "Fixtype of parser states."
   :long
   (xdoc::topstring
    (xdoc::p
     "Our parsing functions take and return parser states.")
    (xdoc::p
+    "The parser state is a stobj, which we turn into a fixtype
+     by adding a fixer along with readers and writers
+     that fix their inputs and unconditionally return typed outputs.
+     The use of a stobj is an optimization for speed:
+     conceptually, the parser state could be defined as a @(tsee fty::defprod),
+     and in fact it was defined like that in previous versions of the parser.
+     The description below of the parser state treats the parser state
+     as if it were defined via @(tsee fty::defprod), not as a stobj;
+     at the end, we explain how the stobj represents that parser state.")
+   (xdoc::p
     "The primary component of a parser state
-     is the input sequence of bytes remaining,
+     is the input sequence @('bytes') of bytes remaining,
      which initially comes from a file (see @(see files)).
      Bytes are read and removed from this component,
      and turned into characters.")
@@ -653,11 +663,6 @@
      This parser state component could potentially evolve into
      a richer set of options for different versions and dialects of C.")
    (xdoc::p
-    "We could look into turning the parser state into a stobj in the future,
-     if efficiency is an issue.
-     The code of the parser already treats the parser state
-     in a single-threaded way.")
-   (xdoc::p
     "For speed, we cache the value returned by
      the function @(tsee parsize) defined later.
      Some profiling revealed that significant time was spent there,
@@ -671,55 +676,365 @@
      The checkpointing and backtracking mechanism described above
      calculates that length in order to record it as a checkpoint.
      When there is a significant number of read token, that can take time,
-     as revealed by some profiling."))
-  ((bytes byte-list)
-   (position position)
-   (chars-read char+position-list)
-   (chars-unread char+position-list)
-   (tokens-read token+span-list)
-   (tokens-read-len natp
-                    :reqfix (len tokens-read))
-   (tokens-unread token+span-list)
-   (checkpoints nat-list)
-   (gcc bool)
-   (size natp
-         :reqfix (+ (len bytes)
-                    (len chars-unread)
-                    (len tokens-unread))))
-  :require (and (equal size
-                       (+ (len bytes)
-                          (len chars-unread)
-                          (len tokens-unread)))
-                (equal tokens-read-len
-                       (len tokens-read)))
-  :pred parstatep
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defmacro+ irr-parstate ()
-  :short "An irrelevant parser state."
-  :long
-  (xdoc::topstring
+     as revealed by some profiling.")
    (xdoc::p
-    "This is used in functions that take a parser state as input,
-     so a natural choice for an irrelevant parser state to return
-     is the result of fixing the input parser state.")
+    "The stobj for the parser state consists of
+     the components described above,
+     but in a stobj instead of a @(tsee fty::defprod).
+     This is a ``shallow'' stobj, because several of the components
+     are still lists that are updated in a non-destructive way.
+     We plan to ``deepen'' the stobj by using arrays and indices
+     to simulate those lists in a more efficient way.")
    (xdoc::p
-    "This macro assumes that the variable @('parstate') is in scope
-     and has the type of parser states.
-     This is normally a function formal."))
-  '(parstate-fix parstate))
+    "The definition of the stobj itself is straightforward,
+     but we use a @(tsee make-event) so we can use @(tsee position-init)
+     instead of a term for its value that exposes
+     the internal representation of positions.")
+   (xdoc::p
+    "The @(tsee defstobj) generates an enabled recognizer,
+     which we disable after introducing the readers and writers.
+     We define a fixer for that recognizer,
+     using @(tsee mbe) to avoid the stobj restriction
+     of having to return the stobj on all paths.
+     Then we define a fixtype with the same name as the stobj,
+     which causes no issue because fixtypes and stobjs
+     are in different name spaces.
+     In defining the fixtype,
+     we set the equivalence relation to be non-executable,
+     because otherwise we run into stobj restrictions.")
+   (xdoc::p
+    "The @(tsee defstobj) also generates recognizers for the fields,
+     for which we have no use.
+     But we rename them to less ambiguous names,
+     by incorporating @('parstate') into them,
+     to avoid polluting the name space.
+     These recognizers are enabled, but we do not bother disabling them,
+     because we are not going to use them anywhere anyhow.")
+   (xdoc::p
+    "The @(tsee defstobj) also generates readers and writers for the fields,
+     but they neither fix their inputs
+     nor return outputs with unconditional types.
+     So we define our own readers and writers that do both things,
+     which we define in terms of the generated ones.
+     The generated ones are enabled,
+     but we do not both disabling them,
+     because we are not going to use them anywhere anyhow.
+     We also prove some theorems about how readers and writers interact,
+     as needed.")
+   (xdoc::p
+    "We locally enable @(tsee length) in order for
+     the proofs generated by @(tsee defstobj) to go through.
+     This is also useful for proofs about our readers and writers;
+     for those, we also locally enable the fixer.")
+   (xdoc::p
+    "By making the parser state a stobj instead of a @(tsee fty::defprod),
+     we cannot use the @(':require') feature of @(tsee fty::defprod)
+     to enforce that the two redundant components described above
+     are indeed redundant.
+     But we can probably use @(tsee defabsstobj) for that,
+     which may be also overall a better way to
+     ``turn'' a stobj into a @(tsee fty::defprod)-like fixtype."))
+
+  ;; needed for DEFSTOBJ and writer proofs:
+
+  (local (in-theory (enable length)))
+
+  ;; stobj definition:
+
+  (make-event
+   `(defstobj parstate
+      (bytes :type (satisfies byte-listp)
+             :initially nil)
+      (position :type (satisfies positionp)
+                :initially ,(position-init))
+      (chars-read :type (satisfies char+position-listp)
+                  :initially nil)
+      (chars-unread :type (satisfies char+position-listp)
+                    :initially nil)
+      (tokens-read :type (satisfies token+span-listp)
+                   :initially nil)
+      (tokens-read-len :type (integer 0 *)
+                       :initially 0)
+      (tokens-unread :type (satisfies token+span-listp)
+                     :initially nil)
+      (checkpoints :type (satisfies nat-listp)
+                   :initially nil)
+      (gcc :type (satisfies booleanp)
+           :initially nil)
+      (size :type (integer 0 *)
+            :initially 0)
+      :renaming (;; field recognizers:
+                 (bytesp raw-parstate->bytes-p)
+                 (positionp raw-parstate->position-p)
+                 (chars-readp raw-parstate->chars-read-p)
+                 (chars-unreadp raw-parstate->chars-unread-p)
+                 (tokens-readp raw-parstate->tokens-read-p)
+                 (tokens-read-lenp raw-parstate->tokens-read-len-p)
+                 (tokens-unreadp raw-parstate->tokens-unread-p)
+                 (checkpointsp raw-parstate->checkpoints-p)
+                 (gccp raw-parstate->gcc-p)
+                 (sizep raw-parstate->size-p)
+                 ;; field readers:
+                 (bytes raw-parstate->bytes)
+                 (position raw-parstate->position)
+                 (chars-read raw-parstate->chars-read)
+                 (chars-unread raw-parstate->chars-unread)
+                 (tokens-read raw-parstate->tokens-read)
+                 (tokens-read-len raw-parstate->tokens-read-len)
+                 (tokens-unread raw-parstate->tokens-unread)
+                 (checkpoints raw-parstate->checkpoints)
+                 (gcc raw-parstate->gcc)
+                 (size raw-parstate->size)
+                 ;; field writers:
+                 (update-bytes raw-update-parstate->bytes)
+                 (update-position raw-update-parstate->position)
+                 (update-chars-read raw-update-parstate->chars-read)
+                 (update-chars-unread raw-update-parstate->chars-unread)
+                 (update-tokens-read raw-update-parstate->tokens-read)
+                 (update-tokens-read-len raw-update-parstate->tokens-read-len)
+                 (update-tokens-unread raw-update-parstate->tokens-unread)
+                 (update-checkpoints raw-update-parstate->checkpoints)
+                 (update-gcc raw-update-parstate->gcc)
+                 (update-size raw-update-parstate->size))))
+
+  ;; fixer:
+
+  (define parstate-fix (parstate)
+    :returns (parstate parstatep)
+    (mbe :logic (if (parstatep parstate)
+                    parstate
+                  (create-parstate))
+         :exec parstate)
+    ///
+    (defrule parstate-fix-when-parstatep
+      (implies (parstatep parstate)
+               (equal (parstate-fix parstate)
+                      parstate))))
+
+  ;; fixtype:
+
+  (fty::deffixtype parstate
+    :pred parstatep
+    :fix parstate-fix
+    :equiv parstate-equiv
+    :define t
+    :executablep nil)
+
+  ;; needed for readers and writers proofs:
+
+  (local (in-theory (enable parstate-fix)))
+
+  ;; readers:
+
+  (define parstate->bytes (parstate)
+    :returns (bytes byte-listp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->bytes parstate)
+                  nil)
+         :exec (raw-parstate->bytes parstate))
+    :hooks (:fix)
+    ///
+    (more-returns
+     (bytes true-listp :rule-classes :type-prescription)))
+
+  (define parstate->position (parstate)
+    :returns (position positionp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->position parstate)
+                  (position-init))
+         :exec (raw-parstate->position parstate))
+    :hooks (:fix))
+
+  (define parstate->chars-read (parstate)
+    :returns (chars-read char+position-listp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->chars-read parstate)
+                  nil)
+         :exec (raw-parstate->chars-read parstate))
+    :hooks (:fix))
+
+  (define parstate->chars-unread (parstate)
+    :returns (chars-unread char+position-listp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->chars-unread parstate)
+                  nil)
+         :exec (raw-parstate->chars-unread parstate))
+    :hooks (:fix))
+
+  (define parstate->tokens-read (parstate)
+    :returns (tokens-read token+span-listp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->tokens-read parstate)
+                  nil)
+         :exec (raw-parstate->tokens-read parstate))
+    :hooks (:fix))
+
+  (define parstate->tokens-read-len (parstate)
+    :returns (tokens-read-len natp :rule-classes (:rewrite :type-prescription))
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->tokens-read-len parstate)
+                  0)
+         :exec (raw-parstate->tokens-read-len parstate))
+    :hooks (:fix))
+
+  (define parstate->tokens-unread (parstate)
+    :returns (tokens-unread token+span-listp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->tokens-unread parstate)
+                  nil)
+         :exec (raw-parstate->tokens-unread parstate))
+    :hooks (:fix))
+
+  (define parstate->checkpoints (parstate)
+    :returns (checkpoints nat-listp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->checkpoints parstate)
+                  nil)
+         :exec (raw-parstate->checkpoints parstate))
+    :hooks (:fix))
+
+  (define parstate->gcc (parstate)
+    :returns (gcc booleanp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->gcc parstate)
+                  nil)
+         :exec (raw-parstate->gcc parstate))
+    :hooks (:fix))
+
+  (define parstate->size (parstate)
+    :returns (size natp :rule-classes (:rewrite :type-prescription))
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->size parstate)
+                  0)
+         :exec (raw-parstate->size parstate))
+    :hooks (:fix))
+
+  ;; writers:
+
+  (define update-parstate->bytes ((bytes byte-listp) parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->bytes (byte-list-fix bytes) parstate))
+    :hooks (:fix))
+
+  (define update-parstate->position ((position positionp) parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->position (position-fix position) parstate))
+    :hooks (:fix))
+
+  (define update-parstate->chars-read ((chars-read char+position-listp)
+                                       parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->chars-read (char+position-list-fix chars-read)
+                                       parstate))
+    :hooks (:fix))
+
+  (define update-parstate->chars-unread ((chars-unread char+position-listp)
+                                         parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->chars-unread (char+position-list-fix chars-unread)
+                                         parstate))
+    :hooks (:fix))
+
+  (define update-parstate->tokens-read ((tokens-read token+span-listp)
+                                        parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->tokens-read (token+span-list-fix tokens-read)
+                                        parstate))
+    :hooks (:fix))
+
+  (define update-parstate->tokens-read-len ((tokens-read-len natp) parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->tokens-read-len (lnfix tokens-read-len)
+                                            parstate))
+    :hooks (:fix))
+
+  (define update-parstate->tokens-unread ((tokens-unread token+span-listp)
+                                          parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->tokens-unread (token+span-list-fix tokens-unread)
+                                          parstate))
+    :hooks (:fix))
+
+  (define update-parstate->checkpoints ((checkpoints nat-listp) parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->checkpoints (nat-list-fix checkpoints)
+                                        parstate))
+    :hooks (:fix))
+
+  (define update-parstate->gcc ((gcc booleanp) parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->gcc (bool-fix gcc) parstate))
+    :hooks (:fix))
+
+  (define update-parstate->size ((size natp) parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->size (lnfix size) parstate))
+    :hooks (:fix))
+
+  ;; readers over writers:
+
+  (defrule parstate->size-of-update-parstate->tokens-read
+    (equal (parstate->size (update-parstate->tokens-read tokens-read parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->tokens-read
+             parstatep
+             parstate-fix
+             length))
+
+  (defrule parstate->size-of-update-parstate->tokens-read-len
+    (equal (parstate->size
+            (update-parstate->tokens-read-len tokens-read-len parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->tokens-read-len
+             parstatep
+             parstate-fix
+             length))
+
+  (defrule parstate->size-of-update-parstate->checkpoints
+    (equal (parstate->size
+            (update-parstate->checkpoints checkpoints parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->checkpoints
+             parstatep
+             parstate-fix
+             length))
+
+  (defrule parstate->size-of-update-parstate->size
+    (equal (parstate->size (update-parstate->size size parstate))
+           (lnfix size))
+    :enable (parstate->size
+             update-parstate->size
+             parstatep
+             parstate-fix
+             length))
+
+  ;; keep recognizer disabled:
+
+  (in-theory (disable parstatep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp) (gcc booleanp))
+(define init-parstate ((data byte-listp) (gcc booleanp) parstate)
   :returns (parstate parstatep)
-  :short "Initial parser state."
+  :short "Initialize the parser state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Given (the data of) a file to parse,
+    "This is the state when we start parsing a file.
+     Given (the data of) a file to parse,
      and a flag saying whether GCC extensions should be accepted or not,
      the initial parsing state consists of
      the data to parse,
@@ -727,42 +1042,69 @@
      no read characters or tokens,
      the initial file position,
      and no checkpoints."))
-  (make-parstate :bytes data
-                 :position (position-init)
-                 :chars-read nil
-                 :chars-unread nil
-                 :tokens-read nil
-                 :tokens-read-len 0
-                 :tokens-unread nil
-                 :checkpoints nil
-                 :gcc gcc
-                 :size (len data))
-  :guard-hints (("Goal" :in-theory (enable fix))))
+  (b* ((parstate (update-parstate->bytes data parstate))
+       (parstate (update-parstate->position (position-init) parstate))
+       (parstate (update-parstate->chars-read nil parstate))
+       (parstate (update-parstate->chars-unread nil parstate))
+       (parstate (update-parstate->tokens-read nil parstate))
+       (parstate (update-parstate->tokens-read-len 0 parstate))
+       (parstate (update-parstate->tokens-unread nil parstate))
+       (parstate (update-parstate->checkpoints nil parstate))
+       (parstate (update-parstate->gcc gcc parstate))
+       (parstate (update-parstate->size (len data) parstate)))
+    parstate)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parsize ((parstate parstatep))
-  :returns (size natp)
+  :returns (size natp :rule-classes (:rewrite :type-prescription))
   :short "Size of the parsing state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used as the measure for termination of the parsing functions.
-     The size is measured as the sum of
-     the lists of bytes, characters, and tokens that can be read.")
-   (xdoc::p
-    "As explained in @(tsee parstate), this is cached for efficiency.
-     We use an @(tsee mbe) to just return the value in execution."))
-  (mbe :logic (+ (len (parstate->bytes parstate))
-                 (len (parstate->chars-unread parstate))
-                 (len (parstate->tokens-unread parstate)))
-       :exec (parstate->size parstate))
+    "This is a synonym of @(tsee parstate->size) at this point.
+     It was slightly more elaborate when
+     @(tsee parstate) was defined via @(tsee fty::defprod)."))
+  (parstate->size parstate)
+  :hooks (:fix)
 
   ///
 
-  (defrule parsize-of-parstate-fix
-    (equal (parsize (parstate-fix parstate))
-           (parsize parstate))))
+  (defrule parsize-of-initparstate
+    (equal (parsize (init-parstate nil gcc parstate))
+           0)
+    :enable init-parstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; fixtype version of PARSTATE stobj (useful for debugging and testing)
+(fty::defprod parstate$
+  ((bytes byte-list)
+   (position position)
+   (chars-read char+position-list)
+   (chars-unread char+position-list)
+   (tokens-read token+span-list)
+   (tokens-read-len nat)
+   (tokens-unread token+span-list)
+   (checkpoints nat-list)
+   (gcc bool)
+   (size nat))
+  :prepwork ((local (in-theory (enable nfix)))))
+
+; convert PARSTATE stobj to fixtype value (useful for debugging and testing)
+(define to-parstate$ (parstate)
+  (make-parstate$
+   :bytes (parstate->bytes parstate)
+   :position (parstate->position parstate)
+   :chars-read (parstate->chars-read parstate)
+   :chars-unread (parstate->chars-unread parstate)
+   :tokens-read (parstate->tokens-read parstate)
+   :tokens-read-len (parstate->tokens-read-len parstate)
+   :tokens-unread (parstate->tokens-unread parstate)
+   :checkpoints (parstate->checkpoints parstate)
+   :gcc (parstate->gcc parstate)
+   :size (parstate->size parstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -892,7 +1234,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-char ((parstate parstatep))
-  :returns (mv erp (char? nat-optionp) (pos positionp) (new-parstate parstatep))
+  :returns (mv erp
+               (char? nat-optionp)
+               (pos positionp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Read a character."
   :long
   (xdoc::topstring
@@ -1014,19 +1359,26 @@
      just increment the column number by 1 and leave the line number unchanged.
      This may not be appropriate for certain Unicode characters,
      but for now we treat them in this simplified way."))
-  (b* (((reterr) nil (irr-position) (irr-parstate))
-       ((parstate parstate) parstate)
-       ((when (consp parstate.chars-unread))
-        (b* ((char+pos (car parstate.chars-unread)))
+  (b* (((reterr) nil (irr-position) parstate)
+       (parstate.bytes (parstate->bytes parstate))
+       (parstate.position (parstate->position parstate))
+       (parstate.chars-read (parstate->chars-read parstate))
+       (parstate.chars-unread (parstate->chars-unread parstate))
+       (parstate.size (parstate->size parstate))
+       ((when (and (consp parstate.chars-unread)
+                   (> parstate.size 0)))
+        (b* ((char+pos (car parstate.chars-unread))
+             (parstate (update-parstate->chars-unread
+                        (cdr parstate.chars-unread) parstate))
+             (parstate (update-parstate->chars-read
+                        (cons char+pos parstate.chars-read) parstate))
+             (parstate (update-parstate->size (1- parstate.size) parstate)))
           (retok (char+position->char char+pos)
                  (char+position->position char+pos)
-                 (change-parstate
-                  parstate
-                  :chars-unread (cdr parstate.chars-unread)
-                  :chars-read (cons char+pos parstate.chars-read)
-                  :size (1- parstate.size)))))
-       ((unless (consp parstate.bytes))
-        (retok nil parstate.position (parstate-fix parstate)))
+                 parstate)))
+       ((unless (and (consp parstate.bytes)
+                     (> parstate.size 0)))
+        (retok nil parstate.position parstate))
        (byte (car parstate.bytes))
        (bytes (cdr parstate.bytes))
        ;; ASCII except line feed and carriage return:
@@ -1034,50 +1386,53 @@
                   (= byte 11)
                   (= byte 12)
                   (and (<= 32 byte) (<= byte 126))))
-        (retok byte
-               parstate.position
-               (change-parstate
-                parstate
-                :bytes bytes
-                :position (position-inc-column 1 parstate.position)
-                :chars-read (cons (make-char+position
-                                   :char byte
-                                   :position parstate.position)
-                                  parstate.chars-read)
-                :size (1- parstate.size))))
+        (b* ((parstate (update-parstate->bytes bytes parstate))
+             (parstate (update-parstate->position
+                        (position-inc-column 1 parstate.position) parstate))
+             (parstate (update-parstate->chars-read
+                        (cons (make-char+position
+                               :char byte
+                               :position parstate.position)
+                              parstate.chars-read)
+                        parstate))
+             (parstate (update-parstate->size (1- parstate.size) parstate)))
+          (retok byte parstate.position parstate)))
        ;; line feed:
        ((when (= byte 10))
-        (retok 10
-               parstate.position
-               (change-parstate
-                parstate
-                :bytes bytes
-                :position (position-inc-line 1 parstate.position)
-                :chars-read (cons (make-char+position
-                                   :char 10
-                                   :position parstate.position)
-                                  parstate.chars-read)
-                :size (1- parstate.size))))
+        (b* ((parstate (update-parstate->bytes bytes parstate))
+             (parstate (update-parstate->position
+                        (position-inc-line 1 parstate.position) parstate))
+             (parstate (update-parstate->chars-read
+                        (cons (make-char+position
+                               :char 10
+                               :position parstate.position)
+                              parstate.chars-read)
+                        parstate))
+             (parstate (update-parstate->size (1- parstate.size) parstate)))
+          (retok 10 parstate.position parstate)))
        ;; carriage return:
        ((when (= byte 13))
         (b* (((mv bytes count) (if (and (consp bytes)
+                                        (> parstate.size 1)
                                         (= (car bytes) 10))
                                    (mv (cdr bytes) 2)
-                                (mv bytes 1))))
-          (retok 10
-                 parstate.position
-                 (change-parstate
-                  parstate
-                  :bytes bytes
-                  :position (position-inc-line 1 parstate.position)
-                  :chars-read (cons (make-char+position
-                                     :char 10
-                                     :position parstate.position)
-                                    parstate.chars-read)
-                  :size (- parstate.size count)))))
+                                 (mv bytes 1)))
+             (parstate (update-parstate->bytes bytes parstate))
+             (parstate (update-parstate->position
+                        (position-inc-line 1 parstate.position) parstate))
+             (parstate (update-parstate->chars-read
+                        (cons (make-char+position
+                               :char 10
+                               :position parstate.position)
+                              parstate.chars-read)
+                        parstate))
+             (parstate (update-parstate->size
+                        (- parstate.size count) parstate)))
+          (retok 10 parstate.position parstate)))
        ;; 2-byte UTF-8:
        ((when (= (logand byte #b11100000) #b11000000)) ; 110xxxyy
-        (b* (((unless (consp bytes))
+        (b* (((unless (and (consp bytes)
+                           (> parstate.size 1)))
               (reterr-msg :where (position-to-msg parstate.position)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
@@ -1106,21 +1461,22 @@
                                           UTF-8-encoded in the two bytes ~
                                           (~x0 ~x1)"
                                          byte byte2)
-                          :found (msg "the value ~x0" code))))
-          (retok code
-                 parstate.position
-                 (change-parstate
-                  parstate
-                  :bytes bytes
-                  :position (position-inc-column 1 parstate.position)
-                  :chars-read (cons (make-char+position
-                                     :char code
-                                     :position parstate.position)
-                                    parstate.chars-read)
-                  :size (- parstate.size 2)))))
+                          :found (msg "the value ~x0" code)))
+             (parstate (update-parstate->bytes bytes parstate))
+             (parstate (update-parstate->position
+                        (position-inc-column 1 parstate.position) parstate))
+             (parstate (update-parstate->chars-read
+                        (cons (make-char+position
+                               :char code
+                               :position parstate.position)
+                              parstate.chars-read)
+                        parstate))
+             (parstate (update-parstate->size (- parstate.size 2) parstate)))
+          (retok code parstate.position parstate)))
        ;; 3-byte UTF-8:
        ((when (= (logand byte #b11110000) #b11100000)) ; 1110xxxx
-        (b* (((unless (consp bytes))
+        (b* (((unless (and (consp bytes)
+                           (> parstate.size 1)))
               (reterr-msg :where (position-to-msg parstate.position)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
@@ -1141,7 +1497,8 @@
                                           of a three-byte UTF-8 encoding"
                                          byte)
                           :found (msg "the byte ~x0" byte2)))
-             ((unless (consp bytes))
+             ((unless (and (consp bytes)
+                           (> parstate.size 2)))
               (reterr-msg :where (position-to-msg parstate.position)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
@@ -1187,21 +1544,22 @@
                                      in the range 9-13 or 32-126 ~
                                      or 128-8233 or 8239-8293 or ~
                                      or 8298-55295 or 57344-1114111"
-                          :found (char-to-msg code))))
-          (retok code
-                 parstate.position
-                 (change-parstate
-                  parstate
-                  :bytes bytes
-                  :position (position-inc-column 1 parstate.position)
-                  :chars-read (cons (make-char+position
-                                     :char code
-                                     :position parstate.position)
-                                    parstate.chars-read)
-                  :size (- parstate.size 3)))))
+                          :found (char-to-msg code)))
+             (parstate (update-parstate->bytes bytes parstate))
+             (parstate (update-parstate->position
+                        (position-inc-column 1 parstate.position) parstate))
+             (parstate (update-parstate->chars-read
+                        (cons (make-char+position
+                               :char code
+                               :position parstate.position)
+                              parstate.chars-read)
+                        parstate))
+             (parstate (update-parstate->size (- parstate.size 3) parstate)))
+          (retok code parstate.position parstate)))
        ;; 4-byte UTF-8:
        ((when (= (logand #b11111000 byte) #b11110000)) ; 11110xyy
-        (b* (((unless (consp bytes))
+        (b* (((unless (and (consp bytes)
+                           (> parstate.size 1)))
               (reterr-msg :where (position-to-msg parstate.position)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
@@ -1222,7 +1580,8 @@
                                           of a four-byte UTF-8 encoding"
                                          byte)
                           :found (msg "the byte ~x0" byte2)))
-             ((unless (consp bytes))
+             ((unless (and (consp bytes)
+                           (> parstate.size 2)))
               (reterr-msg :where (position-to-msg parstate.position)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
@@ -1249,7 +1608,8 @@
                                           of a four-byte UTF-8 encoding"
                                          byte byte2)
                           :found (msg "the byte ~x0" byte3)))
-             ((unless (consp bytes))
+             ((unless (and (consp bytes)
+                           (> parstate.size 3)))
               (reterr-msg :where (position-to-msg parstate.position)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
@@ -1293,30 +1653,33 @@
                                           UTF-8-encoded in the four bytes ~
                                           (~x0 ~x1 ~x2 ~x3)"
                                          byte byte2 byte3 byte4)
-                          :found (msg "the value ~x0" code))))
-          (retok code
-                 parstate.position
-                 (change-parstate
-                  parstate
-                  :bytes bytes
-                  :position (position-inc-column 1 parstate.position)
-                  :chars-read (cons (make-char+position
-                                     :char code
-                                     :position parstate.position)
-                                    parstate.chars-read)
-                  :size (- parstate.size 4))))))
+                          :found (msg "the value ~x0" code)))
+             (parstate (update-parstate->bytes bytes parstate))
+             (parstate (update-parstate->position
+                        (position-inc-column 1 parstate.position) parstate))
+             (parstate (update-parstate->chars-read
+                        (cons (make-char+position
+                               :char code
+                               :position parstate.position)
+                              parstate.chars-read)
+                        parstate))
+             (parstate (update-parstate->size (- parstate.size 4) parstate)))
+          (retok code parstate.position parstate))))
     (reterr-msg :where (position-to-msg parstate.position)
                 :expected "a byte in the range 9-13 or 32-126 or 192-223"
                 :found (msg "the byte ~x0" byte)))
   :guard-hints (("Goal" :in-theory (e/d (len fix natp)
                                         ((:e tau-system))))) ; for speed
   :prepwork ((local (in-theory (enable acl2-numberp-when-bytep
+                                       acl2-numberp-when-natp
                                        rationalp-when-bytep
+                                       rationalp-when-natp
                                        integerp-when-natp
                                        natp-when-bytep
                                        natp-of-plus
                                        natp-of-logand
-                                       natp-of-ash))))
+                                       natp-of-ash)))
+             (local (include-book "arithmetic/top" :dir :system)))
 
   ///
 
@@ -1324,7 +1687,7 @@
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize len))))
+    :hints (("Goal" :in-theory (enable parsize len nfix))))
 
   (defret parsize-of-read-char-cond
     (implies (and (not erp)
@@ -1332,12 +1695,12 @@
              (<= (parsize new-parstate)
                  (1- (parsize parstate))))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize len fix)))))
+    :hints (("Goal" :in-theory (enable parsize len fix nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define unread-char ((parstate parstatep))
-  :returns (new-parstate parstatep)
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
   :short "Unread a character."
   :long
   (xdoc::topstring
@@ -1351,32 +1714,38 @@
      logically we return a parser state
      where we push an irrelevant character and position,
      so that the theorem about @(tsee parsize) holds unconditionally."))
-  (b* (((parstate parstate) parstate)
+  (b* ((parstate.chars-read (parstate->chars-read parstate))
+       (parstate.chars-unread (parstate->chars-unread parstate))
+       (parstate.size (parstate->size parstate))
        ((unless (consp parstate.chars-read))
         (raise "Internal error: no character to unread.")
-        (change-parstate parstate
-                         :chars-unread (cons (make-char+position
-                                              :char 0
-                                              :position (irr-position))
-                                             parstate.chars-unread)
-                         :size (1+ parstate.size)))
-       (char+pos (car parstate.chars-read)))
-    (change-parstate parstate
-                     :chars-unread (cons char+pos parstate.chars-unread)
-                     :chars-read (cdr parstate.chars-read)
-                     :size (1+ parstate.size)))
+        (b* ((parstate (update-parstate->chars-unread
+                        (cons (make-char+position
+                               :char 0
+                               :position (irr-position))
+                              parstate.chars-unread)
+                        parstate))
+             (parstate (update-parstate->size (1+ parstate.size) parstate)))
+          parstate))
+       (char+pos (car parstate.chars-read))
+       (parstate (update-parstate->chars-unread
+                  (cons char+pos parstate.chars-unread) parstate))
+       (parstate (update-parstate->chars-read
+                  (cdr parstate.chars-read) parstate))
+       (parstate (update-parstate->size (1+ parstate.size) parstate)))
+    parstate)
 
   ///
 
   (defret parsize-of-unread-char
     (equal (parsize new-parstate)
            (1+ (parsize parstate)))
-    :hints (("Goal" :in-theory (enable parsize len)))))
+    :hints (("Goal" :in-theory (enable parsize len nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define unread-chars ((n natp) (parstate parstatep))
-  :returns (new-parstate parstatep)
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
   :short "Unread a specified number of characters."
   :long
   (xdoc::topstring
@@ -1408,7 +1777,10 @@
              (and (<= (char-code #\a) first-char)
                   (<= first-char (char-code #\z)))
              (= first-char (char-code #\_)))
-  :returns (mv erp (lexeme lexemep) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (lexeme lexemep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex an identifier or keyword."
   :long
   (xdoc::topstring
@@ -1447,7 +1819,7 @@
      (more precisely, lists of that).
      If the ASCII string is a keyword, we return a keyword token.
      Otherwise, we return an identifier token."))
-  (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp rest-chars last-pos parstate)
         (lex-identifier/keyword-loop first-pos parstate))
        (span (make-span :start first-pos :end last-pos))
@@ -1522,9 +1894,9 @@
                                                      integer-range-p
                                                      integerp-when-natp))))
                   (last-pos positionp)
-                  (new-parstate parstatep))
+                  (new-parstate parstatep :hyp (parstatep parstate)))
      :parents nil
-     (b* (((reterr) nil (irr-position) (irr-parstate))
+     (b* (((reterr) nil (irr-position) parstate)
           ((erp char pos parstate) (read-char parstate))
           ((when (not char))
            (retok nil (position-fix pos-so-far) parstate))
@@ -1571,7 +1943,7 @@
                                                    integer-range-p
                                                    integerp-when-natp))))
                (pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a hexadecimal digit."
   :long
   (xdoc::topstring
@@ -1581,7 +1953,7 @@
      If the next character is present and is a hexadecimal digit,
      we return the corresponding ACL2 character,
      along with its position in the file."))
-  (b* (((reterr) #\0 (irr-position) (irr-parstate))
+  (b* (((reterr) #\0 (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((when (not char))
         (reterr-msg :where (position-to-msg pos)
@@ -1619,7 +1991,7 @@
   :returns (mv erp
                (quad hex-quad-p)
                (last-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a quadruple of hexadecimal digits."
   :long
   (xdoc::topstring
@@ -1627,7 +1999,7 @@
     "This is called when we expect four hexadecimal digits,
      so we call @(tsee lex-hexadecimal-digit) four times.
      We return the position of the last one."))
-  (b* (((reterr) (irr-hex-quad) (irr-position) (irr-parstate))
+  (b* (((reterr) (irr-hex-quad) (irr-position) parstate)
        ((erp hexdig1 & parstate) (lex-hexadecimal-digit parstate))
        ((erp hexdig2 & parstate) (lex-hexadecimal-digit parstate))
        ((erp hexdig3 & parstate) (lex-hexadecimal-digit parstate))
@@ -1667,7 +2039,7 @@
                                              integerp-when-natp))))
                (last-pos positionp)
                (next-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex zero or more (decimal) digits, as many as available."
   :long
   (xdoc::topstring
@@ -1692,7 +2064,7 @@
      or the input @('pos-so-far') if there is no digit:
      this input is the position read so far,
      just before the zero or more digits to be read."))
-  (b* (((reterr) nil (irr-position) (irr-position) (irr-parstate))
+  (b* (((reterr) nil (irr-position) (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((when (not char))
         (retok nil (position-fix pos-so-far) pos parstate))
@@ -1737,7 +2109,7 @@
                                              integerp-when-natp))))
                (last-pos positionp)
                (next-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex zero or more hexadecimal digits, as many as available."
   :long
   (xdoc::topstring
@@ -1762,7 +2134,7 @@
      or the input @('pos-so-far') if there is no hexadecimal character:
      this input is the position read so far,
      just before the zero or more hexadecimal digits to be read."))
-  (b* (((reterr) nil (irr-position) (irr-position) (irr-parstate))
+  (b* (((reterr) nil (irr-position) (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((when (not char))
         (retok nil (position-fix pos-so-far) pos parstate))
@@ -1803,7 +2175,7 @@
   :returns (mv erp
                (escape escapep)
                (last-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex an escape sequence."
   :long
   (xdoc::topstring
@@ -1834,7 +2206,7 @@
     "In all other cases, it is an error:
      although this starts like an escape sequence,
      it is not one."))
-  (b* (((reterr) (irr-escape) (irr-position) (irr-parstate))
+  (b* (((reterr) (irr-escape) (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
@@ -1951,7 +2323,7 @@
   :returns (mv erp
                (cchars c-char-listp)
                (closing-squote-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex zero or more characters and escape sequences
           in a character constant."
   :long
@@ -1978,7 +2350,7 @@
      we take the character as is,
      we read zero or more additional characters and escape sequences,
      and we combine them with the character."))
-  (b* (((reterr) nil (irr-position) (irr-parstate))
+  (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((unless char)
         (reterr-msg :where (position-to-msg pos)
@@ -2030,7 +2402,7 @@
   :returns (mv erp
                (schars s-char-listp)
                (closing-dquote-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex zero or more characters and escape sequences
           in a string literal."
   :long
@@ -2057,7 +2429,7 @@
      we take the character as is,
      we read zero or more additional characters and escape sequences,
      and we combine them with the character."))
-  (b* (((reterr) nil (irr-position) (irr-parstate))
+  (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((unless char)
         (reterr-msg :where (position-to-msg pos)
@@ -2108,7 +2480,10 @@
 (define lex-character-constant ((cprefix? cprefix-optionp)
                                 (first-pos positionp)
                                 (parstate parstatep))
-  :returns (mv erp (lexeme lexemep) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (lexeme lexemep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a character constant."
   :long
   (xdoc::topstring
@@ -2123,7 +2498,7 @@
      we read up to the closing single quote (see @(tsee lex-*-c-char)),
      whose position we use as the ending one of the span we return.
      The starting position of the span is passed to this function as input."))
-  (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp cchars closing-squote-pos parstate) (lex-*-c-char parstate))
        (span (make-span :start first-pos :end closing-squote-pos))
        ((unless cchars)
@@ -2152,7 +2527,10 @@
 (define lex-stringlit ((eprefix? eprefix-optionp)
                        (first-pos positionp)
                        (parstate parstatep))
-  :returns (mv erp (lexeme lexemep) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (lexeme lexemep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a string literal."
   :long
   (xdoc::topstring
@@ -2166,7 +2544,7 @@
      we read up to the closing double quote (see @(tsee lex-*-s-char)),
      whose position we use as the ending one of the span we return.
      The starting position of the span is passed to this function as input."))
-  (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp schars closing-dquote-pos parstate) (lex-*-s-char parstate))
        (span (make-span :start first-pos :end closing-dquote-pos)))
     (retok (lexeme-token (token-string (stringlit eprefix? schars)))
@@ -2192,7 +2570,7 @@
   :returns (mv erp
                (isuffix? isuffix-optionp)
                (last/next-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex an integer suffix, if present."
   :long
   (xdoc::topstring
@@ -2228,7 +2606,7 @@
      We could shorten it by merging the treatment of
      lowercase @('l') and uppercase @('L'),
      single or double."))
-  (b* (((reterr) nil (irr-position) (irr-parstate))
+  (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char) ; EOF
@@ -2422,7 +2800,7 @@
   :returns (mv erp
                (fsuffix? fsuffix-optionp)
                (last/next-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a floating suffix, if present."
   :long
   (xdoc::topstring
@@ -2434,7 +2812,7 @@
      Otherwise, there are four possibilities for suffixes.
      If the next character is not part of any suffix,
      we unread the character and return no suffix."))
-  (b* (((reterr) nil (irr-position) (irr-parstate))
+  (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
@@ -2472,7 +2850,7 @@
   :returns (mv erp
                (sign? sign-optionp)
                (last/next-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a sign, if present."
   :long
   (xdoc::topstring
@@ -2484,7 +2862,7 @@
      Otherwise, we read the next character,
      and return a sign if appropriate,
      otherwise no sign and we put back the character."))
-  (b* (((reterr) nil (irr-position) (irr-parstate))
+  (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
@@ -2518,7 +2896,7 @@
   :returns (mv erp
                (expo? dec-expo-optionp)
                (last/next-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a decimal exponent, if present."
   :long
   (xdoc::topstring
@@ -2536,7 +2914,7 @@
      we put back the sign character (if it was present),
      and we put back the @('e') or @('E').
      If there are digits, we return an appropriate exponent."))
-  (b* (((reterr) nil (irr-position) (irr-parstate))
+  (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
@@ -2585,7 +2963,7 @@
   :returns (mv erp
                (expo dec-expop)
                (last-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a decimal exponent."
   :long
   (xdoc::topstring
@@ -2595,7 +2973,7 @@
      Then we read an optional sign.
      Then we read zero or more decimal digits,
      of which there must be at least one."))
-  (b* (((reterr) (irr-dec-expo) (irr-position) (irr-parstate))
+  (b* (((reterr) (irr-dec-expo) (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
@@ -2646,7 +3024,7 @@
   :returns (mv erp
                (expo bin-expop)
                (last-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a binary exponent."
   :long
   (xdoc::topstring
@@ -2656,7 +3034,7 @@
      Then we read an optional sign.
      Then we read zero or more decimal digits,
      of which there must be at least one."))
-  (b* (((reterr) (irr-bin-expo) (irr-position) (irr-parstate))
+  (b* (((reterr) (irr-bin-expo) (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
@@ -2705,7 +3083,7 @@
 
 (define check-full-ppnumber ((ends-in-e booleanp)
                              (parstate parstatep))
-  :returns (mv erp (new-parstate parstatep))
+  :returns (mv erp (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Check that the numerical constant just read
           is a full preprocessing number."
   :long
@@ -2794,7 +3172,7 @@
      in particular, @('0xf') is a valid hexadecimal integer constant.
      But @('0xe+1') is not a hexadecimal (or integer) constant,
      and so it cannot be converted to one."))
-  (b* (((reterr) (irr-parstate))
+  (b* (((reterr) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((when (not char)) (retok parstate))
        ((when (or (and (<= (char-code #\A) char)
@@ -2835,7 +3213,7 @@
   :returns (mv erp
                (const constp)
                (last-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a hexadecimal integer or floating constant."
   :long
   (xdoc::topstring
@@ -2872,7 +3250,7 @@
     "Just before returning the constant,
      we use @(tsee check-full-ppnumber),
      for the reasons explained there."))
-  (b* (((reterr) (irr-const) (irr-position) (irr-parstate))
+  (b* (((reterr) (irr-const) (irr-position) parstate)
        ;; 0 x/X
        ((erp hexdigs hexdigs-last-pos & parstate)
         (lex-*-hexadecimal-digit prefix-last-pos parstate)))
@@ -3039,7 +3417,7 @@
   :returns (mv erp
                (const constp)
                (last-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a decimal integer or floating constant."
   :long
   (xdoc::topstring
@@ -3080,7 +3458,7 @@
      We put back the character and read an integer suffix if present.
      If @(tsee check-full-ppnumber) passes,
      we return the appropriate integer constant."))
-  (b* (((reterr) (irr-const) (irr-position) (irr-parstate))
+  (b* (((reterr) (irr-const) (irr-position) parstate)
        ;; 1-9
        ((erp decdigs decdigs-last-pos & parstate)
         (lex-*-digit first-pos parstate))
@@ -3200,7 +3578,10 @@
 (define lex-dec-fconst ((first-digit-after-dot dec-digit-char-p)
                         (first-pos-after-dot positionp)
                         (parstate parstatep))
-  :returns (mv erp (const constp) (last-pos positionp) (new-parstate parstatep))
+  :returns (mv erp
+               (const constp)
+               (last-pos positionp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a decimal floating constant."
   :long
   (xdoc::topstring
@@ -3213,7 +3594,7 @@
      Then a floating suffix, if present.
      Finally, if @(tsee check-full-ppnumber) passes,
      we return an appropriate floating constant."))
-  (b* (((reterr) (irr-const) (irr-position) (irr-parstate))
+  (b* (((reterr) (irr-const) (irr-position) parstate)
        ;; . decdig
        ((erp decdigs decdigs-last-pos & parstate)
         (lex-*-digit first-pos-after-dot parstate))
@@ -3257,7 +3638,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lex-non-octal-digit ((parstate parstatep))
-  :returns (mv erp (char natp) (pos positionp) (new-parstate parstatep))
+  :returns (mv erp
+               (char natp)
+               (pos positionp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a non-octal digit."
   :long
   (xdoc::topstring
@@ -3271,7 +3655,7 @@
      So we expect that a non-octal digit will be found,
      and it is thus an internal error if it is not found
      (which should never happen)."))
-  (b* (((reterr) 0 (irr-position) (irr-parstate))
+  (b* (((reterr) 0 (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((unless char)
         (raise "Internal error: no non-octal digit found.")
@@ -3302,7 +3686,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lex-oct-iconst-/-dec-fconst ((zero-pos positionp) (parstate parstatep))
-  :returns (mv erp (const constp) (last-pos positionp) (new-parstate parstatep))
+  :returns (mv erp
+               (const constp)
+               (last-pos positionp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3362,7 +3749,7 @@
      because in the latter case the digits would have to be followed by
      a dot or an exponent;
      so it is an error in that case."))
-  (b* (((reterr) (irr-const) (irr-position) (irr-parstate))
+  (b* (((reterr) (irr-const) (irr-position) parstate)
        ;; 0
        ((erp digits digits-last-pos & parstate)
         (lex-*-digit zero-pos parstate))
@@ -3502,7 +3889,10 @@
 (define lex-iconst/fconst ((first-digit dec-digit-char-p)
                            (first-pos positionp)
                            (parstate parstatep))
-  :returns (mv erp (const constp) (last-pos positionp) (new-parstate parstatep))
+  :returns (mv erp
+               (const constp)
+               (last-pos positionp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex an integer or floating constant."
   :long
   (xdoc::topstring
@@ -3523,7 +3913,7 @@
     "If instead the first digit is @('1') to @('9'),
      we must have a decimal integer or floating constant,
      for which we use a separate function."))
-  (b* (((reterr) (irr-const) (irr-position) (irr-parstate)))
+  (b* (((reterr) (irr-const) (irr-position) parstate))
     (cond
      ((eql first-digit #\0) ; 0
       (b* (((erp char pos parstate) (read-char parstate)))
@@ -3561,7 +3951,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lex-block-comment ((first-pos positionp) (parstate parstatep))
-  :returns (mv erp (lexeme lexemep) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (lexeme lexemep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a block comment."
   :long
   (xdoc::topstring
@@ -3583,7 +3976,7 @@
      passed to this function,
      and the last position (of the @('/') in the closing @('*/')),
      returned by the loop function."))
-  (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp last-pos parstate) (lex-rest-of-block-comment first-pos parstate)))
     (retok (lexeme-comment)
            (make-span :start first-pos :end last-pos)
@@ -3595,8 +3988,10 @@
 
      (define lex-rest-of-block-comment ((first-pos positionp)
                                         (parstate parstatep))
-       :returns (mv erp (last-pos positionp) (new-parstate parstatep))
-       (b* (((reterr) (irr-position) (irr-parstate))
+       :returns (mv erp
+                    (last-pos positionp)
+                    (new-parstate parstatep :hyp (parstatep parstate)))
+       (b* (((reterr) (irr-position) parstate)
             ((erp char pos parstate) (read-char parstate)))
          (cond
           ((not char) ; EOF
@@ -3614,8 +4009,10 @@
 
      (define lex-rest-of-block-comment-after-star ((first-pos positionp)
                                                    (parstate parstatep))
-       :returns (mv erp (last-pos positionp) (new-parstate parstatep))
-       (b* (((reterr) (irr-position) (irr-parstate))
+       :returns (mv erp
+                    (last-pos positionp)
+                    (new-parstate parstatep :hyp (parstatep parstate)))
+       (b* (((reterr) (irr-position) parstate)
             ((erp char pos parstate) (read-char parstate)))
          (cond
           ((not char) ; EOF
@@ -3681,7 +4078,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lex-line-comment ((first-pos positionp) (parstate parstatep))
-  :returns (mv erp (lexeme lexemep) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (lexeme lexemep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a line comment."
   :long
   (xdoc::topstring
@@ -3700,7 +4100,7 @@
      which is passed to this function,
      and the position of the closing new-line,
      which is returned by the loop function."))
-  (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp last-pos parstate) (lex-line-comment-loop first-pos parstate)))
     (retok (lexeme-comment)
            (make-span :start first-pos :end last-pos)
@@ -3709,9 +4109,11 @@
   :prepwork
 
   ((define lex-line-comment-loop ((first-pos positionp) (parstate parstatep))
-     :returns (mv erp (last-pos positionp) (new-parstate parstatep))
+     :returns (mv erp
+                  (last-pos positionp)
+                  (new-parstate parstatep :hyp (parstatep parstate)))
      :parents nil
-     (b* (((reterr) (irr-position) (irr-parstate))
+     (b* (((reterr) (irr-position) parstate)
           ((erp char pos parstate) (read-char parstate)))
        (cond
         ((not char) ; EOF
@@ -3763,7 +4165,7 @@
   :returns (mv erp
                (lexeme? lexeme-optionp)
                (span spanp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a lexeme."
   :long
   (xdoc::topstring
@@ -3887,7 +4289,7 @@
       Some punctuators are not prefixes of others,
       and so they can be immediately decided.")))
 
-  (b* (((reterr) nil (irr-span) (irr-parstate))
+  (b* (((reterr) nil (irr-span) parstate)
        ((erp char first-pos parstate) (read-char parstate))
        ((unless char)
         (retok nil
@@ -4421,7 +4823,7 @@
   :returns (mv erp
                (token? token-optionp)
                (span spanp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Read a token."
   :long
   (xdoc::topstring
@@ -4446,19 +4848,25 @@
      That is, we discard white space and comments.
      (Future extensions of this parser may instead
      return certain white space and comments under some conditions.)"))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
-       ((parstate parstate) parstate)
-       ((when (consp parstate.tokens-unread))
-        (b* ((token+span (car parstate.tokens-unread)))
+  (b* (((reterr) nil (irr-span) parstate)
+       (parstate.tokens-read (parstate->tokens-read parstate))
+       (parstate.tokens-read-len (parstate->tokens-read-len parstate))
+       (parstate.tokens-unread (parstate->tokens-unread parstate))
+       (parstate.size (parstate->size parstate))
+       ((when (and (consp parstate.tokens-unread)
+                   (> parstate.size 0)))
+        (b* ((token+span (car parstate.tokens-unread))
+             (parstate (update-parstate->tokens-unread
+                        (cdr parstate.tokens-unread) parstate))
+             (parstate (update-parstate->tokens-read
+                        (cons token+span parstate.tokens-read) parstate))
+             (parstate (update-parstate->tokens-read-len
+                        (1+ parstate.tokens-read-len) parstate))
+             (parstate (update-parstate->chars-read nil parstate))
+             (parstate (update-parstate->size (1- parstate.size) parstate)))
           (retok (token+span->token token+span)
                  (token+span->span token+span)
-                 (change-parstate
-                  parstate
-                  :tokens-unread (cdr parstate.tokens-unread)
-                  :tokens-read (cons token+span parstate.tokens-read)
-                  :tokens-read-len (1+ parstate.tokens-read-len)
-                  :chars-read nil
-                  :size (1- parstate.size))))))
+                 parstate))))
     (read-token-loop parstate))
   :guard-hints (("Goal" :in-theory (enable natp fix len)))
 
@@ -4468,22 +4876,23 @@
      :returns (mv erp
                   (token? token-optionp)
                   (span spanp)
-                  (new-parstate parstatep))
+                  (new-parstate parstatep :hyp (parstatep parstate)))
      :parents nil
-     (b* (((reterr) nil (irr-span) (irr-parstate))
+     (b* (((reterr) nil (irr-span) parstate)
           ((erp lexeme? span parstate) (lex-lexeme parstate))
           ((when (not lexeme?))
            (retok nil span parstate))
           ((when (lexeme-case lexeme? :token))
            (b* ((token (lexeme-token->unwrap lexeme?))
-                (parstate (change-parstate
-                         parstate
-                         :tokens-read (cons (make-token+span
-                                             :token token
-                                             :span span)
-                                            (parstate->tokens-read parstate))
-                         :tokens-read-len (1+ (parstate->tokens-read-len
-                                               parstate)))))
+                (parstate (update-parstate->tokens-read
+                           (cons (make-token+span
+                                  :token token
+                                  :span span)
+                                 (parstate->tokens-read parstate))
+                           parstate))
+                (parstate (update-parstate->tokens-read-len
+                           (1+ (parstate->tokens-read-len parstate))
+                           parstate)))
              (retok token span parstate))))
        (read-token-loop parstate))
      :measure (parsize parstate)
@@ -4518,7 +4927,7 @@
         (parsize parstate))
     :rule-classes :linear
     :hints (("Goal"
-             :in-theory (e/d (parsize len fix)
+             :in-theory (e/d (parsize len fix nfix)
                              (parsize-of-read-token-loop-uncond))
              :use parsize-of-read-token-loop-uncond)))
 
@@ -4529,14 +4938,14 @@
                  (1- (parsize parstate))))
     :rule-classes :linear
     :hints (("Goal"
-             :in-theory (e/d (parsize len fix)
+             :in-theory (e/d (parsize len fix nfix)
                              (parsize-of-read-token-loop-cond))
              :use parsize-of-read-token-loop-cond))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define unread-token ((parstate parstatep))
-  :returns (new-parstate parstatep)
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
   :short "Unread a token."
   :long
   (xdoc::topstring
@@ -4550,21 +4959,30 @@
      logically we return a parser state
      where we push an irrelevant character and position,
      so that the theorem about @(tsee parsize) holds unconditionally."))
-  (b* (((parstate parstate) parstate)
-       ((unless (consp parstate.tokens-read))
+  (b* ((parstate.tokens-read (parstate->tokens-read parstate))
+       (parstate.tokens-read-len (parstate->tokens-read-len parstate))
+       (parstate.tokens-unread (parstate->tokens-unread parstate))
+       (parstate.size (parstate->size parstate))
+       ((unless (and (consp parstate.tokens-read)
+                     (> parstate.tokens-read-len 0)))
         (raise "Internal error: no token to unread.")
-        (change-parstate parstate
-                         :tokens-unread (cons (make-token+span
-                                               :token (irr-token)
-                                               :span (irr-span))
-                                              parstate.tokens-unread)
-                         :size (1+ parstate.size)))
-       (token+span (car parstate.tokens-read)))
-    (change-parstate parstate
-                     :tokens-unread (cons token+span parstate.tokens-unread)
-                     :tokens-read (cdr parstate.tokens-read)
-                     :tokens-read-len (1- parstate.tokens-read-len)
-                     :size (1+ parstate.size)))
+        (b* ((parstate (update-parstate->tokens-unread
+                        (cons (make-token+span
+                               :token (irr-token)
+                               :span (irr-span))
+                              parstate.tokens-unread)
+                        parstate))
+             (parstate (update-parstate->size (1+ parstate.size) parstate)))
+          parstate))
+       (token+span (car parstate.tokens-read))
+       (parstate (update-parstate->tokens-unread
+                  (cons token+span parstate.tokens-unread) parstate))
+       (parstate (update-parstate->tokens-read
+                  (cdr parstate.tokens-read) parstate))
+       (parstate (update-parstate->tokens-read-len
+                  (1- parstate.tokens-read-len) parstate))
+       (parstate (update-parstate->size (1+ parstate.size) parstate)))
+    parstate)
   :guard-hints (("Goal" :in-theory (enable natp len fix)))
 
   ///
@@ -4572,12 +4990,12 @@
   (defret parsize-of-unread-token
     (equal (parsize new-parstate)
            (1+ (parsize parstate)))
-    :hints (("Goal" :in-theory (enable parsize len)))))
+    :hints (("Goal" :in-theory (enable parsize len nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define unread-tokens ((n natp) (parstate parstatep))
-  :returns (new-parstate parstatep)
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
   :short "Unread a specified number of tokens."
   :long
   (xdoc::topstring
@@ -4602,7 +5020,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-punctuator ((punct stringp) (parstate parstatep))
-  :returns (mv erp (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Read a specific punctuator token."
   :long
   (xdoc::topstring
@@ -4611,7 +5031,7 @@
      We pass the string for the punctuator,
      and we read the next token,
      ensuring it exists and it is that punctuator."))
-  (b* (((reterr) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate))
        ((unless (token-punctuatorp token punct)) ; implies non-nil
         (reterr-msg :where (position-to-msg (span->start span))
@@ -4635,7 +5055,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-keyword ((keywd stringp) (parstate parstatep))
-  :returns (mv erp (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Read a specific keyword token."
   :long
   (xdoc::topstring
@@ -4644,7 +5066,7 @@
      We pass the string for the keyword,
      and we read the next token,
      ensuring it exists and it is that keyword."))
-  (b* (((reterr) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate))
        ((unless (token-keywordp token keywd)) ; implies non-nil
         (reterr-msg :where (position-to-msg (span->start span))
@@ -4668,7 +5090,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-stringlit ((parstate parstatep))
-  :returns (mv erp (stringlit stringlitp) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (stringlit stringlitp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Read a string literal token."
   :long
   (xdoc::topstring
@@ -4676,7 +5101,7 @@
     "This is called when we expect a string literal token.
      We read the next token, ensuring it exists and is a string literal.
      We return the string literal if successful."))
-  (b* (((reterr) (irr-stringlit) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-stringlit) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate))
        ((unless (and token
                      (token-case token :string)))
@@ -4702,7 +5127,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-identifier ((parstate parstatep))
-  :returns (mv erp (ident identp) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (ident identp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Read an identifier token."
   :long
   (xdoc::topstring
@@ -4710,7 +5138,7 @@
     "This is called when we expect an identifier token.
      We read the next token, ensuring it exists and is an identifier.
      We return the identifier if successful."))
-  (b* (((reterr) (irr-ident) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-ident) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate))
        ((unless (and token
                      (token-case token :ident)))
@@ -4736,7 +5164,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define record-checkpoint ((parstate parstatep))
-  :returns (new-parstate parstatep)
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
   :short "Record a checkpoint for possible backtracking."
   :long
   (xdoc::topstring
@@ -4747,8 +5175,8 @@
   (b* ((tokens-read-len (parstate->tokens-read-len parstate))
        (checkpoints (parstate->checkpoints parstate))
        (new-checkpoints (cons tokens-read-len checkpoints))
-       (new-parstate (change-parstate parstate :checkpoints new-checkpoints)))
-    new-parstate)
+       (parstate (update-parstate->checkpoints new-checkpoints parstate)))
+    parstate)
 
   ///
 
@@ -4761,7 +5189,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define clear-checkpoint ((parstate parstatep))
-  :returns (new-parstate parstatep)
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
   :short "Clear the latest checkpoint."
   :long
   (xdoc::topstring
@@ -4775,12 +5203,12 @@
      when the list of checkpoints is empty.
      If this happens, there is a bug in the parser."))
   (b* ((checkpoints (parstate->checkpoints parstate))
-       ((unless checkpoints)
+       ((unless (consp checkpoints))
         (raise "Internal error: no checkpoint to clear.")
         (parstate-fix parstate))
        (new-checkpoints (cdr checkpoints))
-       (new-parstate (change-parstate parstate :checkpoints new-checkpoints)))
-    new-parstate)
+       (parstate (update-parstate->checkpoints new-checkpoints parstate)))
+    parstate)
 
   ///
 
@@ -4793,7 +5221,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define backtrack-checkpoint ((parstate parstatep))
-  :returns (new-parstate parstatep)
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
   :short "Backtrack to the latest checkpoint."
   :long
   (xdoc::topstring
@@ -4822,14 +5250,14 @@
                number-tokens-read)
         (parstate-fix parstate))
        (parstate (unread-tokens number-tokens-to-unread parstate))
-       (new-parstate (change-parstate parstate :checkpoints new-chechpoints)))
-    new-parstate)
+       (parstate (update-parstate->checkpoints new-chechpoints parstate)))
+    parstate)
   :prepwork
   ((defrulel verify-guards-lemma
      (implies (and (natp x)
                    (natp y)
-                   (>= y x))
-              (natp (+ (- x) y)))
+                   (< 0 (+ x (- y))))
+              (natp (+ x (- y))))
      :enable natp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5731,7 +6159,7 @@
   :returns (mv erp
                (strings stringlit-listp)
                (span spanp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a list of zero or more string literals."
   :long
   (xdoc::topstring
@@ -5744,7 +6172,7 @@
      we join spans only if the remaining ones are one or more;
      if there are zero, the span of the first string literal
      is also the span of the whole sequence."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
+  (b* (((reterr) nil (irr-span) parstate)
        ((erp token span parstate) (read-token parstate))
        ((unless (and token (token-case token :string)))
         (b* ((parstate (if token (unread-token parstate) parstate)))
@@ -5774,8 +6202,7 @@
   :returns (mv erp
                (tyquals type-qual-listp)
                (span spanp)
-               (new-parstate parstatep))
-  :parents (parser parse-exprs/decls)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a list of one or more type qualifiers."
   :long
   (xdoc::topstring
@@ -5784,7 +6211,7 @@
      Then we check the next token to see if there is be another one,
      in which case we put it back and recursively parse a type qualifier list,
      otherwise we put back it back and return."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
+  (b* (((reterr) nil (irr-span) parstate)
        ((erp token span parstate) (read-token parstate)))
     (cond
      ((token-type-qualifier-p token) ; tyqual
@@ -5836,8 +6263,7 @@
   :returns (mv erp
                (tyqualss type-qual-list-listp)
                (span spanp)
-               (new-parstate parstatep))
-  :parents (parser parse-exprs/decls)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a pointer."
   :long
   (xdoc::topstring
@@ -5858,7 +6284,7 @@
      If instead the initial star is followed by another star,
      we also call this function recursively.
      We stop when there is not a star."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
+  (b* (((reterr) nil (irr-span) parstate)
        ((erp span parstate) (read-punctuator "*" parstate)) ; *
        ((erp token & parstate) (read-token parstate)))
     (cond
@@ -5910,7 +6336,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-*-increment/decrement ((parstate parstatep))
-  :returns (mv erp (ops inc/dec-op-listp) (new-parstate parstatep))
+  :returns (mv erp
+               (ops inc/dec-op-listp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse zero or more increment and decrement operators."
   :long
   (xdoc::topstring
@@ -5918,7 +6346,7 @@
     "This is used to handle possibly ambiguous cast expressions.
      We never need the spans of these operators,
      so this function returns no span."))
-  (b* (((reterr) nil (irr-parstate))
+  (b* (((reterr) nil parstate)
        ((erp token & parstate) (read-token parstate))
        ((when (token-punctuatorp token "++"))
         (b* (((erp ops parstate) (parse-*-increment/decrement parstate)))
@@ -6011,7 +6439,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an expression."
     :long
@@ -6034,7 +6465,7 @@
        to @(tsee parse-expression-rest),
        where the final expression is constructed:
        see the documentation of that function for details."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-assignment-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6047,7 +6478,10 @@
   (define parse-expression-rest ((prev-expr exprp)
                                  (prev-span spanp)
                                  (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of an expression."
     :long
@@ -6074,7 +6508,7 @@
        this is the new current expression,
        which we pass to the recursive call of this function.
        Spans are joined similarly."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token ","))) ; prev-expr not,
@@ -6095,7 +6529,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-assignment-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an assignment expression."
     :long
@@ -6117,7 +6554,7 @@
        and instead it is a unary expression,
        which includes unary expressions propers
        but also other kinds of expressions."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate)
           (parse-conditional-expression parstate)) ; expr
@@ -6143,7 +6580,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-conditional-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a conditional expression."
     :long
@@ -6157,7 +6597,7 @@
        and then we check whether there is a @('?'):
        if there is, it must be a conditional expression proper;
        if there is not, it must be a logical disjunction expression."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate)
           (parse-logical-or-expression parstate)) ; expr
@@ -6183,7 +6623,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-logical-or-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a logical disjunction expression."
     :long
@@ -6192,7 +6635,7 @@
       "We handle the left recursion in the grammar rule
        in the same way as for expressions:
        see @(tsee parse-expression)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-logical-and-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6205,7 +6648,10 @@
   (define parse-logical-or-expression-rest ((prev-expr exprp)
                                             (prev-span spanp)
                                             (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of a logical disjunction expression."
     :long
@@ -6213,7 +6659,7 @@
      (xdoc::p
       "This completes the job started by @(tsee parse-logical-or-expression);
        it is analogous to @(tsee parse-expression-rest)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token "||"))) ; prev-expr not||
@@ -6236,7 +6682,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-logical-and-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a logical conjunction expression."
     :long
@@ -6245,7 +6694,7 @@
       "We handle the left recursion in the grammar rule
        in the same way as for expressions:
        see @(tsee parse-expression)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-inclusive-or-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6258,7 +6707,10 @@
   (define parse-logical-and-expression-rest ((prev-expr exprp)
                                              (prev-span spanp)
                                              (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of a logical conjunction expression."
     :long
@@ -6266,7 +6718,7 @@
      (xdoc::p
       "This completes the job started by @(tsee parse-logical-and-expression);
        it is analogous to @(tsee parse-expression-rest)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token "&&"))) ; prev-expr not&&
@@ -6289,7 +6741,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-inclusive-or-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an inclusive disjunction expression."
     :long
@@ -6298,7 +6753,7 @@
       "We handle the left recursion in the grammar rule
        in the same way as for expressions:
        see @(tsee parse-expression)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-exclusive-or-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6311,7 +6766,10 @@
   (define parse-inclusive-or-expression-rest ((prev-expr exprp)
                                               (prev-span spanp)
                                               (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of an inclusive disjunction expression."
     :long
@@ -6319,7 +6777,7 @@
      (xdoc::p
       "This completes the job started by @(tsee parse-inclusive-or-expression);
        it is analogous to @(tsee parse-expression-rest)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token "|"))) ; prev-expr not|
@@ -6342,7 +6800,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-exclusive-or-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an exclusive disjunction expression."
     :long
@@ -6351,7 +6812,7 @@
       "We handle the left recursion in the grammar rule
        in the same way as for expressions:
        see @(tsee parse-expression)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-and-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6364,7 +6825,10 @@
   (define parse-exclusive-or-expression-rest ((prev-expr exprp)
                                               (prev-span spanp)
                                               (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of an exclusive disjunction expression."
     :long
@@ -6372,7 +6836,7 @@
      (xdoc::p
       "This completes the job started by @(tsee parse-exclusive-or-expression);
        it is analogous to @(tsee parse-expression-rest)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token "^"))) ; prev-expr not^
@@ -6394,7 +6858,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-and-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a conjunction expression."
     :long
@@ -6403,7 +6870,7 @@
       "We handle the left recursion in the grammar rule
        in the same way as for expressions:
        see @(tsee parse-expression)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-equality-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6416,7 +6883,10 @@
   (define parse-and-expression-rest ((prev-expr exprp)
                                      (prev-span spanp)
                                      (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of a conjunction expression."
     :long
@@ -6424,7 +6894,7 @@
      (xdoc::p
       "This completes the job started by @(tsee parse-and-expression);
        it is analogous to @(tsee parse-expression-rest)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token "&"))) ; prev-expr not&
@@ -6447,7 +6917,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-equality-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an equality expression."
     :long
@@ -6456,7 +6929,7 @@
       "We handle the left recursion in the grammar rule
        in the same way as for expressions:
        see @(tsee parse-expression)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-relational-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6469,7 +6942,10 @@
   (define parse-equality-expression-rest ((prev-expr exprp)
                                           (prev-span spanp)
                                           (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of an equality expression."
     :long
@@ -6477,7 +6953,7 @@
      (xdoc::p
       "This completes the job started by @(tsee parse-equality-expression);
        it is analogous to @(tsee parse-expression-rest)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-equality-operator-p token))) ; prev-expr not-eqop
@@ -6501,7 +6977,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-relational-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a relational expression."
     :long
@@ -6510,7 +6989,7 @@
       "We handle the left recursion in the grammar rule
        in the same way as for expressions:
        see @(tsee parse-expression)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-shift-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6523,7 +7002,10 @@
   (define parse-relational-expression-rest ((prev-expr exprp)
                                             (prev-span spanp)
                                             (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of a relational expression."
     :long
@@ -6531,7 +7013,7 @@
      (xdoc::p
       "This completes the job started by @(tsee parse-relational-expression);
        it is analogous to @(tsee parse-expression-rest)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-relational-operator-p token))) ; prev-expr not-relop
@@ -6554,7 +7036,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-shift-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a shift expression."
     :long
@@ -6563,7 +7048,7 @@
       "We handle the left recursion in the grammar rule
        in the same way as for expressions:
        see @(tsee parse-expression)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-additive-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6576,7 +7061,10 @@
   (define parse-shift-expression-rest ((prev-expr exprp)
                                        (prev-span spanp)
                                        (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of a shift expression."
     :long
@@ -6584,7 +7072,7 @@
      (xdoc::p
       "This completes the job started by @(tsee parse-shift-expression);
        it is analogous to @(tsee parse-expression-rest)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-shift-operator-p token))) ; prev-expr not-shiftop
@@ -6607,7 +7095,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-additive-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an additive expression."
     :long
@@ -6616,7 +7107,7 @@
       "We handle the left recursion in the grammar rule
        in the same way as for expressions:
        see @(tsee parse-expression)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-multiplicative-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6629,7 +7120,10 @@
   (define parse-additive-expression-rest ((prev-expr exprp)
                                           (prev-span spanp)
                                           (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of an additive expression."
     :long
@@ -6637,7 +7131,7 @@
      (xdoc::p
       "This completes the job started by @(tsee parse-additive-expression);
        it is analogous to @(tsee parse-expression-rest)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-additive-operator-p token))) ; prev-expr notaddop
@@ -6660,7 +7154,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-multiplicative-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a multiplicative expression."
     :long
@@ -6669,7 +7166,7 @@
       "We handle the left recursion in the grammar rule
        in the same way as for expressions:
        see @(tsee parse-expression)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate) (parse-cast-expression parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -6682,7 +7179,10 @@
   (define parse-multiplicative-expression-rest ((prev-expr exprp)
                                                 (prev-span spanp)
                                                 (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of a multiplicative expression."
     :long
@@ -6691,7 +7191,7 @@
       "This completes the job started by
        @(tsee parse-multiplicative-expression);
        it is analogous to @(tsee parse-expression-rest)."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token & parstate) (read-token parstate))
          ((when (not
@@ -6715,7 +7215,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-cast-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a cast expression."
     :long
@@ -6878,7 +7381,7 @@
         in parenthesis.
         We put back the token (if present),
         and we return the parenthesized expression.")))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is an open parenthesis,
@@ -6949,7 +7452,7 @@
                  ;; no larger than the initial one,
                  ;; so we just return the empty parser state.
                  ;; This is just logical: execution stops at the RAISE above.
-                 (b* ((parstate (init-parstate nil nil)))
+                 (b* ((parstate (init-parstate nil nil parstate)))
                    (reterr t)))
                 (parstate (unread-token parstate))) ;
              (parse-postfix-expression parstate))
@@ -7107,7 +7610,7 @@
                      ;; so we just return the empty parser state.
                      ;; This is just logical:
                      ;; execution stops at the RAISE above.
-                     (b* ((parstate (init-parstate nil nil)))
+                     (b* ((parstate (init-parstate nil nil parstate)))
                        (reterr t)))
                     (parstate (unread-token parstate))) ;
                  (parse-postfix-expression parstate))))))))
@@ -7124,7 +7627,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-unary-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a unary expression."
     :long
@@ -7141,7 +7647,7 @@
        we parse an expression or type name via a separate function,
        and based on the result we return a @('sizeof') expression with
        an expression, a type name, or an ambiguous type name or expression."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token may start a postfix expression
@@ -7249,7 +7755,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-postfix-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a postfix expression."
     :long
@@ -7339,7 +7848,7 @@
       (xdoc::li
        "If this fourth token is none of the above,
         we have an error.")))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is an open parenthesis,
@@ -7420,7 +7929,10 @@
   (define parse-postfix-expression-rest ((prev-expr exprp)
                                          (prev-span spanp)
                                          (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of a postfix expression."
     :long
@@ -7446,7 +7958,7 @@
        as implied by the grammar.
        The recursion ends when the next token
        is absent or cannot start a postfix construct."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ;; prev-expr
          ((erp token span parstate) (read-token parstate)))
       (cond
@@ -7506,7 +8018,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-argument-expressions ((parstate parstatep))
-    :returns (mv erp (exprs expr-listp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (exprs expr-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse zero or more argument expressions."
     :long
@@ -7530,7 +8045,7 @@
        and then we call a separate function
        to parse any additional arguments.
        Otherwise, we return the empty list of argument expressions."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          ((erp token & parstate) (read-token parstate)))
       (cond
        ((token-expression-start-p token) ; expr...
@@ -7553,7 +8068,10 @@
   (define parse-argument-expressions-rest ((prev-exprs expr-listp)
                                            (prev-span spanp)
                                            (parstate parstatep))
-    :returns (mv erp (exprs expr-listp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (exprs expr-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of one or more argument expressions."
     :long
@@ -7570,7 +8088,7 @@
       "We could extend the list in reverse (via @(tsee cons)),
        and then reverse it in the caller,
        but it probably does not make a big difference in performance."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          ;; prev-exprs
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token ",")))
@@ -7592,7 +8110,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-primary-expression ((parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a primary expression."
     :long
@@ -7620,7 +8141,7 @@
       "If the token is none of the above,
        including the token being absent,
        it is an error."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((and token (token-case token :ident)) ; identifier
@@ -7683,7 +8204,7 @@
     :returns (mv erp
                  (genassocs genassoc-listp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse zero or more reamaining generic associations."
     :long
@@ -7700,7 +8221,7 @@
        the list of generic expressions parsed so far,
        along with their span.
        This makes it easier to handle the span calculation."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          ((erp token & parstate) (read-token parstate))
          ((when (not (token-punctuatorp token ",")))
           (b* ((parstate (if token (unread-token parstate) parstate)))
@@ -7721,7 +8242,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-generic-association ((parstate parstatep))
-    :returns (mv erp (genassoc genassocp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (genassoc genassocp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a generic association."
     :long
@@ -7737,7 +8261,7 @@
        we parse a colon and an assignment expression.")
      (xdoc::p
       "If the token is none of the above, it is an error."))
-    (b* (((reterr) (irr-genassoc) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-genassoc) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((token-type-name-start-p token) ; typename...
@@ -7792,7 +8316,10 @@
   (define parse-compound-literal ((tyname tynamep)
                                   (first-span spanp)
                                   (parstate parstatep))
-    :returns (mv erp (expr exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (expr exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a compound literal."
     :long
@@ -7802,7 +8329,7 @@
        So we start by parsing an open curly brace,
        a list of initializers,
        and a closed curly brace."))
-    (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp & parstate) (read-punctuator "{" parstate)) ; {
          ((erp desiniters final-comma & parstate) ; { inits [,]
           (parse-initializer-list parstate))
@@ -7818,7 +8345,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-constant-expression ((parstate parstatep))
-    :returns (mv erp (cexpr const-exprp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (cexpr const-exprp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a constant expression."
     :long
@@ -7833,7 +8363,7 @@
        just as a wrapper of an expression;
        the wrapper marks the expression as intended to be in fact constant,
        but the check that that is the case is done elsewhere."))
-    (b* (((reterr) (irr-const-expr) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-const-expr) (irr-span) parstate)
          ((erp expr span parstate) (parse-conditional-expression parstate)))
       (retok (const-expr expr) span parstate))
     :measure (two-nats-measure (parsize parstate) 17))
@@ -7845,7 +8375,7 @@
     :returns (mv erp
                  (statassert statassertp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a static assert declaration."
     :long
@@ -7860,7 +8390,7 @@
       "We read the remaining components of the grammar rule,
        one after the other.
        There are no alternatives."))
-    (b* (((reterr) (irr-statassert) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-statassert) (irr-span) parstate)
          ((erp & parstate) (read-punctuator "(" parstate))
          ((erp cexpr & parstate) (parse-constant-expression parstate))
          ((erp & parstate) (read-punctuator "," parstate))
@@ -7876,7 +8406,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-designator ((parstate parstatep))
-    :returns (mv erp (designor designorp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (designor designorp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a designator."
     :long
@@ -7884,7 +8417,7 @@
      (xdoc::p
       "There are two kinds of designators,
        easily distinguished by their first token."))
-    (b* (((reterr) (irr-designor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-designor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((token-punctuatorp token "[") ; [
@@ -7907,7 +8440,7 @@
     :returns (mv erp
                  (designors designor-listp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a designator list."
     :long
@@ -7923,7 +8456,7 @@
        where it is followed by an equal sign.
        So there is no overlap between the equal sign
        and the possible starts of a designator."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp designor span parstate) (parse-designator parstate)) ; designor
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -7946,7 +8479,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-initializer ((parstate parstatep))
-    :returns (mv erp (initer initerp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (initer initerp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an initializer."
     :long
@@ -7959,7 +8495,7 @@
        If the token is an open curly brace,
        we must have an aggregate initializer.
        There is no overlap between these two cases."))
-    (b* (((reterr) (irr-initer) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-initer) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((token-expression-start-p token) ; expr...
@@ -8006,7 +8542,7 @@
     :returns (mv erp
                  (desiniter desiniterp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an initializer with an optional designation."
     :long
@@ -8019,7 +8555,7 @@
        we parse an initializer.
        Note that there is no overlap between the starts of
        designations and initializers."))
-    (b* (((reterr) (irr-desiniter) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-desiniter) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((token-designation-start-p token) ; designation...
@@ -8075,7 +8611,7 @@
                  (desiniters desiniter-listp)
                  (final-comma booleanp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a list of one or more initializers."
     :long
@@ -8100,7 +8636,7 @@
        We parse that comma (if present) in this function.
        So, technically, this function parses slightly more then
        an @('initializer-list') as defined in the ABNF grammar."))
-    (b* (((reterr) nil nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp desiniter span parstate) ; initializer
           (parse-designation?-initializer parstate))
@@ -8186,10 +8722,13 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-enumerator ((parstate parstatep))
-    :returns (mv erp (enumer enumerp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (enumer enumerp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an enumerator."
-    (b* (((reterr) (irr-enumer) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-enumer) (irr-span) parstate)
          ;; An enumerator always starts with (or is) an identifier.
          ((erp ident span parstate) (read-identifier parstate)) ; ident
          ;; The identifier may be the whole enumerator, or there may be more,
@@ -8220,7 +8759,7 @@
                  (enumers enumer-listp)
                  (final-comma booleanp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a list of one or more enumerators."
     :long
@@ -8233,7 +8772,7 @@
      (xdoc::p
       "This function does not consume the closed curly brace.
        The caller must consume it."))
-    (b* (((reterr) nil nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil nil (irr-span) parstate)
          ;; The list must not be empty, so we parse the first enumerator.
          (psize (parsize parstate))
          ((erp enumer enumer-span parstate)
@@ -8310,7 +8849,7 @@
     :returns (mv erp
                  (specqual spec/qual-p)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a specifier or qualifier."
     :long
@@ -8351,7 +8890,7 @@
        the @('_Atomic') must start a type specifier,
        so we must parse a type name after the open parenthesis,
        and finally the closing parenthesis."))
-    (b* (((reterr) (irr-spec/qual) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-spec/qual) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is a type specifier consisting of a single keyword,
@@ -8490,7 +9029,7 @@
     :returns (mv erp
                  (specquals spec/qual-listp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a list of one or more specifiers and qualifiers."
     :long
@@ -8502,7 +9041,7 @@
        Lists of specifiers and qualifiers have the same restrictions
        as lists of declaration specifiers with respect to
        type specifiers, which we use to resolve identifier ambiguities."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp specqual first-span parstate) ; specqual
           (parse-specifier/qualifier tyspec-seenp parstate))
@@ -8561,7 +9100,10 @@
 
   (define parse-declaration-specifier ((tyspec-seenp booleanp)
                                        (parstate parstatep))
-    :returns (mv erp (declspec declspecp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (declspec declspecp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a declaration specifier."
     :long
@@ -8601,7 +9143,7 @@
        is resolved in the same way as in @(tsee parse-specifier/qualifier),
        which motivates the @('tyspec-seenp') flag passed to this function;
        see that function's documentation."))
-    (b* (((reterr) (irr-declspec) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-declspec) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is a storage class specifier,
@@ -8760,7 +9302,7 @@
     :returns (mv erp
                  (declspecs declspec-listp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a list of one or more declaration specifiers."
     :long
@@ -8796,7 +9338,7 @@
        the identifier cannot be (the start of) a declarator,
        because we have not found a type specifier yet,
        and thus the identifier must be the missing type specifier."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp declspec first-span parstate) ; declspec
           (parse-declaration-specifier tyspec-seenp parstate))
@@ -8857,7 +9399,7 @@
     :returns (mv erp
                  (strunispec strunispecp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse or structure or union specifier."
     :long
@@ -8870,7 +9412,7 @@
        whether it is a structure or a union,
        which is done in @(tsee type-spec) instead;
        this is how we have factored our abstract syntax."))
-    (b* (((reterr) (irr-strunispec) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-strunispec) (irr-span) parstate)
          ;; There must be at least one token (identifier of open curly brace),
          ;; so we read one.
          ((erp token span parstate) (read-token parstate)))
@@ -8930,7 +9472,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-enum-specifier ((first-span spanp) (parstate parstatep))
-    :returns (mv erp (enumspec enumspecp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (enumspec enumspecp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an enumeration specifier."
     :long
@@ -8939,7 +9484,7 @@
       "This is called after parsing the initial @('enum') keyword.")
      (xdoc::p
       "The span of the @('enum') keyword is passed as input here."))
-    (b* (((reterr) (irr-enumspec) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-enumspec) (irr-span) parstate)
          ;; There must be at least one token (identifier of open curly brace),
          ;; so we read one.
          ((erp token span parstate) (read-token parstate)))
@@ -9003,7 +9548,7 @@
     :returns (mv erp
                  (alignspec align-specp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an alignment specifier."
     :long
@@ -9012,7 +9557,7 @@
       "This is called after parsing the initial @('_Alignas') keyword.")
      (xdoc::p
       "The span of the @('_Alignas') keyword is passed as input here."))
-    (b* (((reterr) (irr-align-spec) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-align-spec) (irr-span) parstate)
          ;; There must be an open parenthesis.
          ((erp & parstate) (read-punctuator "(" parstate)) ; (
          ;; Next comes a possibly ambiguous expression or type name.
@@ -9046,7 +9591,7 @@
     :returns (mv erp
                  (dirabsdeclor dirabsdeclorp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an array or function abstract declarator."
     :long
@@ -9057,7 +9602,7 @@
        See @(tsee parse-direct-abstract-declarator).")
      (xdoc::p
       "This function is called when we expect this kind of declarator."))
-    (b* (((reterr) (irr-dirabsdeclor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-dirabsdeclor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is an open square bracket,
@@ -9242,7 +9787,7 @@
     :returns (mv erp
                  (dirabsdeclor dirabsdeclorp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a direct abstract declarator."
     :long
@@ -9263,7 +9808,7 @@
        or a parenthesized abstract declarator
        followed by a sequence of
        zero or more array and function abstract declarators."))
-    (b* (((reterr) (irr-dirabsdeclor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-dirabsdeclor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is an open parenthesis,
@@ -9350,7 +9895,7 @@
     :returns (mv erp
                  (dirabsdeclor dirabsdeclorp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of a direct abstract declartor."
     :long
@@ -9363,7 +9908,7 @@
        and in this function we read zero or more
        additional array and function abstract declarators,
        combining them with the one passed to this function."))
-    (b* (((reterr) (irr-dirabsdeclor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-dirabsdeclor) (irr-span) parstate)
          ;; We read the next token, to determine whether
          ;; there is another array or function abstract declarator.
          ((erp token & parstate) (read-token parstate)))
@@ -9412,7 +9957,7 @@
     :returns (mv erp
                  (absdeclor absdeclorp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an abstract declarator."
     :long
@@ -9422,7 +9967,7 @@
        a pointer,
        or a direct abstract declarator,
        or a pointer followed by a direct abstract declarator."))
-    (b* (((reterr) (irr-absdeclor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-absdeclor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is a star, we must have a pointer,
@@ -9488,7 +10033,7 @@
     :returns (mv erp
                  (dirdeclor dirdeclorp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an array or function declarator."
     :long
@@ -9512,7 +10057,7 @@
        we always generate @(':function-params') during parsing,
        and potentially re-classify it to @(':function-names')
        during post-parsing semantic analysis."))
-    (b* (((reterr) (irr-dirdeclor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-dirdeclor) (irr-span) parstate)
          ((erp token & parstate) (read-token parstate)))
       (cond
        ;; If token is an open square bracket,
@@ -9745,7 +10290,7 @@
     :returns (mv erp
                  (dirdeclor dirdeclorp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a direct declarator."
     :long
@@ -9758,7 +10303,7 @@
        First we parse the initial identifier or parenthesized declarator,
        then we call a separate function to parse
        the zero or more array or function constructs."))
-    (b* (((reterr) (irr-dirdeclor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-dirdeclor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is an identifier,
@@ -9797,7 +10342,7 @@
     :returns (mv erp
                  (dirdeclor dirdeclorp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse the rest of a direct declarator."
     :long
@@ -9809,7 +10354,7 @@
        and which is a direct declarator itself,
        and is passed to this function as the @('prev-dirdeclor') input,
        along with its span."))
-    (b* (((reterr) (irr-dirdeclor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-dirdeclor) (irr-span) parstate)
          ;; We read the next token, to determine whether
          ;; there is another array or function declarator.
          ((erp token & parstate) (read-token parstate)))
@@ -9848,7 +10393,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-declarator ((parstate parstatep))
-    :returns (mv erp (declor declorp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (declor declorp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a declarator."
     :long
@@ -9856,7 +10404,7 @@
      (xdoc::p
       "A declarator has an optional pointer part
        followed by a mandatory direct declarator."))
-    (b* (((reterr) (irr-declor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-declor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is a star, we must have a pointer,
@@ -9887,7 +10435,7 @@
     :returns (mv erp
                  (structdeclor structdeclorp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a structure declarator."
     :long
@@ -9897,7 +10445,7 @@
        a declarator,
        or a declarator followed by colon and a constant expression,
        or a colon and a constant expression."))
-    (b* (((reterr) (irr-structdeclor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-structdeclor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token may start a declarator, we parse it,
@@ -9950,7 +10498,7 @@
     :returns (mv erp
                  (structdeclors structdeclor-listp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a list of one or more structure declarator."
     :long
@@ -9959,7 +10507,7 @@
       "We parse a structure declarator, which must be present.
        Then if we have a comma we recursively call this function
        to parse one or more structure declarators."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp structdeclor span parstate) ; structdeclor
           (parse-struct-declarator parstate))
@@ -9991,7 +10539,7 @@
     :returns (mv erp
                  (structdecl structdeclp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a structure declaration."
     :long
@@ -10005,7 +10553,7 @@
        a non-assert structure declaration
        may start with the @('__extension__') keyword,
        and may end (before the semicolon) with attribute specifiers."))
-    (b* (((reterr) (irr-structdecl) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-structdecl) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is the '_Static_assert' keyword,
@@ -10024,7 +10572,8 @@
               (if (and (token-keywordp token "__extension__")
                        (parstate->gcc parstate))
                   (mv t parstate)
-                (mv nil (if token (unread-token parstate) parstate))))
+                (b* ((parstate (if token (unread-token parstate) parstate)))
+                  (mv nil parstate))))
              ;; [__extension__]
              (psize (parsize parstate))
              ((erp specquals span parstate) ; [__extension__] specquals
@@ -10103,7 +10652,7 @@
     :returns (mv erp
                  (structdecls structdecl-listp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a list of one or more structure declarations."
     :long
@@ -10112,7 +10661,7 @@
       "We parse the first structure declaration, which must be present.
        Then we recursively call this function if the next token
        may start another structure declaration."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp structdecl span parstate) ; structdecl
           (parse-struct-declaration parstate))
@@ -10141,7 +10690,7 @@
     :returns (mv erp
                  (paramdecl paramdeclp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a parameter declaration."
     :long
@@ -10159,7 +10708,7 @@
        we parse a possibly ambiguous declarator or abstract declarator,
        and generate a parameter declarator accordingly,
        and then a parameter declaration with the declaration specifiers."))
-    (b* (((reterr) (irr-paramdecl) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-paramdecl) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp declspecs span parstate) ; declspecs
           (parse-declaration-specifiers nil parstate))
@@ -10220,7 +10769,7 @@
                  (paramdecls paramdecl-listp)
                  (ellipsis booleanp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a list of one or more parameter declarations."
     :long
@@ -10232,7 +10781,7 @@
        So we must read a bit further to check that;
        if there may be indeed another parameter declaration,
        we recursively parse the remaining list of one or more."))
-    (b* (((reterr) nil nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp paramdecl span parstate) ; paramdecl
           (parse-parameter-declaration parstate))
@@ -10277,7 +10826,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-type-name ((parstate parstatep))
-    :returns (mv erp (tyname tynamep) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (tyname tynamep)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a type name."
     :long
@@ -10287,7 +10839,7 @@
        which may be followed by an abstract declarator.
        We parse the specifier and qualifier list,
        and then we parse the abstract declarator if present."))
-    (b* (((reterr) (irr-tyname) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-tyname) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp specquals span parstate) ; specquals
           (parse-specifier-qualifier-list nil parstate))
@@ -10319,7 +10871,7 @@
     :returns (mv erp
                  (expr/tyname amb?-expr/tyname-p)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an expression or a type name."
     :long
@@ -10357,7 +10909,7 @@
        should not exceed the size of the input before backtracking.
        For now we insert a run-time check without @(tsee mbt),
        but we plan to revisit this to see if we can have an @(tsee mbt)."))
-    (b* (((reterr) (irr-amb?-expr/tyname) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-amb?-expr/tyname) (irr-span) parstate)
          (parstate (record-checkpoint parstate)) ; we will backtrack here
          (psize (parsize parstate))
          ((mv erp-expr expr span-expr parstate) (parse-expression parstate)))
@@ -10375,7 +10927,7 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((parstate (init-parstate nil nil)))
+                (b* ((parstate (init-parstate nil nil parstate)))
                   (reterr t)))
                ((erp tyname span parstate) (parse-type-name parstate))
                ;; Ensure there is a closed parenthesis,
@@ -10406,7 +10958,7 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
-                    (b* ((parstate (init-parstate nil nil)))
+                    (b* ((parstate (init-parstate nil nil parstate)))
                       (reterr t)))
                    (parstate
                     (record-checkpoint parstate)) ; we may backtrack again
@@ -10434,7 +10986,7 @@
                           ;; so we just return the empty parser state.
                           ;; This is just logical:
                           ;; execution stops at the RAISE above.
-                          (b* ((parstate (init-parstate nil nil)))
+                          (b* ((parstate (init-parstate nil nil parstate)))
                             (reterr t)))
                          ((mv erp expr1 span-expr1 parstate)
                           (parse-expression parstate))
@@ -10504,7 +11056,7 @@
                             ;; so we just return the empty parser state.
                             ;; This is just logical:
                             ;; execution stops at the RAISE above.
-                            (b* ((parstate (init-parstate nil nil)))
+                            (b* ((parstate (init-parstate nil nil parstate)))
                               (reterr t)))
                            ((mv erp expr1 span-expr1 parstate)
                             (parse-expression parstate))
@@ -10546,7 +11098,7 @@
                   ;; no larger than the initial one,
                   ;; so we just return the empty parser state.
                   ;; This is just logical: execution stops at the RAISE above.
-                  (b* ((parstate (init-parstate nil nil)))
+                  (b* ((parstate (init-parstate nil nil parstate)))
                     (reterr t)))
                  ((erp tyname span parstate) (parse-type-name parstate))
                  ;; Ensure there is a closed parenthesis,
@@ -10562,7 +11114,7 @@
     :returns (mv erp
                  (declor/absdeclor amb?-declor/absdeclor-p)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a declarator or an abstract declarator."
     :long
@@ -10595,7 +11147,7 @@
        we also ensure that the next token is a comma or closed parenthesis,
        otherwise we regard the parsing of the abstract declarator
        to have failed."))
-    (b* (((reterr) (irr-amb?-declor/absdeclor) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-amb?-declor/absdeclor) (irr-span) parstate)
          (parstate (record-checkpoint parstate)) ; we will backtrack here
          (psize (parsize parstate))
          ((mv erp-declor declor span-declor parstate)
@@ -10614,7 +11166,7 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((parstate (init-parstate nil nil)))
+                (b* ((parstate (init-parstate nil nil parstate)))
                   (reterr t)))
                ((erp absdeclor span parstate)
                 (parse-abstract-declarator parstate)))
@@ -10634,7 +11186,7 @@
               ;; so we just return the empty parser state.
               ;; This is just logical:
               ;; execution stops at the RAISE above.
-              (b* ((parstate (init-parstate nil nil)))
+              (b* ((parstate (init-parstate nil nil parstate)))
                 (reterr t)))
              (parstate (record-checkpoint parstate)) ; we may backtrack again
              ((mv erp absdeclor span-absdeclor parstate)
@@ -10661,7 +11213,7 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
-                    (b* ((parstate (init-parstate nil nil)))
+                    (b* ((parstate (init-parstate nil nil parstate)))
                       (reterr t)))
                    ((mv erp declor1 span-declor1 parstate)
                     (parse-declarator parstate))
@@ -10734,7 +11286,7 @@
                       ;; so we just return the empty parser state.
                       ;; This is just logical:
                       ;; execution stops at the RAISE above.
-                      (b* ((parstate (init-parstate nil nil)))
+                      (b* ((parstate (init-parstate nil nil parstate)))
                         (reterr t)))
                      ((mv erp declor1 span-declor1 parstate)
                       (parse-declarator parstate))
@@ -10767,7 +11319,7 @@
     :returns (mv erp
                  (attrparams expr-listp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse attribute parameters."
     :long
@@ -10781,7 +11333,7 @@
        We re-use @(tsee parse-argument-expressions)
        to parse the zero or more comma-separated expressions.
        This parsing function does exactly what is needed here."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          ((erp open-span parstate) (read-punctuator "(" parstate))
          ((erp exprs & parstate) (parse-argument-expressions parstate))
          ((erp close-span parstate) (read-punctuator ")" parstate)))
@@ -10791,7 +11343,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-attribute ((parstate parstatep))
-    :returns (mv erp (attr attribp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (attr attribp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an attribute."
     :long
@@ -10799,7 +11354,7 @@
      (xdoc::p
       "This is only used if GCC extensions are supported.
        See the ABNF grammar rule for @('attribute')."))
-    (b* (((reterr) (irr-attrib) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-attrib) (irr-span) parstate)
          ((erp ident ident-span parstate) (read-identifier parstate)) ; ident
          ((erp token & parstate) (read-token parstate)))
       (cond
@@ -10820,7 +11375,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-attribute-list ((parstate parstatep))
-    :returns (mv erp (attrs attrib-listp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (attrs attrib-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse a list of one or more attributes, separated by commas."
     :long
@@ -10828,7 +11386,7 @@
      (xdoc::p
       "This is only used if GCC extensions are supported.
        See the ABNF grammar rule for @('attribute-list')."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp attr span parstate) (parse-attribute parstate)) ; attr
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -10855,7 +11413,7 @@
     :returns (mv erp
                  (attrspec attrib-specp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse an attribute specifier."
     :long
@@ -10866,7 +11424,7 @@
      (xdoc::p
       "This is called after parsing the initial @('__attribute__'),
        whose span we pass to this parsing function as input."))
-    (b* (((reterr) (irr-attrib-spec) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-attrib-spec) (irr-span) parstate)
          ;; __attribute__
          ((erp & parstate) (read-punctuator "(" parstate)) ; __attribute__ (
          ((erp & parstate) (read-punctuator "(" parstate)) ; __attribute__ ( (
@@ -10885,7 +11443,7 @@
     :returns (mv erp
                  (attrspecs attrib-spec-listp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls)
     :short "Parse zero or more attribute specifiers."
     :long
@@ -10912,7 +11470,7 @@
        this parsing function always returns the empty list,
        because @('__attribute__') is a keyword
        only if GCC extensions are supported."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          ((erp token first-span parstate) (read-token parstate))
          ((unless (token-keywordp token "__attribute__"))
           (b* ((parstate (if token (unread-token parstate) parstate)))
@@ -11821,7 +12379,7 @@
   :returns (mv erp
                (asmspec asm-name-specp)
                (span spanp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse an assembler name specifier."
   :long
   (xdoc::topstring
@@ -11836,7 +12394,7 @@
      and return its abstract syntax representation.
      We ensure that there is at least one string literal;
      see grammar rule for @('asm-name-specifier'), which uses @('1*')."))
-  (b* (((reterr) (irr-asm-name-spec) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-asm-name-spec) (irr-span) parstate)
        ;; asm-or-__asm__
        ((erp & parstate) (read-punctuator "(" parstate)) ; asm-or-__asm__ (
        ((erp token span parstate) (read-token parstate))
@@ -11873,7 +12431,7 @@
   :returns (mv erp
                (asmspec? asm-name-spec-optionp)
                (span spanp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse an optional assembler name specifier."
   :long
   (xdoc::topstring
@@ -11885,7 +12443,7 @@
      Otherwise, we put back the token
      and return no assembler name specifier;
      in this case, the returned span is an irrelevant one."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
+  (b* (((reterr) nil (irr-span) parstate)
        ((erp token span parstate) (read-token parstate)))
     (cond
      ((token-keywordp token "asm")
@@ -11909,14 +12467,14 @@
   :returns (mv erp
                (initdeclor initdeclorp)
                (span spanp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse an initializer declarator."
   :long
   (xdoc::topstring
    (xdoc::p
     "An initializer declarator consists of a declarator,
      optionally followed by an equal sign and an initializer."))
-  (b* (((reterr) (irr-initdeclor) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-initdeclor) (irr-span) parstate)
        ((erp declor span parstate) (parse-declarator parstate)) ; declor
        ((erp token & parstate) (read-token parstate)))
     (cond
@@ -11953,7 +12511,7 @@
   :returns (mv erp
                (initdeclors initdeclor-listp)
                (span spanp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a list of one or more initializer declarators."
   :long
   (xdoc::topstring
@@ -11961,7 +12519,7 @@
     "We parse the first one, which must be present.
      If there is a comma after that,
      we recursively parse one or more after the comma."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
+  (b* (((reterr) nil (irr-span) parstate)
        ((erp initdeclor span parstate) ; initdeclor
         (parse-init-declarator parstate))
        ((erp token & parstate) (read-token parstate)))
@@ -12001,7 +12559,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-declaration ((parstate parstatep))
-  :returns (mv erp (decl declp) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (decl declp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a declaration."
   :long
   (xdoc::topstring
@@ -12019,7 +12580,7 @@
      and we must also allow for an @('__extension__') keyword
      just before the declaration.
      See the ABNF grammar rule for @('declaration')."))
-  (b* (((reterr) (irr-decl) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-decl) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate)))
     (cond
      ;; If token may start a declaration specifier, we put it back and
@@ -12035,7 +12596,8 @@
             (if (and (token-keywordp token "__extension__")
                      (parstate->gcc parstate))
                 (mv t parstate)
-              (mv nil (unread-token parstate))))
+              (b* ((parstate (unread-token parstate)))
+                (mv nil parstate))))
            ;; [__extension__]
            ((erp declspecs span parstate) ; [__extension__] declspecs
             (parse-declaration-specifiers nil parstate))
@@ -12173,7 +12735,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-declaration-list ((parstate parstatep))
-  :returns (mv erp (decls decl-listp) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (decls decl-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a list of one or more declarations."
   :long
   (xdoc::topstring
@@ -12183,7 +12748,7 @@
      because the only place where we parse declaration lists
      is in function definitions, between declarator and body.
      Otherwise we recursively call this function to parse more."))
-  (b* (((reterr) nil (irr-span) (irr-parstate))
+  (b* (((reterr) nil (irr-span) parstate)
        ((erp decl span parstate) (parse-declaration parstate)) ; decl
        ((erp token & parstate) (read-token parstate)))
     (cond
@@ -12223,7 +12788,7 @@
   :returns (mv erp
                (decl/stmt amb?-decl/stmt-p)
                (span spanp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a declaration or a statement."
   :long
   (xdoc::topstring
@@ -12245,7 +12810,7 @@
      If both succeed, there is an ambiguity,
      which we return as such.
      If none succeeds, it is an error."))
-  (b* (((reterr) (irr-amb?-decl/stmt) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-amb?-decl/stmt) (irr-span) parstate)
        (parstate (record-checkpoint parstate)) ; we will backtrack here
        (psize (parsize parstate))
        ((mv erp expr span-expr parstate) (parse-expression parstate)))
@@ -12263,7 +12828,7 @@
               ;; no larger than the initial one,
               ;; so we just return the empty parser state.
               ;; This is just logical: execution stops at the RAISE above.
-              (b* ((parstate (init-parstate nil nil)))
+              (b* ((parstate (init-parstate nil nil parstate)))
                 (reterr t)))
              ((erp decl span parstate) (parse-declaration parstate)))
           (retok (amb?-decl/stmt-decl decl) span parstate))
@@ -12291,7 +12856,7 @@
                   ;; so we just return the empty parser state.
                   ;; This is just logical:
                   ;; execution stops at the RAISE above.
-                  (b* ((parstate (init-parstate nil nil)))
+                  (b* ((parstate (init-parstate nil nil parstate)))
                     (reterr t)))
                  (parstate
                   (record-checkpoint parstate)) ; we may backtrack again
@@ -12314,7 +12879,7 @@
                         ;; so we just return the empty parser state.
                         ;; This is just logical:
                         ;; execution stops at the RAISE above.
-                        (b* ((parstate (init-parstate nil nil)))
+                        (b* ((parstate (init-parstate nil nil parstate)))
                           (reterr t)))
                        ((mv erp expr1 span-expr1 parstate)
                         (parse-expression parstate))
@@ -12388,7 +12953,7 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((parstate (init-parstate nil nil)))
+                (b* ((parstate (init-parstate nil nil parstate)))
                   (reterr t)))
                ((erp decl span parstate) (parse-declaration parstate)))
             (retok (amb?-decl/stmt-decl decl) span parstate))))))
@@ -12421,7 +12986,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-statement ((parstate parstatep))
-    :returns (mv erp (stmt stmtp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (stmt stmtp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-stmts/blocks)
     :short "Parse a statement."
     :long
@@ -12452,7 +13020,7 @@
        In other words, we may fail to accept the case of
        a declaration that starts with a @('typedef') name for now.
        We plan to rectify this situation soon."))
-    (b* (((reterr) (irr-stmt) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-stmt) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is an identifier,
@@ -13094,7 +13662,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-block-item ((parstate parstatep))
-    :returns (mv erp (item block-itemp) (span spanp) (new-parstate parstatep))
+    :returns (mv erp
+                 (item block-itemp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-stmts/blocks)
     :short "Parse a block item."
     :long
@@ -13107,7 +13678,7 @@
        the overlap cannot be disambiguated purely syntactically.
        Thus, under the appropriate conditions,
        we parse a possibly ambiguous declaration or statement."))
-    (b* (((reterr) (irr-block-item) (irr-span) (irr-parstate))
+    (b* (((reterr) (irr-block-item) (irr-span) parstate)
          ((erp token & parstate) (read-token parstate)))
       (cond
        ;; If token is an identifier, we need to read another token.
@@ -13170,7 +13741,7 @@
     :returns (mv erp
                  (items block-item-listp)
                  (span spanp)
-                 (new-parstate parstatep))
+                 (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-stmts/blocks)
     :short "Parse a list of one or more block items."
     :long
@@ -13179,7 +13750,7 @@
       "We parse the first block item, which must be present.
        Then, unless we have a closed curly brace,
        we recursively parse one or more block items."))
-    (b* (((reterr) nil (irr-span) (irr-parstate))
+    (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp item span parstate) (parse-block-item parstate)) ; item
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -13269,7 +13840,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-external-declaration ((parstate parstatep))
-  :returns (mv erp (extdecl extdeclp) (span spanp) (new-parstate parstatep))
+  :returns (mv erp
+               (extdecl extdeclp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse an external declaration."
   :long
   (xdoc::topstring
@@ -13295,7 +13869,7 @@
     "If GCC extensions are supported, we must also taken into account
      the possible presence of attributes and assembler name specifiers,
      as well as of an @('__external__') keyword."))
-  (b* (((reterr) (irr-extdecl) (irr-span) (irr-parstate))
+  (b* (((reterr) (irr-extdecl) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate)))
     (cond
      ;; If token is the keyword '_Static_assert',
@@ -13312,7 +13886,8 @@
             (if (and (token-keywordp token "__extension__")
                      (parstate->gcc parstate))
                 (mv t parstate)
-              (mv nil (if token (unread-token parstate) parstate))))
+              (b* ((parstate (if token (unread-token parstate) parstate)))
+                (mv nil parstate))))
            ;; [__extension__]
            ((erp declspecs span parstate) ; [__extension__] declspecs
             (parse-declaration-specifiers nil parstate))
@@ -13705,7 +14280,7 @@
                (extdecls extdecl-listp)
                (span spanp)
                (eof-pos positionp)
-               (new-parstate parstatep))
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a list of one or more external declarations."
   :long
   (xdoc::topstring
@@ -13720,7 +14295,7 @@
     "We parse the first external declaration, which must be present.
      Then, unless we have reached the end of the file,
      we recursively parse more external declarations."))
-  (b* (((reterr) nil (irr-span) (irr-position) (irr-parstate))
+  (b* (((reterr) nil (irr-span) (irr-position) parstate)
        ((erp extdecl first-span parstate) ; extdecl
         (parse-external-declaration parstate))
        ((erp token span parstate) (read-token parstate))
@@ -13756,7 +14331,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-translation-unit ((parstate parstatep))
-  :returns (mv erp (tunit transunitp) (new-parstate parstatep))
+  :returns (mv erp
+               (tunit transunitp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a translation unit."
   :long
   (xdoc::topstring
@@ -13775,7 +14352,7 @@
      this means that, since the file is not empty,
      the last character is a new-line,
      otherwise that position would be at a non-zero column."))
-  (b* (((reterr) (irr-transunit) (irr-parstate))
+  (b* (((reterr) (irr-transunit) parstate)
        ((erp extdecls & eof-pos parstate)
         (parse-external-declaration-list parstate))
        ((unless (= (position->column eof-pos) 0))
@@ -13806,24 +14383,33 @@
     "We also pass a flag saying whether GCC extensions should be accepted.")
    (xdoc::p
     "If successful, the result is a translation unit.
-     We initialize the parser state with the data bytes,
+     We create a local stobj with the parser state,
+     we initialize it with the data bytes,
      and we attempt to parse them as a translation unit.
-     The final parser state is discarded, since it is no longer needed.")
+     The final parser state is discarded, as is the case for local stobjs,
+     since it is no longer needed.")
    (xdoc::p
     "If an error occurs, we enhance it with
      information about the file path.
      It is the case that @('erp') is a message,
      but currently we do not have that information statically available,
      so we add a run-time check that should always succeed."))
-  (b* (((reterr) (irr-transunit))
-       (parstate (init-parstate data gcc))
-       ((mv erp tunit &) (parse-translation-unit parstate))
-       ((when erp)
-        (b* (((unless (msgp erp))
-              (raise "Internal error: ~x0 is not a message." erp)
-              (reterr t)))
-          (reterr (msg "Error in file ~x0: ~@1" (filepath->unwrap path) erp)))))
-    (retok tunit)))
+  (with-local-stobj
+    parstate
+    (mv-let (erp tunit parstate)
+        (b* ((parstate (init-parstate data gcc parstate))
+             ((mv erp tunit parstate) (parse-translation-unit parstate)))
+          (if erp
+              (if (msgp erp)
+                  (mv (msg "Error in file ~x0: ~@1"
+                           (filepath->unwrap path) erp)
+                      (irr-transunit)
+                      parstate)
+                (prog2$
+                 (raise "Internal error: ~x0 is not a message." erp)
+                 (mv t (irr-transunit) parstate)))
+            (mv nil tunit parstate)))
+      (mv erp tunit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
