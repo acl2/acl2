@@ -134,6 +134,7 @@
 
   :inline t
   :non-memoizable t
+  :non-executable t
   :renaming
   ((update-ai !ai)
    (a-length al)
