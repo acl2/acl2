@@ -10,7 +10,7 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/defines" :dir :system)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
-(include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
+(include-book "std/system/dumb-occur-var-open" :dir :system)
 
 (include-book "./utils/pseudo-term")
 

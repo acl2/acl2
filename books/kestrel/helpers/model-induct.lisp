@@ -19,7 +19,7 @@
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/terms-light/function-call-subterms" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
-(include-book "kestrel/std/system/measured-subset-plus" :dir :system)
+(include-book "std/system/measured-subset-plus" :dir :system)
 ;(include-book "kestrel/utilities/rational-printing" :dir :system)
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))

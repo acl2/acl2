@@ -28,11 +28,13 @@
                                    typep
                                    unread-char))
               '(any
+                assert!-stobj
                 bool
                 bool-fix
                 bytep
                 byte-list
                 byte-listp
+                byte-list-fix
                 defirrelevant
                 defmacro+
                 defxdoc+
@@ -41,9 +43,11 @@
                 impossible
                 keyword-listp
                 keyword-value-list-to-alist
+                lnfix
                 make-event-terse
                 nat
                 nat-list
+                nat-list-fix
                 nat-optionp
                 nats=>string
                 pos

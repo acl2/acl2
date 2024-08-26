@@ -12,8 +12,8 @@
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "kestrel/std/system/defun-sk-queries" :dir :system)
-(include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
+(include-book "std/system/defun-sk-queries" :dir :system)
+(include-book "std/system/maybe-pseudo-event-formp" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 

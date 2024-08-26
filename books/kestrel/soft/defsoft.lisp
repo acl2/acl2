@@ -13,8 +13,8 @@
 (include-book "core")
 
 (include-book "kestrel/event-macros/cw-event" :dir :system)
-(include-book "kestrel/std/system/irecursivep" :dir :system)
-(include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
+(include-book "std/system/irecursivep" :dir :system)
+(include-book "std/system/well-founded-relation-plus" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

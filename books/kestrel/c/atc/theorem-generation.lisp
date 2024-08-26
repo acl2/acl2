@@ -16,11 +16,11 @@
 (include-book "tag-tables")
 
 (include-book "kestrel/event-macros/event-generation" :dir :system)
-(include-book "kestrel/std/system/formals-plus" :dir :system)
-(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
-(include-book "kestrel/std/system/untranslate-dollar" :dir :system)
+(include-book "std/system/formals-plus" :dir :system)
+(include-book "std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "std/system/untranslate-dollar" :dir :system)
 
-(local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

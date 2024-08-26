@@ -12,7 +12,7 @@
 
 (include-book "type-macros")
 
-(include-book "kestrel/std/system/function-name-listp" :dir :system)
+(include-book "std/system/function-name-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

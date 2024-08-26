@@ -27,7 +27,7 @@
 (include-book "known-booleans")
 (include-book "axe-rule-lists")
 (include-book "axe-syntax") ;since this book knows about axe-syntaxp and axe-bind-free
-(include-book "kestrel/std/system/theorem-symbolp" :dir :system)
+(include-book "std/system/theorem-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))

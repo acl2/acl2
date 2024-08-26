@@ -17,8 +17,9 @@
 
 (defmacro test-dimb (input &key gcc)
   `(assert-event
-    (b* ((pstate (init-parstate (acl2::string=>nats ,input) nil))
-         ((mv erp1 ast &) (parse-translation-unit pstate))
+    (b* (((mv erp1 ast) (parse-file (filepath "test")
+                                    (acl2::string=>nats ,input)
+                                    ,gcc))
          (- (cw "~%Input:~%~x0~|" ast))
          ((mv erp2 ast) (dimb-transunit ast ,gcc))
          (- ))

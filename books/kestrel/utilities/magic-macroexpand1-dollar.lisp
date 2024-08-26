@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/macro-namep" :dir :system)
+(include-book "std/system/macro-namep" :dir :system)
 (include-book "magic-macroexpand")
 
 (local

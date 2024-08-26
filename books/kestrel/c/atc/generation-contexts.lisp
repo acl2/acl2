@@ -17,7 +17,7 @@
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
-(include-book "kestrel/std/system/formals-plus" :dir :system)
+(include-book "std/system/formals-plus" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))

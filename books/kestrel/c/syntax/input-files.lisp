@@ -18,8 +18,8 @@
 (include-book "kestrel/fty/string-option" :dir :system)
 (include-book "system/pseudo-event-form-listp" :dir :system)
 
-(local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
-(local (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system))
+(local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
+(local (include-book "std/system/pseudo-event-form-listp" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
