@@ -17,7 +17,7 @@
  (include-book \"kestrel/utilities/ubi\" :dir :system)
  (local (include-book \"kestrel/utilities/system/world-queries\" :dir :system))
  (defpkg \"FOO\" nil)
- (include-book \"kestrel/std/system/defun-sk-queries\" :dir :system))
+ (include-book \"std/system/defun-sk-queries\" :dir :system))
  (defun f (x) x)
  (include-book \"arithmetic/top\" :dir :system)
  (defun g (x) x)
@@ -33,7 +33,7 @@
     d       2  (LOCAL (INCLUDE-BOOK \"kestrel/utilities/system/world-queries\"
                                     :DIR ...))
             3  (DEFPKG \"FOO\" NIL)
-    d       4  (INCLUDE-BOOK \"kestrel/std/system/defun-sk-queries\"
+    d       4  (INCLUDE-BOOK \"std/system/defun-sk-queries\"
                              :DIR ...)
   L         5  (DEFUN F (X) ...)
     d       6  (INCLUDE-BOOK \"arithmetic/top\" :DIR ...)
@@ -57,7 +57,7 @@
 
  @({
  ACL2 !>:ubi
-    d       4:x(INCLUDE-BOOK \"kestrel/std/system/defun-sk-queries\"
+    d       4:x(INCLUDE-BOOK \"std/system/defun-sk-queries\"
                              :DIR ...)
  ACL2 !>:pbt 0
             0  (EXIT-BOOT-STRAP-MODE)
@@ -66,7 +66,7 @@
     d       2  (LOCAL (INCLUDE-BOOK \"kestrel/utilities/system/world-queries\"
                                     :DIR ...))
             3  (DEFPKG \"FOO\" NIL)
-    d       4:x(INCLUDE-BOOK \"kestrel/std/system/defun-sk-queries\"
+    d       4:x(INCLUDE-BOOK \"std/system/defun-sk-queries\"
                              :DIR ...)
  ACL2 !>
  })
@@ -126,7 +126,7 @@
     d       2  (LOCAL (INCLUDE-BOOK \"kestrel/utilities/system/world-queries\"
                                     :DIR ...))
             3  (DEFPKG \"FOO\" NIL)
-    d       4  (INCLUDE-BOOK \"kestrel/std/system/defun-sk-queries\"
+    d       4  (INCLUDE-BOOK \"std/system/defun-sk-queries\"
                              :DIR ...)
   L         5  (DEFUN F (X) ...)
     d       6  (INCLUDE-BOOK \"arithmetic/top\" :DIR ...)

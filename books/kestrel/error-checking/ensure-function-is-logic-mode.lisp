@@ -12,7 +12,7 @@
 
 (include-book "def-error-checker")
 
-(include-book "kestrel/std/system/function-namep" :dir :system)
+(include-book "std/system/function-namep" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

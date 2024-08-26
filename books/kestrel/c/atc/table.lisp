@@ -11,8 +11,8 @@
 
 (in-package "C")
 
-(include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
-(include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "std/system/maybe-pseudo-event-formp" :dir :system)
+(include-book "std/system/table-alist-plus" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)

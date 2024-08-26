@@ -10,9 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/fresh-namep" :dir :system)
-(include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
-(include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "std/system/fresh-namep" :dir :system)
+(include-book "std/system/pseudo-event-formp" :dir :system)
+(include-book "std/system/table-alist-plus" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/nondigit-chars" :dir :system)
 (include-book "std/util/defval" :dir :system)

@@ -13,11 +13,11 @@
 
 (include-book "../representation/integer-operations")
 
-(include-book "kestrel/std/system/check-and-call" :dir :system)
-(include-book "kestrel/std/system/check-or-call" :dir :system)
-(include-book "kestrel/std/system/check-list-call" :dir :system)
-(include-book "kestrel/std/system/check-mv-let-call" :dir :system)
-(include-book "kestrel/std/system/irecursivep-plus" :dir :system)
+(include-book "std/system/check-and-call" :dir :system)
+(include-book "std/system/check-or-call" :dir :system)
+(include-book "std/system/check-list-call" :dir :system)
+(include-book "std/system/check-mv-let-call" :dir :system)
+(include-book "std/system/irecursivep-plus" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

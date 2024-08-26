@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
+(include-book "std/system/pseudo-event-formp" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/util/define" :dir :system)

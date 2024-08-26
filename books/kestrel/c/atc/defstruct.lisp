@@ -21,11 +21,11 @@
 (include-book "../language/structure-operations")
 
 (include-book "kestrel/fty/pseudo-event-form" :dir :system)
-(include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/util/tuple" :dir :system)
 
-(local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 

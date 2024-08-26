@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/add-suffix-to-fn-or-const" :dir :system)
+(include-book "std/system/add-suffix-to-fn-or-const" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

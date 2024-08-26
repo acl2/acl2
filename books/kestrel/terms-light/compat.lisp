@@ -10,5 +10,5 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/top" :dir :system)
+(include-book "std/system/top" :dir :system)
 (include-book "top")

@@ -21,7 +21,7 @@
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 (include-book "std/basic/if-star" :dir :system)
 
-(local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 

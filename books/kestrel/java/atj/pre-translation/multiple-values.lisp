@@ -14,9 +14,9 @@
 
 (include-book "../types")
 
-(include-book "kestrel/std/system/check-mv-let-call" :dir :system)
-(include-book "kestrel/std/system/make-mv-let-call" :dir :system)
-(include-book "kestrel/std/system/term-possible-numbers-of-results" :dir :system)
+(include-book "std/system/check-mv-let-call" :dir :system)
+(include-book "std/system/make-mv-let-call" :dir :system)
+(include-book "std/system/term-possible-numbers-of-results" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -14,7 +14,7 @@
 
 (include-book "java-abstract-syntax")
 
-(include-book "kestrel/std/system/primitivep" :dir :system)
+(include-book "std/system/primitivep" :dir :system)
 (include-book "std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
