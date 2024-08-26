@@ -16,7 +16,7 @@
 (include-book "symbolic-execution-rules/syntaxp")
 
 (include-book "kestrel/event-macros/event-generation" :dir :system)
-(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))

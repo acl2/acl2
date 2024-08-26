@@ -6,7 +6,7 @@
 
 (include-book "xdoc/top" :dir :system)
 
-(local (include-book "kestrel/std/system/all-vars" :dir :system))
+(local (include-book "std/system/all-vars" :dir :system))
 
 (defxdoc sublis-expr+
   :parents (kestrel-utilities)

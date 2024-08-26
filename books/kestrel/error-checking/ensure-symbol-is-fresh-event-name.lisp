@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/fresh-namep" :dir :system)
+(include-book "std/system/fresh-namep" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
 

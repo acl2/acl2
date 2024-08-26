@@ -12,8 +12,8 @@
 
 (include-book "def-error-checker")
 
-(include-book "kestrel/std/system/function-namep" :dir :system)
-(include-book "kestrel/std/system/guard-verified-p" :dir :system)
+(include-book "std/system/function-namep" :dir :system)
+(include-book "std/system/guard-verified-p" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

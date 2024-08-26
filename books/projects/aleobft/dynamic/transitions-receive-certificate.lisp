@@ -155,4 +155,35 @@
     (equal (faulty-addresses new-systate)
            (faulty-addresses systate))
     :hyp (receive-certificate-possiblep msg systate)
-    :hints (("Goal" :in-theory (enable receive-certificate-possiblep)))))
+    :hints (("Goal" :in-theory (enable receive-certificate-possiblep))))
+
+  (defret validator-state->dag-of-receive-certificate-next
+    (equal (validator-state->dag (get-validator-state val new-systate))
+           (validator-state->dag (get-validator-state val systate)))
+    :hyp (and (set::in val (correct-addresses systate))
+              (receive-certificate-possiblep msg systate))
+    :hints
+    (("Goal" :in-theory (enable
+                         receive-certificate-possiblep
+                         get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->buffer-of-receive-certificate-next
+    (equal (validator-state->buffer (get-validator-state val new-systate))
+           (if (equal val (message->destination msg))
+               (set::insert (message->certificate msg)
+                            (validator-state->buffer
+                             (get-validator-state val systate)))
+             (validator-state->buffer (get-validator-state val systate))))
+    :hyp (and (set::in val (correct-addresses systate))
+              (receive-certificate-possiblep msg systate))
+    :hints
+    (("Goal" :in-theory (enable receive-certificate-possiblep))))
+
+  (defret get-network-state-of-receive-certificate-next
+    (equal (get-network-state new-systate)
+           (set::delete (message-fix msg)
+                        (get-network-state systate))))
+
+  (in-theory (disable validator-state->dag-of-receive-certificate-next
+                      validator-state->buffer-of-receive-certificate-next
+                      get-network-state-of-receive-certificate-next)))

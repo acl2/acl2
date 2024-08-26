@@ -16,7 +16,7 @@
 (include-book "types")
 
 (include-book "kestrel/fty/defbyte" :dir :system)
-(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+(include-book "std/system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))

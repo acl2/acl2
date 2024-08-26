@@ -12,7 +12,7 @@
 
 (include-book "pseudo-event-form")
 
-(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+(include-book "std/system/pseudo-event-form-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

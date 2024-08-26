@@ -66,6 +66,14 @@
 (include-book "defmax-nat-doc")
 (include-book "defmin-int")
 (include-book "defmin-int-doc")
+(include-book "defmapping")
+(include-book "defmapping-doc")
+(include-book "definj")
+(include-book "definj-doc")
+(include-book "defsurj")
+(include-book "defsurj-doc")
+(include-book "defiso")
+(include-book "defiso-doc")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)

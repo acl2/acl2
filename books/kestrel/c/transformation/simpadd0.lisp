@@ -159,7 +159,7 @@
   (define simpadd0-const-expr-option ((cexpr? const-expr-optionp))
     :guard (const-expr-option-unambp cexpr?)
     :returns (new-cexpr? const-expr-optionp)
-    :parents (simpadd0 simpadd0-const-exprs/decls)
+    :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an optional constant expression."
     (const-expr-option-case
      cexpr?
@@ -311,7 +311,7 @@
   (define simpadd0-initer-option ((initer? initer-optionp))
     :guard (initer-option-unambp initer?)
     :returns (new-initer? initer-optionp)
-    :parents (simpadd0 simpadd0-initers/decls)
+    :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an optional initializer."
     (initer-option-case
      initer?
@@ -387,7 +387,7 @@
   (define simpadd0-declor-option ((declor? declor-optionp))
     :guard (declor-option-unambp declor?)
     :returns (new-declor? declor-optionp)
-    :parents (simpadd0 simpadd0-declors/decls)
+    :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an optional declarator."
     (declor-option-case
      declor?
@@ -448,7 +448,7 @@
   (define simpadd0-absdeclor-option ((absdeclor? absdeclor-optionp))
     :guard (absdeclor-option-unambp absdeclor?)
     :returns (new-absdeclor? absdeclor-optionp)
-    :parents (simpadd0 simpadd0-absdeclors/decls)
+    :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an optional abstract declarator."
     (absdeclor-option-case
      absdeclor?
@@ -494,7 +494,7 @@
   (define simpadd0-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp))
     :guard (dirabsdeclor-option-unambp dirabsdeclor?)
     :returns (new-dirabsdeclor? dirabsdeclor-optionp)
-    :parents (simpadd0 simpadd0-dirabsdeclors/decls)
+    :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform an optional direct abstract declarator."
     (dirabsdeclor-option-case
      dirabsdeclor?

@@ -176,7 +176,7 @@
 (include-book "kestrel/utilities/system/terms" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system) ; for control-screen-output
 (include-book "kestrel/utilities/defmacroq" :dir :system)
-(include-book "kestrel/std/system/install-not-normalized-dollar" :dir :system)
+(include-book "std/system/install-not-normalized-dollar" :dir :system)
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/copy-def" :dir :system) ; includes tools/flag
@@ -187,7 +187,7 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
-(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/proof-builder-macros" :dir :system)
 (include-book "kestrel/utilities/sublis-expr-plus" :dir :system)
 (include-book "utilities/untranslate-specifiers")

@@ -15,8 +15,8 @@
 (include-book "function-tables")
 (include-book "tag-tables")
 
-(include-book "kestrel/std/system/formals-plus" :dir :system)
-(include-book "kestrel/std/system/irecursivep-plus" :dir :system)
+(include-book "std/system/formals-plus" :dir :system)
+(include-book "std/system/irecursivep-plus" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
