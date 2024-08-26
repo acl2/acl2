@@ -1,9 +1,0 @@
-(F
- (1 1 (:TYPE-PRESCRIPTION F))
- )
-(G)
-(G-NECC
- (4 4 (:DEFINITION MV-NTH))
- )
-(H)
-(H-SUFF)
