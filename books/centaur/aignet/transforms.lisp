@@ -40,6 +40,7 @@
 (include-book "transform-stub")
 (include-book "unreachability")
 (include-book "dom-supergate-sweep")
+(include-book "parametrize")
 
 (defxdoc aignet-comb-transforms
   :parents (aignet-transforms)
@@ -181,50 +182,52 @@ for translating between ABC and aignet does not support xors.</p>"
 
 (local (in-theory (disable w)))
 
+(defmacro aignet2-return (retvals form)
+  `(b* ((,retvals ,form))
+     (mv aignet2 output-ranges state)))
+
+
 (define apply-comb-transform-default ((aignet)
                                       (aignet2)
                                       (transform)
+                                      (output-ranges aignet-output-range-map-p)
                                       (state))
-  :returns (mv new-aignet2 new-state)
-  (b* (((unless (comb-transform-p transform))
+  :returns (mv new-aignet2
+               (new-output-ranges aignet-output-range-map-p)
+               new-state)
+  (b* ((output-ranges (aignet-output-range-map-fix output-ranges))
+       ((unless (comb-transform-p transform))
         (raise "Bad transform config object; should satisfy ~x1: ~x0~%"
                transform 'comb-transform-p)
         (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
-          (mv aignet2 state)))
+          (mv aignet2 output-ranges state)))
        (name (comb-transform->name transform)))
     (time$
-     (b* (((mv aignet2 state)
+     (b* (((mv aignet2 output-ranges state)
            (case (tag transform)
-             (:balance-config (b* ((aignet2 (balance aignet aignet2 transform)))
-                                (mv aignet2 state)))
-             (:fraig-config (fraig aignet aignet2 transform state))
-             (:rewrite-config (b* ((aignet2 (rewrite aignet aignet2 transform)))
-                                (mv aignet2 state)))
-             (:obs-constprop-config (obs-constprop aignet aignet2 transform state))
-             (:observability-config (observability-fix aignet aignet2 transform state))
-             (:constprop-config (b* ((aignet2 (constprop aignet aignet2 transform)))
-                                  (mv aignet2 state)))
+             (:balance-config (aignet2-return aignet2 (balance aignet aignet2 transform)))
+             (:fraig-config (fraig nil aignet aignet2 transform output-ranges state))
+             (:rewrite-config (aignet2-return aignet2 (rewrite aignet aignet2 transform)))
+             (:obs-constprop-config (aignet2-return (mv aignet2 state) (obs-constprop aignet aignet2 transform state)))
+             (:observability-config (aignet2-return (mv aignet2 state) (observability-fix aignet aignet2 transform state)))
+             (:constprop-config (aignet2-return aignet2 (constprop aignet aignet2 transform)))
              (:snapshot-config (b* ((state (aignet-write-aiger (snapshot-config->filename transform)
                                                                aignet state))
                                     (aignet2 (aignet-raw-copy aignet aignet2)))
-                                 (mv aignet2 state)))
-             (:prune-config (b* ((aignet2 (prune aignet aignet2 transform)))
-                              (mv aignet2 state)))
-             (:unreachability-config (b* ((aignet2 (unreachability aignet aignet2 transform)))
-                                      (mv aignet2 state)))
-             (:dom-supergates-sweep-config
-              (b* ((aignet2 (dom-supergates-sweep aignet aignet2 transform)))
-                (mv aignet2 state)))
-             (otherwise (abc-comb-simplify aignet aignet2 transform state))))
+                                 (mv aignet2 output-ranges state)))
+             (:prune-config (aignet2-return aignet2 (prune aignet aignet2 transform)))
+             (:unreachability-config (aignet2-return aignet2 (unreachability aignet aignet2 transform)))
+             (:dom-supergates-sweep-config (aignet2-return aignet2 (dom-supergates-sweep aignet aignet2 transform)))
+             (otherwise (aignet2-return (mv aignet2 state) (abc-comb-simplify aignet aignet2 transform state)))))
           (- (print-aignet-stats name aignet2)))
-       (mv aignet2 state))
+       (mv aignet2 output-ranges state))
      :msg "~s0 transform: ~st seconds, ~sa bytes.~%"
      :args (list name)))
   ///
   (defret normalize-inputs-of-<fn>
     (implies (syntaxp (not (equal aignet2 ''nil)))
-             (equal (<fn> aignet aignet2 transform state)
-                    (<fn> aignet nil transform state))))
+             (equal (<fn> aignet aignet2 transform output-ranges state)
+                    (<fn> aignet nil transform output-ranges state))))
 
   (defret num-ins-of-<fn>
     (equal (stype-count :pi new-aignet2)
@@ -241,12 +244,21 @@ for translating between ABC and aignet does not support xors.</p>"
   (defret <fn>-comb-equivalent
     (comb-equiv new-aignet2 aignet))
 
+  (defret output-range-map-length-of-<fn>
+    (implies (<= (aignet-output-range-map-length output-ranges)
+                 (stype-count :po aignet))
+             (<= (aignet-output-range-map-length new-output-ranges)
+                 (stype-count :po new-aignet2)))
+    :rule-classes ((:linear :trigger-terms
+                    ((stype-count :po new-aignet2)
+                     (aignet-output-range-map-length new-output-ranges)))))
+  
   (defret w-state-of-<fn>
     (equal (w new-state)
            (w state)))
 
   (defret list-of-outputs-of-<fn>
-    (equal (list new-aignet2 new-state) <call>)))
+    (equal (list new-aignet2 new-output-ranges new-state) <call>)))
 
 (defattach apply-comb-transform apply-comb-transform-default)
 
@@ -263,66 +275,69 @@ for translating between ABC and aignet does not support xors.</p>"
 (fty::deftranssum n-output-comb-transform
   :short "Configuration object for any combinational transform supported by @(see apply-comb-transforms)."
   :parents (aignet-n-output-comb-transforms)
-  (comb-transform
-   n-outputs-unreachability-config
-   n-outputs-dom-supergates-sweep-config))
+  (n-outputs-unreachability-config
+   n-outputs-dom-supergates-sweep-config
+   comb-transform))
 
 (fty::deflist n-output-comb-transformlist :elt-type n-output-comb-transform :true-listp t)
 
 (define n-output-comb-transform->name ((x n-output-comb-transform-p))
   :returns (name stringp :rule-classes :type-prescription)
   :guard-hints (("goal" :in-theory (enable n-output-comb-transform-p)))
+  :guard-debug t
   (case (tag (n-output-comb-transform-fix x))
     (:n-outputs-unreachability-config "N-output Unreachability")
     (:n-outputs-dom-supergates-sweep-config "N-output observability supergate sweep")
-    (otherwise (comb-transform->name x))))
+    (otherwise (comb-transform->name x)))
+  ///
+  (local (in-theory (enable n-output-comb-transform-fix))))
 
 
 (define apply-n-output-comb-transform-default ((n natp)
                                                (aignet)
                                                (aignet2)
                                                (transform)
+                                               (output-ranges aignet-output-range-map-p)
                                                (state))
   :guard (<= n (num-outs aignet))
-  :returns (mv new-aignet2 new-state)
-  (b* (((unless (n-output-comb-transform-p transform))
+  :returns (mv new-aignet2
+               (new-output-ranges aignet-output-range-map-p)
+               new-state)
+  (b* ((output-ranges (aignet-output-range-map-fix output-ranges))
+       ((unless (n-output-comb-transform-p transform))
         (raise "Bad transform config object; should satisfy ~x1: ~x0~%"
                transform 'n-output-comb-transform-p)
         (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
-          (mv aignet2 state)))
+          (mv aignet2 output-ranges state)))
        (name (n-output-comb-transform->name transform)))
     (time$
-     (b* (((mv aignet2 state)
+     (b* (((mv aignet2 output-ranges state)
            (case (tag transform)
-             (:balance-config (b* ((aignet2 (balance aignet aignet2 transform)))
-                                (mv aignet2 state)))
-             (:fraig-config (fraig aignet aignet2 transform state))
-             (:rewrite-config (b* ((aignet2 (rewrite aignet aignet2 transform)))
-                                (mv aignet2 state)))
-             (:obs-constprop-config (obs-constprop aignet aignet2 transform state))
-             (:observability-config (observability-fix aignet aignet2 transform state))
-             (:constprop-config (b* ((aignet2 (constprop aignet aignet2 transform)))
-                                  (mv aignet2 state)))
+             (:balance-config (aignet2-return aignet2 (balance aignet aignet2 transform)))
+             (:fraig-config (fraig (lnfix n) aignet aignet2 transform output-ranges state))
+             (:rewrite-config (aignet2-return aignet2 (rewrite aignet aignet2 transform)))
+             (:obs-constprop-config (aignet2-return (mv aignet2 state)
+                                                    (obs-constprop aignet aignet2 transform state)))
+             (:observability-config (aignet2-return (mv aignet2 state)
+                                                    (observability-fix aignet aignet2 transform state)))
+             (:constprop-config (aignet2-return aignet2 (constprop aignet aignet2 transform)))
              (:snapshot-config (b* ((state (aignet-write-aiger (snapshot-config->filename transform)
                                                                aignet state))
                                     (aignet2 (aignet-raw-copy aignet aignet2)))
-                                 (mv aignet2 state)))
-             (:prune-config (b* ((aignet2 (prune aignet aignet2 transform)))
-                              (mv aignet2 state)))
-             (:unreachability-config (b* ((aignet2 (unreachability aignet aignet2 transform)))
-                                       (mv aignet2 state)))
+                                 (mv aignet2 output-ranges state)))
+             (:prune-config (aignet2-return aignet2 (prune aignet aignet2 transform)))
+             (:unreachability-config (aignet2-return aignet2 (unreachability aignet aignet2 transform)))
              (:dom-supergates-sweep-config
-              (b* ((aignet2 (dom-supergates-sweep aignet aignet2 transform)))
-                (mv aignet2 state)))
+              (aignet2-return aignet2 (dom-supergates-sweep aignet aignet2 transform)))
              (:n-outputs-unreachability-config
-              (b* ((aignet2 (n-outputs-unreachability n aignet aignet2 transform)))
-                (mv aignet2 state)))
+              (aignet2-return aignet2 (n-outputs-unreachability n aignet aignet2 transform)))
              (:n-outputs-dom-supergates-sweep-config
-              (b* ((aignet2 (n-outputs-dom-supergates-sweep n aignet aignet2 transform)))
-                (mv aignet2 state)))
-             (otherwise (abc-comb-simplify aignet aignet2 transform state))))
+              (aignet2-return aignet2 (n-outputs-dom-supergates-sweep n aignet aignet2 transform)))
+             (otherwise
+              (aignet2-return (mv aignet2 state)
+                              (abc-comb-simplify aignet aignet2 transform state)))))
           (- (print-aignet-stats name aignet2)))
-       (mv aignet2 state))
+       (mv aignet2 output-ranges state))
      :msg "~s0 transform: ~st seconds, ~sa bytes.~%"
      :args (list name)))
   ///
@@ -340,8 +355,19 @@ for translating between ABC and aignet does not support xors.</p>"
            (stype-count :reg aignet)))
 
   (defret num-outs-of-<fn>
-    (equal (stype-count :po new-aignet2)
-           (stype-count :po aignet)))
+    (implies (<= (nfix n) (stype-count :po aignet))
+             (<= (nfix n) (stype-count :po new-aignet2)))
+    :rule-classes ((:linear :trigger-terms
+                    ((stype-count :po new-aignet2)))))
+
+  (defret num-outs-of-<fn>-relative-to-output-map-length
+    (implies (<= (aignet-output-range-map-length output-ranges)
+                 (stype-count :po aignet))
+             (<= (aignet-output-range-map-length new-output-ranges)
+                 (stype-count :po new-aignet2)))
+    :rule-classes ((:linear :trigger-terms
+                    ((aignet-output-range-map-length new-output-ranges)
+                     (stype-count :po new-aignet2)))))
 
   (defret <fn>-outputs-equivalent
     (implies (< (nfix i) (nfix n))
@@ -353,7 +379,7 @@ for translating between ABC and aignet does not support xors.</p>"
            (w state)))
 
   (defret list-of-outputs-of-<fn>
-    (equal (list new-aignet2 new-state) <call>)))
+    (equal (list new-aignet2 new-output-ranges new-state) <call>)))
 
 
 
@@ -376,7 +402,8 @@ for translating between ABC and aignet does not support xors.</p>"
   (comb-transform
    n-outputs-unreachability-config
    n-outputs-dom-supergates-sweep-config
-   m-assum-n-output-observability-config))
+   m-assum-n-output-observability-config
+   parametrize-config))
 
 (fty::deflist m-assumption-n-output-comb-transformlist
   :elt-type m-assumption-n-output-comb-transform :true-listp t)
@@ -388,56 +415,62 @@ for translating between ABC and aignet does not support xors.</p>"
     (:n-outputs-unreachability-config "N-output Unreachability")
     (:n-outputs-dom-supergates-sweep-config "N-output observability supergate sweep")
     (:m-assum-n-output-observability-config "M-assumption N-output observability")
+    (:parametrize-config "Parametrization")
     (otherwise (comb-transform->name x))))
 
 (define apply-m-assumption-n-output-output-transform-default ((m natp)
-                                                             (n natp)
-                                                             (aignet)
-                                                             (aignet2)
-                                                             (transform)
-                                                             (state))
+                                                              (n natp)
+                                                              (aignet)
+                                                              (aignet2)
+                                                              (transform)
+                                                              (output-ranges
+                                                               aignet-output-range-map-p)
+                                                              (state))
   :guard (<= (+ m n) (num-outs aignet))
-  :returns (mv new-aignet2 new-state)
-  (b* (((unless (m-assumption-n-output-comb-transform-p transform))
+  :returns (mv new-aignet2
+               (new-output-ranges aignet-output-range-map-p)
+               new-state)
+  (b* ((output-ranges (aignet-output-range-map-fix output-ranges))
+       ((unless (m-assumption-n-output-comb-transform-p transform))
         (raise "Bad transform config object; should satisfy ~x1: ~x0~%"
                transform 'm-assumption-n-output-comb-transform-p)
         (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
-          (mv aignet2 state)))
+          (mv aignet2 output-ranges state)))
        (name (m-assumption-n-output-comb-transform->name transform)))
     (time$
-     (b* (((mv aignet2 state)
+     (b* (((mv aignet2 output-ranges state)
            (case (tag transform)
-             (:balance-config (b* ((aignet2 (balance aignet aignet2 transform)))
-                                (mv aignet2 state)))
-             (:fraig-config (fraig aignet aignet2 transform state))
-             (:rewrite-config (b* ((aignet2 (rewrite aignet aignet2 transform)))
-                                (mv aignet2 state)))
-             (:obs-constprop-config (obs-constprop aignet aignet2 transform state))
-             (:observability-config (observability-fix aignet aignet2 transform state))
-             (:constprop-config (b* ((aignet2 (constprop aignet aignet2 transform)))
-                                  (mv aignet2 state)))
+             (:balance-config (aignet2-return aignet2 (balance aignet aignet2 transform)))
+             (:fraig-config (fraig (+ (lnfix m) (lnfix n))
+                                   aignet aignet2 transform output-ranges state))
+             (:rewrite-config (aignet2-return aignet2 (rewrite aignet aignet2 transform)))
+             (:obs-constprop-config (aignet2-return (mv aignet2 state)
+                                                    (obs-constprop aignet aignet2 transform state)))
+             (:observability-config (aignet2-return (mv aignet2 state)
+                                                    (observability-fix aignet aignet2 transform state)))
+             (:constprop-config (aignet2-return aignet2 (constprop aignet aignet2 transform)))
              (:snapshot-config (b* ((state (aignet-write-aiger (snapshot-config->filename transform)
                                                                aignet state))
                                     (aignet2 (aignet-raw-copy aignet aignet2)))
-                                 (mv aignet2 state)))
-             (:prune-config (b* ((aignet2 (prune aignet aignet2 transform)))
-                              (mv aignet2 state)))
-             (:unreachability-config (b* ((aignet2 (unreachability aignet aignet2 transform)))
-                                       (mv aignet2 state)))
+                                 (mv aignet2 output-ranges state)))
+             (:prune-config (aignet2-return aignet2 (prune aignet aignet2 transform)))
+             (:unreachability-config (aignet2-return aignet2 (unreachability aignet aignet2 transform)))
              (:dom-supergates-sweep-config
-              (b* ((aignet2 (dom-supergates-sweep aignet aignet2 transform)))
-                (mv aignet2 state)))
+              (aignet2-return aignet2 (dom-supergates-sweep aignet aignet2 transform)))
              (:n-outputs-unreachability-config
-              (b* ((aignet2 (n-outputs-unreachability (+ (lnfix m) (lnfix n)) aignet aignet2 transform)))
-                (mv aignet2 state)))
+              (aignet2-return aignet2 (n-outputs-unreachability (+ (lnfix m) (lnfix n)) aignet aignet2 transform)))
              (:n-outputs-dom-supergates-sweep-config
-              (b* ((aignet2 (n-outputs-dom-supergates-sweep (+ (lnfix m) (lnfix n)) aignet aignet2 transform)))
-                (mv aignet2 state)))
+              (aignet2-return aignet2 (n-outputs-dom-supergates-sweep (+ (lnfix m) (lnfix n)) aignet aignet2 transform)))
              (:m-assum-n-output-observability-config
-              (m-assum-n-output-observability m n aignet aignet2 transform state))
-             (otherwise (abc-comb-simplify aignet aignet2 transform state))))
+              (aignet2-return (mv aignet2 state)
+                              (m-assum-n-output-observability m n aignet aignet2 transform state)))
+             (:parametrize-config
+              (aignet2-return aignet2
+                              (aignet-parametrize-m-n m n aignet aignet2 transform output-ranges)))
+             (otherwise
+              (aignet2-return (mv aignet2 state) (abc-comb-simplify aignet aignet2 transform state)))))
           (- (print-aignet-stats name aignet2)))
-       (mv aignet2 state))
+       (mv aignet2 output-ranges state))
      :msg "~s0 transform: ~st seconds, ~sa bytes.~%"
      :args (list name)))
   ///
@@ -454,9 +487,23 @@ for translating between ABC and aignet does not support xors.</p>"
     (equal (stype-count :reg new-aignet2)
            (stype-count :reg aignet)))
 
+  
+
   (defret num-outs-of-<fn>
-    (equal (stype-count :po new-aignet2)
-           (stype-count :po aignet)))
+    (implies (<= (+ (nfix m) (nfix n)) (stype-count :po aignet))
+             (<= (+ (nfix m) (nfix n)) (stype-count :po new-aignet2)))
+    :rule-classes ((:linear :trigger-terms
+                    ((aignet-output-range-map-length new-output-ranges)
+                     (stype-count :po new-aignet2)))))
+
+  (defret num-outs-of-<fn>-relative-to-output-map-length
+    (implies (<= (aignet-output-range-map-length output-ranges)
+                 (stype-count :po aignet))
+             (<= (aignet-output-range-map-length new-output-ranges)
+                 (stype-count :po new-aignet2)))
+    :rule-classes ((:linear :trigger-terms
+                    ((aignet-output-range-map-length new-output-ranges)
+                     (stype-count :po new-aignet2)))))
 
   (defret <fn>-eval-assumptions
     (implies (< (nfix i) (nfix m))
@@ -469,12 +516,13 @@ for translating between ABC and aignet does not support xors.</p>"
              (equal (output-eval i invals regvals new-aignet2)
                     (output-eval i invals regvals aignet))))
 
+  
   (defret w-state-of-<fn>
     (equal (w new-state)
            (w state)))
 
   (defret list-of-outputs-of-<fn>
-    (equal (list new-aignet2 new-state) <call>)))
+    (equal (list new-aignet2 new-output-ranges new-state) <call>)))
 
 
 

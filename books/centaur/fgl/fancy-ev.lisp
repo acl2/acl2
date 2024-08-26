@@ -479,7 +479,7 @@ any).  This allows all functions that were added using
      (let ((key (caar keys))
            (guard (cdar keys)))
        (cons `(fancy-ev-add-primitive ,(intern-in-package-of-symbol
-                                        (if (eq guard t)
+                                        (if (or (eq guard t) (eq key :errmsg))
                                             (concatenate 'string "INTERP-ST->" (symbol-name key))
                                           (concatenate 'string "INTERP-ST->" (symbol-name key) "$INLINE"))
                                         'fgl-fgl)
@@ -489,7 +489,7 @@ any).  This allows all functions that were added using
                      (eq key :errmsg))
                  (make-interp-st-fancy-ev-primitives (cdr keys))
                (cons `(fancy-ev-add-primitive ,(intern-in-package-of-symbol
-                                                (if (eq guard t)
+                                                (if (or (eq guard t) (eq key :errmsg))
                                                     (concatenate 'string "UPDATE-INTERP-ST->" (symbol-name key))
                                                   (concatenate 'string "UPDATE-INTERP-ST->" (symbol-name key) "$INLINE"))
                                                 'fgl-fgl)
@@ -509,7 +509,7 @@ any).  This allows all functions that were added using
                  (:cgraph-index   . (natp cgraph-index))
                  (:user-scratch   . (obj-alist-p user-scratch))
                  (:trace-scratch  . t)
-                 (:errmsg         . t)
+                 (:errmsg         . (not (eq errmsg :unreachable)))
                  (:debug-info     . t)
                  (:debug-stack    . (major-stack-p debug-stack))))))
 

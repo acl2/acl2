@@ -32,6 +32,6 @@
 ;; ----------------------------------------------------------------------
 
 (include-book "portcullis")
-;; cert-flags: ? t :ttags :all :skip-proofs-okp nil
+;; cert-flags: ? t :ttags :all :skip-proofs-okp t
 
 ;; ----------------------------------------------------------------------

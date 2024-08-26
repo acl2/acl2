@@ -77,7 +77,7 @@
                  "Search at most this many literals for a match.")
    (supergate-limit posp :default 1000
                     "Build supergates at most this big.")
-   (verbosity-level natp :default 1
+   (verbosity-level natp :default 0
                     "Controls the level of output during balance
                      transformation. Level 0 will speed things up for larger aignets.")
    (gatesimp gatesimp-p :default (default-gatesimp)

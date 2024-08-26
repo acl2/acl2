@@ -35,16 +35,10 @@
 (include-book "interp-st-bfrs-ok")
 (include-book "sat-stub")
 (include-book "centaur/aignet/cube-sat" :dir :system)
+(include-book "satlink-sat-config")
 (local (std::add-default-post-define-hook :fix))
 (local (include-book "std/lists/resize-list" :dir :system))
 
-(defprod fgl-satlink-monolithic-sat-config
-  ((ignore-pathcond booleanp :default nil)
-   (ignore-constraint booleanp :default nil)
-   (satlink-config-override :default nil)
-   (transform booleanp :default nil)
-   (transform-config-override :default nil))
-  :tag :fgl-satlink-config)
 
 
 (define interp-st-sat-check-cube ((config fgl-satlink-monolithic-sat-config-p)
@@ -61,7 +55,8 @@
                 (pathcond (interp-st->pathcond interp-st))
                 (constraint-pathcond (interp-st->constraint interp-st)))
                (cube)
-               (b* ((cube nil)
+               ;; Put the "conclusion" last so that we can use M-assum/N-output
+               (b* ((cube (list (bfr->aignet-lit bfr (logicman->bfrstate))))
                     (cube
                      (if (or** config.ignore-pathcond
                                (not (pathcond-enabledp pathcond)))
@@ -72,7 +67,7 @@
                                (not (pathcond-enabledp constraint-pathcond)))
                          cube
                        (pathcond-to-cube constraint-pathcond cube))))
-                 (cons (bfr->aignet-lit bfr (logicman->bfrstate)) cube))
+                 cube)
                cube))
   ///
   
@@ -212,7 +207,7 @@
                                           (transform-config (fgl-aignet-transforms-config-wrapper config))
                                           ((acl2::hintcontext :xform)))
                                        (aignet::aignet-transform-sat-check-cube
-                                        cube satlink-config transform-config aignet bitarr state))
+                                        cube satlink-config transform-config aignet bitarr state :conjoin config.conjoin))
                                      (mv ans env$ state))
                           (mv ans env$ state))
                (mv ans interp-st state)))
@@ -276,7 +271,8 @@
                          (aignet ,(acl2::hq aignet))
                          (bitarr ,(acl2::hq bitarr))
                          (invals ,(acl2::hq invals))
-                         (regvals nil)))))))))
+                         (regvals nil)
+                         (conjoin ,(acl2::hq config.conjoin))))))))))
                                 
   
   ;; (defret status-of-<fn>
@@ -414,12 +410,6 @@
               (logicman->aignet (interp-st->logicman interp-st))))))
 
 
-;; the main monolithic SAT configs we tend to need:
-(define monolithic-sat-with-transforms ()
-  (make-fgl-satlink-monolithic-sat-config :transform t))
-
-(define monolithic-sat-without-transforms ()
-  (make-fgl-satlink-monolithic-sat-config :transform nil))
 
 
 

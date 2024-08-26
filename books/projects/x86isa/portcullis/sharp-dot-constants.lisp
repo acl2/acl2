@@ -127,6 +127,7 @@
 
 ;; Group 1:
 (defconst *lock*                  #xF0)
+(defconst *rep*                  #xF3)
 (defconst *repe*                  #xF3)
 (defconst *repne*                 #xF2)
 
@@ -205,6 +206,7 @@
 (defconst *OP-IDIV*      32)
 (defconst *OP-MAX*       34)
 (defconst *OP-MIN*       36)
+(defconst *OP-XADD*      38)
 
 ;; Odd IDs: Logical Instructions
 
@@ -458,6 +460,7 @@
 (defconst *2^max-linear-address-size-1* (expt 2 *max-linear-address-size-1*))
 (defconst *-2^max-linear-address-size-1* (- *2^max-linear-address-size-1*))
 (defconst *max-linear-address-space* (expt 2 *max-linear-address-size*))
+(defconst *max-linear-page-size* (- *max-linear-address-size* 12))
 
 ; Physical Memory:
 

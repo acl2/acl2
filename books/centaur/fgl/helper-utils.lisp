@@ -37,6 +37,7 @@
 (include-book "fancy-ev")
 (include-book "def-fgl-rewrite")
 (include-book "sat-stub")
+(include-book "sat-binder-defs")
 (include-book "centaur/aignet/stats" :dir :system)
 (include-book "centaur/meta/bindinglist" :dir :system)
 (local (include-book "std/lists/resize-list" :dir :system))
@@ -211,49 +212,15 @@
 
 
 
-(define interp-st-run-ctrex (sat-config
-                             (interp-st interp-st-bfrs-ok)
-                             state)
-  :returns (mv errmsg new-interp-st)
-  (b* ((goal (cdr (hons-get :goal-term (interp-st->user-scratch interp-st))))
-       ((unless (pseudo-termp goal))
-        (mv (msg "Goal term malformed: ~x0~%" goal) interp-st))
-       (bindings (variable-g-bindings (term-vars goal)))
-       ((mv sat-ctrex-err interp-st)
-        (interp-st-sat-counterexample sat-config interp-st state))
-       ((when sat-ctrex-err)
-        (mv (msg "Error retrieving SAT counterexample: ~@0~%" sat-ctrex-err) interp-st))
-       ((mv ctrex-errmsg ctrex-bindings ?var-vals interp-st)
-        (interp-st-counterex-bindings bindings interp-st state))
-       (- (and ctrex-errmsg
-               (cw "Warnings/errors from deriving counterexample: ~@0~%" ctrex-errmsg)))
-       ;; ((when ctrex-errmsg)
-       ;;  (mv (msg "Error extending counterexample: ~@0~%" ctrex-errmsg) interp-st state))
-       (- (cw "~%*** Counterexample assignment: ***~%~x0~%~%" ctrex-bindings))
-       (- (cw "Running counterexample on top-level goal:~%"))
-       ((mv err ans) (magitastic-ev goal ctrex-bindings 1000 state t t))
-       (- (cond (err (cw "Error running goal on counterexample: ~@0~%" err))
-                (ans (cw "False counterexample -- returned: ~x0.  See ~
-                          warnings/errors from counterexample derivation ~
-                          above.~%" ans))
-                (t   (cw "Counterexample verified!~%"))))
-       (interp-st (interp-st-check-bvar-db-ctrex-consistency interp-st state))
-       (scratch (interp-st->user-scratch interp-st))
-       ;; Collect counterexamples in the user scratch for later extraction
-       (interp-st (update-interp-st->user-scratch
-                   (hons-acons ':counterexamples
-                               (cons ctrex-bindings
-                                     (cdr (hons-get ':counterexamples scratch)))
-                               scratch)
-                   interp-st))
-       (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
-    (mv nil interp-st))
-  ///
+(encapsulate nil
+  (local (std::set-define-current-function interp-st-run-ctrex))
+  (local (in-theory (enable interp-st-run-ctrex)))
+
   (make-event
    ;; remove the one that references new-state
-   (cons 'progn (butlast  *fancy-ev-primitive-thms* 1))))
+   (cons 'progn (butlast  *fancy-ev-primitive-thms* 1)))
 
-(fancy-ev-add-primitive interp-st-run-ctrex t)
+  (fancy-ev-add-primitive interp-st-run-ctrex t))
 
 
 
@@ -372,6 +339,30 @@ be a string or message identifying the particular SAT check.</p>"
     :hints(("Goal" :in-theory (enable fgl-sat-check)))))
 
 
+(disable-definition fgl-prove-fn)
+(disable-execution fgl-prove-fn)
+
+(def-fgl-rewrite fgl-prove-rw
+  (equal (fgl-prove params msg x :stop-on-ctrex stop-on-ctrex :stop-on-fail stop-on-fail)
+         (b* ((sat-result (sat-check-raw sat-result params (not x)))
+              ((when (eq sat-result :unsat))
+               t)
+              ((unless (eq sat-result :sat))
+               ;; failed
+               (fgl-prog2
+                (and stop-on-fail
+                     (syntax-interp (fgl-interp-store-debug-info
+                                     (msg "Fgl-prove SAT check failed on ~@0~%" msg) x 'interp-st)))
+                (and x t))))
+           (fgl-prog2
+            (syntax-interp (interp-st-run-ctrex
+                            (g-concrete->val params) 'interp-st 'state))
+            (fgl-prog2
+             (and stop-on-ctrex
+                  (syntax-interp (update-interp-st->errmsg (msg "Fgl-prove counterexample on ~@0~%" msg) 'interp-st)))
+             (and x t)))))
+  :hints(("Goal" :in-theory (enable fgl-prove))))
+                  
 
 
 

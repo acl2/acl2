@@ -60,10 +60,11 @@
        (?gpr-or-spec-fn   (mk-name "GPR-OR-SPEC-"    operand-size))
        (?gpr-and-spec-fn  (mk-name "GPR-AND-SPEC-"   operand-size))
        (?gpr-xor-spec-fn  (mk-name "GPR-XOR-SPEC-"   operand-size))
-       (?gpr-test-spec-fn (mk-name "GPR-TEST-SPEC-"  operand-size)))
+       (?gpr-test-spec-fn (mk-name "GPR-TEST-SPEC-"  operand-size))
+       (?gpr-xadd-spec-fn (mk-name "GPR-XADD-SPEC-"  operand-size)))
 
       `(define ,fn-name
-         ((operation :type (member #.*OP-ADD* #.*OP-ADC* #.*OP-SUB*
+         ((operation :type (member #.*OP-ADD* #.*OP-XADD* #.*OP-ADC* #.*OP-SUB*
                                    #.*OP-SBB* #.*OP-CMP* #.*OP-OR*
                                    #.*OP-AND* #.*OP-XOR* #.*OP-TEST*))
           (dst          :type (unsigned-byte ,(ash operand-size 3)))
@@ -93,6 +94,8 @@
            (#.*OP-CMP* ;; 8
             ;; We will re-use the SUB specification here.
             (,gpr-sub-spec-fn dst src input-rflags))
+           (#.*OP-XADD* ;; 0
+            (,gpr-xadd-spec-fn dst src input-rflags))
            (otherwise
             ;; The guard will prevent us from reaching here.
             (mv 0 0 0))))))
@@ -117,6 +120,7 @@
 <li>@('AND')</li>
 <li>@('XOR')</li>
 <li>@('TEST')</li>
+<li>@('XADD')</li>
 </ul>
 
 @(def gpr-arith/logic-spec)"

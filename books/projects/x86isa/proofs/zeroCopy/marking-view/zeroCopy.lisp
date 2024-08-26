@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +36,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 
@@ -611,7 +614,9 @@
                                 (xr :rgf *rdi* x86)
                                 (pdpt-base-addr (xr :rgf *rdi* x86) x86)) x86)))
           30))
-    (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))))
+    (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
+   ;; The TLB is consistent for the destination addresses
+   (tlb-consistent-n *2^30* (xr :rgf *rsi* x86) :r x86)))
 
 (defun-nx throwaway-destination-data-preconditions (x86)
   (and
@@ -941,858 +946,525 @@
 
 (defun-nx zeroCopy-state (x86)
   (XW
-   :RGF *RAX* 1
-   (XW
-    :RGF *RCX*
-    (LOGIOR (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-            (LOGAND 4088
-                    (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+    :RGF *RAX* 1
     (XW
-     :RGF *RDX*
-     (LOGAND
-      4503598553628672
-      (LOGIOR
-       (LOGAND
-        -4503598553628673
-        (LOGEXT
-         64
-         (MV-NTH
-          1
-          (RB
-           8
-           (LOGIOR
-            (LOGAND 4088
-                    (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-            (ASH
-             (LOGHEAD
-              40
-              (LOGTAIL
-               12
-               (MV-NTH
-                1
-                (RB
-                 8
-                 (LOGIOR
-                  (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                  (LOGAND 4088
-                          (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                 :R X86))))
-             12))
-           :R X86))))
-       (LOGAND
-        4503598553628672
-        (LOGEXT
-         64
-         (MV-NTH
-          1
-          (RB
-           8
-           (LOGIOR
-            (LOGAND 4088
-                    (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-            (ASH
-             (LOGHEAD
-              40
-              (LOGTAIL
-               12
-               (MV-NTH
-                1
-                (RB
-                 8
-                 (LOGIOR
-                  (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                  (LOGAND 4088
-                          (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                 :R X86))))
-             12))
-           :R X86))))))
+     :RGF *RCX*
+     (PML4-TABLE-ENTRY-ADDR (XR :RGF *RSI* X86)
+                            (PML4-TABLE-BASE-ADDR X86))
      (XW
-      :RGF *RSP* (+ 8 (XR :RGF *RSP* X86))
+      :RGF *RDX*
+      (LOGAND
+       4503598553628672
+       (LOGIOR
+         (LOGAND -4503598553628673
+                 (LOGEXT 64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                          X86))
+                                     :R X86))))
+         (LOGAND 4503598553628672
+                 (LOGEXT 64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86))))))
       (XW
-       :RGF *RSI* 0
+       :RGF *RSP* (+ 8 (XR :RGF *RSP* X86))
        (XW
-        :RGF *RDI*
-        (LOGAND
-         4503598553628672
-         (LOGEXT
-          64
-          (MV-NTH
-           1
-           (RB
-            8
-            (LOGIOR
-             (LOGAND 4088
-                     (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-             (ASH
-              (LOGHEAD
-               40
-               (LOGTAIL
-                12
-                (MV-NTH
-                 1
-                 (RB
-                  8
-                  (LOGIOR
-                   (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                   (LOGAND 4088
-                           (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                  :R X86))))
-              12))
-            :R X86))))
+        :RGF *RSI* 0
         (XW
-         :RGF *R8* 1099511627775
+         :RGF *RDI*
+         (LOGAND 4503598553628672
+                 (LOGEXT 64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86))))
          (XW
-          :RGF *R9*
-          (LOGAND
-           4503598553628672
-           (LOGEXT
-            64
-            (MV-NTH
-             1
-             (RB
-              8
-              (LOGIOR
-               (LOGAND 4088
-                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-               (ASH
-                (LOGHEAD
-                 40
-                 (LOGTAIL
-                  12
-                  (MV-NTH
-                   1
-                   (RB
-                    8
-                    (LOGIOR
-                     (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                     (LOGAND 4088
-                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                    :R X86))))
-                12))
-              :R X86))))
+          :RGF *R8* 1099511627775
           (XW
-           :RIP nil
-           (LOGEXT 64
-                   (MV-NTH 1 (RB 8 (XR :RGF *RSP* X86) :R X86)))
+           :RGF *R9*
+           (LOGAND
+                4503598553628672
+                (LOGEXT 64
+                        (MV-NTH 1
+                                (RB 8
+                                    (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                         (XR :RGF *RDI* X86)
+                                         (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                         X86))
+                                    :R X86))))
            (XW
-            :UNDEF nil (+ 46 (NFIX (XR :UNDEF nil X86)))
+            :RIP NIL
+            (LOGEXT 64
+                    (MV-NTH 1 (RB 8 (XR :RGF *RSP* X86) :R X86)))
             (XW
-             :RFLAGS nil
-             (RFLAGSBITS
-              (BOOL->BIT
-               (<
-                (LOGAND
-                 4503598553628672
-                 (MV-NTH
-                  1
-                  (RB
-                   8
-                   (LOGIOR
-                    (LOGAND 4088
-                            (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                    (ASH
-                     (LOGHEAD
-                      40
-                      (LOGTAIL
-                       12
-                       (MV-NTH
-                        1
-                        (RB
-                         8
-                         (LOGIOR
-                          (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                          (LOGAND
-                           4088
-                           (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                         :R X86))))
-                     12))
-                   :R X86)))
-                (LOGAND
-                 4503598553628672
-                 (LOGIOR
-                  (LOGAND
-                   18442240475155922943
-                   (MV-NTH
-                    1
-                    (RB
-                     8
-                     (LOGIOR
-                      (LOGAND 4088
-                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                      (ASH
-                       (LOGHEAD
-                        40
-                        (LOGTAIL
-                         12
-                         (MV-NTH
-                          1
-                          (RB
-                           8
-                           (LOGIOR
-                            (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                            (LOGAND
-                             4088
-                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                           :R X86))))
-                       12))
-                     :R X86)))
-                  (LOGAND
-                   4503598553628672
-                   (MV-NTH
-                    1
-                    (RB
-                     8
-                     (LOGIOR
-                      (LOGAND 4088
-                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                      (ASH
-                       (LOGHEAD
-                        40
-                        (LOGTAIL
-                         12
-                         (MV-NTH
-                          1
-                          (RB
-                           8
-                           (LOGIOR
-                            (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                            (LOGAND
-                             4088
-                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                           :R X86))))
-                       12))
-                     :R X86)))))))
-              (RFLAGSBITS->RES1 (XR :RFLAGS nil X86))
-              (PF-SPEC64
-               (LOGHEAD
-                64
-                (+
-                 (LOGAND
-                  4503598553628672
-                  (LOGEXT
-                   64
-                   (MV-NTH
-                    1
-                    (RB
-                     8
-                     (LOGIOR
-                      (LOGAND 4088
-                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                      (ASH
-                       (LOGHEAD
-                        40
-                        (LOGTAIL
-                         12
-                         (MV-NTH
-                          1
-                          (RB
-                           8
-                           (LOGIOR
-                            (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                            (LOGAND
-                             4088
-                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                           :R X86))))
-                       12))
-                     :R X86))))
-                 (-
-                  (LOGAND
-                   4503598553628672
-                   (LOGIOR
-                    (LOGAND
-                     -4503598553628673
-                     (LOGEXT
-                      64
-                      (MV-NTH
-                       1
-                       (RB
-                        8
-                        (LOGIOR
-                         (LOGAND
-                          4088
-                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                         (ASH
-                          (LOGHEAD
-                           40
-                           (LOGTAIL
-                            12
-                            (MV-NTH
-                             1
-                             (RB
-                              8
-                              (LOGIOR
-                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                               (LOGAND
-                                4088
-                                (LOGHEAD
-                                 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                              :R X86))))
-                          12))
-                        :R X86))))
-                    (LOGAND
-                     4503598553628672
-                     (LOGEXT
-                      64
-                      (MV-NTH
-                       1
-                       (RB
-                        8
-                        (LOGIOR
-                         (LOGAND
-                          4088
-                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                         (ASH
-                          (LOGHEAD
-                           40
-                           (LOGTAIL
-                            12
-                            (MV-NTH
-                             1
-                             (RB
-                              8
-                              (LOGIOR
-                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                               (LOGAND
-                                4088
-                                (LOGHEAD
-                                 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                              :R X86))))
-                          12))
-                        :R X86))))))))))
-              (RFLAGSBITS->RES2 (XR :RFLAGS nil X86))
-              (SUB-AF-SPEC64
-               (LOGAND
-                4503598553628672
-                (MV-NTH
-                 1
-                 (RB
-                  8
-                  (LOGIOR
-                   (LOGAND 4088
-                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                   (ASH
-                    (LOGHEAD
-                     40
-                     (LOGTAIL
-                      12
-                      (MV-NTH
-                       1
-                       (RB
-                        8
-                        (LOGIOR
-                         (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                         (LOGAND
-                          4088
-                          (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                        :R X86))))
-                    12))
-                  :R X86)))
-               (LOGAND
-                4503598553628672
-                (LOGIOR
-                 (LOGAND
-                  18442240475155922943
-                  (MV-NTH
-                   1
-                   (RB
-                    8
-                    (LOGIOR
-                     (LOGAND 4088
-                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                     (ASH
-                      (LOGHEAD
-                       40
-                       (LOGTAIL
-                        12
-                        (MV-NTH
-                         1
-                         (RB
-                          8
-                          (LOGIOR
-                           (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                           (LOGAND
-                            4088
-                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                          :R X86))))
-                      12))
-                    :R X86)))
-                 (LOGAND
-                  4503598553628672
-                  (MV-NTH
-                   1
-                   (RB
-                    8
-                    (LOGIOR
-                     (LOGAND 4088
-                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                     (ASH
-                      (LOGHEAD
-                       40
-                       (LOGTAIL
-                        12
-                        (MV-NTH
-                         1
-                         (RB
-                          8
-                          (LOGIOR
-                           (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                           (LOGAND
-                            4088
-                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                          :R X86))))
-                      12))
-                    :R X86))))))
-              (RFLAGSBITS->RES3 (XR :RFLAGS nil X86))
-              1
-              (SF-SPEC64
-               (LOGHEAD
-                64
-                (+
-                 (LOGAND
-                  4503598553628672
-                  (LOGEXT
-                   64
-                   (MV-NTH
-                    1
-                    (RB
-                     8
-                     (LOGIOR
-                      (LOGAND 4088
-                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                      (ASH
-                       (LOGHEAD
-                        40
-                        (LOGTAIL
-                         12
-                         (MV-NTH
-                          1
-                          (RB
-                           8
-                           (LOGIOR
-                            (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                            (LOGAND
-                             4088
-                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                           :R X86))))
-                       12))
-                     :R X86))))
-                 (-
-                  (LOGAND
-                   4503598553628672
-                   (LOGIOR
-                    (LOGAND
-                     -4503598553628673
-                     (LOGEXT
-                      64
-                      (MV-NTH
-                       1
-                       (RB
-                        8
-                        (LOGIOR
-                         (LOGAND
-                          4088
-                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                         (ASH
-                          (LOGHEAD
-                           40
-                           (LOGTAIL
-                            12
-                            (MV-NTH
-                             1
-                             (RB
-                              8
-                              (LOGIOR
-                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                               (LOGAND
-                                4088
-                                (LOGHEAD
-                                 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                              :R X86))))
-                          12))
-                        :R X86))))
-                    (LOGAND
-                     4503598553628672
-                     (LOGEXT
-                      64
-                      (MV-NTH
-                       1
-                       (RB
-                        8
-                        (LOGIOR
-                         (LOGAND
-                          4088
-                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                         (ASH
-                          (LOGHEAD
-                           40
-                           (LOGTAIL
-                            12
-                            (MV-NTH
-                             1
-                             (RB
-                              8
-                              (LOGIOR
-                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                               (LOGAND
-                                4088
-                                (LOGHEAD
-                                 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                              :R X86))))
-                          12))
-                        :R X86))))))))))
-              (RFLAGSBITS->TF (XR :RFLAGS nil X86))
-              (RFLAGSBITS->INTF (XR :RFLAGS nil X86))
-              (RFLAGSBITS->DF (XR :RFLAGS nil X86))
-              (OF-SPEC64
-               (+
-                (LOGAND
-                 4503598553628672
-                 (LOGEXT
-                  64
-                  (MV-NTH
-                   1
-                   (RB
-                    8
-                    (LOGIOR
-                     (LOGAND 4088
-                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                     (ASH
-                      (LOGHEAD
-                       40
-                       (LOGTAIL
-                        12
-                        (MV-NTH
-                         1
-                         (RB
-                          8
-                          (LOGIOR
-                           (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                           (LOGAND
-                            4088
-                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                          :R X86))))
-                      12))
-                    :R X86))))
-                (-
+             :UNDEF
+             NIL (+ 46 (NFIX (XR :UNDEF NIL X86)))
+             (XW
+              :RFLAGS NIL
+              (RFLAGSBITS
+               (BOOL->BIT
+                (<
+                 (LOGAND 4503598553628672
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86)))
                  (LOGAND
                   4503598553628672
                   (LOGIOR
-                   (LOGAND
-                    -4503598553628673
-                    (LOGEXT
-                     64
-                     (MV-NTH
-                      1
-                      (RB
-                       8
-                       (LOGIOR
-                        (LOGAND
-                         4088
-                         (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                        (ASH
-                         (LOGHEAD
-                          40
-                          (LOGTAIL
-                           12
-                           (MV-NTH
-                            1
-                            (RB
-                             8
-                             (LOGIOR
-                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                              (LOGAND
-                               4088
-                               (LOGHEAD
-                                28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                             :R X86))))
-                         12))
-                       :R X86))))
-                   (LOGAND
+                    (LOGAND
+                         18442240475155922943
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                          X86))
+                                     :R X86)))
+                    (LOGAND
+                         4503598553628672
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86)))))))
+               (RFLAGSBITS->RES1 (XR :RFLAGS NIL X86))
+               (PF-SPEC64
+                (LOGHEAD
+                 64
+                 (+
+                  (LOGAND
                     4503598553628672
                     (LOGEXT
-                     64
-                     (MV-NTH
-                      1
-                      (RB
-                       8
-                       (LOGIOR
-                        (LOGAND
-                         4088
-                         (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                        (ASH
-                         (LOGHEAD
-                          40
-                          (LOGTAIL
-                           12
-                           (MV-NTH
+                         64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86))))
+                  (-
+                   (LOGAND
+                    4503598553628672
+                    (LOGIOR
+                     (LOGAND
+                      -4503598553628673
+                      (LOGEXT
+                         64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                          X86))
+                                     :R X86))))
+                     (LOGAND
+                      4503598553628672
+                      (LOGEXT
+                         64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86))))))))))
+               (RFLAGSBITS->RES2 (XR :RFLAGS NIL X86))
+               (SUB-AF-SPEC64
+                (LOGAND 4503598553628672
+                        (MV-NTH 1
+                                (RB 8
+                                    (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                         (XR :RGF *RDI* X86)
+                                         (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                         X86))
+                                    :R X86)))
+                (LOGAND
+                 4503598553628672
+                 (LOGIOR
+                    (LOGAND
+                         18442240475155922943
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                          X86))
+                                     :R X86)))
+                    (LOGAND
+                         4503598553628672
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86))))))
+               (RFLAGSBITS->RES3 (XR :RFLAGS NIL X86))
+               1
+               (SF-SPEC64
+                (LOGHEAD
+                 64
+                 (+
+                  (LOGAND
+                    4503598553628672
+                    (LOGEXT
+                         64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86))))
+                  (-
+                   (LOGAND
+                    4503598553628672
+                    (LOGIOR
+                     (LOGAND
+                      -4503598553628673
+                      (LOGEXT
+                         64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                          X86))
+                                     :R X86))))
+                     (LOGAND
+                      4503598553628672
+                      (LOGEXT
+                         64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86))))))))))
+               (RFLAGSBITS->TF (XR :RFLAGS NIL X86))
+               (RFLAGSBITS->INTF (XR :RFLAGS NIL X86))
+               (RFLAGSBITS->DF (XR :RFLAGS NIL X86))
+               (OF-SPEC64
+                (+
+                 (LOGAND
+                    4503598553628672
+                    (LOGEXT
+                         64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86))))
+                 (-
+                  (LOGAND
+                   4503598553628672
+                   (LOGIOR
+                    (LOGAND
+                     -4503598553628673
+                     (LOGEXT
+                         64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                          X86))
+                                     :R X86))))
+                    (LOGAND
+                     4503598553628672
+                     (LOGEXT
+                         64
+                         (MV-NTH 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86)))))))))
+               (RFLAGSBITS->IOPL (XR :RFLAGS NIL X86))
+               (RFLAGSBITS->NT (XR :RFLAGS NIL X86))
+               (RFLAGSBITS->RES4 (XR :RFLAGS NIL X86))
+               (RFLAGSBITS->RF (XR :RFLAGS NIL X86))
+               (RFLAGSBITS->VM (XR :RFLAGS NIL X86))
+               (BOOL->BIT (LOGBITP 18 (XR :RFLAGS NIL X86)))
+               (RFLAGSBITS->VIF (XR :RFLAGS NIL X86))
+               (RFLAGSBITS->VIP (XR :RFLAGS NIL X86))
+               (RFLAGSBITS->ID (XR :RFLAGS NIL X86))
+               (RFLAGSBITS->RES5 (XR :RFLAGS NIL X86)))
+              (MV-NTH
+               2
+               (LAS-TO-PAS
+                8 (XR :RGF *RSP* X86)
+                :R
+                (MV-NTH
+                 2
+                 (LAS-TO-PAS
+                  40 (+ 209 (XR :RIP NIL X86))
+                  :X
+                  (MV-NTH
+                   2
+                   (LAS-TO-PAS
+                    15 (+ 193 (XR :RIP NIL X86))
+                    :X
+                    (XW
+                     :TLB NIL
+                     :TLB
+                     (XW
+                      :UNDEF
+                      NIL (+ 39 (NFIX (XR :UNDEF NIL X86)))
+                      (XW
+                       :RFLAGS NIL
+                       (RFLAGSBITS
+                        0
+                        (RFLAGSBITS->RES1 (XR :RFLAGS NIL X86))
+                        (PF-SPEC64
+                         (LOGIOR
+                          (LOGAND
+                            18442240475155922943
+                            (MV-NTH
+                                 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                          X86))
+                                     :R X86)))
+                          (LOGAND
+                            4503598553628672
+                            (MV-NTH
+                                 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86)))))
+                        (RFLAGSBITS->RES2 (XR :RFLAGS NIL X86))
+                        (LOGHEAD
                             1
-                            (RB
-                             8
-                             (LOGIOR
-                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                              (LOGAND
-                               4088
-                               (LOGHEAD
-                                28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                             :R X86))))
-                         12))
-                       :R X86)))))))))
-              (RFLAGSBITS->IOPL (XR :RFLAGS nil X86))
-              (RFLAGSBITS->NT (XR :RFLAGS nil X86))
-              (RFLAGSBITS->RES4 (XR :RFLAGS nil X86))
-              (RFLAGSBITS->RF (XR :RFLAGS nil X86))
-              (RFLAGSBITS->VM (XR :RFLAGS nil X86))
-              (BOOL->BIT (LOGBITP 18 (XR :RFLAGS nil X86)))
-              (RFLAGSBITS->VIF (XR :RFLAGS nil X86))
-              (RFLAGSBITS->VIP (XR :RFLAGS nil X86))
-              (RFLAGSBITS->ID (XR :RFLAGS nil X86))
-              (RFLAGSBITS->RES5 (XR :RFLAGS nil X86)))
-             (MV-NTH
-              2
-              (LAS-TO-PAS
-               8 (XR :RGF *RSP* X86)
-               :R
-               (MV-NTH
-                2
-                (LAS-TO-PAS
-                 40 (+ 206 (XR :RIP nil X86))
-                 :X
-                 (MV-NTH
-                  2
-                  (LAS-TO-PAS
-                   15 (+ 190 (XR :RIP nil X86))
-                   :X
-                   (MV-NTH
-                    1
-                    (WB
-                     8
-                     (LOGIOR
-                      (LOGAND 4088
-                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                      (ASH
-                       (LOGHEAD
-                        40
-                        (LOGTAIL
-                         12
-                         (MV-NTH
-                          1
-                          (RB
-                           8
-                           (LOGIOR
-                            (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                            (LOGAND
-                             4088
-                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                           :R X86))))
-                       12))
-                     :W
-                     (LOGIOR
-                      (LOGAND
-                       18442240475155922943
-                       (MV-NTH
-                        1
-                        (RB
-                         8
+                            (CREATE-UNDEF (+ 38 (NFIX (XR :UNDEF NIL X86)))))
+                        (RFLAGSBITS->RES3 (XR :RFLAGS NIL X86))
+                        (ZF-SPEC
                          (LOGIOR
                           (LOGAND
-                           4088
-                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                          (ASH
-                           (LOGHEAD
-                            40
-                            (LOGTAIL
-                             12
-                             (MV-NTH
-                              1
-                              (RB
-                               8
-                               (LOGIOR
-                                (LOGAND
-                                 -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                (LOGAND
-                                 4088
-                                 (LOGHEAD
-                                  28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                               :R X86))))
-                           12))
-                         :R X86)))
-                      (LOGAND
-                       4503598553628672
-                       (MV-NTH
-                        1
-                        (RB
-                         8
+                            18442240475155922943
+                            (MV-NTH
+                                 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                          X86))
+                                     :R X86)))
+                          (LOGAND
+                            4503598553628672
+                            (MV-NTH
+                                 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86)))))
+                        (SF-SPEC64
                          (LOGIOR
                           (LOGAND
-                           4088
-                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                          (ASH
-                           (LOGHEAD
-                            40
-                            (LOGTAIL
-                             12
-                             (MV-NTH
-                              1
-                              (RB
-                               8
-                               (LOGIOR
-                                (LOGAND
-                                 -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                (LOGAND
-                                 4088
-                                 (LOGHEAD
-                                  28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
-                               :R X86))))
-                           12))
-                         :R X86))))
-                     (MV-NTH
-                      2
-                      (LAS-TO-PAS
-                       6 (+ 184 (XR :RIP nil X86))
-                       :X
+                            18442240475155922943
+                            (MV-NTH
+                                 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                          X86))
+                                     :R X86)))
+                          (LOGAND
+                            4503598553628672
+                            (MV-NTH
+                                 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86)))))
+                        (RFLAGSBITS->TF (XR :RFLAGS NIL X86))
+                        (RFLAGSBITS->INTF (XR :RFLAGS NIL X86))
+                        (RFLAGSBITS->DF (XR :RFLAGS NIL X86))
+                        0
+                        (RFLAGSBITS->IOPL (XR :RFLAGS NIL X86))
+                        (RFLAGSBITS->NT (XR :RFLAGS NIL X86))
+                        (RFLAGSBITS->RES4 (XR :RFLAGS NIL X86))
+                        (RFLAGSBITS->RF (XR :RFLAGS NIL X86))
+                        (RFLAGSBITS->VM (XR :RFLAGS NIL X86))
+                        (BOOL->BIT (LOGBITP 18 (XR :RFLAGS NIL X86)))
+                        (RFLAGSBITS->VIF (XR :RFLAGS NIL X86))
+                        (RFLAGSBITS->VIP (XR :RFLAGS NIL X86))
+                        (RFLAGSBITS->ID (XR :RFLAGS NIL X86))
+                        (RFLAGSBITS->RES5 (XR :RFLAGS NIL X86)))
                        (MV-NTH
                         2
                         (LAS-TO-PAS
-                         8
-                         (LOGIOR
-                          (LOGAND
-                           4088
-                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                          (ASH
-                           (LOGHEAD
-                            40
-                            (LOGTAIL
-                             12
-                             (MV-NTH
-                              1
-                              (RB
-                               8
-                               (LOGIOR
-                                (LOGAND
-                                 -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                (LOGAND
-                                 4088
-                                 (LOGHEAD
-                                  28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                               :R X86))))
-                           12))
-                         :R
+                         3 (+ 190 (XR :RIP NIL X86))
+                         :X
                          (MV-NTH
-                          2
-                          (LAS-TO-PAS
-                           40 (+ 144 (XR :RIP nil X86))
-                           :X
+                          1
+                          (WB
+                           8
+                           (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                (XR :RGF *RSI* X86)
+                                (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                X86))
+                           :W
+                           (LOGIOR
+                            (LOGAND
+                             18442240475155922943
+                             (MV-NTH
+                                 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                          X86))
+                                     :R X86)))
+                            (LOGAND
+                             4503598553628672
+                             (MV-NTH
+                                 1
+                                 (RB 8
+                                     (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RDI* X86)
+                                          (PDPT-BASE-ADDR (XR :RGF *RDI* X86)
+                                                          X86))
+                                     :R X86))))
                            (MV-NTH
                             2
                             (LAS-TO-PAS
-                             3 (+ 140 (XR :RIP nil X86))
+                             6 (+ 184 (XR :RIP NIL X86))
                              :X
                              (MV-NTH
                               2
                               (LAS-TO-PAS
                                8
-                               (LOGIOR
-                                (LOGAND
-                                 -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                (LOGAND
-                                 4088
-                                 (LOGHEAD
-                                  28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                               (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                    (XR :RGF *RSI* X86)
+                                    (PDPT-BASE-ADDR (XR :RGF *RSI* X86)
+                                                    X86))
                                :R
                                (MV-NTH
                                 2
                                 (LAS-TO-PAS
-                                 32 (+ 108 (XR :RIP nil X86))
+                                 40 (+ 144 (XR :RIP NIL X86))
                                  :X
                                  (MV-NTH
                                   2
                                   (LAS-TO-PAS
-                                   18 (+ 86 (XR :RIP nil X86))
+                                   3 (+ 140 (XR :RIP NIL X86))
                                    :X
                                    (MV-NTH
                                     2
                                     (LAS-TO-PAS
                                      8
-                                     (LOGIOR
-                                      (LOGAND
-                                       4088
-                                       (LOGHEAD
-                                        32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
-                                      (ASH
-                                       (LOGHEAD
-                                        40
-                                        (LOGTAIL
-                                         12
-                                         (MV-NTH
-                                          1
-                                          (RB
-                                           8
-                                           (LOGIOR
-                                            (LOGAND
-                                             -4096
-                                             (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                            (LOGAND
-                                             4088
-                                             (LOGHEAD
-                                              28
-                                              (LOGTAIL
-                                               36 (XR :RGF *RDI* X86)))))
-                                           :R X86))))
-                                       12))
+                                     (PML4-TABLE-ENTRY-ADDR
+                                          (XR :RGF *RSI* X86)
+                                          (PML4-TABLE-BASE-ADDR X86))
                                      :R
                                      (MV-NTH
                                       2
                                       (LAS-TO-PAS
-                                       40 (+ 46 (XR :RIP nil X86))
+                                       32 (+ 108 (XR :RIP NIL X86))
                                        :X
                                        (MV-NTH
                                         2
                                         (LAS-TO-PAS
-                                         4 (+ 38 (XR :RIP nil X86))
+                                         18 (+ 86 (XR :RIP NIL X86))
                                          :X
                                          (MV-NTH
                                           2
                                           (LAS-TO-PAS
                                            8
-                                           (LOGIOR
-                                            (LOGAND
-                                             -4096
-                                             (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                            (LOGAND
-                                             4088
-                                             (LOGHEAD
-                                              28
-                                              (LOGTAIL
-                                               36 (XR :RGF *RDI* X86)))))
+                                           (PAGE-DIR-PTR-TABLE-ENTRY-ADDR
+                                                (XR :RGF *RDI* X86)
+                                                (PDPT-BASE-ADDR
+                                                     (XR :RGF *RDI* X86)
+                                                     X86))
                                            :R
                                            (MV-NTH
                                             2
                                             (LAS-TO-PAS
-                                             25 (+ 13 (XR :RIP nil X86))
+                                             40 (+ 46 (XR :RIP NIL X86))
                                              :X
                                              (MV-NTH
                                               2
                                               (LAS-TO-PAS
-                                               8 (+ -24 (XR :RGF *RSP* X86))
-                                               :R
+                                               4 (+ 38 (XR :RIP NIL X86))
+                                               :X
                                                (MV-NTH
                                                 2
                                                 (LAS-TO-PAS
-                                                 5 (+ 8 (XR :RIP nil X86))
-                                                 :X
+                                                 8
+                                                 (PML4-TABLE-ENTRY-ADDR
+                                                  (XR :RGF *RDI* X86)
+                                                  (PML4-TABLE-BASE-ADDR X86))
+                                                 :R
                                                  (MV-NTH
-                                                  1
-                                                  (WB
-                                                   8
-                                                   (+
-                                                    -24 (XR :RGF *RSP* X86))
-                                                   :W (XR :CTR *CR3* X86)
+                                                  2
+                                                  (LAS-TO-PAS
+                                                   25
+                                                   (+ 13 (XR :RIP NIL X86))
+                                                   :X
                                                    (MV-NTH
                                                     2
                                                     (LAS-TO-PAS
-                                                     8 (XR :RIP nil X86)
-                                                     :X
-                                                     X86))))))))))))))))))))))))))))))))))))))))))))))))))))
+                                                     8
+                                                     (+ -24
+                                                        (XR :RGF *RSP* X86))
+                                                     :R
+                                                     (MV-NTH
+                                                      2
+                                                      (LAS-TO-PAS
+                                                       5
+                                                       (+
+                                                         8 (XR :RIP NIL X86))
+                                                       :X
+                                                       (MV-NTH
+                                                        1
+                                                        (WB
+                                                         8
+                                                         (+
+                                                          -24
+                                                          (XR
+                                                             :RGF *RSP* X86))
+                                                         :W
+                                                         (XR :CTR *CR3* X86)
+                                                         (MV-NTH
+                                                          2
+                                                          (LAS-TO-PAS
+                                                           8
+                                                           (XR :RIP NIL X86)
+                                                           :X
+                                                           X86)))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
 (defrule 64-bit-modep-of-zerocopy-state
   (equal (64-bit-modep (zerocopy-state x86))
@@ -1803,15 +1475,15 @@
    (rewire_dst_to_src-effects-preconditions x86)
    (equal
     (x86-run (rewire_dst_to_src-clk) x86)
-    (zeroCopy-state x86)))
+    (zerocopy-state x86)))
   :hints (("Goal"
            :expand ((:free (x) (hide x))
                     (rewire_dst_to_src-effects-preconditions x86))
            :use ((:instance x86-run-plus
                             (n1 (rewire_dst_to_src-clk-1-to-45))
-                            (n2 (rewire_dst_to_src-clk-46-to-58)))
+                            (n2 (rewire_dst_to_src-clk-46-to-59)))
                  (:instance rewire_dst_to_src-effects-1-to-45-instructions)
-                 (:instance rewire_dst_to_src-effects-46-to-58-instructions)
+                 (:instance rewire_dst_to_src-effects-46-to-59-instructions)
                  (:instance rewrite-to-pml4-table-entry-addr)
                  (:instance rewrite-to-page-dir-ptr-table-entry-addr))
            :in-theory (union-theories
@@ -1821,7 +1493,7 @@
                          (natp)
                          rewire_dst_to_src-clk
                          rewire_dst_to_src-clk-1-to-45
-                         rewire_dst_to_src-clk-46-to-58)
+                         rewire_dst_to_src-clk-46-to-59)
                        (theory 'minimal-theory)))))
 
 (in-theory (e/d () ((rewire_dst_to_src-clk) rewire_dst_to_src-clk)))
@@ -1871,9 +1543,9 @@
                   (LAS-TO-PAS
                    8
                    (LOGIOR
-                    (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                    (LOGAND 4088
-                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                      (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                      (LOGAND 4088
+                              (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
                    :R X86))
                  X86)))
               12))
@@ -1902,9 +1574,9 @@
                   (LAS-TO-PAS
                    8
                    (LOGIOR
-                    (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                    (LOGAND 4088
-                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                      (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                      (LOGAND 4088
+                              (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                    :R X86))
                  X86)))
               12))
@@ -1939,9 +1611,9 @@
                    (LAS-TO-PAS
                     8
                     (LOGIOR
-                     (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                     (LOGAND 4088
-                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                      (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                      (LOGAND 4088
+                              (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                     :R X86))
                   X86)))
                12))
@@ -1974,26 +1646,28 @@
                      (LAS-TO-PAS
                       8
                       (LOGIOR
-                       (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                       (LOGAND 4088
-                               (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                         (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                         (LOGAND
+                              4088
+                              (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                       :R X86))
                     X86)))
                  12))
                :R X86))
              X86)))
           (XW
-           :RIP nil
+           :RIP NIL
            (LOGEXT 64
                    (READ-FROM-PHYSICAL-MEMORY
-                    (MV-NTH 1
-                            (LAS-TO-PAS 8 (XR :RGF *RSP* X86)
-                                        :R X86))
-                    X86))
+                        (MV-NTH 1
+                                (LAS-TO-PAS 8 (XR :RGF *RSP* X86)
+                                            :R X86))
+                        X86))
            (XW
-            :UNDEF nil (+ 46 (NFIX (XR :UNDEF nil X86)))
+            :UNDEF
+            NIL (+ 46 (NFIX (XR :UNDEF NIL X86)))
             (XW
-             :RFLAGS nil
+             :RFLAGS NIL
              (RFLAGSBITS
               (BOOL->BIT
                (<
@@ -2020,8 +1694,8 @@
                            (LOGIOR
                             (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                             (LOGAND
-                             4088
-                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                              4088
+                              (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                            :R X86))
                          X86)))
                       12))
@@ -2053,8 +1727,9 @@
                              (LOGIOR
                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                               (LOGAND
-                               4088
-                               (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                  4088
+                                  (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
                              :R X86))
                            X86)))
                         12))
@@ -2083,14 +1758,15 @@
                              (LOGIOR
                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                               (LOGAND
-                               4088
-                               (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                  4088
+                                  (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                              :R X86))
                            X86)))
                         12))
                       :R X86))
                     X86))))))
-              (RFLAGSBITS->RES1 (XR :RFLAGS nil X86))
+              (RFLAGSBITS->RES1 (XR :RFLAGS NIL X86))
               (PF-SPEC64
                (LOGHEAD
                 64
@@ -2120,8 +1796,9 @@
                              (LOGIOR
                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                               (LOGAND
-                               4088
-                               (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                  4088
+                                  (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                              :R X86))
                            X86)))
                         12))
@@ -2142,8 +1819,8 @@
                          8
                          (LOGIOR
                           (LOGAND
-                           4088
-                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
                           (ASH
                            (LOGHEAD
                             40
@@ -2156,11 +1833,11 @@
                                 8
                                 (LOGIOR
                                  (LOGAND
-                                  -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                                  (LOGAND
                                   4088
                                   (LOGHEAD
-                                   28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                       28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
                                 :R X86))
                               X86)))
                            12))
@@ -2177,8 +1854,8 @@
                          8
                          (LOGIOR
                           (LOGAND
-                           4088
-                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
                           (ASH
                            (LOGHEAD
                             40
@@ -2191,17 +1868,17 @@
                                 8
                                 (LOGIOR
                                  (LOGAND
-                                  -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                                  (LOGAND
                                   4088
                                   (LOGHEAD
-                                   28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                       28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                                 :R X86))
                               X86)))
                            12))
                          :R X86))
                        X86)))))))))
-              (RFLAGSBITS->RES2 (XR :RFLAGS nil X86))
+              (RFLAGSBITS->RES2 (XR :RFLAGS NIL X86))
               (SUB-AF-SPEC64
                (LOGAND
                 4503598553628672
@@ -2226,8 +1903,8 @@
                           (LOGIOR
                            (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                            (LOGAND
-                            4088
-                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                              4088
+                              (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                           :R X86))
                         X86)))
                      12))
@@ -2296,7 +1973,7 @@
                        12))
                      :R X86))
                    X86)))))
-              (RFLAGSBITS->RES3 (XR :RFLAGS nil X86))
+              (RFLAGSBITS->RES3 (XR :RFLAGS NIL X86))
               1
               (SF-SPEC64
                (LOGHEAD
@@ -2312,9 +1989,8 @@
                      (LAS-TO-PAS
                       8
                       (LOGIOR
-                       (LOGAND
-                        4088
-                        (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                       (LOGAND 4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
                        (ASH
                         (LOGHEAD
                          40
@@ -2326,12 +2002,11 @@
                             (LAS-TO-PAS
                              8
                              (LOGIOR
+                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                               (LOGAND
-                               -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                              (LOGAND
-                               4088
-                               (LOGHEAD
-                                28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                  4088
+                                  (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                              :R X86))
                            X86)))
                         12))
@@ -2352,8 +2027,8 @@
                          8
                          (LOGIOR
                           (LOGAND
-                           4088
-                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
                           (ASH
                            (LOGHEAD
                             40
@@ -2366,11 +2041,11 @@
                                 8
                                 (LOGIOR
                                  (LOGAND
-                                  -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                                  (LOGAND
                                   4088
                                   (LOGHEAD
-                                   28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                       28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
                                 :R X86))
                               X86)))
                            12))
@@ -2387,8 +2062,8 @@
                          8
                          (LOGIOR
                           (LOGAND
-                           4088
-                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
                           (ASH
                            (LOGHEAD
                             40
@@ -2401,19 +2076,19 @@
                                 8
                                 (LOGIOR
                                  (LOGAND
-                                  -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                                  (LOGAND
                                   4088
                                   (LOGHEAD
-                                   28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                       28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                                 :R X86))
                               X86)))
                            12))
                          :R X86))
                        X86)))))))))
-              (RFLAGSBITS->TF (XR :RFLAGS nil X86))
-              (RFLAGSBITS->INTF (XR :RFLAGS nil X86))
-              (RFLAGSBITS->DF (XR :RFLAGS nil X86))
+              (RFLAGSBITS->TF (XR :RFLAGS NIL X86))
+              (RFLAGSBITS->INTF (XR :RFLAGS NIL X86))
+              (RFLAGSBITS->DF (XR :RFLAGS NIL X86))
               (OF-SPEC64
                (+
                 (LOGAND
@@ -2426,9 +2101,8 @@
                     (LAS-TO-PAS
                      8
                      (LOGIOR
-                      (LOGAND
-                       4088
-                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                      (LOGAND 4088
+                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
                       (ASH
                        (LOGHEAD
                         40
@@ -2440,12 +2114,10 @@
                            (LAS-TO-PAS
                             8
                             (LOGIOR
-                             (LOGAND
-                              -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                             (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                              (LOGAND
                               4088
-                              (LOGHEAD
-                               28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                              (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                             :R X86))
                           X86)))
                        12))
@@ -2466,8 +2138,8 @@
                         8
                         (LOGIOR
                          (LOGAND
-                          4088
-                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                              4088
+                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
                          (ASH
                           (LOGHEAD
                            40
@@ -2480,11 +2152,11 @@
                                8
                                (LOGIOR
                                 (LOGAND
-                                 -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                                 (LOGAND
-                                 4088
-                                 (LOGHEAD
-                                  28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                  4088
+                                  (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
                                :R X86))
                              X86)))
                           12))
@@ -2501,8 +2173,8 @@
                         8
                         (LOGIOR
                          (LOGAND
-                          4088
-                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                              4088
+                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
                          (ASH
                           (LOGHEAD
                            40
@@ -2515,26 +2187,26 @@
                                8
                                (LOGIOR
                                 (LOGAND
-                                 -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
                                 (LOGAND
-                                 4088
-                                 (LOGHEAD
-                                  28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                  4088
+                                  (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
                                :R X86))
                              X86)))
                           12))
                         :R X86))
                       X86))))))))
-              (RFLAGSBITS->IOPL (XR :RFLAGS nil X86))
-              (RFLAGSBITS->NT (XR :RFLAGS nil X86))
-              (RFLAGSBITS->RES4 (XR :RFLAGS nil X86))
-              (RFLAGSBITS->RF (XR :RFLAGS nil X86))
-              (RFLAGSBITS->VM (XR :RFLAGS nil X86))
-              (BOOL->BIT (LOGBITP 18 (XR :RFLAGS nil X86)))
-              (RFLAGSBITS->VIF (XR :RFLAGS nil X86))
-              (RFLAGSBITS->VIP (XR :RFLAGS nil X86))
-              (RFLAGSBITS->ID (XR :RFLAGS nil X86))
-              (RFLAGSBITS->RES5 (XR :RFLAGS nil X86)))
+              (RFLAGSBITS->IOPL (XR :RFLAGS NIL X86))
+              (RFLAGSBITS->NT (XR :RFLAGS NIL X86))
+              (RFLAGSBITS->RES4 (XR :RFLAGS NIL X86))
+              (RFLAGSBITS->RF (XR :RFLAGS NIL X86))
+              (RFLAGSBITS->VM (XR :RFLAGS NIL X86))
+              (BOOL->BIT (LOGBITP 18 (XR :RFLAGS NIL X86)))
+              (RFLAGSBITS->VIF (XR :RFLAGS NIL X86))
+              (RFLAGSBITS->VIP (XR :RFLAGS NIL X86))
+              (RFLAGSBITS->ID (XR :RFLAGS NIL X86))
+              (RFLAGSBITS->RES5 (XR :RFLAGS NIL X86)))
              (MV-NTH
               2
               (LAS-TO-PAS
@@ -2543,369 +2215,613 @@
                (MV-NTH
                 2
                 (LAS-TO-PAS
-                 40 (+ 206 (XR :RIP nil X86))
+                 40 (+ 209 (XR :RIP NIL X86))
                  :X
                  (MV-NTH
                   2
                   (LAS-TO-PAS
-                   15 (+ 190 (XR :RIP nil X86))
+                   15 (+ 193 (XR :RIP NIL X86))
                    :X
-                   (MV-NTH
-                    2
-                    (LAS-TO-PAS
-                     8
-                     (LOGIOR
-                      (LOGAND
-                       4088
-                       (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                      (ASH
-                       (LOGHEAD
-                        40
-                        (LOGTAIL
-                         12
-                         (READ-FROM-PHYSICAL-MEMORY
-                          (MV-NTH
-                           1
-                           (LAS-TO-PAS
-                            8
-                            (LOGIOR
-                             (LOGAND
-                              -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                             (LOGAND
-                              4088
-                              (LOGHEAD
-                               28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                            :R X86))
-                          X86)))
-                       12))
-                     :W
-                     (MV-NTH
-                      2
-                      (LAS-TO-PAS
-                       6 (+ 184 (XR :RIP nil X86))
-                       :X
-                       (MV-NTH
-                        2
-                        (LAS-TO-PAS
-                         8
-                         (LOGIOR
-                          (LOGAND
-                           4088
-                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
-                          (ASH
-                           (LOGHEAD
-                            40
-                            (LOGTAIL
-                             12
-                             (READ-FROM-PHYSICAL-MEMORY
-                              (MV-NTH
-                               1
-                               (LAS-TO-PAS
-                                8
-                                (LOGIOR
-                                 (LOGAND
-                                  -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                 (LOGAND
-                                  4088
-                                  (LOGHEAD
-                                   28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                                :R X86))
-                              X86)))
-                           12))
-                         :R
-                         (MV-NTH
-                          2
-                          (LAS-TO-PAS
-                           40 (+ 144 (XR :RIP nil X86))
-                           :X
+                   (XW
+                    :TLB NIL
+                    :TLB
+                    (XW
+                     :UNDEF
+                     NIL (+ 39 (NFIX (XR :UNDEF NIL X86)))
+                     (XW
+                      :RFLAGS NIL
+                      (RFLAGSBITS
+                       0
+                       (RFLAGSBITS->RES1 (XR :RFLAGS NIL X86))
+                       (PF-SPEC64
+                        (LOGIOR
+                         (LOGAND
+                          18442240475155922943
+                          (READ-FROM-PHYSICAL-MEMORY
                            (MV-NTH
-                            2
+                            1
                             (LAS-TO-PAS
-                             3 (+ 140 (XR :RIP nil X86))
-                             :X
-                             (MV-NTH
-                              2
-                              (LAS-TO-PAS
-                               8
-                               (LOGIOR
-                                (LOGAND
-                                 -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
-                                (LOGAND
-                                 4088
-                                 (LOGHEAD
-                                  28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
-                               :R
+                             8
+                             (LOGIOR
+                              (LOGAND
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (READ-FROM-PHYSICAL-MEMORY
+                                  (MV-NTH
+                                   1
+                                   (LAS-TO-PAS
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                       -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                    :R X86))
+                                  X86)))
+                               12))
+                             :W X86))
+                           X86))
+                         (LOGAND
+                          4503598553628672
+                          (READ-FROM-PHYSICAL-MEMORY
+                           (MV-NTH
+                            1
+                            (LAS-TO-PAS
+                             8
+                             (LOGIOR
+                              (LOGAND
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (READ-FROM-PHYSICAL-MEMORY
+                                  (MV-NTH
+                                   1
+                                   (LAS-TO-PAS
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                       -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                    :R X86))
+                                  X86)))
+                               12))
+                             :R X86))
+                           X86))))
+                       (RFLAGSBITS->RES2 (XR :RFLAGS NIL X86))
+                       (LOGHEAD
+                            1
+                            (CREATE-UNDEF (+ 38 (NFIX (XR :UNDEF NIL X86)))))
+                       (RFLAGSBITS->RES3 (XR :RFLAGS NIL X86))
+                       (ZF-SPEC
+                        (LOGIOR
+                         (LOGAND
+                          18442240475155922943
+                          (READ-FROM-PHYSICAL-MEMORY
+                           (MV-NTH
+                            1
+                            (LAS-TO-PAS
+                             8
+                             (LOGIOR
+                              (LOGAND
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (READ-FROM-PHYSICAL-MEMORY
+                                  (MV-NTH
+                                   1
+                                   (LAS-TO-PAS
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                       -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                    :R X86))
+                                  X86)))
+                               12))
+                             :W X86))
+                           X86))
+                         (LOGAND
+                          4503598553628672
+                          (READ-FROM-PHYSICAL-MEMORY
+                           (MV-NTH
+                            1
+                            (LAS-TO-PAS
+                             8
+                             (LOGIOR
+                              (LOGAND
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (READ-FROM-PHYSICAL-MEMORY
+                                  (MV-NTH
+                                   1
+                                   (LAS-TO-PAS
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                       -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                    :R X86))
+                                  X86)))
+                               12))
+                             :R X86))
+                           X86))))
+                       (SF-SPEC64
+                        (LOGIOR
+                         (LOGAND
+                          18442240475155922943
+                          (READ-FROM-PHYSICAL-MEMORY
+                           (MV-NTH
+                            1
+                            (LAS-TO-PAS
+                             8
+                             (LOGIOR
+                              (LOGAND
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (READ-FROM-PHYSICAL-MEMORY
+                                  (MV-NTH
+                                   1
+                                   (LAS-TO-PAS
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                       -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                    :R X86))
+                                  X86)))
+                               12))
+                             :W X86))
+                           X86))
+                         (LOGAND
+                          4503598553628672
+                          (READ-FROM-PHYSICAL-MEMORY
+                           (MV-NTH
+                            1
+                            (LAS-TO-PAS
+                             8
+                             (LOGIOR
+                              (LOGAND
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                              (ASH
+                               (LOGHEAD
+                                40
+                                (LOGTAIL
+                                 12
+                                 (READ-FROM-PHYSICAL-MEMORY
+                                  (MV-NTH
+                                   1
+                                   (LAS-TO-PAS
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                       -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                    :R X86))
+                                  X86)))
+                               12))
+                             :R X86))
+                           X86))))
+                       (RFLAGSBITS->TF (XR :RFLAGS NIL X86))
+                       (RFLAGSBITS->INTF (XR :RFLAGS NIL X86))
+                       (RFLAGSBITS->DF (XR :RFLAGS NIL X86))
+                       0
+                       (RFLAGSBITS->IOPL (XR :RFLAGS NIL X86))
+                       (RFLAGSBITS->NT (XR :RFLAGS NIL X86))
+                       (RFLAGSBITS->RES4 (XR :RFLAGS NIL X86))
+                       (RFLAGSBITS->RF (XR :RFLAGS NIL X86))
+                       (RFLAGSBITS->VM (XR :RFLAGS NIL X86))
+                       (BOOL->BIT (LOGBITP 18 (XR :RFLAGS NIL X86)))
+                       (RFLAGSBITS->VIF (XR :RFLAGS NIL X86))
+                       (RFLAGSBITS->VIP (XR :RFLAGS NIL X86))
+                       (RFLAGSBITS->ID (XR :RFLAGS NIL X86))
+                       (RFLAGSBITS->RES5 (XR :RFLAGS NIL X86)))
+                      (MV-NTH
+                       2
+                       (LAS-TO-PAS
+                        3 (+ 190 (XR :RIP NIL X86))
+                        :X
+                        (MV-NTH
+                         2
+                         (LAS-TO-PAS
+                          8
+                          (LOGIOR
+                           (LOGAND
+                               4088
+                               (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                           (ASH
+                            (LOGHEAD
+                             40
+                             (LOGTAIL
+                              12
+                              (READ-FROM-PHYSICAL-MEMORY
                                (MV-NTH
-                                2
+                                1
                                 (LAS-TO-PAS
-                                 32 (+ 108 (XR :RIP nil X86))
-                                 :X
-                                 (MV-NTH
-                                  2
-                                  (LAS-TO-PAS
-                                   18 (+ 86 (XR :RIP nil X86))
-                                   :X
+                                 8
+                                 (LOGIOR
+                                  (LOGAND
+                                       -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                  (LOGAND
+                                   4088
+                                   (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                 :R X86))
+                               X86)))
+                            12))
+                          :W
+                          (MV-NTH
+                           2
+                           (LAS-TO-PAS
+                            6 (+ 184 (XR :RIP NIL X86))
+                            :X
+                            (MV-NTH
+                             2
+                             (LAS-TO-PAS
+                              8
+                              (LOGIOR
+                               (LOGAND
+                                   4088
+                                   (LOGHEAD
+                                        32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                               (ASH
+                                (LOGHEAD
+                                 40
+                                 (LOGTAIL
+                                  12
+                                  (READ-FROM-PHYSICAL-MEMORY
                                    (MV-NTH
-                                    2
+                                    1
                                     (LAS-TO-PAS
                                      8
                                      (LOGIOR
                                       (LOGAND
+                                       -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                      (LOGAND
                                        4088
                                        (LOGHEAD
-                                        32
-                                        (LOGTAIL
-                                         27 (XR :RGF *RDI* X86))))
-                                      (ASH
-                                       (LOGHEAD
-                                        40
-                                        (LOGTAIL
-                                         12
-                                         (READ-FROM-PHYSICAL-MEMORY
-                                          (MV-NTH
-                                           1
-                                           (LAS-TO-PAS
-                                            8
-                                            (LOGIOR
-                                             (LOGAND
-                                              -4096
-                                              (LOGEXT
-                                               64 (XR :CTR *CR3* X86)))
-                                             (LOGAND
-                                              4088
-                                              (LOGHEAD
-                                               28
+                                          28
+                                          (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                     :R X86))
+                                   X86)))
+                                12))
+                              :R
+                              (MV-NTH
+                               2
+                               (LAS-TO-PAS
+                                40 (+ 144 (XR :RIP NIL X86))
+                                :X
+                                (MV-NTH
+                                 2
+                                 (LAS-TO-PAS
+                                  3 (+ 140 (XR :RIP NIL X86))
+                                  :X
+                                  (MV-NTH
+                                   2
+                                   (LAS-TO-PAS
+                                    8
+                                    (LOGIOR
+                                     (LOGAND
+                                       -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                     (LOGAND
+                                      4088
+                                      (LOGHEAD
+                                       28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                    :R
+                                    (MV-NTH
+                                     2
+                                     (LAS-TO-PAS
+                                      32 (+ 108 (XR :RIP NIL X86))
+                                      :X
+                                      (MV-NTH
+                                       2
+                                       (LAS-TO-PAS
+                                        18 (+ 86 (XR :RIP NIL X86))
+                                        :X
+                                        (MV-NTH
+                                         2
+                                         (LAS-TO-PAS
+                                          8
+                                          (LOGIOR
+                                           (LOGAND
+                                            4088
+                                            (LOGHEAD
+                                               32
                                                (LOGTAIL
-                                                36
-                                                (XR :RGF *RDI* X86)))))
-                                            :R X86))
-                                          X86)))
-                                       12))
-                                     :R
-                                     (MV-NTH
-                                      2
-                                      (LAS-TO-PAS
-                                       40 (+ 46 (XR :RIP nil X86))
-                                       :X
-                                       (MV-NTH
-                                        2
-                                        (LAS-TO-PAS
-                                         4 (+ 38 (XR :RIP nil X86))
-                                         :X
-                                         (MV-NTH
-                                          2
-                                          (LAS-TO-PAS
-                                           8
-                                           (LOGIOR
-                                            (LOGAND
-                                             -4096
-                                             (LOGEXT
-                                              64 (XR :CTR *CR3* X86)))
-                                            (LOGAND
-                                             4088
-                                             (LOGHEAD
-                                              28
-                                              (LOGTAIL
-                                               36 (XR :RGF *RDI* X86)))))
-                                           :R
-                                           (MV-NTH
-                                            2
-                                            (LAS-TO-PAS
-                                             25 (+ 13 (XR :RIP nil X86))
-                                             :X
-                                             (MV-NTH
-                                              2
-                                              (LAS-TO-PAS
-                                               8
-                                               (+
-                                                -24 (XR :RGF *RSP* X86))
-                                               :R
+                                                    27 (XR :RGF *RDI* X86))))
+                                           (ASH
+                                            (LOGHEAD
+                                             40
+                                             (LOGTAIL
+                                              12
+                                              (READ-FROM-PHYSICAL-MEMORY
                                                (MV-NTH
-                                                2
+                                                1
                                                 (LAS-TO-PAS
-                                                 5 (+ 8 (XR :RIP nil X86))
-                                                 :X
-                                                 (MV-NTH
-                                                  2
-                                                  (LAS-TO-PAS
-                                                   8
-                                                   (+
-                                                    -24
-                                                    (XR :RGF *RSP* X86))
-                                                   :W
-                                                   (MV-NTH
-                                                    2
-                                                    (LAS-TO-PAS
-                                                     8 (XR :RIP nil X86)
-                                                     :X
-                                                     (WRITE-TO-PHYSICAL-MEMORY
+                                                 8
+                                                 (LOGIOR
+                                                  (LOGAND
+                                                   -4096
+                                                   (LOGEXT
+                                                     64 (XR :CTR *CR3* X86)))
+                                                  (LOGAND
+                                                   4088
+                                                   (LOGHEAD
+                                                    28
+                                                    (LOGTAIL
+                                                      36
+                                                      (XR :RGF *RDI* X86)))))
+                                                 :R X86))
+                                               X86)))
+                                            12))
+                                          :R
+                                          (MV-NTH
+                                           2
+                                           (LAS-TO-PAS
+                                            40 (+ 46 (XR :RIP NIL X86))
+                                            :X
+                                            (MV-NTH
+                                             2
+                                             (LAS-TO-PAS
+                                              4 (+ 38 (XR :RIP NIL X86))
+                                              :X
+                                              (MV-NTH
+                                               2
+                                               (LAS-TO-PAS
+                                                8
+                                                (LOGIOR
+                                                 (LOGAND
+                                                  -4096
+                                                  (LOGEXT
+                                                     64 (XR :CTR *CR3* X86)))
+                                                 (LOGAND
+                                                  4088
+                                                  (LOGHEAD
+                                                   28
+                                                   (LOGTAIL
+                                                      36
+                                                      (XR :RGF *RDI* X86)))))
+                                                :R
+                                                (MV-NTH
+                                                 2
+                                                 (LAS-TO-PAS
+                                                  25 (+ 13 (XR :RIP NIL X86))
+                                                  :X
+                                                  (MV-NTH
+                                                   2
+                                                   (LAS-TO-PAS
+                                                    8
+                                                    (+
+                                                     -24 (XR :RGF *RSP* X86))
+                                                    :R
+                                                    (MV-NTH
+                                                     2
+                                                     (LAS-TO-PAS
+                                                      5
+                                                      (+ 8 (XR :RIP NIL X86))
+                                                      :X
                                                       (MV-NTH
-                                                       1
+                                                       2
                                                        (LAS-TO-PAS
                                                         8
-                                                        (LOGIOR
-                                                         (LOGAND
-                                                          4088
-                                                          (LOGHEAD
-                                                           32
-                                                           (LOGTAIL
-                                                            27
+                                                        (+
+                                                         -24
+                                                         (XR :RGF *RSP* X86))
+                                                        :W
+                                                        (MV-NTH
+                                                         2
+                                                         (LAS-TO-PAS
+                                                          8 (XR :RIP NIL X86)
+                                                          :X
+                                                          (WRITE-TO-PHYSICAL-MEMORY
+                                                           (MV-NTH
+                                                            1
+                                                            (LAS-TO-PAS
+                                                             8
+                                                             (LOGIOR
+                                                              (LOGAND
+                                                               4088
+                                                               (LOGHEAD
+                                                                32
+                                                                (LOGTAIL
+                                                                 27
+                                                                 (XR
+                                                                   :RGF *RSI*
+                                                                   X86))))
+                                                              (ASH
+                                                               (LOGHEAD
+                                                                40
+                                                                (LOGTAIL
+                                                                 12
+                                                                 (READ-FROM-PHYSICAL-MEMORY
+                                                                  (MV-NTH
+                                                                   1
+                                                                   (LAS-TO-PAS
+                                                                    8
+                                                                    (LOGIOR
+                                                                     (LOGAND
+                                                                      -4096
+                                                                      (LOGEXT
+                                                                       64
+                                                                       (XR
+                                                                        :CTR
+                                                                        *CR3*
+                                                                        X86)))
+                                                                     (LOGAND
+                                                                      4088
+                                                                      (LOGHEAD
+                                                                       28
+                                                                       (LOGTAIL
+                                                                        36
+                                                                        (XR
+                                                                         :RGF
+                                                                         *RSI*
+                                                                         X86)))))
+                                                                    :R X86))
+                                                                  X86)))
+                                                               12))
+                                                             :W X86))
+                                                           (LOGIOR
+                                                            (LOGAND
+                                                             18442240475155922943
+                                                             (READ-FROM-PHYSICAL-MEMORY
+                                                              (MV-NTH
+                                                               1
+                                                               (LAS-TO-PAS
+                                                                8
+                                                                (LOGIOR
+                                                                 (LOGAND
+                                                                  4088
+                                                                  (LOGHEAD
+                                                                   32
+                                                                   (LOGTAIL
+                                                                    27
+                                                                    (XR
+                                                                      :RGF
+                                                                      *RSI*
+                                                                      X86))))
+                                                                 (ASH
+                                                                  (LOGHEAD
+                                                                   40
+                                                                   (LOGTAIL
+                                                                    12
+                                                                    (READ-FROM-PHYSICAL-MEMORY
+                                                                     (MV-NTH
+                                                                      1
+                                                                      (LAS-TO-PAS
+                                                                       8
+                                                                       (LOGIOR
+                                                                        (LOGAND
+                                                                         -4096
+                                                                         (LOGEXT
+                                                                          64
+                                                                          (XR
+                                                                           :CTR
+                                                                           *CR3*
+                                                                           X86)))
+                                                                        (LOGAND
+                                                                         4088
+                                                                         (LOGHEAD
+                                                                          28
+                                                                          (LOGTAIL
+                                                                           36
+                                                                           (XR
+                                                                            :RGF
+                                                                            *RSI*
+                                                                            X86)))))
+                                                                       :R
+                                                                       X86))
+                                                                     X86)))
+                                                                  12))
+                                                                :W X86))
+                                                              X86))
+                                                            (LOGAND
+                                                             4503598553628672
+                                                             (READ-FROM-PHYSICAL-MEMORY
+                                                              (MV-NTH
+                                                               1
+                                                               (LAS-TO-PAS
+                                                                8
+                                                                (LOGIOR
+                                                                 (LOGAND
+                                                                  4088
+                                                                  (LOGHEAD
+                                                                   32
+                                                                   (LOGTAIL
+                                                                    27
+                                                                    (XR
+                                                                      :RGF
+                                                                      *RDI*
+                                                                      X86))))
+                                                                 (ASH
+                                                                  (LOGHEAD
+                                                                   40
+                                                                   (LOGTAIL
+                                                                    12
+                                                                    (READ-FROM-PHYSICAL-MEMORY
+                                                                     (MV-NTH
+                                                                      1
+                                                                      (LAS-TO-PAS
+                                                                       8
+                                                                       (LOGIOR
+                                                                        (LOGAND
+                                                                         -4096
+                                                                         (LOGEXT
+                                                                          64
+                                                                          (XR
+                                                                           :CTR
+                                                                           *CR3*
+                                                                           X86)))
+                                                                        (LOGAND
+                                                                         4088
+                                                                         (LOGHEAD
+                                                                          28
+                                                                          (LOGTAIL
+                                                                           36
+                                                                           (XR
+                                                                            :RGF
+                                                                            *RDI*
+                                                                            X86)))))
+                                                                       :R
+                                                                       X86))
+                                                                     X86)))
+                                                                  12))
+                                                                :R X86))
+                                                              X86)))
+                                                           (WRITE-TO-PHYSICAL-MEMORY
+                                                            (MV-NTH
+                                                             1
+                                                             (LAS-TO-PAS
+                                                              8
+                                                              (+
+                                                               -24
+                                                               (XR
+                                                                  :RGF
+                                                                  *RSP* X86))
+                                                              :W X86))
                                                             (XR
-                                                             :RGF *RSI*
-                                                             X86))))
-                                                         (ASH
-                                                          (LOGHEAD
-                                                           40
-                                                           (LOGTAIL
-                                                            12
-                                                            (READ-FROM-PHYSICAL-MEMORY
-                                                             (MV-NTH
-                                                              1
-                                                              (LAS-TO-PAS
-                                                               8
-                                                               (LOGIOR
-                                                                (LOGAND
-                                                                 -4096
-                                                                 (LOGEXT
-                                                                  64
-                                                                  (XR
-                                                                   :CTR
-                                                                   *CR3*
-                                                                   X86)))
-                                                                (LOGAND
-                                                                 4088
-                                                                 (LOGHEAD
-                                                                  28
-                                                                  (LOGTAIL
-                                                                   36
-                                                                   (XR
-                                                                    :RGF
-                                                                    *RSI*
-                                                                    X86)))))
-                                                               :R X86))
-                                                             X86)))
-                                                          12))
-                                                        :W X86))
-                                                      (LOGIOR
-                                                       (LOGAND
-                                                        18442240475155922943
-                                                        (READ-FROM-PHYSICAL-MEMORY
-                                                         (MV-NTH
-                                                          1
-                                                          (LAS-TO-PAS
-                                                           8
-                                                           (LOGIOR
-                                                            (LOGAND
-                                                             4088
-                                                             (LOGHEAD
-                                                              32
-                                                              (LOGTAIL
-                                                               27
-                                                               (XR
-                                                                :RGF
-                                                                *RSI*
-                                                                X86))))
-                                                            (ASH
-                                                             (LOGHEAD
-                                                              40
-                                                              (LOGTAIL
-                                                               12
-                                                               (READ-FROM-PHYSICAL-MEMORY
-                                                                (MV-NTH
-                                                                 1
-                                                                 (LAS-TO-PAS
-                                                                  8
-                                                                  (LOGIOR
-                                                                   (LOGAND
-                                                                    -4096
-                                                                    (LOGEXT
-                                                                     64
-                                                                     (XR
-                                                                      :CTR
-                                                                      *CR3*
-                                                                      X86)))
-                                                                   (LOGAND
-                                                                    4088
-                                                                    (LOGHEAD
-                                                                     28
-                                                                     (LOGTAIL
-                                                                      36
-                                                                      (XR
-                                                                       :RGF
-                                                                       *RSI*
-                                                                       X86)))))
-                                                                  :R
-                                                                  X86))
-                                                                X86)))
-                                                             12))
-                                                           :W X86))
-                                                         X86))
-                                                       (LOGAND
-                                                        4503598553628672
-                                                        (READ-FROM-PHYSICAL-MEMORY
-                                                         (MV-NTH
-                                                          1
-                                                          (LAS-TO-PAS
-                                                           8
-                                                           (LOGIOR
-                                                            (LOGAND
-                                                             4088
-                                                             (LOGHEAD
-                                                              32
-                                                              (LOGTAIL
-                                                               27
-                                                               (XR
-                                                                :RGF
-                                                                *RDI*
-                                                                X86))))
-                                                            (ASH
-                                                             (LOGHEAD
-                                                              40
-                                                              (LOGTAIL
-                                                               12
-                                                               (READ-FROM-PHYSICAL-MEMORY
-                                                                (MV-NTH
-                                                                 1
-                                                                 (LAS-TO-PAS
-                                                                  8
-                                                                  (LOGIOR
-                                                                   (LOGAND
-                                                                    -4096
-                                                                    (LOGEXT
-                                                                     64
-                                                                     (XR
-                                                                      :CTR
-                                                                      *CR3*
-                                                                      X86)))
-                                                                   (LOGAND
-                                                                    4088
-                                                                    (LOGHEAD
-                                                                     28
-                                                                     (LOGTAIL
-                                                                      36
-                                                                      (XR
-                                                                       :RGF
-                                                                       *RDI*
-                                                                       X86)))))
-                                                                  :R
-                                                                  X86))
-                                                                X86)))
-                                                             12))
-                                                           :R X86))
-                                                         X86)))
-                                                      (WRITE-TO-PHYSICAL-MEMORY
-                                                       (MV-NTH
-                                                        1
-                                                        (LAS-TO-PAS
-                                                         8
-                                                         (+
-                                                          -24
-                                                          (XR :RGF
-                                                              *RSP* X86))
-                                                         :W X86))
-                                                       (XR
-                                                        :CTR *CR3* X86)
-                                                       X86))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                                                              :CTR *CR3* X86)
+                                                            X86)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
 (defthmd zeroCopy-state-and-zeroCopy-state-physical-memory
   (implies (rewire_dst_to_src-effects-preconditions x86)
@@ -2944,9 +2860,8 @@
   :hints (("Goal"
            :do-not '(preprocess)
            :hands-off (x86-run)
-           :in-theory (e/d* ()
+           :in-theory (e/d* (disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
                             (rewrite-rb-to-rb-alt
-                             mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
                              mv-nth-1-las-to-pas-returns-nil-when-error
                              (:rewrite acl2::loghead-identity)
                              (:meta acl2::mv-nth-cons-meta)
@@ -3004,6 +2919,7 @@
     (physical-address-p lin-addr)
     (equal (loghead 3 lin-addr) 0)
     (canonical-address-p lin-addr)
+    (tlb-consistent-n (len bytes) prog-addr :x x86)
     (unsigned-byte-p 64 value))
    (equal
     (program-at-alt prog-addr bytes (mv-nth 1 (wb 8 lin-addr w value x86)))
@@ -3383,10 +3299,8 @@
                              create-canonical-address-list
                              subset-p
                              (:meta acl2::mv-nth-cons-meta)
-                             r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
                              acl2::loghead-identity
                              mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-                             mv-nth-2-las-to-pas-system-level-non-marking-view
                              member-p-canonical-address-listp
                              xr-marking-view-mv-nth-2-las-to-pas
                              right-shift-to-logtail
@@ -3440,10 +3354,8 @@
                   create-canonical-address-list
                   subset-p
                   (:meta acl2::mv-nth-cons-meta)
-                  r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
                   acl2::loghead-identity
                   mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-                  mv-nth-2-las-to-pas-system-level-non-marking-view
                   member-p-canonical-address-listp
                   xr-marking-view-mv-nth-2-las-to-pas
                   right-shift-to-logtail
@@ -3523,6 +3435,7 @@
       (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
       (double-rewrite x86)))
     (64-bit-modep x86) ; added
+    (tlb-consistent-n 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) :r x86)
     (not (app-view x86)))
    (equal (pdpt-base-addr lin-addr (mv-nth 1 (wb n-w write-addr w value x86)))
           (pdpt-base-addr lin-addr (double-rewrite x86))))
@@ -3619,10 +3532,8 @@
                              create-canonical-address-list
                              subset-p
                              (:meta acl2::mv-nth-cons-meta)
-                             r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
                              acl2::loghead-identity
                              mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-                             mv-nth-2-las-to-pas-system-level-non-marking-view
                              member-p-canonical-address-listp
                              xr-marking-view-mv-nth-2-las-to-pas
                              right-shift-to-logtail
@@ -3712,10 +3623,8 @@
                         create-canonical-address-list
                         subset-p
                         (:meta acl2::mv-nth-cons-meta)
-                        r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
                         acl2::loghead-identity
                         mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-                        mv-nth-2-las-to-pas-system-level-non-marking-view
                         member-p-canonical-address-listp
                         xr-marking-view-mv-nth-2-las-to-pas
                         right-shift-to-logtail
@@ -3734,7 +3643,6 @@
                         combine-mv-nth-2-las-to-pas-same-r-w-x
                         loghead-zero-smaller
                         pdpt-base-addr-after-mv-nth-2-las-to-pas
-                        las-to-pas-values-1g-pages-and-wb-to-page-dir-ptr-table-entry-addr
                         rb-and-rm-low-64-for-direct-map
                         all-xlation-governing-entries-paddrs-1g-pages-and-wb-to-page-dir-ptr-table-entry-addr
                         xr-ctr-mv-nth-2-las-to-pas
@@ -3817,50 +3725,13 @@
           x86)))
        30))
      x86)))
-  :instructions
-  (:pro
-   (:dv 1)
-   (:rewrite
-    source-data-from-initial-state-in-terms-of-read-from-physical-memory-and-las-to-pas)
-   :top
-   (:change-goal nil t)
-   (:= t)
-   (:dv 1 1)
-   (:rewrite
-    las-to-pas-values-for-same-1g-page
-    ((page-dir-ptr-table-entry
-      (mv-nth
-       1
-       (rb
-        8
-        (page-dir-ptr-table-entry-addr (xr :rgf *rdi* x86)
-                                       (pdpt-base-addr (xr :rgf *rdi* x86)
-                                                       (double-rewrite x86)))
-        :r (double-rewrite x86))))
-     (page-dir-ptr-table-entry-addr
-      (page-dir-ptr-table-entry-addr (xr :rgf *rdi* x86)
-                                     (pdpt-base-addr (xr :rgf *rdi* x86)
-                                                     (double-rewrite x86))))
-     (pdpt-base-addr (pdpt-base-addr (xr :rgf *rdi* x86)
-                                     (double-rewrite x86)))
-     (pml4-table-entry-addr
-      (pml4-table-entry-addr (xr :rgf *rdi* x86)
-                             (pml4-table-base-addr (double-rewrite x86))))
-     (pml4-table-base-addr (pml4-table-base-addr (double-rewrite x86))))
-    t)
-   :top (:= t)
-   :bash :bash :bash :bash :bash :bash
-   :bash
-   (:in-theory (e/d (page-size) nil))
-   :bash
-   (:change-goal nil t)
-   :bash :bash :bash :bash :bash :bash (:dv 1)
-   (:rewrite
-    mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
-    ((n *2^30*)
-     (addr-1 (xr :rgf *rdi* x86)))
-    t)
-   :bash :bash :bash :bash :bash))
+  :hints (("Goal" :in-theory (e/d (source-data-from-initial-state-in-terms-of-read-from-physical-memory-and-las-to-pas
+                                    direct-map-p-implies-canonical-address-p
+                                    las-to-pas-values-for-same-1G-page-virt-mem-pt-accesses
+                                    page-size)
+                                  (rewrite-rb-to-rb-alt
+                                    (:LINEAR X86ISA::SIZE-OF-READ-FROM-PHYSICAL-MEMORY)
+                                    (:LINEAR X86ISA::SIZE-OF-RB))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -4190,10 +4061,8 @@
       (two-mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas
        rewrite-rb-to-rb-alt
        subset-p (:meta acl2::mv-nth-cons-meta)
-       r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
        acl2::loghead-identity
        mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-       mv-nth-2-las-to-pas-system-level-non-marking-view
        member-p-canonical-address-listp
        xr-marking-view-mv-nth-2-las-to-pas
        right-shift-to-logtail
@@ -4205,6 +4074,23 @@
        (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
        (:rewrite gl::nfix-natp)
        mv-nth-0-las-to-pas-subset-p))))))
+
+(local
+  ;; This is the same as las-to-pas-without-tlb-when-tlb-consistent
+  ;; but with the syntaxp hyp to keep it from looping with las-to-pas-without-tlb-when-tlb-consistent.
+  ;; For this to work, you must restrict it with (x86 x86)
+  (defthmd specialized-las-to-pas-values-are-las-to-pas-without-tlb-when-tlb-consistent
+           (implies (and (64-bit-modep x86)
+                         (natp n)
+                         (canonical-address-p (+ lin-addr n -1))
+                         (canonical-address-p lin-addr)
+                         (tlb-consistent-n n lin-addr r-w-x x86)
+                         (syntaxp (not (equal x86 'x86))))
+                    (and (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86))
+                                (mv-nth 0 (las-to-pas-without-tlb 0 n lin-addr r-w-x x86)))
+                         (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))
+                                (mv-nth 1 (las-to-pas-without-tlb 0 n lin-addr r-w-x x86)))))
+           :hints (("Goal" :in-theory (enable las-to-pas-values-are-las-to-pas-without-tlb-when-tlb-consistent)))))
 
 (local
  (defthmd translation-of-destination-addresses-helper-1
@@ -4266,23 +4152,27 @@
            30))))
    :hints
    (("Goal"
+     :do-not-induct t
+     :restrict ((las-to-pas-without-tlb-when-tlb-consistent
+                  ((x86 x86))))
      :in-theory
      (e/d*
-      (direct-map-p
+      (specialized-las-to-pas-values-are-las-to-pas-without-tlb-when-tlb-consistent
+       las-to-pas-without-tlb-when-tlb-consistent
+       disjoint-p-commutative
+       direct-map-p
        page-present
        page-size
        pml4-table-base-addr-projection
        disjoint-p-all-xlation-governing-entries-paddrs-subset-p
        pml4-table-base-addr pdpt-base-addr
-       page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-       disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
-      (two-mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas
+       page-dir-ptr-table-entry-addr-to-c-program-optimized-form)
+      (tlb-consistent-implies-we-can-lookup-without-tlb
+       two-mv-nth-1-las-to-pas-subset-p-disjoint-from-las-to-pas
        rewrite-rb-to-rb-alt
        subset-p
        (:meta acl2::mv-nth-cons-meta)
-       r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
        mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-       mv-nth-2-las-to-pas-system-level-non-marking-view
        member-p-canonical-address-listp
        xr-marking-view-mv-nth-2-las-to-pas
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
@@ -4342,9 +4232,15 @@
      nil))
    :hints
    (("Goal"
+     :do-not-induct t
+     :restrict ((las-to-pas-without-tlb-when-tlb-consistent
+                  ((x86 x86))))
      :in-theory
      (e/d*
-      (direct-map-p
+      (specialized-las-to-pas-values-are-las-to-pas-without-tlb-when-tlb-consistent
+       las-to-pas-without-tlb-when-tlb-consistent
+       disjoint-p-commutative
+       direct-map-p
        page-present
        page-size
        pml4-table-base-addr-projection
@@ -4356,9 +4252,7 @@
        rewrite-rb-to-rb-alt
        subset-p
        (:meta acl2::mv-nth-cons-meta)
-       r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
        mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-       mv-nth-2-las-to-pas-system-level-non-marking-view
        member-p-canonical-address-listp
        xr-marking-view-mv-nth-2-las-to-pas
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
@@ -4439,9 +4333,7 @@
       rewrite-rb-to-rb-alt
       subset-p
       (:meta acl2::mv-nth-cons-meta)
-      r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
       mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-      mv-nth-2-las-to-pas-system-level-non-marking-view
       member-p-canonical-address-listp
       xr-marking-view-mv-nth-2-las-to-pas
       (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
@@ -4612,9 +4504,14 @@
       x86)))
    :hints
    (("Goal"
+     :restrict ((las-to-pas-without-tlb-when-tlb-consistent
+                  ((x86 x86))))
      :in-theory
      (e/d*
-      (direct-map-p
+      (specialized-las-to-pas-values-are-las-to-pas-without-tlb-when-tlb-consistent
+       las-to-pas-without-tlb-when-tlb-consistent
+       disjoint-p-commutative
+       direct-map-p
        page-present
        page-size
        pml4-table-base-addr-projection
@@ -4626,9 +4523,7 @@
        rewrite-rb-to-rb-alt
        subset-p
        (:meta acl2::mv-nth-cons-meta)
-       r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
        mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-       mv-nth-2-las-to-pas-system-level-non-marking-view
        member-p-canonical-address-listp
        xr-marking-view-mv-nth-2-las-to-pas
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
@@ -4831,51 +4726,25 @@
           x86)))
        30))
      x86)))
-  :instructions
-  (:pro
-   (:in-theory
-    (e/d (ms-fault-application-level-and-marking-view-projection
-          preconditions-imply-ms-fault-view
-          page-size ia32e-page-tablesbits->ps
-          pml4-table-base-addr-projection
-          source-pml4-table-entry-projection
-          source-pdpt-base-addr-projection
-          source-pas-projection
-          disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
-         (zerocopy-state
-          rewire_dst_to_src-effects-preconditions
-          read-from-physical-memory
-          pdpt-base-addr-after-mv-nth-2-las-to-pas
-          rewrite-rb-to-rb-alt
-          page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-          unsigned-byte-p-52-of-left-shifting-a-40-bit-vector-by-12)))
-   (:dv 1 2)
-   :x
-   (:dv 1)
-   (:= nil)
-   :top
-   :s
-   (:dv 1 1)
-   (:rewrite translation-of-destination-addresses)
-   :top
-   (:dv 1)
-   (:rewrite
-    destination-data-from-final-state-in-terms-of-read-from-physical-memory-and-addr-range-helper-2)
-   :top
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)
-   (:= t)))
+  :hints (("Goal"
+           :in-theory (e/d (destination-data-from-final-state-in-terms-of-read-from-physical-memory-and-addr-range-helper-2
+                             rb
+                             ms-fault-application-level-and-marking-view-projection
+                             preconditions-imply-ms-fault-view
+                             page-size ia32e-page-tablesbits->ps
+                             pml4-table-base-addr-projection
+                             source-pml4-table-entry-projection
+                             source-pdpt-base-addr-projection
+                             source-pas-projection
+                             disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
+                           (zerocopy-state
+                             rewire_dst_to_src-effects-preconditions
+                             read-from-physical-memory
+                             pdpt-base-addr-after-mv-nth-2-las-to-pas
+                             rewrite-rb-to-rb-alt
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                             unsigned-byte-p-52-of-left-shifting-a-40-bit-vector-by-12
+                             force (force))))))
 
 ;; ----------------------------------------------------------------------
 

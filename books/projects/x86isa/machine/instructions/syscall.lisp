@@ -527,9 +527,13 @@
        (x86 (!seg-hidden-limiti #.*cs* cs-limit x86))
        (x86 (!seg-hidden-attri #.*cs* cs-attr x86))
 
+       ;; Yahya: What's going on here? We're supposed to be returning to privilege
+       ;; level 3, and earlier, we forced the rpl in the cs to 3. I've commented this
+       ;; out for now cause I don't understand why it's here.
+       ;; TODO find out if this is correct
        ;; CPL <- 0;
-       (current-cs-register (!segment-selectorBits->rpl 0 current-cs-register))
-       (x86 (!seg-visiblei #.*cs* current-cs-register x86))
+       ;; (current-cs-register (!segment-selectorBits->rpl 0 current-cs-register))
+       ;; (x86 (!seg-visiblei #.*cs* current-cs-register x86))
 
        ;; SS.Selector <- (IA32_STAR[63:48] + 8) OR 3; (* RPL forced to 3 *)
        (new-ss-selector
