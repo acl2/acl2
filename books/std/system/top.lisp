@@ -65,10 +65,4 @@
   (xdoc::topstring
    "A library that complements the "
    (xdoc::seetopic "system-utilities" "built-in system utilities")
-   " with theorems and with non-built-in system utilities.")
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is just a start towards a comprehensive library.
-     Some candidate utilities are under @(see community-book)
-     @('kestrel/std').")))
+   " with theorems and with non-built-in system utilities."))
