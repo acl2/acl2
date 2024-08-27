@@ -15,9 +15,8 @@
 (include-book "../evaluator-basic")
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p$inline
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline
-(include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, etc.
+(include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, x86isa::get-one-byte-prefix-array-code-unguarded, etc.
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline
-(include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::get-one-byte-prefix-array-code-unguarded
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
@@ -792,6 +791,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; I hope this is still fast in the normal case.
+;; TOOD: For some reason, I am seeing slow array warnings.
 (defund acl2::aref1-unguarded (name l n)
   (declare (xargs :guard t
                   :guard-hints (("Goal" :in-theory (disable array1p header dimensions default)))))
@@ -1090,6 +1090,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline-unguarded (x86isa::opcode x86isa::prefixes)
+  (declare (xargs :guard t ))
+  (let ((x86isa::rep-pfx (the (unsigned-byte 8)
+                           (x86isa::prefixes->rep-unguarded x86isa::prefixes))))
+    (if (not (eql x86isa::rep-pfx 0))
+        (if (or (and (equal x86isa::rep-pfx 243)
+                     (aref1-unguarded 'x86isa::64-bit-mode-two-byte-f3-ok
+                                      x86isa::*64-bit-mode-two-byte-f3-ok-ar*
+                                      x86isa::opcode))
+                (and (equal x86isa::rep-pfx 242)
+                     (aref1-unguarded 'x86isa::64-bit-mode-two-byte-f2-ok
+                                      x86isa::*64-bit-mode-two-byte-f2-ok-ar*
+                                      x86isa::opcode)))
+            x86isa::rep-pfx
+          0)
+      (let ((x86isa::opr-pfx (the (unsigned-byte 8)
+                               (x86isa::prefixes->opr-unguarded x86isa::prefixes))))
+        (if (not (eql x86isa::opr-pfx 0))
+            (if (aref1-unguarded 'x86isa::64-bit-mode-two-byte-66-ok
+                                 x86isa::*64-bit-mode-two-byte-66-ok-ar*
+                                 x86isa::opcode)
+                x86isa::opr-pfx
+              0)
+          0)))))
+
+(defthm 64-bit-compute-mandatory-prefix-for-two-byte-opcode-unguarded-correct
+  (equal (x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline-unguarded x86isa::opcode x86isa::prefixes)
+         (x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline x86isa::opcode x86isa::prefixes))
+  :hints (("Goal" :in-theory (enable x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *axe-evaluator-x86-fns-and-aliases*
   (append '(implies ; push back to basic evaluator?
             (integer-range-p integer-range-p-unguarded)
@@ -1187,7 +1219,9 @@
             (x86isa::two-byte-opcode-modr/m-p$inline x86isa::two-byte-opcode-modr/m-p$inline-unguarded)
             (acl2::aref1 acl2::aref1-unguarded)
             (acl2::every-nth acl2::every-nth-unguarded)
-            (acl2::negated-elems-listp acl2::negated-elems-listp-unguarded))
+            (acl2::negated-elems-listp acl2::negated-elems-listp-unguarded)
+            (x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline-unguarded)
+            )
           *axe-evaluator-basic-fns-and-aliases*))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):
