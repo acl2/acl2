@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+(include-book "std/system/pseudo-event-form-listp" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 

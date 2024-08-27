@@ -12,7 +12,7 @@
 
 (include-book "common-code-generation")
 
-(include-book "kestrel/std/system/unquote-term" :dir :system)
+(include-book "std/system/unquote-term" :dir :system)
 (include-book "std/typed-alists/cons-pos-alistp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

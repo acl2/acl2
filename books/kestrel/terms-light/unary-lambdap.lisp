@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/pseudo-lambdap" :dir :system) ;reduce?
+(include-book "std/system/pseudo-lambdap" :dir :system) ;reduce?
 
 ;; Recognize a unary lambda (not a lambda application).  Example: (lambda (x) (foo 3 x))
 ;; todo: check that all vars mentioned in farg2 are in farg1?

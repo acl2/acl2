@@ -10,12 +10,12 @@
 
 (in-package "SOFT")
 
-(include-book "kestrel/std/system/defchoose-queries" :dir :system)
-(include-book "kestrel/std/system/definedp" :dir :system)
-(include-book "kestrel/std/system/defun-sk-queries" :dir :system)
-(include-book "kestrel/std/system/function-symbol-listp" :dir :system)
-(include-book "kestrel/std/system/measure" :dir :system)
-(include-book "kestrel/std/system/uguard" :dir :system)
+(include-book "std/system/defchoose-queries" :dir :system)
+(include-book "std/system/definedp" :dir :system)
+(include-book "std/system/defun-sk-queries" :dir :system)
+(include-book "std/system/function-symbol-listp" :dir :system)
+(include-book "std/system/measure" :dir :system)
+(include-book "std/system/uguard" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)

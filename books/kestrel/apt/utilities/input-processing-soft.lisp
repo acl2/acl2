@@ -233,5 +233,5 @@
                   x a1...am ?f)))
     (value x))
   :prepwork
-  ((local (include-book "kestrel/std/system/all-vars" :dir :system))
+  ((local (include-book "std/system/all-vars" :dir :system))
    (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))))

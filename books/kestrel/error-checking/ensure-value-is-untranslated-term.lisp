@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/check-user-term" :dir :system)
+(include-book "std/system/check-user-term" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
 

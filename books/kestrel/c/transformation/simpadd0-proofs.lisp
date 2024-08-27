@@ -17,8 +17,8 @@
 
 (include-book "../atc/symbolic-execution-rules/top")
 
-(include-book "kestrel/std/system/constant-value" :dir :system)
-(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+(include-book "std/system/constant-value" :dir :system)
+(include-book "std/system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

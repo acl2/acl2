@@ -14,11 +14,11 @@
 (include-book "semantics-shallow")
 (include-book "proof-support")
 
-(include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "std/system/table-alist-plus" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
-(local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/union" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))

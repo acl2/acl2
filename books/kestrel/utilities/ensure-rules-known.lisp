@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/theorem-symbolp" :dir :system) ;todo: reduce?
+(include-book "std/system/theorem-symbolp" :dir :system) ;todo: reduce?
 
 ;;;
 ;;; ensure-rules-known

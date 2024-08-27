@@ -19,7 +19,7 @@
 (include-book "../math-rules")
 (include-book "lifter-utilities") ; for field-pair-okayp, etc
 (include-book "../step-increments")
-(include-book "kestrel/std/system/fresh-namep" :dir :system)
+(include-book "std/system/fresh-namep" :dir :system)
 (include-book "kestrel/jvm/method-designator-strings" :dir :system)
 (include-book "kestrel/jvm/symbolic-execution" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)

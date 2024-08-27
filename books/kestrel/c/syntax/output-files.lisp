@@ -14,14 +14,14 @@
 (include-book "printer")
 
 (include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
-(include-book "kestrel/std/system/constant-value" :dir :system)
+(include-book "std/system/constant-value" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 (include-book "system/pseudo-event-formp" :dir :system)
 
-(local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
-(local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
 
