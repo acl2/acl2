@@ -7,9 +7,7 @@
 ; Copyright (C) 2024, Kestrel Technology, LLC
 ; All rights reserved.
 
-; Redistribution and use in source and binary forms, with or without
-; modification, are permitted provided that the following conditions are
-; met:
+; Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
 ; o Redistributions of source code must retain the above copyright
 ;   notice, this list of conditions and the following disclaimer.
@@ -80,6 +78,20 @@
 (include-book "subroutine"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "fp/top"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "interrupts"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "cpuid"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "msrs"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "x87"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "time"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "pio"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "cache"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -169,8 +181,22 @@ writes the final value of the instruction pointer into RIP.</p>")
        ;; "If an interrupt ... is used to resume execution after a HLT
        ;; instruction, the saved instruction pointer points to the instruction
        ;; following the HLT instruction."
-       (x86 (write-*ip proc-mode temp-rip x86)))
-    (!!ms-fresh :legal-halt :hlt)))
+       (x86 (write-*ip proc-mode temp-rip x86))
+
+       ;; In sys-view, HLT is essentially a NOP. This isn't correct; we should
+       ;; stop executing instructions until we get an interrupt. However, most
+       ;; of the time HLT is called in a loop, so it works fine for most real
+       ;; world programs. Fixing this would require adding a halt state to the
+       ;; model state and making it so either we spin the timer until it
+       ;; interrupts or skip enough timer steps to cause an interrupt. This
+       ;; breaks the notion that our model's time is tied to the number of
+       ;; instructions executed, but that isn't a big deal.
+
+       ;; In app-view, we set ms to stop execution
+       (x86 (if (app-view x86)
+              (!!ms-fresh :legal-halt :hlt)
+              x86)))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: CMC/CLC/STC/CLD/STD

@@ -44,7 +44,7 @@
                     *test_code*
                     x86))
    (equal (x86-fetch-decode-execute x86)
-          (X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP/TEST-E-G 0 (XR :RIP 0 X86)
+          (X86-ADD/XADD/ADC/SUB/SBB/OR/AND/XOR/CMP/TEST-E-G 0 (XR :RIP 0 X86)
                                                        (+ 7 (XR :RIP 0 X86))
                                                        3845 0 0 0 0 X86)))
   :enable (x86-fetch-decode-execute)

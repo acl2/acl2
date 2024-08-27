@@ -296,7 +296,18 @@ recommend using these functions at the top-level.</p>")
     :hints (("Goal" :in-theory (e/d* (pos) ()))))
 
   (defthmd addr-range-ifix
-    (equal (addr-range n (ifix x)) (addr-range n x))))
+    (equal (addr-range n (ifix x)) (addr-range n x)))
+
+  (defthm integerp-addr-range-member
+          (implies (member-p x (addr-range n m))
+                   (integerp x)))
+
+  (defthm addr-range-not-member-out-of-range
+          (implies (and (natp n)
+                        (integerp addr)
+                        (< el addr)
+                        (>= el (+ addr n)))
+                   (not (member-p el (addr-range n addr))))))
 
 ;; ======================================================================
 
@@ -318,8 +329,8 @@ recommend using these functions at the top-level.</p>")
 (local (in-theory (e/d (bitops::unsigned-byte-p-by-find-rule) ())))
 
 (define rm-low-32
-  ((addr :type (unsigned-byte #.*physical-address-size*))
-   (x86))
+    ((addr :type (unsigned-byte #.*physical-address-size*))
+     (x86))
   :guard (and (not (app-view x86))
               (integerp addr)
               (<= 0 addr)
@@ -353,27 +364,27 @@ recommend using these functions at the top-level.</p>")
   ///
 
   (defthm rm-low-32-in-app-view
-    (implies (app-view x86)
-             (equal (rm-low-32 p-addr x86) 0)))
+      (implies (app-view x86)
+               (equal (rm-low-32 p-addr x86) 0)))
 
   (defthm-unsigned-byte-p n32p-rm-low-32
-    :bound 32
-    :concl (rm-low-32 addr x86)
-    :hints (("Goal" :in-theory (e/d () (force (force)))))
-    :gen-linear t
-    :gen-type t)
+      :bound 32
+      :concl (rm-low-32 addr x86)
+      :hints (("Goal" :in-theory (e/d () (force (force)))))
+      :gen-linear t
+      :gen-type t)
 
   (defthm rm-low-32-xw
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :app-view)))
-             (equal (rm-low-32 addr (xw fld index val x86))
-                    (rm-low-32 addr x86)))
+      (implies (and (not (equal fld :mem))
+                    (not (equal fld :app-view)))
+               (equal (rm-low-32 addr (xw fld index val x86))
+                      (rm-low-32 addr x86)))
     :hints (("Goal" :in-theory (e/d* (rm-low-32) (force (force)))))))
 
 (define wm-low-32
-  ((addr :type (unsigned-byte #.*physical-address-size*))
-   (val :type (unsigned-byte 32))
-   (x86))
+    ((addr :type (unsigned-byte #.*physical-address-size*))
+     (val :type (unsigned-byte 32))
+     (x86))
   :inline t
   :no-function t
   :guard (and (not (app-view x86))
@@ -409,67 +420,68 @@ recommend using these functions at the top-level.</p>")
   ///
 
   (defthm x86p-wm-low-32
-    (implies (x86p x86)
-             (x86p (wm-low-32 addr val x86)))
+      (implies (x86p x86)
+               (x86p (wm-low-32 addr val x86)))
     :rule-classes (:rewrite :type-prescription))
 
   (defthm xr-wm-low-32
-    (implies (not (equal fld :mem))
-             (equal (xr fld index (wm-low-32 addr val x86))
-                    (xr fld index x86)))
+      (implies (not (equal fld :mem))
+               (equal (xr fld index (wm-low-32 addr val x86))
+                      (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* (wm-low-32) (force (force))))))
 
   (defthm wm-low-32-xw
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :app-view)))
-             (equal (wm-low-32 addr val (xw fld index value x86))
-                    (xw fld index value (wm-low-32 addr val x86))))
+      (implies (and (not (equal fld :mem))
+                    (not (equal fld :app-view)))
+               (equal (wm-low-32 addr val (xw fld index value x86))
+                      (xw fld index value (wm-low-32 addr val x86))))
     :hints (("Goal" :in-theory (e/d* (wm-low-32) (force (force)))))))
 
+
 ; MattK mod for ACL2(p): Hint LOGBITP-REASONING modifies state:
-(set-waterfall-parallelism nil)
+; (set-waterfall-parallelism nil)
 
 (defthmd put-logior-4-bytes-together
-  (implies (unsigned-byte-p 32 val)
-           (equal (logior (loghead 8 val)
-                          (ash (loghead 8 (logtail 8 val)) 8)
-                          (ash (logior (loghead 8 (logtail 16 val))
-                                       (ash (logtail 24 val) 8))
-                               16))
-                  val))
+    (implies (unsigned-byte-p 32 val)
+             (equal (logior (loghead 8 val)
+                            (ash (loghead 8 (logtail 8 val)) 8)
+                            (ash (logior (loghead 8 (logtail 16 val))
+                                         (ash (logtail 24 val) 8))
+                                 16))
+                    val))
   :hints ((bitops::logbitp-reasoning)))
 
 ;; rm-low-32/wm-low-32/xw RoW:
 
 (defthm |(rm-low-32 addr2 (wm-low-32 addr1 val x86)) --- same addr|
-  (implies (and (equal addr1 addr2)
-                (force (n32p val))
-                (not (app-view x86)))
-           (equal (rm-low-32 addr2 (wm-low-32 addr1 val x86))
-                  val))
+    (implies (and (equal addr1 addr2)
+                  (force (n32p val))
+                  (not (app-view x86)))
+             (equal (rm-low-32 addr2 (wm-low-32 addr1 val x86))
+                    val))
   :hints (("Goal" :in-theory (e/d (rm-low-32 wm-low-32 nfix ifix put-logior-4-bytes-together)
                                   (unsigned-byte-p force (force))))))
 
 (defthm |(rm-low-32 addr2 (wm-low-32 addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 4 addr1)
-                       (addr-range 4 addr2))
-           (equal (rm-low-32 addr2 (wm-low-32 addr1 val x86))
-                  (rm-low-32 addr2 x86)))
+    (implies (disjoint-p (addr-range 4 addr1)
+                         (addr-range 4 addr2))
+             (equal (rm-low-32 addr2 (wm-low-32 addr1 val x86))
+                    (rm-low-32 addr2 x86)))
   :hints (("Goal" :in-theory (e/d (rm-low-32 wm-low-32 nfix ifix)
                                   (unsigned-byte-p force (force))))))
 
 (defthm |(rm-low-32 addr2 (xw :mem addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 1 addr1)
-                       (addr-range 4 addr2))
-           (equal (rm-low-32 addr2 (xw :mem addr1 val x86))
-                  (rm-low-32 addr2 x86)))
+    (implies (disjoint-p (addr-range 1 addr1)
+                         (addr-range 4 addr2))
+             (equal (rm-low-32 addr2 (xw :mem addr1 val x86))
+                    (rm-low-32 addr2 x86)))
   :hints (("Goal" :in-theory (e/d (rm-low-32) (force (force))))))
 
 (defthm |(xr :mem addr1 (wm-low-32 addr2 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 4 addr2)
-                       (addr-range 1 addr1))
-           (equal (xr :mem addr1 (wm-low-32 addr2 val x86))
-                  (xr :mem addr1 x86)))
+    (implies (disjoint-p (addr-range 4 addr2)
+                         (addr-range 1 addr1))
+             (equal (xr :mem addr1 (wm-low-32 addr2 val x86))
+                    (xr :mem addr1 x86)))
   :hints (("Goal" :in-theory (e/d (nfix wm-low-32) (force (force))))))
 
 ;; wm-low-32 WoW:
@@ -489,17 +501,17 @@ recommend using these functions at the top-level.</p>")
   :rule-classes ((:rewrite :loop-stopper ((addr2 addr1)))))
 
 (defthm |(xw :mem addr1 (wm-low-32 addr2 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 4 addr2)
-                       (addr-range 1 addr1))
-           (equal (wm-low-32 addr2 val2 (xw :mem addr1 val1 x86))
-                  (xw :mem addr1 val1 (wm-low-32 addr2 val2 x86))))
+    (implies (disjoint-p (addr-range 4 addr2)
+                         (addr-range 1 addr1))
+             (equal (wm-low-32 addr2 val2 (xw :mem addr1 val1 x86))
+                    (xw :mem addr1 val1 (wm-low-32 addr2 val2 x86))))
   :hints (("Goal" :in-theory (e/d (nfix ifix wm-low-32) (force (force))))))
 
 ;; ======================================================================
 
 (define rm-low-64
-  ((addr :type (unsigned-byte #.*physical-address-size*))
-   (x86))
+    ((addr :type (unsigned-byte #.*physical-address-size*))
+     (x86))
   :guard (and (not (app-view x86))
               (integerp addr)
               (<= 0 addr)
@@ -527,29 +539,29 @@ recommend using these functions at the top-level.</p>")
   ///
 
   (defthm rm-low-64-in-app-view
-    (implies (app-view x86)
-             (equal (rm-low-64 p-addr x86) 0)))
+      (implies (app-view x86)
+               (equal (rm-low-64 p-addr x86) 0)))
 
   (defthm-unsigned-byte-p n64p-rm-low-64
-    :bound 64
-    :concl (rm-low-64 addr x86)
-    :hints (("Goal" :in-theory (e/d ()
-                                    (rm-low-32
-                                     force (force)))))
-    :gen-linear t
-    :gen-type t)
+      :bound 64
+      :concl (rm-low-64 addr x86)
+      :hints (("Goal" :in-theory (e/d ()
+                                      (rm-low-32
+                                       force (force)))))
+      :gen-linear t
+      :gen-type t)
 
   (defthm rm-low-64-xw
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :app-view)))
-             (equal (rm-low-64 addr (xw fld index val x86))
-                    (rm-low-64 addr x86)))
+      (implies (and (not (equal fld :mem))
+                    (not (equal fld :app-view)))
+               (equal (rm-low-64 addr (xw fld index val x86))
+                      (rm-low-64 addr x86)))
     :hints (("Goal" :in-theory (e/d* (rm-low-64) (force (force)))))))
 
 (define wm-low-64
-  ((addr :type (unsigned-byte #.*physical-address-size*))
-   (val :type (unsigned-byte 64))
-   (x86))
+    ((addr :type (unsigned-byte #.*physical-address-size*))
+     (val :type (unsigned-byte 64))
+     (x86))
   :guard (and (not (app-view x86))
               (< (+ 7 addr) *mem-size-in-bytes*))
   :guard-hints (("Goal" :in-theory (e/d (logtail unsigned-byte-p)
@@ -569,22 +581,22 @@ recommend using these functions at the top-level.</p>")
     x86)
   ///
   (defthm x86p-wm-low-64
-    (implies (x86p x86)
-             (x86p (wm-low-64 addr val x86)))
+      (implies (x86p x86)
+               (x86p (wm-low-64 addr val x86)))
     :hints (("Goal" :in-theory (e/d () (x86p))))
     :rule-classes (:rewrite :type-prescription))
 
   (defthm xr-wm-low-64
-    (implies (not (equal fld :mem))
-             (equal (xr fld index (wm-low-64 addr val x86))
-                    (xr fld index x86)))
+      (implies (not (equal fld :mem))
+               (equal (xr fld index (wm-low-64 addr val x86))
+                      (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d* (wm-low-64) (force (force))))))
 
   (defthm wm-low-64-xw
-    (implies (and (not (equal fld :mem))
-                  (not (equal fld :app-view)))
-             (equal (wm-low-64 addr val (xw fld index value x86))
-                    (xw fld index value (wm-low-64 addr val x86))))
+      (implies (and (not (equal fld :mem))
+                    (not (equal fld :app-view)))
+               (equal (wm-low-64 addr val (xw fld index value x86))
+                      (xw fld index value (wm-low-64 addr val x86))))
     :hints (("Goal" :in-theory (e/d* (wm-low-64) (force (force)))))))
 
 ;; rm-low-64/wm-low-64 RoW:
@@ -597,59 +609,59 @@ recommend using these functions at the top-level.</p>")
   :hints ((bitops::logbitp-reasoning)))
 
 (defthm |(rm-low-64 addr2 (wm-low-64 addr1 val x86)) --- same addr|
-  (implies (and (equal addr1 addr2)
-                (force (n64p val))
-                (not (app-view x86)))
-           (equal (rm-low-64 addr2 (wm-low-64 addr1 val x86))
-                  val))
+    (implies (and (equal addr1 addr2)
+                  (force (n64p val))
+                  (not (app-view x86)))
+             (equal (rm-low-64 addr2 (wm-low-64 addr1 val x86))
+                    val))
   :hints (("Goal" :in-theory (e/d (rm-low-64 wm-low-64 put-logior-2-dwords-together)
                                   ()))))
 
 (defthm |(rm-low-64 addr2 (wm-low-64 addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 8 addr1)
-                       (addr-range 8 addr2))
-           (equal (rm-low-64 addr2 (wm-low-64 addr1 val x86))
-                  (rm-low-64 addr2 x86)))
+    (implies (disjoint-p (addr-range 8 addr1)
+                         (addr-range 8 addr2))
+             (equal (rm-low-64 addr2 (wm-low-64 addr1 val x86))
+                    (rm-low-64 addr2 x86)))
   :hints (("Goal"
            :expand ((:free (n x) (addr-range n x))) ;; ugh
            :in-theory (e/d (rm-low-64 wm-low-64 ifix)
                            (disjoint-p)))))
 
 (defthm |(rm-low-64 addr2 (xw :mem addr1 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 1 addr1)
-                       (addr-range 8 addr2))
-           (equal (rm-low-64 addr2 (xw :mem addr1 val x86))
-                  (rm-low-64 addr2 x86)))
+    (implies (disjoint-p (addr-range 1 addr1)
+                         (addr-range 8 addr2))
+             (equal (rm-low-64 addr2 (xw :mem addr1 val x86))
+                    (rm-low-64 addr2 x86)))
   :hints (("Goal" :in-theory (e/d (rm-low-64 rm-low-32) (force (force))))))
 
 (defthm |(xr :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 8 addr2)
-                       (addr-range 1 addr1))
-           (equal (xr :mem addr1 (wm-low-64 addr2 val x86))
-                  (xr :mem addr1 x86)))
+    (implies (disjoint-p (addr-range 8 addr2)
+                         (addr-range 1 addr1))
+             (equal (xr :mem addr1 (wm-low-64 addr2 val x86))
+                    (xr :mem addr1 x86)))
   :hints (("Goal" :in-theory (e/d (ifix wm-low-32 wm-low-64) (force (force))))))
 
 ;; wm-low-64 WoW:
 
 (defthm |(wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86)) --- same addr|
-  (implies (equal addr1 addr2)
-           (equal (wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86))
-                  (wm-low-64 addr2 val2 x86)))
+    (implies (equal addr1 addr2)
+             (equal (wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86))
+                    (wm-low-64 addr2 val2 x86)))
   :hints (("Goal" :in-theory (e/d (wm-low-64) (rm-low-32 wm-low-32)))))
 
 (defthm |(wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 8 addr1)
-                       (addr-range 8 addr2))
-           (equal (wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86))
-                  (wm-low-64 addr1 val1 (wm-low-64 addr2 val2 x86))))
+    (implies (disjoint-p (addr-range 8 addr1)
+                         (addr-range 8 addr2))
+             (equal (wm-low-64 addr2 val2 (wm-low-64 addr1 val1 x86))
+                    (wm-low-64 addr1 val1 (wm-low-64 addr2 val2 x86))))
   :hints (("Goal" :in-theory (e/d (wm-low-64 wm-low-32) ())))
   :rule-classes ((:rewrite :loop-stopper ((addr2 addr1)))))
 
 (defthm |(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
-  (implies (disjoint-p (addr-range 8 addr2)
-                       (addr-range 1 addr1))
-           (equal (wm-low-64 addr2 val2 (xw :mem addr1 val1 x86))
-                  (xw :mem addr1 val1 (wm-low-64 addr2 val2 x86))))
+    (implies (disjoint-p (addr-range 8 addr2)
+                         (addr-range 1 addr1))
+             (equal (wm-low-64 addr2 val2 (xw :mem addr1 val1 x86))
+                    (xw :mem addr1 val1 (wm-low-64 addr2 val2 x86))))
   :hints (("Goal" :in-theory (e/d (ifix wm-low-64 wm-low-32) (force (force))))))
 
 ;; ======================================================================

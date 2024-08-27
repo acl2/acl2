@@ -244,7 +244,15 @@
   ;; machine and the former is the index of the register in the x86 stobj.  So
   ;; the *...-IDX* values are specific to the formal model.
 
-  `(defconsts (
+  `(defconsts (*IA32_SYSENTER_CS*
+               *IA32_SYSENTER_CS-IDX*
+
+               *IA32_SYSENTER_ESP*
+               *IA32_SYSENTER_ESP-IDX*
+
+               *IA32_SYSENTER_EIP*
+               *IA32_SYSENTER_EIP-IDX*
+
                ;; extended features enables --- If
                ;; CPUID.80000001.EDX.[bit 20] or
                ;; CPUID.80000001.EDX.[bit 29]
@@ -286,7 +294,13 @@
 
                *model-specific-register-names-len*)
 
-     ,(b* ((lst (list #uxC000_0080 ;; ia32_efer and idx
+     ,(b* ((lst (list #ux174
+                      8
+                      #ux175
+                      9
+                      #ux176
+                      10
+                      #uxC000_0080 ;; ia32_efer and idx
                       0
                       #uxC000_0100 ;; ia32_fs_base and idx
                       1

@@ -38,7 +38,7 @@
                                         &key
                                         (debugdata 'debugdata)
                                         )
-  :returns (evaldata svtv-evaldata-p)
+  :returns (evaldata svtv-chase-evaldata-p)
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable debugdatap)
                        :do-not-induct t)))
@@ -62,9 +62,12 @@
        (- (clear-memoize-table 'svex-eval))
        (initst (make-fast-alist (pairlis$ states
                                           (replicate (len states) (4vec-x))))))
-    (make-svtv-evaldata :nextstate (make-fast-alist debugdata.nextstates)
-                        :inputs (make-fast-alists in-envs)
-                        :initst (make-fast-alist initst))))
+    (make-svtv-chase-evaldata
+     :evaldata
+     (make-svtv-evaldata :nextstate (make-fast-alist debugdata.nextstates)
+                         :inputs (make-fast-alists in-envs)
+                         :initst (make-fast-alist initst))
+     :updates (make-fast-alist debugdata.updates))))
 
 (defthm nth-of-svtv-debug-set-ios-logic
   (implies (not (member (nfix n)
@@ -170,8 +173,6 @@
        (svtv-chase-data (set-svtv-chase-data->stack nil svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->evaldata evaldata svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->smartp t svtv-chase-data))
-       (svtv-chase-data (set-svtv-chase-data->updates
-                         (make-fast-alist (debugdata->updates debugdata)) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->assigns
                          (make-fast-alist (debugdata->override-assigns debugdata)) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->delays

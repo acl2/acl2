@@ -18,7 +18,7 @@
 ;; VAR-RENAMED.
 ;;
 ;; Before applying ALT-CONST-FNS-GEN, the user needs to introduce constant
-;; functions representind the arguments of the input function. This can be done
+;; functions representing the arguments of the input function. This can be done
 ;; via an ENCAPSULATE event. For example, suppose an input function has two
 ;; arguments, we can introduce two constant functions representing these two
 ;; arguments as follows.

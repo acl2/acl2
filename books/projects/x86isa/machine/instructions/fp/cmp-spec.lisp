@@ -62,7 +62,7 @@
                          (sign2 :type (unsigned-byte 1))
                          (exp-width posp)
                          (frac-width posp)
-                         (operation :type (integer 0 36)))
+                         (operation :type (integer 0 38)))
   :long "<p>This function checks whether operands are NaN and then
   returns the corresponding results. It also handles the
   infinities.</p>
@@ -151,7 +151,7 @@
       (sse-cmp-special kind1 sign1 kind2 sign2 exp-width frac-width operation)))
     :rule-classes :type-prescription))
 
-(define sse-cmp ((operation :type (integer 0 36))
+(define sse-cmp ((operation :type (integer 0 38))
                  (op1 natp)
                  (op2 natp)
                  (mxcsr :type (unsigned-byte 32))
@@ -246,7 +246,7 @@
 
 ;; Single-Precision:
 
-(define sp-sse-cmp ((operation :type (integer 0 36))
+(define sp-sse-cmp ((operation :type (integer 0 38))
                     (op1       :type (unsigned-byte 32))
                     (op2       :type (unsigned-byte 32))
                     (mxcsr     :type (unsigned-byte 32)))
@@ -270,7 +270,7 @@
 
 ;; Double-Precision:
 
-(define dp-sse-cmp ((operation :type (integer 0 36))
+(define dp-sse-cmp ((operation :type (integer 0 38))
                     (op1       :type (unsigned-byte 64))
                     (op2       :type (unsigned-byte 64))
                     (mxcsr     :type (unsigned-byte 32)))

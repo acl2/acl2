@@ -60,7 +60,15 @@
   :enabled t
   (with-local-state
     (mv-let (aignet::aignet state)
-      (aignet::fraig! aignet::aignet (gl-default-fraig-config) state)
+      (with-local-stobj aignet::aignet2
+        (mv-let (aignet::aignet2 aignet::aignet state)
+          (mv-let (aignet::aignet2 outranges state)
+            (aignet::fraig nil aignet::aignet aignet::aignet2 (gl-default-fraig-config) nil state)
+            (declare (ignore outranges))
+            (mv-let (aignet::aignet2 aignet::aignet)
+              (swap-stobjs aignet::aignet2 aignet::aignet)
+              (mv aignet::aignet2 aignet::aignet state)))
+          (mv aignet::aignet state)))
       aignet::aignet)))
   
 
@@ -98,9 +106,10 @@ satlink) after aignet fraiging to solve queries."
   (declare (ignore transform-config))
   :enabled t
   (with-local-state
-    (mv-let (aignet::aignet state)
-      (time$ (aignet::apply-comb-transforms! aignet::aignet (gl-transforms-config) state)
+    (mv-let (aignet::aignet outranges state)
+      (time$ (aignet::apply-comb-transforms! aignet::aignet (gl-transforms-config) nil state)
              :msg "All transforms: ~st seconds, ~sa bytes.~%")
+      (declare (ignore outranges))
       aignet::aignet)))
 
 

@@ -73,6 +73,75 @@ attached to the @('apply') function when that book is included.</p>
 
 ")
 
+(defxdoc aignet-output-ranges
+  :parents (aignet-transforms)
+  :short "Summary of a system to specify the treatments of different primary outputs by AIG transformations"
+  :long "<p>As an <see topic='@(url aignet)'>AIG</see> is passed through
+several different transforms, its nodes are typically renumbered, so that the
+only way of identifying certain a node/literal is if it is the fanin of some
+primary output. In that case since the primary outputs' numbering is preserved
+by the transform, we can be assured that e.g. the fanin literal of primary
+output K after a series of combinational transforms is combinationally
+equivalent to the fanin literal of primary output K before those
+transforms.</p>
+
+<p>This is fine when all we want to do with a transform is have it run fully
+automatically and e.g. preserve combinational equivalence among the
+outputs. But some transforms benefit from more user direction, and can be
+configured such that certain nodes are identified for certain purposes.  For
+example, the FRAIG transform can find candidate equivalence classes, but it can
+benefit from a configuration which says that only certain nodes are to be
+treated as candidate equivalences.  In a usage such as @(see
+sv::svex-focused-equivalence-checking), these potentially equivalent nodes are
+known before any transforms are done, but other transforms may need to be run
+before the fraig transform.  Therefore these candidate equivalence nodes are
+added as primary outputs (generally after the \"real\" primary outputs of the
+AIG).  We then need to tell the FRAIG transform which outputs are regular
+primary outputs and which are the candidate equivalence classes. As this is
+just one example of the special purpose use of primary output nodes for a
+transform, there may be several different ranges of outputs that are to be used
+for different purposes across different transforms.  We need a mapping,
+therefore, between ranges of outputs and their special purposes in various
+transforms.</p>
+
+<p>To allow this sort of thing to work with minimal user hassle, we add one
+layer of indirection: we instead keep a mapping from output ranges to
+names (symbols), and separately in each transform's configuration, map names to
+objects describing their special purposes (which vary by transform).</p>
+
+<p>Typically the <see topic='@(url aignet-output-range-map)'>output-range
+map</see> is provided by the user before transforms are started and preserved
+throughout.  However, we also allow a transform to modify the output-range
+map. E.g., in the future the fraig transform could support recording the
+remaining candidate equivalence classes so that a subsequent fraig transform
+could begin with those classes.</p>")
+
+(fty::defalist aignet-output-range-map :key-type symbolp :val-type natp :true-listp t
+  :parents (aignet-output-ranges)
+  :short "Type of the mapping that names ranges of primary outputs of an AIG"
+  :long "<p>An object of this type associates an identifier or NIL with each
+range of primary outputs of an AIG.  Such an object can be passed to AIGNET
+<see topic='@(url aignet-transforms)'>transforms</see> to identify which ranges
+of outputs should be used for which purposes, according to the transform and
+its configuration. See @(see aignet-output-ranges) for a more comprehensive
+description.</p>")
+
+(define aignet-output-range-map-length ((x aignet-output-range-map-p))
+  :hooks (:fix)
+  :returns (len natp :rule-classes :type-prescription)
+  (if (atom x)
+      0
+    (+ (if (mbt (consp (car x)))
+           (lnfix (cdar x))
+         0)
+       (aignet-output-range-map-length (cdr x))))
+  ///
+  (defthm aignet-output-range-map-length-of-append
+    (equal (aignet-output-range-map-length (append a b))
+           (+ (aignet-output-range-map-length a) (aignet-output-range-map-length b)))
+    :hints(("Goal" :in-theory (enable aignet-output-range-map-length))))
+  
+  (local (in-theory (enable aignet-output-range-map-fix))))
 
 (defconst *apply-transform-template*
   '(progn
@@ -81,157 +150,199 @@ attached to the @('apply') function when that book is included.</p>
        :short <short>
        :long <long>)
      (encapsulate
-       (((apply-<name>-transform <extra-formals-*> aignet aignet2 * state) => (mv aignet2 state)
+       (((apply-<name>-transform <extra-formals-*> aignet aignet2 * * state) => (mv aignet2 * state)
          :guard <encap-guard>
-         :formals (<extra-args> aignet aignet2 config state)))
+         :formals (<extra-args> aignet aignet2 config output-ranges state)))
 
-       (local (define apply-<name>-transform (<extra-define-formals> aignet aignet2 config state)
+       (local (define apply-<name>-transform (<extra-define-formals> aignet aignet2 config
+                                                                     (output-ranges aignet-output-range-map-p)
+                                                                     state)
                 :guard <guard>
-                :returns (mv new-aignet2 new-state)
+                :returns (mv new-aignet2
+                             new-output-ranges
+                             new-state)
                 (Declare (ignore <extra-args> config aignet2))
                 (b* ((aignet2 (non-exec (node-list-fix aignet))))
-                  (mv aignet2 state))))
+                  (mv aignet2 (aignet-output-range-map-fix output-ranges) state))))
 
        (local (in-theory (enable apply-<name>-transform)))
+
+       (defret output-ranges-of-<fn>
+         (aignet-output-range-map-p new-output-ranges))
        
        (defret normalize-inputs-of-<fn>
          (implies (syntaxp (not (equal aignet2 ''nil)))
                   (equal <call>
-                         (<fn> <extra-args> aignet nil config state))))
+                         (<fn> <extra-args> aignet nil config output-ranges state))))
 
        (defret num-ins-of-<fn>
          (equal (stype-count :pi new-aignet2)
                 (stype-count :pi aignet)))
 
-       (defret num-regs-of-<fn>
-         (equal (stype-count :reg new-aignet2)
-                (stype-count :reg aignet)))
+       ;; (defret num-regs-of-<fn>
+       ;;   (equal (stype-count :reg new-aignet2)
+       ;;          (stype-count :reg aignet)))
 
-       (defret num-outs-of-<fn>
-         (equal (stype-count :po new-aignet2)
-                (stype-count :po aignet)))
+       (defret num-outs-lower-bound-of-<fn>
+         (implies (<= (aignet-output-range-map-length output-ranges)
+                      (stype-count :po aignet))
+                  (<= (aignet-output-range-map-length new-output-ranges)
+                      (stype-count :po new-aignet2)))
+         :rule-classes
+         ((:linear :trigger-terms
+           ((aignet-output-range-map-length new-output-ranges)
+            (stype-count :po new-aignet2)))))
 
-       (defret <fn>-correct
-         <correctness-claim-aignet2>)
+       <correctness-thms-aignet2>
 
        (defret w-state-of-<fn>
          (equal (w new-state)
                 (w state)))
 
        (defret list-of-outputs-of-<fn>
-         (equal (list new-aignet2 new-state) <call>)))
+         (equal (list new-aignet2 new-output-ranges new-state) <call>)))
 
      (acl2::set-prev-stobjs-correspondence apply-<name>-transform
                                            :stobjs-out (aignet state)
-                                           :formals (<extra-args> aignet aignet2 config state))
+                                           :formals (<extra-args> aignet aignet2 config output-ranges state))
 
 
      (define apply-<name>-transform! (<extra-define-formals>
                                       aignet
                                       transform
+                                      (output-ranges aignet-output-range-map-p)
                                       state)
        :parents (apply-<name>-transform)
        :guard <guard>
-       :returns (mv new-aignet new-state)
+       :returns (mv new-aignet
+                    (new-output-ranges aignet-output-range-map-p)
+                    new-state)
        :enabled t
        :hooks nil
-       (mbe :logic (non-exec (apply-<name>-transform <extra-args> aignet nil transform state))
+       (mbe :logic (non-exec (apply-<name>-transform <extra-args> aignet nil transform output-ranges state))
             :exec (b* (((acl2::local-stobjs aignet2)
-                        (mv aignet aignet2 state))
-                       ((mv aignet2 state) (apply-<name>-transform <extra-args> aignet aignet2 transform state))
+                        (mv aignet aignet2 output-ranges state))
+                       ((mv aignet2 output-ranges state) (apply-<name>-transform <extra-args> aignet aignet2 transform output-ranges state))
                        ((mv aignet aignet2) (swap-stobjs aignet aignet2)))
-                    (mv aignet aignet2 state))))
+                    (mv aignet aignet2 output-ranges state))))
 
      (define apply-<name>-transforms!-core (<extra-define-formals>
                                             aignet
                                             transforms
+                                            (output-ranges aignet-output-range-map-p)
                                             state)
        :guard <guard>  
-       :returns (mv new-aignet new-state)
+       :returns (mv new-aignet
+                    (new-output-ranges aignet-output-range-map-p)
+                    new-state)
        (b* (((when (atom transforms))
              (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
                                :exec aignet)))
-               (mv aignet state)))
-            ((mv aignet state) (apply-<name>-transform! <extra-args> aignet (car transforms) state)))
-         (apply-<name>-transforms!-core <extra-args> aignet (cdr transforms) state))
+               (mv aignet (aignet-output-range-map-fix output-ranges) state)))
+            ((mv aignet output-ranges state)
+             (apply-<name>-transform! <extra-args> aignet (car transforms) output-ranges state)))
+         (apply-<name>-transforms!-core <extra-args> aignet (cdr transforms) output-ranges state))
        ///
        (defret num-ins-of-<fn>
          (equal (stype-count :pi new-aignet)
                 (stype-count :pi aignet)))
 
-       (defret num-regs-of-<fn>
-         (equal (stype-count :reg new-aignet)
-                (stype-count :reg aignet)))
+       ;; (defret num-regs-of-<fn>
+       ;;   (equal (stype-count :reg new-aignet)
+       ;;          (stype-count :reg aignet)))
 
-       (defret num-outs-of-<fn>
-         (equal (stype-count :po new-aignet)
-                (stype-count :po aignet)))
+       ;; (defret num-outs-of-<fn>
+       ;;   (equal (stype-count :po new-aignet)
+       ;;          (stype-count :po aignet)))
 
-       (defret <fn>-correct
-         <correctness-claim-aignet>)
+       (defret num-outs-lower-bound-of-<fn>
+         (implies (<= (aignet-output-range-map-length output-ranges)
+                      (stype-count :po aignet))
+                  (<= (aignet-output-range-map-length new-output-ranges)
+                      (stype-count :po new-aignet)))
+         :rule-classes
+         ((:linear :trigger-terms
+           ((aignet-output-range-map-length new-output-ranges)
+            (stype-count :po new-aignet)))))
+
+       <correctness-thms-aignet>
 
        (defret w-state-of-<fn>
          (equal (w new-state)
                 (w state)))
 
        (defret list-of-outputs-of-<fn>
-         (equal (list new-aignet new-state) <call>)))
+         (equal (list new-aignet new-output-ranges new-state) <call>)))
 
      (define apply-<name>-transforms! (<extra-define-formals>
                                        aignet
                                        transforms
+                                       (output-ranges aignet-output-range-map-p)
                                        state)
        :parents (apply-<name>-transform)
        :guard <guard>
        :enabled t
        :hooks nil
-       :returns (mv new-aignet new-state)
+       :returns (mv new-aignet new-output-ranges new-state)
        (prog2$ (print-aignet-stats "Input" aignet)
-               (time$ (apply-<name>-transforms!-core <extra-args> aignet transforms state)
+               (time$ (apply-<name>-transforms!-core <extra-args> aignet transforms output-ranges state)
                       :msg "All transforms: ~st seconds, ~sa bytes.~%")))
 
-     (define apply-<name>-transforms-in-place (<extra-define-formals> aignet aignet2 transforms state)
+     (define apply-<name>-transforms-in-place (<extra-define-formals>
+                                               aignet
+                                               aignet2
+                                               transforms
+                                               (output-ranges aignet-output-range-map-p)
+                                               state)
        :guard <guard>
-       :returns (mv new-aignet new-aignet2 new-state)
+       :returns (mv new-aignet new-aignet2 new-output-ranges new-state)
        (b* (((when (atom transforms))
              (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
                                :exec aignet))
                   (aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
                                 :exec aignet2)))
-               (mv aignet aignet2 state))))
+               (mv aignet aignet2 (aignet-output-range-map-fix output-ranges) state))))
          (mbe :logic (non-exec
-                      (b* (((mv new-aignet state) (apply-<name>-transform <extra-args> aignet nil (car transforms) state)))
-                        (apply-<name>-transforms-in-place <extra-args> new-aignet aignet (cdr transforms) state)))
-              :exec (b* (((mv aignet2 state) (apply-<name>-transform <extra-args> aignet aignet2 (car transforms) state))
+                      (b* (((mv new-aignet output-ranges state) (apply-<name>-transform <extra-args> aignet nil (car transforms) output-ranges state)))
+                        (apply-<name>-transforms-in-place <extra-args> new-aignet aignet (cdr transforms) output-ranges state)))
+              :exec (b* (((mv aignet2 output-ranges state) (apply-<name>-transform <extra-args> aignet aignet2 (car transforms) output-ranges state))
                          ((mv aignet aignet2) (swap-stobjs aignet aignet2)))
-                      (apply-<name>-transforms-in-place <extra-args> aignet aignet2 (cdr transforms) state))))
+                      (apply-<name>-transforms-in-place <extra-args> aignet aignet2 (cdr transforms) output-ranges state))))
        ///
        (defret <fn>-equals-apply-<name>-transforms!
-         (b* (((mv new-aignet-spec new-state-spec) (apply-<name>-transforms! <extra-args> aignet transforms state)))
+         (b* (((mv new-aignet-spec new-output-ranges-spec new-state-spec) (apply-<name>-transforms! <extra-args> aignet transforms output-ranges state)))
            (and (equal new-aignet new-aignet-spec)
+                (equal new-output-ranges new-output-ranges-spec)
                 (equal new-state new-state-spec)))
          :hints(("Goal" :in-theory (enable apply-<name>-transforms!-core))))
 
        (defret list-of-outputs-of-<fn>
-         (equal (list new-aignet new-aignet2 new-state) <call>)
+         (equal (list new-aignet new-aignet2 new-output-ranges new-state) <call>)
          :hints(("Goal" :in-theory (disable <fn>-equals-apply-<name>-transforms!)))))
 
-     (define apply-<name>-transforms (<extra-define-formals> aignet aignet2 transforms state)
+     (define apply-<name>-transforms (<extra-define-formals>
+                                      aignet
+                                      aignet2
+                                      transforms
+                                      (output-ranges aignet-output-range-map-p)
+                                      state)
        :parents (apply-<name>-transform)
        :guard <guard>
-       :returns (mv new-aignet2 new-state)
-       :guard-hints (("goal" :expand ((apply-<name>-transforms!-core <extra-args> aignet transforms state))))
+       :returns (mv new-aignet2
+                    (new-output-ranges aignet-output-range-map-p)
+                    new-state)
+       :guard-hints (("goal" :expand ((apply-<name>-transforms!-core <extra-args> aignet transforms output-ranges state))))
        (prog2$
         (print-aignet-stats "Input" aignet)
         (time$
          (b* (((unless (consp transforms))
                (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
-                 (mv aignet2 state))))
-           (mbe :logic (non-exec (apply-<name>-transforms!-core <extra-args> aignet transforms state))
-                :exec (b* (((mv aignet2 state) (apply-<name>-transform <extra-args> aignet aignet2 (car transforms) state))
+                 (mv aignet2 (aignet-output-range-map-fix output-ranges) state))))
+           (mbe :logic (non-exec (apply-<name>-transforms!-core <extra-args> aignet transforms output-ranges state))
+                :exec (b* (((mv aignet2 output-ranges state) (apply-<name>-transform <extra-args> aignet aignet2 (car transforms) output-ranges state))
                            ((acl2::local-stobjs aignet3)
-                            (mv aignet2 aignet3 state)))
-                        (apply-<name>-transforms-in-place <extra-args> aignet2 aignet3 (cdr transforms) state))))
+                            (mv aignet2 aignet3 output-ranges state)))
+                        (apply-<name>-transforms-in-place <extra-args> aignet2 aignet3 (cdr transforms) output-ranges state))))
          :msg "All transforms: ~st seconds, ~sa bytes.~%"))
        ///
        (defret normalize-inputs-of-<fn>
@@ -243,46 +354,56 @@ attached to the @('apply') function when that book is included.</p>
          (equal (stype-count :pi new-aignet2)
                 (stype-count :pi aignet)))
 
-       (defret num-regs-of-<fn>
-         (equal (stype-count :reg new-aignet2)
-                (stype-count :reg aignet)))
+       ;; (defret num-regs-of-<fn>
+       ;;   (equal (stype-count :reg new-aignet2)
+       ;;          (stype-count :reg aignet)))
 
-       (defret num-outs-of-<fn>
-         (equal (stype-count :po new-aignet2)
-                (stype-count :po aignet)))
+       ;; (defret num-outs-of-<fn>
+       ;;   (equal (stype-count :po new-aignet2)
+       ;;          (stype-count :po aignet)))
 
-       (defret <fn>-correct
-         <correctness-claim-aignet2>)
+       (defret num-outs-lower-bound-of-<fn>
+         (implies (<= (aignet-output-range-map-length output-ranges)
+                      (stype-count :po aignet))
+                  (<= (aignet-output-range-map-length new-output-ranges)
+                      (stype-count :po new-aignet2)))
+         :rule-classes
+         ((:linear :trigger-terms
+           ((stype-count :po new-aignet2)
+            (aignet-output-range-map-length new-output-ranges)))))
+
+       <correctness-thms-aignet2>
 
        (defret w-state-of-<fn>
          (equal (w new-state)
                 (w state)))
 
        (defret list-of-outputs-of-<fn>
-         (equal (list new-aignet2 new-state) <call>)))))
+         (equal (list new-aignet2 new-output-ranges new-state) <call>)))))
 
 
 (defun def-apply-transform-fn (name
                                extra-define-formals
                                guard
-                               correctness-claim
+                               correctness-thms
                                parents short long)
   (declare (xargs :mode :program))
   (b* ((formals (std::parse-formals `(def-apply-transform ,name)
                                     extra-define-formals nil nil))
        (formal-guards (std::formallist->guards formals))
        (formal-names (std::formallist->names formals))
-       (full-guard `(and ,guard . ,formal-guards))
-       (correctness-claim-aignet2 (subst 'new-aignet2 'new-aignet correctness-claim))
+       (full-guard `(and (aignet-output-range-map-p output-ranges)
+                         ,guard . ,formal-guards))
+       (correctness-thms-aignet2 (subst 'new-aignet2 'new-aignet correctness-thms))
        (subst
         (acl2::make-tmplsubst
          :splices `((<extra-define-formals> . ,extra-define-formals)
                     (<extra-args> . ,formal-names)
-                    (<extra-formals-*> . ,(make-list (len formal-names) :initial-element '*)))
+                    (<extra-formals-*> . ,(make-list (len formal-names) :initial-element '*))
+                    (<correctness-thms-aignet> . ,correctness-thms)
+                    (<correctness-thms-aignet2> . ,correctness-thms-aignet2))
          :atoms `((<encap-guard> . ,full-guard)
                   (<guard> . ,guard)
-                  (<correctness-claim-aignet> . ,correctness-claim)
-                  (<correctness-claim-aignet2> . ,correctness-claim-aignet2)
                   (<parents> . ,parents)
                   (<short> . ,short)
                   (<long> . ,long))
@@ -293,21 +414,37 @@ attached to the @('apply') function when that book is included.</p>
 (defmacro def-apply-transform (name extra-define-formals
                                &key
                                (guard 't)
-                               (correctness-claim)
+                               (correctness-thms)
                                parents short long)
-  (def-apply-transform-fn name extra-define-formals guard correctness-claim parents short long))
+  (def-apply-transform-fn name extra-define-formals guard correctness-thms parents short long))
 
 (def-apply-transform comb ()
-  :correctness-claim (comb-equiv new-aignet aignet)
+  :correctness-thms
+  ((defret <fn>-comb-equiv
+     (comb-equiv new-aignet aignet))
+   (defret num-regs-of-<fn>
+     (equal (stype-count :reg new-aignet)
+            (stype-count :reg aignet)))
+   (defret num-outs-of-<fn>
+     (equal (stype-count :po new-aignet)
+            (stype-count :po aignet))))
   :parents (aignet-comb-transforms)
   :short "Stub for an AIG transform that preserves combinational equivalence")
 
 (def-apply-transform n-output-comb ((n natp))
   :guard (<= n (num-outs aignet))
-  :correctness-claim
-  (implies (< (nfix i) (nfix n))
-           (equal (output-eval i invals regvals new-aignet)
-                  (output-eval i invals regvals aignet)))
+  :correctness-thms
+  ((defret output-eval-of-<fn>
+     (implies (< (nfix i) (nfix n))
+              (equal (output-eval i invals regvals new-aignet)
+                     (output-eval i invals regvals aignet))))
+   (defret num-regs-of-<fn>
+     (equal (stype-count :reg new-aignet)
+            (stype-count :reg aignet)))
+   (defret num-outs-of-<fn>
+     (implies (<= (nfix n) (stype-count :po aignet))
+              (<= (nfix n) (stype-count :po new-aignet)))
+     :rule-classes :linear))
   :parents (aignet-n-output-comb-transforms)
   :short "Stub for an AIG transform that preserves combinational equivalence of
           the first N primary outputs")
@@ -528,16 +665,24 @@ attached to the @('apply') function when that book is included.</p>
 
 (def-apply-transform m-assumption-n-output ((m natp) (n natp))
   :guard (<= (+ m n) (num-outs aignet))
-  :correctness-claim
-  (and ;; (output-range-equiv m invals regvals new-aignet aignet)
-       (implies (< (nfix i) (nfix m))
-                (equal (output-eval i invals regvals new-aignet)
-                       (output-eval i invals regvals aignet)))
-       (implies (and (< (nfix i) (+ (nfix m) (nfix n)))
-                     (equal (conjoin-output-range 0 m invals regvals aignet)
-                            1))
-                (equal (output-eval i invals regvals new-aignet)
-                       (output-eval i invals regvals aignet))))
+  :correctness-thms
+  ((defret output-eval-of-<fn>-assum
+     (implies (< (nfix i) (nfix m))
+              (equal (output-eval i invals regvals new-aignet)
+                     (output-eval i invals regvals aignet))))
+   (defret output-eval-of-<fn>-under-assum
+     (implies (and (< (nfix i) (+ (nfix m) (nfix n)))
+                   (equal (conjoin-output-range 0 m invals regvals aignet)
+                          1))
+              (equal (output-eval i invals regvals new-aignet)
+                     (output-eval i invals regvals aignet))))
+   (defret num-outs-of-<fn>
+     (implies (<= (+ (nfix m) (nfix n)) (stype-count :po aignet))
+              (<= (+ (nfix m) (nfix n)) (stype-count :po new-aignet)))
+     :rule-classes :linear)
+   (defret num-regs-of-<fn>
+     (equal (stype-count :reg new-aignet)
+            (stype-count :reg aignet))))
   :parents (aignet-m-assumption-n-output-transforms)
   :short "Stub for an AIG transform that preserves combinational equivalence of
           the first M primary outputs, then preserves combinational equivalence
