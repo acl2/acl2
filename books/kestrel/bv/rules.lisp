@@ -1897,7 +1897,7 @@
                 (natp high))
            (equal (bitand (slice high low x) y)
                   (bitand (getbit low x) y)))
-  :hints (("Goal" :in-theory (enable bitand bvand))))
+  :hints (("Goal" :in-theory (enable bitand bvand getbit))))
 
 ;bozo analogue for bvand?
 (defthm bitand-of-slice-arg2
@@ -1906,7 +1906,7 @@
                 (natp high))
            (equal (bitand y (slice high low x))
                   (bitand y (getbit low x))))
-  :hints (("Goal" :in-theory (enable bitand bvand))))
+  :hints (("Goal" :in-theory (enable bitand bvand getbit))))
 
 ;same for bitnot?
 (defthm equal-bvnot-1-getbit-0
@@ -2441,7 +2441,7 @@
                                (bvchop 1 y))
                          lowsize2
                          (bvor lowsize2 j k))))
-  :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
+  :hints (("Goal" :in-theory (enable slice))))
 
 (defthm bvor-of-bvcat-and-bvcat-constant-version-alt
   (implies (and (syntaxp (and (quotep j) (quotep k)))
@@ -2460,7 +2460,7 @@
                                (bvchop 1 y))
                          lowsize2
                          (bvor lowsize2 j k))))
-  :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
+  :hints (("Goal" :in-theory (enable slice))))
 
 (defthm bvand-with-256
   (implies (and (integerp x)
@@ -3735,7 +3735,7 @@
              (if (equal 1 (getbit 0 x)) 1 0)
            ;both branches are the same...:
            (if (equal 1 (getbit 0 x)) 0 0)))
-  :hints (("Goal" :in-theory (enable bvand))))
+  :hints (("Goal" :in-theory (enable bvand getbit))))
 
 ;fixme we probably need a lot more rules like this to add sizes (we need sizes
 ;in the if nest, since there can be logexts to be gotten rid of at the leaves
@@ -4734,7 +4734,7 @@
            (equal (< (BVCHOP (+ 1 HIGH) X) (EXPT 2 HIGH))
                   (not (EQUAL 1 (GETBIT HIGH X)))))
   :hints (("Goal" :use (:instance split-with-bvcat (x x) (hs 1) (ls high))
-           :in-theory (enable bvcat logapp))))
+           :in-theory (enable bvcat logapp getbit))))
 
 (defthmd getbit-when-bvlt-of-small-helper
   (implies (and (bvlt (+ 1 size) x (expt 2 size))
@@ -5911,7 +5911,7 @@
                        (n 32)
                        (m 31)
                        (x (bvchop 32 x)))
-          :in-theory (e/d (bvcat logapp) (logapp-of-bvchop-same)))))
+          :in-theory (e/d (bvcat logapp getbit) (logapp-of-bvchop-same)))))
 
 ;gen
 (defthm <-of-bvplus-of-minus1-and-bvchop-same

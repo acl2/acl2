@@ -1,7 +1,7 @@
 ; Logical negation of a bit-vector
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -64,7 +64,6 @@
            (equal (getbit 0 (bvnot size x))
                   (bvnot 1 x)))
   :hints (("Goal" :in-theory (enable bvnot))))
-
 
 (defthm bvchop-of-bvnot-same
   (equal (bvchop size (bvnot size val))

@@ -89,7 +89,7 @@
 (defthm sf-spec64-of-bvchop-64
   (equal (sf-spec64 (bvchop 64 x))
          (sf-spec64 x))
-  :hints (("Goal" :in-theory (enable sf-spec64))))
+  :hints (("Goal" :in-theory (enable sf-spec64 acl2::logtail-of-bvchop))))
 
 (defthm of-spec64-of-logext-64
   (equal (of-spec64 (logext 64 x))

@@ -141,7 +141,7 @@
            (if (equal 1 (getbit 0 x))
                  1
              0)))
-  :hints (("Goal" :in-theory (enable bitxor bvxor))))
+  :hints (("Goal" :in-theory (enable bitxor bvxor getbit))))
 
 (defthm getbit-of-bitxor-all-cases
   (implies (natp n)
@@ -200,12 +200,12 @@
 (defthm equal-of-bitxor-and-bitxor-same
   (equal (equal (bitxor x y) (bitxor x z))
          (equal (getbit 0 y) (getbit 0 z)))
-  :hints (("Goal" :in-theory (e/d (bitxor) (bvxor-1-becomes-bitxor)))))
+  :hints (("Goal" :in-theory (e/d (bitxor getbit) (bvxor-1-becomes-bitxor)))))
 
 (defthm equal-of-bitxor-and-bitxor-same-alt
   (equal (equal (bitxor x1 y) (bitxor x2 y))
          (equal (getbit 0 x1) (getbit 0 x2)))
-  :hints (("Goal" :in-theory (e/d (bitxor) (bvxor-1-becomes-bitxor)))))
+  :hints (("Goal" :in-theory (e/d (bitxor getbit) (bvxor-1-becomes-bitxor)))))
 
 (defthm bitxor-of-ifix-arg1
   (equal (bitxor (ifix x) y)
@@ -260,21 +260,21 @@
 (defthm equal-of-bitxor-and-bitxor-same-4
   (equal (equal (bitxor y x) (bitxor x z))
          (equal (getbit 0 y) (getbit 0 z)))
-  :hints (("Goal" :in-theory (e/d (bitxor)
+  :hints (("Goal" :in-theory (e/d (bitxor getbit)
                                   (bvxor-1-becomes-bitxor)))))
 
 
 (defthm equal-of-bitxor-and-bitxor-same-5
   (equal (equal (bitxor x y) (bitxor z x))
          (equal (getbit 0 y) (getbit 0 z)))
-  :hints (("Goal" :in-theory (e/d (bitxor)
+  :hints (("Goal" :in-theory (e/d (bitxor getbit)
                                   (bvxor-1-becomes-bitxor)))))
 
 
 (defthm equal-of-bitxor-and-bitxor-same-6
   (equal (equal (bitxor y x) (bitxor z x))
          (equal (getbit 0 y) (getbit 0 z)))
-  :hints (("Goal" :in-theory (e/d (bitxor)
+  :hints (("Goal" :in-theory (e/d (bitxor getbit)
                                   (bvxor-1-becomes-bitxor)))))
 
 (defthm bvchop-of-bitxor

@@ -1653,7 +1653,7 @@
   (implies (posp size)
            (equal (bvchop (+ -1 size) y)
                   (- (bvchop size y) (* (expt 2 (+ -1 size)) (getbit (+ -1 size) y)))))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp posp) (bvcat-of-getbit-and-x-adjacent))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp posp getbit) (bvcat-of-getbit-and-x-adjacent))
            :use ((:instance split-with-bvcat (x y) (hs 1) (ls (+ -1 size)))))))
 
 (defthmd usb4-cases
@@ -3922,14 +3922,15 @@
 
 ;gen!
 ;gend below?
-(defthm equal-of-1-and-getbit-of-bvpluss-minus-4
+(defthm equal-of-1-and-getbit-of-bvplus-minus-4
   (equal (equal 1 (getbit 31 (bvplus 32 4294967292 x)))
          (or (bvle 32 (+ (expt 2 31) 4) x)
              (bvlt 32 x 4)))
   :hints (("Goal" :in-theory (e/d (getbit-of-bvplus-split
                                    bvcat logapp bvlt ;BVCHOP-32-SPLIT-HACK
                                    BVCHOP-WHEN-TOP-BIT-NOT-1
-                                   getbit-of-+)
+                                   getbit-of-+
+                                   bvchop-1-becomes-getbit)
                                   (BVCAT-OF-GETBIT-AND-X-ADJACENT
                                    <-of-bvplus-becomes-bvlt-arg1
                                    <-of-bvplus-becomes-bvlt-arg2
@@ -4095,7 +4096,8 @@
                             bvchop-when-top-bit-not-1
                             bvchop-when-top-bit-1-cheap
                             bvchop-of-sum-cases
-                            bvplus)
+                            bvplus
+                            bvchop-1-becomes-getbit)
                            (<-of-bvchop-hack
                             plus-1-and-bvchop-becomes-bvplus
                             plus-becomes-bvplus
@@ -10225,7 +10227,7 @@
            (equal (slice m 0 x)
                   (slice m 0 y)))
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable differing-bit slice-becomes-getbit))))
+  :hints (("Goal" :in-theory (enable differing-bit slice-becomes-getbit bvchop-1-becomes-getbit))))
 
 ;; (defthm natp-of-differing-bit
 ;;   (natp (differing-bit n x y)))
@@ -10260,7 +10262,7 @@
            (equal (< (differing-bit n x y) 0)
                   (equal (bvchop (+ 1 n) x)
                          (bvchop (+ 1 n) y))))
-  :hints (("Goal" :in-theory (enable differing-bit slice-becomes-getbit))))
+  :hints (("Goal" :in-theory (enable differing-bit slice-becomes-getbit bvchop-1-becomes-getbit))))
 
 ;;(local (in-theory (enable BVOR-1-BECOMES-BITOR)))         ;Thu Mar 31 16:45:29 2011
 
@@ -11381,7 +11383,7 @@
 (defthm bvcat-of-slice-of-bv-array-read-and-bvcat-of-getbit-of-bv-array-read
   (equal (bvcat '5 (slice '7 '3 (bv-array-read '8 len index lst)) '3 (bvcat '1 (getbit '2 (bv-array-read '3 len index lst)) '2 x))
          (bvcat '6 (slice '7 '2 (bv-array-read '8 len index lst)) '2 x))
-  :hints (("Goal" :in-theory (enable getbit-of-bv-array-read-trim))))
+  :hints (("Goal" :in-theory (enable getbit-of-bv-array-read-trim bvchop-1-becomes-getbit))))
 
 ;kill
 ;; (defthm bvcat-of-slice-and-bvcat-of-getbit

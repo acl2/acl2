@@ -134,12 +134,12 @@
 (defthm bvor-1-of-getbit-0-arg2
   (equal (bvor 1 (getbit 0 x) y)
          (bvor 1 x y))
-  :hints (("Goal" :in-theory (enable bvor))))
+  :hints (("Goal" :in-theory (enable bvor getbit))))
 
 (defthm bvor-1-of-getbit-0-arg3
   (equal (bvor 1 y (getbit 0 x))
          (bvor 1 y x))
-  :hints (("Goal" :in-theory (enable bvor))))
+  :hints (("Goal" :in-theory (enable bvor getbit))))
 
 (defthm bvchop-of-bvor-same
   (implies (natp size)
@@ -415,7 +415,7 @@
                 (integerp z))
            (equal (bvor size (bvor size2 x y) z)
                   (bvor size (bvor size x y) z)))
-  :hints (("Goal" :in-theory (e/d (bvor) (bvchop-1-becomes-getbit)))))
+  :hints (("Goal" :in-theory (e/d (bvor) ()))))
 
 ;use trim?
 (defthm bvor-of-bvor-tighten-2
@@ -427,7 +427,7 @@
                 (integerp z))
            (equal (bvor size z (bvor size2 x y))
                   (bvor size z (bvor size x y))))
-  :hints (("Goal" :in-theory (e/d (bvor) (bvchop-1-becomes-getbit)))))
+  :hints (("Goal" :in-theory (e/d (bvor) ()))))
 
 (defthm bitp-of-bvor-of-1
   (bitp (bvor 1 x y))
