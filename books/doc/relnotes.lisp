@@ -158,6 +158,14 @@
      resulting information, including checkpoints.  See
      @('kestrel/acl2data/README') and @('kestrel/acl2data/gather/README').")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Schroder-Bernstein Library")
+
+   (xdoc::p
+    "This added a proof of the Schroder-Berstein theorem. See
+     @('projects/schroder-bernstein/README.md').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
@@ -299,6 +307,16 @@
    (xdoc::p
     "A new sub-library has been added,
      which contains tools to perform C-to-C transformations.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Centaur Library")
+
+   (xdoc::p
+    "A soundness issue was fixed in @(tsee tshell-call), which was modified to
+     take and return @(tsee state). To accomodate users who do not wish to
+     refactor to this new stateful variant, the old version was retained and
+     moved to a new book under the name @(tsee tshell-call-unsound).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -581,6 +599,11 @@
      defining an irrelevant value of a given type
      (usable as a dummy value, but of appropriate type).
      Typically useful for irrelevant values of structured fixtypes.")
+
+   (xdoc::p
+    "The @(tsee defines) macro was extended to allow the @(':verify-guards
+     :after-returns') option. As in @(tsee define), this option delays the
+     guard proof until just after the @(tsee std::returns-specifiers).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
