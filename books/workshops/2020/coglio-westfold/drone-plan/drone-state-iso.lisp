@@ -12,7 +12,7 @@
 
 (include-book "dp-impl-support")
 
-(include-book "kestrel/std/util/defiso" :dir :system)
+(include-book "std/util/defiso" :dir :system)
 
 
 ;;; Extended Drone State

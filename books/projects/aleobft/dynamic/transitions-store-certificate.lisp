@@ -163,4 +163,54 @@
     systate)
   :guard-hints (("Goal" :in-theory (enable store-certificate-possiblep
                                            posp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret all-addresses-of-store-certificate-next
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hyp (store-certificate-possiblep val cert systate)
+    :hints (("Goal" :in-theory (enable store-certificate-possiblep))))
+
+  (defret correct-addresses-of-store-certificate-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (store-certificate-possiblep val cert systate)
+    :hints (("Goal" :in-theory (enable store-certificate-possiblep))))
+
+  (defret faulty-addresses-of-store-certificate-next
+    (equal (faulty-addresses new-systate)
+           (faulty-addresses systate))
+    :hyp (store-certificate-possiblep val cert systate)
+    :hints (("Goal" :in-theory (enable store-certificate-possiblep))))
+
+  (defret validator-state->dag-of-store-certificate-next
+    (equal (validator-state->dag (get-validator-state val1 new-systate))
+           (if (equal val1 (address-fix val))
+               (set::insert (certificate-fix cert)
+                            (validator-state->dag
+                             (get-validator-state val1 systate)))
+             (validator-state->dag (get-validator-state val1 systate))))
+    :hyp (and (set::in val1 (correct-addresses systate))
+              (store-certificate-possiblep val cert systate))
+    :hints (("Goal" :in-theory (enable store-certificate-possiblep))))
+
+  (defret validator-state->buffer-of-store-certificate-next
+    (equal (validator-state->buffer (get-validator-state val1 new-systate))
+           (if (equal val1 (address-fix val))
+               (set::delete (certificate-fix cert)
+                            (validator-state->buffer
+                             (get-validator-state val1 systate)))
+             (validator-state->buffer (get-validator-state val1 systate))))
+    :hyp (and (set::in val1 (correct-addresses systate))
+              (store-certificate-possiblep val cert systate))
+    :hints (("Goal" :in-theory (enable store-certificate-possiblep))))
+
+  (defret get-network-state-of-store-certificate-next
+    (equal (get-network-state (store-certificate-next val cert systate))
+           (get-network-state systate)))
+
+  (in-theory (disable validator-state->dag-of-store-certificate-next
+                      validator-state->buffer-of-store-certificate-next
+                      get-network-state-of-store-certificate-next)))

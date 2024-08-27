@@ -11,10 +11,10 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/enumerations" :dir :system)
-(include-book "kestrel/std/system/fundef-disabledp" :dir :system)
-(include-book "kestrel/std/system/non-executablep" :dir :system)
-(include-book "kestrel/std/system/function-namep" :dir :system)
-(include-book "kestrel/std/system/definedp" :dir :system)
+(include-book "std/system/fundef-disabledp" :dir :system)
+(include-book "std/system/non-executablep" :dir :system)
+(include-book "std/system/function-namep" :dir :system)
+(include-book "std/system/definedp" :dir :system)
 
 ;; Determine the appropriate variant of defun to use for the new function (defun, defund, defun-nx, or defund-nx).
 ;; See also isodata-new-pred/fun-macro.

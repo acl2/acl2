@@ -41,7 +41,7 @@
 ;(include-book "simplify-defun-impl")    ; just for generalize-to-lambda and fn-ubody
 (include-book "../sequences/defmap")
 (include-book "../sequences/deffilter")
-(include-book "../std/system/pseudo-event-landmark-listp")
+(include-book "std/system/pseudo-event-landmark-listp" :dir :system)
 
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
@@ -53,10 +53,10 @@
 (include-book "kestrel/utilities/make-and-nice" :dir :system)
 ;(include-book "kestrel/untranslated-terms-old/untranslated-terms-apply" :dir :system)
 
-(include-book "kestrel/std/system/classes" :dir :system)
-(include-book "kestrel/std/system/defun-sk-queries" :dir :system)
-(include-book "kestrel/std/system/fundef-enabledp" :dir :system)
-(include-book "kestrel/std/system/rune-enabledp" :dir :system)
+(include-book "std/system/classes" :dir :system)
+(include-book "std/system/defun-sk-queries" :dir :system)
+(include-book "std/system/fundef-enabledp" :dir :system)
+(include-book "std/system/rune-enabledp" :dir :system)
 
 (set-state-ok t)
 

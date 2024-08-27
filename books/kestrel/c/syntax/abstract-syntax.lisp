@@ -1396,7 +1396,7 @@
        possibly ambiguous cast expressions."))
     (:ident ((unwrap ident)))
     (:const ((unwrap const)))
-    (:string ((unwrap stringlit-list)))
+    (:string ((literals stringlit-list)))
     (:paren ((unwrap expr)))
     (:gensel ((control expr)
               (assocs genassoc-list)))

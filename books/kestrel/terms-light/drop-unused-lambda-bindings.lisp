@@ -24,7 +24,7 @@
 (include-book "tools/flag" :dir :system)
 (include-book "filter-formals-and-actuals")
 (include-book "free-vars-in-term")
-;(local (include-book "kestrel/std/system/all-vars" :dir :system))
+;(local (include-book "std/system/all-vars" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))

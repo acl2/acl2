@@ -14,11 +14,11 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
-(include-book "kestrel/std/system/close-lambdas" :dir :system)
-(include-book "kestrel/std/system/make-mv-let-call" :dir :system)
+(include-book "std/system/close-lambdas" :dir :system)
+(include-book "std/system/make-mv-let-call" :dir :system)
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 
-(local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))

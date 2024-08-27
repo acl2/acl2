@@ -20,9 +20,9 @@
 
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/fty/symbol-pseudoeventform-alist" :dir :system)
-(include-book "kestrel/std/system/constant-namep" :dir :system)
-(include-book "kestrel/std/system/constant-value" :dir :system)
-(include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "std/system/constant-namep" :dir :system)
+(include-book "std/system/constant-value" :dir :system)
+(include-book "std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system)
 (include-book "std/alists/assoc" :dir :system)
@@ -31,7 +31,7 @@
 (include-book "std/typed-lists/nat-listp" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
-(local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
+(local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
 

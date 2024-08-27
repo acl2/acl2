@@ -10,8 +10,8 @@
 
 (in-package "JAVA")
 
-(include-book "kestrel/std/system/remove-mbe" :dir :system)
-(include-book "kestrel/std/system/remove-progn" :dir :system)
+(include-book "std/system/remove-mbe" :dir :system)
+(include-book "std/system/remove-progn" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

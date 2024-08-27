@@ -189,4 +189,52 @@
                        natp
                        evenp
                        active-committee-at-earlier-round-when-at-later-round)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret all-addresses-of-commit-anchors-next
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hyp (commit-anchors-possiblep val systate)
+    :hints (("Goal" :in-theory (enable commit-anchors-possiblep))))
+
+  (defret correct-addresses-of-commit-anchors-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (commit-anchors-possiblep val systate)
+    :hints (("Goal" :in-theory (enable commit-anchors-possiblep))))
+
+  (defret faulty-addresses-of-commit-anchors-next
+    (equal (faulty-addresses new-systate)
+           (faulty-addresses systate))
+    :hyp (commit-anchors-possiblep val systate)
+    :hints (("Goal" :in-theory (enable commit-anchors-possiblep))))
+
+  (defret validator-state->dag-of-commit-anchors-next
+    (equal (validator-state->dag (get-validator-state val1 new-systate))
+           (validator-state->dag (get-validator-state val1 systate)))
+    :hyp (and (set::in val1 (correct-addresses systate))
+              (commit-anchors-possiblep val systate))
+    :hints
+    (("Goal"
+      :in-theory (enable commit-anchors-possiblep
+                         get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->buffer-of-commit-anchors-next
+    (equal (validator-state->buffer (get-validator-state val1 new-systate))
+           (validator-state->buffer (get-validator-state val1 systate)))
+    :hyp (and (set::in val1 (correct-addresses systate))
+              (commit-anchors-possiblep val systate))
+    :hints
+    (("Goal"
+      :in-theory (enable commit-anchors-possiblep
+                         get-validator-state-of-update-validator-state))))
+
+  (defret get-network-state-of-commit-anchors-next
+    (equal (get-network-state new-systate)
+           (get-network-state systate)))
+
+  (in-theory (disable validator-state->dag-of-commit-anchors-next
+                      validator-state->buffer-of-commit-anchors-next
+                      get-network-state-of-commit-anchors-next)))

@@ -15,8 +15,8 @@
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
-(include-book "kestrel/std/system/fundef-enabledp" :dir :system)
-(include-book "kestrel/std/system/guard-verified-p" :dir :system)
+(include-book "std/system/fundef-enabledp" :dir :system)
+(include-book "std/system/guard-verified-p" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

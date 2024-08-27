@@ -29,7 +29,7 @@
 (include-book "kestrel/utilities/verify-guards-dollar" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate-dollar" :dir :system)
 (include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
-(include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
+(include-book "std/system/install-not-normalized-event" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
 (defxdoc finite-difference
