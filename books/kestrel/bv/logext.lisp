@@ -805,8 +805,9 @@
   :hints (("Goal" :expand (slice highbit lowbit x)
            :cases ((and (integerp x) (<= lowbit highbit))
                    (and (integerp x) (> lowbit highbit)))
-           :in-theory (e/d (slice logtail-of-bvchop logext) (bvchop-of-logtail-becomes-slice
-                                    logtail-of-bvchop-becomes-slice)))))
+           :in-theory (e/d (slice getbit logtail-of-bvchop logext)
+                           (bvchop-of-logtail-becomes-slice
+                            logtail-of-bvchop-becomes-slice)))))
 
 (defthm logext-of-truncate
   (implies (and (signed-byte-p size i)

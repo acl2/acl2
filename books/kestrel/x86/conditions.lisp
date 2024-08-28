@@ -589,9 +589,9 @@
                             ;; logext
                             acl2::sbvlt
                             acl2::bvlt
+                            ;;getbit
                             )
-                           ( ;
-                            acl2::bvminus-becomes-bvplus-of-bvuminus
+                           (acl2::bvminus-becomes-bvplus-of-bvuminus
                             ;;acl2::plus-bvcat-with-0 ;looped
                             ;;acl2::plus-bvcat-with-0-alt ;looped
                             acl2::signed-byte-p-forward ; for speed
@@ -1180,7 +1180,7 @@
   (implies (signed-byte-p 64 x) ;t;(unsigned-byte-p 64 x)
            (equal (jnl-condition (sf-spec64 x) (of-spec64 x))
                   (sbvle 64 0 x)))
-  :hints (("Goal" :in-theory (enable sf-spec64 of-spec64 jnl-condition))))
+  :hints (("Goal" :in-theory (enable sf-spec64 of-spec64 jnl-condition acl2::bvchop-1-becomes-getbit))))
 
 ;; (defthm jnl-condition-of-sf-spec64-and-0
 ;;   (equal (jnl-condition (sf-spec64 x) 0)
@@ -1620,7 +1620,8 @@
                                      acl2::getbit-of-+
                                      bvplus
                                      bvminus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::bvchop-1-becomes-getbit))))
 
 ;nice?
 (defthm js-condition-of-sub-sf-spec16
@@ -1636,7 +1637,8 @@
                                      acl2::getbit-of-+
                                      bvplus
                                      bvminus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::bvchop-1-becomes-getbit))))
 
 ;nice?
 (defthm js-condition-of-sub-sf-spec32
@@ -1652,7 +1654,8 @@
                                      acl2::getbit-of-+
                                      bvplus
                                      bvminus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::bvchop-1-becomes-getbit))))
 
 ;nice?
 (defthm js-condition-of-sub-sf-spec64
@@ -1668,7 +1671,8 @@
                                      acl2::getbit-of-+
                                      bvplus
                                      bvminus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::bvchop-1-becomes-getbit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
