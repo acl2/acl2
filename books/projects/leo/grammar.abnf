@@ -10,6 +10,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; This is a copy of https://github.com/ProvableHQ/grammars/blob/master/leo.abnf,
+; which is Provable's official ABNF grammar of Leo.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; This file specifies the grammar of Leo in the ABNF notation,
 ; which is defined in:
 ; - RFC 5234 (https://www.rfc-editor.org/rfc/rfc5234)
