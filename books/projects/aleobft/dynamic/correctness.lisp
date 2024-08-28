@@ -14,6 +14,7 @@
 (include-book "owned-certificates")
 (include-book "same-owned-certificates")
 (include-book "no-self-messages")
+(include-book "no-self-buffer")
 (include-book "unequivocal-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
 
@@ -33,6 +34,7 @@
   :order-subtopics (owned-certificates
                     same-owned-certificates
                     no-self-messages
+                    no-self-buffer
                     unequivocal-certificates-def-and-init
                     nonforking-blockchains-def-and-init))
 
