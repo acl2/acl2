@@ -1,6 +1,6 @@
 ; An R1CS gadget for comparing a packed value to a constant
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -2235,7 +2235,7 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (make-range-check-a-constraints
                             ACL2::PACKBV-OPENER
-                            zip)
+                            zip acl2::bvchop-1-becomes-getbit)
                            (index-of-lowest-0
                             ALISTP)))))
 

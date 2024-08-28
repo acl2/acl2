@@ -56,7 +56,8 @@
   :hints (("Goal" :in-theory (enable getbit))))
 
 ;; Which do we prefer?
-(defthm bvchop-1-becomes-getbit
+;rename
+(defthmd bvchop-1-becomes-getbit
   (equal (bvchop 1 x)
          (getbit 0 x))
   :hints (("Goal" :cases ((integerp x))
@@ -72,6 +73,12 @@
   :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit)))))
 
 (theory-invariant (incompatible (:rewrite slice-becomes-getbit) (:definition getbit)))
+
+;; In case we don't want to commit to either normal form
+(defthm equal-of-getbit-0-and-bvchop-1
+  (equal (equal (getbit 0 y) (bvchop 1 y))
+         t)
+  :hints (("Goal" :in-theory (enable getbit))))
 
 ;; In case we are not enforcing either normal form
 (defthm equal-of-slice-and-getbit
@@ -146,7 +153,7 @@
                   x))
   :hints (("Goal" :use (:instance bvchop-identity (i x)
                                   (size 1))
-           :in-theory (disable bvchop-identity))))
+           :in-theory (e/d (getbit) (bvchop-identity)))))
 
 (defthm getbit-identity-free
   (implies (and (unsigned-byte-p free x)

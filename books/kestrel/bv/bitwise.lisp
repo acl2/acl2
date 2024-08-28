@@ -383,7 +383,7 @@
            :in-theory (e/d (bvxor bvnot bitxor ;LOGXOR*
     ;                                          bvchop
     ;lognot getbit
-                                  )
+                                  getbit)
                            (
                             GETBIT-WHEN-NOT-0
                             BVCHOP-LOGNOT-BVCHOP

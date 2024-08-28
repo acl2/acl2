@@ -650,7 +650,7 @@
                   (add (- (expt 2 lowsize))
                        (acl2::bvcat 1 (acl2::bitnot bit) lowsize 0) p)))
   :hints (("Goal" :cases ((equal 0 (acl2::getbit 0 bit)))
-           :in-theory (enable add neg acl2::bvcat acl2::bitnot))))
+           :in-theory (enable add neg acl2::bvcat acl2::bitnot acl2::getbit))))
 
 ;; We have a bit times a negative power of 2.  We negate the bit and shift it into position.
 (defthmd mul-of-negative-power-of-2-when-bitp

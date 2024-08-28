@@ -907,7 +907,7 @@
   (equal (bvlt 1 x y)
          (and (equal 0 (getbit 0 x))
               (equal 1 (getbit 0 y))))
-  :hints (("Goal" :in-theory (enable bvlt))))
+  :hints (("Goal" :in-theory (enable bvlt getbit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

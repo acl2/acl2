@@ -1601,7 +1601,7 @@
 (defthm bv-array-read-of-getbit-when-len-is-2
   (equal (bv-array-read element-size 2 (getbit 0 x) lst)
          (bv-array-read element-size 2 x lst))
-  :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer getbit-when-val-is-not-an-integer)
+  :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer getbit-when-val-is-not-an-integer getbit)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
 ;; (defthm take-of-logext-list

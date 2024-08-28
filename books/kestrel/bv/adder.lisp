@@ -1,7 +1,7 @@
 ; Expressing a sum as a ripple-carry adder
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -87,7 +87,7 @@
            (equal (equal y (+ a (bvchop (+ -1 n) y)))
                   (equal (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y))
                          a)))
-  :hints (("Goal" :in-theory (enable bvcat logapp)
+  :hints (("Goal" :in-theory (enable bvcat logapp getbit)
            :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
@@ -111,7 +111,7 @@
            (equal (equal (+ x y) (+ a (bvchop (+ -1 n) y) b))
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
                          (+ a b))))
-  :hints (("Goal" :in-theory (enable bvcat logapp)
+  :hints (("Goal" :in-theory (enable bvcat logapp getbit)
            :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
@@ -124,7 +124,7 @@
            (equal (equal (+ x y) (+ a b (bvchop (+ -1 n) y)))
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
                          (+ a b))))
-  :hints (("Goal" :in-theory (enable bvcat logapp)
+  :hints (("Goal" :in-theory (enable bvcat logapp getbit)
            :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
@@ -143,7 +143,7 @@
            (equal (equal (+ y x) (+ a (bvchop (+ -1 n) y)))
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
                          (+ a))))
-  :hints (("Goal" :in-theory (enable bvcat logapp)
+  :hints (("Goal" :in-theory (enable bvcat logapp getbit)
            :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 

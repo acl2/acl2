@@ -1465,7 +1465,7 @@
            (equal (< (bvcat 1 x lowsize y) k)
                   (and (equal (getbit 0 x) 0)
                        (< (bvchop lowsize y) k))))
-  :hints (("Goal" :in-theory (enable BVCAT LOGAPP bvchop))))
+  :hints (("Goal" :in-theory (enable BVCAT LOGAPP bvchop getbit))))
 
 (defthmd getbit-numeric-bound
   (implies (and (syntaxp (quotep k))
@@ -2261,7 +2261,7 @@
                      (* (expt 2 (+ -1 n))
                         (getbit 0 x)))
                   (* (expt 2 (+ -1 n)) (slice 1 0 x))))
-  :hints (("Goal" :in-theory (enable logapp bvcat expt-of-+)
+  :hints (("Goal" :in-theory (enable logapp bvcat expt-of-+ getbit)
            :use (:instance split-bv (x (bvchop 2 x)) (n 2) (m 1)))))
 ;gen the 8
 (defthm unsigned-byte-p-1-of-*
