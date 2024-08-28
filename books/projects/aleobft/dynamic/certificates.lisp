@@ -313,6 +313,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define get-certificates-with-author ((author addressp)
+                                      (certs certificate-setp))
+  :returns (certs-with-author certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with a given author."
+  (b* (((when (set::emptyp certs)) nil)
+       ((certificate cert) (set::head certs)))
+    (if (equal author cert.author)
+        (set::insert (certificate-fix cert)
+                     (get-certificates-with-author author (set::tail certs)))
+      (get-certificates-with-author author (set::tail certs))))
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled get-certificates-with-author-when-emptyp
+    (implies (set::emptyp certs)
+             (equal (get-certificates-with-author author certs)
+                    nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define get-certificates-with-round ((round posp)
                                      (certs certificate-setp))
   :returns (certs-with-round certificate-setp)
