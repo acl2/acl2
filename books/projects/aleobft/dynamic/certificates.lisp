@@ -320,13 +320,16 @@
           the subset of certificates with a given author."
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs)))
-    (if (equal author cert.author)
+    (if (equal (address-fix author) cert.author)
         (set::insert (certificate-fix cert)
                      (get-certificates-with-author author (set::tail certs)))
       (get-certificates-with-author author (set::tail certs))))
   :verify-guards :after-returns
 
   ///
+
+  (fty::deffixequiv get-certificates-with-author
+    :args ((author addressp)))
 
   (defruled get-certificates-with-author-when-emptyp
     (implies (set::emptyp certs)
@@ -342,11 +345,16 @@
           the subset of certificates with a given round."
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs)))
-    (if (equal round cert.round)
+    (if (equal (pos-fix round) cert.round)
         (set::insert (certificate-fix cert)
                      (get-certificates-with-round round (set::tail certs)))
       (get-certificates-with-round round (set::tail certs))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv get-certificates-with-round
+    :args ((round posp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
