@@ -331,10 +331,46 @@
   (fty::deffixequiv get-certificates-with-author
     :args ((author addressp)))
 
+  (defruled in-of-get-certificates-with-author
+    (implies (certificate-setp certs)
+             (equal (set::in cert (get-certificates-with-author author certs))
+                    (and (set::in cert certs)
+                         (equal (certificate->author cert)
+                                (address-fix author)))))
+    :induct t
+    :enable certificate-set->author-set-of-insert)
+
   (defruled get-certificates-with-author-when-emptyp
     (implies (set::emptyp certs)
              (equal (get-certificates-with-author author certs)
-                    nil))))
+                    nil)))
+
+  (defruled get-certificate-with-author-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (equal (get-certificates-with-author author
+                                                  (set::insert cert certs))
+                    (if (equal (certificate->author cert)
+                               (address-fix author))
+                        (set::insert cert
+                                     (get-certificates-with-author author
+                                                                   certs))
+                      (get-certificates-with-author author certs))))
+    :enable (in-of-get-certificates-with-author
+             set::double-containment-no-backchain-limit
+             set::pick-a-point-subset-strategy)
+    :disable (get-certificates-with-author))
+
+  (defruled get-certificate-with-author-of-delete
+    (implies (certificate-setp certs)
+             (equal (get-certificates-with-author author
+                                                  (set::delete cert certs))
+                    (set::delete cert
+                                 (get-certificates-with-author author certs))))
+    :enable (in-of-get-certificates-with-author
+             set::double-containment-no-backchain-limit
+             set::pick-a-point-subset-strategy)
+    :disable get-certificates-with-author))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
