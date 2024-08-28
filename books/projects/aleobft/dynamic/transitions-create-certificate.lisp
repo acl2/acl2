@@ -784,7 +784,6 @@
                        (make-certificate-messages
                         cert (set::delete (certificate->author cert)
                                           (correct-addresses systate)))))
-    :hyp (set::in val (correct-addresses systate))
     :hints
     (("Goal"
       :in-theory (enable get-network-state-of-create-certificate-endorsers-next
