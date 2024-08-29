@@ -16,6 +16,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 
 (defthm unsigned-byte-p-forced-of-bv-array-read
   (implies (and (<= element-size n)
@@ -44,3 +45,15 @@
            (equal (bv-array-read element-size len (+ i1 i2) data)
                   (bv-array-read element-size len (bvplus (acl2::ceiling-of-lg len) i1 i2) data)))
   :hints (("Goal" :in-theory (enable bv-array-read bvplus))))
+
+(defthm bv-array-read-tighten-free
+  (implies (and (syntaxp (quotep width))
+                (all-unsigned-byte-p free data)
+                (syntaxp (quotep free))
+                (equal len (len data))
+                (natp free)
+                (natp width)
+                (< free width))
+           (equal (bv-array-read width len index data)
+                  (bv-array-read free len index data)))
+  :hints (("Goal" :in-theory (enable slice-too-high-is-0 bv-array-read))))
