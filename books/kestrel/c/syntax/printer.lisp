@@ -1251,12 +1251,13 @@
   (type-qual-case
    tyqual
    :const (print-astring "const" pstate)
-   :restrict (print-astring "restrict" pstate)
+   :restrict (keyword-uscores-case
+              tyqual.uscores
+              :none (print-astring "restrict" pstate)
+              :start (print-astring "__restrict" pstate)
+              :both (print-astring "__restrict__" pstate))
    :volatile (print-astring "volatile" pstate)
-   :atomic (print-astring "_Atomic" pstate)
-   ;; GCC extensions:
-   :__restrict (print-astring "__restrict" pstate)
-   :__restrict__ (print-astring "__restrict__" pstate))
+   :atomic (print-astring "_Atomic" pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

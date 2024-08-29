@@ -5813,10 +5813,10 @@
      would be identifier tokens, not keyword tokens."))
   (or (token-keywordp token? "const")
       (token-keywordp token? "restrict")
-      (token-keywordp token? "volatile")
-      (token-keywordp token? "_Atomic")
       (token-keywordp token? "__restrict")
-      (token-keywordp token? "__restrict__"))
+      (token-keywordp token? "__restrict__")
+      (token-keywordp token? "volatile")
+      (token-keywordp token? "_Atomic"))
   ///
 
   (defrule non-nil-when-token-type-qualifier-p
@@ -5832,11 +5832,14 @@
   :short "Map a token that is a type qualifier
           to the correspoding type qualifier."
   (cond ((token-keywordp token "const") (type-qual-const))
-        ((token-keywordp token "restrict") (type-qual-restrict))
+        ((token-keywordp token "restrict")
+         (type-qual-restrict (keyword-uscores-none)))
+        ((token-keywordp token "__restrict")
+         (type-qual-restrict (keyword-uscores-start)))
+        ((token-keywordp token "__restrict__")
+         (type-qual-restrict (keyword-uscores-both)))
         ((token-keywordp token "volatile") (type-qual-volatile))
         ((token-keywordp token "_Atomic") (type-qual-atomic))
-        ((token-keywordp token "__restrict") (type-qual-__restrict))
-        ((token-keywordp token "__restrict__") (type-qual-__restrict__))
         (t (prog2$ (impossible) (irr-type-qual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 

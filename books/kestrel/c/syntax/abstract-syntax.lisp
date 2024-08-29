@@ -1084,15 +1084,12 @@
     "We also include the GCC extension variants
      @('__restrict') and @('__restrict__') of @('restrict'),
      only used if GCC extensions are supported.
-     In particular, the parser generates these GCC type qualifiers
-     only if instructed to allow GCC extensions."))
+     These are captured by adding underscore information
+     to the @(':restrict') case."))
   (:const ())
-  (:restrict ())
+  (:restrict ((uscores keyword-uscores)))
   (:volatile ())
   (:atomic ())
-  ;; GCC extensions:
-  (:__restrict ())
-  (:__restrict__ ())
   :pred type-qualp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
