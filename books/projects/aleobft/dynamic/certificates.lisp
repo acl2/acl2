@@ -337,8 +337,7 @@
                     (and (set::in cert certs)
                          (equal (certificate->author cert)
                                 (address-fix author)))))
-    :induct t
-    :enable certificate-set->author-set-of-insert)
+    :induct t)
 
   (defruled get-certificates-with-author-when-emptyp
     (implies (set::emptyp certs)
