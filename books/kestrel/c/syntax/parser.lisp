@@ -1870,7 +1870,8 @@
                                    "_Static_assert"
                                    "_Thread_local"))
             (and (parstate->gcc parstate)
-                 (member-equal string '("__alignof__"
+                 (member-equal string '("__alignof"
+                                        "__alignof__"
                                         "asm"
                                         "__asm__"
                                         "__attribute__"
@@ -5590,7 +5591,8 @@
      or an @('_Alignof') keyword.")
    (xdoc::p
     "We also compare the token against
-     the GCC extension variant @('__alignof__') of @('_Alignof').
+     the GCC extension variants
+     @('__alignof') and @('__alignof__') of @('_Alignof').
      Note that this variant is a keywords only if GCC extensions are supported:
      @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
      So the comparison here with that variant keyword
@@ -5608,6 +5610,7 @@
       (token-punctuatorp token? "!")
       (token-keywordp token? "sizeof")
       (token-keywordp token? "_Alignof")
+      (token-keywordp token? "__alignof")
       (token-keywordp token? "__alignof__"))
   ///
 
@@ -7718,9 +7721,10 @@
                      parstate))))))
        ;; If token is '_Alignof',
        ;; we parse an open parenthesis, a type name, and a closed parenthesis.
-       ;; We also allow '__alignof__',
-       ;; which can be a keyword only if GCC extensions are supported.
+       ;; We also allow '__alignof' and '__alignof__',
+       ;; which can be keywords only if GCC extensions are supported.
        ((or (token-keywordp token "_Alignof") ; _Alignof
+            (token-keywordp token "__alignof") ; __alignof
             (token-keywordp token "__alignof__")) ; __alignof__
         (b* (((erp & parstate) ; _Alignof (
               (read-punctuator "(" parstate))
@@ -7730,7 +7734,12 @@
               (read-punctuator ")" parstate)))
           (retok (make-expr-alignof
                   :type tyname
-                  :uscores (token-keywordp token "__alignof__"))
+                  :uscores (cond ((token-keywordp token "_Alignof")
+                                  (keyword-uscores-none))
+                                 ((token-keywordp token "__alignof")
+                                  (keyword-uscores-start))
+                                 ((token-keywordp token "__alignof__")
+                                  (keyword-uscores-both))))
                  (span-join span last-span)
                  parstate)))
        ;; If token is anything else, it is an error.

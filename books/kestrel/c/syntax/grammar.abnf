@@ -440,7 +440,8 @@ keyword = %s"auto"
 ; we have also verified in at least one implementation of GCC on MacOS
 ; that all the keywords below are indeed accepted.
 
-gcc-keyword = %s"__alignof__"
+gcc-keyword = %s"__alignof"
+            / %s"__alignof__"
             / %s"asm"
             / %s"__asm__"
             / %s"__attribute__"

@@ -1680,9 +1680,11 @@
              pstate)
            :sizeof-ambig (prog2$ (impossible) (pristate-fix pstate))
            :alignof
-           (b* ((pstate (if expr.uscores
-                            (print-astring "__alignof__(" pstate)
-                          (print-astring "_Alignof(" pstate)))
+           (b* ((pstate (keyword-uscores-case
+                         expr.uscores
+                         :none (print-astring "_Alignof(" pstate)
+                         :start (print-astring "__alignof(" pstate)
+                         :both (print-astring "__alignof__(" pstate)))
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)

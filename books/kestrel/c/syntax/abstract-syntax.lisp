@@ -1250,9 +1250,14 @@
        which contains an @(tsee amb-expr/tyname).")
      (xdoc::p
       "The @(':alignof') case of this fixtype
-       includes a flag saying whether the keyword used is
-       the standard @('_Alignof') or the GCC extension @('__alignof__').
-       The latter is allowed only if GCC extensions are enabled.")
+       includes an indication of the undescore variant.
+       Note that the variant without underscores
+       represent the standard @('_Alignof'),
+       not the non-existing @('alignof'),
+       while the other two represent @('__alignof') and @('__alignof__');
+       see the ABNF grammar.
+       Presumable, @('_Alignof') was added to the grammar
+       after @('__alignof') and @('__alignof__') were GCC extensions.")
      (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
@@ -1430,7 +1435,7 @@
     (:sizeof ((type tyname)))
     (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
     (:alignof ((type tyname)
-               (uscores bool)))
+               (uscores keyword-uscores)))
     (:cast ((type tyname)
             (arg expr)))
     (:binary ((op binop)
