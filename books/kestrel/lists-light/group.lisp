@@ -213,9 +213,8 @@
 ;;            (equal (cdr (firstn n lst))
 ;;                   (subrange 1 (+ -1 n) lst)))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-;;            :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange
-;;                                        cdr-of-take-becomes-subrange
-;;                                        cdr-of-take-becomes-subrange-better)))))
+;;            :in-theory (e/d (subrange) (
+;;                                        )))))
 
 (defthm firstn-of-subrange-gen
   (implies (and (<= i (+ 1 (- end start)))

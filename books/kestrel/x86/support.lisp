@@ -889,9 +889,9 @@
                   (< x (+ (- (expt 2 64) k) (- (expt 2 63))))))
   :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::LOGEXT-CASES
                                                 acl2::bvcat ACL2::LOGAPP
-                                                ACL2::LOGEXT-OF-PLUS)
-                                  (
-                                   ACL2::BVCHOP-IDENTITY-CHEAP
+                                                ACL2::LOGEXT-OF-PLUS
+                                                acl2::getbit)
+                                  (ACL2::BVCHOP-IDENTITY-CHEAP
                                    ACL2::BVCHOP-IDENTITY
                                    ;ACL2::TRIM-TO-N-BITS-META-RULE-FOR-BVCAT ;looped
                                    ACL2::PLUS-BVCAT-WITH-0 ;looped
@@ -1869,7 +1869,7 @@
                            (x::set-flag :of (acl2::getbit 0 (create-undef (nfix (xr :undef nil x86)))) x86))
                      (x::set-flag :of (rflagsbits->of user-flags-vector) x86))))
            x86))
-  :hints (("Goal" :in-theory (enable x::set-flag))))
+  :hints (("Goal" :in-theory (enable x::set-flag acl2::getbit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

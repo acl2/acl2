@@ -35,7 +35,7 @@
                  (:instance bvmult-of-bvchop-arg2 (size 1) (x y) (y 1))
                  (:instance bvmult-of-bvchop-arg2 (size 1) (x y) (y 0)))
            :in-theory (e/d (bitand bvand ;bvmult
-                                   getbit-when-val-is-not-an-integer)
+                                   getbit)
                            (bvmult-of-bvchop-arg2)))))
 
 ;; A 1-bit sum is just an XOR.

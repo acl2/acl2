@@ -308,7 +308,7 @@
   :hints (("Goal" :use (:instance acl2::split-bv (x x)
                                   (n 33)
                                   (m 32))
-           :in-theory (enable bvcat acl2::logapp))))
+           :in-theory (enable bvcat acl2::logapp getbit))))
 
 (defthmd acl2::split-bv-with-logapp
   (implies (integerp x)

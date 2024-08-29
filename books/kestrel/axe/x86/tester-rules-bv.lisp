@@ -259,7 +259,7 @@
                          (quotep k2)))
            (equal (bvuminus 32 (bvif 1 test k1 k2))
                   (bvif 32 test (bvuminus 32 (bvchop 1 k1)) (bvuminus 32 (bvchop 1 k2)))))
-  :hints (("Goal" :in-theory (enable bvif))))
+  :hints (("Goal" :in-theory (enable bvif getbit))))
 
 (defthm ifix-of-if
   (equal (ifix (if test x86 x86_2))
