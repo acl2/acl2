@@ -1013,6 +1013,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum keyword-uscores
+  :short "Fixtype of keyword underscores."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some keywords for GCC extensions have variants
+     without underscores,
+     with underscores at the beginning,
+     and with underscores at both the beginning and end:
+     see the ABNF grammar for examples.")
+   (xdoc::p
+    "In order to preserve that information in our abstract syntax,
+     we introduce a fixtype that captures those three possibilities."))
+  (:none ())
+  (:start ())
+  (:both ())
+  :pred keyword-uscores-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum stor-spec
   :short "Fixtype of storage class specifiers [C:6.7.1] [C:A.2.2]."
   :long
