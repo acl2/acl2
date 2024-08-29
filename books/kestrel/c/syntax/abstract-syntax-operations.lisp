@@ -127,7 +127,7 @@
 (defirrelevant irr-fun-spec
   :short "An irrelevant function specifier."
   :type fun-specp
-  :body (fun-spec-inline))
+  :body (fun-spec-noreturn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

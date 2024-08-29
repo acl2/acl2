@@ -1131,13 +1131,10 @@
     "We also include the GCC extension variants
      @('__inline') and @('__inline__') of @('inline'),
      only used if GCC extensions are supported.
-     In particular, the parser generates these GCC function specifiers
-     only if instructed to allow GCC extensions."))
-  (:inline ())
+     These are captured by adding underscore information
+     to the @(':inline') case."))
+  (:inline ((uscores keyword-uscores)))
   (:noreturn ())
-  ;; GCC extensions:
-  (:__inline ())
-  (:__inline__ ())
   :pred fun-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

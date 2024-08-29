@@ -5892,9 +5892,9 @@
      because in that case both @('__inline') and @('__inline__')
      would be identifier tokens, not keyword tokens."))
   (or (token-keywordp token? "inline")
-      (token-keywordp token? "_Noreturn")
       (token-keywordp token? "__inline")
-      (token-keywordp token? "__inline__"))
+      (token-keywordp token? "__inline__")
+      (token-keywordp token? "_Noreturn"))
   ///
 
   (defrule non-nil-when-token-function-specifier-p
@@ -5909,10 +5909,13 @@
   :returns (funspec fun-specp)
   :short "Map a token that is a function specifier
           to the corresponding function specifier."
-  (cond ((token-keywordp token "inline") (fun-spec-inline))
+  (cond ((token-keywordp token "inline")
+         (fun-spec-inline (keyword-uscores-none)))
+        ((token-keywordp token "__inline")
+         (fun-spec-inline (keyword-uscores-start)))
+        ((token-keywordp token "__inline__")
+         (fun-spec-inline (keyword-uscores-both)))
         ((token-keywordp token "_Noreturn") (fun-spec-noreturn))
-        ((token-keywordp token "__inline") (fun-spec-__inline))
-        ((token-keywordp token "__inline__") (fun-spec-__inline__))
         (t (prog2$ (impossible) (irr-fun-spec))))
   :prepwork ((local (in-theory (enable token-function-specifier-p)))))
 

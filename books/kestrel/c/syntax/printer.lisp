@@ -1324,11 +1324,12 @@
   :short "Print a function specifier."
   (fun-spec-case
    funspec
-   :inline (print-astring "inline" pstate)
-   :noreturn (print-astring "_Noreturn" pstate)
-   ;; GCC extensions:
-   :__inline (print-astring "__inline" pstate)
-   :__inline__ (print-astring "__inline__" pstate))
+   :inline (keyword-uscores-case
+            funspec.uscores
+            :none (print-astring "inline" pstate)
+            :start (print-astring "__inline" pstate)
+            :both (print-astring "__inline__" pstate))
+   :noreturn (print-astring "_Noreturn" pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
