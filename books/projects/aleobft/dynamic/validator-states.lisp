@@ -58,7 +58,7 @@
      for details about the exact use of these pairs."))
   ((address address)
    (pos posp))
-  :pred address+posp)
+  :pred address+pos-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
