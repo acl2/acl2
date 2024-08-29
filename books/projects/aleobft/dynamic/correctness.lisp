@@ -15,6 +15,7 @@
 (include-book "same-owned-certificates")
 (include-book "no-self-messages")
 (include-book "no-self-buffer")
+(include-book "no-self-endorsed")
 (include-book "unequivocal-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
 
@@ -35,6 +36,7 @@
                     same-owned-certificates
                     no-self-messages
                     no-self-buffer
+                    no-self-endorsed
                     unequivocal-certificates-def-and-init
                     nonforking-blockchains-def-and-init))
 
