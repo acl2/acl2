@@ -160,8 +160,7 @@
   (defret validator-state->dag-of-receive-certificate-next
     (equal (validator-state->dag (get-validator-state val new-systate))
            (validator-state->dag (get-validator-state val systate)))
-    :hyp (and (set::in val (correct-addresses systate))
-              (receive-certificate-possiblep msg systate))
+    :hyp (receive-certificate-possiblep msg systate)
     :hints
     (("Goal" :in-theory (enable
                          receive-certificate-possiblep
