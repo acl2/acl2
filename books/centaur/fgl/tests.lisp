@@ -112,14 +112,16 @@
 
 
 (thm
-  (not (and (or (a) (b) (c))
-            (or (not (a)) (b) (c))
-            (or (a) (not (b)) (c))
-            (or (not (a)) (not (b)) (c))
-            (or (a) (b) (not (c)))
-            (or (not (a)) (b) (not (c)))
-            (or (a) (not (b)) (not (c)))
-            (or (not (a)) (not (b)) (not (c)))))
+ (fgl-prove (fgl-toplevel-sat-check-config)
+            "top-level proof"
+            (not (and (or (a) (b) (c))
+                      (or (not (a)) (b) (c))
+                      (or (a) (not (b)) (c))
+                      (or (not (a)) (not (b)) (c))
+                      (or (a) (b) (not (c)))
+                      (or (not (a)) (b) (not (c)))
+                      (or (a) (not (b)) (not (c)))
+                      (or (not (a)) (not (b)) (not (c))))))
   :hints (("goal" :clause-processor (fgl-interp-cp clause
                                                   (change-fgl-config
                                                    (default-fgl-config)

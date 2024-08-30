@@ -1251,12 +1251,13 @@
   (type-qual-case
    tyqual
    :const (print-astring "const" pstate)
-   :restrict (print-astring "restrict" pstate)
+   :restrict (keyword-uscores-case
+              tyqual.uscores
+              :none (print-astring "restrict" pstate)
+              :start (print-astring "__restrict" pstate)
+              :both (print-astring "__restrict__" pstate))
    :volatile (print-astring "volatile" pstate)
-   :atomic (print-astring "_Atomic" pstate)
-   ;; GCC extensions:
-   :__restrict (print-astring "__restrict" pstate)
-   :__restrict__ (print-astring "__restrict__" pstate))
+   :atomic (print-astring "_Atomic" pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1323,11 +1324,12 @@
   :short "Print a function specifier."
   (fun-spec-case
    funspec
-   :inline (print-astring "inline" pstate)
-   :noreturn (print-astring "_Noreturn" pstate)
-   ;; GCC extensions:
-   :__inline (print-astring "__inline" pstate)
-   :__inline__ (print-astring "__inline__" pstate))
+   :inline (keyword-uscores-case
+            funspec.uscores
+            :none (print-astring "inline" pstate)
+            :start (print-astring "__inline" pstate)
+            :both (print-astring "__inline__" pstate))
+   :noreturn (print-astring "_Noreturn" pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1678,9 +1680,11 @@
              pstate)
            :sizeof-ambig (prog2$ (impossible) (pristate-fix pstate))
            :alignof
-           (b* ((pstate (if expr.uscores
-                            (print-astring "__alignof__(" pstate)
-                          (print-astring "_Alignof(" pstate)))
+           (b* ((pstate (keyword-uscores-case
+                         expr.uscores
+                         :none (print-astring "_Alignof(" pstate)
+                         :start (print-astring "__alignof(" pstate)
+                         :both (print-astring "__alignof__(" pstate)))
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
@@ -1835,7 +1839,11 @@
      :long (print-astring "long" pstate)
      :float (print-astring "float" pstate)
      :double (print-astring "double" pstate)
-     :signed (print-astring "signed" pstate)
+     :signed (keyword-uscores-case
+              tyspec.uscores
+              :none (print-astring "signed" pstate)
+              :start (print-astring "__signed" pstate)
+              :both (print-astring "__signed__" pstate))
      :unsigned (print-astring "unsigned" pstate)
      :bool (print-astring "_Bool" pstate)
      :complex (print-astring "_Complex" pstate)
@@ -1852,7 +1860,29 @@
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enumspec tyspec.unwrap pstate)))
              pstate)
-     :typedef (print-ident tyspec.name pstate))
+     :typedef (print-ident tyspec.name pstate)
+     :int128 (print-astring "__int128" pstate)
+     :float128 (print-astring "_Float128" pstate)
+     :builtin-va-list (print-astring "__builtin_va_list" pstate)
+     :typeof-expr
+     (b* ((pstate (keyword-uscores-case
+                   tyspec.uscores
+                   :none (print-astring "typeof(" pstate)
+                   :start (print-astring "__typeof(" pstate)
+                   :both (print-astring "__typeof__(" pstate)))
+          (pstate (print-expr tyspec.expr (expr-priority-expr) pstate))
+          (pstate (print-astring ")" pstate)))
+       pstate)
+     :typeof-type
+     (b* ((pstate (keyword-uscores-case
+                   tyspec.uscores
+                   :none (print-astring "typeof(" pstate)
+                   :start (print-astring "__typeof(" pstate)
+                   :both (print-astring "__typeof__(" pstate)))
+          (pstate (print-tyname tyspec.type pstate))
+          (pstate (print-astring ")" pstate)))
+       pstate)
+     :typeof-ambig (prog2$ (impossible) (pristate-fix pstate)))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2670,10 +2700,12 @@
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print an attribute specifier."
-    (b* ((pstate (print-astring "__attribute__ ((" pstate))
-         (attrs (attrib-spec->attribs attrspec))
-         (pstate (if (consp attrs)
-                     (print-attrib-list attrs pstate)
+    (b* (((attrib-spec attrspec) attrspec)
+         (pstate (if attrspec.uscores
+                     (print-astring "__attribute__ ((" pstate)
+                   (print-astring "__attribute ((" pstate)))
+         (pstate (if (consp attrspec.attribs)
+                     (print-attrib-list attrspec.attribs pstate)
                    pstate))
          (pstate (print-astring "))" pstate)))
       pstate)
@@ -2724,9 +2756,11 @@
    (xdoc::p
     "We check that there is at least one string literal."))
   (b* (((asm-name-spec asmspec) asmspec)
-       (pstate (if asmspec.uscores
-                   (print-astring "__asm__ (" pstate)
-                 (print-astring "asm (" pstate)))
+       (pstate (keyword-uscores-case
+                asmspec.uscores
+                :none (print-astring "asm (" pstate)
+                :start (print-astring "__asm (" pstate)
+                :both (print-astring "__asm__ (" pstate)))
        ((unless (consp asmspec.strings))
         (raise "Misusage error: ~
                 no string literals in assembler name specifier.")

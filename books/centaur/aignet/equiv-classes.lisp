@@ -66,7 +66,6 @@
 
 
 
-
 ;; (define classes-sized ((size natp) classes)
 ;;   (and (<= (lnfix size) (class-nexts-length classes))
 ;;        (<= (lnfix size) (class-heads-length classes)))
@@ -253,6 +252,111 @@
                (nfix v)
              (node-head n classes)))
     :hints(("Goal" :in-theory (enable node-head)))))
+
+
+;;   - Generally, a node's head points to the lowest-numbered node in its equiv
+;; class. But if that node is the lowest-numbered node in its equiv class, then
+;; it instead points to the last node in its equiv class.  So head == node
+;; indicates a singleton class.
+
+;;  - Generally, a node's next points to the next-higher-numbered node in its
+;;  equiv class. If next <= node, that indicates that node is the
+;;  highest-numbered in its equiv class, and it isn't important what next is.
+
+
+(define class-remove-unmarked ((n natp)
+                               (classes)
+                               (mark)
+                               (prev natp)
+                               (head natp))
+  ;; Remove all unmarked nodes from a class, assuming we've already found at
+  ;; least one node that is marked.
+  :guard (and (< n (classes-size classes))
+              (classes-wellformed classes)
+              (<= (classes-size classes) (bits-length mark))
+              (< prev n)
+              (< head n))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  :returns (new-classes)
+  (b* (((unless (mbt (and (classes-wellformed classes)
+                          (< (nfix n) (classes-size classes))
+                          (< (nfix prev) (nfix n))
+                          (< (nfix head) (nfix n)))))
+        classes)
+       (n (lnfix n))
+       (next (node-next n classes))
+       (marked (eql 1 (get-bit n mark)))
+       ((mv classes new-prev)
+        (if marked
+            ;; Keep this node in the class and it is the new prev.
+            (b* ((classes (node-set-head n head classes))
+                 (classes (node-set-next prev n classes)))
+              (mv classes n))
+          ;; Ignore and keep the current prev.
+          ;; Don't bother setting it to a singleton because we'll
+          ;; do so as part of the classes-remove-unmarked sweep.
+          (mv classes prev)))
+       ((when (< n next))
+        ;; recur through the rest of the class.
+        (class-remove-unmarked next classes mark new-prev head))
+       ;; Otherwise we're at the end of the class and new-prev is the final
+       ;; node of the class.
+       (classes (node-set-head head new-prev classes)))
+    (node-set-next new-prev new-prev classes))
+  ///
+  (defret <fn>-preserves-wellformed
+    (implies (classes-wellformed classes)
+             (classes-wellformed new-classes)))
+
+  (defret <fn>-preserves-size
+    (equal (classes-size new-classes)
+           (classes-size classes))))
+
+       
+        
+
+
+(define classes-remove-unmarked ((n natp)
+                                 (classes)
+                                 (mark))
+  :returns (new-classes)
+  :guard (and (<= n (classes-size classes))
+              (classes-wellformed classes)
+              (<= (classes-size classes) (Bits-length mark)))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  (b* (((when (mbe :logic (zp (- (classes-size classes) (nfix n)))
+                   :exec (eql (classes-size classes) n)))
+        classes)
+       (classes (if (eql 1 (get-bit n mark))
+                    ;; When we see a node that is marked, check its head.
+                    ;; - If the head >= n, or if the head is unmarked,
+                    ;; then n is either the head of a class or a singleton.
+                    ;; Otherwise, it has already been processed as part of a
+                    ;; previous class.
+                    (b* ((head (node-head n classes))
+                         ((unless (or (>= head (lnfix n))
+                                      (eql 0 (get-bit head mark))))
+                          classes)
+                         (next (node-next n classes))
+                         ;; (classes )
+                         ((when (<= next (lnfix n)))
+                          ;; singleton
+                          (node-set-head n n classes)))
+                      (class-remove-unmarked next classes mark n n))
+                  ;; When we see a node that is not marked,
+                  ;; set it to a singleton
+                  (b* ((classes (node-set-head n n classes)))
+                    (node-set-next n n classes)))))
+    (classes-remove-unmarked (1+ (lnfix n)) classes mark))
+  ///
+  (defret <fn>-preserves-wellformed
+    (implies (classes-wellformed classes)
+             (classes-wellformed new-classes)))
+
+  (defret <fn>-preserves-size
+    (equal (classes-size new-classes)
+           (classes-size classes))))
+       
 
 
 (define class-list ((n natp) classes)
@@ -1359,12 +1463,11 @@
                   :expand ((:free (foo) (classes-wellformed-aux 0 foo))))))))
 
 
-(define classes-join-po-pairs ((idx natp) (offset natp) (n natp) aignet classes mark)
+(define classes-join-po-pairs ((idx natp) (offset natp) (n natp) aignet classes)
   ;; N is the maximum first index, offset is the offset of the second index.
   :guard (and (<= (+ offset n) (num-outs aignet))
               (<= idx n)
               (<= (num-fanins aignet) (classes-size classes))
-              (<= (num-fanins aignet) (bits-length mark))
               (classes-wellformed classes))
   :measure (nfix (- (nfix n) (nfix idx)))
   :returns new-classes
@@ -1373,12 +1476,9 @@
         classes)
        (id1 (lit->var (outnum->fanin idx aignet)))
        (id2 (lit->var (outnum->fanin (+ (lnfix idx) (lnfix offset)) aignet)))
-        
-       (classes (if (and (eql (get-bit id1 mark) 1)
-                         (eql (get-bit id2 mark) 1))
-                    (uf-join-classes-compress id1 id2 classes)
-                  classes)))
-    (classes-join-po-pairs (1+ (lnfix idx)) offset n aignet classes mark))
+       ;; (- (and (not (eql id1 id2)) (cw " (~x0 ~x1)~%" id1 id2)))
+       (classes (uf-join-classes-compress id1 id2 classes)))
+    (classes-join-po-pairs (1+ (lnfix idx)) offset n aignet classes))
   ///
   
   (defret classes-size/wellformed-of-<fn>
@@ -1419,8 +1519,8 @@
   
 
 
-(define classes-init-n-outputs ((n natp)
-                                (lastp "if nonnil, use the last 2N outputs instead of the first 2N outputs")
+(define classes-init-n-outputs ((n natp "number of pairs to consider")
+                                (start natp "starting point of the range of outputs")
                                 classes aignet)
   ;; Pairs the first N outputs with the next N outputs to form the initial equivalence classes.
   :returns (new-classes)
@@ -1440,33 +1540,26 @@
        (classes (resize-class-nexts size classes))
        (classes (resize-class-heads size classes))
        ((when (zp size)) classes)
-       ((acl2::local-stobjs mark)
-        (mv mark classes))
-       (mark (resize-bits size mark))
-       (mark (set-bit 0 1 mark)) ;; mark constant node
        (classes (classes-init-empty-aux (num-fanins aignet) classes))
-       ((when (> (* 2 (lnfix n)) (num-outs aignet)))
+       ((when (> (+ (lnfix start) (* 2 (lnfix n))) (num-outs aignet)))
         (cw " **********  TRANSFORMATION FAILED **********~%~
 Fraig transform was attempted with option ~x0 set to ~x1. ~
 When this value is a natural number N, there must be at least 2*N outputs, ~
 so in this case the aignet should have at least ~x2 outputs, but in fact it has ~x3.~%"
             :n-outputs-are-initial-equiv-classes
             (lnfix n) (* 2 (lnfix n)) (num-outs aignet))
-        (mv mark classes))
-       (regular-outs-start (if lastp 0 (* 2 (lnfix n))))
-       (regular-outs-end (if lastp
-                             (- (num-outs aignet) (* 2 (lnfix n)))
-                           (num-outs aignet)))
-       (mark (aignet-mark-dfs-outs-range regular-outs-start regular-outs-end mark aignet))
-                           
-       (classes (if lastp
-                    (b* ((start (- (num-outs aignet) (* 2 (lnfix n)))))
-                      (classes-join-po-pairs start n (+ start (lnfix n)) aignet classes mark))
-                  (classes-join-po-pairs 0 n n aignet classes mark)))
+        ;; the classes are empty, i.e. every node in its on equiv class, so the
+        ;; transform will just copy.  But (FIXME) we should add a way to
+        ;; prevent class refinement after this, since it will be useless.
+        classes)
+
+       ;; (- (cw "(~%"))
+       (classes (classes-join-po-pairs start n (+ (lnfix start) (lnfix n)) aignet classes))
+       ;; (- (cw ")~%"))
        (classes (uf-fix-to-equiv-class-format 0 classes)))
     (classes-report-sizes classes)
     (classes-check-consistency (num-fanins aignet) classes)
-    (mv mark classes))
+    classes)
        
   ///
 
@@ -2226,11 +2319,68 @@ so in this case the aignet should have at least ~x2 outputs, but in fact it has 
     (classes-counts-aux (1+ n) max nclasses nconst-lits nclass-lits classes)))
 
 (define classes-counts (classes &key ((start-node natp) '0))
-  :guard (<= start-node (classes-size classes))
+  :guard (and (<= start-node (classes-size classes)))
   :returns (mv (nclasses natp :rule-classes :type-prescription)
                (nconst-lits natp :rule-classes :type-prescription)
                (nclass-lits natp :rule-classes :type-prescription))
   (classes-counts-aux start-node (classes-size classes) 0 0 0 classes))
+
+
+
+(define classes-counts-with-mark-aux ((n natp)
+                                      (max natp)
+                                      (nclasses natp)
+                                      (nconst-lits natp)
+                                      (nclass-lits natp)
+                                      (classes)
+                                      (mark))
+  :guard (and (eql max (classes-size classes))
+              (<= max (bits-length mark))
+              (<= (nfix n) (classes-size classes)))
+  :returns (mv (nclasses-out natp :rule-classes :type-prescription)
+               (nconst-lits-out natp :rule-classes :type-prescription)
+               (nclass-lits-out natp :rule-classes :type-prescription))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  ;; The three stats returned are disjoint subsets of the nodes, so the number of nodes with no equivalences is
+  ;; (- (num-fanins) (+ nconst-lits nclasses nclass-lits)) (where the 1 is for the constant-0 node).
+  (b* ((nclasses (lnfix nclasses))
+       (nconst-lits (lnfix nconst-lits))
+       (nclass-lits (lnfix nclass-lits))
+       ((when (mbe :logic (zp (- (classes-size classes) (nfix n)))
+                   :exec (eql n max)))
+        (mv nclasses nconst-lits nclass-lits))
+       (n (lnfix n))
+       ((mv nclasses nconst-lits nclass-lits)
+        (b* (((when (eql 0 (node-head n classes)))
+              ;; node is equivalent to 0
+              (if (or (eql n 0)
+                      (eql (get-bit n mark) 0))
+                  (mv nclasses nconst-lits nclass-lits)
+                (mv nclasses (+ 1 nconst-lits) nclass-lits)))
+             ((when (< (node-head n classes) n))
+              ;; node is in some other equivalence class
+              (mv nclasses nconst-lits
+                  (if (or (eql (get-bit n mark) 0)
+                          (eql (get-bit (node-head n classes) mark) 0))
+                      nclass-lits
+                    (+ 1 nclass-lits))))
+             ;; node is its own head -- check whether it has a next, otherwise it's a singleton class
+             ((when (or (<= (node-next n classes) n)
+                        (eql (get-bit n mark) 0)))
+              (mv nclasses nconst-lits nclass-lits)))
+          (mv (+ 1 nclasses) nconst-lits nclass-lits))))
+    (classes-counts-with-mark-aux (1+ n) max nclasses nconst-lits nclass-lits classes mark))
+  ///
+  ;; somehow the definition being enabled messes up the fixequiv expand hint
+  (local (in-theory (disable (:d classes-counts-with-mark-aux)))))
+
+(define classes-counts-with-mark (classes mark &key ((start-node natp) '0))
+  :guard (and (<= start-node (classes-size classes))
+              (<= (classes-size classes) (bits-length mark)))
+  :returns (mv (nclasses natp :rule-classes :type-prescription)
+               (nconst-lits natp :rule-classes :type-prescription)
+               (nclass-lits natp :rule-classes :type-prescription))
+  (classes-counts-with-mark-aux start-node (classes-size classes) 0 0 0 classes mark))
 
 
 

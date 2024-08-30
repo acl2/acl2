@@ -408,6 +408,7 @@
                 ;;                     (read 1 (x86isa::read-*ip proc-mode x86) x86)))
                 ;; (poor-mans-quotep (read 1 (rip x86) x86))
                 (64-bit-modep x86)
+                (app-view x86)
                 (not (ms x86))
                 (not (fault x86)))
            (equal (x86-fetch-decode-execute x86)

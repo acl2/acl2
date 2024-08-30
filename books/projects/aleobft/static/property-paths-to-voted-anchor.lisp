@@ -18,7 +18,7 @@
 (include-book "std/basic/inductions" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "lib-ext"))
+(local (include-book "../library-extensions/oset-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

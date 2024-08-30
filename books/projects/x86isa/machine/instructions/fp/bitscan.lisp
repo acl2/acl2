@@ -167,16 +167,13 @@
 
        ;; [Shilpi:] DEST (register rgf-index) should be undefined if
        ;; reg/mem = 0.
-       ((when (int= reg/mem 0))
-        (b* (((mv val x86)
-              (pop-x86-oracle x86))
-             (x86 (!rgfi-size operand-size rgf-index
-                              (loghead (ash operand-size 3) (nfix val))
-                              rex-byte x86)))
-            x86))
-
-       (index (the (unsigned-byte 6) (bsf 0 reg/mem)))
-       (x86 (!rgfi-size operand-size rgf-index index rex-byte x86)))
+       ;; Yahya: AMD documents this instruction as leaving the destination
+       ;; operand unchanged when the source is 0. While Intel says it is
+       ;; undefined, their CPUs do the same thing in practice, and GCC appears
+       ;; to generate code relying on this behavior, so I use this behavior instead.
+       (x86 (if (int= reg/mem 0)
+              x86
+              (!rgfi-size operand-size rgf-index (bsf 0 reg/mem) rex-byte x86))))
       x86))
 
 ;; ======================================================================

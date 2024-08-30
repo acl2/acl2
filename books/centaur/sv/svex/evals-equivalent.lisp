@@ -26,13 +26,16 @@
 (in-package "SV")
 
 (include-book "symbolic")
+(include-book "centaur/fgl/bfrcount" :dir :system)
 (include-book "envs-agree-on-masks")
 (include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
 (include-book "centaur/fgl/bfr" :dir :system)
 (include-book "centaur/fgl/simplify-defs" :dir :system)
+(include-book "centaur/fgl/congruence-rules" :dir :system)
 (include-book "centaur/fgl/checks" :dir :system)
 (include-book "centaur/fgl/make-isomorphic-def" :dir :system)
 (include-book "centaur/fgl/list-to-tree" :dir :system)
+(include-book "centaur/aignet/fraig-config" :dir :system)
 (local (include-book "alist-thms"))
 ;; (include-book "centaur/aignet/transforms" :dir :System)
 
@@ -74,7 +77,7 @@ overall evaluations to be equivalent because of relatively simple equivalences
 near the inputs, not because of deep properties that SAT is ill-equipped to
 check.</p>
 
-<p>We do this using FGL's @(see fgl::fgl-simplify-ordered) operation.  This
+<p>We do this using FGL's @('fgl::fgl-simplify-ordered') operation.  This
 operation produces an AIG from an existing symbolic object, arranging the
 outputs of the AIG in a predictable order corresponding to the traversal order
 of the symbolic object -- e.g., car before cdr, integer bits LSB first, etc.
@@ -87,6 +90,37 @@ where O is the total number of outputs and N is the number of subexpression
 bits for each evaluation.  The FRAIG transformation then uses random simulation
 to further refine these equivalence classes and proceeds with the equivalence
 check.</p>
+
+<p>This requires some hand-tuning by the user.  The user must provide the list
+of AIGNET transforms, of type @(see
+aignet::m-assumption-n-output-comb-transform).  To use the special support for
+limited FRAIGING, one or more of these transforms should be a FRAIG transform
+with @(':output-types') specified as follows:</p>
+
+@({
+ (aignet::make-fraig-config ...
+      :output-types `((:evals-equivalent-equiv-classes
+                        . ,(aignet::fraig-output-type-initial-equiv-classes)))
+      ...)
+ })
+
+<p>Explanation: Our focused equivalence checking utilities add a set of outputs
+to the AIG to be simplified, and these outputs specify which nodes should
+initially be candidate equivalences. These outputs are tagged with the keyword
+@(':evals-equivalent-equiv-classes'). The fraig transform needs to be told to
+treat these outputs as initial equivalence classes, so we specify that mapping
+of @(':evals-equivalent-equiv-classes') to
+@('(aignet::fraig-output-type-initial-equiv-classes)') in the FRAIG
+configuration object's output-types field.  Subsequent FRAIG transforms may
+instead set @(':fraig-remaining-equiv-classes') as the initial
+equivalences as follows:</p>
+
+@({
+ (aignet::make-fraig-config ...
+        :output-types `((:fraig-remaining-equiv-classes
+                          . ,(aignet::fraig-output-type-initial-equiv-classes)))
+        ...)
+ })
 
 ")
 
@@ -205,152 +239,24 @@ to the svexes.</p>"
         
 
 
-(define transforms-update-fraig-configs-for-n-outputs ((n natp) transforms)
-  ;; BOZO We don't want to load the fraig book just to be able to write an updater for its config.
-  ;; So we're going to assume the basic form of a fraig config object which is (:fraig . alist)
-  (if (atom transforms)
-      nil
-    (cons (b* ((x (car transforms))
-               ((unless (and (consp x)
-                             (eq (car x) :fraig-config)
-                             (alistp (cdr x))))
-                x)
-               ;; Change the config: find the AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES entry
-               ;; and replace it with `(AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES . ,n)
-               (alist (cdr x))
-               (n-outputs-entry (cdr (assoc 'AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES alist)))
-               ((unless n-outputs-entry)
-                (cons :fraig-config alist))
-               (alist (my-replace-assoc 
-                       'AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES (lnfix n) alist))
-               (alist (my-replace-assoc
-                       'AIGNET::INITIAL-EQUIV-CLASSES-LAST t alist)))
-            (cons :fraig-config alist))
-          (transforms-update-fraig-configs-for-n-outputs n (cdr transforms)))))
+;; (define transforms-update-fraig-configs-for-n-outputs ((n natp) transforms)
+;;   ;; BOZO We don't want to load the fraig book just to be able to write an updater for its config.
+;;   ;; So we're going to assume the basic form of a fraig config object which is (:fraig . alist)
+;;   (if (atom transforms)
+;;       nil
+;;     (cons (b* ((x (car transforms))
+;;                ((unless (aignet::fraig-config-p x))
+;;                 x)
+;;                ((aignet::fraig-config x))
+;;                ;; Change the config: find the AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES entry
+;;                ;; and replace it with `(AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES . ,n)
+;;                ((unless x.n-outputs-are-initial-equiv-classes)
+;;                 x))
+;;             (aignet::change-fraig-config x
+;;                                          :n-outputs-are-initial-equiv-classes n
+;;                                          :initial-equiv-classes-last t))
+;;           (transforms-update-fraig-configs-for-n-outputs n (cdr transforms)))))
 
-;; (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-;; (local (include-book "std/lists/nth" :dir :system))
-
-;; (define fgl-fix-boolean-list-to-g-booleans-rec (n x rest)
-;;   :enabled t
-;;   (append (ec-call (take n x)) rest)
-;;   ///
-;;   (local (in-theory (enable bitops::logtail**)))
-;;   (local (defthm logcar-plus-logcdr
-;;            (implies (natp x)
-;;                     (<= (+ (logcar x) (logcdr x)) x))
-;;            :hints (("goal" :use ((:instance bitops::logcons-destruct))
-;;                     :in-theory (e/d (logcons)
-;;                                     (bitops::logcons-destruct
-;;                                      acl2::logcar-logcdr-elim))))
-;;            :rule-classes :linear))
-;;   (local (defthm logcar-plus-logcdr-gte-1
-;;            (implies (posp x)
-;;                     (<= 1 (+ (logcar x) (logcdr x))))
-;;            :hints (("goal" :use ((:instance bitops::logcons-destruct))
-;;                     :in-theory (e/d (logcons)
-;;                                     (bitops::logcons-destruct
-;;                                      acl2::logcar-logcdr-elim))))
-;;            :rule-classes :linear))
-;;   (local (defthm append-take-nthcdr
-;;            (equal (append (take n x) (take m (nthcdr n x)))
-;;                   (take (+ (nfix n) (nfix m)) x))
-;;            :hints(("Goal" :in-theory (enable take nthcdr)
-;;                    :induct (take m (nthcdr n x))))))
-;;   (local (defthm cdr-of-nthcdr
-;;            (equal (cdr (nthcdr n x))
-;;                   (nthcdr n (cdr x)))))
-;;   (local (in-theory (disable acl2::cdr-nthcdr)))
-
-;;   (local (defthm append-take-nthcdr-2
-;;            (equal (append (take n x) (take m (nthcdr n x)) y)
-;;                   (append (take (+ (nfix n) (nfix m)) x) y))
-;;            :hints (("goal" :use ((:instance ACL2::ASSOCIATIVITY-OF-APPEND
-;;                                   (a (take n x)) (b (take m (nthcdr n x))) (c y)))
-;;                     :in-theory (disable acl2::associativity-of-append)))))
-  
-;;   (fgl::def-fgl-rewrite fgl-fix-boolean-list-to-g-booleans-rec-impl
-;;     (equal (fgl-fix-boolean-list-to-g-booleans-rec n x rest)
-;;            (b* (((When (zp n)) rest)
-;;                 (first (b* ((x1 (car x))
-;;                             ((when (fgl::check-equal x1-is-t x1 t))
-;;                              (fgl::symbolic-t))
-;;                             ((when (fgl::check-equal x-is-nil x1 nil))
-;;                              (fgl::symbolic-nil)))
-;;                          x1))
-;;                 (x (cdr x))
-;;                 (n (1- n))
-;;                 (halfn (ash n -1))
-;;                 (restn (- n halfn))
-;;                 (rest (fgl-fix-boolean-list-to-g-booleans-rec restn (nthcdr halfn x) rest))
-;;                 (rest (fgl-fix-boolean-list-to-g-booleans-rec halfn x rest)))
-;;              (cons first rest)))
-;;     :hints (("goal" :in-theory (enable fgl::check-equal))))
-
-;;   (fgl::remove-fgl-rewrite fgl-fix-boolean-list-to-g-booleans-rec))
-    
-
-
-;; (define fgl-fix-boolean-list-to-g-booleans (x)
-;;   :enabled t
-;;   (true-list-fix x)
-;;   ///
-;;   (fgl::def-fgl-rewrite fgl-fix-boolean-list-to-g-booleans-impl
-;;     (equal (fgl-fix-boolean-list-to-g-booleans x)
-;;            (fgl-fix-boolean-list-to-g-booleans-rec (len x) x nil)))
-
-;;   (fgl::remove-fgl-rewrite fgl-fix-boolean-list-to-g-booleans))
-
-
-
-;; (define a4veclist-eval-for-evals-equal ((x a4veclist-p) (sub a4veclist-p) (env1) (env2) (transforms))
-;;   ;; Flattens sub and x (a4veclists) into AIG lists, evaluates them under two
-;;   ;; envs, orders them so that the respective evaluations of y can be used as
-;;   ;; simplifies them with the special form of the FRAIG transform, then
-;;   ;; recovers those from x and transforms it back to an a4veclist.
-;;   :enabled t
-;;   (declare (ignorable sub transforms))
-;;   (mv (a4veclist-eval x env1)
-;;       (a4veclist-eval x env2))
-;;   ///
-;;   (fgl::def-fgl-rewrite a4veclist-eval-for-evals-equal-fgl
-;;     (equal (a4veclist-eval-for-evals-equal x sub env1 env2 transforms)
-;;            (b* ((sub-aiglist (time$ (a4veclist->aiglist sub)
-;;                                     :msg "; SV bit-blasting: a4veclist->aiglist (sub): ~st sec, ~sa bytes.~%"))
-;;                 (sub-len (time$ (len sub-aiglist)
-;;                                 :msg "; SV bit-blasting: len(sub): ~st sec, ~sa bytes.~%"))
-;;                 (x-aiglist (time$ (a4veclist->aiglist x)
-;;                                   :msg "; SV bit-blasting: a4veclist->aiglist (x): ~st sec, ~sa bytes.~%"))
-;;                 (x-len (time$ (len x-aiglist)
-;;                               :msg "; SV bit-blasting: len(x): ~st sec, ~sa bytes.~%"))
-;;                 (env1 (make-fast-alist env1))
-;;                 (env2 (make-fast-alist env2))
-;;                 (sub-bits1 (time$ (fgl-fix-boolean-list-to-g-booleans
-;;                                    (aig-eval-list sub-aiglist env1))
-;;                                   :msg "; SV bit-blasting: aig-eval-list (sub, env1): ~st sec, ~sa bytes.~%"))
-;;                 (sub-bits2 (time$ (fgl-fix-boolean-list-to-g-booleans
-;;                                    (aig-eval-list sub-aiglist env2))
-;;                                   :msg "; SV bit-blasting: aig-eval-list (sub, env2): ~st sec, ~sa bytes.~%"))
-;;                 (x-bits1 (time$ (aig-eval-list x-aiglist env1)
-;;                                 :msg "; SV bit-blasting: aig-eval-list (x, env1): ~st sec, ~sa bytes.~%"))
-;;                 (x-bits2 (time$ (aig-eval-list x-aiglist env2)
-;;                                 :msg "; SV bit-blasting: aig-eval-list (x, env2): ~st sec, ~sa bytes.~%"))
-;;                 (?ign (fast-alist-free env1))
-;;                 (?ign (fast-alist-free env2))
-;;                 (full-bits (append sub-bits1 sub-bits2 x-bits1 x-bits2))
-;;                 (transforms (transforms-update-fraig-configs-for-n-outputs sub-len transforms))
-;;                 (full-bits-simp (fgl::fgl-simplify-ordered full-bits transforms :use-pathcond nil :use-constraint nil))
-;;                 (x-bits-simp (nthcdr (* 2 sub-len) full-bits-simp))
-;;                 (x-bits1 (take x-len x-bits-simp))
-;;                 (x-bits2 (nthcdr x-len x-bits-simp))
-;;                 (x-4vecs1 (time$ (4veclist-from-bitlist x x-bits1)
-;;                                  :msg "; bits->4vecs 1: ~st sec, ~sa bytes.~%"))
-;;                 (x-4vecs2 (time$ (4veclist-from-bitlist x x-bits2)
-;;                                  :msg "; bits->4vecs 1: ~st sec, ~sa bytes.~%"))
-;;                 (?ign (fgl::fgl-gatecount 4vecs (cons x-4vecs1 x-4vecs2))))
-;;              (mv x-4vecs1 x-4vecs2))))
-  
-;;   (fgl::remove-fgl-rewrite a4veclist-eval-for-evals-equal))
 
 (local (include-book "std/lists/sets" :dir :system))
 
@@ -522,6 +428,7 @@ to the svexes.</p>"
 
 
 (define hons-aig-accumulate-nodes (x acc)
+  :returns (nodes alistp :hyp (alistp acc))
   (b* (((when (atom x))
         (if (or (booleanp x)
                 (hons-get x acc))
@@ -535,6 +442,7 @@ to the svexes.</p>"
     (hons-aig-accumulate-nodes (cdr x) acc)))
 
 (define hons-aiglist-accumulate-nodes (x acc)
+  :returns (nodes alistp :hyp (alistp acc))
   (if (atom x)
       acc
     (hons-aiglist-accumulate-nodes
@@ -557,17 +465,25 @@ to the svexes.</p>"
 
 
 (define a4veclist-accumulate-upper-nodes ((x a4veclist-p) acc)
+  :returns (nodes alistp :hyp (alistp acc))
   (if (atom x)
       acc
-    (a4veclist-accumulate-nodes (cdr x)
-                                (hons-aiglist-accumulate-nodes (a4vec->upper (car x))
-                                                               acc))))
+    (a4veclist-accumulate-upper-nodes
+     (cdr x)
+     (hons-aiglist-accumulate-nodes (a4vec->upper (car x))
+                                    acc))))
 
 
 (define a4veclist-upper-subnodes ((x a4veclist-p))
+  :prepwork ((local (defthm alist-keys-is-strip-cars-when-alistp
+                      (implies (alistp x)
+                               (equal (alist-keys x)
+                                      (Strip-cars x)))
+                      :hints(("Goal" :in-theory (enable alist-keys))))))
   (b* ((acc (a4veclist-accumulate-upper-nodes x nil)))
     (fast-alist-free acc)
-    (alist-keys acc)))
+    (mbe :logic (alist-keys acc)
+         :exec (strip-cars acc))))
 
 
 
@@ -1027,15 +943,26 @@ in two symbolic SVEX environments."
                                               (env1 svex-env-p)
                                               (env2 svex-env-p)
                                               (symbolic-params alistp)
-                                              (transforms))
-  (declare (ignorable symbolic-params transforms))
+                                              (transforms)
+                                              &key tracked-alist)
+  (declare (ignorable symbolic-params transforms tracked-alist))
   (svexlist-evals-equal x env1 env2)
   ///
 
+  (defcong fgl::unequiv equal (svexlist-evals-equal-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 4)
+  (defcong fgl::unequiv equal (svexlist-evals-equal-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 5)
+  (defcong fgl::unequiv equal (svexlist-evals-equal-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 6)
 
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-with-transforms-fn-4)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-with-transforms-fn-5)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-with-transforms-fn-6)
   
   (fgl::def-fgl-rewrite svexlist-evals-equal-with-transforms-fgl
-    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms)
+    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms
+                                                 :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env1 (make-fast-alist (svex-env-fix env1)))
@@ -1101,18 +1028,22 @@ in two symbolic SVEX environments."
                                  they were made isomorphic!~%"))
                       (?foo (break$)))
                    (fgl::abort-rewrite (svexlist-evals-equal orig-x env1 env2))))
-                (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                ;; (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms))
+                )
                 
              (fgl::fgl-simplify-ordered evals-equal transforms
                                         :tracked-obj
-                                        (cons hint-eval1 hint-eval2))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons hint-eval1 hint-eval2))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)
                                    (svexlist->a4vec-correct)))))
 
   (fgl::def-fgl-rewrite svexlist-evals-equal-with-transforms-fgl-less-extreme
-    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms)
+    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms
+                                                 :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env1 (make-fast-alist (svex-env-fix env1)))
@@ -1199,11 +1130,14 @@ in two symbolic SVEX environments."
                                  they were made isomorphic!~%"))
                       (?foo (break$)))
                    (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)))))
-                (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                ;; (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms))
+                )
                 
              (fgl::fgl-simplify-ordered evals-equal transforms
                                         :tracked-obj
-                                        (cons hint-iso1 hint-iso2))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons hint-iso1 hint-iso2))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)
@@ -1211,7 +1145,8 @@ in two symbolic SVEX environments."
   
 
   (fgl::def-fgl-rewrite svexlist-evals-equal-with-transforms-fgl-extreme
-    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms)
+    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms
+                                                 :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env1 (make-fast-alist (svex-env-fix env1)))
@@ -1299,32 +1234,61 @@ in two symbolic SVEX environments."
                                  they were made isomorphic!~%"))
                       (?foo (break$)))
                    (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)))))
-                (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                ;; (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms))
+                )
                 
              (fgl::fgl-simplify-ordered evals-equal transforms
                                         :tracked-obj
-                                        (cons hint-iso1 hint-iso2))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons hint-iso1 hint-iso2))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)
                                    (svexlist->a4vec-correct))))))
 
+#!fgl
+(define fgl-list-object-bfrcounts ((x fgl-object-p))
+  :returns (counts nat-listp)
+  :measure (fgl-object-count x)
+  :prepwork ((local
+              #!acl2
+              (defthm nat-listp-of-repeat
+                (implies (natp x)
+                         (nat-listp (repeat n x)))
+                :hints(("Goal" :in-theory (enable repeat))))))
+  (fgl-object-case x
+    :g-concrete (acl2::repeat (len x.val) 0)
+    :g-cons (cons (fgl-object-bfrcount x.car)
+                  (fgl-list-object-bfrcounts x.cdr))
+    :otherwise nil))
 
 (define svexlist-evals-equal-and-integerp-with-transforms ((x svexlist-p)
                                                            (env1 svex-env-p)
                                                            (env2 svex-env-p)
                                                            (symbolic-params alistp)
-                                                           (transforms))
-  (declare (ignorable symbolic-params transforms))
+                                                           (transforms)
+                                                           &key tracked-alist)
+  (declare (ignorable symbolic-params transforms tracked-alist))
   (and (svexlist-evals-equal x env1 env2)
        (integer-listp (svexlist-eval x env1)))
   ///
 
+  (defcong fgl::unequiv equal (svexlist-evals-equal-and-integerp-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 4)
+  (defcong fgl::unequiv equal (svexlist-evals-equal-and-integerp-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 5)
+  (defcong fgl::unequiv equal (svexlist-evals-equal-and-integerp-with-transforms-fn
+                               x env1 env2 symbolic-params transforms tracked-alist) 6)
 
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-and-integerp-with-transforms-fn-4)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-and-integerp-with-transforms-fn-5)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-evals-equal-and-integerp-with-transforms-fn-6)
 
 
   (fgl::def-fgl-rewrite svexlist-evals-equal-and-integerp-with-transforms-fgl
-    (equal (svexlist-evals-equal-and-integerp-with-transforms x env1 env2 symbolic-params transforms)
+    (equal (svexlist-evals-equal-and-integerp-with-transforms x env1 env2 symbolic-params transforms
+                                                              :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env1 (make-fast-alist (svex-env-fix env1)))
@@ -1403,11 +1367,22 @@ in two symbolic SVEX environments."
                       (?foo (break$)))
                    (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)
                                             (integer-listp (svexlist-eval orig-x env1))))))
-                (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                ;; (omo-bfrcounts (fgl::syntax-bind
+                ;;                 omo-bfrcounts
+                ;;                 (fgl::fgl-list-object-bfrcounts output-map-objects)))
+                ;; (transforms (if omo-bfrcounts
+                ;;                 (transforms-update-fraig-output-maps
+                ;;                  len1
+                ;;                  (append omo-bfrcounts (list (* 2 len1)))
+                ;;                  transforms)
+                ;;               (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                )
                 
              (fgl::fgl-simplify-ordered evals-equal-and-integerp transforms
                                         :tracked-obj
-                                        (cons hint-iso1 hint-iso2))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons hint-iso1 hint-iso2))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)
@@ -1419,15 +1394,27 @@ in two symbolic SVEX environments."
 (define svexlist-eval-integer-listp-with-transforms ((x svexlist-p)
                                                       (env svex-env-p)
                                                       (symbolic-params alistp)
-                                                      (transforms))
-  (declare (ignorable symbolic-params transforms))
+                                                      (transforms)
+                                                      &key tracked-alist)
+  (declare (ignorable symbolic-params transforms tracked-alist))
   (integer-listp (svexlist-eval x env))
   ///
+  (defcong fgl::unequiv equal (svexlist-eval-integer-listp-with-transforms-fn
+                               x env symbolic-params transforms tracked-alist) 3)
+  (defcong fgl::unequiv equal (svexlist-eval-integer-listp-with-transforms-fn
+                               x env symbolic-params transforms tracked-alist) 4)
+  (defcong fgl::unequiv equal (svexlist-eval-integer-listp-with-transforms-fn
+                               x env symbolic-params transforms tracked-alist) 5)
+
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-eval-integer-listp-with-transforms-fn-3)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-eval-integer-listp-with-transforms-fn-4)
+  (fgl::add-fgl-congruence unequiv-implies-equal-svexlist-eval-integer-listp-with-transforms-fn-5)
 
 
   
   (fgl::def-fgl-rewrite svexlist-eval-integer-listp-with-transforms-fgl
-    (equal (svexlist-eval-integer-listp-with-transforms x env symbolic-params transforms)
+    (equal (svexlist-eval-integer-listp-with-transforms x env symbolic-params transforms
+                                                        :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env (make-fast-alist (svex-env-fix env)))
@@ -1482,18 +1469,22 @@ in two symbolic SVEX environments."
                                  they were made isomorphic!~%"))
                       (?foo (break$)))
                    (fgl::abort-rewrite (integer-listp (svexlist-eval orig-x env)))))
-                (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                ;; (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms))
+                )
                 
              (fgl::fgl-simplify-ordered evals-integer-listp transforms
                                         :tracked-obj
-                                        (cons hint-upper hint-lower))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons hint-upper hint-lower))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)
                                    (svexlist->a4vec-correct)))))
 
   (fgl::def-fgl-rewrite svexlist-eval-integer-listp-with-transforms-fgl-extreme-2
-    (equal (svexlist-eval-integer-listp-with-transforms x env symbolic-params transforms)
+    (equal (svexlist-eval-integer-listp-with-transforms x env symbolic-params transforms
+                                                        :tracked-alist tracked-alist)
            (b* ((orig-x x)
 
                 (env (make-fast-alist (svex-env-fix env)))
@@ -1552,11 +1543,14 @@ in two symbolic SVEX environments."
                                  they were made isomorphic!~%"))
                       (?foo (break$)))
                    (fgl::abort-rewrite (and (integer-listp (svexlist-eval orig-x env))))))
-                (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                ;; (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms))
+                )
                 
              (fgl::fgl-simplify-ordered integer-listp transforms
                                         :tracked-obj
-                                        (cons upper-eval lower-eval))))
+                                        (cons (cons :evals-equivalent-equiv-classes
+                                                    (cons upper-eval lower-eval))
+                                              tracked-alist))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)

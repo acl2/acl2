@@ -133,6 +133,18 @@
   (set::in (address-fix val) (committee->addresses commtt))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define committee-membersp ((vals address-setp) (commtt committeep))
+  :returns (yes/no booleanp)
+  :short "Check if all the validators in a set are members of a committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This essentially lifts @(tsee committee-memberp) to sets."))
+  (set::subset (address-set-fix vals) (committee->addresses commtt))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection genesis-committee

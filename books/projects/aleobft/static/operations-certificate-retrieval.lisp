@@ -13,7 +13,7 @@
 
 (include-book "certificates")
 
-(local (include-book "lib-ext"))
+(local (include-book "../library-extensions/oset-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

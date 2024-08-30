@@ -32,8 +32,7 @@
      it is endorsed by validators other than the author of the certificate:
      @(tsee create-certificate-possiblep) checks that condition.
      A @('create-certificate') event is the only one
-     that extends the @('signed-author+round-pairs') component
-     of a validator state.
+     that extends the @('endorsed') component of a validator state.
      The other events either leave it unchanged
      or remove pairs from it.
      Thus, it follows that all the pairs have authors
