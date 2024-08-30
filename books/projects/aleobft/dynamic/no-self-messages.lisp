@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ invariant-no-self-messages
+(defxdoc+ no-self-messages
   :parents (correctness)
   :short "Invariant that messages are never self-addressed."
   :long
