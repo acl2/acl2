@@ -187,7 +187,13 @@
                     :struct (strunispec-unambp tyspec.unwrap)
                     :union (strunispec-unambp tyspec.unwrap)
                     :enum (enumspec-unambp tyspec.unwrap)
-                    :typedef t)
+                    :typedef t
+                    :int128 t
+                    :float128 t
+                    :builtin-va-list t
+                    :typeof-expr (expr-unambp tyspec.expr)
+                    :typeof-type (tyname-unambp tyspec.type)
+                    :typeof-ambig nil)
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -838,15 +844,15 @@
            (expr-unambp expr))
     :expand (genassoc-unambp (genassoc-default expr)))
 
-  (defrule type-spec-unambp-when-void/.../complex/typedef
+  (defrule type-spec-unambp-when-not-atomic/struct/union/enum
     ;; The formulation (type-spec-unambp (type-spec-... ...))
     ;; does not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by
     ;; the formulation we give here,
     ;; which is not ideal because the conclusion is quite generic.
-    (implies (member-eq (type-spec-kind tyspec)
-                        '(:void :char :short :int :long :float :double
-                          :signed :unsigned :bool :complex :typedef))
+    (implies (not (member-eq (type-spec-kind tyspec)
+                             '(:atomic :struct :union :enum
+                               :typeof-expr :typeof-type :typeof-ambig)))
              (type-spec-unambp tyspec)))
 
   (defrule type-spec-unambp-of-type-spec-atomic
@@ -868,6 +874,16 @@
     (equal (type-spec-unambp (type-spec-enum enumspec))
            (enumspec-unambp enumspec))
     :expand (type-spec-unambp (type-spec-enum enumspec)))
+
+  (defrule type-spec-unambp-of-type-spec-typeof-expr
+    (equal (type-spec-unambp (type-spec-typeof-expr expr uscores))
+           (expr-unambp expr))
+    :expand (type-spec-unambp (type-spec-typeof-expr expr uscores)))
+
+  (defrule type-spec-unambp-of-type-spec-typeof-type
+    (equal (type-spec-unambp (type-spec-typeof-type tyname uscores))
+           (tyname-unambp tyname))
+    :expand (type-spec-unambp (type-spec-typeof-type tyname uscores)))
 
   (defrule spec/qual-unambp-of-spec/qual-tyspec
     (equal (spec/qual-unambp (spec/qual-tyspec tyspec))
@@ -1318,6 +1334,23 @@
                   (type-spec-case tyspec :enum))
              (enumspec-unambp (type-spec-enum->unwrap tyspec)))
     :expand (type-spec-unambp tyspec))
+
+  (defrule expr-unambp-of-type-spec-typeof-expr->expr
+    (implies (and (type-spec-unambp tyspec)
+                  (equal (type-spec-kind tyspec) :typeof-expr))
+             (expr-unambp (type-spec-typeof-expr->expr tyspec)))
+    :rule-classes :forward-chaining)
+
+  (defrule tyname-unambp-of-type-spec-typeof-type->type
+    (implies (and (type-spec-unambp tyspec)
+                  (equal (type-spec-kind tyspec) :typeof-type))
+             (tyname-unambp (type-spec-typeof-type->type tyspec)))
+    :rule-classes :forward-chaining)
+
+  (defrule not-typeof-ambig-when-type-spec-unambp
+    (implies (type-spec-unambp tyspec)
+             (not (equal (type-spec-kind tyspec) :typeof-ambig)))
+    :rule-classes :forward-chaining)
 
   (defrule type-spec-unambp-of-spec/qual-tyspec->unwrap
     (implies (and (spec/qual-unambp specqual)

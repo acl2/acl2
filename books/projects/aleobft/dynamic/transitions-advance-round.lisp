@@ -230,10 +230,23 @@
       :in-theory (enable advance-round-possiblep
                          get-validator-state-of-update-validator-state))))
 
+  (defret validator-state->endorsed-of-advance-round-next
+    (equal (validator-state->endorsed
+            (get-validator-state val1 new-systate))
+           (validator-state->endorsed
+            (get-validator-state val1 systate)))
+    :hyp (advance-round-possiblep val systate)
+    :hints
+    (("Goal"
+      :in-theory
+      (enable advance-round-possiblep
+              get-validator-state-of-update-validator-state))))
+
   (defret get-network-state-of-advance-round-next
     (equal (get-network-state new-systate)
            (get-network-state systate)))
 
   (in-theory (disable validator-state->dag-of-advance-round-next
                       validator-state->buffer-of-advance-round-next
+                      validator-state->endorsed-of-advance-round-next
                       get-network-state-of-advance-round-next)))

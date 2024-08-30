@@ -460,10 +460,15 @@
     (equal (validator-state->buffer new-vstate)
            (validator-state->buffer vstate)))
 
+  (defret validator-state->endorsed-of-create-certificate-author-next
+    (equal (validator-state->endorsed new-vstate)
+           (validator-state->endorsed vstate)))
+
   (in-theory
    (disable
     validator-state->dag-of-create-certificate-author-next
-    validator-state->buffer-of-create-certificate-author-next)))
+    validator-state->buffer-of-create-certificate-author-next
+    validator-state->endorsed-of-create-certificate-author-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -502,10 +507,18 @@
     (equal (validator-state->buffer new-vstate)
            (validator-state->buffer vstate)))
 
+  (defret validator-state->endorsed-of-create-certificate-endorser-next
+    (equal (validator-state->endorsed new-vstate)
+           (set::insert (make-address+pos
+                         :address (certificate->author cert)
+                         :pos (certificate->round cert))
+                        (validator-state->endorsed vstate))))
+
   (in-theory
    (disable
     validator-state->dag-of-create-certificate-endorser-next
-    validator-state->buffer-of-create-certificate-endorser-next)))
+    validator-state->buffer-of-create-certificate-endorser-next
+    validator-state->endorsed-of-create-certificate-endorser-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -591,6 +604,24 @@
           validator-state->buffer-of-create-certificate-endorser-next
           get-validator-state-of-update-validator-state))))
 
+     (defret validator-state->endorsed-of-create-certificate-endorsers-next-loop
+       (equal (validator-state->endorsed (get-validator-state val new-systate))
+              (if (set::in val endorsers)
+                  (set::insert (make-address+pos
+                                :address (certificate->author cert)
+                                :pos (certificate->round cert))
+                               (validator-state->endorsed
+                                (get-validator-state val systate)))
+                (validator-state->endorsed
+                 (get-validator-state val systate))))
+       :hyp (set::in val (correct-addresses systate))
+       :hints
+       (("Goal"
+         :induct t
+         :in-theory
+         (enable validator-state->endorsed-of-create-certificate-endorser-next
+                 get-validator-state-of-update-validator-state))))
+
      (defret get-network-state-of-create-certificate-endorsers-next-loop
        (equal (get-network-state new-systate)
               (get-network-state systate))
@@ -620,6 +651,18 @@
            (validator-state->buffer (get-validator-state val systate)))
     :hyp (set::in val (correct-addresses systate)))
 
+  (defret validator-state->endorsed-of-create-certificate-endorsers-next
+    (equal (validator-state->endorsed (get-validator-state val new-systate))
+           (if (set::in val (certificate->endorsers cert))
+               (set::insert (make-address+pos
+                             :address (certificate->author cert)
+                             :pos (certificate->round cert))
+                            (validator-state->endorsed
+                             (get-validator-state val systate)))
+             (validator-state->endorsed
+              (get-validator-state val systate))))
+    :hyp (set::in val (correct-addresses systate)))
+
   (defret get-network-state-of-create-certificate-endorsers-next
     (equal (get-network-state new-systate)
            (get-network-state systate)))
@@ -628,9 +671,11 @@
    (disable
     validator-state->dag-of-create-certificate-endorsers-next-loop
     validator-state->buffer-of-create-certificate-endorsers-next-loop
+    validator-state->endorsed-of-create-certificate-endorsers-next-loop
     get-network-state-of-create-certificate-endorsers-next-loop
     validator-state->dag-of-create-certificate-endorsers-next
     validator-state->buffer-of-create-certificate-endorsers-next
+    validator-state->endorsed-of-create-certificate-endorsers-next
     get-network-state-of-create-certificate-endorsers-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -778,13 +823,31 @@
        validator-state->buffer-of-create-certificate-endorsers-next
        get-validator-state-of-update-validator-state))))
 
+  (defret validator-state->endorsed-of-create-certificate-next
+    (equal (validator-state->endorsed (get-validator-state val new-systate))
+           (if (set::in val (certificate->endorsers cert))
+               (set::insert (make-address+pos
+                             :address (certificate->author cert)
+                             :pos (certificate->round cert))
+                            (validator-state->endorsed
+                             (get-validator-state val systate)))
+             (validator-state->endorsed
+              (get-validator-state val systate))))
+    :hyp (set::in val (correct-addresses systate))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       get-validator-state-of-update-validator-state
+       validator-state->endorsed-of-create-certificate-author-next
+       validator-state->endorsed-of-create-certificate-endorsers-next))))
+
   (defret get-network-state-of-create-certificate-next
     (equal (get-network-state new-systate)
            (set::union (get-network-state systate)
                        (make-certificate-messages
                         cert (set::delete (certificate->author cert)
                                           (correct-addresses systate)))))
-    :hyp (set::in val (correct-addresses systate))
     :hints
     (("Goal"
       :in-theory (enable get-network-state-of-create-certificate-endorsers-next
@@ -792,4 +855,5 @@
 
   (in-theory (disable validator-state->dag-of-create-certificate-next
                       validator-state->buffer-of-create-certificate-next
+                      validator-state->endorsed-of-create-certificate-next
                       get-network-state-of-create-certificate-next)))

@@ -1870,15 +1870,26 @@
                                    "_Static_assert"
                                    "_Thread_local"))
             (and (parstate->gcc parstate)
-                 (member-equal string '("__alignof__"
+                 (member-equal string '("__alignof"
+                                        "__alignof__"
                                         "asm"
+                                        "__asm"
                                         "__asm__"
+                                        "__attribute"
                                         "__attribute__"
+                                        "__builtin_va_list"
                                         "__extension__"
+                                        "_Float128"
                                         "__inline"
                                         "__inline__"
+                                        "__int128"
                                         "__restrict"
-                                        "__restrict__"))))
+                                        "__restrict__"
+                                        "__signed"
+                                        "__signed__"
+                                        "typeof"
+                                        "__typeof"
+                                        "__typeof__"))))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
@@ -5590,7 +5601,8 @@
      or an @('_Alignof') keyword.")
    (xdoc::p
     "We also compare the token against
-     the GCC extension variant @('__alignof__') of @('_Alignof').
+     the GCC extension variants
+     @('__alignof') and @('__alignof__') of @('_Alignof').
      Note that this variant is a keywords only if GCC extensions are supported:
      @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
      So the comparison here with that variant keyword
@@ -5608,6 +5620,7 @@
       (token-punctuatorp token? "!")
       (token-keywordp token? "sizeof")
       (token-keywordp token? "_Alignof")
+      (token-keywordp token? "__alignof")
       (token-keywordp token? "__alignof__"))
   ///
 
@@ -5729,7 +5742,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There are a number of type specifiers that consist of single keywords."))
+    "There are a number of type specifiers that consist of single keywords.")
+   (xdoc::p
+    "We also compare the token against the GCC variants
+     @('__signed') and @('__signed__') of @('signed').
+     Note that these variants are keywords only if GCC extensions are supported:
+     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     So the comparison here with those variant keywords
+     will always fail if GCC extensions are not supported,
+     because in that case both @('__signed') and @('__signed__')
+     would be identifier tokens, not keyword tokens.")
+   (xdoc::p
+    "We similarly include the GCC extension types
+     @('__int128'), @('_Float128'), @('__builtin_va_list')."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
       (token-keywordp token? "short")
@@ -5738,9 +5763,14 @@
       (token-keywordp token? "float")
       (token-keywordp token? "double")
       (token-keywordp token? "signed")
+      (token-keywordp token? "__signed")
+      (token-keywordp token? "__signed__")
       (token-keywordp token? "unsigned")
       (token-keywordp token? "_Bool")
-      (token-keywordp token? "_Complex"))
+      (token-keywordp token? "_Complex")
+      (token-keywordp token? "__int128")
+      (token-keywordp token? "_Float128")
+      (token-keywordp token? "__builtin_va_list"))
   ///
 
   (defrule non-nil-when-token-type-specifier-keyword-p
@@ -5762,10 +5792,18 @@
         ((token-keywordp token "long") (type-spec-long))
         ((token-keywordp token "float") (type-spec-float))
         ((token-keywordp token "double") (type-spec-double))
-        ((token-keywordp token "signed") (type-spec-signed))
+        ((token-keywordp token "signed")
+         (type-spec-signed (keyword-uscores-none)))
+        ((token-keywordp token "__signed")
+         (type-spec-signed (keyword-uscores-start)))
+        ((token-keywordp token "__signed__")
+         (type-spec-signed (keyword-uscores-both)))
         ((token-keywordp token "unsigned") (type-spec-unsigned))
         ((token-keywordp token "_Bool") (type-spec-bool))
         ((token-keywordp token "_Complex") (type-spec-complex))
+        ((token-keywordp token "__int128") (type-spec-int128))
+        ((token-keywordp token "_Float128") (type-spec-float128))
+        ((token-keywordp token "__builtin_va_list") (type-spec-builtin-va-list))
         (t (prog2$ (impossible) (irr-type-spec))))
   :prepwork ((local (in-theory (enable token-type-specifier-keyword-p)))))
 
@@ -5785,6 +5823,9 @@
       (token-keywordp token? "struct")
       (token-keywordp token? "union")
       (token-keywordp token? "enum")
+      (token-keywordp token? "typeof")
+      (token-keywordp token? "__typeof")
+      (token-keywordp token? "__typeof__")
       (and token? (token-case token? :ident)))
   ///
 
@@ -5813,10 +5854,10 @@
      would be identifier tokens, not keyword tokens."))
   (or (token-keywordp token? "const")
       (token-keywordp token? "restrict")
-      (token-keywordp token? "volatile")
-      (token-keywordp token? "_Atomic")
       (token-keywordp token? "__restrict")
-      (token-keywordp token? "__restrict__"))
+      (token-keywordp token? "__restrict__")
+      (token-keywordp token? "volatile")
+      (token-keywordp token? "_Atomic"))
   ///
 
   (defrule non-nil-when-token-type-qualifier-p
@@ -5832,11 +5873,14 @@
   :short "Map a token that is a type qualifier
           to the correspoding type qualifier."
   (cond ((token-keywordp token "const") (type-qual-const))
-        ((token-keywordp token "restrict") (type-qual-restrict))
+        ((token-keywordp token "restrict")
+         (type-qual-restrict (keyword-uscores-none)))
+        ((token-keywordp token "__restrict")
+         (type-qual-restrict (keyword-uscores-start)))
+        ((token-keywordp token "__restrict__")
+         (type-qual-restrict (keyword-uscores-both)))
         ((token-keywordp token "volatile") (type-qual-volatile))
         ((token-keywordp token "_Atomic") (type-qual-atomic))
-        ((token-keywordp token "__restrict") (type-qual-__restrict))
-        ((token-keywordp token "__restrict__") (type-qual-__restrict__))
         (t (prog2$ (impossible) (irr-type-qual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 
@@ -5889,9 +5933,9 @@
      because in that case both @('__inline') and @('__inline__')
      would be identifier tokens, not keyword tokens."))
   (or (token-keywordp token? "inline")
-      (token-keywordp token? "_Noreturn")
       (token-keywordp token? "__inline")
-      (token-keywordp token? "__inline__"))
+      (token-keywordp token? "__inline__")
+      (token-keywordp token? "_Noreturn"))
   ///
 
   (defrule non-nil-when-token-function-specifier-p
@@ -5906,10 +5950,13 @@
   :returns (funspec fun-specp)
   :short "Map a token that is a function specifier
           to the corresponding function specifier."
-  (cond ((token-keywordp token "inline") (fun-spec-inline))
+  (cond ((token-keywordp token "inline")
+         (fun-spec-inline (keyword-uscores-none)))
+        ((token-keywordp token "__inline")
+         (fun-spec-inline (keyword-uscores-start)))
+        ((token-keywordp token "__inline__")
+         (fun-spec-inline (keyword-uscores-both)))
         ((token-keywordp token "_Noreturn") (fun-spec-noreturn))
-        ((token-keywordp token "__inline") (fun-spec-__inline))
-        ((token-keywordp token "__inline__") (fun-spec-__inline__))
         (t (prog2$ (impossible) (irr-fun-spec))))
   :prepwork ((local (in-theory (enable token-function-specifier-p)))))
 
@@ -7712,9 +7759,10 @@
                      parstate))))))
        ;; If token is '_Alignof',
        ;; we parse an open parenthesis, a type name, and a closed parenthesis.
-       ;; We also allow '__alignof__',
-       ;; which can be a keyword only if GCC extensions are supported.
+       ;; We also allow '__alignof' and '__alignof__',
+       ;; which can be keywords only if GCC extensions are supported.
        ((or (token-keywordp token "_Alignof") ; _Alignof
+            (token-keywordp token "__alignof") ; __alignof
             (token-keywordp token "__alignof__")) ; __alignof__
         (b* (((erp & parstate) ; _Alignof (
               (read-punctuator "(" parstate))
@@ -7724,7 +7772,12 @@
               (read-punctuator ")" parstate)))
           (retok (make-expr-alignof
                   :type tyname
-                  :uscores (token-keywordp token "__alignof__"))
+                  :uscores (cond ((token-keywordp token "_Alignof")
+                                  (keyword-uscores-none))
+                                 ((token-keywordp token "__alignof")
+                                  (keyword-uscores-start))
+                                 ((token-keywordp token "__alignof__")
+                                  (keyword-uscores-both))))
                  (span-join span last-span)
                  parstate)))
        ;; If token is anything else, it is an error.
@@ -8970,6 +9023,37 @@
                 (type-spec-typedef (token-ident->unwrap token)))
                span
                parstate))
+       ;; If token is 'typeof' or '__typeof' or '__typeof__',
+       ;; we parse an open parenthesis,
+       ;; then a possibly ambiguous expression or type name,
+       ;; and finally a closed parenthesis.
+       ((or (token-keywordp token "typeof") ; typeof
+            (token-keywordp token "__typeof") ; __typeof
+            (token-keywordp token "__typeof__")) ; __typeof__
+        (b* ((uscores (cond ((token-keywordp token "typeof")
+                             (keyword-uscores-none))
+                            ((token-keywordp token "__typeof")
+                             (keyword-uscores-start))
+                            ((token-keywordp token "__typeof__")
+                             (keyword-uscores-both))))
+             ((erp & parstate) ; typeof (
+              (read-punctuator "(" parstate))
+             ((erp expr/tyname & parstate) ; typeof ( expr/tyname
+              (parse-expression-or-type-name parstate))
+             ((erp last-span parstate) ; typeof ( expr/tyname )
+              (read-punctuator ")" parstate))
+             (tyspec
+              (amb?-expr/tyname-case
+               expr/tyname
+               :expr (make-type-spec-typeof-expr :expr expr/tyname.unwrap
+                                                 :uscores uscores)
+               :tyname (make-type-spec-typeof-type :type expr/tyname.unwrap
+                                                   :uscores uscores)
+               :ambig (make-type-spec-typeof-ambig :expr/type expr/tyname.unwrap
+                                                   :uscores uscores))))
+          (retok (spec/qual-tyspec tyspec)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is a type qualifier, which is always a single keyword,
        ;; we have that type qualifier.
        ((token-type-qualifier-p token) ; tyqual
@@ -8984,12 +9068,14 @@
           (retok (spec/qual-align alignspec)
                  (span-join span last-span)
                  parstate)))
-       ;; If token is the keyword __attribute__,
+       ;; If token is the keyword '__attribute' or '__attribute__',
        ;; which can only happen if GCC extensions are enabled,
        ;; we must have an attribute specifier.
-       ((token-keywordp token "__attribute__") ; __attribute__
-        (b* (((erp attrspec last-span parstate) ; attrspec
-              (parse-attribute-specifier span parstate)))
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((uscores (token-keywordp token "__attribute__"))
+             ((erp attrspec last-span parstate) ; attrspec
+              (parse-attribute-specifier uscores span parstate)))
           (retok (spec/qual-attrib attrspec)
                  (span-join span last-span)
                  parstate)))
@@ -9229,6 +9315,37 @@
         (retok (declspec-tyspec (type-spec-typedef (token-ident->unwrap token)))
                span
                parstate))
+       ;; If token is 'typeof' or '__typeof' or '__typeof__',
+       ;; we parse an open parenthesis,
+       ;; then a possibly ambiguous expression or type name,
+       ;; and finally a closed parenthesis.
+       ((or (token-keywordp token "typeof") ; typeof
+            (token-keywordp token "__typeof") ; __typeof
+            (token-keywordp token "__typeof__")) ; __typeof__
+        (b* ((uscores (cond ((token-keywordp token "typeof")
+                             (keyword-uscores-none))
+                            ((token-keywordp token "__typeof")
+                             (keyword-uscores-start))
+                            ((token-keywordp token "__typeof__")
+                             (keyword-uscores-both))))
+             ((erp & parstate) ; typeof (
+              (read-punctuator "(" parstate))
+             ((erp expr/tyname & parstate) ; typeof ( expr/tyname
+              (parse-expression-or-type-name parstate))
+             ((erp last-span parstate) ; typeof ( expr/tyname )
+              (read-punctuator ")" parstate))
+             (tyspec
+              (amb?-expr/tyname-case
+               expr/tyname
+               :expr (make-type-spec-typeof-expr :expr expr/tyname.unwrap
+                                                 :uscores uscores)
+               :tyname (make-type-spec-typeof-type :type expr/tyname.unwrap
+                                                   :uscores uscores)
+               :ambig (make-type-spec-typeof-ambig :expr/type expr/tyname.unwrap
+                                                   :uscores uscores))))
+          (retok (declspec-tyspec tyspec)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is a type qualifier, which is always a single keyword,
        ;; we have that type qualifier.
        ((token-type-qualifier-p token) ; tyqual
@@ -9249,12 +9366,14 @@
           (retok (declspec-align alignspec)
                  (span-join span last-span)
                  parstate)))
-       ;; If token is the keyword __attribute__,
+       ;; If token is the keyword '__attribute' or '__attribute__',
        ;; which can only happen if GCC extensions are enabled,
        ;; we must have an attribute specifier.
-       ((token-keywordp token "__attribute__") ; __attribute__
-        (b* (((erp attrspec last-span parstate) ; attrspec
-              (parse-attribute-specifier span parstate)))
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((uscores (token-keywordp token "__attribute__"))
+             ((erp attrspec last-span parstate) ; attrspec
+              (parse-attribute-specifier uscores span parstate)))
           (retok (declspec-attrib attrspec)
                  (span-join span last-span)
                  parstate)))
@@ -11409,7 +11528,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-attribute-specifier ((first-span spanp) (parstate parstatep))
+  (define parse-attribute-specifier ((uscores booleanp)
+                                     (first-span spanp)
+                                     (parstate parstatep))
     :returns (mv erp
                  (attrspec attrib-specp)
                  (span spanp)
@@ -11434,7 +11555,9 @@
           (read-punctuator ")" parstate))
          ((erp last-span parstate) ; __attribute__ ( ( attrs ) )
           (read-punctuator ")" parstate)))
-      (retok (attrib-spec attrs) (span-join first-span last-span) parstate))
+      (retok (make-attrib-spec :uscores uscores :attribs attrs)
+             (span-join first-span last-span)
+             parstate))
     :measure (two-nats-measure (parsize parstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -11472,13 +11595,15 @@
        only if GCC extensions are supported."))
     (b* (((reterr) nil (irr-span) parstate)
          ((erp token first-span parstate) (read-token parstate))
-         ((unless (token-keywordp token "__attribute__"))
+         ((unless (or (token-keywordp token "__attribute")
+                      (token-keywordp token "__attribute__")))
           (b* ((parstate (if token (unread-token parstate) parstate)))
             (retok nil (irr-span) parstate)))
          ;; __attribute__
+         (uscores (token-keywordp token "__attribute__"))
          (psize (parsize parstate))
          ((erp attrspec span parstate)
-          (parse-attribute-specifier first-span parstate))
+          (parse-attribute-specifier uscores first-span parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
          ;; __attribute__ ( ( ... ) )
@@ -12373,7 +12498,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-asm-name-specifier ((uscores booleanp)
+(define parse-asm-name-specifier ((uscores keyword-uscores-p)
                                   (first-span spanp)
                                   (parstate parstatep))
   :returns (mv erp
@@ -12395,8 +12520,8 @@
      We ensure that there is at least one string literal;
      see grammar rule for @('asm-name-specifier'), which uses @('1*')."))
   (b* (((reterr) (irr-asm-name-spec) (irr-span) parstate)
-       ;; asm-or-__asm__
-       ((erp & parstate) (read-punctuator "(" parstate)) ; asm-or-__asm__ (
+       ;; asm
+       ((erp & parstate) (read-punctuator "(" parstate)) ; asm (
        ((erp token span parstate) (read-token parstate))
        ((unless (and token (token-case token :string)))
         (reterr-msg :where (position-to-msg (span->start span))
@@ -12447,9 +12572,11 @@
        ((erp token span parstate) (read-token parstate)))
     (cond
      ((token-keywordp token "asm")
-      (parse-asm-name-specifier nil span parstate))
+      (parse-asm-name-specifier (keyword-uscores-none) span parstate))
+     ((token-keywordp token "__asm")
+      (parse-asm-name-specifier (keyword-uscores-start) span parstate))
      ((token-keywordp token "__asm__")
-      (parse-asm-name-specifier t span parstate))
+      (parse-asm-name-specifier (keyword-uscores-both) span parstate))
      (t
       (b* ((parstate (if token (unread-token parstate) parstate)))
         (retok nil (irr-span) parstate)))))
@@ -12603,17 +12730,23 @@
             (parse-declaration-specifiers nil parstate))
            ((erp token2 span2 parstate) (read-token parstate)))
         (cond
-         ;; If token2 is the keyword 'asm' or '__asm__',
+         ;; If token2 is the keyword 'asm' or '__asm' or '__asm__',
          ;; and if GCC extensions are supported,
          ;; we have no initializer declarators;
          ;; parse the assembler name specifier,
          ;; any attribute specifiers after that,
          ;; and the ending semicolon.
          ((and (or (token-keywordp token2 "asm")
+                   (token-keywordp token2 "__asm")
                    (token-keywordp token2 "__asm__"))
                (parstate->gcc parstate))
-          ;; [__extension__] declspecs asm-or__asm__
-          (b* ((uscores (token-keywordp token2 "__asm__"))
+          ;; [__extension__] declspecs asm
+          (b* ((uscores (cond ((token-keywordp token2 "asm")
+                               (keyword-uscores-none))
+                              ((token-keywordp token2 "__asm")
+                               (keyword-uscores-start))
+                              ((token-keywordp token2 "__asm__")
+                               (keyword-uscores-both))))
                ((erp asmspec & parstate)
                 ;; [__extension__] declspecs asmspec
                 (parse-asm-name-specifier uscores span2 parstate))
@@ -13903,17 +14036,23 @@
                                                :attrib nil))
                  (span-join span span2)
                  parstate))
-         ;; If token2 is the 'asm' or '__asm__' keyword,
+         ;; If token2 is the 'asm' or '__asm' or '__asm__' keyword,
          ;; and if GCC extensions are supported,
          ;; we parse an assembler name specifier,
          ;; and this external declaration must be a declaration
          ;; (we do not support attributes of function definitions).
          ;; We also conditionally parse any attributes before the semicolon.
          ((and (or (token-keywordp token2 "asm")
+                   (token-keywordp token2 "__asm")
                    (token-keywordp token2 "__asm__"))
                (parstate->gcc parstate))
-          ;; [__extension__] declspecs asm-or-__asm__
-          (b* ((uscores (token-keywordp token2 "__asm__"))
+          ;; [__extension__] declspecs asm
+          (b* ((uscores (cond ((token-keywordp token2 "asm")
+                               (keyword-uscores-none))
+                              ((token-keywordp token2 "__asm")
+                               (keyword-uscores-start))
+                              ((token-keywordp token2 "__asm__")
+                               (keyword-uscores-both))))
                ((erp asmspec & parstate)
                 ;; [__extension__] declspecs asmspec
                 (parse-asm-name-specifier uscores span2 parstate))
@@ -13953,7 +14092,7 @@
          ;; If token2 is not a semicolon,
          ;; and either GCC extensions are not supported
          ;; or token2 is not any of the keywords
-         ;; 'asm', '__asm__', or '__attribute__'.
+         ;; 'asm', '__asm', '__asm__', or '__attribute__'.
          ;; we must have at least one declarator, which we parse.
          (t ; [__extension__] declspecs other
           (b* ((parstate (if token2 (unread-token parstate) parstate))
@@ -14028,16 +14167,22 @@
                              :attrib attrspecs))
                            (span-join span last-span)
                            parstate)))
-                 ;; If token4 is the keyword 'asm' or '__asm__',
+                 ;; If token4 is the keyword 'asm' or '__asm' or '__asm__',
                  ;; and GCC extensions are supported,
                  ;; we have just one declarator with the initializer,
                  ;; followed by an assembler name specifier,
                  ;; and possibly by attribute specifiers.
                  ((and (or (token-keywordp token4 "asm")
+                           (token-keywordp token4 "__asm")
                            (token-keywordp token4 "__asm__"))
                        (parstate->gcc parstate))
-                  ;; [__extension__] declspecs declor = initer asm-or-__asm__
-                  (b* ((uscore (token-keywordp token4 "__asm__"))
+                  ;; [__extension__] declspecs declor = initer asm
+                  (b* ((uscore (cond ((token-keywordp token4 "asm")
+                                      (keyword-uscores-none))
+                                     ((token-keywordp token4 "__asm")
+                                      (keyword-uscores-start))
+                                     ((token-keywordp token4 "__asm__")
+                                      (keyword-uscores-both))))
                        ((erp asmspec & parstate)
                         ;; [__extension__] declspecs declor = initer asmspec
                         (parse-asm-name-specifier uscore span4 parstate))
@@ -14148,17 +14293,23 @@
                          :attrib attrspecs))
                        (span-join span last-span)
                        parstate)))
-             ;; If token3 is the 'asm' or '__asm__' keyword
+             ;; If token3 is the 'asm' or '__asm' or '__asm__' keyword
              ;; and GCC extensions are supported,
              ;; this external declaration must be a declaration,
              ;; and we parse the assembler name specifier,
              ;; followed by zero or more attribute specifiers,
              ;; and then the final semicolon.
              ((and (or (token-keywordp token3 "asm")
+                       (token-keywordp token3 "__asm")
                        (token-keywordp token3 "__asm__"))
                    (parstate->gcc parstate))
-              ;; [__extension__] declspecs declor asm-or-__asm__
-              (b* ((uscores (token-keywordp token3 "__asm__"))
+              ;; [__extension__] declspecs declor asm
+              (b* ((uscores (cond ((token-keywordp token3 "asm")
+                                   (keyword-uscores-none))
+                                  ((token-keywordp token3 "__asm")
+                                   (keyword-uscores-start))
+                                  ((token-keywordp token3 "__asm__")
+                                   (keyword-uscores-both))))
                    ((erp asmspec & parstate)
                     ;; [__extension__] declspecs declor asmspec
                     (parse-asm-name-specifier uscores span3 parstate))

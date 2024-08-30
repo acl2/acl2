@@ -428,41 +428,38 @@ keyword = %s"auto"
 
 ; The following are valid identifiers in standard C,
 ; but they are recognized as keywords as part of GCC extensions.
-; This is not an exhaustive list:
-; we only include some that we have encountered in actual code;
-; we may extend the list as needed.
-; Our goal here is not to thoroughly cover all the GCC extensions,
-; but only to cover practical C code that uses certain GCC extensions.
+; This is not an exhaustive list,
+; also because the GCC documentation does not seem to
+; explicitly and clearly list all of them.
+; The ones that we include here are ones that we have seen in documentation,
+; including the "GNU C Reference Manual"
+; at https://www.gnu.org/software/gnu-c-manual/gnu-c-manual.pdf,
+; which can be found via a web search
+; but does not seem linked from the GCC main web site
+; (which suggests that that manual may not be up to date);
+; we have also verified in at least one implementation of GCC on MacOS
+; that all the keywords below are indeed accepted.
 
-; We include the '__alignof__' keywords, which is equivalent to '_Alignof'.
-; The latter is standard, presumably added to the standard after GCC.
-
-; We include the 'asm' keyword, and its '__asm__' variant;
-; see https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html.
-
-; We include '__attribute__', which is indicated to be a keyword in
-; https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html (first paragraph).
-
-; We include variants of the 'inline' and 'restrict' keywords
-; with double underscores at the beginning or both beginning and end.
-; While https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html says that
-; the alternate 'inline' and 'restrict' keywords
-; are only '__inline__' and '__restrict__',
-; https://gcc.gnu.org/onlinedocs/gcc/Restricted-Pointers.html
-; also mentions '__restrict'.
-; This latter page of the GCC documentation actually pertains to C++,
-; but it begins with "As with the C front end, ...".
-; Furthermore, we have seen '__inline' and '__restrict' in actual C code.
-
-gcc-keyword = %s"__alignof__"
+gcc-keyword = %s"__alignof"
+            / %s"__alignof__"
             / %s"asm"
+            / %s"__asm"
             / %s"__asm__"
+            / %s"__attribute"
             / %s"__attribute__"
+            / %s"__builtin_va_list"
             / %s"__extension__"
+            / %s"_Float128"
             / %s"__inline"
             / %s"__inline__"
+            / %s"__int128"
             / %s"__restrict"
             / %s"__restrict__"
+            / %s"__signed"
+            / %s"__signed__"
+            / %s"typeof"
+            / %s"__typeof"
+            / %s"__typeof__"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -787,6 +784,8 @@ unary-expression = postfix-expression
                  / %s"sizeof" unary-expression
                  / %s"sizeof" "(" type-name ")"
                  / %s"_Alignof" "(" type-name ")"
+                 / %s"__alignof" "(" type-name ")"   ; GCC extension
+                 / %s"__alignof__" "(" type-name ")" ; GCC extension
 
 unary-operator = "&"
                / "*"
@@ -919,8 +918,8 @@ attribute = identifier [ attribute-parameters ]
 
 attribute-list = attribute *( "," attribute )
 
-attribute-specifier =
-    %s"__attribute__" "(" "(" [ attribute-list ] ")" ")"
+attribute-specifier = ( %s"__attribute__" / %s"__attribute" )
+                      "(" "(" [ attribute-list ] ")" ")"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -935,7 +934,8 @@ attribute-specifier =
 ; a clear term to describe this construct,
 ; we use the term 'assembler name specifier', which seems appropriate.
 
-asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
+asm-name-specifier = ( %s"asm" / %s"__asm" / %s"__asm__" )
+                     "(" 1*string-literal ")"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -949,7 +949,7 @@ asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
 ; we allow declaration specifiers, as well as specifier and qualifier lists,
 ; to include attribute specifiers;
 ; these can be easily distinguished from other declaration specifiers
-; by the starting '__attribute__' GCC keyword.
+; by the starting '__attribute__' or '__attribute' GCC keyword.
 
 ; As a GCC extension,
 ; we allow one or more attribute specifiers
@@ -970,11 +970,22 @@ asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
 ; but currently our goal is just to handle practical code with GCC extensions,
 ; not to provide a formalization of GCC extensions.
 
-declaration = [ %s"__extension__" ]
+; As GCC extensions, we include
+; the '__signed' and '__signed__' variants of 'signed' as type specifiers.
+
+; As GCC extensions, we include the type specifiers
+; '__int128', '_Float128', and '__builtin_va_list'.
+
+; We include the GCC extension for the 'typeof' operator,
+; along with its '__typeof' and '__typeof__' variants.
+; This is documented at https://gcc.gnu.org/onlinedocs/gcc/Typeof.html.
+; This must fit into the grammar as a type specifier.
+
+declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
               [ init-declarator-list ]
               [ asm-name-specifier ]
-              *attribute-specifier
+              *attribute-specifier ; GCC extension
               ";"
             / static-assert-declaration
 
@@ -983,6 +994,7 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
                        / type-qualifier [ declaration-specifiers ]
                        / function-specifier [ declaration-specifiers ]
                        / alignment-specifier [ declaration-specifiers ]
+                       ; GCC extension:
                        / attribute-specifier [ declaration-specifiers ]
 
 init-declarator-list = init-declarator
@@ -1006,6 +1018,8 @@ type-specifier = %s"void"
                / %s"float"
                / %s"double"
                / %s"signed"
+               / %s"__signed" ; GCC extension
+               / %s"__signed__" ; GCC extension
                / %s"unsigned"
                / %s"_Bool"
                / %s"_Complex"
@@ -1013,6 +1027,16 @@ type-specifier = %s"void"
                / struct-or-union-specifier
                / enum-specifier
                / typedef-name
+               ; GCC extensions:
+               / %s"__int128"
+               / %s"_Float128"
+               / %s"__builtin_va_list"
+               / %s"typeof" "(" expression ")"
+               / %s"typeof" "(" type-name ")"
+               / %s"__typeof" "(" expression ")"
+               / %s"__typeof" "(" type-name ")"
+               / %s"__typeof__" "(" expression ")"
+               / %s"__typeof__" "(" type-name ")"
 
 struct-or-union-specifier =
       struct-or-union [ identifier ] "{" struct-declaration-list "}"
@@ -1024,16 +1048,17 @@ struct-or-union = %s"struct"
 struct-declaration-list = struct-declaration
                         / struct-declaration-list struct-declaration
 
-struct-declaration = [ %s"__extension__" ]
+struct-declaration = [ %s"__extension__" ] ; GCC extension
                      specifier-qualifier-list
                      [ struct-declarator-list ]
-                     *attribute-specifier
+                     *attribute-specifier ; GCC extension
                      ";"
                    / static-assert-declaration
 
 specifier-qualifier-list = type-specifier [ specifier-qualifier-list ]
                          / type-qualifier [ specifier-qualifier-list ]
                          / alignment-specifier [ specifier-qualifier-list ]
+                         ; GCC extension:
                          / attribute-specifier [ specifier-qualifier-list ]
 
 struct-declarator-list = struct-declarator
@@ -1056,10 +1081,14 @@ atomic-type-specifier = %s"_Atomic" "(" type-name ")"
 
 type-qualifier = %s"const"
                / %s"restrict"
+               / %s"__restrict" ; GCC extension
+               / %s"__restrict__" ; GCC extension
                / %s"volatile"
                / %s"_Atomic"
 
 function-specifier = %s"inline"
+                   / %s"__inline" ; GCC extension
+                   / %s"__inline__" ; GCC extension
                    / %s"_Noreturn"
 
 alignment-specifier = %s"_Alignas" "(" type-name ")"
@@ -1189,7 +1218,7 @@ translation-unit = external-declaration
 external-declaration = function-definition
                      / declaration
 
-function-definition = [ %s"__extension__" ]
+function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers
                       declarator
                       [ declaration-list ]
