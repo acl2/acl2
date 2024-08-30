@@ -237,9 +237,9 @@ occurring.
         Mac) or the x64 DMG installer. Then, open the DMG and run the
         installer inside of it.</li></ol></li>
   <li>Install Eclipse<ol>
-      <li>Download the Eclipse version appropriate for your machine: <a href=\"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2024-06/R/eclipse-java-2024-06-R-macosx-cocoa-aarch64.dmg&r=1\">M1/M2
+      <li>Download the Eclipse version appropriate for your machine: <a href=\"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2024-06/R/eclipse-java-2024-06-R-macosx-cocoa-aarch64.dmg&amp;r=1\">M1/M2
           Mac</a>
-        or <a href=\"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2024-06/R/eclipse-java-2024-06-R-macosx-cocoa-x86_64.dmg&r=1\">x86
+        or <a href=\"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2024-06/R/eclipse-java-2024-06-R-macosx-cocoa-x86_64.dmg&amp;r=1\">x86
           Mac</a>.</li>
       <li>Open the downloaded file and click and drag the Eclipse icon
         into your Applications folder.</li>
@@ -311,7 +311,7 @@ occurring.
   <li>Tap and install ACL2s<ol>
       <li>Run <code>brew tap acl2s/acl2s</code> and then <code>brew install acl2s/acl2s/acl2s --force-bottle</code> inside of a terminal. <b>Do not</b> follow any of Homebrew's suggestions regarding installing @('gcc').</li></ol></li>
   <li>Install Eclipse<ol>
-      <li>Download <a href=\"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2024-06/R/eclipse-java-2024-06-R-linux-gtk-x86_64.tar.gz&r=1\">Eclipse</a> and unpack it somewhere on your computer.</li>
+      <li>Download <a href=\"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2024-06/R/eclipse-java-2024-06-R-linux-gtk-x86_64.tar.gz&amp;r=1\">Eclipse</a> and unpack it somewhere on your computer.</li>
       <li>Run Eclipse by running <code>./eclipse/eclipse</code> from the directory
         that you unpacked the Eclipse package inside of.</li>
       <li>In the menu bar, click on Help &rarr; Install New Software...</li>
