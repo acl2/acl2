@@ -1880,6 +1880,7 @@
                                         "__extension__"
                                         "__inline"
                                         "__inline__"
+                                        "__int128"
                                         "__restrict"
                                         "__restrict__"
                                         "__signed"
@@ -5745,7 +5746,9 @@
      So the comparison here with those variant keywords
      will always fail if GCC extensions are not supported,
      because in that case both @('__signed') and @('__signed__')
-     would be identifier tokens, not keyword tokens."))
+     would be identifier tokens, not keyword tokens.")
+   (xdoc::p
+    "We similarly include the GCC extension type @('__int128')."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
       (token-keywordp token? "short")
@@ -5758,7 +5761,8 @@
       (token-keywordp token? "__signed__")
       (token-keywordp token? "unsigned")
       (token-keywordp token? "_Bool")
-      (token-keywordp token? "_Complex"))
+      (token-keywordp token? "_Complex")
+      (token-keywordp token? "__int128"))
   ///
 
   (defrule non-nil-when-token-type-specifier-keyword-p
@@ -5789,6 +5793,7 @@
         ((token-keywordp token "unsigned") (type-spec-unsigned))
         ((token-keywordp token "_Bool") (type-spec-bool))
         ((token-keywordp token "_Complex") (type-spec-complex))
+        ((token-keywordp token "__int128") (type-spec-int128))
         (t (prog2$ (impossible) (irr-type-spec))))
   :prepwork ((local (in-theory (enable token-type-specifier-keyword-p)))))
 

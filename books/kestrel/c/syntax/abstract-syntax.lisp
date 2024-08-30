@@ -1578,7 +1578,14 @@
       "We include the GCC extension variant keywords
        @('__signed') and @('__signed__') of @('signed').
        An indicator of which variant is included
-       in the @(':signed') case of this fixtype."))
+       in the @(':signed') case of this fixtype.")
+     (xdoc::p
+      "We also include the GCC extension @('__int128'),
+       which is a (non-standard) integer type: see "
+      (xdoc::ahref
+       "https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html"
+       "@('https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html')")
+      "."))
     (:void ())
     (:char ())
     (:short ())
@@ -1595,6 +1602,7 @@
     (:union ((unwrap strunispec)))
     (:enum ((unwrap enumspec)))
     (:typedef ((name ident)))
+    (:int128 ()) ; GCC extension
     :pred type-specp
     :measure (two-nats-measure (acl2-count x) 0))
 

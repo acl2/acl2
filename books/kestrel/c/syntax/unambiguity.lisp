@@ -187,7 +187,8 @@
                     :struct (strunispec-unambp tyspec.unwrap)
                     :union (strunispec-unambp tyspec.unwrap)
                     :enum (enumspec-unambp tyspec.unwrap)
-                    :typedef t)
+                    :typedef t
+                    :int128 t)
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -838,15 +839,14 @@
            (expr-unambp expr))
     :expand (genassoc-unambp (genassoc-default expr)))
 
-  (defrule type-spec-unambp-when-void/.../complex/typedef
+  (defrule type-spec-unambp-when-not-atomic/struct/union/enum
     ;; The formulation (type-spec-unambp (type-spec-... ...))
     ;; does not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by
     ;; the formulation we give here,
     ;; which is not ideal because the conclusion is quite generic.
-    (implies (member-eq (type-spec-kind tyspec)
-                        '(:void :char :short :int :long :float :double
-                          :signed :unsigned :bool :complex :typedef))
+    (implies (not (member-eq (type-spec-kind tyspec)
+                             '(:atomic :struct :union :enum)))
              (type-spec-unambp tyspec)))
 
   (defrule type-spec-unambp-of-type-spec-atomic

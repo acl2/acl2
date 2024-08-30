@@ -798,7 +798,8 @@
       :struct (type-spec-struct (,(cdr (assoc-eq 'strunispec names)) tyspec.unwrap ,@extra-args-names))
       :union (type-spec-union (,(cdr (assoc-eq 'strunispec names)) tyspec.unwrap ,@extra-args-names))
       :enum (type-spec-enum (,(cdr (assoc-eq 'enumspec names)) tyspec.unwrap ,@extra-args-names))
-      :typedef (type-spec-fix tyspec))
+      :typedef (type-spec-fix tyspec)
+      :int128 (type-spec-fix tyspec))
    '(:returns (new-tyspec type-specp)
      :measure (type-spec-count tyspec))))
 

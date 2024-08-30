@@ -218,7 +218,8 @@
      :struct (type-spec-struct (simpadd0-strunispec tyspec.unwrap))
      :union (type-spec-union (simpadd0-strunispec tyspec.unwrap))
      :enum (type-spec-enum (simpadd0-enumspec tyspec.unwrap))
-     :typedef (type-spec-fix tyspec))
+     :typedef (type-spec-fix tyspec)
+     :int128 (type-spec-fix tyspec))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

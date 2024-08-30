@@ -1219,7 +1219,8 @@
                                (msg "The identifier ~x0 denotes ~
                                    an enumeration constant ~
                                    but it is used as a typedef name."
-                                    tyspec.name))))))
+                                    tyspec.name))))
+       :int128 (retok (type-spec-int128) (dimb-table-fix table))))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
