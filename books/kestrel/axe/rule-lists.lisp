@@ -1043,7 +1043,7 @@
      sbvdiv-same
 
      bvchop-of-ifix ; more like this?
-     acl2::slice-tighten-top-dag
+     slice-tighten-top-axe
 
      unsigned-byte-p-when-unsigned-byte-p-smaller
 
@@ -1883,7 +1883,7 @@
   (declare (xargs :guard t))
   (append (bvplus-rules) ; todo: maybe drop, as these are bad for md5, for example
           ;; todo: a lot of cruft in here:
-          '(;bvand-of-constant-tighten-dag-version ; warning: can change the size of the bvand
+          '(;bvand-of-constant-tighten-axe ; warning: can change the size of the bvand
 
             max-constants-lemma ;bozo more like this?
             myif-not-myif-same  ;bozo more like this?
@@ -1917,7 +1917,6 @@
             myif-myif-myif-1
             myif-myif-myif-2
 
-            slice-tighten-top-dag
             bvif-tighten
             bvif-test-test2-test
             bvif-test-test2-test-alt
@@ -2098,7 +2097,7 @@
     bvlt-of-bvcat-arg3-bvmult-version
     bvdiv-31-4
 
-    bvlt-when-bound-dag
+    bvlt-when-bound-axe
     ;; bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:15:59 2010
 ;    not-bvlt-of-max-arg2          ;alt version?
     ;bvlt-of-bvchop-arg3-same  ;gen and move? or drop?
@@ -2427,10 +2426,10 @@
      bvlt-of-bvmod-hack
      bvplus-of-1-33-32
      unsigned-byte-p-of-bvmod-hack
-     bvmod-tighten-dag
+     bvmod-tighten-axe
      bvdiv-tighten-dag ;new
      bvmod-cancel-hack-8-1-44-6-1
-     bvmod-tighten-dag-free-1
+     bvmod-tighten-axe-free-1
      bvmod-does-nothing-6-44
      unsigned-byte-p-of-bvmod ;gen and add to usb rules
      unsigned-byte-p-of-mod
@@ -3716,9 +3715,9 @@
              acl2-numberp-of-len
              ;; jvm::acl2-numberp-of-call-stack-size ;trying
              equal-of-append
-             bvmult-tighten-dag-power-of-2
+             bvmult-tighten-axe-power-of-2
              bvplus-tighten-better
-             bvmult-tighten-dag ;can we do better for a power of 2?? ffixme
+             bvmult-tighten-axe ;can we do better for a power of 2?? ffixme
              true-listp-of-group2
              bvmult-of-bvplus-hack-gen-constant-version
              equal-of-bvmult-of-slice

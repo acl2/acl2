@@ -1117,7 +1117,7 @@
            (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
 
-(defthmd bvlt-when-bound-dag
+(defthmd bvlt-when-bound-axe
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (< xsize size)
@@ -1128,7 +1128,7 @@
   :hints (("Goal" :use (:instance bvlt-when-bound)
            :in-theory (disable bvlt-when-bound))))
 
-(defthmd bvmod-tighten-dag
+(defthmd bvmod-tighten-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (< (max xsize ysize) size)
@@ -1141,7 +1141,7 @@
   :hints (("Goal" :use (:instance bvmod-tighten)
            :in-theory (disable bvmod-tighten))))
 
-(defthmd bvmod-tighten-dag-free-1
+(defthmd bvmod-tighten-axe-free-1
   (implies (and (unsigned-byte-p xsize x)
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (< (max xsize ysize) size)
@@ -1153,7 +1153,7 @@
   :hints (("Goal" :use (:instance bvmod-tighten)
            :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (bvmod-tighten)))))
 
-(defthmd bvmult-tighten-dag
+(defthmd bvmult-tighten-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (< (+ xsize ysize) size)
@@ -1370,7 +1370,7 @@
                   (bvif (max xsize ysize) test x y)))
   :hints (("Goal" :in-theory (enable bvif myif getbit-too-high))))
 
-(defthmd slice-tighten-top-dag
+(defthmd slice-tighten-top-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= xsize high)
                 (natp low)
@@ -1600,7 +1600,7 @@
 
 ;free var rule from usb to integerp of the index?
 
-(defthmd bvand-of-constant-tighten-dag-version
+(defthmd bvand-of-constant-tighten-axe
   (implies (and (syntaxp (quotep k))
                 (syntaxp (quotep size))
                 (< (integer-length k) size)
@@ -2252,7 +2252,7 @@
 ;rename
 ;version for <=?
 ;not a bv rule
-(defthmd equal-when-bound-dag
+(defthmd not-equal-when-bound
   (implies (and (syntaxp (quotep y))
                 ;(equal (< free x) t) ;awkward
                 (< free x)

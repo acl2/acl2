@@ -1417,7 +1417,7 @@
            '(nth-of-myif ;sun feb 27 02:08:36 2011 (to simplify expressions for locals - the if goes away)
              equal-of-nil-of-s-and-s
 ;             jvm::initialize-2d-array ;sun jun  6 21:04:46 2010
-             equal-when-bound-dag
+             not-equal-when-bound
              acl2-numberp-of-len
              jvm::acl2-numberp-of-call-stack-size
              equal-constant-+-alt
