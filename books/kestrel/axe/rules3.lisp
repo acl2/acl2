@@ -3109,7 +3109,7 @@
 
 ;maybe the trim rules should use force-unsigned-byte-p
 
-;reiterting last to have this fire first
+;reiterating this here so that it fires first
 (defthm unsigned-byte-p-of-bvchop2
   (implies (<= size size1)
            (equal (unsigned-byte-p size1 (bvchop size i))
