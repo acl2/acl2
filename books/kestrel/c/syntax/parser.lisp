@@ -1873,6 +1873,7 @@
                  (member-equal string '("__alignof"
                                         "__alignof__"
                                         "asm"
+                                        "__asm"
                                         "__asm__"
                                         "__attribute__"
                                         "__extension__"
@@ -12388,7 +12389,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-asm-name-specifier ((uscores booleanp)
+(define parse-asm-name-specifier ((uscores keyword-uscores-p)
                                   (first-span spanp)
                                   (parstate parstatep))
   :returns (mv erp
@@ -12410,8 +12411,8 @@
      We ensure that there is at least one string literal;
      see grammar rule for @('asm-name-specifier'), which uses @('1*')."))
   (b* (((reterr) (irr-asm-name-spec) (irr-span) parstate)
-       ;; asm-or-__asm__
-       ((erp & parstate) (read-punctuator "(" parstate)) ; asm-or-__asm__ (
+       ;; asm
+       ((erp & parstate) (read-punctuator "(" parstate)) ; asm (
        ((erp token span parstate) (read-token parstate))
        ((unless (and token (token-case token :string)))
         (reterr-msg :where (position-to-msg (span->start span))
@@ -12462,9 +12463,11 @@
        ((erp token span parstate) (read-token parstate)))
     (cond
      ((token-keywordp token "asm")
-      (parse-asm-name-specifier nil span parstate))
+      (parse-asm-name-specifier (keyword-uscores-none) span parstate))
+     ((token-keywordp token "__asm")
+      (parse-asm-name-specifier (keyword-uscores-start) span parstate))
      ((token-keywordp token "__asm__")
-      (parse-asm-name-specifier t span parstate))
+      (parse-asm-name-specifier (keyword-uscores-both) span parstate))
      (t
       (b* ((parstate (if token (unread-token parstate) parstate)))
         (retok nil (irr-span) parstate)))))
@@ -12618,17 +12621,23 @@
             (parse-declaration-specifiers nil parstate))
            ((erp token2 span2 parstate) (read-token parstate)))
         (cond
-         ;; If token2 is the keyword 'asm' or '__asm__',
+         ;; If token2 is the keyword 'asm' or '__asm' or '__asm__',
          ;; and if GCC extensions are supported,
          ;; we have no initializer declarators;
          ;; parse the assembler name specifier,
          ;; any attribute specifiers after that,
          ;; and the ending semicolon.
          ((and (or (token-keywordp token2 "asm")
+                   (token-keywordp token2 "__asm")
                    (token-keywordp token2 "__asm__"))
                (parstate->gcc parstate))
-          ;; [__extension__] declspecs asm-or__asm__
-          (b* ((uscores (token-keywordp token2 "__asm__"))
+          ;; [__extension__] declspecs asm
+          (b* ((uscores (cond ((token-keywordp token2 "asm")
+                               (keyword-uscores-none))
+                              ((token-keywordp token2 "__asm")
+                               (keyword-uscores-start))
+                              ((token-keywordp token2 "__asm__")
+                               (keyword-uscores-both))))
                ((erp asmspec & parstate)
                 ;; [__extension__] declspecs asmspec
                 (parse-asm-name-specifier uscores span2 parstate))
@@ -13918,17 +13927,23 @@
                                                :attrib nil))
                  (span-join span span2)
                  parstate))
-         ;; If token2 is the 'asm' or '__asm__' keyword,
+         ;; If token2 is the 'asm' or '__asm' or '__asm__' keyword,
          ;; and if GCC extensions are supported,
          ;; we parse an assembler name specifier,
          ;; and this external declaration must be a declaration
          ;; (we do not support attributes of function definitions).
          ;; We also conditionally parse any attributes before the semicolon.
          ((and (or (token-keywordp token2 "asm")
+                   (token-keywordp token2 "__asm")
                    (token-keywordp token2 "__asm__"))
                (parstate->gcc parstate))
-          ;; [__extension__] declspecs asm-or-__asm__
-          (b* ((uscores (token-keywordp token2 "__asm__"))
+          ;; [__extension__] declspecs asm
+          (b* ((uscores (cond ((token-keywordp token2 "asm")
+                               (keyword-uscores-none))
+                              ((token-keywordp token2 "__asm")
+                               (keyword-uscores-start))
+                              ((token-keywordp token2 "__asm__")
+                               (keyword-uscores-both))))
                ((erp asmspec & parstate)
                 ;; [__extension__] declspecs asmspec
                 (parse-asm-name-specifier uscores span2 parstate))
@@ -13968,7 +13983,7 @@
          ;; If token2 is not a semicolon,
          ;; and either GCC extensions are not supported
          ;; or token2 is not any of the keywords
-         ;; 'asm', '__asm__', or '__attribute__'.
+         ;; 'asm', '__asm', '__asm__', or '__attribute__'.
          ;; we must have at least one declarator, which we parse.
          (t ; [__extension__] declspecs other
           (b* ((parstate (if token2 (unread-token parstate) parstate))
@@ -14043,16 +14058,22 @@
                              :attrib attrspecs))
                            (span-join span last-span)
                            parstate)))
-                 ;; If token4 is the keyword 'asm' or '__asm__',
+                 ;; If token4 is the keyword 'asm' or '__asm' or '__asm__',
                  ;; and GCC extensions are supported,
                  ;; we have just one declarator with the initializer,
                  ;; followed by an assembler name specifier,
                  ;; and possibly by attribute specifiers.
                  ((and (or (token-keywordp token4 "asm")
+                           (token-keywordp token4 "__asm")
                            (token-keywordp token4 "__asm__"))
                        (parstate->gcc parstate))
-                  ;; [__extension__] declspecs declor = initer asm-or-__asm__
-                  (b* ((uscore (token-keywordp token4 "__asm__"))
+                  ;; [__extension__] declspecs declor = initer asm
+                  (b* ((uscore (cond ((token-keywordp token4 "asm")
+                                      (keyword-uscores-none))
+                                     ((token-keywordp token4 "__asm")
+                                      (keyword-uscores-start))
+                                     ((token-keywordp token4 "__asm__")
+                                      (keyword-uscores-both))))
                        ((erp asmspec & parstate)
                         ;; [__extension__] declspecs declor = initer asmspec
                         (parse-asm-name-specifier uscore span4 parstate))
@@ -14163,17 +14184,23 @@
                          :attrib attrspecs))
                        (span-join span last-span)
                        parstate)))
-             ;; If token3 is the 'asm' or '__asm__' keyword
+             ;; If token3 is the 'asm' or '__asm' or '__asm__' keyword
              ;; and GCC extensions are supported,
              ;; this external declaration must be a declaration,
              ;; and we parse the assembler name specifier,
              ;; followed by zero or more attribute specifiers,
              ;; and then the final semicolon.
              ((and (or (token-keywordp token3 "asm")
+                       (token-keywordp token3 "__asm")
                        (token-keywordp token3 "__asm__"))
                    (parstate->gcc parstate))
-              ;; [__extension__] declspecs declor asm-or-__asm__
-              (b* ((uscores (token-keywordp token3 "__asm__"))
+              ;; [__extension__] declspecs declor asm
+              (b* ((uscores (cond ((token-keywordp token3 "asm")
+                                   (keyword-uscores-none))
+                                  ((token-keywordp token3 "__asm")
+                                   (keyword-uscores-start))
+                                  ((token-keywordp token3 "__asm__")
+                                   (keyword-uscores-both))))
                    ((erp asmspec & parstate)
                     ;; [__extension__] declspecs declor asmspec
                     (parse-asm-name-specifier uscores span3 parstate))

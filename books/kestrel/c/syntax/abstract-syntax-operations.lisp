@@ -341,7 +341,7 @@
 (defirrelevant irr-asm-name-spec
   :short "An irrelevant assembler name specifier."
   :type asm-name-specp
-  :body (asm-name-spec nil nil))
+  :body (asm-name-spec nil (keyword-uscores-none)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

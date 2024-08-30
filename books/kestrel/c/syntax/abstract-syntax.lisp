@@ -2497,15 +2497,15 @@
     "This captures the "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html"
                  "construct to specify assembler names")
-    ". It consists of the keyword @('asm') or @('__asm__')
+    ". It consists of the keyword @('asm') or @('__asm') or @('__asm__')
      and a parenthesized string literal.
      Since adjacent string literals may be concatenated [C:5.1.1.2/6],
      we allow a list of string literals here;
      this way, we preserve the fact that there were adjacent string literals.
      Indeed, we have observed multiple (two, to be precise)
      string literals in this construct in practical code.
-     We also capture whether the plain @('asm') keyword was used
-     or whether the one with underscores, @('__asm__') was used instead.")
+     We also capture which keyword variant (with or without underscores)
+     was used.")
    (xdoc::p
     "The GCC documentation does not provide a clear term
      to denote this construct,
@@ -2520,7 +2520,7 @@
      which should be non-empty, although we do not capture this constraint.
      This way, we preserve the information about adjacent string literals."))
   ((strings stringlit-list)
-   (uscores bool))
+   (uscores keyword-uscores))
   :pred asm-name-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

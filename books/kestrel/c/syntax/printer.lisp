@@ -2728,9 +2728,11 @@
    (xdoc::p
     "We check that there is at least one string literal."))
   (b* (((asm-name-spec asmspec) asmspec)
-       (pstate (if asmspec.uscores
-                   (print-astring "__asm__ (" pstate)
-                 (print-astring "asm (" pstate)))
+       (pstate (keyword-uscores-case
+                asmspec.uscores
+                :none (print-astring "asm (" pstate)
+                :start (print-astring "__asm (" pstate)
+                :both (print-astring "__asm__ (" pstate)))
        ((unless (consp asmspec.strings))
         (raise "Misusage error: ~
                 no string literals in assembler name specifier.")
