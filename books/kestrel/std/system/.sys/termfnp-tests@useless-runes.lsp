@@ -1,3 +1,0 @@
-(H
- (1 1 (:TYPE-PRESCRIPTION H))
- )

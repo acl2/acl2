@@ -16,7 +16,6 @@
 (include-book "operations-unequivocal-certificates")
 (include-book "operations-anchors")
 (include-book "operations-dags-additional")
-(include-book "operations-non-forking")
 (include-book "operations-blockchain-additional")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -37,5 +36,4 @@
                     operations-certificates-for-validators
                     operations-unequivocal-certificates
                     operations-anchors
-                    operations-dags-additional
-                    operations-non-forking))
+                    operations-dags-additional))

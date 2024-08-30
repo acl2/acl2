@@ -4,6 +4,8 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) August 2023 - May 2024, Yahya Sohail
+; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +37,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 (include-book "gather-paging-structures" :ttags :all)
@@ -65,7 +69,7 @@
              0
              (paging-entry-no-page-fault-p
               structure-type lin-addr entry u-s-acc r/w-acc x/d-acc wp
-              smep smap ac nxe r-w-x cpl x86 ignored))
+              smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
             t))
   :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
                                     page-fault-exception
@@ -79,8 +83,8 @@
           (mv-nth 2 (paging-entry-no-page-fault-p
                      structure-type lin-addr entry
                      u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl
-                     x86 ignored)))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                     x86)))
          (gather-all-paging-structure-qword-addresses x86))
   :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
                                     page-fault-exception)
@@ -93,8 +97,8 @@
     (mv-nth 2 (paging-entry-no-page-fault-p
                structure-type lin-addr entry
                u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl
-               x86 ignored)))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+               x86)))
    (xlate-equiv-entries-at-qword-addresses addrs addrs x86 x86))
   :hints (("Goal"
            :in-theory (e/d* (xlate-equiv-entries-at-qword-addresses
@@ -112,15 +116,15 @@
                    (paging-entry-no-page-fault-p
                     structure-type lin-addr e-1
                     u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl
-                    x86 ignored))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                    x86))
                   (mv-nth
                    0
                    (paging-entry-no-page-fault-p
                     structure-type lin-addr e-2
                     u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl
-                    x86 ignored))))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                    x86))))
   :hints (("Goal"
            :in-theory (e/d* (paging-entry-no-page-fault-p
                              page-fault-exception)
@@ -150,14 +154,14 @@
                           (paging-entry-no-page-fault-p
                            structure-type lin-addr e-1
                            u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-w-x cpl
-                           x86 ignored))
+                           wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                           x86))
                   (mv-nth 2
                           (paging-entry-no-page-fault-p
                            structure-type lin-addr e-2
                            u/s-acc r/w-acc x/d-acc
-                           wp smep smap ac nxe r-w-x cpl
-                           x86 ignored))))
+                           wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                           x86))))
   :hints (("Goal"
            :use ((:instance xlate-equiv-entries-and-logtail
                             (e-1 (loghead 64 e-1))
@@ -187,15 +191,15 @@
                    (paging-entry-no-page-fault-p
                     structure-type lin-addr entry
                     u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl
-                    x86-1 ignored))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                    x86-1))
                   (mv-nth
                    0
                    (paging-entry-no-page-fault-p
                     structure-type lin-addr entry
                     u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl
-                    x86-2 ignored))))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                    x86-2))))
   :hints (("Goal"
            :in-theory (e/d* (paging-entry-no-page-fault-p
                              page-fault-exception)
@@ -210,8 +214,8 @@
             (mv-nth 2 (paging-entry-no-page-fault-p
                        structure-type lin-addr entry
                        u/s-acc r/w-acc x/d-acc
-                       wp smep smap ac nxe r-w-x cpl
-                       x86 ignored))
+                       wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+                       x86))
             (double-rewrite x86)))
   :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
                                     page-fault-exception
@@ -285,7 +289,7 @@
 (defthm ia32e-la-to-pa-page-table-in-app-view
   (implies (app-view x86)
            (equal (ia32e-la-to-pa-page-table
-                   lin-addr base-addr u/s-acc r/w-acc x/d-acc wp smep smap ac nxe r-w-x cpl x86)
+                   lin-addr base-addr u/s-acc r/w-acc x/d-acc wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)
                   (mv t 0 x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-table) ()))))
 
@@ -317,22 +321,22 @@
                     0
                     (ia32e-la-to-pa-page-table
                      lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl x86-1))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
                    (mv-nth
                     0
                     (ia32e-la-to-pa-page-table
                      lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl x86-2)))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2)))
             (equal (mv-nth
                     1
                     (ia32e-la-to-pa-page-table
                      lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl x86-1))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
                    (mv-nth
                     1
                     (ia32e-la-to-pa-page-table
                      lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl x86-2)))))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2)))))
   :hints (("Goal"
            :in-theory (e/d* (ia32e-la-to-pa-page-table)
                             (bitops::logand-with-negated-bitmask
@@ -345,12 +349,12 @@
                    0
                    (ia32e-la-to-pa-page-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86-1))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
                   (mv-nth
                    0
                    (ia32e-la-to-pa-page-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86-2))))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2))))
   :hints (("Goal" :use ((:instance xlate-equiv-memory-and-ia32e-la-to-pa-page-table))))
   :rule-classes :congruence)
 
@@ -360,12 +364,12 @@
                    1
                    (ia32e-la-to-pa-page-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86-1))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
                   (mv-nth
                    1
                    (ia32e-la-to-pa-page-table
                     lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                    wp smep smap ac nxe r-w-x cpl x86-2))))
+                    wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2))))
   :hints (("Goal" :use ((:instance xlate-equiv-memory-and-ia32e-la-to-pa-page-table))))
   :rule-classes :congruence)
 
@@ -373,7 +377,7 @@
   (xlate-equiv-structures
    (mv-nth 2 (ia32e-la-to-pa-page-table
               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-              wp smep smap ac nxe r-w-x cpl x86))
+              wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
    (double-rewrite x86))
   :hints (("Goal"
            :cases
@@ -407,10 +411,10 @@
    (xlate-equiv-structures
     (mv-nth 2 (ia32e-la-to-pa-page-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-1))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
     (mv-nth 2 (ia32e-la-to-pa-page-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-2))))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2))))
   :rule-classes :congruence)
 
 (defthm all-mem-except-paging-structures-equal-and-paging-entry-no-page-fault-p
@@ -420,8 +424,8 @@
     (paging-entry-no-page-fault-p
      structure-type lin-addr entry
      u/s-acc r/w-acc x/d-acc
-     wp smep smap ac nxe r-w-x cpl
-     x86 ignored))
+     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl
+     x86))
    x86)
   :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
                                     page-fault-exception)
@@ -435,7 +439,7 @@
    (all-mem-except-paging-structures-equal
     (mv-nth 2 (ia32e-la-to-pa-page-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
     (double-rewrite x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-table)
                                    (bitops::logand-with-negated-bitmask
@@ -455,10 +459,10 @@
    (all-mem-except-paging-structures-equal
     (mv-nth 2 (ia32e-la-to-pa-page-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-1))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
     (mv-nth 2 (ia32e-la-to-pa-page-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-2)))))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2)))))
 
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-page-table
   (implies
@@ -471,7 +475,7 @@
    (xlate-equiv-memory
     (mv-nth 2 (ia32e-la-to-pa-page-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))
     (double-rewrite x86)))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (xlate-equiv-memory)
@@ -494,10 +498,10 @@
    (xlate-equiv-memory
     (mv-nth 2 (ia32e-la-to-pa-page-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-1))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-1))
     (mv-nth 2 (ia32e-la-to-pa-page-table
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
-               wp smep smap ac nxe r-w-x cpl x86-2))))
+               wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86-2))))
   ;; add the following after adding 64-bit mode hyp to previous theorem:
   :hints (("Goal" :in-theory (enable xlate-equiv-memory))))
 
@@ -518,36 +522,36 @@
       0
       (ia32e-la-to-pa-page-table
        lin-addr-1 base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-       wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
+       wp-1 smep-1 smap-1 ac-1 nxe-1  implicit-supervisor-access-1 r-w-x-1 cpl-1
        (mv-nth
         2
         (ia32e-la-to-pa-page-table
          lin-addr-2 base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-         wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2
+         wp-2 smep-2 smap-2 ac-2 nxe-2  implicit-supervisor-access-2 r-w-x-2 cpl-2
          x86))))
      (mv-nth
       0
       (ia32e-la-to-pa-page-table
        lin-addr-1 base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-       wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86)))
+       wp-1 smep-1 smap-1 ac-1 nxe-1  implicit-supervisor-access-1 r-w-x-1 cpl-1 x86)))
 
     (equal
      (mv-nth
       1
       (ia32e-la-to-pa-page-table
        lin-addr-1 base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-       wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1
+       wp-1 smep-1 smap-1 ac-1 nxe-1  implicit-supervisor-access-1 r-w-x-1 cpl-1
        (mv-nth
         2
         (ia32e-la-to-pa-page-table
          lin-addr-2 base-addr-2 u/s-acc-2 r/w-acc-2 x/d-acc-2
-         wp-2 smep-2 smap-2 ac-2 nxe-2 r-w-x-2 cpl-2
+         wp-2 smep-2 smap-2 ac-2 nxe-2  implicit-supervisor-access-2 r-w-x-2 cpl-2
          x86))))
      (mv-nth
       1
       (ia32e-la-to-pa-page-table
        lin-addr-1 base-addr-1 u/s-acc-1 r/w-acc-1 x/d-acc-1
-       wp-1 smep-1 smap-1 ac-1 nxe-1 r-w-x-1 cpl-1 x86)))))
+       wp-1 smep-1 smap-1 ac-1 nxe-1  implicit-supervisor-access-1 r-w-x-1 cpl-1 x86)))))
 
   :hints (("Goal" :in-theory (e/d* () (ia32e-la-to-pa-page-table)))))
 
@@ -584,14 +588,14 @@
   (equal (gather-all-paging-structure-qword-addresses
           (mv-nth 2 (ia32e-la-to-pa-page-table
                      lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                     wp smep smap ac nxe r-w-x cpl x86)))
+                     wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
          (gather-all-paging-structure-qword-addresses x86))
   :hints (("Goal"
            :use ((:instance
                   gather-all-paging-structure-qword-addresses-with-xlate-equiv-structures
                   (x86-equiv (mv-nth 2 (ia32e-la-to-pa-page-table
                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                        wp smep smap ac nxe r-w-x cpl x86))))))))
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))))))
 
 
 (defthm xlate-equiv-entries-at-qword-addresses-mv-nth-2-ia32e-la-to-pa-page-table
@@ -601,7 +605,7 @@
                    x86
                    (mv-nth 2 (ia32e-la-to-pa-page-table
                               lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                              wp smep smap ac nxe r-w-x cpl x86)))
+                              wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86)))
                   (xlate-equiv-entries-at-qword-addresses addrs addrs x86 x86)))
   :hints (("Goal" :in-theory (e/d* ()
                                    (xlate-equiv-structures-and-xlate-equiv-entries-at-qword-addresses
@@ -612,7 +616,7 @@
                             (x86-equiv
                              (mv-nth 2 (ia32e-la-to-pa-page-table
                                         lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                        wp smep smap ac nxe r-w-x cpl x86))))
+                                        wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))
                  (:instance booleanp-of-xlate-equiv-entries-at-qword-addresses
                             (addrs (gather-all-paging-structure-qword-addresses x86))
                             (x x86)
@@ -622,6 +626,6 @@
                             (x x86)
                             (y (mv-nth 2 (ia32e-la-to-pa-page-table
                                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
-                                          wp smep smap ac nxe r-w-x cpl x86))))))))
+                                          wp smep smap ac nxe implicit-supervisor-access r-w-x cpl x86))))))))
 
 ;; ======================================================================

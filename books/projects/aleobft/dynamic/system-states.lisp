@@ -14,7 +14,7 @@
 (include-book "validator-states")
 (include-book "messages")
 
-(local (include-book "lib-ext"))
+(local (include-book "../library-extensions/omap-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

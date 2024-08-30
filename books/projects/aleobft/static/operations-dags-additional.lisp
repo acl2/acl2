@@ -15,7 +15,7 @@
 
 (include-book "kestrel/utilities/osets" :dir :system)
 
-(local (include-book "lib-ext"))
+(local (include-book "../library-extensions/oset-theorems"))
 
 (include-book "std/util/define-sk" :dir :system)
 

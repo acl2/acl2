@@ -127,7 +127,7 @@
 (defirrelevant irr-fun-spec
   :short "An irrelevant function specifier."
   :type fun-specp
-  :body (fun-spec-inline))
+  :body (fun-spec-noreturn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,14 +334,14 @@
 (defirrelevant irr-attrib-spec
   :short "An irrelevant attribute specifier."
   :type attrib-specp
-  :body (attrib-spec nil))
+  :body (attrib-spec nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-asm-name-spec
   :short "An irrelevant assembler name specifier."
   :type asm-name-specp
-  :body (asm-name-spec nil nil))
+  :body (asm-name-spec nil (keyword-uscores-none)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

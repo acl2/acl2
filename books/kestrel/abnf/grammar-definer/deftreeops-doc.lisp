@@ -73,7 +73,8 @@
 
     (xdoc::codeblock
      "(deftreeops *grammar*"
-     "            :prefix ..."
+     "            :prefix ...  ; no default"
+     "            :print  ...  ; default :result"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,7 +119,60 @@
        where @('<lang>') indicates the language that the grammar refers to.")
      (xdoc::p
       "In the rest of this documentation page,
-       let @('<prefix>') be this symbol.")))
+       let @('<prefix>') be this symbol."))
+
+    (xdoc::desc
+     "@(':print') &mdash; default @(':result')"
+     (xdoc::p
+      "Specifies what is printed on the screen.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':error'), to print only error output (if any).")
+      (xdoc::li
+       "@(':result'), to print, besides any error output,
+        also the "
+       (xdoc::seetopic "acl2::event-macro-results" "results")
+       " of @('deftreeops').
+        This is the default value of the @(':print') input.
+        Since the results may consist of a large number of events,
+        only their names are printed;
+        the event themselves can be inspected via
+        the macro @('deftreeops-show-event'),
+        described in the `Companion Macros' section below.")
+      (xdoc::li
+       "@(':info'), to print,
+        besides any error output and the results,
+        also some additional information about
+        the internal operation of @('deftreeops')
+        (Currently there is no difference between
+        the @(':info') and the @(':result') outputs,
+        but we plan to add @(':info') outputs.).")
+      (xdoc::li
+       "@(':all'), to print,
+        besides any error output,
+        the results,
+        and the additional information,
+        also ACL2's output in response to all the submitted events.
+        This could be a lot of output."))
+     (xdoc::p
+      "The errors are printed as "
+      (xdoc::seetopic "set-inhibit-output-lst" "error output")
+      ". The results and the additional information are printed as "
+      (xdoc::seetopic "set-inhibit-output-lst" "comment output")
+      ". The ACL2 output enabled by @(':print :all') may consist of "
+      (xdoc::seetopic "set-inhibit-output-lst" "output of various kinds")
+      ".")
+     (xdoc::p
+      "If @(':print') is @(':error') or @(':result') or @(':info'),
+       @('deftreeops') suppresses all kinds of outputs (via @(tsee with-output))
+       except for error and comment output.
+       Otherwise, @('deftreeops') does not suppress any output.
+       However, the actual output depends on
+       which outputs are enabled or not prior to the call of @('deftreeops'),
+       including any @(tsee with-output) with which
+       the user may wrap the call of @('deftreeops').")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

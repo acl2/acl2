@@ -218,7 +218,17 @@
      :struct (type-spec-struct (simpadd0-strunispec tyspec.unwrap))
      :union (type-spec-union (simpadd0-strunispec tyspec.unwrap))
      :enum (type-spec-enum (simpadd0-enumspec tyspec.unwrap))
-     :typedef (type-spec-fix tyspec))
+     :typedef (type-spec-fix tyspec)
+     :int128 (type-spec-fix tyspec)
+     :float128 (type-spec-fix tyspec)
+     :builtin-va-list (type-spec-fix tyspec)
+     :typeof-expr (make-type-spec-typeof-expr
+                   :expr (simpadd0-expr tyspec.expr)
+                   :uscores tyspec.uscores)
+     :typeof-type (make-type-spec-typeof-type
+                   :type (simpadd0-tyname tyspec.type)
+                   :uscores tyspec.uscores)
+     :typeof-ambig (prog2$ (impossible) (irr-type-spec)))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -850,7 +860,8 @@
                                        irr-const-expr
                                        irr-align-spec
                                        irr-dirabsdeclor
-                                       irr-paramdeclor)))))
+                                       irr-paramdeclor
+                                       irr-type-spec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -41,6 +41,7 @@
 (include-book "doc")
 (include-book "pathcond-fix")
 (include-book "centaur/aignet/transform-utils" :dir :system)
+(include-book "fgl-primitive-congruences")
 
 (local (in-theory (disable w)))
 

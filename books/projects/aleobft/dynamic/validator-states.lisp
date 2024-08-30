@@ -58,7 +58,7 @@
      for details about the exact use of these pairs."))
   ((address address)
    (pos posp))
-  :pred address+posp)
+  :pred address+pos-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,6 +73,70 @@
   :elt-type address+pos
   :elementp-of-nil nil
   :pred address+pos-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-address+pos-pairs-with-address ((addr addressp)
+                                            (pairs address+pos-setp))
+  :returns (pairs-with-addr address+pos-setp)
+  :short "Retrieve, from a set of pairs of addresses and positive integers,
+          the pairs with a given address."
+  (b* (((when (set::emptyp pairs)) nil)
+       (pair (set::head pairs)))
+    (if (equal (address-fix addr) (address+pos->address pair))
+        (set::insert (address+pos-fix pair)
+                     (get-address+pos-pairs-with-address addr
+                                                         (set::tail pairs)))
+      (get-address+pos-pairs-with-address addr
+                                          (set::tail pairs))))
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv get-address+pos-pairs-with-address
+    :args ((addr addressp)))
+
+  (defruled in-of-get-address+pos-pairs-with-address
+    (implies (address+pos-setp pairs)
+             (equal (set::in pair
+                             (get-address+pos-pairs-with-address addr pairs))
+                    (and (set::in pair pairs)
+                         (equal (address+pos->address pair)
+                                (address-fix addr)))))
+    :induct t)
+
+  (defruled get-address+pos-pairs-with-address-when-emptyp
+    (implies (set::emptyp pairs)
+             (equal (get-address+pos-pairs-with-address addr pairs)
+                    nil)))
+
+  (defruled get-address+pos-pairs-with-address-of-insert
+    (implies (and (address+pos-p pair)
+                  (address+pos-setp pairs))
+             (equal (get-address+pos-pairs-with-address
+                     addr (set::insert pair pairs))
+                    (if (equal (address+pos->address pair)
+                               (address-fix addr))
+                        (set::insert pair
+                                     (get-address+pos-pairs-with-address
+                                      addr pairs))
+                      (get-address+pos-pairs-with-address addr pairs))))
+    :enable (in-of-get-address+pos-pairs-with-address
+             set::double-containment-no-backchain-limit
+             set::pick-a-point-subset-strategy)
+    :disable get-address+pos-pairs-with-address)
+
+  (defruled get-address+pos-pairs-with-address-of-delete
+    (implies (address+pos-setp pairs)
+             (equal (get-address+pos-pairs-with-address
+                     addr (set::delete pair pairs))
+                    (set::delete pair
+                                 (get-address+pos-pairs-with-address
+                                  addr pairs))))
+    :enable (in-of-get-address+pos-pairs-with-address
+             set::double-containment-no-backchain-limit
+             set::pick-a-point-subset-strategy)
+    :disable get-address+pos-pairs-with-address))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

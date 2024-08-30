@@ -32,7 +32,7 @@
 (local (in-theory nil))
 
 (local (in-theory (enable basic-boot-strap ; From ihs-theories
-			 ;; From math-lemmas
+                          ;; From math-lemmas
 			  ihs-math
 			  rationalp-algebra
 			  ifix nfix)))
@@ -825,13 +825,13 @@ property of @('(/ x y)').</p>"
   :rule-classes ((:rewrite)
 		 (:generalize)
 		 (:linear :corollary
-			  (implies (and (>= x 0) (> y 0) (<= y x)
-					(qr-guard x y))
-				   (> (floor x y) 0)))
+                  (implies (and (>= x 0) (> y 0) (<= y x)
+                                (qr-guard x y))
+                           (> (floor x y) 0)))
 		 (:linear :corollary
-			  (implies (and (<= x 0) (< y 0) (>= y x)
-					(qr-guard x y))
-				   (> (floor x y) 0))))
+                  (implies (and (<= x 0) (< y 0) (>= y x)
+                                (qr-guard x y))
+                           (> (floor x y) 0))))
   :hints (("Subgoal 6" :cases ((<= x 0) (<= 0 x)))
           ("Subgoal 2" :cases ((<= x 0) (<= 0 x)))))
 
@@ -848,21 +848,21 @@ property of @('(/ x y)').</p>"
   :rule-classes ((:rewrite)
 		 (:generalize)
 		 (:rewrite :corollary
-			   (implies (and (>= x 0) (> y 0) (< x y)
-					 (qr-guard x y))
-				    (equal (floor x y) 0)))
+                  (implies (and (>= x 0) (> y 0) (< x y)
+                                (qr-guard x y))
+                           (equal (floor x y) 0)))
 		 (:rewrite :corollary
-			   (implies (and (<= x 0) (< y 0) (> x y)
-					 (qr-guard x y))
-				    (equal (floor x y) 0)))
+                  (implies (and (<= x 0) (< y 0) (> x y)
+                                (qr-guard x y))
+                           (equal (floor x y) 0)))
 		 (:type-prescription :corollary
-				     (implies (and (>= x 0) (> y 0)
-						   (qr-guard x y))
-					      (>= (floor x y) 0)))
+                  (implies (and (>= x 0) (> y 0)
+                                (qr-guard x y))
+                           (>= (floor x y) 0)))
 		 (:type-prescription :corollary
-				     (implies (and (<= x 0) (< y 0)
-						   (qr-guard x y))
-					      (>= (floor x y) 0))))
+                  (implies (and (<= x 0) (< y 0)
+                                (qr-guard x y))
+                           (>= (floor x y) 0))))
   :cases ((< (/ x y) 0) (> (/ x y) 0)))
 
 (defrule floor-type-4
@@ -878,13 +878,13 @@ property of @('(/ x y)').</p>"
   :rule-classes ((:rewrite)
 		 (:generalize)
 		 (:rewrite :corollary
-			   (implies (and (> x 0) (< y 0) (<= x (- y))
-					 (qr-guard x y))
-				    (equal (floor x y) -1)))
+                  (implies (and (> x 0) (< y 0) (<= x (- y))
+                                (qr-guard x y))
+                           (equal (floor x y) -1)))
 		 (:rewrite :corollary
-			   (implies (and (< x 0) (> y 0) (<= (- x) y)
-					 (qr-guard x y))
-				    (equal (floor x y) -1))))
+                  (implies (and (< x 0) (> y 0) (<= (- x) y)
+                                (qr-guard x y))
+                           (equal (floor x y) -1))))
   :hints (("Goal" :cases ((< (/ x y) 0) (> (/ x y) 0)))
 	  ("Subgoal 2"
 	   :in-theory (set-difference-theories (enable <-+-negative-0-1
@@ -1102,28 +1102,28 @@ property of @('(/ x y)').</p>"
 
 (encapsulate nil
 
-   (local (defthm another-crock
-	    (equal (equal (- x) 1) (equal x -1))))
+  (local (defthm another-crock
+           (equal (equal (- x) 1) (equal x -1))))
 
-   (defrule mod-x-y-=-x+y-for-rationals
-     :parents (mod-lemmas)
-     :short "Rewrite: @('(MOD x y) = x + y'), when @('|x| <= |y|') and x and y
+  (defrule mod-x-y-=-x+y-for-rationals
+    :parents (mod-lemmas)
+    :short "Rewrite: @('(MOD x y) = x + y'), when @('|x| <= |y|') and x and y
   have different signs and x /= 0."
-     :long "<p>This rule is a corollary of a more general equality which is
+    :long "<p>This rule is a corollary of a more general equality which is
   also stored as :REWRITE and :GENERALIZE rules.</p>"
-     (implies (qr-guard x y)
-              (equal (equal (mod x y) (+ x y))
-                     (or (and (> x 0) (< y 0) (<= x (- y)))
-                         (and (< x 0) (> y 0) (<= (- x) y)))))
-     :rule-classes
-     ((:rewrite)
-      (:generalize)
-      (:rewrite :corollary (implies (and (> x 0) (< y 0) (<= x y) (qr-guard x y))
-                                    (equal (mod x y) (+ x y))))
-      (:rewrite :corollary (implies (and (< x 0) (> y 0) (<= (- x) y) (qr-guard x y))
-                                    (equal (mod x y) (+ x y)))))
-     :in-theory (e/d (linearize-mod) (floor-bounded-by-/))
-     :use floor-bounded-by-/))
+    (implies (qr-guard x y)
+             (equal (equal (mod x y) (+ x y))
+                    (or (and (> x 0) (< y 0) (<= x (- y)))
+                        (and (< x 0) (> y 0) (<= (- x) y)))))
+    :rule-classes
+    ((:rewrite)
+     (:generalize)
+     (:rewrite :corollary (implies (and (> x 0) (< y 0) (<= x y) (qr-guard x y))
+                                   (equal (mod x y) (+ x y))))
+     (:rewrite :corollary (implies (and (< x 0) (> y 0) (<= (- x) y) (qr-guard x y))
+                                   (equal (mod x y) (+ x y)))))
+    :in-theory (e/d (linearize-mod) (floor-bounded-by-/))
+    :use floor-bounded-by-/))
 
 ;; Added the :rule-classes :rewrite as this seems necessary at times.
 ;; A. Flatau  1-Dec-1994
@@ -1517,36 +1517,36 @@ property of @('(/ x y)').</p>"
 ; [Jared] bozo this looks kind of expensive...
 
 (defthm not-rationalp-rationalp-plus
- (implies (and (acl2-numberp x)
-               (rationalp y)
-               (not (rationalp x)))
-          (not (rationalp (+ x y))))
- :hints (("Goal" :use ((:instance rationalp-+ (x (+ x y)) (y (- y)))))))
+  (implies (and (acl2-numberp x)
+                (rationalp y)
+                (not (rationalp x)))
+           (not (rationalp (+ x y))))
+  :hints (("Goal" :use ((:instance rationalp-+ (x (+ x y)) (y (- y)))))))
 
 (defthm not-rationalp-rationalp-unary---plus
- (implies (and (acl2-numberp x)
-               (rationalp y)
-               (not (rationalp (- x))))
-          (not (rationalp (+ x y))))
- :hints (("Goal" :use ((:instance rationalp-+ (x (+ x y)) (y (- y))))
-	  :in-theory (enable rationalp-unary--))))
+  (implies (and (acl2-numberp x)
+                (rationalp y)
+                (not (rationalp (- x))))
+           (not (rationalp (+ x y))))
+  :hints (("Goal" :use ((:instance rationalp-+ (x (+ x y)) (y (- y))))
+           :in-theory (enable rationalp-unary--))))
 
 #+non-standard-analysis
 (defthm not-realp-realp-plus
- (implies (and (acl2-numberp x)
-               (realp y)
-               (not (realp x)))
-          (not (realp (+ x y))))
- :hints (("Goal" :use ((:instance realp-+ (x (+ x y)) (y (- y)))))))
+  (implies (and (acl2-numberp x)
+                (realp y)
+                (not (realp x)))
+           (not (realp (+ x y))))
+  :hints (("Goal" :use ((:instance realp-+ (x (+ x y)) (y (- y)))))))
 
 #+non-standard-analysis
 (defthm not-realp-realp-unary---plus
- (implies (and (acl2-numberp x)
-               (realp y)
-               (not (realp (- x))))
-          (not (realp (+ x y))))
- :hints (("Goal" :use ((:instance realp-+ (x (+ x y)) (y (- y))))
-	  :in-theory (enable realp-unary--))))
+  (implies (and (acl2-numberp x)
+                (realp y)
+                (not (realp (- x))))
+           (not (realp (+ x y))))
+  :hints (("Goal" :use ((:instance realp-+ (x (+ x y)) (y (- y))))
+           :in-theory (enable realp-unary--))))
 
 (encapsulate nil
 
@@ -1659,9 +1659,9 @@ property of @('(/ x y)').</p>"
    (defthm floor-floor-integer-crock0
      (implies
       (and (real/rationalp x)
-	   (integerp i)
+	   (rationalp i)
 	   (not (equal i 0))
-	   (integerp j)
+	   (rationalp j)
 	   (not (equal j 0))
 	   (syntaxp (and (eq x 'x) (eq i 'i) (eq j 'j))))
       (equal (floor (floor x i) j)
@@ -1678,7 +1678,7 @@ property of @('(/ x y)').</p>"
    (defthm floor-floor-integer-crock1
      (implies
       (and (real/rationalp x)
-	   (integerp i)
+	   (rationalp i)
 	   (not (equal i 0))
 	   (integerp j)
 	   (not (equal j 0))
@@ -1697,9 +1697,9 @@ property of @('(/ x y)').</p>"
    (defthm floor-floor-integer-crock2
      (implies
       (and (real/rationalp x)
-	   (integerp i)
+	   (rationalp i)
 	   (< 0 i)
-	   (integerp j)
+	   (rationalp j)
 	   (< 0 j))
       (equal (floor (floor (mod x (* i j)) i) j)
 	     0))
@@ -1721,7 +1721,7 @@ property of @('(/ x y)').</p>"
   (defrule floor-floor-integer
     :parents (floor-lemmas)
     :short "Rewrite: @('(FLOOR (FLOOR x i) j) = (FLOOR x (* i j))') for integers i,j &gt; 0."
-    (implies (and (integerp i)
+    (implies (and (rationalp i)
                   (integerp j)
                   (< 0 i)
                   (< 0 j)
@@ -1736,7 +1736,7 @@ property of @('(/ x y)').</p>"
   :long "<p>This is a crucial lemma for certain kinds of reasoning about hardware
   specifications, and is used to prove @(see MOD-x+i*j-i*k).</p>"
   (implies (and (force (real/rationalp x))
-                (force (integerp i))
+                (force (rationalp i))
                 (force (integerp j))
                 (force (integerp k))
                 (< 0 i)
@@ -1762,7 +1762,7 @@ property of @('(/ x y)').</p>"
   <p>for @('n > 0'), which justifies a recursive specification of hardware
   operations.</p>"
   (implies (and (force (real/rationalp x))
-                (force (integerp i))
+                (force (rationalp i))
                 (force (integerp j))
                 (force (integerp k))
                 (< 0 i)

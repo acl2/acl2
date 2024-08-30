@@ -267,7 +267,7 @@
 (defthm mod-x+i*k-i*j
   (implies
    (and (force (real/rationalp x))
-	(force (integerp i))
+	(force (rationalp i))
 	(force (integerp j))
 	(force (integerp k))
 	(< 0 i)
@@ -282,7 +282,7 @@
 (defthm floor-x+i*k-i*j
   (implies
    (and (force (real/rationalp x))
-	(force (integerp i))
+	(force (rationalp i))
 	(force (integerp j))
 	(force (integerp k))
 	(< 0 i)

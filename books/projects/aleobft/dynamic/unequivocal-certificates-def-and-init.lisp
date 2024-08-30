@@ -36,7 +36,8 @@
      because there are no certificates at all.")
    (xdoc::p
     "The preservation of this invariant relies on another invariant,
-     namely that blockchains do not fork.
+     namely that blockchains do not fork,
+     which is defined in @(see nonforking-blockchains-def-and-init).
      The reason is that, in order to prove certificate non-equivocation,
      we need the fact that different validators agree on
      the active committee at certain rounds;
@@ -54,10 +55,10 @@
      also hold on the new state.")
    (xdoc::p
     "Here we define the invariant about unequivocal certificates,
-     and we also prove that it holds in the initial state.
-     Elsewhere we do the same for
-     the invariant about non-forking blockchains,
-     i.e. we define it and prove it holds in the initial state.
+     and we also prove that it holds in the initial states.
+     In @(see nonforking-blockchains-def-and-init)
+     we do the same for the invariant about non-forking blockchains,
+     i.e. we define it and prove it holds in the initial states.
      Then we prove that each holds in the new state
      if both hold in the old state,
      and finally we put everything together
@@ -89,7 +90,7 @@
 
 (defruled unequivocal-certificates-p-when-init
   :short "Establishment of the invariant:
-          the invariant holds on any initial system state."
+          the invariant holds in any initial system state."
   (implies (system-initp systate)
            (unequivocal-certificates-p systate))
   :enable (unequivocal-certificates-p

@@ -74,6 +74,11 @@
            (message-set-not-self-p (set::tail msgs))))
   ///
 
+  (defrule message-set-not-self-p-of-sfix
+    (equal (message-set-not-self-p (set::sfix msgs))
+           (message-set-not-self-p msgs))
+    :induct t)
+
   (defruled message-set-not-self-p-element
     (implies (and (message-set-not-self-p msgs)
                   (set::in msg msgs))
@@ -104,21 +109,9 @@
     (equal (message-set-not-self-p (set::union msgs1 msgs2))
            (and (message-set-not-self-p msgs1)
                 (message-set-not-self-p msgs2)))
-    :use (if-direction only-if-direction)
-    :prep-lemmas
-    ((defruled if-direction
-       (implies (and (message-set-not-self-p msgs1)
-                     (message-set-not-self-p msgs2))
-                (message-set-not-self-p (set::union msgs1 msgs2)))
-       :induct t
-       :enable (set::union
-                message-set-not-self-p-element
-                message-set-not-self-p-subset))
-     (defruled only-if-direction
-       (implies (message-set-not-self-p (set::union msgs1 msgs2))
-                (and (message-set-not-self-p msgs1)
-                     (message-set-not-self-p msgs2)))
-       :enable message-set-not-self-p-subset))))
+    :induct t
+    :enable (set::union
+             message-set-not-self-p-of-insert)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

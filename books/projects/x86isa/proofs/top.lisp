@@ -97,13 +97,17 @@
 ;; ----------------------------------------------------------------------
 ;; System Program:
 
-;; The zeroCopy program has been proved correct in both the marking
+;; The zeroCopy program was proven correct in both the marking
 ;; and non-marking view of the x86 model.
 
-(local
- (encapsulate
-   ()
-   (local (include-book "zeroCopy/non-marking-view/zeroCopy" :ttags :all))))
+;; With the addition of the TLB, we only updated the marking-view version of
+;; the proof. The non-marking-view version does not work anymore, so we comment
+;; it out here.
+
+;; (local
+;;  (encapsulate
+;;    ()
+;;    (local (include-book "zeroCopy/non-marking-view/zeroCopy" :ttags :all))))
 (local
  (encapsulate
    ()

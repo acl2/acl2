@@ -4,6 +4,8 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) August 2023 - May 2024, Yahya Sohail
+; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +37,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 (include-book "paging-basics")
@@ -392,7 +396,9 @@
   :parents (xlate-equiv-structures)
   :long "<p>Two paging structure entries are @('xlate-equiv-entries')
   if they are equal for all bits except the accessed and dirty
-  bits (bits 5 and 6, respectively).</p>"
+  bits (bits 5 and 6, respectively). Additionally, the tlb and paging entries
+  on the states must be arranged so that address translations are the same
+  on both states.</p>"
   ;; (and (equal (part-select e-1 :low 0 :high 4)
   ;;             (part-select e-2 :low 0 :high 4))
   ;;      ;; Bits 5 (accessed bit) and 6 (dirty bit) missing here.
@@ -1693,7 +1699,8 @@
     (bound-x86-term mfc state)
   (declare (xargs :stobjs (state) :mode :program)
            (ignorable state))
-  (b* ((call (acl2::find-call-lst 'xlate-equiv-structures (acl2::mfc-clause mfc)))
+  (b* ((call (or (acl2::find-call-lst 'xlate-equiv-structures (acl2::mfc-clause mfc))
+                 (acl2::find-call-lst 'xlate-equiv-memory (acl2::mfc-clause mfc))))
        ((when (not call))
         ;; xlate-equiv-structures term not encountered.
         nil)
@@ -2101,6 +2108,8 @@
              (equal (xr :marking-view nil x86-1)
                     (xr :marking-view nil x86-2))
              (equal paging-qword-addresses-1 paging-qword-addresses-2)
+             (equal (implicit-supervisor-access x86-1)
+                    (implicit-supervisor-access x86-2))
              (xlate-equiv-entries-at-qword-addresses
               paging-qword-addresses-1 paging-qword-addresses-2 x86-1 x86-2)))
 
@@ -2158,10 +2167,21 @@
                   (not (equal fld :ctr))
                   (not (equal fld :rflags))
                   (not (equal fld :app-view))
-                  (not (equal fld :marking-view)))
+                  (not (equal fld :marking-view))
+                  (not (equal fld :implicit-supervisor-access)))
              (xlate-equiv-structures (xw fld index val x86)
                                      (double-rewrite x86)))
     :hints (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)
+                                     ()))))
+
+  (defthm xlate-equiv-structures-and-xw-rflags
+    (implies (equal (rflagsBits->ac val)
+                    (rflagsBits->ac (xr :rflags nil x86)))
+             (xlate-equiv-structures (xw :rflags nil val x86)
+                                     (double-rewrite x86)))
+    :hints (("Goal" :in-theory (e/d* (rflagsBits->ac
+                                      rflagsBits-fix
+                                      gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)
                                      ()))))
 
   (defthm xlate-equiv-structures-and-app-view-cong
@@ -2196,7 +2216,17 @@
              (all-mem-except-paging-structures-equal x86-1 x86-2))
     :rule-classes :refinement)
 
-  (defcong xlate-equiv-memory equal (64-bit-modep x86) 1))
+  (defcong xlate-equiv-memory equal (64-bit-modep x86) 1)
+
+  (defthm xlate-equiv-memory-and-xw-rflags
+          (implies (and (equal (rflagsBits->ac val)
+                               (rflagsBits->ac (xr :rflags nil x86)))
+                        (64-bit-modep x86)
+                        (not (app-view x86)))
+                   (xlate-equiv-memory (xw :rflags nil val x86)
+                                       (double-rewrite x86)))
+          :hints (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)
+                                           ())))))
 
 ;; =====================================================================
 
