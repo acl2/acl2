@@ -2674,10 +2674,12 @@
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls)
     :short "Print an attribute specifier."
-    (b* ((pstate (print-astring "__attribute__ ((" pstate))
-         (attrs (attrib-spec->attribs attrspec))
-         (pstate (if (consp attrs)
-                     (print-attrib-list attrs pstate)
+    (b* (((attrib-spec attrspec) attrspec)
+         (pstate (if attrspec.uscores
+                     (print-astring "__attribute__ ((" pstate)
+                   (print-astring "__attribute ((" pstate)))
+         (pstate (if (consp attrspec.attribs)
+                     (print-attrib-list attrspec.attribs pstate)
                    pstate))
          (pstate (print-astring "))" pstate)))
       pstate)

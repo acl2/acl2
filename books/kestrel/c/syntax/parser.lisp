@@ -1875,6 +1875,7 @@
                                         "asm"
                                         "__asm"
                                         "__asm__"
+                                        "__attribute"
                                         "__attribute__"
                                         "__extension__"
                                         "__inline"
@@ -9000,12 +9001,14 @@
           (retok (spec/qual-align alignspec)
                  (span-join span last-span)
                  parstate)))
-       ;; If token is the keyword __attribute__,
+       ;; If token is the keyword '__attribute' or '__attribute__',
        ;; which can only happen if GCC extensions are enabled,
        ;; we must have an attribute specifier.
-       ((token-keywordp token "__attribute__") ; __attribute__
-        (b* (((erp attrspec last-span parstate) ; attrspec
-              (parse-attribute-specifier span parstate)))
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((uscores (token-keywordp token "__attribute__"))
+             ((erp attrspec last-span parstate) ; attrspec
+              (parse-attribute-specifier uscores span parstate)))
           (retok (spec/qual-attrib attrspec)
                  (span-join span last-span)
                  parstate)))
@@ -9265,12 +9268,14 @@
           (retok (declspec-align alignspec)
                  (span-join span last-span)
                  parstate)))
-       ;; If token is the keyword __attribute__,
+       ;; If token is the keyword '__attribute' or '__attribute__',
        ;; which can only happen if GCC extensions are enabled,
        ;; we must have an attribute specifier.
-       ((token-keywordp token "__attribute__") ; __attribute__
-        (b* (((erp attrspec last-span parstate) ; attrspec
-              (parse-attribute-specifier span parstate)))
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((uscores (token-keywordp token "__attribute__"))
+             ((erp attrspec last-span parstate) ; attrspec
+              (parse-attribute-specifier uscores span parstate)))
           (retok (declspec-attrib attrspec)
                  (span-join span last-span)
                  parstate)))
@@ -11425,7 +11430,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-attribute-specifier ((first-span spanp) (parstate parstatep))
+  (define parse-attribute-specifier ((uscores booleanp)
+                                     (first-span spanp)
+                                     (parstate parstatep))
     :returns (mv erp
                  (attrspec attrib-specp)
                  (span spanp)
@@ -11450,7 +11457,9 @@
           (read-punctuator ")" parstate))
          ((erp last-span parstate) ; __attribute__ ( ( attrs ) )
           (read-punctuator ")" parstate)))
-      (retok (attrib-spec attrs) (span-join first-span last-span) parstate))
+      (retok (make-attrib-spec :uscores uscores :attribs attrs)
+             (span-join first-span last-span)
+             parstate))
     :measure (two-nats-measure (parsize parstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -11488,13 +11497,15 @@
        only if GCC extensions are supported."))
     (b* (((reterr) nil (irr-span) parstate)
          ((erp token first-span parstate) (read-token parstate))
-         ((unless (token-keywordp token "__attribute__"))
+         ((unless (or (token-keywordp token "__attribute")
+                      (token-keywordp token "__attribute__")))
           (b* ((parstate (if token (unread-token parstate) parstate)))
             (retok nil (irr-span) parstate)))
          ;; __attribute__
+         (uscores (token-keywordp token "__attribute__"))
          (psize (parsize parstate))
          ((erp attrspec span parstate)
-          (parse-attribute-specifier first-span parstate))
+          (parse-attribute-specifier uscores first-span parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
          ;; __attribute__ ( ( ... ) )

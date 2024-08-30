@@ -334,7 +334,7 @@
 (defirrelevant irr-attrib-spec
   :short "An irrelevant attribute specifier."
   :type attrib-specp
-  :body (attrib-spec nil))
+  :body (attrib-spec nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

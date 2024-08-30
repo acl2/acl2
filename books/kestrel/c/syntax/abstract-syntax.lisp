@@ -2397,8 +2397,12 @@
       ". For now we only model the older @('__attribute__') syntax.")
      (xdoc::p
       "We wrap a possibly empty list of attributes,
-       leaving the @('__attribute__') part implicit."))
-    ((attribs attrib-list))
+       and we include a flag to distinguish
+       between @('__attribute') and @('__attribute__').
+       The flag is @('t') for the second variant (i.e. more underscores),
+       @('nil') for the first variant (i.e. fewer underscores)."))
+    ((uscores bool)
+     (attribs attrib-list))
     :pred attrib-specp
     :measure (two-nats-measure (acl2-count x) 1))
 
