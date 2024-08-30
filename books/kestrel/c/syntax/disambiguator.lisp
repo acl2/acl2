@@ -1223,7 +1223,28 @@
        :int128 (retok (type-spec-int128) (dimb-table-fix table))
        :float128 (retok (type-spec-float128) (dimb-table-fix table))
        :builtin-va-list (retok (type-spec-builtin-va-list)
-                               (dimb-table-fix table))))
+                               (dimb-table-fix table))
+       :typeof-expr
+       (b* (((erp new-expr table) (dimb-expr tyspec.expr table)))
+         (retok (make-type-spec-typeof-expr :expr new-expr
+                                            :uscores tyspec.uscores)
+                table))
+       :typeof-type
+       (b* (((erp new-tyname table) (dimb-tyname tyspec.type table)))
+         (retok (make-type-spec-typeof-type :type new-tyname
+                                            :uscores tyspec.uscores)
+                table))
+       :typeof-ambig
+       (b* (((erp expr/tyname table)
+             (dimb-amb-expr/tyname tyspec.expr/type table)))
+         (expr/tyname-case
+          expr/tyname
+          :expr (retok (make-type-spec-typeof-expr :expr expr/tyname.unwrap
+                                                   :uscores tyspec.uscores)
+                       table)
+          :tyname (retok (make-type-spec-typeof-type :type expr/tyname.unwrap
+                                                     :uscores tyspec.uscores)
+                         table)))))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

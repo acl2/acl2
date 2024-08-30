@@ -270,6 +270,7 @@
     (:linear c$::expr-count-of-genassoc-default->expr)
     (:linear c$::expr-count-of-genassoc-type->expr)
     (:linear c$::expr-count-of-initer-single->expr)
+    (:linear c$::expr-count-of-type-spec-typeof-expr->expr)
     (:linear c$::expr-list-count-of-cdr)
     (:linear c$::expr-list-count-of-expr-funcall->args)
     (:linear c$::expr-option-count-of-dirabsdeclor-array->expr?)
@@ -314,6 +315,7 @@
     (:linear c$::tyname-count-of-expr-sizeof->type)
     (:linear c$::tyname-count-of-genassoc-type->type)
     (:linear c$::tyname-count-of-type-spec-atomic->type)
+    (:linear c$::tyname-count-of-type-spec-typeof-type->type)
     (:linear c$::type-spec-count-of-declspec-tyspec->unwrap)
     (:linear c$::type-spec-count-of-spec/qual-tyspec->unwrap)))
 
@@ -801,7 +803,16 @@
       :typedef (type-spec-fix tyspec)
       :int128 (type-spec-fix tyspec)
       :float128 (type-spec-fix tyspec)
-      :builtin-va-list (type-spec-fix tyspec))
+      :builtin-va-list (type-spec-fix tyspec)
+      :typeof-expr (make-type-spec-typeof-expr
+                    :expr (,(cdr (assoc-eq 'expr names)) tyspec.expr ,@extra-args-names)
+                    :uscores tyspec.uscores)
+      :typeof-type (make-type-spec-typeof-type
+                    :type (,(cdr (assoc-eq 'tyname names)) tyspec.type ,@extra-args-names)
+                    :uscores tyspec.uscores)
+      :typeof-ambig (prog2$
+                     (raise "Misusage error: ~x0." (type-spec-fix tyspec))
+                     (type-spec-fix tyspec)))
    '(:returns (new-tyspec type-specp)
      :measure (type-spec-count tyspec))))
 

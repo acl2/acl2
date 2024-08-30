@@ -1886,7 +1886,10 @@
                                         "__restrict"
                                         "__restrict__"
                                         "__signed"
-                                        "__signed__"))))
+                                        "__signed__"
+                                        "typeof"
+                                        "__typeof"
+                                        "__typeof__"))))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
@@ -5820,6 +5823,9 @@
       (token-keywordp token? "struct")
       (token-keywordp token? "union")
       (token-keywordp token? "enum")
+      (token-keywordp token? "typeof")
+      (token-keywordp token? "__typeof")
+      (token-keywordp token? "__typeof__")
       (and token? (token-case token? :ident)))
   ///
 
@@ -9017,6 +9023,37 @@
                 (type-spec-typedef (token-ident->unwrap token)))
                span
                parstate))
+       ;; If token is 'typeof' or '__typeof' or '__typeof__',
+       ;; we parse an open parenthesis,
+       ;; then a possibly ambiguous expression or type name,
+       ;; and finally a closed parenthesis.
+       ((or (token-keywordp token "typeof") ; typeof
+            (token-keywordp token "__typeof") ; __typeof
+            (token-keywordp token "__typeof__")) ; __typeof__
+        (b* ((uscores (cond ((token-keywordp token "typeof")
+                             (keyword-uscores-none))
+                            ((token-keywordp token "__typeof")
+                             (keyword-uscores-start))
+                            ((token-keywordp token "__typeof__")
+                             (keyword-uscores-both))))
+             ((erp & parstate) ; typeof (
+              (read-punctuator "(" parstate))
+             ((erp expr/tyname & parstate) ; typeof ( expr/tyname
+              (parse-expression-or-type-name parstate))
+             ((erp last-span parstate) ; typeof ( expr/tyname )
+              (read-punctuator ")" parstate))
+             (tyspec
+              (amb?-expr/tyname-case
+               expr/tyname
+               :expr (make-type-spec-typeof-expr :expr expr/tyname.unwrap
+                                                 :uscores uscores)
+               :tyname (make-type-spec-typeof-type :type expr/tyname.unwrap
+                                                   :uscores uscores)
+               :ambig (make-type-spec-typeof-ambig :expr/type expr/tyname.unwrap
+                                                   :uscores uscores))))
+          (retok (spec/qual-tyspec tyspec)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is a type qualifier, which is always a single keyword,
        ;; we have that type qualifier.
        ((token-type-qualifier-p token) ; tyqual
@@ -9278,6 +9315,37 @@
         (retok (declspec-tyspec (type-spec-typedef (token-ident->unwrap token)))
                span
                parstate))
+       ;; If token is 'typeof' or '__typeof' or '__typeof__',
+       ;; we parse an open parenthesis,
+       ;; then a possibly ambiguous expression or type name,
+       ;; and finally a closed parenthesis.
+       ((or (token-keywordp token "typeof") ; typeof
+            (token-keywordp token "__typeof") ; __typeof
+            (token-keywordp token "__typeof__")) ; __typeof__
+        (b* ((uscores (cond ((token-keywordp token "typeof")
+                             (keyword-uscores-none))
+                            ((token-keywordp token "__typeof")
+                             (keyword-uscores-start))
+                            ((token-keywordp token "__typeof__")
+                             (keyword-uscores-both))))
+             ((erp & parstate) ; typeof (
+              (read-punctuator "(" parstate))
+             ((erp expr/tyname & parstate) ; typeof ( expr/tyname
+              (parse-expression-or-type-name parstate))
+             ((erp last-span parstate) ; typeof ( expr/tyname )
+              (read-punctuator ")" parstate))
+             (tyspec
+              (amb?-expr/tyname-case
+               expr/tyname
+               :expr (make-type-spec-typeof-expr :expr expr/tyname.unwrap
+                                                 :uscores uscores)
+               :tyname (make-type-spec-typeof-type :type expr/tyname.unwrap
+                                                   :uscores uscores)
+               :ambig (make-type-spec-typeof-ambig :expr/type expr/tyname.unwrap
+                                                   :uscores uscores))))
+          (retok (declspec-tyspec tyspec)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is a type qualifier, which is always a single keyword,
        ;; we have that type qualifier.
        ((token-type-qualifier-p token) ; tyqual

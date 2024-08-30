@@ -1863,7 +1863,26 @@
      :typedef (print-ident tyspec.name pstate)
      :int128 (print-astring "__int128" pstate)
      :float128 (print-astring "_Float128" pstate)
-     :builtin-va-list (print-astring "__builtin_va_list" pstate))
+     :builtin-va-list (print-astring "__builtin_va_list" pstate)
+     :typeof-expr
+     (b* ((pstate (keyword-uscores-case
+                   tyspec.uscores
+                   :none (print-astring "typeof(" pstate)
+                   :start (print-astring "__typeof(" pstate)
+                   :both (print-astring "__typeof__(" pstate)))
+          (pstate (print-expr tyspec.expr (expr-priority-expr) pstate))
+          (pstate (print-astring ")" pstate)))
+       pstate)
+     :typeof-type
+     (b* ((pstate (keyword-uscores-case
+                   tyspec.uscores
+                   :none (print-astring "typeof(" pstate)
+                   :start (print-astring "__typeof(" pstate)
+                   :both (print-astring "__typeof__(" pstate)))
+          (pstate (print-tyname tyspec.type pstate))
+          (pstate (print-astring ")" pstate)))
+       pstate)
+     :typeof-ambig (prog2$ (impossible) (pristate-fix pstate)))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

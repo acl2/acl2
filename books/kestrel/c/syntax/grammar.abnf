@@ -457,6 +457,9 @@ gcc-keyword = %s"__alignof"
             / %s"__restrict__"
             / %s"__signed"
             / %s"__signed__"
+            / %s"typeof"
+            / %s"__typeof"
+            / %s"__typeof__"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -781,6 +784,8 @@ unary-expression = postfix-expression
                  / %s"sizeof" unary-expression
                  / %s"sizeof" "(" type-name ")"
                  / %s"_Alignof" "(" type-name ")"
+                 / %s"__alignof" "(" type-name ")"   ; GCC extension
+                 / %s"__alignof__" "(" type-name ")" ; GCC extension
 
 unary-operator = "&"
                / "*"
@@ -913,8 +918,8 @@ attribute = identifier [ attribute-parameters ]
 
 attribute-list = attribute *( "," attribute )
 
-attribute-specifier =
-    %s"__attribute__" "(" "(" [ attribute-list ] ")" ")"
+attribute-specifier = ( %s"__attribute__" / %s"__attribute" )
+                      "(" "(" [ attribute-list ] ")" ")"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -929,7 +934,8 @@ attribute-specifier =
 ; a clear term to describe this construct,
 ; we use the term 'assembler name specifier', which seems appropriate.
 
-asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
+asm-name-specifier = ( %s"asm" / %s"__asm" / %s"__asm__" )
+                     "(" 1*string-literal ")"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -943,7 +949,7 @@ asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
 ; we allow declaration specifiers, as well as specifier and qualifier lists,
 ; to include attribute specifiers;
 ; these can be easily distinguished from other declaration specifiers
-; by the starting '__attribute__' GCC keyword.
+; by the starting '__attribute__' or '__attribute' GCC keyword.
 
 ; As a GCC extension,
 ; we allow one or more attribute specifiers
@@ -964,11 +970,22 @@ asm-name-specifier = ( %s"asm" / %s"__asm__") "(" 1*string-literal ")"
 ; but currently our goal is just to handle practical code with GCC extensions,
 ; not to provide a formalization of GCC extensions.
 
-declaration = [ %s"__extension__" ]
+; As GCC extensions, we include
+; the '__signed' and '__signed__' variants of 'signed' as type specifiers.
+
+; As GCC extensions, we include the type specifiers
+; '__int128', '_Float128', and '__builtin_va_list'.
+
+; We include the GCC extension for the 'typeof' operator,
+; along with its '__typeof' and '__typeof__' variants.
+; This is documented at https://gcc.gnu.org/onlinedocs/gcc/Typeof.html.
+; This must fit into the grammar as a type specifier.
+
+declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
               [ init-declarator-list ]
               [ asm-name-specifier ]
-              *attribute-specifier
+              *attribute-specifier ; GCC extension
               ";"
             / static-assert-declaration
 
@@ -977,6 +994,7 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
                        / type-qualifier [ declaration-specifiers ]
                        / function-specifier [ declaration-specifiers ]
                        / alignment-specifier [ declaration-specifiers ]
+                       ; GCC extension:
                        / attribute-specifier [ declaration-specifiers ]
 
 init-declarator-list = init-declarator
@@ -1000,6 +1018,8 @@ type-specifier = %s"void"
                / %s"float"
                / %s"double"
                / %s"signed"
+               / %s"__signed" ; GCC extension
+               / %s"__signed__" ; GCC extension
                / %s"unsigned"
                / %s"_Bool"
                / %s"_Complex"
@@ -1007,9 +1027,16 @@ type-specifier = %s"void"
                / struct-or-union-specifier
                / enum-specifier
                / typedef-name
+               ; GCC extensions:
                / %s"__int128"
                / %s"_Float128"
                / %s"__builtin_va_list"
+               / %s"typeof" "(" expression ")"
+               / %s"typeof" "(" type-name ")"
+               / %s"__typeof" "(" expression ")"
+               / %s"__typeof" "(" type-name ")"
+               / %s"__typeof__" "(" expression ")"
+               / %s"__typeof__" "(" type-name ")"
 
 struct-or-union-specifier =
       struct-or-union [ identifier ] "{" struct-declaration-list "}"
@@ -1021,16 +1048,17 @@ struct-or-union = %s"struct"
 struct-declaration-list = struct-declaration
                         / struct-declaration-list struct-declaration
 
-struct-declaration = [ %s"__extension__" ]
+struct-declaration = [ %s"__extension__" ] ; GCC extension
                      specifier-qualifier-list
                      [ struct-declarator-list ]
-                     *attribute-specifier
+                     *attribute-specifier ; GCC extension
                      ";"
                    / static-assert-declaration
 
 specifier-qualifier-list = type-specifier [ specifier-qualifier-list ]
                          / type-qualifier [ specifier-qualifier-list ]
                          / alignment-specifier [ specifier-qualifier-list ]
+                         ; GCC extension:
                          / attribute-specifier [ specifier-qualifier-list ]
 
 struct-declarator-list = struct-declarator
@@ -1053,10 +1081,14 @@ atomic-type-specifier = %s"_Atomic" "(" type-name ")"
 
 type-qualifier = %s"const"
                / %s"restrict"
+               / %s"__restrict" ; GCC extension
+               / %s"__restrict__" ; GCC extension
                / %s"volatile"
                / %s"_Atomic"
 
 function-specifier = %s"inline"
+                   / %s"__inline" ; GCC extension
+                   / %s"__inline__" ; GCC extension
                    / %s"_Noreturn"
 
 alignment-specifier = %s"_Alignas" "(" type-name ")"
@@ -1186,7 +1218,7 @@ translation-unit = external-declaration
 external-declaration = function-definition
                      / declaration
 
-function-definition = [ %s"__extension__" ]
+function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers
                       declarator
                       [ declaration-list ]

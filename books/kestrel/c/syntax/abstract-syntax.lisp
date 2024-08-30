@@ -1599,7 +1599,12 @@
        Although we did not see it in the GCC documentation,
        we encountered it in practical code,
        and we indeed verified that it is accepted as a type
-       in at least an implementation of GCC in macOS."))
+       in at least an implementation of GCC in macOS.")
+     (xdoc::p
+      "As a GCC extension, we include @('typeof'),
+       along with its variants @('__typeof') and @('__typeof__').
+       The argument may be an expression or a type name,
+       and therefore we also need to include the ambiguous possibility."))
     (:void ())
     (:char ())
     (:short ())
@@ -1616,9 +1621,16 @@
     (:union ((unwrap strunispec)))
     (:enum ((unwrap enumspec)))
     (:typedef ((name ident)))
-    (:int128 ()) ; GCC extension
-    (:float128 ()) ; GCC extension
-    (:builtin-va-list ()) ; GCC extension
+    ;; GCC extensions:
+    (:int128 ())
+    (:float128 ())
+    (:builtin-va-list ())
+    (:typeof-expr ((expr expr)
+                   (uscores keyword-uscores-p)))
+    (:typeof-type ((type tyname)
+                   (uscores keyword-uscores-p)))
+    (:typeof-ambig ((expr/type amb-expr/tyname)
+                    (uscores keyword-uscores-p)))
     :pred type-specp
     :measure (two-nats-measure (acl2-count x) 0))
 

@@ -114,6 +114,9 @@
     type-spec-struct
     type-spec-union
     type-spec-enum
+    make-type-spec-typeof-expr
+    make-type-spec-typeof-type
+    irr-type-spec
 
     spec/qual-p
     spec/qual-fix
