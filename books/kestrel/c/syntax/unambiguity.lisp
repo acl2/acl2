@@ -188,7 +188,8 @@
                     :union (strunispec-unambp tyspec.unwrap)
                     :enum (enumspec-unambp tyspec.unwrap)
                     :typedef t
-                    :int128 t)
+                    :int128 t
+                    :float128 t)
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

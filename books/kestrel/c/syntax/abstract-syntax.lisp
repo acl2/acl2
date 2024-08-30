@@ -1585,6 +1585,13 @@
       (xdoc::ahref
        "https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html"
        "@('https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html')")
+      ".")
+     (xdoc::p
+      "We also include the GCC extension @('_Float128'),
+       which is a floating type: see "
+      (xdoc::ahref
+       "https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html"
+       "@('https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html')")
       "."))
     (:void ())
     (:char ())
@@ -1603,6 +1610,7 @@
     (:enum ((unwrap enumspec)))
     (:typedef ((name ident)))
     (:int128 ()) ; GCC extension
+    (:float128 ()) ; GCC extension
     :pred type-specp
     :measure (two-nats-measure (acl2-count x) 0))
 

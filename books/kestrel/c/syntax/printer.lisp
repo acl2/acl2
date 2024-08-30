@@ -1861,7 +1861,8 @@
                 (pstate (print-enumspec tyspec.unwrap pstate)))
              pstate)
      :typedef (print-ident tyspec.name pstate)
-     :int128 (print-astring "__int128" pstate))
+     :int128 (print-astring "__int128" pstate)
+     :float128 (print-astring "_Float128" pstate))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1878,6 +1878,7 @@
                                         "__attribute"
                                         "__attribute__"
                                         "__extension__"
+                                        "_Float128"
                                         "__inline"
                                         "__inline__"
                                         "__int128"
@@ -5748,7 +5749,8 @@
      because in that case both @('__signed') and @('__signed__')
      would be identifier tokens, not keyword tokens.")
    (xdoc::p
-    "We similarly include the GCC extension type @('__int128')."))
+    "We similarly include the GCC extension types
+     @('__int128') and @('_Float128')."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
       (token-keywordp token? "short")
@@ -5762,7 +5764,8 @@
       (token-keywordp token? "unsigned")
       (token-keywordp token? "_Bool")
       (token-keywordp token? "_Complex")
-      (token-keywordp token? "__int128"))
+      (token-keywordp token? "__int128")
+      (token-keywordp token? "_Float128"))
   ///
 
   (defrule non-nil-when-token-type-specifier-keyword-p
@@ -5794,6 +5797,7 @@
         ((token-keywordp token "_Bool") (type-spec-bool))
         ((token-keywordp token "_Complex") (type-spec-complex))
         ((token-keywordp token "__int128") (type-spec-int128))
+        ((token-keywordp token "_Float128") (type-spec-float128))
         (t (prog2$ (impossible) (irr-type-spec))))
   :prepwork ((local (in-theory (enable token-type-specifier-keyword-p)))))
 

@@ -1220,7 +1220,8 @@
                                    an enumeration constant ~
                                    but it is used as a typedef name."
                                     tyspec.name))))
-       :int128 (retok (type-spec-int128) (dimb-table-fix table))))
+       :int128 (retok (type-spec-int128) (dimb-table-fix table))
+       :float128 (retok (type-spec-float128) (dimb-table-fix table))))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3015,9 +3016,6 @@
                                          table))
                   (table (dimb-add-ident (ident "__builtin_bswap64")
                                          (dimb-kind-objfun)
-                                         table))
-                  (table (dimb-add-ident (ident "_Float128")
-                                         (dimb-kind-typedef)
                                          table)))
                table)
            table))
