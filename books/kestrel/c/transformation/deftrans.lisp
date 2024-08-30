@@ -800,7 +800,8 @@
       :enum (type-spec-enum (,(cdr (assoc-eq 'enumspec names)) tyspec.unwrap ,@extra-args-names))
       :typedef (type-spec-fix tyspec)
       :int128 (type-spec-fix tyspec)
-      :float128 (type-spec-fix tyspec))
+      :float128 (type-spec-fix tyspec)
+      :builtin-va-list (type-spec-fix tyspec))
    '(:returns (new-tyspec type-specp)
      :measure (type-spec-count tyspec))))
 

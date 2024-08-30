@@ -1592,7 +1592,14 @@
       (xdoc::ahref
        "https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html"
        "@('https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html')")
-      "."))
+      ".")
+     (xdoc::p
+      "We also include the GCC extension @('__builtin_va_list'),
+       whch is a type.
+       Although we did not see it in the GCC documentation,
+       we encountered it in practical code,
+       and we indeed verified that it is accepted as a type
+       in at least an implementation of GCC in macOS."))
     (:void ())
     (:char ())
     (:short ())
@@ -1611,6 +1618,7 @@
     (:typedef ((name ident)))
     (:int128 ()) ; GCC extension
     (:float128 ()) ; GCC extension
+    (:builtin-va-list ()) ; GCC extension
     :pred type-specp
     :measure (two-nats-measure (acl2-count x) 0))
 

@@ -1221,7 +1221,9 @@
                                    but it is used as a typedef name."
                                     tyspec.name))))
        :int128 (retok (type-spec-int128) (dimb-table-fix table))
-       :float128 (retok (type-spec-float128) (dimb-table-fix table))))
+       :float128 (retok (type-spec-float128) (dimb-table-fix table))
+       :builtin-va-list (retok (type-spec-builtin-va-list)
+                               (dimb-table-fix table))))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2996,7 +2998,7 @@
      the initial disambiguation table is empty.
      If the flag is @('t'), for now the only difference is that
      we initialize the disambiguation table with some GCC built-ins.
-     For now the only add some built-ins
+     For now we only add some built-ins
      that we have observed in some preprocessed files.
      We should revisit this, adding all the GCC built-ins,
      with clear and accurate references."))
@@ -3005,10 +3007,7 @@
        (table (dimb-init-table))
        (table
          (if gcc
-             (b* ((table (dimb-add-ident (ident "__builtin_va_list")
-                                         (dimb-kind-typedef)
-                                         table))
-                  (table (dimb-add-ident (ident "__builtin_bswap16")
+             (b* ((table (dimb-add-ident (ident "__builtin_bswap16")
                                          (dimb-kind-objfun)
                                          table))
                   (table (dimb-add-ident (ident "__builtin_bswap32")

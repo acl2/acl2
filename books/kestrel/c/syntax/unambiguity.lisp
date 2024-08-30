@@ -189,7 +189,8 @@
                     :enum (enumspec-unambp tyspec.unwrap)
                     :typedef t
                     :int128 t
-                    :float128 t)
+                    :float128 t
+                    :builtin-va-list t)
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
