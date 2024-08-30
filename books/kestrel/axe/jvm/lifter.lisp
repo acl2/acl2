@@ -499,7 +499,7 @@
 (defconst-computed-simple *stack-height-axe-rule-alist*
   (make-rule-alist!
    (append (jvm-simplification-rules)
-           '(equal-when-bound-dag
+           '(not-equal-when-bound
              LEN-EQUAL-IMPOSSIBLE
              EQUAL-CONSTANT-+-alt
              ;LEN-OF-CALL-STACK-OF-MYIF

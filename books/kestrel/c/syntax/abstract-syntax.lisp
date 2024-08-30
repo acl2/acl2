@@ -1013,6 +1013,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum keyword-uscores
+  :short "Fixtype of keyword underscores."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some keywords for GCC extensions have variants
+     without underscores,
+     with underscores at the beginning,
+     and with underscores at both the beginning and end:
+     see the ABNF grammar for examples.")
+   (xdoc::p
+    "In order to preserve that information in our abstract syntax,
+     we introduce a fixtype that captures those three possibilities."))
+  (:none ())
+  (:start ())
+  (:both ())
+  :pred keyword-uscores-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum stor-spec
   :short "Fixtype of storage class specifiers [C:6.7.1] [C:A.2.2]."
   :long
@@ -1064,15 +1084,12 @@
     "We also include the GCC extension variants
      @('__restrict') and @('__restrict__') of @('restrict'),
      only used if GCC extensions are supported.
-     In particular, the parser generates these GCC type qualifiers
-     only if instructed to allow GCC extensions."))
+     These are captured by adding underscore information
+     to the @(':restrict') case."))
   (:const ())
-  (:restrict ())
+  (:restrict ((uscores keyword-uscores)))
   (:volatile ())
   (:atomic ())
-  ;; GCC extensions:
-  (:__restrict ())
-  (:__restrict__ ())
   :pred type-qualp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1114,13 +1131,10 @@
     "We also include the GCC extension variants
      @('__inline') and @('__inline__') of @('inline'),
      only used if GCC extensions are supported.
-     In particular, the parser generates these GCC function specifiers
-     only if instructed to allow GCC extensions."))
-  (:inline ())
+     These are captured by adding underscore information
+     to the @(':inline') case."))
+  (:inline ((uscores keyword-uscores)))
   (:noreturn ())
-  ;; GCC extensions:
-  (:__inline ())
-  (:__inline__ ())
   :pred fun-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1236,9 +1250,14 @@
        which contains an @(tsee amb-expr/tyname).")
      (xdoc::p
       "The @(':alignof') case of this fixtype
-       includes a flag saying whether the keyword used is
-       the standard @('_Alignof') or the GCC extension @('__alignof__').
-       The latter is allowed only if GCC extensions are enabled.")
+       includes an indication of the undescore variant.
+       Note that the variant without underscores
+       represent the standard @('_Alignof'),
+       not the non-existing @('alignof'),
+       while the other two represent @('__alignof') and @('__alignof__');
+       see the ABNF grammar.
+       Presumable, @('_Alignof') was added to the grammar
+       after @('__alignof') and @('__alignof__') were GCC extensions.")
      (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
@@ -1416,7 +1435,7 @@
     (:sizeof ((type tyname)))
     (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
     (:alignof ((type tyname)
-               (uscores bool)))
+               (uscores keyword-uscores)))
     (:cast ((type tyname)
             (arg expr)))
     (:binary ((op binop)
@@ -1554,7 +1573,38 @@
        avoiding explicit modeling of the <i>struct-or-union</i> nonterminal.")
      (xdoc::p
       "We model <i>typedef-name</i>
-       by inlining the type name into the @(':typedef') case of this fixtype."))
+       by inlining the type name into the @(':typedef') case of this fixtype.")
+     (xdoc::p
+      "We include the GCC extension variant keywords
+       @('__signed') and @('__signed__') of @('signed').
+       An indicator of which variant is included
+       in the @(':signed') case of this fixtype.")
+     (xdoc::p
+      "We also include the GCC extension @('__int128'),
+       which is a (non-standard) integer type: see "
+      (xdoc::ahref
+       "https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html"
+       "@('https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html')")
+      ".")
+     (xdoc::p
+      "We also include the GCC extension @('_Float128'),
+       which is a floating type: see "
+      (xdoc::ahref
+       "https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html"
+       "@('https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html')")
+      ".")
+     (xdoc::p
+      "We also include the GCC extension @('__builtin_va_list'),
+       whch is a type.
+       Although we did not see it in the GCC documentation,
+       we encountered it in practical code,
+       and we indeed verified that it is accepted as a type
+       in at least an implementation of GCC in macOS.")
+     (xdoc::p
+      "As a GCC extension, we include @('typeof'),
+       along with its variants @('__typeof') and @('__typeof__').
+       The argument may be an expression or a type name,
+       and therefore we also need to include the ambiguous possibility."))
     (:void ())
     (:char ())
     (:short ())
@@ -1562,7 +1612,7 @@
     (:long ())
     (:float ())
     (:double ())
-    (:signed ())
+    (:signed ((uscores keyword-uscores-p)))
     (:unsigned ())
     (:bool ())
     (:complex ())
@@ -1571,6 +1621,16 @@
     (:union ((unwrap strunispec)))
     (:enum ((unwrap enumspec)))
     (:typedef ((name ident)))
+    ;; GCC extensions:
+    (:int128 ())
+    (:float128 ())
+    (:builtin-va-list ())
+    (:typeof-expr ((expr expr)
+                   (uscores keyword-uscores-p)))
+    (:typeof-type ((type tyname)
+                   (uscores keyword-uscores-p)))
+    (:typeof-ambig ((expr/type amb-expr/tyname)
+                    (uscores keyword-uscores-p)))
     :pred type-specp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -2378,8 +2438,12 @@
       ". For now we only model the older @('__attribute__') syntax.")
      (xdoc::p
       "We wrap a possibly empty list of attributes,
-       leaving the @('__attribute__') part implicit."))
-    ((attribs attrib-list))
+       and we include a flag to distinguish
+       between @('__attribute') and @('__attribute__').
+       The flag is @('t') for the second variant (i.e. more underscores),
+       @('nil') for the first variant (i.e. fewer underscores)."))
+    ((uscores bool)
+     (attribs attrib-list))
     :pred attrib-specp
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -2478,15 +2542,15 @@
     "This captures the "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html"
                  "construct to specify assembler names")
-    ". It consists of the keyword @('asm') or @('__asm__')
+    ". It consists of the keyword @('asm') or @('__asm') or @('__asm__')
      and a parenthesized string literal.
      Since adjacent string literals may be concatenated [C:5.1.1.2/6],
      we allow a list of string literals here;
      this way, we preserve the fact that there were adjacent string literals.
      Indeed, we have observed multiple (two, to be precise)
      string literals in this construct in practical code.
-     We also capture whether the plain @('asm') keyword was used
-     or whether the one with underscores, @('__asm__') was used instead.")
+     We also capture which keyword variant (with or without underscores)
+     was used.")
    (xdoc::p
     "The GCC documentation does not provide a clear term
      to denote this construct,
@@ -2501,7 +2565,7 @@
      which should be non-empty, although we do not capture this constraint.
      This way, we preserve the information about adjacent string literals."))
   ((strings stringlit-list)
-   (uscores bool))
+   (uscores keyword-uscores))
   :pred asm-name-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
