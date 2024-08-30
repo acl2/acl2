@@ -121,7 +121,7 @@
     'nil)
    ((save "If @('t'), the output file is saved. If @('nil'), the file is
            removed after reading it in. If @(':auto'), the default value, the
-           file will be saved only if an explicilty @('out') value is
+           file will be saved only if an explicit @('out') value is
            provided.")
     ':auto)
    ((read "If @('t'), the output file will be read and returned. If you want
@@ -279,7 +279,7 @@
     'nil)
    ((save "If @('t'), the output files are saved. If @('nil'), the files are
            removed after reading them in. If @(':auto'), the default value,
-           files will be saved only if an explicilty @('out-dir') value is
+           files will be saved only if an explicit @('out-dir') value is
            provided.")
     ':auto)
    ((preprocessor stringp
