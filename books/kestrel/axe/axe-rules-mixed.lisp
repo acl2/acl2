@@ -267,7 +267,7 @@
                             bvlt-tighten
                             UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2)))))
 
-(defthmd bvmult-tighten-dag-power-of-2
+(defthmd bvmult-tighten-axe-power-of-2
   (implies (and (syntaxp (quotep x))
                 (natp x)
                 (power-of-2p x)
