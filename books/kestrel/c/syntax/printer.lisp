@@ -1839,7 +1839,11 @@
      :long (print-astring "long" pstate)
      :float (print-astring "float" pstate)
      :double (print-astring "double" pstate)
-     :signed (print-astring "signed" pstate)
+     :signed (keyword-uscores-case
+              tyspec.uscores
+              :none (print-astring "signed" pstate)
+              :start (print-astring "__signed" pstate)
+              :both (print-astring "__signed__" pstate))
      :unsigned (print-astring "unsigned" pstate)
      :bool (print-astring "_Bool" pstate)
      :complex (print-astring "_Complex" pstate)

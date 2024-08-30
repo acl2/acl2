@@ -1183,7 +1183,7 @@
        :long (retok (type-spec-long) (dimb-table-fix table))
        :float (retok (type-spec-float) (dimb-table-fix table))
        :double (retok (type-spec-double) (dimb-table-fix table))
-       :signed (retok (type-spec-signed) (dimb-table-fix table))
+       :signed (retok (type-spec-signed tyspec.uscores) (dimb-table-fix table))
        :unsigned (retok (type-spec-unsigned) (dimb-table-fix table))
        :bool (retok (type-spec-bool) (dimb-table-fix table))
        :complex (retok (type-spec-complex) (dimb-table-fix table))

@@ -1573,7 +1573,12 @@
        avoiding explicit modeling of the <i>struct-or-union</i> nonterminal.")
      (xdoc::p
       "We model <i>typedef-name</i>
-       by inlining the type name into the @(':typedef') case of this fixtype."))
+       by inlining the type name into the @(':typedef') case of this fixtype.")
+     (xdoc::p
+      "We include the GCC extension variant keywords
+       @('__signed') and @('__signed__') of @('signed').
+       An indicator of which variant is included
+       in the @(':signed') case of this fixtype."))
     (:void ())
     (:char ())
     (:short ())
@@ -1581,7 +1586,7 @@
     (:long ())
     (:float ())
     (:double ())
-    (:signed ())
+    (:signed ((uscores keyword-uscores-p)))
     (:unsigned ())
     (:bool ())
     (:complex ())

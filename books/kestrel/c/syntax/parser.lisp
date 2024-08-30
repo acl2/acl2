@@ -1881,7 +1881,9 @@
                                         "__inline"
                                         "__inline__"
                                         "__restrict"
-                                        "__restrict__"))))
+                                        "__restrict__"
+                                        "__signed"
+                                        "__signed__"))))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
@@ -5734,7 +5736,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There are a number of type specifiers that consist of single keywords."))
+    "There are a number of type specifiers that consist of single keywords.")
+   (xdoc::p
+    "We also compare the token against the GCC variants
+     @('__signed') and @('__signed__') of @('signed').
+     Note that these variants are keywords only if GCC extensions are supported:
+     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     So the comparison here with those variant keywords
+     will always fail if GCC extensions are not supported,
+     because in that case both @('__signed') and @('__signed__')
+     would be identifier tokens, not keyword tokens."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
       (token-keywordp token? "short")
@@ -5743,6 +5754,8 @@
       (token-keywordp token? "float")
       (token-keywordp token? "double")
       (token-keywordp token? "signed")
+      (token-keywordp token? "__signed")
+      (token-keywordp token? "__signed__")
       (token-keywordp token? "unsigned")
       (token-keywordp token? "_Bool")
       (token-keywordp token? "_Complex"))
@@ -5767,7 +5780,12 @@
         ((token-keywordp token "long") (type-spec-long))
         ((token-keywordp token "float") (type-spec-float))
         ((token-keywordp token "double") (type-spec-double))
-        ((token-keywordp token "signed") (type-spec-signed))
+        ((token-keywordp token "signed")
+         (type-spec-signed (keyword-uscores-none)))
+        ((token-keywordp token "__signed")
+         (type-spec-signed (keyword-uscores-start)))
+        ((token-keywordp token "__signed__")
+         (type-spec-signed (keyword-uscores-both)))
         ((token-keywordp token "unsigned") (type-spec-unsigned))
         ((token-keywordp token "_Bool") (type-spec-bool))
         ((token-keywordp token "_Complex") (type-spec-complex))
