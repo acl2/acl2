@@ -43,10 +43,19 @@
                            CONSP-FROM-LEN-CHEAP
                            state-p
                            nth
+                           consp-of-car-when-symbol-term-alistp-cheap
+                           equal-constant-when-bvchop-equal-constant-false
+                           pseudo-dagp-of-cdr-when-pseudo-dagp
                            ;; not sure if these help:
                            ;;pseudo-term-listp
                            ;;quotep
                            )))
+
+(local
+  (defthm quotep-forward-to-consp
+    (implies (quotep x)
+             (consp x))
+    :hints (("Goal" :in-theory (enable quotep)))))
 
 (defund lookup-with-default (key alist default)
   (declare (xargs :guard (and (eqlablep key)
