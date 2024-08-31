@@ -122,6 +122,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define committee-members ((commtt committeep))
+  :returns (addresses address-setp)
+  :short "Addresses of the members of the committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a synonym of the fixtype deconstructor,
+     but it provides a bit of abstract,
+     especially facilitating the extension of the model with stake,
+     in which a committee will be not just a set of addresses."))
+  (committee->addresses commtt)
+  :hooks (:fix)
+
+  ///
+
+  (defret not-emptyp-of-committee-members
+    (not (set::emptyp addresses))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define committee-memberp ((val addressp) (commtt committeep))
   :returns (yes/no booleanp)
   :short "Check if a validator is a member of a committee."
@@ -130,7 +150,7 @@
    (xdoc::p
     "The validator is identifier by its address.
      We check whether the address is in the committee."))
-  (set::in (address-fix val) (committee->addresses commtt))
+  (set::in (address-fix val) (committee-members commtt))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,7 +162,7 @@
   (xdoc::topstring
    (xdoc::p
     "This essentially lifts @(tsee committee-memberp) to sets."))
-  (set::subset (address-set-fix vals) (committee->addresses commtt))
+  (set::subset (address-set-fix vals) (committee-members commtt))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -638,7 +658,7 @@
      where there is a fixed set of validators,
      in AleoBFT we have dynamic committees,
      and so @($n$) is a function of the committee."))
-  (set::cardinality (committee->addresses commtt))
+  (set::cardinality (committee-members commtt))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
