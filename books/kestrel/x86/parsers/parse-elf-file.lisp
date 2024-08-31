@@ -1,6 +1,6 @@
 ; A parser for ELF executables
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,6 +37,7 @@
     (1 . :elfdata2lsb)
     (2 . :elfdata2msb)))
 
+;; todo: There is an entry for Linux, but I don't see it being used.
 (defconst *osabis*
   `((0 . :elfosabi_sysv)
     (1 . :elfosabi_hpux)
@@ -142,21 +143,21 @@
     (100 . :EM_ST200) ;     STMicroelectronics (www.st.com) ST200 microcontroller
     ))
 
-;; Returns (mv item bytes).
+;; Returns (mv item bytes).  Little endian.
 (defun parse-half (bytes)
   (declare (xargs :guard (byte-listp bytes)
                   :verify-guards nil
                   ))
   (parse-u16 bytes))
 
-;; Returns (mv item bytes).
+;; Returns (mv item bytes).  Little endian.
 (defun parse-word (bytes)
   (declare (xargs :guard (byte-listp bytes)
                   :verify-guards nil
                   ))
   (parse-u32 bytes))
 
-;; Returns (mv item bytes).
+;; Returns (mv item bytes).  Little endian.
 (defun parse-addr (64bitp bytes)
   (declare (xargs :guard (and (booleanp 64bitp)
                               (byte-listp bytes))
@@ -164,7 +165,7 @@
                   ))
   (if 64bitp (parse-u64 bytes) (parse-u32 bytes)))
 
-;; Returns (mv item bytes).
+;; Returns (mv item bytes).  Little endian.
 (defun parse-offset (64bitp bytes)
   (declare (xargs :guard (and (booleanp 64bitp)
                               (byte-listp bytes))
@@ -172,7 +173,7 @@
                   ))
   (parse-addr 64bitp bytes))
 
-;; Returns (mv item bytes).
+;; Returns (mv item bytes).  Little endian.
 (defun parse-xword (bytes)
   (declare (xargs :guard (byte-listp bytes)
                   :verify-guards nil
@@ -338,35 +339,42 @@
       (extract-elf-sections (rest section-header-table) all-bytes
                             (acons name bytes acc)))))
 
+;; TODO: Some of this parsing need not be done for all callers (e.g., when loading an image)
 (defun parse-elf-file-bytes (bytes)
   (b* ((all-bytes bytes) ;capture for later looking up things at given offsets
-       (result nil) ; empty alist
        ((mv e_ident bytes) (parse-n-bytes 16 bytes))
-       (elfmag0 (nth 0 e_ident))
-       (elfmag1 (nth 1 e_ident))
-       (elfmag2 (nth 2 e_ident))
-       (elfmag3 (nth 3 e_ident))
-       ((when (not (and (= #x7F elfmag0)
-                        (= (char-code #\E) elfmag1)
-                        (= (char-code #\L) elfmag2)
-                        (= (char-code #\F) elfmag3))))
-        (er hard? 'parse-elf-file-bytes "Bad magic number: ~x0." (take 4 e_ident)))
+       (ei_mag0 (nth 0 e_ident))
+       (ei_mag1 (nth 1 e_ident))
+       (ei_mag2 (nth 2 e_ident))
+       (ei_mag3 (nth 3 e_ident))
        (ei_class (nth 4 e_ident))
+       (ei_data (nth 5 e_ident))
+       (ei_version (nth 6 e_ident))
+       (ei_osabi (nth 7 e_ident))
+       (ei_abiversion (nth 8 e_ident))
+       ;; todo: parse more fields of e_ident?
+
+       ;; Check that the magic number is right:
+       ((when (not (and (= #x7F ei_mag0)
+                        (= (char-code #\E) ei_mag1)
+                        (= (char-code #\L) ei_mag2)
+                        (= (char-code #\F) ei_mag3))))
+        (er hard? 'parse-elf-file-bytes "Bad magic number: ~x0." (take 4 e_ident)))
+
        (class (lookup-safe ei_class *classes*))
        (64-bitp (eq :elfclass64 class))
-       (result (acons :class class result))
+
+       (result nil) ; empty alist, to be extended
        ;; Now we can set the magic number:
        (result (acons :magic (if 64-bitp :elf-64 :elf-32) result)) ; for use by parsed-executable-type
-       (ei_data (nth 5 e_ident))
+       (result (acons :class class result))
        (data (lookup-safe ei_data *data-encodings*))
        (result (acons :data data result))
-       (ei_version (nth 6 e_ident))
        (result (acons :version ei_version result))
-       (ei_osabi (nth 7 e_ident))
        (osabi (lookup-safe ei_osabi *osabis*))
        (result (acons :osabi osabi result))
-       (ei_abiversion (nth 8 e_ident))
        (result (acons :abiversion ei_abiversion result))
+       ;; Done with e_ident.
        ((mv e_type bytes) (parse-half bytes)) ; todo: consider endianness for these values
        (type (lookup-safe e_type *elf-file-types*))
        (result (acons :type type result))
