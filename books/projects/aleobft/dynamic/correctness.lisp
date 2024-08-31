@@ -16,6 +16,7 @@
 (include-book "no-self-messages")
 (include-book "no-self-buffer")
 (include-book "no-self-endorsed")
+(include-book "signer-records")
 (include-book "unequivocal-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
 
@@ -37,6 +38,7 @@
                     no-self-messages
                     no-self-buffer
                     no-self-endorsed
+                    signer-records
                     unequivocal-certificates-def-and-init
                     nonforking-blockchains-def-and-init))
 
