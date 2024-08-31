@@ -309,7 +309,56 @@
     (implies cert?
              (equal (certificate->round cert?)
                     (pos-fix round)))
-    :hints (("Goal" :induct t))))
+    :hints (("Goal" :induct t)))
+
+  (defruled get-certificate-with-author+round-element
+    (implies (and (certificate-setp certs)
+                  (get-certificate-with-author+round author round certs))
+             (set::in (get-certificate-with-author+round author round certs)
+                      certs))
+    :induct t)
+
+  (defruled get-certificate-with-author+round-when-element
+    (implies (and (set::in cert certs)
+                  (equal (certificate->author cert) author)
+                  (equal (certificate->round cert) round))
+             (get-certificate-with-author+round author round certs))
+    :induct t)
+
+  (defruled get-certificate-with-author+round-when-subset
+    (implies (and (get-certificate-with-author+round author round certs0)
+                  (set::subset certs0 certs))
+             (get-certificate-with-author+round author round certs))
+    :induct t
+    :enable (get-certificate-with-author+round-when-element
+             set::subset))
+
+  (defruled get-certificate-with-author+round-of-insert-iff
+    (iff (get-certificate-with-author+round
+          author round (set::insert cert certs))
+         (or (and (equal (certificate->author cert) author)
+                  (equal (certificate->round cert) round))
+             (get-certificate-with-author+round author round certs)))
+    :induct (set::weak-insert-induction cert certs)
+    :enable (get-certificate-with-author+round-when-element))
+
+  (defruled get-certificate-with-author+round-when-delete
+    (implies (get-certificate-with-author+round author
+                                                round
+                                                (set::delete cert certs))
+             (get-certificate-with-author+round author round certs))
+    :enable get-certificate-with-author+round-when-subset)
+
+  (defruled get-certificate-with-author+round-of-delete
+    (implies (and (get-certificate-with-author+round author round certs)
+                  (or (not (equal (certificate->author cert) author))
+                      (not (equal (certificate->round cert) round))))
+             (get-certificate-with-author+round author
+                                                round
+                                                (set::delete cert certs)))
+    :induct t
+    :enable (set::delete
+             get-certificate-with-author+round-of-insert-iff)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
