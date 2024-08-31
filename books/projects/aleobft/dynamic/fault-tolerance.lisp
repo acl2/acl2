@@ -11,7 +11,6 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "initialization")
 (include-book "transitions")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
