@@ -652,6 +652,13 @@ if you do not want to use the pick-a-point method to solve your goal.</p>"
 (defsection subset-theorems
   :extension subset
 
+  ;; NOTE: This defsection adds these defthms to the xdoc for SUBSET,
+  ;; but the xdoc preprocessor wants to see these as separate
+  ;; events (see xdoc::get-event).
+  ;; Until the xdoc preprocessor is changed to recognize these,
+  ;; any defthm here should be repeated in osets/top.lisp
+  ;; at the top level.
+
   (defthm subset-sfix-cancel-X
     (equal (subset (sfix X) Y)
            (subset X Y)))
@@ -660,11 +667,11 @@ if you do not want to use the pick-a-point method to solve your goal.</p>"
     (equal (subset X (sfix Y))
            (subset X Y)))
 
-  (defthm empty-subset
+  (defthm emptyp-subset
     (implies (emptyp X)
              (subset X Y)))
 
-  (defthm empty-subset-2
+  (defthm emptyp-subset-2
     (implies (emptyp Y)
              (equal (subset X Y)
                     (emptyp X))))
