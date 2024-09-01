@@ -233,8 +233,7 @@
   (defret validator-state->dag-of-commit-anchors-next
     (equal (validator-state->dag (get-validator-state val1 new-systate))
            (validator-state->dag (get-validator-state val1 systate)))
-    :hyp (and (set::in val1 (correct-addresses systate))
-              (commit-anchors-possiblep val systate))
+    :hyp (commit-anchors-possiblep val systate)
     :hints
     (("Goal"
       :in-theory (enable commit-anchors-possiblep
@@ -243,8 +242,7 @@
   (defret validator-state->buffer-of-commit-anchors-next
     (equal (validator-state->buffer (get-validator-state val1 new-systate))
            (validator-state->buffer (get-validator-state val1 systate)))
-    :hyp (and (set::in val1 (correct-addresses systate))
-              (commit-anchors-possiblep val systate))
+    :hyp (commit-anchors-possiblep val systate)
     :hints
     (("Goal"
       :in-theory (enable commit-anchors-possiblep

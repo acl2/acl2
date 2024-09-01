@@ -622,7 +622,6 @@
      (defret validator-state->dag-of-create-certificate-endorsers-next-loop
        (equal (validator-state->dag (get-validator-state val new-systate))
               (validator-state->dag (get-validator-state val systate)))
-       :hyp (set::in val (correct-addresses systate))
        :hints
        (("Goal"
          :induct t
@@ -634,7 +633,6 @@
      (defret validator-state->buffer-of-create-certificate-endorsers-next-loop
        (equal (validator-state->buffer (get-validator-state val new-systate))
               (validator-state->buffer (get-validator-state val systate)))
-       :hyp (set::in val (correct-addresses systate))
        :hints
        (("Goal"
          :induct t
@@ -664,7 +662,6 @@
      (defret validator-state->blockchain-of-create-certificate-endorsers-next-loop
        (equal (validator-state->blockchain (get-validator-state val new-systate))
               (validator-state->blockchain (get-validator-state val systate)))
-       :hyp (set::in val (correct-addresses systate))
        :hints
        (("Goal"
          :induct t
@@ -694,13 +691,11 @@
 
   (defret validator-state->dag-of-create-certificate-endorsers-next
     (equal (validator-state->dag (get-validator-state val new-systate))
-           (validator-state->dag (get-validator-state val systate)))
-    :hyp (set::in val (correct-addresses systate)))
+           (validator-state->dag (get-validator-state val systate))))
 
   (defret validator-state->buffer-of-create-certificate-endorsers-next
     (equal (validator-state->buffer (get-validator-state val new-systate))
-           (validator-state->buffer (get-validator-state val systate)))
-    :hyp (set::in val (correct-addresses systate)))
+           (validator-state->buffer (get-validator-state val systate))))
 
   (defret validator-state->endorsed-of-create-certificate-endorsers-next
     (equal (validator-state->endorsed (get-validator-state val new-systate))
@@ -716,8 +711,7 @@
 
   (defret validator-state->blockchain-of-create-certificate-endorsers-next
     (equal (validator-state->blockchain (get-validator-state val new-systate))
-           (validator-state->blockchain (get-validator-state val systate)))
-    :hyp (set::in val (correct-addresses systate)))
+           (validator-state->blockchain (get-validator-state val systate))))
 
   (defret get-network-state-of-create-certificate-endorsers-next
     (equal (get-network-state new-systate)
@@ -872,7 +866,6 @@
   (defret validator-state->buffer-of-create-certificate-next
     (equal (validator-state->buffer (get-validator-state val new-systate))
            (validator-state->buffer (get-validator-state val systate)))
-    :hyp (set::in val (correct-addresses systate))
     :hints
     (("Goal"
       :in-theory
@@ -903,7 +896,6 @@
   (defret validator-state->blockchain-of-create-certificate-next
     (equal (validator-state->blockchain (get-validator-state val new-systate))
            (validator-state->blockchain (get-validator-state val systate)))
-    :hyp (set::in val (correct-addresses systate))
     :hints
     (("Goal"
       :in-theory

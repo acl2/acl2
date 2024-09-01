@@ -104,8 +104,7 @@
   (defret validator-state->dag-of-timer-expires-next
     (equal (validator-state->dag (get-validator-state val1 new-systate))
            (validator-state->dag (get-validator-state val1 systate)))
-    :hyp (and (set::in val2 (correct-addresses systate))
-              (timer-expires-possiblep val systate))
+    :hyp (timer-expires-possiblep val systate)
     :hints
     (("Goal"
       :in-theory (enable timer-expires-possiblep
@@ -114,8 +113,7 @@
   (defret validator-state->buffer-of-timer-expires-next
     (equal (validator-state->buffer (get-validator-state val1 new-systate))
            (validator-state->buffer (get-validator-state val1 systate)))
-    :hyp (and (set::in val1 (correct-addresses systate))
-              (timer-expires-possiblep val systate))
+    :hyp (timer-expires-possiblep val systate)
     :hints
     (("Goal"
       :in-theory (enable timer-expires-possiblep
