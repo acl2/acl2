@@ -285,8 +285,9 @@
                                               vstate.blockchain
                                               vstate.committed)))
              (validator-state->blockchain
-              (get-validator-state val1 new-systate))))
-    :hyp (commit-anchors-possiblep val systate)
+              (get-validator-state val1 systate))))
+    :hyp (and (set::in val1 (correct-addresses systate))
+              (commit-anchors-possiblep val systate))
     :hints
     (("Goal"
       :in-theory (enable commit-anchors-possiblep
