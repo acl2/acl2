@@ -262,6 +262,38 @@
       (enable commit-anchors-possiblep
               get-validator-state-of-update-validator-state))))
 
+  (defret validator-state->blockchain-of-commit-anchors-next
+    (equal (validator-state->blockchain
+            (get-validator-state val1 new-systate))
+           (if (equal val1 (address-fix val))
+               (b* (((validator-state vstate)
+                     (get-validator-state val1 systate))
+                    (commit-round (1- vstate.round))
+                    (commtt (active-committee-at-round
+                             commit-round
+                             vstate.blockchain
+                             (all-addresses systate)))
+                    (leader (leader-at-round commit-round commtt))
+                    (anchor (get-certificate-with-author+round
+                             leader commit-round vstate.dag))
+                    (anchors (collect-anchors anchor
+                                              (- commit-round 2)
+                                              vstate.last
+                                              vstate.dag
+                                              vstate.blockchain
+                                              (all-addresses systate))))
+                 (mv-nth 0 (extend-blockchain anchors
+                                              vstate.dag
+                                              vstate.blockchain
+                                              vstate.committed)))
+             (validator-state->blockchain
+              (get-validator-state val1 new-systate))))
+    :hyp (commit-anchors-possiblep val systate)
+    :hints
+    (("Goal"
+      :in-theory (enable commit-anchors-possiblep
+                         get-validator-state-of-update-validator-state))))
+
   (defret get-network-state-of-commit-anchors-next
     (equal (get-network-state new-systate)
            (get-network-state systate)))

@@ -133,6 +133,18 @@
       (enable timer-expires-possiblep
               get-validator-state-of-update-validator-state))))
 
+  (defret validator-state->blockchain-of-timer-expires-next
+    (equal (validator-state->blockchain
+            (get-validator-state val1 new-systate))
+           (validator-state->blockchain
+            (get-validator-state val1 systate)))
+    :hyp (timer-expires-possiblep val systate)
+    :hints
+    (("Goal"
+      :in-theory
+      (enable timer-expires-possiblep
+              get-validator-state-of-update-validator-state))))
+
   (defret get-network-state-of-timer-expires-next
     (equal (get-network-state new-systate)
            (get-network-state systate)))
@@ -140,4 +152,5 @@
   (in-theory (disable validator-state->dag-of-timer-expires-next
                       validator-state->buffer-of-timer-expires-next
                       validator-state->endorsed-of-timer-expires-next
+                      validator-state->blockchain-of-timer-expires-next
                       get-network-state-of-timer-expires-next)))
