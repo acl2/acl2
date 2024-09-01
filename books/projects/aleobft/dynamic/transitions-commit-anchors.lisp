@@ -299,4 +299,5 @@
   (in-theory (disable validator-state->dag-of-commit-anchors-next
                       validator-state->buffer-of-commit-anchors-next
                       validator-state->endorsed-of-commit-anchors-next
+                      validator-state->blockchain-of-commit-anchors-next
                       get-network-state-of-commit-anchors-next)))
