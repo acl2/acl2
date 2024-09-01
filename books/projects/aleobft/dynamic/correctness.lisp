@@ -18,6 +18,7 @@
 (include-book "no-self-endorsed")
 (include-book "signer-records")
 (include-book "fault-tolerance")
+(include-book "committees-in-system")
 (include-book "unequivocal-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
 
@@ -41,6 +42,7 @@
                     no-self-endorsed
                     signer-records
                     fault-tolerance
+                    committees-in-system
                     unequivocal-certificates-def-and-init
                     nonforking-blockchains-def-and-init))
 
