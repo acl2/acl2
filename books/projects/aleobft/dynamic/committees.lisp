@@ -421,7 +421,14 @@
                     (block->round (car blocks))))
            (committee-after-blocks blocks all-vals)))
        (bonded-committee-at-round-loop round (cdr blocks) all-vals))
-     :hooks (:fix)))
+     :hooks (:fix)
+
+     ///
+
+     (defruled bonded-committee-at-round-loop-when-no-blocks
+       (implies (endp blocks)
+                (equal (bonded-committee-at-round-loop round blocks all-vals)
+                       (genesis-committee))))))
 
   ///
 
@@ -429,7 +436,14 @@
     (implies (and (bonded-committee-at-round later blocks all-vals)
                   (< (pos-fix earlier)
                      (pos-fix later)))
-             (bonded-committee-at-round earlier blocks all-vals))))
+             (bonded-committee-at-round earlier blocks all-vals)))
+
+  (defruled bonded-committee-at-round-when-no-blocks
+    (implies (endp blocks)
+             (b* ((commtt (bonded-committee-at-round round blocks all-vals)))
+               (implies commtt
+                        (equal commtt (genesis-committee)))))
+    :enable bonded-committee-at-round-loop-when-no-blocks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -528,7 +542,14 @@
                      (pos-fix later)))
              (active-committee-at-round earlier blocks all-vals))
     :enable (bonded-committee-at-earlier-round-when-at-later-round
-             posp)))
+             posp))
+
+  (defruled active-committee-at-round-when-no-blocks
+    (implies (endp blocks)
+             (b* ((commtt (active-committee-at-round round blocks all-vals)))
+               (implies commtt
+                        (equal commtt (genesis-committee)))))
+    :enable bonded-committee-at-round-when-no-blocks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
