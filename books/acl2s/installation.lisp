@@ -287,7 +287,9 @@ occurring.
   <li>An Intel or AMD processor</li>
 </ul>
 <h3 id=\"instructions\">Instructions</h3>
-<p>These instructions are known to work on Ubuntu 20.04, and may work on
+<p>A video walking through installation is available
+  <a href=\"https://youtu.be/FVgDt0gHTTw\" target=\"_blank\">here</a>. 
+  These instructions are known to work on Ubuntu 24.04, and may work on
   other platforms as well. If you run into any issues, feel free to
   reach out to Cassidy.</p>
 <ol>
