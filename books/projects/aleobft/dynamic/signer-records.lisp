@@ -245,10 +245,10 @@
   (defruled signer-records-p-of-create-certificate-next
     (implies (signer-records-p systate)
              (signer-records-p (create-certificate-next cert systate)))
-    :expand (signer-records-p (create-certificate-next cert systate))
     :enable (certificates-owned-by-of-create-certificate-next
              signer-record-p-of-create-certificate-next-new
              signer-record-p-of-create-certificate-next-old
+             signer-records-p
              signer-records-p-necc))
 
   ;; receive-certificate:
@@ -270,9 +270,9 @@
     (implies (and (signer-records-p systate)
                   (receive-certificate-possiblep msg systate))
              (signer-records-p (receive-certificate-next msg systate)))
-    :expand (signer-records-p (receive-certificate-next msg systate))
     :enable (certificates-owned-by-of-receive-certificate-next
              signer-record-p-of-receive-certificate-next
+             signer-records-p
              signer-records-p-necc))
 
   ;; store-certificate:
@@ -295,9 +295,9 @@
     (implies (and (signer-records-p systate)
                   (store-certificate-possiblep val cert systate))
              (signer-records-p (store-certificate-next val cert systate)))
-    :expand (signer-records-p (store-certificate-next val cert systate))
     :enable (certificates-owned-by-of-store-certificate-next
              signer-record-p-of-store-certificate-next
+             signer-records-p
              signer-records-p-necc))
 
   ;; advance-round:
@@ -318,9 +318,9 @@
     (implies (and (signer-records-p systate)
                   (advance-round-possiblep val systate))
              (signer-records-p (advance-round-next val systate)))
-    :expand (signer-records-p (advance-round-next val systate))
     :enable (certificates-owned-by-of-advance-round-next
              signer-record-p-of-advance-round-next
+             signer-records-p
              signer-records-p-necc))
 
   ;; commit-anchors:
@@ -341,9 +341,9 @@
     (implies (and (signer-records-p systate)
                   (commit-anchors-possiblep val systate))
              (signer-records-p (commit-anchors-next val systate)))
-    :expand (signer-records-p (commit-anchors-next val systate))
     :enable (certificates-owned-by-of-commit-anchors-next
              signer-record-p-of-commit-anchors-next
+             signer-records-p
              signer-records-p-necc))
 
   ;; timer-expires:
@@ -364,9 +364,9 @@
     (implies (and (signer-records-p systate)
                   (timer-expires-possiblep val systate))
              (signer-records-p (timer-expires-next val systate)))
-    :expand (signer-records-p (timer-expires-next val systate))
     :enable (certificates-owned-by-of-timer-expires-next
              signer-record-p-of-timer-expires-next
+             signer-records-p
              signer-records-p-necc))
 
   ;; all events:
