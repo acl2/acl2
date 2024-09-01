@@ -245,7 +245,11 @@
      and the one with that address is certainly a possibly validator.
      Thus, this is more of a constraint on
      the system of all validators
-     than on the calculation of committees per se."))
+     than on the calculation of committees per se.")
+   (xdoc::p
+    "We prove that, if the old committee's members are in @('all-vals'),
+     then the same holds for the new committee's members.
+     That is, the invariant is maintained."))
   (transaction-case
    trans
    :bond (b* ((addresses (committee->addresses commtt))
@@ -259,7 +263,18 @@
                  (committee-fix commtt)
                (change-committee commtt :addresses new-addresses)))
    :other (committee-fix commtt))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret update-committee-with-transactions-subset-all-vals
+    (set::subset (committee-members new-commtt) all-vals)
+    :hyp (and (address-setp all-vals)
+              (set::subset (committee-members commtt) all-vals))
+    :hints (("Goal" :in-theory (enable* committee-members
+                                        set::expensive-rules))))
+
+  (in-theory (disable update-committee-with-transactions-subset-all-vals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,12 +290,29 @@
      from left to right.")
    (xdoc::p
     "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction)."))
+     explained in @(tsee update-committee-with-transaction).")
+   (xdoc::p
+    "We prove that, if the old committee's members are in @('all-vals'),
+     then the same holds for the new committee's members.
+     That is, the invariant is maintained."))
   (b* (((when (endp transs)) (committee-fix commtt))
        (commtt
         (update-committee-with-transaction (car transs) commtt all-vals)))
     (update-committee-with-transaction-list (cdr transs) commtt all-vals))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret update-committee-with-transaction-list-subset-all-vals
+    (set::subset (committee-members new-commtt) all-vals)
+    :hyp (and (address-setp all-vals)
+              (set::subset (committee-members commtt) all-vals))
+    :hints (("Goal"
+             :induct t
+             :in-theory
+             (enable update-committee-with-transactions-subset-all-vals))))
+
+  (in-theory (disable update-committee-with-transaction-list-subset-all-vals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,14 +334,32 @@
      to arrive at the resulting committee.")
    (xdoc::p
     "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction)."))
+     explained in @(tsee update-committee-with-transaction).")
+   (xdoc::p
+    "We show that the committee's members are in @('all-vals'),
+     so long as the genesis committee's members are."))
   (b* (((when (endp blocks)) (genesis-committee))
        (commtt (committee-after-blocks (cdr blocks) all-vals)))
     (update-committee-with-transaction-list (block->transactions (car blocks))
                                             commtt
                                             all-vals))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret committee-after-blocks-subset-all-vals
+    (set::subset (committee-members commtt) all-vals)
+    :hyp (and (address-setp all-vals)
+              (set::subset (committee-members (genesis-committee))
+                           all-vals))
+    :hints (("Goal"
+             :induct t
+             :in-theory
+             (enable
+              update-committee-with-transaction-list-subset-all-vals))))
+
+  (in-theory (disable committee-after-blocks-subset-all-vals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -401,7 +451,12 @@
      the @('blocks') input forming a well-formed blockchain.")
    (xdoc::p
     "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction)."))
+     explained in @(tsee update-committee-with-transaction).")
+   (xdoc::p
+    "We show that the bonded committee, if calculable,
+     has members in @('all-vals'), so long as the genesis committee does.
+     This derives from the analogous property
+     of @(tsee committee-after-blocks)."))
   (b* ((last (if (consp blocks)
                  (block->round (car blocks))
                0))
@@ -428,7 +483,19 @@
      (defruled bonded-committee-at-round-loop-when-no-blocks
        (implies (endp blocks)
                 (equal (bonded-committee-at-round-loop round blocks all-vals)
-                       (genesis-committee))))))
+                       (genesis-committee))))
+
+     (defret bonded-committee-at-round-loop-subset-all-vals
+       (set::subset (committee-members commtt) all-vals)
+       :hyp (and (address-setp all-vals)
+                 (set::subset (committee-members (genesis-committee))
+                              all-vals))
+       :hints (("Goal"
+                :induct t
+                :in-theory
+                (enable committee-after-blocks-subset-all-vals))))
+
+     (in-theory (disable bonded-committee-at-round-loop-subset-all-vals))))
 
   ///
 
@@ -443,7 +510,19 @@
              (b* ((commtt (bonded-committee-at-round round blocks all-vals)))
                (implies commtt
                         (equal commtt (genesis-committee)))))
-    :enable bonded-committee-at-round-loop-when-no-blocks))
+    :enable bonded-committee-at-round-loop-when-no-blocks)
+
+  (defret bonded-committee-at-round-subset-all-vals
+    (implies commtt?
+             (set::subset (committee-members commtt?) all-vals))
+    :hyp (and (address-setp all-vals)
+              (set::subset (committee-members (genesis-committee))
+                           all-vals))
+    :hints
+    (("Goal"
+      :in-theory (enable bonded-committee-at-round-loop-subset-all-vals))))
+
+  (in-theory (disable bonded-committee-at-round-subset-all-vals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -525,7 +604,12 @@
      @('nil') if no committee is available.")
    (xdoc::p
     "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction)."))
+     explained in @(tsee update-committee-with-transaction).")
+   (xdoc::p
+    "We show that the bonded committee, if calculable,
+     has members in @('all-vals'), so long as the genesis committee does.
+     This derives from the analogous property
+     of @(tsee bonded-committee-at-round)."))
   (if (> (pos-fix round) (lookback))
       (bonded-committee-at-round (- (pos-fix round) (lookback))
                                  blocks
@@ -549,7 +633,20 @@
              (b* ((commtt (active-committee-at-round round blocks all-vals)))
                (implies commtt
                         (equal commtt (genesis-committee)))))
-    :enable bonded-committee-at-round-when-no-blocks))
+    :enable bonded-committee-at-round-when-no-blocks)
+
+  (defret active-committee-at-round-subset-all-vals
+    (implies commtt?
+             (set::subset (committee-members commtt?)
+                          all-vals))
+    :hyp (and (address-setp all-vals)
+              (set::subset (committee-members (genesis-committee))
+                           all-vals))
+    :hints
+    (("Goal"
+      :in-theory (enable bonded-committee-at-round-subset-all-vals))))
+
+  (in-theory (disable active-committee-at-round-subset-all-vals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
