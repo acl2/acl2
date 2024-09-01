@@ -64,3 +64,10 @@
   :elt-type address
   :elementp-of-nil nil
   :pred address-setp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption address-option
+  address
+  :short "Fixtype of optional addresses."
+  :pred address-optionp)
