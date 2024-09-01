@@ -461,6 +461,25 @@ gcc-keyword = %s"__alignof"
             / %s"__typeof"
             / %s"__typeof__"
 
+; Given that some GCC keyword variants are completely equivalent
+; to each other and to some standard keywords,
+; we introduce grammar rules for these equivalence classes,
+; to make their use in other rules more compact.
+
+alignof-keyword = %s"_Alignof" / %s"__alignof" / %s"__alignof__"
+
+asm-keyword = %s"asm" / %s"__asm" / %s"__asm__"
+
+attribute-keyword = %s"__attribute" / %s"__attribute__"
+
+inline-keyword = %s"inline" / %s"__inline" / %s"__inline__"
+
+restrict-keyword = %s"restrict" / %s"__restrict" / %s"__restrict__"
+
+signed-keyword = %s"signed" / %s"__signed" / %s"__signed__"
+
+typeof-keyword = %s"typeof" / %s"__typeof" / %s"__typeof__"
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Identifiers [C:A.1.3] [C:6.4.2.1]
@@ -783,9 +802,7 @@ unary-expression = postfix-expression
                  / unary-operator cast-expression
                  / %s"sizeof" unary-expression
                  / %s"sizeof" "(" type-name ")"
-                 / %s"_Alignof" "(" type-name ")"
-                 / %s"__alignof" "(" type-name ")"   ; GCC extension
-                 / %s"__alignof__" "(" type-name ")" ; GCC extension
+                 / alignof-keyword "(" type-name ")"
 
 unary-operator = "&"
                / "*"
@@ -918,8 +935,7 @@ attribute = identifier [ attribute-parameters ]
 
 attribute-list = attribute *( "," attribute )
 
-attribute-specifier = ( %s"__attribute__" / %s"__attribute" )
-                      "(" "(" [ attribute-list ] ")" ")"
+attribute-specifier = attribute-keyword "(" "(" [ attribute-list ] ")" ")"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -927,15 +943,14 @@ attribute-specifier = ( %s"__attribute__" / %s"__attribute" )
 
 ; These are a GCC extension,
 ; used to specify the assembler name of declared identifiers.
-; This construct starts with the 'asm' or '__asm__' keyword,
+; This construct starts with the 'asm' or '__asm' or '__asm__' keyword,
 ; followed by a parenthesized sequence of one or more string literals.
 
 ; Although the GCC documentation does not seem to provide
 ; a clear term to describe this construct,
 ; we use the term 'assembler name specifier', which seems appropriate.
 
-asm-name-specifier = ( %s"asm" / %s"__asm" / %s"__asm__" )
-                     "(" 1*string-literal ")"
+asm-name-specifier = asm-keyword "(" 1*string-literal ")"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1017,9 +1032,7 @@ type-specifier = %s"void"
                / %s"long"
                / %s"float"
                / %s"double"
-               / %s"signed"
-               / %s"__signed" ; GCC extension
-               / %s"__signed__" ; GCC extension
+               / signed-keyword
                / %s"unsigned"
                / %s"_Bool"
                / %s"_Complex"
@@ -1031,12 +1044,8 @@ type-specifier = %s"void"
                / %s"__int128"
                / %s"_Float128"
                / %s"__builtin_va_list"
-               / %s"typeof" "(" expression ")"
-               / %s"typeof" "(" type-name ")"
-               / %s"__typeof" "(" expression ")"
-               / %s"__typeof" "(" type-name ")"
-               / %s"__typeof__" "(" expression ")"
-               / %s"__typeof__" "(" type-name ")"
+               / typeof-keyword "(" expression ")"
+               / typeof-keyword "(" type-name ")"
 
 struct-or-union-specifier =
       struct-or-union [ identifier ] "{" struct-declaration-list "}"
@@ -1080,15 +1089,11 @@ enumerator = enumeration-constant
 atomic-type-specifier = %s"_Atomic" "(" type-name ")"
 
 type-qualifier = %s"const"
-               / %s"restrict"
-               / %s"__restrict" ; GCC extension
-               / %s"__restrict__" ; GCC extension
+               / restrict-keyword
                / %s"volatile"
                / %s"_Atomic"
 
-function-specifier = %s"inline"
-                   / %s"__inline" ; GCC extension
-                   / %s"__inline__" ; GCC extension
+function-specifier = inline-keyword
                    / %s"_Noreturn"
 
 alignment-specifier = %s"_Alignas" "(" type-name ")"
