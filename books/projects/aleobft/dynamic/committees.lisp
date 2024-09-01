@@ -191,7 +191,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define update-committee-with-transaction ((trans transactionp)
-                                           (commtt committeep))
+                                           (commtt committeep)
+                                           (all-vals address-setp))
   :returns (new-commtt committeep)
   :short "Update a committee with a transaction."
   :long
@@ -217,7 +218,7 @@
    (xdoc::p
     "It is an interesting question whether an AleoBFT implementation
      should have mechanisms in place to guarantee minimal committee sizes.
-     If it does, our model of unbonding captures that.
+     If it does, our model of unbonding captures a form of that.
      If it does not, which is plausible since validators
      should be generally free to bond and unbond as they want,
      then the whole network could be considered to fail
@@ -225,12 +226,30 @@
      If that is the case, our model of unbonding is still adequate to capture
      the situation in which the whole network has not failed;
      as mentioned above, the unbonding transaction that does not unbond
-     can be simply regarded as if it were an @(':other') kind of transaction."))
+     can be simply regarded as if it were an @(':other') kind of transaction.")
+   (xdoc::p
+    "In order to maintain the fact that
+     the committee is a subset of all the validators in the system,
+     we pass to this function an input @('all-vals')
+     that consists of the set of all validator addresses in the system.
+     If a bonding transaction references an address outside that set,
+     the committee is unchanged by that transaction,
+     i.e. it is ignored.
+     This is just a technical device in our formal model;
+     it does not mean that validators need to know @('all-vals')
+     in order to calculate committees.
+     In an AleoBFT implementation,
+     the existence of a bonding transaction with a certain address
+     means that a validator with that address is part of the system,
+     which in our model consists of all possible validators,
+     and the one with that address is certainly a possibly validator."))
   (transaction-case
    trans
    :bond (b* ((addresses (committee->addresses commtt))
               (new-addresses (set::insert trans.validator addresses)))
-           (change-committee commtt :addresses new-addresses))
+           (if (set::in trans.validator (address-set-fix all-vals))
+               (change-committee commtt :addresses new-addresses)
+             (committee-fix commtt)))
    :unbond (b* ((addresses (committee->addresses commtt))
                 (new-addresses (set::delete trans.validator addresses)))
              (if (set::emptyp new-addresses)
@@ -242,22 +261,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define update-committee-with-transaction-list ((transs transaction-listp)
-                                                (commtt committeep))
+                                                (commtt committeep)
+                                                (all-vals address-setp))
   :returns (new-commtt committeep)
   :short "Update a committee with a list of transactions."
   :long
   (xdoc::topstring
    (xdoc::p
     "We update the committee with each transaction in the list,
-     from left to right."))
+     from left to right.")
+   (xdoc::p
+    "The role of the @('all-vals') input is
+     explained in @(tsee update-committee-with-transaction)."))
   (b* (((when (endp transs)) (committee-fix commtt))
-       (commtt (update-committee-with-transaction (car transs) commtt)))
-    (update-committee-with-transaction-list (cdr transs) commtt))
+       (commtt
+        (update-committee-with-transaction (car transs) commtt all-vals)))
+    (update-committee-with-transaction-list (cdr transs) commtt all-vals))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define committee-after-blocks ((blocks block-listp))
+(define committee-after-blocks ((blocks block-listp) (all-vals address-setp))
   :returns (commtt committeep)
   :short "Calculate the committee after a list of blocks."
   :long
@@ -272,17 +296,23 @@
      (i.e. the leftmost block is the newest
      and the rightmost block is the oldest),
      we update the genesis committee from right to left
-     to arrive at the resulting committee."))
+     to arrive at the resulting committee.")
+   (xdoc::p
+    "The role of the @('all-vals') input is
+     explained in @(tsee update-committee-with-transaction)."))
   (b* (((when (endp blocks)) (genesis-committee))
-       (commtt (committee-after-blocks (cdr blocks))))
+       (commtt (committee-after-blocks (cdr blocks) all-vals)))
     (update-committee-with-transaction-list (block->transactions (car blocks))
-                                            commtt))
+                                            commtt
+                                            all-vals))
   :verify-guards :after-returns
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bonded-committee-at-round ((round posp) (blocks block-listp))
+(define bonded-committee-at-round ((round posp)
+                                   (blocks block-listp)
+                                   (all-vals address-setp))
   :returns (commtt? committee-optionp)
   :short "Bonded committee at a given round."
   :long
@@ -365,33 +395,38 @@
      but we do not need that in order to define this function.
      Note that the loop terminates regardless of the round numbers.
      But in order to understand this function, it is best to think of
-     the @('blocks') input forming a well-formed blockchain."))
+     the @('blocks') input forming a well-formed blockchain.")
+   (xdoc::p
+    "The role of the @('all-vals') input is
+     explained in @(tsee update-committee-with-transaction)."))
   (b* ((last (if (consp blocks)
                  (block->round (car blocks))
                0))
        ((when (> (pos-fix round)
                  (+ 2 last))) nil))
-    (bonded-committee-at-round-loop round blocks))
+    (bonded-committee-at-round-loop round blocks all-vals))
   :hooks (:fix)
 
   :prepwork
-  ((define bonded-committee-at-round-loop ((round posp) (blocks block-listp))
+  ((define bonded-committee-at-round-loop ((round posp)
+                                           (blocks block-listp)
+                                           (all-vals address-setp))
      :returns (commtt committeep)
      :parents nil
      (b* (((when (endp blocks)) (genesis-committee))
           ((when (> (pos-fix round)
                     (block->round (car blocks))))
-           (committee-after-blocks blocks)))
-       (bonded-committee-at-round-loop round (cdr blocks)))
+           (committee-after-blocks blocks all-vals)))
+       (bonded-committee-at-round-loop round (cdr blocks) all-vals))
      :hooks (:fix)))
 
   ///
 
   (defruled bonded-committee-at-earlier-round-when-at-later-round
-    (implies (and (bonded-committee-at-round later blocks)
+    (implies (and (bonded-committee-at-round later blocks all-vals)
                   (< (pos-fix earlier)
                      (pos-fix later)))
-             (bonded-committee-at-round earlier blocks))))
+             (bonded-committee-at-round earlier blocks all-vals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -441,7 +476,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define active-committee-at-round ((round posp) (blocks block-listp))
+(define active-committee-at-round ((round posp)
+                                   (blocks block-listp)
+                                   (all-vals address-setp))
   :returns (commtt? committee-optionp)
   :short "Active committee at a given round."
   :long
@@ -468,9 +505,14 @@
     "Note that there is no guarantee that there is a bonded committee
      at round @('R - B'), where @('R') is the round of interest.
      Thus, this function returns an optional committee,
-     @('nil') if no committee is available."))
+     @('nil') if no committee is available.")
+   (xdoc::p
+    "The role of the @('all-vals') input is
+     explained in @(tsee update-committee-with-transaction)."))
   (if (> (pos-fix round) (lookback))
-      (bonded-committee-at-round (- (pos-fix round) (lookback)) blocks)
+      (bonded-committee-at-round (- (pos-fix round) (lookback))
+                                 blocks
+                                 all-vals)
     (genesis-committee))
   :guard-hints (("Goal" :in-theory (enable posp)))
   :hooks (:fix)
@@ -478,10 +520,10 @@
   ///
 
   (defruled active-committee-at-earlier-round-when-at-later-round
-    (implies (and (active-committee-at-round later blocks)
+    (implies (and (active-committee-at-round later blocks all-vals)
                   (< (pos-fix earlier)
                      (pos-fix later)))
-             (active-committee-at-round earlier blocks))
+             (active-committee-at-round earlier blocks all-vals))
     :enable (bonded-committee-at-earlier-round-when-at-later-round
              posp)))
 
