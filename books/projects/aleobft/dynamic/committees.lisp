@@ -242,7 +242,10 @@
      the existence of a bonding transaction with a certain address
      means that a validator with that address is part of the system,
      which in our model consists of all possible validators,
-     and the one with that address is certainly a possibly validator."))
+     and the one with that address is certainly a possibly validator.
+     Thus, this is more of a constraint on
+     the system of all validators
+     than on the calculation of committees per se."))
   (transaction-case
    trans
    :bond (b* ((addresses (committee->addresses commtt))
