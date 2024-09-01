@@ -10,3 +10,10 @@
 (ld "centaur/fty/package.lsp" :dir :system)
 (ld "coi/pattern-hint/package.lsp" :dir :system)
 (ld "package.lsp")
+
+; (Matt K. mod): Computed hints used in density.lisp, dpss.lisp, events.lisp,
+; step.lisp, and perhaps others, modify state and thus cause ACL2(p)
+; certification failures when waterfall-parallelism is enabled.  So we turn it
+; off here.
+#+acl2-par
+(set-waterfall-parallelism nil)
