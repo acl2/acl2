@@ -175,8 +175,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
 (defsection signer-records-p-of-next
   :short "Preservation of the invariant:
           if the invariant holds in a system state,
