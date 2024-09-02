@@ -497,7 +497,14 @@
     (("Goal"
       :in-theory (enable bonded-committee-at-round-loop-subset-all-vals))))
 
-  (in-theory (disable bonded-committee-at-round-subset-all-vals)))
+  (in-theory (disable bonded-committee-at-round-subset-all-vals))
+
+  (defruled bonded-committee-at-round-iff-round-upper-bound
+    (iff (bonded-committee-at-round round blocks all-vals)
+         (<= (pos-fix round)
+             (+ 2 (if (consp blocks)
+                      (block->round (car blocks))
+                    0))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -621,7 +628,18 @@
     (("Goal"
       :in-theory (enable bonded-committee-at-round-subset-all-vals))))
 
-  (in-theory (disable active-committee-at-round-subset-all-vals)))
+  (in-theory (disable active-committee-at-round-subset-all-vals))
+
+  (defruled active-committee-at-round-iff-round-upper-bound
+    (iff (active-committee-at-round round blocks all-vals)
+         (<= (nfix (- (pos-fix round) (lookback)))
+             (+ 2 (if (consp blocks)
+                      (block->round (car blocks))
+                    0))))
+    :enable (bonded-committee-at-round-iff-round-upper-bound
+             nfix
+             pos-fix
+             posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
