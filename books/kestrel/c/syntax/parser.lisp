@@ -1889,7 +1889,9 @@
                                         "__signed__"
                                         "typeof"
                                         "__typeof"
-                                        "__typeof__"))))
+                                        "__typeof__"
+                                        "__volatile"
+                                        "__volatile__"))))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
@@ -5851,12 +5853,17 @@
      So the comparison here with those variant keywords
      will always fail if GCC extensions are not supported,
      because in that case both @('__restrict') and @('__restrict__')
-     would be identifier tokens, not keyword tokens."))
+     would be identifier tokens, not keyword tokens.")
+   (xdoc::p
+    "We do the same for the @('__volatile') and @('__volatile__')
+     variants of @('volatile')."))
   (or (token-keywordp token? "const")
       (token-keywordp token? "restrict")
       (token-keywordp token? "__restrict")
       (token-keywordp token? "__restrict__")
       (token-keywordp token? "volatile")
+      (token-keywordp token? "__volatile")
+      (token-keywordp token? "__volatile__")
       (token-keywordp token? "_Atomic"))
   ///
 
@@ -5879,7 +5886,12 @@
          (type-qual-restrict (keyword-uscores-start)))
         ((token-keywordp token "__restrict__")
          (type-qual-restrict (keyword-uscores-both)))
-        ((token-keywordp token "volatile") (type-qual-volatile))
+        ((token-keywordp token "volatile")
+         (type-qual-volatile (keyword-uscores-none)))
+        ((token-keywordp token "__volatile")
+         (type-qual-volatile (keyword-uscores-start)))
+        ((token-keywordp token "__volatile__")
+         (type-qual-volatile (keyword-uscores-both)))
         ((token-keywordp token "_Atomic") (type-qual-atomic))
         (t (prog2$ (impossible) (irr-type-qual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
@@ -6278,11 +6290,11 @@
      (t ; other
       (reterr-msg :where (position-to-msg (span->start span))
                   :expected "a keyword in {~
-                               const, ~
-                               restrict, ~
-                               volatile, ~
-                               _Atomic~
-                               }"
+                             const, ~
+                             restrict, ~
+                             volatile, ~
+                             _Atomic~
+                             }"
                   :found (token-to-msg token)))))
   :measure (parsize parstate)
   :hints (("Goal" :in-theory (enable o< o-finp)))

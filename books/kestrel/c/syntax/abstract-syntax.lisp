@@ -1085,10 +1085,16 @@
      @('__restrict') and @('__restrict__') of @('restrict'),
      only used if GCC extensions are supported.
      These are captured by adding underscore information
-     to the @(':restrict') case."))
+     to the @(':restrict') case.")
+   (xdoc::p
+    "We also include the GCC extension variants
+     @('__volatile') and @('__volatile__') of @('volatile'),
+     only used if GCC extensions are supported.
+     These are captured by adding underscore information
+     to the @(':volatile') case."))
   (:const ())
   (:restrict ((uscores keyword-uscores)))
-  (:volatile ())
+  (:volatile ((uscores keyword-uscores)))
   (:atomic ())
   :pred type-qualp)
 

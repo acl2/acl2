@@ -460,6 +460,8 @@ gcc-keyword = %s"__alignof"
             / %s"typeof"
             / %s"__typeof"
             / %s"__typeof__"
+            / %s"__volatile"
+            / %s"__volatile__"
 
 ; Given that some GCC keyword variants are completely equivalent
 ; to each other and to some standard keywords,
@@ -479,6 +481,8 @@ restrict-keyword = %s"restrict" / %s"__restrict" / %s"__restrict__"
 signed-keyword = %s"signed" / %s"__signed" / %s"__signed__"
 
 typeof-keyword = %s"typeof" / %s"__typeof" / %s"__typeof__"
+
+volatile-keyword = %s"volatile" / %s"__volatile" / %s"__volatile__"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1090,7 +1094,7 @@ atomic-type-specifier = %s"_Atomic" "(" type-name ")"
 
 type-qualifier = %s"const"
                / restrict-keyword
-               / %s"volatile"
+               / volatile-keyword
                / %s"_Atomic"
 
 function-specifier = inline-keyword

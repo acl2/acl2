@@ -1256,7 +1256,11 @@
               :none (print-astring "restrict" pstate)
               :start (print-astring "__restrict" pstate)
               :both (print-astring "__restrict__" pstate))
-   :volatile (print-astring "volatile" pstate)
+   :volatile (keyword-uscores-case
+              tyqual.uscores
+              :none (print-astring "volatile" pstate)
+              :start (print-astring "__volatile" pstate)
+              :both (print-astring "__volatile__" pstate))
    :atomic (print-astring "_Atomic" pstate))
   :hooks (:fix))
 
