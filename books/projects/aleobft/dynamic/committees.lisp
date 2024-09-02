@@ -140,31 +140,6 @@
   (defret not-emptyp-of-committee-members
     (not (set::emptyp addresses))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define committee-memberp ((val addressp) (commtt committeep))
-  :returns (yes/no booleanp)
-  :short "Check if a validator is a member of a committee."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The validator is identifier by its address.
-     We check whether the address is in the committee."))
-  (set::in (address-fix val) (committee-members commtt))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define committee-membersp ((vals address-setp) (commtt committeep))
-  :returns (yes/no booleanp)
-  :short "Check if all the validators in a set are members of a committee."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This essentially lifts @(tsee committee-memberp) to sets."))
-  (set::subset (address-set-fix vals) (committee-members commtt))
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection genesis-committee
