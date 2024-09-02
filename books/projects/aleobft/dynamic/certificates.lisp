@@ -418,6 +418,23 @@
     :enable (in-of-get-certificates-with-author
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
+    :disable get-certificates-with-author)
+
+  (defruled certificate-with-author+round-in-certificates-with-author
+    (implies (and (certificate-setp certs)
+                  (get-certificate-with-author+round author round certs))
+             (set::in (get-certificate-with-author+round author round certs)
+                      (get-certificates-with-author author certs)))
+    :enable (in-of-get-certificates-with-author
+             get-certificate-with-author+round-element)
+    :disable get-certificates-with-author)
+
+  (defruled no-certificate-with-author+round-if-no-certificates-with-author
+    (implies (and (certificate-setp certs)
+                  (equal (get-certificates-with-author author certs)
+                         nil))
+             (not (get-certificate-with-author+round author round certs)))
+    :use certificate-with-author+round-in-certificates-with-author
     :disable get-certificates-with-author))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
