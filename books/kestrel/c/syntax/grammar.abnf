@@ -943,18 +943,29 @@ attribute-specifier = attribute-keyword "(" "(" [ attribute-list ] ")" ")"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Assembler Name Specifiers (https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html)
+; Assembler
+; (https://gcc.gnu.org/onlinedocs/gcc/Using-Assembly-Language-with-C.html)
 
-; These are a GCC extension,
-; used to specify the assembler name of declared identifiers.
-; This construct starts with the 'asm' or '__asm' or '__asm__' keyword,
+; This is a GCC extension,
+; introduced by the keywords 'asm', '__asm', or '__asm__'.
+; The GCC documentation describes three instances of this:
+; 1. One to specify the assembler name of a function or variable
+;    (https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html).
+;    We call this 'assembler name specifier', which seems fitting,
+;    although the GCC documentation does not seem to use a precise term.
+; 2. Basic assembler statements, i.e. instructions without operands
+;    (https://gcc.gnu.org/onlinedocs/gcc/Basic-Asm.html).
+; 3. Extended assembler statements, i.e. instructions with operands
+;    (https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html).
+
+; An assembler name specifier consists of an 'asm' or variant keyword
 ; followed by a parenthesized sequence of one or more string literals.
-
-; Although the GCC documentation does not seem to provide
-; a clear term to describe this construct,
-; we use the term 'assembler name specifier', which seems appropriate.
+; Recall that our grammar captures juxtaposed string literals,
+; not just their concatenation; this is why we allow one or more here.
 
 asm-name-specifier = asm-keyword "(" 1*string-literal ")"
+
+; Support for basic and extended assembler statements will be added later.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
