@@ -136,6 +136,22 @@
     :enable (in-of-get-address+pos-pairs-with-address
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
+    :disable get-address+pos-pairs-with-address)
+
+  (defruled author+round-pair-in-pairs-with-author
+    (implies (and (address+pos-setp pairs)
+                  (set::in (address+pos author round) pairs))
+             (set::in (address+pos author round)
+                      (get-address+pos-pairs-with-address author pairs)))
+    :enable in-of-get-address+pos-pairs-with-address
+    :disable get-address+pos-pairs-with-address)
+
+  (defruled no-author+round-pair-if-no-pairs-with-author
+    (implies (and (address+pos-setp pairs)
+                  (equal (get-address+pos-pairs-with-address author pairs)
+                         nil))
+             (not (set::in (address+pos author round) pairs)))
+    :use author+round-pair-in-pairs-with-author
     :disable get-address+pos-pairs-with-address))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
