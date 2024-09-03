@@ -183,12 +183,6 @@
      ((equal tyspecs (list (type-spec-signed (keyword-uscores-none))
                            (type-spec-char)))
       (retok (c::tyspecseq-schar)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-start))
-                           (type-spec-char)))
-      (retok (c::tyspecseq-schar)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-both))
-                           (type-spec-char)))
-      (retok (c::tyspecseq-schar)))
      ((equal tyspecs (list (type-spec-unsigned)
                            (type-spec-char)))
       (retok (c::tyspecseq-uchar)))
@@ -197,24 +191,10 @@
      ((equal tyspecs (list (type-spec-signed (keyword-uscores-none))
                            (type-spec-short)))
       (retok (c::make-tyspecseq-sshort :signed t :int nil)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-start))
-                           (type-spec-short)))
-      (retok (c::make-tyspecseq-sshort :signed t :int nil)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-both))
-                           (type-spec-short)))
-      (retok (c::make-tyspecseq-sshort :signed t :int nil)))
      ((equal tyspecs (list (type-spec-short)
                            (type-spec-int)))
       (retok (c::make-tyspecseq-sshort :signed nil :int t)))
      ((equal tyspecs (list (type-spec-signed (keyword-uscores-none))
-                           (type-spec-short)
-                           (type-spec-int)))
-      (retok (c::make-tyspecseq-sshort :signed t :int t)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-start))
-                           (type-spec-short)
-                           (type-spec-int)))
-      (retok (c::make-tyspecseq-sshort :signed t :int t)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-both))
                            (type-spec-short)
                            (type-spec-int)))
       (retok (c::make-tyspecseq-sshort :signed t :int t)))
@@ -229,17 +209,7 @@
       (retok (c::make-tyspecseq-sint :signed nil :int t)))
      ((equal tyspecs (list (type-spec-signed (keyword-uscores-none))))
       (retok (c::make-tyspecseq-sint :signed t :int nil)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-start))))
-      (retok (c::make-tyspecseq-sint :signed t :int nil)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-both))))
-      (retok (c::make-tyspecseq-sint :signed t :int nil)))
      ((equal tyspecs (list (type-spec-signed (keyword-uscores-none))
-                           (type-spec-int)))
-      (retok (c::make-tyspecseq-sint :signed t :int t)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-start))
-                           (type-spec-int)))
-      (retok (c::make-tyspecseq-sint :signed t :int t)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-both))
                            (type-spec-int)))
       (retok (c::make-tyspecseq-sint :signed t :int t)))
      ((equal tyspecs (list (type-spec-unsigned)))
@@ -255,21 +225,7 @@
      ((equal tyspecs (list (type-spec-signed (keyword-uscores-none))
                            (type-spec-long)))
       (retok (c::make-tyspecseq-slong :signed t :int nil)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-start))
-                           (type-spec-long)))
-      (retok (c::make-tyspecseq-slong :signed t :int nil)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-both))
-                           (type-spec-long)))
-      (retok (c::make-tyspecseq-slong :signed t :int nil)))
      ((equal tyspecs (list (type-spec-signed (keyword-uscores-none))
-                           (type-spec-long)
-                           (type-spec-int)))
-      (retok (c::make-tyspecseq-slong :signed t :int t)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-start))
-                           (type-spec-long)
-                           (type-spec-int)))
-      (retok (c::make-tyspecseq-slong :signed t :int t)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-both))
                            (type-spec-long)
                            (type-spec-int)))
       (retok (c::make-tyspecseq-slong :signed t :int t)))
@@ -291,25 +247,7 @@
                            (type-spec-long)
                            (type-spec-long)))
       (retok (c::make-tyspecseq-sllong :signed t :int nil)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-start))
-                           (type-spec-long)
-                           (type-spec-long)))
-      (retok (c::make-tyspecseq-sllong :signed t :int nil)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-both))
-                           (type-spec-long)
-                           (type-spec-long)))
-      (retok (c::make-tyspecseq-sllong :signed t :int nil)))
      ((equal tyspecs (list (type-spec-signed (keyword-uscores-none))
-                           (type-spec-long)
-                           (type-spec-long)
-                           (type-spec-int)))
-      (retok (c::make-tyspecseq-sllong :signed t :int t)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-start))
-                           (type-spec-long)
-                           (type-spec-long)
-                           (type-spec-int)))
-      (retok (c::make-tyspecseq-sllong :signed t :int t)))
-     ((equal tyspecs (list (type-spec-signed (keyword-uscores-both))
                            (type-spec-long)
                            (type-spec-long)
                            (type-spec-int)))
@@ -791,6 +729,11 @@
        ((when (structdecl-case structdecl :statassert))
         (reterr (msg "Unsupported structure declaration ~x0."
                      (structdecl-fix structdecl))))
+       (extension (structdecl-member->extension structdecl))
+       ((when extension)
+        (reterr (msg "Unsupported GCC extension keyword ~
+                      in structure declaration ~x0."
+                     (structdecl-fix structdecl))))
        (specquals (structdecl-member->specqual structdecl))
        (declors (structdecl-member->declor structdecl))
        ((mv okp tyspecs) (check-spec/qual-list-all-tyspec specquals))
@@ -813,7 +756,12 @@
         (reterr (msg "Unsupported structure declarator ~
                       in structure declaration ~x0."
                      (structdecl-fix structdecl))))
-       ((erp objdeclor) (ldm-declor-obj declor.declor?)))
+       ((erp objdeclor) (ldm-declor-obj declor.declor?))
+       (attrib (structdecl-member->attrib structdecl))
+       ((when attrib)
+        (reterr (msg "Unsupporte GCC attributes ~
+                      in structure declaration ~x0."
+                     (structdecl-fix structdecl)))))
     (retok (c::make-struct-declon :tyspec tyspecseq :declor objdeclor)))
   :hooks (:fix))
 
@@ -882,8 +830,18 @@
        ((when (decl-case decl :statassert))
         (reterr (msg "Unsupported static assertion declaration ~x0."
                      (decl-fix decl))))
+       (extension (decl-decl->extension decl))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
+       (attrib (decl-decl->attrib decl))
+       ((when extension)
+        (reterr (msg "Unsupported GCC extension keyword ~
+                      for tag (i.e. structure/union/enumeration) ~
+                      declaration.")))
+       ((when attrib)
+        (reterr (msg "Unsupported GCC attributes ~x0 ~
+                      for tag (i.e. structure/union/enumeration) declaration."
+                     attrib)))
        ((when initdeclors)
         (reterr (msg "Unsupported initialization declarators ~x0 ~
                       for tag (i.e. structure/union/enumeration) declaration."
@@ -1093,8 +1051,18 @@
        ((when (decl-case decl :statassert))
         (reterr (msg "Unsupported static assertion declaration ~x0."
                      (decl-fix decl))))
+       (extension (decl-decl->extension decl))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
+       (attrib (decl-decl->attrib decl))
+       ((when extension)
+        (reterr (msg "Unsupported GCC extension keyword ~
+                      for tag (i.e. structure/union/enumeration) ~
+                      declaration.")))
+       ((when attrib)
+        (reterr (msg "Unsupported GCC attributes ~x0 ~
+                      for tag (i.e. structure/union/enumeration) declaration."
+                     attrib)))
        ((mv okp tyspecs) (check-declspec-list-all-tyspec declspecs))
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifier list ~
@@ -1111,6 +1079,10 @@
         (reterr (msg "Unsupported initializer ~x0 ~
                       for function declaration."
                      initdeclor.init?)))
+       ((when initdeclor.asm?)
+        (reterr (msg "Unsupported assembler name specifier ~x0 ~
+                      for function declaration."
+                     initdeclor.asm?)))
        ((erp fundeclor) (ldm-declor-fun initdeclor.declor)))
     (retok (c::make-fun-declon :tyspec tyspecseq :declor fundeclor)))
   :hooks (:fix))
@@ -1190,8 +1162,18 @@
        ((when (decl-case decl :statassert))
         (reterr (msg "Unsupported static assertion declaration ~x0."
                      (decl-fix decl))))
+       (extension (decl-decl->extension decl))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
+       (attrib (decl-decl->attrib decl))
+       ((when extension)
+        (reterr (msg "Unsupported GCC extension keyword ~
+                      for tag (i.e. structure/union/enumeration) ~
+                      declaration.")))
+       ((when attrib)
+        (reterr (msg "Unsupported GCC attributes ~x0 ~
+                      for tag (i.e. structure/union/enumeration) declaration."
+                     attrib)))
        ((mv okp tyspecs stor-specs)
         (check-declspec-list-all-tyspec/storspec declspecs))
        ((unless okp)
@@ -1207,6 +1189,10 @@
                      initdeclors)))
        ((initdeclor initdeclor) (car initdeclors))
        ((erp objdeclor) (ldm-declor-obj initdeclor.declor))
+       ((when initdeclor.asm?)
+        (reterr (msg "Unsupported assembler name specifier ~x0 ~
+                      for object declaration."
+                     initdeclor.asm?)))
        ((when (not initdeclor.init?))
         (retok (c::make-obj-declon :scspec scspecseq
                                    :tyspec tyspecseq
