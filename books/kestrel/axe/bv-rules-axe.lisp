@@ -18,8 +18,6 @@
 
 ;; See also bv-rules-axe0.lisp.
 
-;; TODO: Rename rules that end in -dag to instead end in -axe.
-
 ;; TODO: Some of these are not BV rules.
 
 ;(include-book "bv-rules-axe0") ;drop?
@@ -1546,7 +1544,7 @@
 
 ;; ;y is a free var - yuck!
 ;; ;bozo prove me
-;; ;rename to have -dag in the name
+;; ;rename to have -axe in the name
 ;; (defthmd bvplus-tighten
 ;;    (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
 ;;                  ;(axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
@@ -1618,7 +1616,7 @@
 
 ;; ; not really an axe rule
 ;; ;; todo: drop?
-;; (defthmd bvshl-32-cases-dag ;just use the non-axe-version?
+;; (defthmd bvshl-32-cases-axe ;just use the non-axe-version?
 ;;   (implies (and (syntaxp (not (quotep shift-amount)))
 ;;                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
 ;;            (equal (BVSHL 32 x shift-AMOUNT)
@@ -1727,7 +1725,7 @@
 
 ;; ; not really an axe rule
 ;; ;; todo: drop?
-;; (defthmd bvshr-32-cases-dag;just use the non-axe-version?
+;; (defthmd bvshr-32-cases-axe;just use the non-axe-version?
 ;;   (implies (and (syntaxp (not (quotep shift-amount)))
 ;;                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
 ;;            (equal (BVSHR 32 x shift-AMOUNT)
@@ -1829,7 +1827,7 @@
 ;;   :hints (("Goal" :in-theory (e/d (bvif bvshr) (unsigned-byte-p-from-bounds)))))
 
 ;; ;; todo: drop?
-;; (defthmd bvshl-32-cases-dag-barrel-shifter ;just use a non-axe-version?
+;; (defthmd bvshl-32-cases-axe-barrel-shifter ;just use a non-axe-version?
 ;;   (implies (and (syntaxp (not (quotep shift-amount)))
 ;;                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
 ;;            (equal (BVSHL 32 x shift-AMOUNT)
@@ -1885,7 +1883,7 @@
 ;;            :in-theory (e/d (BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT) (BVSHL-REWRITE-WITH-BVCHOP)))))
 
 ;; ;; todo: drop?
-;; (defthmd bvshr-32-cases-dag-barrel-shifter ;just use a non-axe-version?
+;; (defthmd bvshr-32-cases-axe-barrel-shifter ;just use a non-axe-version?
 ;;   (implies (and (syntaxp (not (quotep shift-amount)))
 ;;                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
 ;;            (equal (BVSHR 32 x shift-AMOUNT)
