@@ -5736,36 +5736,6 @@
                                    NTH-BECOMES-BV-ARRAY-READ2
                                    BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ)))))
 
-(DEFTHM EQUAL-OF-NTH-AND-BV-ARRAY-READ-better
-  (IMPLIES (AND (EQUAL LEN (LEN X)) ;weaken
-                (UNSIGNED-BYTE-P SIZE (nth n X))
-                (NATP N)
-                (< N LEN))
-           (EQUAL (EQUAL (NTH N X) (BV-ARRAY-READ SIZE LEN N X))
-                  T))
-  :HINTS
-  (("Goal"
-    :IN-THEORY
-    (E/D (BV-ARRAY-READ-opener ;LIST::NTH-WITH-LARGE-INDEX
-          )
-         (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-          NTH-BECOMES-BV-ARRAY-READ2
-          BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ)))))
-
-(DEFTHM EQUAL-OF-NTH-AND-BV-ARRAY-READ-ALT-better
-  (IMPLIES (AND (EQUAL LEN (LEN X)) ;weaken
-                (UNSIGNED-BYTE-P SIZE (nth n X))
-                (NATP N)
-                (< N LEN))
-           (EQUAL (EQUAL (BV-ARRAY-READ SIZE LEN N X)
-                         (NTH N X))
-                  T))
-  :HINTS
-  (("Goal"
-    :USE (:INSTANCE EQUAL-OF-NTH-AND-BV-ARRAY-READ-better)
-    :IN-THEORY (disable EQUAL-OF-NTH-AND-BV-ARRAY-READ-better))))
-
-
 ;move
 (defthmd bvmod-of-power-of-2-helper
   (implies (and (equal k (expt 2 m))
@@ -14435,24 +14405,6 @@
            (equal (bvmod 31 (bvplus 31 k (bvmod 31 x y)) y)
                   (bvmod 31 (bvplus 31 k x) y)))
   :hints (("Goal" :use (:instance bvmod-of-bvplus-of-bvmod-helper (x (bvchop 31 x)) (k (bvchop 31 k))))))
-
-;fixme move
-(defthm bv-array-read-tighten-free
-  (implies (and (syntaxp (quotep width))
-                (all-unsigned-byte-p free data)
-                (syntaxp (quotep free))
-                (equal len (len data))
-                (natp free)
-                (natp width)
-                (< free width))
-           (equal (bv-array-read width len index data)
-                  (bv-array-read free len index data)))
-  :hints (("Goal" :in-theory (e/d (SLICE-TOO-HIGH-IS-0
-                                   bv-array-read)
-                                  (BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                                   GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
-
 
 ;gross proof?
 ;fixme gen!
