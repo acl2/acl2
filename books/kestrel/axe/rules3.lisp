@@ -921,7 +921,7 @@
   (equal (bvlt 31 x 4)
          (unsigned-byte-p 2 (bvchop 31 x)))
   :hints (("Goal" :in-theory (e/d (bvlt) (REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER
-                                           )))))
+                                      unsigned-byte-p-of-bvchop-bigger2)))))
 
 ;gen
 (defthm bvplus-of-bvplus-trim
@@ -1181,17 +1181,6 @@
            (equal (bvlt 32 3 x)
                   nil))
   :hints (("Goal" :in-theory (enable bvlt))))
-
-(defthm bvchop-tighten-when-slice-0
-  (implies (and (equal (slice k free x) 0)
-                (equal k (+ -1 n))
-                (< free n)
-                (natp free)
-                (posp n))
-           (equal (bvchop n x)
-                  (bvchop free x)))
-  :hints (("Goal" :use (:instance rewrite-bv-equality-when-sizes-dont-match-2
-                                  (x (bvchop free x)) (x-size free) (y (bvchop n x)) (y-size n)))))
 
 (defthm bvlt-tighten-when-slice-0
   (implies (and (EQUAL (SLICE 31 2 x) 0)
@@ -5829,7 +5818,8 @@
                 (<= free 4))
            (EQUAL (SLICE 30 2 X)
                   0))
-  :hints (("Goal" :use (:instance SLICE-TOO-HIGH-IS-0 (x (bvchop 31 x)) (high 30) (low 2)))))
+  :hints (("Goal" :use (:instance SLICE-TOO-HIGH-IS-0 (x (bvchop 31 x)) (high 30) (low 2))
+           :in-theory (disable unsigned-byte-p-of-bvchop-bigger2))))
 
 (defthm bvdiv-equal-0-rewrite
   (equal (equal 0 (bvdiv '31 x '4))
@@ -6046,7 +6036,7 @@
                 (< free size))
            (equal (slice (+ -1 size) free k)
                   0))
-  :hints (("Goal" :in-theory (e/d (slice) (anti-slice)))))
+  :hints (("Goal" :in-theory (e/d (slice) (anti-slice unsigned-byte-p-of-bvchop-bigger2)))))
 
 ;corresponding theorem about mod?
 (defthm bvchop-when-<-tighten
@@ -6191,7 +6181,7 @@
                   (not (equal (bvchop 31 x)
                               (+ -1 (expt 2 31))))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases)
-                                  (
+                                  (unsigned-byte-p-of-bvchop-bigger
                                    PLUS-BECOMES-BVPLUS)))))
 
 (defthm unsigned-byte-p-of-bvplus-minus-1
@@ -6199,7 +6189,7 @@
            (equal (unsigned-byte-p 31 (bvplus 32 4294967295 x))
                   (not (equal 0 x))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases)
-                                  (
+                                  (unsigned-byte-p-of-bvchop-bigger
                                    plus-becomes-bvplus)))))
 
 (defthm equal-of-minval-and-bvplus-of-bvminus
@@ -11257,6 +11247,7 @@
                                   sbvlt-rewrite)
                            (bvcat-of-getbit-and-x-adjacent
                             bvcat-equal-rewrite-alt
+                            unsigned-byte-p-of-bvchop-bigger
                             )))))
 
 (defthm boolor-of-sbvlt-combine-gen-alt
@@ -12404,10 +12395,7 @@
   :hints (("Goal"
            :in-theory (enable bvlt slice-bound-lemma-gen2))))
 
-(defthm unsigned-byte-p-of-bvchop-bigger
-  (equal (unsigned-byte-p '31 (bvchop '32 x))
-         (bvlt 32 x 2147483648))
-  :hints (("Goal" :in-theory (enable bvlt))))
+
 
 ;gross?
 ;move like this? alt versions?
@@ -14170,17 +14158,6 @@
            :in-theory (e/d (bvlt ceiling-of-lg unsigned-byte-p posp)
                            (<-of-+-of-minus-and-constant ;yuck?
                             )))))
-
-;compare to UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER
-(defthm unsigned-byte-p-of-bvchop-bigger2
-  (implies (and (< size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (unsigned-byte-p size1 (bvchop size2 x))
-                  (equal 0 (slice (+ -1 size2) size1 x))))
-  :hints (("Goal"
-           :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (x (bvchop size2 x)) (n size2) (m size1)))))
 
 ;fixme should stp be able to prove goals like this? maybe we dont translate the read since the len is unknown...
 (defthm equal-of-bv-array-read-and-bv-array-read-different-widths
