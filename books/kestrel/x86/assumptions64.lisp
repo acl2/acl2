@@ -1,7 +1,7 @@
 ; Assumptions for 64-bit x86 proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -83,33 +83,40 @@
 ;; (defun all-addreses-of-stack-slots (num-slots rsp)
 ;;   (x86isa::create-canonical-address-list (* 8 num-slots) (+ (* -8 num-slots) rsp)))
 
+;; Returns a list of terms
+(defund make-standard-state-assumptions-64-fn (state-var)
+  (declare (xargs :guard (symbolp state-var)))
+  `((standard-state-assumption ,state-var)
+     (equal (64-bit-modep ,state-var) t)
+     ;; Alignment checking is turned off:
+     (not (alignment-checking-enabled-p ,state-var))
+
+     ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
+     ;; This may not be respected by malware.
+     ;; TODO: Try without this
+     (equal 0 (bvchop 3 (rgfi *rsp* ,state-var)))
+
+     ;; The return address must be canonical because we will transfer
+     ;; control to that address when doing the return:
+     (canonical-address-p (read 8 (rgfi *rsp* ,state-var) ,state-var))
+
+     ;; The stack slot contaning the return address must be canonical
+     ;; because the stack pointer returns here when we pop the saved
+     ;; RBP:
+     (canonical-address-p (rgfi *rsp* ,state-var))
+
+     ;; The stack slot 'below' the return address must be canonical
+     ;; because the stack pointer returns here when we do the return:
+     (canonical-address-p (+ 8 (rgfi *rsp* ,state-var)))))
+
+(defmacro make-standard-state-assumptions-64 (state-var)
+  `(and ,@(make-standard-state-assumptions-64-fn state-var)))
+
 ;; NOTE: Some of these conjuncts (e.g., stack pointer alignment) are
 ;; conventions that may not be respected by malware!
 (defun standard-state-assumption-64 (x86)
   (declare (xargs :stobjs x86))
-  (and (standard-state-assumption x86)
-       (equal (64-bit-modep x86) t)
-       ;; Alignment checking is turned off:
-       (not (alignment-checking-enabled-p x86))
-
-       ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
-       ;; This may not be respected by malware.
-       ;; TODO: Try without this
-       (equal 0 (bvchop 3 (rgfi *rsp* x86)))
-
-       ;; The return address must be canonical because we will transfer
-       ;; control to that address when doing the return:
-       (canonical-address-p (read 8 (rgfi *rsp* x86) x86))
-
-       ;; The stack slot contaning the return address must be canonical
-       ;; because the stack pointer returns here when we pop the saved
-       ;; RBP:
-       (canonical-address-p (rgfi *rsp* x86))
-
-       ;; The stack slot 'below' the return address must be canonical
-       ;; because the stack pointer returns here when we do the return:
-       (canonical-address-p (+ 8 (rgfi *rsp* x86)))))
-
+  (make-standard-state-assumptions-64 x86))
 
 ;TODO: Show that there is a state that satisfies these assumptions
 ;TODO: Use this more
