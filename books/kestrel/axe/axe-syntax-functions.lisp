@@ -27,9 +27,9 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;; quotep gets converted this this
-(defund-inline axe-quotep (item)
-  (declare (xargs :guard (dargp item)))
-  (consp item) ;; means that it is a quotep, not a nodenum
+(defund-inline axe-quotep (darg)
+  (declare (xargs :guard (dargp darg)))
+  (consp darg) ;; means that it is a quotep, not a nodenum
   )
 
 ;;TODO: Change these to never compare nodenums (can cause simplification to loop if things keep getting commuted due to different nodenums?)
@@ -123,6 +123,7 @@
          (let ((fn (unquote quoted-fn)))
            (call-of fn (aref1 'dag-array dag-array nodenum-or-quotep))))))
 
+;deprecate?  allows an expr to be constant, but that should be very rare
 (defund syntactic-constantp (nodenum-or-quotep dag-array)
   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
                              (and (natp nodenum-or-quotep)
