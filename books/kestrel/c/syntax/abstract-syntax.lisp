@@ -2596,6 +2596,7 @@
      This is part of declarations,
      but it is outside the mutual recursion in @(see exprs/decls)."))
   ((declor declor)
+   (asm? asm-name-spec-option)
    (init? initer-option))
   :pred initdeclorp)
 
@@ -2626,18 +2627,6 @@
      and it is outside the mutual recursion @(see exprs/decls).")
    (xdoc::p
     "As a GCC extension,
-     we include an optional assembler name specifier.
-     According to the GCC documentation,
-     this should normally follow a declarator,
-     so our placement here is more liberal.
-     However, our current goal with GCC extensions
-     is just to handle code that includes them,
-     not to provide a comprehensive formalization of GCC extensions.
-     The optional assembler name specifier is always absent
-     if GCC extensions are not supported;
-     it may be present or absent otherwise.")
-   (xdoc::p
-    "As a GCC extension,
      we also include a list of zero or more attribute specifiers
      as part of a declaration, meant to come after all the declarators.
      This is not fully general, but it covers a set of cases of interest.
@@ -2652,7 +2641,6 @@
   (:decl ((extension bool)
           (specs declspec-list)
           (init initdeclor-list)
-          (asm? asm-name-spec-option)
           (attrib attrib-spec-list)))
   (:statassert ((unwrap statassert)))
   :pred declp)
@@ -2886,6 +2874,7 @@
   ((extension bool) ; GCC extension
    (spec declspec-list)
    (declor declor)
+   (asm? asm-name-spec-option)
    (decls decl-list)
    (body stmt))
   :pred fundefp)

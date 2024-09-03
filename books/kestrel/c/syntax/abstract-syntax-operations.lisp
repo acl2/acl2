@@ -348,7 +348,7 @@
 (defirrelevant irr-initdeclor
   :short "An irrelevant initializer declarator."
   :type initdeclorp
-  :body (make-initdeclor :declor (irr-declor) :init? nil))
+  :body (make-initdeclor :declor (irr-declor) :asm? nil :init? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -358,7 +358,6 @@
   :body (make-decl-decl :extension nil
                         :specs nil
                         :init nil
-                        :asm? nil
                         :attrib nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -404,6 +403,7 @@
   :body (make-fundef :extension nil
                      :spec nil
                      :declor (irr-declor)
+                     :asm? nil
                      :decls nil
                      :body (irr-stmt)))
 

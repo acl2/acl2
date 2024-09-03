@@ -1361,6 +1361,10 @@
                      (fundef-fix fundef))))
        ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((erp fundeclor) (ldm-declor-fun fundef.declor))
+       ((when fundef.asm?)
+        (reterr (msg "Unsupported assembler name specifier ~
+                      in function definition ~x0."
+                     (fundef-fix fundef))))
        ((when fundef.decls)
         (reterr (msg "Unsupported declarations ~
                       in function definition ~x0."

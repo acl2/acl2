@@ -2782,6 +2782,11 @@
   :short "Print an initializer declarator."
   (b* (((initdeclor initdeclor) initdeclor)
        (pstate (print-declor initdeclor.declor pstate))
+       (pstate (if initdeclor.asm?
+                   (b* ((pstate (print-astring " " pstate))
+                        (pstate (print-asm-name-spec initdeclor.asm? pstate)))
+                     pstate)
+                 pstate))
        ((when (initer-option-case initdeclor.init? :none)) pstate)
        (pstate (print-astring " = " pstate))
        (pstate (print-initer (initer-option-some->val initdeclor.init?)
@@ -2837,11 +2842,6 @@
                   (pstate (print-initdeclor-list decl.init pstate)))
                pstate)
            pstate))
-        (pstate (if decl.asm?
-                    (b* ((pstate (print-astring " " pstate))
-                         (pstate (print-asm-name-spec decl.asm? pstate)))
-                      pstate)
-                  pstate))
         (pstate (if decl.attrib
                     (b* ((pstate (print-astring " " pstate))
                          (pstate (print-attrib-spec-list decl.attrib pstate)))
@@ -3241,6 +3241,11 @@
        ((unless (stmt-case fundef.body :compound))
         (raise "Misusage error: function body is not a compound statement.")
         (pristate-fix pstate))
+       (pstate (if fundef.asm?
+                   (b* ((pstate (print-astring " " pstate))
+                        (pstate (print-asm-name-spec fundef.asm? pstate)))
+                     pstate)
+                 pstate))
        (pstate (print-declspec-list fundef.spec pstate))
        (pstate (print-astring " " pstate))
        (pstate (print-declor fundef.declor pstate))

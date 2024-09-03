@@ -994,11 +994,8 @@ asm-name-specifier = asm-keyword "(" 1*string-literal ")"
 ; does not quite comply with the standard due to the presence of GCC extensions.
 
 ; As a GCC extension, we allow an optional assembler name specifier
-; just after the initializer declarators, and before the attributes (see below).
-; The GCC documentation says that an assembler name specifier
-; comes just after a declarator, so our grammar rule may be more liberal;
-; but currently our goal is just to handle practical code with GCC extensions,
-; not to provide a formalization of GCC extensions.
+; just after top-level declarators in initializer declarators,
+; and before the attributes (see below).
 
 ; As GCC extensions, we include
 ; the '__signed' and '__signed__' variants of 'signed' as type specifiers.
@@ -1014,7 +1011,6 @@ asm-name-specifier = asm-keyword "(" 1*string-literal ")"
 declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
               [ init-declarator-list ]
-              [ asm-name-specifier ]
               *attribute-specifier ; GCC extension
               ";"
             / static-assert-declaration
@@ -1030,8 +1026,8 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
 init-declarator-list = init-declarator
                      / init-declarator-list "," init-declarator
 
-init-declarator = declarator
-                / declarator "=" initializer
+init-declarator = declarator [ asm-name-specifier ]
+                / declarator [ asm-name-specifier ] "=" initializer
 
 storage-class-specifier = %s"typedef"
                         / %s"extern"
@@ -1231,6 +1227,8 @@ jump-statement = %s"goto" identifier ";"
 
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a function definition.
+; We also allow an assembler name specifier
+; just after the declarator of a function definition.
 
 translation-unit = external-declaration
                  / translation-unit external-declaration
@@ -1240,7 +1238,7 @@ external-declaration = function-definition
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers
-                      declarator
+                      declarator [asm-name-specifier]
                       [ declaration-list ]
                       compound-statement
 

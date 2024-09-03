@@ -872,6 +872,7 @@
   (b* (((initdeclor initdeclor) initdeclor))
     (make-initdeclor
      :declor (simpadd0-declor initdeclor.declor)
+     :asm? initdeclor.asm?
      :init? (simpadd0-initer-option initdeclor.init?)))
   :hooks (:fix)
 
@@ -909,7 +910,6 @@
           :extension decl.extension
           :specs (simpadd0-declspec-list decl.specs)
           :init (simpadd0-initdeclor-list decl.init)
-          :asm? decl.asm?
           :attrib decl.attrib)
    :statassert (decl-statassert
                 (simpadd0-statassert decl.unwrap)))
@@ -1073,6 +1073,7 @@
      :extension fundef.extension
      :spec (simpadd0-declspec-list fundef.spec)
      :declor (simpadd0-declor fundef.declor)
+     :asm? fundef.asm?
      :decls (simpadd0-decl-list fundef.decls)
      :body (simpadd0-stmt fundef.body)))
   :hooks (:fix)
