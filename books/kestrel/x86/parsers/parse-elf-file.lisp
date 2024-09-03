@@ -86,10 +86,10 @@
     (if res
         res
       (if (and (<= #x60000000 p_type)
-               (<= p_type #x#x60000000))
+               (<= p_type #x6FFFFFFF))
           :operating-system-specific
         (if (and (<= #x70000000 p_type)
-                 (<= p_type #x#x70000000))
+                 (<= p_type #x7FFFFFFF))
             :processor-specific
           (er hard? 'decode-program-header-type "Bad program header type: ~x0." p_type))))))
 
