@@ -418,7 +418,7 @@
        (result (acons :filesz p_filesz result))
        (result (acons :memsz p_memsz result))
        (result (acons :align p_align result)))
-    (mv result bytes)))
+    (mv (reverse result) bytes)))
 
 ;move up
 ; todo: guard
