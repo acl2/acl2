@@ -43,7 +43,7 @@
    ;; that it is initially the constant #x1F80.
 
    ;; Assume denormals are not treated as 0 (this is 0 upon power up or reset
-   ;; and is incompatible with IEEE 754)::
+   ;; and is incompatible with IEEE 754):
    (equal (mxcsrbits->daz (mxcsr x86)) 0)
 
    ;; Assume exceptions are being masked (these are 1 at power up or reset):
@@ -63,11 +63,11 @@
    (equal (mxcsrbits->rc (mxcsr x86)) 0)
 
    ;; These help with things like SSE/AVX/etc
-   (x86isa::cr0bits-p (x86isa::ctri 0 x86)) ; so we can extract the bits (todo: avoid actually using this assumption?)
-   (equal (x86isa::cr0bits->ts (x86isa::ctri 0 x86)) 0)
-   (equal (x86isa::cr0bits->em (x86isa::ctri 0 x86)) 0)
-   (x86isa::cr4bits-p (x86isa::ctri 4 x86)) ; so we can call x86isa::cr4bits->osfxsr (todo: avoid actually using this assumption?)
-   (equal (x86isa::cr4bits->osfxsr (x86isa::ctri 4 x86)) 1)
+   (cr0bits-p (ctri 0 x86)) ; so we can extract the bits (todo: avoid actually using this assumption?)
+   (equal (cr0bits->ts (ctri 0 x86)) 0)
+   (equal (cr0bits->em (ctri 0 x86)) 0)
+   (cr4bits-p (ctri 4 x86)) ; so we can call cr4bits->osfxsr (todo: avoid actually using this assumption?)
+   (equal (cr4bits->osfxsr (ctri 4 x86)) 1)
    ))
 
 ;; A lifter target is either a numeric offset, the name of a subroutine (a string), or the symbol :entry-point.
