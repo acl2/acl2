@@ -178,7 +178,7 @@
             myif-same-branches
             myif-same-test
             myif-same-test2
-            myif-same-arg1-arg2-when-booleanp-axe
+            myif-same-arg1-arg2-when-booleanp
 
             ;; todo: compare to the myif rules:
             if-of-t
