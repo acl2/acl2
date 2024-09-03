@@ -30,6 +30,12 @@
            (unsigned-byte-p 8 (nth n bytes)))
   :hints (("Goal" :in-theory (enable byte-listp nth))))
 
+(defthm byte-listp-of-cons
+  (equal (byte-listp (cons a x))
+         (and (bytep a)
+              (byte-listp x)))
+  :hints (("Goal" :in-theory (enable byte-listp))))
+
 ;avoid name clash with std
 (defthm byte-listp-of-append-2
   (equal (byte-listp (append x y))
@@ -48,8 +54,14 @@
            (byte-listp (cdr x)))
   :hints (("Goal" :in-theory (enable byte-listp))))
 
-(defthm byte-listp-of-cons
-  (equal (byte-listp (cons a x))
-         (and (bytep a)
-              (byte-listp x)))
-  :hints (("Goal" :in-theory (enable byte-listp))))
+;; name avoids clash with byte-listp-of-nthcdr, which calls double-rewrite
+(defthm byte-listp-of-nthcdr-simple
+  (implies (byte-listp x)
+           (byte-listp (nthcdr n x)))
+  :hints (("Goal" :in-theory (enable nthcdr))))
+
+(defthm byte-listp-of-take-simple
+  (implies (byte-listp x)
+           (equal (byte-listp (take n x))
+                  (<= (nfix n) (len x))))
+  :hints (("Goal" :in-theory (enable take byte-listp))))

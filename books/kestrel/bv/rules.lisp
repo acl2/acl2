@@ -6318,3 +6318,30 @@
            (equal (equal k (bvchop size x)) ; hope this matches either way
                   (equal (bvcat 1 1 size k) ; gets computed
                          (bvchop (+ 1 size) x)))))
+
+(defthm bvchop-tighten-when-slice-0
+  (implies (and (equal (slice k free x) 0)
+                (equal k (+ -1 n))
+                (< free n)
+                (natp free)
+                (posp n))
+           (equal (bvchop n x)
+                  (bvchop free x)))
+  :hints (("Goal" :use (:instance rewrite-bv-equality-when-sizes-dont-match-2
+                                  (x (bvchop free x)) (x-size free) (y (bvchop n x)) (y-size n)))))
+
+;compare to UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER
+(defthm unsigned-byte-p-of-bvchop-bigger2
+  (implies (and (< size1 size2)
+                (natp size1)
+                (natp size2))
+           (equal (unsigned-byte-p size1 (bvchop size2 x))
+                  (equal 0 (slice (+ -1 size2) size1 x))))
+  :hints (("Goal"
+           :in-theory (enable bvcat logapp)
+           :use (:instance split-bv (x (bvchop size2 x)) (n size2) (m size1)))))
+
+(defthm unsigned-byte-p-of-bvchop-bigger
+  (equal (unsigned-byte-p '31 (bvchop '32 x))
+         (bvlt 32 x 2147483648))
+  :hints (("Goal" :in-theory (enable bvlt))))
