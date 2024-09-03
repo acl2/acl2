@@ -82,7 +82,7 @@
     (local
      (defun leader-at-round (round commtt)
        (declare (ignore round))
-       (address-fix (set::head (committee->addresses commtt)))))
+       (address-fix (set::head (committee-members commtt)))))
 
     (defrule addressp-of-leader-at-round
       (addressp (leader-at-round round commtt)))

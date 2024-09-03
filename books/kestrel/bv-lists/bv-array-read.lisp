@@ -262,3 +262,22 @@
            (equal (bv-array-read element-width len (+ index (expt 2 (ceiling-of-lg len)))data)
                   (bv-array-read element-width len index data)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm equal-of-nth-and-bv-array-read-better
+  (implies (and (equal len (len x)) ;weaken
+                (unsigned-byte-p size (nth n x))
+                (natp n)
+                (< n len))
+           (equal (equal (nth n x) (bv-array-read size len n x))
+                  t))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener))))
+
+(defthm equal-of-nth-and-bv-array-read-alt-better
+  (implies (and (equal len (len x)) ;weaken
+                (unsigned-byte-p size (nth n x))
+                (natp n)
+                (< n len))
+           (equal (equal (bv-array-read size len n x) (nth n x))
+                  t))
+  :hints (("Goal" :use (:instance equal-of-nth-and-bv-array-read-better)
+           :in-theory (disable equal-of-nth-and-bv-array-read-better))))

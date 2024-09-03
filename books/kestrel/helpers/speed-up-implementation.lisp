@@ -41,6 +41,7 @@
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/print-to-string" :dir :system)
 (include-book "kestrel/utilities/split-path" :dir :system)
+(include-book "kestrel/utilities/magic-macroexpand1-dollar" :dir :system)
 (include-book "kestrel/hints/combine-hints" :dir :system)
 (include-book "kestrel/strings-light/strip-suffix-from-string" :dir :system)
 
@@ -239,6 +240,7 @@
 ;; Returns state.
 ;; Each line printed starts with a newline.
 ;rename?
+;; Does not change the world.
 (defun try-to-drop-runes-from-defthm (runes body hints otf-flg time-to-beat min-time-savings print state)
   (declare (xargs :guard (and (true-listp runes)
                               (booleanp otf-flg)
@@ -265,6 +267,7 @@
 
 ;; Returns state.  Prints a suggestion if disabling RUNE beforehand can significantly speed up EVENT.
 ;; Each line printed starts with a newline.
+;; Does not change the world.
 (defun try-to-drop-rune-from-event (rune event time-to-beat min-time-savings state)
   (declare (xargs :guard (rationalp time-to-beat)
                   :mode :program
@@ -305,6 +308,7 @@
            state))))))
 
 ;; Returns state.  Prints suggestion for RUNES which, if disabled beforehand, lead to significant speed ups for EVENT.
+;; Does not change the world.
 (defun try-to-drop-runes-from-event (runes event time-to-beat min-time-savings state)
   (declare (xargs :guard (and (true-listp runes)
                               (rationalp time-to-beat))
@@ -334,6 +338,7 @@
 ;; - tries :induct t if the proof used induction, in case time was wasted before reverting to induction
 ;; TODO: Compare to speed-up-defrule.  Keep in sync, or merge them.
 ;; todo: refactor to generate list of hints, with descriptions, to try.
+;; Does not change the world.
 (defun speed-up-defthm (event min-time-savings min-event-time print print-headerp state)
   (declare (xargs :guard (and (print-levelp print) ; todo: caller doesn't allow t?
                               (booleanp print-headerp))
@@ -391,7 +396,7 @@
                                 (rules-to-try-to-drop (runes-to-try-disabling runes-used (w state)))
                               ;; Try dropping each rule that contributed to the proof
                                 (state (try-to-drop-runes-from-defthm rules-to-try-to-drop body hints otf-flg original-time min-time-savings print state))
-                             ;; If the proof used induction, try again with :induct t (maybe time was wasted before reverting to proof by induction)
+                                ;; If the proof used induction, try again with :induct t (maybe time was wasted before reverting to proof by induction)
                                 (state (if (exists-rune-of-classp runes-used :induction)
                                            (mv-let (erp provedp time-with-induct-t state)
                                              (prove$-nice-with-time body
@@ -416,6 +421,7 @@
 ;; Returns (mv erp state).
 ;; Each line printed starts with a newline.
 ;; TODO: Try the :induct t speedup as we do with defthms just above
+;; Does not change the world.
 (defun speed-up-defrule (event min-time-savings min-event-time print print-headerp state)
   (declare (xargs :mode :program
                   :guard (and (print-levelp print) ; todo: caller doesn't allow t?
@@ -449,95 +455,141 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(mutual-recursion
+
+ ;; Submits the event, after printing suggestions for improving it.
+ ;; Returns (mv erp state).
+ ;; TODO: Handle more kinds of events, like defun!  And make-event!
+ ;; todo: expand macros, evaluate make-events (revert the world?),
+ (defun speed-up-and-submit-event (event synonym-alist min-time-savings min-event-time print throw-errorp state)
+   (declare (xargs :guard (and (print-levelp print) ; todo: finish threading this through
+                               (booleanp throw-errorp))
+                   :mode :program
+                   :stobjs state))
+   (if (not (consp event))
+       (prog2$ (cw "Error: ~x0 is not an event we can handle." event)
+               (mv :invalid-event state))
+     (let* ((fn (ffn-symb event))
+            ;; See if FN is an alias for some other command
+            (fn (let ((res (assoc-eq fn synonym-alist)))
+                  (if res
+                      (cdr res)
+                    fn))))
+       (case fn
+         ((defthm defthmd) (mv-let (erp state)
+                             (speed-up-defthm event min-time-savings min-event-time print t state)
+                             (if erp
+                                 (mv erp state)
+                               ;; Skip the proof:
+                               (submit-event `(skip-proofs ,event) nil t state))))
+         ((defrule defruled defrulel defruledl) (mv-let (erp state)
+                                                  (speed-up-defrule event min-time-savings min-event-time print t state)
+                                                  (if erp
+                                                      (mv erp state)
+                                                    (submit-event `(skip-proofs ,event) nil t state))))
+         (local (speed-up-and-submit-event (farg1 event) synonym-alist min-time-savings min-event-time print throw-errorp state)) ; strip the local ; todo: this submits it as non-local (ok?)
+         ;; For a call of with-output, the form is the last arg:
+         (with-output (speed-up-and-submit-event (car (last (fargs event))) synonym-alist min-time-savings min-event-time print throw-errorp state))
+         ;; Things we don't try to speed up (but improve-book could try to change in-theory events):
+         ;; TODO: Add to this list (see :doc events):
+         ((in-package
+           defconst
+           deflabel
+           defmacro defmacro+
+           defstobj
+           defstub
+           deftheory defthy
+           defttag
+           defxdoc defxdoc+
+           include-book
+           in-theory
+           set-case-split-limitations
+           set-ignore-ok set-state-ok set-irrelevant-formals-ok set-well-founded-relation
+           set-induction-depth-limit
+           set-induction-depth-limit!
+           skip-proofs
+           table
+           theory-invariant
+           value-triple)
+          (submit-event `(skip-proofs ,event) nil t state))
+         ;; For an encapsulate, we attempt to speed up each of the subsidiary
+         ;; events (submitting each as we go), then we revert the world and
+         ;; finally submit the whole encapsulate:
+         (encapsulate
+             (let ((events (rest (fargs event)))) ; skip the signatures
+               (mv-let (erp val state)
+                 (revert-world
+                  (mv-let (erp state)
+                    (speed-up-and-submit-events events synonym-alist min-time-savings min-event-time print throw-errorp state)
+                    (mv erp :invisible state)))
+                 (declare (ignore val))
+                 (if erp
+                     (mv erp state)
+                   (submit-event `(skip-proofs ,event) nil t state)))))
+         ;; For progn, we just process the subsidiary events in order (no need to revert the world and re-submit the event):
+         (progn
+           (let ((events (fargs event)))
+             (speed-up-and-submit-events events synonym-alist min-time-savings min-event-time print throw-errorp state)))
+         (otherwise
+          (if (macro-namep fn (w state))
+              (progn$ ;; (cw "Macroexpanding ~x0.~%" event)
+                      (speed-up-and-submit-event (magic-macroexpand1$$ event 'speed-up-and-submit-event (w state) state) synonym-alist min-time-savings min-event-time print throw-errorp state))
+            (if throw-errorp
+                (prog2$ (er hard? 'speed-up-event-fn "Unsupported event: ~s0.~%" (abbreviate-event event))
+                        (mv :unsupported-event state))
+              (prog2$ (cw "~%Unsupported event: ~s0.~%" (abbreviate-event event))
+                              ;; For speed, we skip the proofs (todo: can this interfere with calls to make-event?) when submitting the event:
+                      (submit-event `(skip-proofs ,event) nil t state)))))))))
+
+;; Submits each event, after printing suggestions for improving it.
 ;; Returns (mv erp state).
-;; TODO: Handle more kinds of events, like defun!
-;; todo: expand macros, evaluate make-events (revert the world?), handle progn and encapsulate (revert the world).
-(defun speed-up-event-fn (form synonym-alist min-time-savings min-event-time print throw-errorp state)
-  (declare (xargs :guard (and (print-levelp print) ; todo: finish threading this through
-                              (booleanp throw-errorp))
+ (defun speed-up-and-submit-events (events synonym-alist min-time-savings min-event-time print throw-errorp state)
+   (declare (xargs :guard (and (true-listp events)
+                               (symbol-alistp synonym-alist)
+                               (print-levelp print))
+                   :mode :program
+                   :stobjs state))
+   (if (endp events)
+       (mv nil state)
+     (mv-let (erp state)
+       (speed-up-and-submit-event (first events) synonym-alist min-time-savings min-event-time print throw-errorp state)
+       (if erp
+           (mv erp state)
+         (speed-up-and-submit-events (rest events) synonym-alist min-time-savings min-event-time print throw-errorp state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun speed-up-event-fn (event synonym-alist min-time-savings min-event-time print state)
+  (declare (xargs :guard (and (symbol-alistp synonym-alist)
+                              (print-levelp print))
                   :mode :program
                   :stobjs state))
-  (if (not (and (consp form)
-                (consp (cdr form))))
-      (prog2$ (cw "Note: ~x0 is not an event we can handle." form)
-              (mv :invalid-event state))
-    (let* ((fn (ffn-symb form))
-           ;; See if FN is an alias for some other command
-           (fn (let ((res (assoc-eq fn synonym-alist)))
-                 (if res
-                     (cdr res)
-                   fn))))
-      (case fn
-        ((defthm defthmd) (speed-up-defthm form min-time-savings min-event-time print t state))
-        ((defrule defruled defrulel defruledl) (speed-up-defrule form min-time-savings min-event-time print t state))
-        (local (speed-up-event-fn (cadr form) synonym-alist min-time-savings min-event-time print throw-errorp state)) ; strip the local ; todo: this submits it as non-local (ok?)
-        ;; Things we don't try to speed up (but improve-book could try to change in-theory events):
-        ;; TODO: Add to this list (see :doc events):
-        ((in-package
-          defconst
-          deflabel
-          defmacro defmacro+
-          defstobj
-          defstub
-          deftheory defthy
-          defttag
-          defxdoc defxdoc+
-          include-book
-          in-theory
-          theory-invariant
-          set-ignore-ok set-state-ok set-irrelevant-formals-ok set-well-founded-relation
-          skip-proofs
-          table)
-         (mv nil state))
-        (otherwise (if throw-errorp
-                       (prog2$ (er hard? 'speed-up-event-fn "Unsupported event: ~s0." (abbreviate-event form))
-                               (mv :unsupported-event state))
-                     (prog2$ (cw "~%Unsupported event: ~s0." (abbreviate-event form))
-                             (mv nil state))))))))
+  (let* ((state (widen-margins state))
+         ;; Suppress annoying time tracker messages.
+         (fake (time-tracker-fn nil nil nil nil nil nil nil)) ; from :trans (time-tracker nil)
+         (min-time-savings (if (eq :auto min-time-savings) *minimum-time-savings-to-report* min-time-savings))
+         (min-event-time (if (eq :auto min-event-time) *minimum-event-time-to-speed-up* min-event-time)))
+    (declare (ignore fake))
+    (mv-let (erp state)
+      (speed-up-and-submit-event event synonym-alist min-time-savings min-event-time print
+                                 t ; throw error on unsupported event
+                                 state)
+      (prog2$ (cw "~%")
+              (if erp
+                  (mv erp nil state)
+                (mv erp :invisible state))))))
 
 ;; Tries to speed up the given event but does not submit it.
 ;; See doc in doc.lisp.
-(defmacro speed-up-event (form &key
+(defmacro speed-up-event (event &key
                                (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
                                (min-time-savings ':auto) ; in seconds
                                (min-event-time ':auto) ; in seconds
                                (print ':brief))
-  `(speed-up-event-fn ',form ',synonym-alist ,min-time-savings ,min-event-time ',print
-                      t ; throw error on unsupported event
+  `(speed-up-event-fn ',event ',synonym-alist ,min-time-savings ,min-event-time ',print
                       state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Submits the event, after printing suggestions for improving it.
-;; Returns (mv erp state).
-(defun speed-up-and-submit-event (event synonym-alist min-time-savings min-event-time print state)
-  (declare (xargs :guard (print-levelp print) ; todo: finish threading this through
-                  :mode :program
-                  :stobjs state))
-  (mv-let (erp state)
-    (speed-up-event-fn event synonym-alist min-time-savings min-event-time print
-                       nil ; no error on unhandled things
-                       state)
-    (if nil ; erp ; todo
-        (mv erp state)
-      ;; For speed, we skip the proofs (todo: can this interfere with calls to make-event?) when submitting the event:
-      (submit-event `(skip-proofs ,event) nil t state))))
-
-;; Submits each event, after printing suggestions for improving it.
-;; Returns (mv erp state).
-(defun speed-up-and-submit-events (events synonym-alist min-time-savings min-event-time print state)
-  (declare (xargs :guard (and (true-listp events)
-                              (symbol-alistp synonym-alist)
-                              (print-levelp print))
-                  :mode :program
-                  :stobjs state))
-  (if (endp events)
-      (mv nil state)
-    (mv-let (erp state)
-      (speed-up-and-submit-event (first events) synonym-alist min-time-savings min-event-time print state)
-      (if erp
-          (mv erp state)
-        (speed-up-and-submit-events (rest events) synonym-alist min-time-savings min-event-time print state)))))
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
@@ -577,7 +629,9 @@
                  (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
             (progn$ (and (eq print :verbose) (cw "  (Book contains ~x0 forms.)~%" (len events)))
                     (mv-let (erp state)
-                      (speed-up-and-submit-events events synonym-alist min-time-savings min-event-time print state)
+                      (speed-up-and-submit-events events synonym-alist min-time-savings min-event-time print
+                                                  nil ; no error for unknown events
+                                                  state)
                       (let* ((state (unwiden-margins state))
                              (state (set-cbd-simple old-cbd state)))
                         (prog2$ (cw ")~%")

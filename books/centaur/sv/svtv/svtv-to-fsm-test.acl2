@@ -1,0 +1,9 @@
+(ld "cert.acl2")
+
+; (Matt K. mod): Clause processor used in COUNTER-COMB-SVTV-THM-OVERRIDE-LEMMA
+; can "return one or more stobjs".
+#+acl2-par
+(set-waterfall-parallelism nil)
+
+; Copied from cert.acl2:
+; cert-flags: ? t :ttags :all

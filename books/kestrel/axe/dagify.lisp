@@ -447,7 +447,11 @@
                             bounded-renaming-entriesp-of-aset1-special-gen
                             <-of-lookup-equal-when-bounded-darg-listp-of-strip-cdrs)
                            (pseudo-dag-arrayp
-                            dargp)))))
+                            dargp
+                            ;; for speed:
+                            CONSP-WHEN-LEN-GREATER
+                            CONSP-OF-CDR
+                            )))))
 
 (defthm dag-constant-alistp-of-mv-nth-5-of-merge-embedded-dag-into-dag-array
   (implies (and (dag-constant-alistp dag-constant-alist)
