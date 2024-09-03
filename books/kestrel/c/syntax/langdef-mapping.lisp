@@ -1095,10 +1095,6 @@
                      (decl-fix decl))))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
-       ((when initdeclors)
-        (reterr (msg "Unsupported initialization declarators ~x0 ~
-                      for function declaration."
-                     initdeclors)))
        ((mv okp tyspecs) (check-declspec-list-all-tyspec declspecs))
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifier list ~
