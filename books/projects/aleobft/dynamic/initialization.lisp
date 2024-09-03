@@ -138,7 +138,7 @@
    (xdoc::p
     "Furthermore, the network is initially empty."))
   (and (system-validators-initp systate)
-       (set::subset (committee->addresses (genesis-committee))
+       (set::subset (committee-members (genesis-committee))
                     (all-addresses systate))
        (set::emptyp (get-network-state systate)))
   :hooks (:fix))
@@ -148,7 +148,7 @@
 (define system-init ((correct-vals address-setp)
                      (faulty-vals address-setp))
   :guard (and (set::emptyp (set::intersect correct-vals faulty-vals))
-              (set::subset (committee->addresses (genesis-committee))
+              (set::subset (committee-members (genesis-committee))
                            (set::union correct-vals faulty-vals)))
   :returns (systate system-statep)
   :short "Calculate an initial system state."
@@ -302,7 +302,7 @@
   (defrule system-initp-of-system-init
     (implies (and (address-setp correct-vals)
                   (address-setp faulty-vals)
-                  (set::subset (committee->addresses (genesis-committee))
+                  (set::subset (committee-members (genesis-committee))
                                (set::union correct-vals faulty-vals))
                   (not (set::intersect correct-vals faulty-vals)))
              (system-initp (system-init correct-vals faulty-vals)))
