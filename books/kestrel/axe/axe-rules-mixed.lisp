@@ -54,9 +54,7 @@
                             ;minus-becomes-bv
                             ;bvuminus-of-+
                             ;plus-1-and-bvchop-becomes-bvplus ;fixme
-                            bvminus-becomes-bvplus-of-bvuminus
-                            <-of-bvplus-becomes-bvlt-arg1
-                            <-of-bvplus-becomes-bvlt-arg2)))))
+                            bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;shouldn't this just go to bvuminus?
 (defthmd bvchop-of-minus-trim
