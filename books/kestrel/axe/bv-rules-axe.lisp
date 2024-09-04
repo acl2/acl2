@@ -18,8 +18,6 @@
 
 ;; See also bv-rules-axe0.lisp.
 
-;; TODO: Rename rules that end in -dag to instead end in -axe.
-
 ;; TODO: Some of these are not BV rules.
 
 ;(include-book "bv-rules-axe0") ;drop?
@@ -1546,7 +1544,7 @@
 
 ;; ;y is a free var - yuck!
 ;; ;bozo prove me
-;; ;rename to have -dag in the name
+;; ;rename to have -axe in the name
 ;; (defthmd bvplus-tighten
 ;;    (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
 ;;                  ;(axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
@@ -1616,325 +1614,329 @@
   :hints (("Goal" :use (:instance bvand-of-constant-tighten (newsize ksize))
            :in-theory (disable bvand-of-constant-tighten))))
 
-; not really an axe rule
-(defthmd bvshl-32-cases-dag ;just use the non-axe-version?
-  (implies (and (syntaxp (not (quotep shift-amount)))
-                (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
-           (equal (BVSHL 32 x shift-AMOUNT)
-                  (BVIF 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '0)
-                        (bvshl 32 X '0)
-                        (BVIF
-                         32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '1)
-                         (bvshl 32 X '1)
-                         (BVIF
-                          32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '2)
-                          (bvshl 32 X '2)
-                          (BVIF
-                           32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '3)
-                           (bvshl 32 X '3)
-                           (BVIF
-                            32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '4)
-                            (bvshl 32 X '4)
-                            (BVIF
-                             32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '5)
-                             (bvshl 32 X '5)
-                             (BVIF
-                              32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '6)
-                              (bvshl 32 X '6)
-                              (BVIF
-                               32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '7)
-                               (bvshl 32 X '7)
-                               (BVIF
-                                32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '8)
-                                (bvshl 32 X '8)
-                                (BVIF
-                                 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '9)
-                                 (bvshl 32 X '9)
-                                 (BVIF
-                                  32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '10)
-                                  (bvshl 32 X '10)
-                                  (BVIF
-                                   32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '11)
-                                   (bvshl 32 X '11)
-                                   (BVIF
-                                    32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '12)
-                                    (bvshl 32 X '12)
-                                    (BVIF
-                                     32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '13)
-                                     (bvshl 32 X '13)
-                                     (BVIF
-                                      32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '14)
-                                      (bvshl 32 X '14)
-                                      (BVIF
-                                       32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '15)
-                                       (bvshl 32 X '15)
-                                       (BVIF
-                                        32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '16)
-                                        (bvshl 32 X '16)
-                                        (BVIF
-                                         32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '17)
-                                         (bvshl 32 X '17)
-                                         (BVIF
-                                          32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '18)
-                                          (bvshl 32 X '18)
-                                          (BVIF
-                                           32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '19)
-                                           (bvshl 32 X '19)
-                                           (BVIF
-                                            32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '20)
-                                            (bvshl 32 X '20)
-                                            (BVIF
-                                             32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '21)
-                                             (bvshl 32 X '21)
-                                             (BVIF
-                                              32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '22)
-                                              (bvshl 32 X '22)
-                                              (BVIF
-                                               32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '23)
-                                               (bvshl 32 X '23)
-                                               (BVIF
-                                                32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '24)
-                                                (bvshl 32 X '24)
-                                                (BVIF
-                                                 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '25)
-                                                 (bvshl 32 X '25)
-                                                 (BVIF
-                                                  32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '26)
-                                                  (bvshl 32 X '26)
-                                                  (BVIF
-                                                   32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '27)
-                                                   (bvshl 32 X '27)
-                                                   (BVIF
-                                                    32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '28)
-                                                    (bvshl 32 X '28)
-                                                    (BVIF
-                                                     32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '29)
-                                                     (bvshl 32 X '29)
-                                                     (BVIF
-                                                      32 (EQUAL (BVCHOP 5 shift-amount) '30)
-                                                      (bvshl 32 X '30)
-                                                      (bvshl 32
-                                                           X
-                                                           '31))))))))))))))))))))))))))))))))))
-  :hints (("Goal" :in-theory (e/d (bvif bvshl)
-                                  (BVSHL-REWRITE-WITH-BVCHOP
-                                   <=-OF-BVCHOP-SAME-LINEAR
-                                   <-OF-IF-ARG1
-                                   ;BVCHOP-IDENTITY
-                                   ;UNSIGNED-BYTE-P-FROM-BOUNDS
-)))))
+;; ; not really an axe rule
+;; ;; todo: drop?
+;; (defthmd bvshl-32-cases-axe ;just use the non-axe-version?
+;;   (implies (and (syntaxp (not (quotep shift-amount)))
+;;                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
+;;            (equal (BVSHL 32 x shift-AMOUNT)
+;;                   (BVIF 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '0)
+;;                         (bvshl 32 X '0)
+;;                         (BVIF
+;;                          32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '1)
+;;                          (bvshl 32 X '1)
+;;                          (BVIF
+;;                           32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '2)
+;;                           (bvshl 32 X '2)
+;;                           (BVIF
+;;                            32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '3)
+;;                            (bvshl 32 X '3)
+;;                            (BVIF
+;;                             32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '4)
+;;                             (bvshl 32 X '4)
+;;                             (BVIF
+;;                              32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '5)
+;;                              (bvshl 32 X '5)
+;;                              (BVIF
+;;                               32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '6)
+;;                               (bvshl 32 X '6)
+;;                               (BVIF
+;;                                32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '7)
+;;                                (bvshl 32 X '7)
+;;                                (BVIF
+;;                                 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '8)
+;;                                 (bvshl 32 X '8)
+;;                                 (BVIF
+;;                                  32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '9)
+;;                                  (bvshl 32 X '9)
+;;                                  (BVIF
+;;                                   32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '10)
+;;                                   (bvshl 32 X '10)
+;;                                   (BVIF
+;;                                    32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '11)
+;;                                    (bvshl 32 X '11)
+;;                                    (BVIF
+;;                                     32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '12)
+;;                                     (bvshl 32 X '12)
+;;                                     (BVIF
+;;                                      32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '13)
+;;                                      (bvshl 32 X '13)
+;;                                      (BVIF
+;;                                       32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '14)
+;;                                       (bvshl 32 X '14)
+;;                                       (BVIF
+;;                                        32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '15)
+;;                                        (bvshl 32 X '15)
+;;                                        (BVIF
+;;                                         32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '16)
+;;                                         (bvshl 32 X '16)
+;;                                         (BVIF
+;;                                          32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '17)
+;;                                          (bvshl 32 X '17)
+;;                                          (BVIF
+;;                                           32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '18)
+;;                                           (bvshl 32 X '18)
+;;                                           (BVIF
+;;                                            32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '19)
+;;                                            (bvshl 32 X '19)
+;;                                            (BVIF
+;;                                             32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '20)
+;;                                             (bvshl 32 X '20)
+;;                                             (BVIF
+;;                                              32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '21)
+;;                                              (bvshl 32 X '21)
+;;                                              (BVIF
+;;                                               32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '22)
+;;                                               (bvshl 32 X '22)
+;;                                               (BVIF
+;;                                                32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '23)
+;;                                                (bvshl 32 X '23)
+;;                                                (BVIF
+;;                                                 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '24)
+;;                                                 (bvshl 32 X '24)
+;;                                                 (BVIF
+;;                                                  32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '25)
+;;                                                  (bvshl 32 X '25)
+;;                                                  (BVIF
+;;                                                   32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '26)
+;;                                                   (bvshl 32 X '26)
+;;                                                   (BVIF
+;;                                                    32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '27)
+;;                                                    (bvshl 32 X '27)
+;;                                                    (BVIF
+;;                                                     32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '28)
+;;                                                     (bvshl 32 X '28)
+;;                                                     (BVIF
+;;                                                      32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '29)
+;;                                                      (bvshl 32 X '29)
+;;                                                      (BVIF
+;;                                                       32 (EQUAL (BVCHOP 5 shift-amount) '30)
+;;                                                       (bvshl 32 X '30)
+;;                                                       (bvshl 32
+;;                                                            X
+;;                                                            '31))))))))))))))))))))))))))))))))))
+;;   :hints (("Goal" :in-theory (e/d (bvif bvshl)
+;;                                   (BVSHL-REWRITE-WITH-BVCHOP
+;;                                    <=-OF-BVCHOP-SAME-LINEAR
+;;                                    <-OF-IF-ARG1
+;;                                    ;BVCHOP-IDENTITY
+;;                                    ;UNSIGNED-BYTE-P-FROM-BOUNDS
+;; )))))
 
-; not really an axe rule
-(defthmd bvshr-32-cases-dag;just use the non-axe-version?
-  (implies (and (syntaxp (not (quotep shift-amount)))
-                (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
-           (equal (BVSHR 32 x shift-AMOUNT)
-                  (BVIF 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '0)
-                        (bvshr 32 X '0)
-                        (BVIF
-                         32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '1)
-                         (bvshr 32 X '1)
-                         (BVIF
-                          32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '2)
-                          (bvshr 32 X '2)
-                          (BVIF
-                           32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '3)
-                           (bvshr 32 X '3)
-                           (BVIF
-                            32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '4)
-                            (bvshr 32 X '4)
-                            (BVIF
-                             32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '5)
-                             (bvshr 32 X '5)
-                             (BVIF
-                              32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '6)
-                              (bvshr 32 X '6)
-                              (BVIF
-                               32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '7)
-                               (bvshr 32 X '7)
-                               (BVIF
-                                32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '8)
-                                (bvshr 32 X '8)
-                                (BVIF
-                                 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '9)
-                                 (bvshr 32 X '9)
-                                 (BVIF
-                                  32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '10)
-                                  (bvshr 32 X '10)
-                                  (BVIF
-                                   32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '11)
-                                   (bvshr 32 X '11)
-                                   (BVIF
-                                    32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '12)
-                                    (bvshr 32 X '12)
-                                    (BVIF
-                                     32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '13)
-                                     (bvshr 32 X '13)
-                                     (BVIF
-                                      32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '14)
-                                      (bvshr 32 X '14)
-                                      (BVIF
-                                       32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '15)
-                                       (bvshr 32 X '15)
-                                       (BVIF
-                                        32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '16)
-                                        (bvshr 32 X '16)
-                                        (BVIF
-                                         32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '17)
-                                         (bvshr 32 X '17)
-                                         (BVIF
-                                          32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '18)
-                                          (bvshr 32 X '18)
-                                          (BVIF
-                                           32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '19)
-                                           (bvshr 32 X '19)
-                                           (BVIF
-                                            32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '20)
-                                            (bvshr 32 X '20)
-                                            (BVIF
-                                             32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '21)
-                                             (bvshr 32 X '21)
-                                             (BVIF
-                                              32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '22)
-                                              (bvshr 32 X '22)
-                                              (BVIF
-                                               32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '23)
-                                               (bvshr 32 X '23)
-                                               (BVIF
-                                                32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '24)
-                                                (bvshr 32 X '24)
-                                                (BVIF
-                                                 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '25)
-                                                 (bvshr 32 X '25)
-                                                 (BVIF
-                                                  32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '26)
-                                                  (bvshr 32 X '26)
-                                                  (BVIF
-                                                   32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '27)
-                                                   (bvshr 32 X '27)
-                                                   (BVIF
-                                                    32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '28)
-                                                    (bvshr 32 X '28)
-                                                    (BVIF
-                                                     32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '29)
-                                                     (bvshr 32 X '29)
-                                                     (BVIF
-                                                      32 (EQUAL (BVCHOP 5 shift-amount) '30)
-                                                      (bvshr 32 X '30)
-                                                      (bvshr 32
-                                                           X
-                                                           '31))))))))))))))))))))))))))))))))))
-  :hints (("Goal" :in-theory (e/d (bvif bvshr) (unsigned-byte-p-from-bounds)))))
+;; ; not really an axe rule
+;; ;; todo: drop?
+;; (defthmd bvshr-32-cases-axe;just use the non-axe-version?
+;;   (implies (and (syntaxp (not (quotep shift-amount)))
+;;                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
+;;            (equal (BVSHR 32 x shift-AMOUNT)
+;;                   (BVIF 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '0)
+;;                         (bvshr 32 X '0)
+;;                         (BVIF
+;;                          32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '1)
+;;                          (bvshr 32 X '1)
+;;                          (BVIF
+;;                           32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '2)
+;;                           (bvshr 32 X '2)
+;;                           (BVIF
+;;                            32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '3)
+;;                            (bvshr 32 X '3)
+;;                            (BVIF
+;;                             32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '4)
+;;                             (bvshr 32 X '4)
+;;                             (BVIF
+;;                              32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '5)
+;;                              (bvshr 32 X '5)
+;;                              (BVIF
+;;                               32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '6)
+;;                               (bvshr 32 X '6)
+;;                               (BVIF
+;;                                32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '7)
+;;                                (bvshr 32 X '7)
+;;                                (BVIF
+;;                                 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '8)
+;;                                 (bvshr 32 X '8)
+;;                                 (BVIF
+;;                                  32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '9)
+;;                                  (bvshr 32 X '9)
+;;                                  (BVIF
+;;                                   32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '10)
+;;                                   (bvshr 32 X '10)
+;;                                   (BVIF
+;;                                    32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '11)
+;;                                    (bvshr 32 X '11)
+;;                                    (BVIF
+;;                                     32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '12)
+;;                                     (bvshr 32 X '12)
+;;                                     (BVIF
+;;                                      32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '13)
+;;                                      (bvshr 32 X '13)
+;;                                      (BVIF
+;;                                       32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '14)
+;;                                       (bvshr 32 X '14)
+;;                                       (BVIF
+;;                                        32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '15)
+;;                                        (bvshr 32 X '15)
+;;                                        (BVIF
+;;                                         32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '16)
+;;                                         (bvshr 32 X '16)
+;;                                         (BVIF
+;;                                          32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '17)
+;;                                          (bvshr 32 X '17)
+;;                                          (BVIF
+;;                                           32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '18)
+;;                                           (bvshr 32 X '18)
+;;                                           (BVIF
+;;                                            32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '19)
+;;                                            (bvshr 32 X '19)
+;;                                            (BVIF
+;;                                             32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '20)
+;;                                             (bvshr 32 X '20)
+;;                                             (BVIF
+;;                                              32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '21)
+;;                                              (bvshr 32 X '21)
+;;                                              (BVIF
+;;                                               32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '22)
+;;                                               (bvshr 32 X '22)
+;;                                               (BVIF
+;;                                                32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '23)
+;;                                                (bvshr 32 X '23)
+;;                                                (BVIF
+;;                                                 32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '24)
+;;                                                 (bvshr 32 X '24)
+;;                                                 (BVIF
+;;                                                  32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '25)
+;;                                                  (bvshr 32 X '25)
+;;                                                  (BVIF
+;;                                                   32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '26)
+;;                                                   (bvshr 32 X '26)
+;;                                                   (BVIF
+;;                                                    32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '27)
+;;                                                    (bvshr 32 X '27)
+;;                                                    (BVIF
+;;                                                     32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '28)
+;;                                                     (bvshr 32 X '28)
+;;                                                     (BVIF
+;;                                                      32 (EQUAL (BVCHOP 5 SHIFT-AMOUNT) '29)
+;;                                                      (bvshr 32 X '29)
+;;                                                      (BVIF
+;;                                                       32 (EQUAL (BVCHOP 5 shift-amount) '30)
+;;                                                       (bvshr 32 X '30)
+;;                                                       (bvshr 32
+;;                                                            X
+;;                                                            '31))))))))))))))))))))))))))))))))))
+;;   :hints (("Goal" :in-theory (e/d (bvif bvshr) (unsigned-byte-p-from-bounds)))))
 
-(defthmd bvshl-32-cases-dag-barrel-shifter ;just use a non-axe-version?
-  (implies (and (syntaxp (not (quotep shift-amount)))
-                (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
-           (equal (BVSHL 32 x shift-AMOUNT)
-                  (let* ((a (bvif 32 (equal 1 (getbit 4 shift-AMOUNT))
-                                  (bvshl 32 x 16)
-                                  x))
-                         (b (bvif 32 (equal 1 (getbit 3 shift-AMOUNT))
-                                  (bvshl 32 a 8)
-                                  a))
-                         (c (bvif 32 (equal 1 (getbit 2 shift-AMOUNT))
-                                  (bvshl 32 b 4)
-                                  b))
-                         (d (bvif 32 (equal 1 (getbit 1 shift-AMOUNT))
-                                  (bvshl 32 c 2)
-                                  c))
-                         (e (bvif 32 (equal 1 (getbit 0 shift-AMOUNT))
-                                  (bvshl 32 d 1)
-                                  d)))
-                    e)))
-  :hints (("Goal"
-           :cases ((equal 0 shift-amount)
-                   (equal 1 shift-amount)
-                   (equal 2 shift-amount)
-                   (equal 3 shift-amount)
-                   (equal 4 shift-amount)
-                   (equal 5 shift-amount)
-                   (equal 6 shift-amount)
-                   (equal 7 shift-amount)
-                   (equal 8 shift-amount)
-                   (equal 9 shift-amount)
-                   (equal 10 shift-amount)
-                   (equal 11 shift-amount)
-                   (equal 12 shift-amount)
-                   (equal 13 shift-amount)
-                   (equal 14 shift-amount)
-                   (equal 15 shift-amount)
-                   (equal 16 shift-amount)
-                   (equal 17 shift-amount)
-                   (equal 18 shift-amount)
-                   (equal 19 shift-amount)
-                   (equal 20 shift-amount)
-                   (equal 21 shift-amount)
-                   (equal 22 shift-amount)
-                   (equal 23 shift-amount)
-                   (equal 24 shift-amount)
-                   (equal 25 shift-amount)
-                   (equal 26 shift-amount)
-                   (equal 27 shift-amount)
-                   (equal 28 shift-amount)
-                   (equal 29 shift-amount)
-                   (equal 30 shift-amount)
-                   (equal 31 shift-amount))
-           :in-theory (e/d (BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT) (BVSHL-REWRITE-WITH-BVCHOP)))))
+;; ;; todo: drop?
+;; (defthmd bvshl-32-cases-axe-barrel-shifter ;just use a non-axe-version?
+;;   (implies (and (syntaxp (not (quotep shift-amount)))
+;;                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
+;;            (equal (BVSHL 32 x shift-AMOUNT)
+;;                   (let* ((a (bvif 32 (equal 1 (getbit 4 shift-AMOUNT))
+;;                                   (bvshl 32 x 16)
+;;                                   x))
+;;                          (b (bvif 32 (equal 1 (getbit 3 shift-AMOUNT))
+;;                                   (bvshl 32 a 8)
+;;                                   a))
+;;                          (c (bvif 32 (equal 1 (getbit 2 shift-AMOUNT))
+;;                                   (bvshl 32 b 4)
+;;                                   b))
+;;                          (d (bvif 32 (equal 1 (getbit 1 shift-AMOUNT))
+;;                                   (bvshl 32 c 2)
+;;                                   c))
+;;                          (e (bvif 32 (equal 1 (getbit 0 shift-AMOUNT))
+;;                                   (bvshl 32 d 1)
+;;                                   d)))
+;;                     e)))
+;;   :hints (("Goal"
+;;            :cases ((equal 0 shift-amount)
+;;                    (equal 1 shift-amount)
+;;                    (equal 2 shift-amount)
+;;                    (equal 3 shift-amount)
+;;                    (equal 4 shift-amount)
+;;                    (equal 5 shift-amount)
+;;                    (equal 6 shift-amount)
+;;                    (equal 7 shift-amount)
+;;                    (equal 8 shift-amount)
+;;                    (equal 9 shift-amount)
+;;                    (equal 10 shift-amount)
+;;                    (equal 11 shift-amount)
+;;                    (equal 12 shift-amount)
+;;                    (equal 13 shift-amount)
+;;                    (equal 14 shift-amount)
+;;                    (equal 15 shift-amount)
+;;                    (equal 16 shift-amount)
+;;                    (equal 17 shift-amount)
+;;                    (equal 18 shift-amount)
+;;                    (equal 19 shift-amount)
+;;                    (equal 20 shift-amount)
+;;                    (equal 21 shift-amount)
+;;                    (equal 22 shift-amount)
+;;                    (equal 23 shift-amount)
+;;                    (equal 24 shift-amount)
+;;                    (equal 25 shift-amount)
+;;                    (equal 26 shift-amount)
+;;                    (equal 27 shift-amount)
+;;                    (equal 28 shift-amount)
+;;                    (equal 29 shift-amount)
+;;                    (equal 30 shift-amount)
+;;                    (equal 31 shift-amount))
+;;            :in-theory (e/d (BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT) (BVSHL-REWRITE-WITH-BVCHOP)))))
 
-(defthmd bvshr-32-cases-dag-barrel-shifter ;just use a non-axe-version?
-  (implies (and (syntaxp (not (quotep shift-amount)))
-                (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
-           (equal (BVSHR 32 x shift-AMOUNT)
-                  (let* ((a (bvif 32 (equal 1 (getbit 4 shift-AMOUNT))
-                                  (bvshr 32 x 16)
-                                  x))
-                         (b (bvif 32 (equal 1 (getbit 3 shift-AMOUNT))
-                                  (bvshr 32 a 8)
-                                  a))
-                         (c (bvif 32 (equal 1 (getbit 2 shift-AMOUNT))
-                                  (bvshr 32 b 4)
-                                  b))
-                         (d (bvif 32 (equal 1 (getbit 1 shift-AMOUNT))
-                                  (bvshr 32 c 2)
-                                  c))
-                         (e (bvif 32 (equal 1 (getbit 0 shift-AMOUNT))
-                                  (bvshr 32 d 1)
-                                  d)))
-                    e)))
-  :hints (("Goal"
-           :cases ((equal 0 shift-amount)
-                   (equal 1 shift-amount)
-                   (equal 2 shift-amount)
-                   (equal 3 shift-amount)
-                   (equal 4 shift-amount)
-                   (equal 5 shift-amount)
-                   (equal 6 shift-amount)
-                   (equal 7 shift-amount)
-                   (equal 8 shift-amount)
-                   (equal 9 shift-amount)
-                   (equal 10 shift-amount)
-                   (equal 11 shift-amount)
-                   (equal 12 shift-amount)
-                   (equal 13 shift-amount)
-                   (equal 14 shift-amount)
-                   (equal 15 shift-amount)
-                   (equal 16 shift-amount)
-                   (equal 17 shift-amount)
-                   (equal 18 shift-amount)
-                   (equal 19 shift-amount)
-                   (equal 20 shift-amount)
-                   (equal 21 shift-amount)
-                   (equal 22 shift-amount)
-                   (equal 23 shift-amount)
-                   (equal 24 shift-amount)
-                   (equal 25 shift-amount)
-                   (equal 26 shift-amount)
-                   (equal 27 shift-amount)
-                   (equal 28 shift-amount)
-                   (equal 29 shift-amount)
-                   (equal 30 shift-amount)
-                   (equal 31 shift-amount))
-           :in-theory (enable BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT))))
+;; ;; todo: drop?
+;; (defthmd bvshr-32-cases-axe-barrel-shifter ;just use a non-axe-version?
+;;   (implies (and (syntaxp (not (quotep shift-amount)))
+;;                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
+;;            (equal (BVSHR 32 x shift-AMOUNT)
+;;                   (let* ((a (bvif 32 (equal 1 (getbit 4 shift-AMOUNT))
+;;                                   (bvshr 32 x 16)
+;;                                   x))
+;;                          (b (bvif 32 (equal 1 (getbit 3 shift-AMOUNT))
+;;                                   (bvshr 32 a 8)
+;;                                   a))
+;;                          (c (bvif 32 (equal 1 (getbit 2 shift-AMOUNT))
+;;                                   (bvshr 32 b 4)
+;;                                   b))
+;;                          (d (bvif 32 (equal 1 (getbit 1 shift-AMOUNT))
+;;                                   (bvshr 32 c 2)
+;;                                   c))
+;;                          (e (bvif 32 (equal 1 (getbit 0 shift-AMOUNT))
+;;                                   (bvshr 32 d 1)
+;;                                   d)))
+;;                     e)))
+;;   :hints (("Goal"
+;;            :cases ((equal 0 shift-amount)
+;;                    (equal 1 shift-amount)
+;;                    (equal 2 shift-amount)
+;;                    (equal 3 shift-amount)
+;;                    (equal 4 shift-amount)
+;;                    (equal 5 shift-amount)
+;;                    (equal 6 shift-amount)
+;;                    (equal 7 shift-amount)
+;;                    (equal 8 shift-amount)
+;;                    (equal 9 shift-amount)
+;;                    (equal 10 shift-amount)
+;;                    (equal 11 shift-amount)
+;;                    (equal 12 shift-amount)
+;;                    (equal 13 shift-amount)
+;;                    (equal 14 shift-amount)
+;;                    (equal 15 shift-amount)
+;;                    (equal 16 shift-amount)
+;;                    (equal 17 shift-amount)
+;;                    (equal 18 shift-amount)
+;;                    (equal 19 shift-amount)
+;;                    (equal 20 shift-amount)
+;;                    (equal 21 shift-amount)
+;;                    (equal 22 shift-amount)
+;;                    (equal 23 shift-amount)
+;;                    (equal 24 shift-amount)
+;;                    (equal 25 shift-amount)
+;;                    (equal 26 shift-amount)
+;;                    (equal 27 shift-amount)
+;;                    (equal 28 shift-amount)
+;;                    (equal 29 shift-amount)
+;;                    (equal 30 shift-amount)
+;;                    (equal 31 shift-amount))
+;;            :in-theory (enable BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT))))
 
 ;todo: make rules like this for other ops!
 (defthmd bvsx-too-high-axe
@@ -2017,13 +2019,13 @@
   :hints (("Goal" :in-theory (disable <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT ;why
                                       ))))
 
-;move
-(defthmd myif-same-arg1-arg2-when-booleanp-axe
-  (implies (and (axe-syntaxp (not (syntactic-constantp x dag-array))) ;avoid loops
-                (booleanp x))
-           (equal (myif x x y)
-                  (myif x t y)))
-  :hints (("Goal" :in-theory (enable myif))))
+;; ;move
+;; (defthmd myif-same-arg1-arg2-when-booleanp-axe
+;;   (implies (and (axe-syntaxp (not (syntactic-constantp x dag-array))) ;avoid loops
+;;                 (booleanp x))
+;;            (equal (myif x x y)
+;;                   (myif x t y)))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
 (defthmd sbvrem-when-positive-work-hard
   (implies (and (work-hard (sbvle size 0 x))

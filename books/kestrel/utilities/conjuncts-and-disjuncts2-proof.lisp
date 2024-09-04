@@ -1,6 +1,6 @@
 ; Proof of correctness of conjuncts-and-disjuncts functions
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -117,4 +117,4 @@
     (iff (con-and-dis-eval (disjoin (get-disjuncts-of-term2 term)) a)
          (con-and-dis-eval term a))
     :flag get-disjuncts-of-term2)
-  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2))))
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2 myif))))

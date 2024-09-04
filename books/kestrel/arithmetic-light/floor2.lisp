@@ -265,7 +265,12 @@
     :hints (("Goal" :in-theory (disable  /r-when-abs-numerator=1
                                          x*y>1-positive
                                          integerp-of-*-of-/-when-<-and-negative
-                                         x*y>1-positive)))
+                                         x*y>1-positive
+                                         ;; for speed:
+                                         distributivity
+                                         <=-of-*-and-*-same-linear
+                                         ;commutativity-2-of-*
+                                         )))
     ))
 
 (encapsulate ()
@@ -298,7 +303,13 @@
                              mod-when-<
                              integerp-of-*-of-/-and-mod
                              mod-less-than-1
-                             default-*-2))))))
+                             default-*-2
+                             ;; for speed:
+                             <-OF-*-SAME-LINEAR-2
+                             <-OF-*-SAME-LINEAR-SPECIAL
+                             <=-OF-*-AND-*-SAME-LINEAR
+                             <-OF-*-AND-*-SAME-LINEAR-2
+                             ))))))
 
 ;bozo gen the 1/4
 (defthm quotient-is-multiple

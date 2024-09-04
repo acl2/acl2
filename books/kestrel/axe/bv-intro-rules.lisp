@@ -122,19 +122,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;add axe to name
-;todo: more rules like this?
-(defthmd mod-becomes-bvmod
+(defthmd mod-becomes-bvmod-axe-bind-free-arg1
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p xsize y)
+                (unsigned-byte-p-forced xsize x))
+           (equal (mod x y)
+                  (bvmod xsize x y)))
+  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1 (size xsize)))))
+
+(defthmd mod-becomes-bvmod-axe-bind-free-arg2
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced ysize y)
-                (unsigned-byte-p ysize x) ;new..
-                )
+                (unsigned-byte-p ysize x)
+                (unsigned-byte-p-forced ysize y))
            (equal (mod x y)
                   (bvmod ysize x y)))
-  :hints (("Goal" :in-theory (enable mod-becomes-bvmod-core unsigned-byte-p-forced))))
+  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1 (size xsize)))))
 
-;name
-(defthmd mod-becomes-bvmod-better-dag
+;drop?
+(defthmd mod-becomes-bvmod-axe-bind-free-and-bind-free
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced xsize x)
@@ -142,33 +147,30 @@
            (equal (mod x y)
                   (bvmod (max xsize ysize) x y)))
   :hints (("Goal"
-           :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
+           :use (:instance mod-becomes-bvmod-free-arg1 (size (max xsize ysize)))
+           :in-theory (enable unsigned-byte-p-forced))))
 
-;name
-(defthmd mod-becomes-bvmod-better-bind-free-and-free
+;drop?
+(defthmd mod-becomes-bvmod-axe-bind-free-and-free
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x)
                 (unsigned-byte-p ysize y)) ;ysize is a freevar
            (equal (mod x y)
                   (bvmod (max xsize ysize) x y)))
   :hints (("Goal"
-           :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
+           :use (:instance mod-becomes-bvmod-free-arg1 (size (max xsize ysize)))
+           :in-theory (enable unsigned-byte-p-forced))))
 
-;name
-(defthmd mod-becomes-bvmod-better-free-and-bind-free
+;drop?
+(defthmd mod-becomes-bvmod-axe-free-and-bind-free
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced ysize y)
                 (unsigned-byte-p xsize x)) ;xsize is a freevar
            (equal (mod x y)
                   (bvmod (max xsize ysize) x y)))
   :hints (("Goal"
-           :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
+           :use (:instance mod-becomes-bvmod-free-arg1 (size (max xsize ysize)))
+           :in-theory (enable unsigned-byte-p-forced))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

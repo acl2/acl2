@@ -893,7 +893,9 @@
                                                                      (ADD rot
                                                                           (MUL *-2^33* bitc p) p) p) p) p) p) p) p)))
            :in-theory (disable ACL2::BVCAT-EQUAL-REWRITE
-                               ACL2::BVCAT-EQUAL-REWRITE-ALT))))
+                               ACL2::BVCAT-EQUAL-REWRITE-ALT
+                               ;; for speed:
+                               bitp))))
 
 
 ;gen the -32 version
@@ -949,9 +951,12 @@
                            (x bv35)
                            (n 35)
                            (m 33))
-           :in-theory (enable add mul bvcat acl2::logapp ACL2::MOD-SUM-CASES slice ACL2::BVCHOP-OF-SUM-CASES
+           :in-theory (e/d (add mul bvcat acl2::logapp ACL2::MOD-SUM-CASES slice ACL2::BVCHOP-OF-SUM-CASES
                               EQUAL-OF-LOGTAIL-AND-CONSTANT
-                              EQUAL-OF-LOGTAIL-AND-CONSTANT-33))))
+                              EQUAL-OF-LOGTAIL-AND-CONSTANT-33)
+                           (;; for speed:
+                            acl2::MOD-BOUND-LINEAR-ARG2-STRONG
+                            )))))
 
 
 (defthm bound-helper

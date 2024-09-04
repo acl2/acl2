@@ -374,16 +374,6 @@
 ;; ;                                      BVAND-OF-BVCAT-TIGHTEN-LOW
 ;;                                        )))))
 
-(defthmd mod-becomes-bvmod-better-free-and-free
-  (implies (and (unsigned-byte-p xsize x) ;xsize is a freevar
-                (unsigned-byte-p ysize y)) ;ysize is a freevar
-           (equal (mod x y)
-                  (bvmod (max xsize ysize) x y)))
-  :hints (("Goal"
-           :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
-
 (defthm recollapse-hack-helper
   (implies (and (equal free1 (bvchop size x))
                 (natp size)
@@ -2291,23 +2281,40 @@
   :hints (("Goal" :use unsigned-byte-p-of-*-of-constant-helper
            :in-theory (disable unsigned-byte-p-of-*-of-constant-helper))))
 
+(defthmd mod-becomes-bvmod-bind-free-arg1
+  (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
+                (unsigned-byte-p size y)
+                (force (unsigned-byte-p-forced size x)))
+           (equal (mod x y)
+                  (bvmod size x y)))
+  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1)
+           :in-theory (enable unsigned-byte-p-forced))))
+
+(theory-invariant (incompatible (:definition bvmod) (:rewrite mod-becomes-bvmod-bind-free-arg1)))
+
+(defthmd mod-becomes-bvmod-bind-free-arg2
+  (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
+                (unsigned-byte-p size x)
+                (force (unsigned-byte-p-forced size y)))
+           (equal (mod x y)
+                  (bvmod size x y)))
+  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1)
+           :in-theory (enable unsigned-byte-p-forced))))
+
+(theory-invariant (incompatible (:definition bvmod) (:rewrite mod-becomes-bvmod-bind-free-arg2)))
+
 ;where should this go? it needs stuff from bv-syntax.lisp
-;rename to -bind-free
-(defthmd mod-becomes-bvmod-better
+(defthmd mod-becomes-bvmod-bind-free-and-bind-free
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (force (unsigned-byte-p-forced xsize x))
-                (force (unsigned-byte-p-forced ysize y))
-;(natp xsize) ;drop
-;(natp ysize) ;drop
-                )
+                (force (unsigned-byte-p-forced ysize y)))
            (equal (mod x y)
                   (bvmod (max xsize ysize) x y)))
-  :hints (("Goal" :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
+  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1 (size (max xsize ysize)))
+           :in-theory (enable unsigned-byte-p-forced))))
 
-(theory-invariant (incompatible (:definition bvmod) (:rewrite mod-becomes-bvmod-better)))
+(theory-invariant (incompatible (:definition bvmod) (:rewrite mod-becomes-bvmod-bind-free-and-bind-free)))
 
 (defthm bvlt-of-bvmod-same
   (equal (bvlt size (bvmod size x y) y)
