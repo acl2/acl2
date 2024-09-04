@@ -1,7 +1,7 @@
 ; An analogue of mod for bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -154,12 +154,36 @@
          0)
   :hints (("Goal" :in-theory (enable bvmod))))
 
-(defthmd mod-becomes-bvmod-core
-  (implies (and (unsigned-byte-p size y)
-                (unsigned-byte-p size x))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd mod-becomes-bvmod-free-arg1
+  (implies (and (unsigned-byte-p size x)  ;size is a freevar
+                (unsigned-byte-p size y))
            (equal (mod x y)
                   (bvmod size x y)))
   :hints (("Goal" :in-theory (enable bvmod))))
+
+(theory-invariant (incompatible (:rewrite mod-becomes-bvmod-free-arg1) (:definition bvmod)))
+
+(defthmd mod-becomes-bvmod-free-arg2
+  (implies (and (unsigned-byte-p size y)  ;size is a freevar
+                (unsigned-byte-p size x))
+           (equal (mod x y)
+                  (bvmod size x y)))
+  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1))))
+
+(theory-invariant (incompatible (:rewrite mod-becomes-bvmod-free-arg2) (:definition bvmod)))
+
+;rename?
+;do we need this one?
+(defthmd mod-becomes-bvmod-free-and-free
+  (implies (and (unsigned-byte-p xsize x)  ;xsize is a freevar
+                (unsigned-byte-p ysize y)) ;ysize is a freevar
+           (equal (mod x y)
+                  (bvmod (max xsize ysize) x y)))
+  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1 (size (max xsize ysize))))))
+
+(theory-invariant (incompatible (:rewrite mod-becomes-bvmod-free-and-free) (:definition bvmod)))
 
 (defthm bvmod-of-1-arg1
   (implies (posp size)

@@ -755,9 +755,9 @@
 
 ;bvmod-of-bvplus-of-bvmod ;has a work-hard
      bvlt-of-bvmod-same
-     mod-becomes-bvmod-better-free-and-free ;fixme add more!
-     mod-becomes-bvmod-better-free-and-bind-free
-     mod-becomes-bvmod-better-bind-free-and-free
+     mod-becomes-bvmod-free-and-free ; use a better one? ; todo: include more rules?
+     mod-becomes-bvmod-axe-free-and-bind-free
+     mod-becomes-bvmod-axe-bind-free-and-free
 
      bvcat-of-0-arg2 ;trying... for when the highval is 0
 
