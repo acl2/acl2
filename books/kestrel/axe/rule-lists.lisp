@@ -3731,8 +3731,8 @@
              floor-of-floor
              <-of-0-and-floor
 
-             plus-becomes-bvplus-arg2-free-dag ;other ones?
-             plus-becomes-bvplus-arg1-free-dag ;other ones?
+             +-becomes-bvplus-axe-bind-free-and-free ;other ones?
+             +-becomes-bvplus-axe-free-and-bind-free ;other ones?
 ;bvmult-of-slice-when-bvchop-0 ;where did this rule go? ffixme
              bvlt-of-bvmult-hack200
              nth-of-group2-gen

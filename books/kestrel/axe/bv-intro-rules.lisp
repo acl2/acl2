@@ -275,8 +275,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Pretty aggressive
 ;rename
-(defthmd plus-becomes-bvplus-arg1-free-dag
+(defthmd +-becomes-bvplus-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y)
+                (posp xsize))
+           (equal (+ x y)
+                  (bvplus (+ 1 (max xsize ysize)) x y)))
+  :hints (("Goal" :use (:instance plus-becomes-bvplus)
+           :in-theory (disable plus-becomes-bvplus))))
+
+(defthmd +-becomes-bvplus-axe-free-and-bind-free
   (implies (and (unsigned-byte-p xsize x)
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (force (unsigned-byte-p-forced ysize y))
@@ -286,8 +298,7 @@
   :hints (("Goal" :use (:instance plus-becomes-bvplus)
            :in-theory (e/d (unsigned-byte-p-forced) (plus-becomes-bvplus)))))
 
-;rename
-(defthmd plus-becomes-bvplus-arg2-free-dag
+(defthmd +-becomes-bvplus-axe-bind-free-and-free
   (implies (and (unsigned-byte-p xsize x)
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced ysize y)
@@ -310,6 +321,19 @@
 ;;                                    PLUS-BECOMES-BVPLUS
 ;;                                    <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
 ;;                                    )))))
+
+
+;; Special case for when the + is inside an unsigned-byte-p.
+(defthmd unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y)
+                (posp xsize))
+           (equal (unsigned-byte-p size (+ x y))
+                  (unsigned-byte-p size (bvplus (+ 1 (max xsize ysize)) x y))))
+  :hints (("Goal" :use (:instance +-becomes-bvplus-axe)
+           :in-theory (disable +-becomes-bvplus-axe equal-of-+-and-bv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

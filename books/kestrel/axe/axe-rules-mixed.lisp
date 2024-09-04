@@ -52,14 +52,11 @@
                             ;<-when-unsigned-byte-p
                             ;<-when-unsigned-byte-p-alt
                             ;minus-becomes-bv
-                            ;plus-becomes-bvplus-arg1-free
                             ;bvuminus-of-+
                             ;plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
                             <-of-bvplus-becomes-bvlt-arg1
-                            <-of-bvplus-becomes-bvlt-arg2
-                            ;plus-becomes-bvplus
-                            )))))
+                            <-of-bvplus-becomes-bvlt-arg2)))))
 
 ;shouldn't this just go to bvuminus?
 (defthmd bvchop-of-minus-trim
@@ -139,30 +136,6 @@
            (equal (unsigned-byte-p size x)
                   t))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P-FORCED))))
-
-;; Pretty aggressive
-(defthmd +-becomes-bvplus-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y)
-                (posp xsize))
-           (equal (+ x y)
-                  (bvplus (+ 1 (max xsize ysize)) x y)))
-  :hints (("Goal" :use (:instance plus-becomes-bvplus)
-           :in-theory (disable plus-becomes-bvplus))))
-
-;; Special case for when the + is inside an unsigned-byte-p.
-(defthmd unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y)
-                (posp xsize))
-           (equal (unsigned-byte-p size (+ x y))
-                  (unsigned-byte-p size (bvplus (+ 1 (max xsize ysize)) x y))))
-  :hints (("Goal" :use (:instance +-becomes-bvplus-axe)
-           :in-theory (disable +-becomes-bvplus-axe equal-of-+-and-bv))))
 
 (defthmd equal-when-bv-sizes-differ-1-dag
   (implies (and (unsigned-byte-p free x)
