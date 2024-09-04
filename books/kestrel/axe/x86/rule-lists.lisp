@@ -257,7 +257,7 @@
 (defun read-byte-rules ()
   (declare (xargs :guard t))
   '(read-byte-of-xw-irrel
-    read-byte-when-program-at
+    ;;read-byte-when-program-at read-byte-when-program-at-gen
     read-byte-of-set-flag
     read-byte-of-write-byte
     read-byte-of-logext
