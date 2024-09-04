@@ -67,6 +67,11 @@ occurring.
 <p>
   The easiest way to install ACL2s on Windows is to use the installer.
 </p>
+
+<p>A video walking through installation is available
+  <a href=\"https://youtu.be/Pwf2GWGBTD0\" target=\"_blank\">here for Windows 10</a> and
+  <a href=\"https://youtu.be/aunZ1K5BIrg\" target=\"_blank\">here for Windows 11</a>.
+</p>
 <ol>
   <li><b>If you are on Windows 11:</b> Download the installer <a href=\"https://github.com/acl2s/homebrew-acl2s/releases/download/acl2s-0.1.14/ACL2sInstallerWin11.exe\">from here</a>.</li>
   <li><b>If you are on Windows 10:</b> Download the installer <a href=\"https://github.com/acl2s/homebrew-acl2s/releases/download/acl2s-0.1.14/ACL2sInstallerWin10.exe\">from here</a>.</li>
