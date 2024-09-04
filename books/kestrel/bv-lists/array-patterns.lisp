@@ -141,12 +141,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Discards some (usually, most) of the elements in the array:
+;; Example: If we know the index is of the form 4*i, then we can discard all array values
+;; whose indices are not multiples of 4.
 (defthm bv-array-read-of-bvmult-discard-vals
   (implies (and (syntaxp (and (quotep data)
                               (quotep k)
                               (quotep index-width)
                               (quotep len)))
-                (equal len (expt 2 index-width)) ; gen? or other rules might help establish this
+                (<= len (expt 2 index-width)) ; gen?? or other rules might help establish this
+                (integerp len)
                 (< (* k index) len) ; gen? the bvmult doesn't do any real chopping
                 (integerp (/ len k)) ; gen? requires k to be a power of 2
                 (< 1 k)
@@ -156,7 +159,7 @@
            (equal (bv-array-read element-size len (bvmult index-width k index) data)
                   ;; The call to every-nth gets evaluated:
                   (bv-array-read element-size (/ len k)
-                                 index ; consider ghis instead: (bvchop (- index-width (lg k)) index)
+                                 index ; consider this instead: (bvchop (- index-width (lg k)) index)
                                  (every-nth k data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvmult unsigned-byte-p))))
 
@@ -212,7 +215,8 @@
                               (quotep i)
                               (quotep index-width)
                               (quotep len)))
-                (equal len (expt 2 index-width)) ; gen? or other rules might help establish this
+                (<= len (expt 2 index-width)) ; gen?? or other rules might help establish this
+                (integerp len)
                 (< i k)
                 (< (+ i (* k index)) len) ; gen? the bvmult doesn't do any real chopping
                 (integerp (/ len k)) ; gen? requires k to be a power of 2
