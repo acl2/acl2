@@ -672,13 +672,13 @@
 (defthm read-when-program-at-1-byte
   (implies (and ;; find that a program is loaded in the initial state:
             (program-at paddr bytes x86-init) ;these are free vars
+            (<= paddr addr)
+            (< (- addr paddr) (len bytes))
             ;; try to prove that the same program is loaded in the current state:
             (program-at paddr bytes x86)
             (byte-listp bytes)
-            (<= paddr addr)
             (integerp addr)
-;           (integerp paddr)
-            (< addr (+ paddr (len bytes)))
+            ;; (integerp paddr)
             (canonical-address-p paddr)
             (canonical-address-p (+ -1 (len bytes) paddr))
             (app-view x86)
@@ -692,11 +692,11 @@
 ;todo: gen
 (defthm read-when-program-at-2-bytes
   (implies (and (program-at paddr bytes x86-init)
+                (<= paddr addr)
+                (< (- addr paddr) (+ -1 (len bytes)))
                 (program-at paddr bytes x86)
                 (byte-listp bytes)
-                (<= paddr addr)
                 (integerp addr)
-                (< (+ 1 addr) (+ paddr (len bytes)))
                 (canonical-address-p paddr)
                 (canonical-address-p (+ -1 (len bytes) paddr))
                 (app-view x86)
@@ -711,11 +711,11 @@
 ;todo: gen
 (defthm read-when-program-at-4-bytes
   (implies (and (program-at paddr bytes x86-init)
+                (<= paddr addr)
+                (< (- addr paddr) (+ -3 (len bytes)))
                 (program-at paddr bytes x86)
                 (byte-listp bytes)
-                (<= paddr addr)
                 (integerp addr)
-                (< (+ 3 addr) (+ paddr (len bytes)))
                 (canonical-address-p paddr)
                 (canonical-address-p (+ -1 (len bytes) paddr))
                 (app-view x86)
@@ -733,11 +733,11 @@
 
 (defthm read-when-program-at-8-bytes
   (implies (and (program-at paddr bytes x86-init)
+                (<= paddr addr)
+                (< (- addr paddr) (+ -7 (len bytes)))
                 (program-at paddr bytes x86)
                 (byte-listp bytes)
-                (<= paddr addr)
                 (integerp addr)
-                (< (+ 7 addr) (+ paddr (len bytes)))
                 (canonical-address-p paddr)
                 (canonical-address-p (+ -1 (len bytes) paddr))
                 (app-view x86)
