@@ -309,8 +309,10 @@
 
 ;; Note that the program-at assumption we have will be about the initial x86 state,
 ;; which is unlikely to be the state we're reading from.  This rule deals with that.
-;rename read-byte-when-program-at
-(defthm read-byte-in-terms-of-nth-and-pos-eric
+;; add (syntaxp (quotep bytes)) ? but this is used to prove other rules below
+;; todo: reorder hyps?
+;; todo: or just always go to read?
+(defthmd read-byte-when-program-at-gen
   (implies (and ;; find that a program is loaded in the initial state:
             (program-at paddr bytes x86-init) ;these are free vars
             ;; try to prove that the same program is loaded in the current state:
@@ -344,6 +346,25 @@
                             x86isa::rb-in-terms-of-nth-and-pos-eric
                             ;;x86isa::rb-in-terms-of-nth-and-pos-eric-gen
                             )))))
+
+;todo: move up?  may have to change the proof
+;; not very useful, since the state must be the same?
+(defthmd read-byte-when-program-at
+  (implies (and (program-at addr2 bytes x86)
+                (syntaxp (quotep bytes))
+                (< 0 (len bytes))
+                (byte-listp bytes)
+                (canonical-address-p$inline addr2)
+                (canonical-address-p$inline (+ -1 addr2 (len bytes)))
+                (<= addr2 addr)
+                (< (+ addr (- addr2)) (len bytes))
+                (integerp addr)
+                (integerp addr2)
+                (app-view x86)
+                (x86p x86))
+           (equal (read-byte addr x86)
+                  (nth (- addr addr2) bytes)))
+  :hints (("Goal" :use (:instance read-byte-when-program-at-gen (x86-init x86) (paddr addr2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -667,7 +688,7 @@
            (equal (read 1 addr x86)
                   (nth (- addr paddr)
                        bytes)))
-  :hints (("Goal" :in-theory (enable read))))
+  :hints (("Goal" :in-theory (enable read read-byte-when-program-at-gen))))
 
 ;todo: gen
 ;; this is a 2-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
@@ -686,7 +707,7 @@
            (equal (read 2 addr x86)
                   (acl2::bvcat2 8 (nth (+ 1 addr (- paddr)) bytes)
                                 8 (nth (+ addr (- paddr)) bytes))))
-  :hints (("Goal" :in-theory (enable read)
+  :hints (("Goal" :in-theory (enable read read-byte-when-program-at-gen)
            :expand ((read 2 (+ 2 addr) x86)))))
 
 ;todo: gen
@@ -708,7 +729,8 @@
                                 8 (nth (+ 2 addr (- paddr)) bytes)
                                 8 (nth (+ 1 addr (- paddr)) bytes)
                                 8 (nth (+ addr (- paddr)) bytes))))
-  :hints (("Goal" :expand ((read 4 addr x86)
+  :hints (("Goal" :in-theory (enable read read-byte-when-program-at-gen)
+           :expand ((read 4 addr x86)
                            (read 3 (+ 1 addr) x86)
                            (read 2 (+ 2 addr) x86)))))
 
@@ -734,7 +756,8 @@
                                 8 (nth (+ 2 addr (- paddr)) bytes)
                                 8 (nth (+ 1 addr (- paddr)) bytes)
                                 8 (nth (+ addr (- paddr)) bytes))))
-  :hints (("Goal" :expand ((read 8 addr x86)
+  :hints (("Goal" :in-theory (enable read read-byte-when-program-at-gen)
+           :expand ((read 8 addr x86)
                            (read 7 (+ 1 addr) x86)
                            (read 6 (+ 2 addr) x86)
                            (read 5 (+ 3 addr) x86)
@@ -770,6 +793,7 @@
                   ;;(acl2::packbv-little n 8 (take n (nthcdr (- addr paddr) bytes)))
                   (acl2::bv-array-read-chunk-little n 8 (len bytes) (- addr paddr) bytes)))
   :hints (("Goal" :in-theory (enable read
+                                     read-byte-when-program-at-gen
                                      acl2::bv-array-read-chunk-little
                                      ;acl2::packbv-little ; todo
                                      bv-array-read
@@ -1006,25 +1030,7 @@
   :hints (("Goal" :in-theory (e/d (program-at read-when-equal-of-read-gen)
                                   (distributivity)))))
 
-;todo: move up?  may have to change the proof
-(defthm read-byte-when-program-at
-  (implies (and (program-at addr2 bytes x86)
-                (syntaxp (quotep bytes))
-                (< 0 (len bytes))
-                (byte-listp bytes)
-                (canonical-address-p$inline addr2)
-                (canonical-address-p$inline (+ -1 addr2 (len bytes)))
-                (<= addr2 addr)
-                (< (+ addr (- addr2)) (len bytes))
-                (integerp addr)
-                (integerp addr2)
-                (app-view x86)
-                (x86p x86))
-           (equal (read-byte addr x86)
-                  (nth (- addr addr2) bytes)))
-  :hints (("Goal" :use (:instance read-when-program-at)
-           :in-theory (e/d (read) (read-when-program-at
-                                   read-in-terms-of-nth-and-pos-eric)))))
+
 
 ;; or do we want bvplus?
 (defthm read-of-bvplus
