@@ -270,7 +270,7 @@
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
-    read-in-terms-of-nth-and-pos-eric ; read-when-program-at
+    read-when-program-at-1-byte ; read-when-program-at
     read-of-logext
     read-when-equal-of-read
     read-when-equal-of-read-alt
@@ -1957,9 +1957,9 @@
             x86isa::i48-when-canonical-address-p
             x86isa::select-address-size$inline
             ;x86isa::canonical-address-p-of-if
-            read-in-terms-of-nth-and-pos-eric-2-bytes
-            read-in-terms-of-nth-and-pos-eric-4-bytes
-            read-in-terms-of-nth-and-pos-eric-8-bytes
+            read-when-program-at-2-bytes ;move these
+            read-when-program-at-4-bytes
+            read-when-program-at-8-bytes
 
             cf-spec64-when-unsigned-byte-p
 
@@ -4252,10 +4252,10 @@
 
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
 ;;(set-axe-rule-priority read-when-program-at-gen 1)
-(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric 1)
-(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric-2-bytes 2) ; try these after the 1-byte one just above
-(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric-4-bytes 2)
-(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric-8-bytes 2)
+(set-axe-rule-priority read-when-program-at-1-byte 1)
+(set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
+(set-axe-rule-priority read-when-program-at-4-bytes 2)
+(set-axe-rule-priority read-when-program-at-8-bytes 2)
 
 
 
@@ -4784,10 +4784,10 @@
      read-of-set-flag
      read-of-write-disjoint2
      write-of-write-same
-     read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
-     read-in-terms-of-nth-and-pos-eric-4-bytes ; this is for resolving reads of the program.
-     read-in-terms-of-nth-and-pos-eric-2-bytes ; this is for resolving reads of the program.
-     read-in-terms-of-nth-and-pos-eric-8-bytes ; this is for resolving reads of the program.
+     read-when-program-at-1-byte ; this is for resolving reads of the program.
+     read-when-program-at-4-bytes ; this is for resolving reads of the program.
+     read-when-program-at-2-bytes ; this is for resolving reads of the program.
+     read-when-program-at-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
      acl2::equal-of-bvplus-constant-and-constant

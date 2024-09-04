@@ -347,24 +347,24 @@
                             ;;x86isa::rb-in-terms-of-nth-and-pos-eric-gen
                             )))))
 
-;todo: move up?  may have to change the proof
-;; not very useful, since the state must be the same?
-(defthmd read-byte-when-program-at
-  (implies (and (program-at addr2 bytes x86)
-                (syntaxp (quotep bytes))
-                (< 0 (len bytes))
-                (byte-listp bytes)
-                (canonical-address-p$inline addr2)
-                (canonical-address-p$inline (+ -1 addr2 (len bytes)))
-                (<= addr2 addr)
-                (< (+ addr (- addr2)) (len bytes))
-                (integerp addr)
-                (integerp addr2)
-                (app-view x86)
-                (x86p x86))
-           (equal (read-byte addr x86)
-                  (nth (- addr addr2) bytes)))
-  :hints (("Goal" :use (:instance read-byte-when-program-at-gen (x86-init x86) (paddr addr2)))))
+;; ;todo: move up?  may have to change the proof
+;; ;; not very useful, since the state must be the same?
+;; (defthmd read-byte-when-program-at
+;;   (implies (and (program-at addr2 bytes x86)
+;;                 (syntaxp (quotep bytes))
+;;                 (< 0 (len bytes))
+;;                 (byte-listp bytes)
+;;                 (canonical-address-p$inline addr2)
+;;                 (canonical-address-p$inline (+ -1 addr2 (len bytes)))
+;;                 (<= addr2 addr)
+;;                 (< (+ addr (- addr2)) (len bytes))
+;;                 (integerp addr)
+;;                 (integerp addr2)
+;;                 (app-view x86)
+;;                 (x86p x86))
+;;            (equal (read-byte addr x86)
+;;                   (nth (- addr addr2) bytes)))
+;;   :hints (("Goal" :use (:instance read-byte-when-program-at-gen (x86-init x86) (paddr addr2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -669,8 +669,7 @@
 ;; Note that the program-at assumption we have will be about the initial x86 state,
 ;; which is unlikely to be the state we're reading from.  This rule deals with that.
 ;; TODO: Generalize the 1
-;rename read-when-program-at
-(defthm read-in-terms-of-nth-and-pos-eric
+(defthm read-when-program-at-1-byte
   (implies (and ;; find that a program is loaded in the initial state:
             (program-at paddr bytes x86-init) ;these are free vars
             ;; try to prove that the same program is loaded in the current state:
@@ -691,8 +690,7 @@
   :hints (("Goal" :in-theory (enable read read-byte-when-program-at-gen))))
 
 ;todo: gen
-;; this is a 2-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
-(defthm read-in-terms-of-nth-and-pos-eric-2-bytes
+(defthm read-when-program-at-2-bytes
   (implies (and (program-at paddr bytes x86-init)
                 (program-at paddr bytes x86)
                 (byte-listp bytes)
@@ -711,8 +709,7 @@
            :expand ((read 2 (+ 2 addr) x86)))))
 
 ;todo: gen
-;; this is a 4-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
-(defthm read-in-terms-of-nth-and-pos-eric-4-bytes
+(defthm read-when-program-at-4-bytes
   (implies (and (program-at paddr bytes x86-init)
                 (program-at paddr bytes x86)
                 (byte-listp bytes)
@@ -734,8 +731,7 @@
                            (read 3 (+ 1 addr) x86)
                            (read 2 (+ 2 addr) x86)))))
 
-;; this is a 8-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
-(defthm read-in-terms-of-nth-and-pos-eric-8-bytes
+(defthm read-when-program-at-8-bytes
   (implies (and (program-at paddr bytes x86-init)
                 (program-at paddr bytes x86)
                 (byte-listp bytes)
@@ -774,7 +770,7 @@
 ;drop any hyps?
 ;todo: if we can't resolve the index, something like bv-array-read might be preferable.  but we would need multi-byte reads...
 ;rename
-;compare to read-in-terms-of-nth-and-pos-eric-8-bytes, etc.
+;compare to read-when-program-at-8-bytes, etc.
 (defthm read-when-program-at-gen
   (implies (and (program-at paddr bytes x86)
                 (<= paddr addr)
@@ -1010,8 +1006,8 @@
 
 
 ;todo: gen the 1
-;todo: the hyps of read-in-terms-of-nth-and-pos-eric seem better than this
-(defthm read-when-program-at
+;todo: the hyps of read-when-program-at-1-byte seem better than this
+(defthm read-when-program-at-alt
   (implies (and (program-at addr2 bytes x86)
                 (syntaxp (quotep bytes))
                 (< 0 (len bytes))
@@ -1019,7 +1015,7 @@
                 (canonical-address-p$inline addr2)
                 (canonical-address-p$inline (+ -1 addr2 (len bytes)))
                 (<= addr2 addr)
-                (< (+ addr (- addr2)) (len bytes))
+                (< (+ addr (- addr2)) (len bytes)) ; note this!
                 (integerp addr)
                 (integerp addr2)
                 (app-view x86)

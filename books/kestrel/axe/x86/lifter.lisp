@@ -1864,8 +1864,7 @@
                                    extra-rules)
                            remove-rules)
                    :assumptions assumptions
-                   :monitor (append '( ;read-in-terms-of-nth-and-pos-eric
-                                      ;get-flag-of-set-flag
+                   :monitor (append '(;get-flag-of-set-flag
                                       )
                                     rules-to-monitor)
                    :print print
