@@ -94,15 +94,24 @@
           (er hard? 'decode-program-header-type "Bad program header type: ~x0." p_type))))))
 
 (defconst *elf-file-types* ; acl2::*file-types* is already defined
-  `((0 . :none)
-    (1 . :rel)
-    (2 . :exec)
-    (3 . :dyn)
-    (4 . :core)
-    (#xfe00 . :loos) ; fixme: these are ranges
-    (#xfeff . :hios)
-    (#xff00 . :loproc)
-    (#xffff . :hiproc)))
+  `((#x0 . :none)
+    (#x1 . :rel)
+    (#x2 . :exec)
+    (#x3 . :dyn)
+    (#x4 . :core)))
+
+(defun decode-file-type (e_type)
+  (declare (xargs :guard (unsigned-byte-p 16 e_type)))
+  (let ((res (lookup e_type *elf-file-types*)))
+    (if res
+        res
+      (if (and (<= #xfe00 e_type)
+               (<= e_type #xfeff))
+          :operating-system-specific
+        (if (and (<= #xff00 e_type)
+                 (<= e_type #xffff))
+            :processor-specific
+          (er hard? 'decode-file-type "Unknown file type: ~x0." e_type))))))
 
 (defconst *elf-machine-types*
   '((0 . :EM_NONE)
@@ -474,7 +483,7 @@
        (result (acons :abiversion ei_abiversion result))
        ;; Done with e_ident.
        ((mv e_type bytes) (parse-half bytes)) ; todo: consider endianness for these values
-       (type (lookup-safe e_type *elf-file-types*))
+       (type (decode-file-type e_type))
        (result (acons :type type result))
        ((mv e_machine bytes) (parse-half bytes))
        (machine (lookup-safe e_machine *elf-machine-types*))
