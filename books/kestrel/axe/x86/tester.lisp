@@ -582,7 +582,7 @@
                          (stack-slots ':auto)
                          (position-independent ':auto)
                          (max-conflicts '1000000)
-                         (rewriter ':legacy))
+                         (rewriter ':x86))
   `(acl2::make-event-quiet (test-function-fn ',function-name-string
                                              ,executable   ; gets evaluated
                                              ,param-names  ; gets evaluated
