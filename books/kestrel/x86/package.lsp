@@ -824,6 +824,7 @@
     bv-array-to-list-aux
     bv-array-read
     bv-array-write
+    bv-array-read-chunk-little
     bv-arrayp
 
     ;; Stuff supporting b*
