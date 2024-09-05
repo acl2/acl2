@@ -86,11 +86,7 @@
       (cons entry
             (get-entries-eq (cdr keys) alist)))))
 
-;todo: move
-;for Axe only, so disabled.
-(defthm booleanp-of-in
-  (booleanp (set::in a x)))
-
+;; only for lists, not strings
 (defund reverse-fast (x)
   (declare (xargs :guard (true-listp x)))
   (revappend x nil))
