@@ -2,8 +2,10 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Forcing recertification 4/19/2024 for commit, "Increased ACL2 analogue
-of maximum fixnum from 2^29-1 to 2^60-1."  The value of *fixnum-bits*
-has changed (and thus so have at least *fixnat-bits*, the-fixnum,
-fixnum-bound, and *default-step-limit*), making it potentially unsound
-to books certified with an earlier ACL2 version.
+Forcing recertification 9/4/2024 for commit, "Fixed a soundness bug
+that exploited incorrect generation of raw Lisp code for the
+recognizer of a stobj field of a concrete stobj."  The reason is that
+the raw Lisp code for the defstobj and defabsstobj macros depends on
+the ACL2 built-in record type,
+defstobj-redundant-raw-lisp-discriminator-value, which was modified in
+support of fixing this bug.
