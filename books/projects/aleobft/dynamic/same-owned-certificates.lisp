@@ -112,8 +112,8 @@
     (implies (same-owned-certificates-p systate)
              (same-owned-certificates-p
               (create-certificate-next cert systate)))
-    :enable certificates-owned-by-of-create-certificate-next
-    :expand (same-owned-certificates-p (create-certificate-next cert systate))
+    :enable (certificates-owned-by-of-create-certificate-next
+             same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
                            0
@@ -129,8 +129,8 @@
                   (receive-certificate-possiblep msg systate))
              (same-owned-certificates-p
               (receive-certificate-next msg systate)))
-    :enable certificates-owned-by-of-receive-certificate-next
-    :expand (same-owned-certificates-p (receive-certificate-next msg systate))
+    :enable (certificates-owned-by-of-receive-certificate-next
+             same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
                            0
@@ -146,8 +146,8 @@
                   (store-certificate-possiblep cert val systate))
              (same-owned-certificates-p
               (store-certificate-next cert val systate)))
-    :enable certificates-owned-by-of-store-certificate-next
-    :expand (same-owned-certificates-p (store-certificate-next cert val systate))
+    :enable (certificates-owned-by-of-store-certificate-next
+             same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
                            0
@@ -163,8 +163,8 @@
                   (advance-round-possiblep val systate))
              (same-owned-certificates-p
               (advance-round-next val systate)))
-    :enable certificates-owned-by-of-advance-round-next
-    :expand (same-owned-certificates-p (advance-round-next val systate))
+    :enable (certificates-owned-by-of-advance-round-next
+             same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
                            0
@@ -180,8 +180,8 @@
                   (commit-anchors-possiblep val systate))
              (same-owned-certificates-p
               (commit-anchors-next val systate)))
-    :enable certificates-owned-by-of-commit-anchors-next
-    :expand (same-owned-certificates-p (commit-anchors-next val systate))
+    :enable (certificates-owned-by-of-commit-anchors-next
+             same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
                            0
@@ -197,8 +197,8 @@
                   (timer-expires-possiblep val systate))
              (same-owned-certificates-p
               (timer-expires-next val systate)))
-    :enable certificates-owned-by-of-timer-expires-next
-    :expand (same-owned-certificates-p (timer-expires-next val systate))
+    :enable (certificates-owned-by-of-timer-expires-next
+             same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
                            0

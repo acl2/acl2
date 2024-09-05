@@ -14282,6 +14282,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     get-cert-obj-and-cert-filename
     include-book-raw-error
     add-global-stobj remove-global-stobj
+    translate-stobj-type-to-guard
     ))
 
 (defconst *initial-logic-fns-with-raw-code*

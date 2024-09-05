@@ -45,11 +45,14 @@
                          (previous-round natp)
                          (last-committed-round natp)
                          (dag certificate-setp)
-                         (blockchain block-listp))
+                         (blockchain block-listp)
+                         (all-vals address-setp))
   :guard (and (evenp previous-round)
               (> (certificate->round current-anchor) previous-round)
               (or (zp previous-round)
-                  (active-committee-at-round previous-round blockchain)))
+                  (active-committee-at-round previous-round
+                                             blockchain
+                                             all-vals)))
   :returns (anchors certificate-listp)
   :short "Collect all the anchor certificates to commit."
   :long
@@ -107,17 +110,23 @@
      that @('last-committed-round') is in fact the round of the latest block
      (or 0 if the blockchain is empty);
      we plan to prove this invariant, as done for
-     the model of AleoBFT with static committees."))
+     the model of AleoBFT with static committees.")
+   (xdoc::p
+    "The role of the @('all-vals') input is
+     explained in @(tsee update-committee-with-transaction)."))
   (b* (((unless (and (mbt (and (natp previous-round)
                                (evenp previous-round)
                                (natp last-committed-round)
                                (or (zp previous-round)
                                    (active-committee-at-round previous-round
-                                                              blockchain))
+                                                              blockchain
+                                                              all-vals))
                                t))
                      (> previous-round last-committed-round)))
         (list (certificate-fix current-anchor)))
-       (commtt (active-committee-at-round previous-round blockchain))
+       (commtt (active-committee-at-round previous-round
+                                          blockchain
+                                          all-vals))
        (previous-leader (leader-at-round previous-round commtt))
        (previous-anchor? (path-to-author+round current-anchor
                                                previous-leader
@@ -129,12 +138,14 @@
                                (- previous-round 2)
                                last-committed-round
                                dag
-                               blockchain))
+                               blockchain
+                               all-vals))
       (collect-anchors current-anchor
                        (- previous-round 2)
                        last-committed-round
                        dag
-                       blockchain)))
+                       blockchain
+                       all-vals)))
   :measure (nfix previous-round)
   :hints (("Goal" :in-theory (enable o-p o-finp o< nfix)))
   :guard-hints

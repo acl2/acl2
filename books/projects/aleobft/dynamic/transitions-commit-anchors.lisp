@@ -105,18 +105,28 @@
     "If all of the above conditions are met, the anchor can be committed,
      along with possibly some prceding ones,
      down to, but not including, the one at the last committed round,
-     or all of them is the last committed round is 0."))
+     or all of them is the last committed round is 0.")
+   (xdoc::p
+    "Note that we instantiate the @('all-vals') parameter
+     of @(tsee create-certificate-endorser-possiblep)
+     with the set of all the addresses of all validators in the system;
+     that is indeed the rols of @('all-vals'),
+     as explained in @(tsee update-committee-with-transaction)."))
   (b* (((unless (set::in (address-fix val) (correct-addresses systate))) nil)
        ((validator-state vstate) (get-validator-state val systate))
        ((when (evenp vstate.round)) nil)
        ((when (equal vstate.round 1)) nil)
        (vstate.round-commtt
-        (active-committee-at-round vstate.round vstate.blockchain))
+        (active-committee-at-round vstate.round
+                                   vstate.blockchain
+                                   (all-addresses systate)))
        ((unless vstate.round-commtt) nil)
        (commit-round (1- vstate.round))
        ((unless (> commit-round vstate.last)) nil)
        (commit-round-commtt
-        (active-committee-at-round commit-round vstate.blockchain))
+        (active-committee-at-round commit-round
+                                   vstate.blockchain
+                                   (all-addresses systate)))
        (leader (leader-at-round commit-round commit-round-commtt))
        (anchor?
         (get-certificate-with-author+round leader commit-round vstate.dag))
@@ -157,10 +167,18 @@
      Then we use @(tsee extend-blockchain)
      to extend the blockchain, and the set of all committed certificates.
      We also update the last committed round
-     to the one for the latest anchor we committed."))
+     to the one for the latest anchor we committed.")
+   (xdoc::p
+    "Note that we instantiate the @('all-vals') parameter
+     of @(tsee create-certificate-endorser-possiblep)
+     with the set of all the addresses of all validators in the system;
+     that is indeed the rols of @('all-vals'),
+     as explained in @(tsee update-committee-with-transaction)."))
   (b* (((validator-state vstate) (get-validator-state val systate))
        (commit-round (1- vstate.round))
-       (commtt (active-committee-at-round commit-round vstate.blockchain))
+       (commtt (active-committee-at-round commit-round
+                                          vstate.blockchain
+                                          (all-addresses systate)))
        (leader (leader-at-round commit-round commtt))
        (anchor
         (get-certificate-with-author+round leader commit-round vstate.dag))
@@ -168,7 +186,8 @@
                                  (- commit-round 2)
                                  vstate.last
                                  vstate.dag
-                                 vstate.blockchain))
+                                 vstate.blockchain
+                                 (all-addresses systate)))
        ((mv new-blockchain new-committed)
         (extend-blockchain anchors
                            vstate.dag
@@ -214,8 +233,7 @@
   (defret validator-state->dag-of-commit-anchors-next
     (equal (validator-state->dag (get-validator-state val1 new-systate))
            (validator-state->dag (get-validator-state val1 systate)))
-    :hyp (and (set::in val1 (correct-addresses systate))
-              (commit-anchors-possiblep val systate))
+    :hyp (commit-anchors-possiblep val systate)
     :hints
     (("Goal"
       :in-theory (enable commit-anchors-possiblep
@@ -224,8 +242,7 @@
   (defret validator-state->buffer-of-commit-anchors-next
     (equal (validator-state->buffer (get-validator-state val1 new-systate))
            (validator-state->buffer (get-validator-state val1 systate)))
-    :hyp (and (set::in val1 (correct-addresses systate))
-              (commit-anchors-possiblep val systate))
+    :hyp (commit-anchors-possiblep val systate)
     :hints
     (("Goal"
       :in-theory (enable commit-anchors-possiblep
@@ -243,6 +260,55 @@
       (enable commit-anchors-possiblep
               get-validator-state-of-update-validator-state))))
 
+  (defret validator-state->last-of-commit-anchors-next
+    (equal (validator-state->last
+            (get-validator-state val1 new-systate))
+           (if (equal (address-fix val1) (address-fix val))
+               (1- (validator-state->round
+                    (get-validator-state val systate)))
+             (validator-state->last
+              (get-validator-state val1 systate))))
+    :hyp (commit-anchors-possiblep val systate)
+    :hints
+    (("Goal"
+      :in-theory
+      (enable commit-anchors-possiblep
+              get-validator-state-of-update-validator-state
+              nfix))))
+
+  (defret validator-state->blockchain-of-commit-anchors-next
+    (equal (validator-state->blockchain
+            (get-validator-state val1 new-systate))
+           (if (equal val1 (address-fix val))
+               (b* (((validator-state vstate)
+                     (get-validator-state val1 systate))
+                    (commit-round (1- vstate.round))
+                    (commtt (active-committee-at-round
+                             commit-round
+                             vstate.blockchain
+                             (all-addresses systate)))
+                    (leader (leader-at-round commit-round commtt))
+                    (anchor (get-certificate-with-author+round
+                             leader commit-round vstate.dag))
+                    (anchors (collect-anchors anchor
+                                              (- commit-round 2)
+                                              vstate.last
+                                              vstate.dag
+                                              vstate.blockchain
+                                              (all-addresses systate))))
+                 (mv-nth 0 (extend-blockchain anchors
+                                              vstate.dag
+                                              vstate.blockchain
+                                              vstate.committed)))
+             (validator-state->blockchain
+              (get-validator-state val1 systate))))
+    :hyp (and (set::in val1 (correct-addresses systate))
+              (commit-anchors-possiblep val systate))
+    :hints
+    (("Goal"
+      :in-theory (enable commit-anchors-possiblep
+                         get-validator-state-of-update-validator-state))))
+
   (defret get-network-state-of-commit-anchors-next
     (equal (get-network-state new-systate)
            (get-network-state systate)))
@@ -250,4 +316,6 @@
   (in-theory (disable validator-state->dag-of-commit-anchors-next
                       validator-state->buffer-of-commit-anchors-next
                       validator-state->endorsed-of-commit-anchors-next
+                      validator-state->last-of-commit-anchors-next
+                      validator-state->blockchain-of-commit-anchors-next
                       get-network-state-of-commit-anchors-next)))

@@ -8448,15 +8448,16 @@
 ; This record is used both for defstobj and defabsstobj events.
 
 ; The first field, :event, completely determines the other fields.  We store
-; those simply for convenience, as per the comments below.  At the time of this
-; writing (6/14/2020), none of the accesses needs to be efficient; if that
-; changes then we can rearrange the fields.
+; those for convenience.  Note that since the :event determines the other
+; fields, all fields are based on the original event: the possibility of an
+; attached stobj is not considered in populating these fields.
 
-  (event
-   creator             ; helpful for get-stobj-creator
-   congruent-stobj-rep ; helpful for congruent-stobj-rep-raw
-   non-memoizable      ; helpful for non-memoizable-stobj-raw
-   non-executable)     ; helpful for add-trip
+; At the time of this writing (6/14/2020), none of the accesses needs to be
+; efficient; if that changes then we can rearrange the fields.
+
+  ((event recognizer . creator)
+   .
+   (congruent-stobj-rep non-memoizable . non-executable))
   nil)
 
 (defrec stobj-property
@@ -9245,12 +9246,22 @@
 ; explicitly using :stobjs.
 
   (or (translate-declaration-to-guard x var wrld)
-      (let ((prop (and (not (eq x 'state))
-                       (symbolp x)
-                       (getpropc x 'stobj nil wrld))))
-        (and prop
-             (list (access stobj-property prop :recognizer)
-                   var)))))
+      (and (not (eq x 'state))
+           (symbolp x)
+           #-acl2-loop-only
+           (let ((d (get (the-live-var x)
+                         'redundant-raw-lisp-discriminator)))
+             (and (consp d)
+                  (member-eq (car d) '(defstobj defabsstobj))
+                  (list (access defstobj-redundant-raw-lisp-discriminator-value
+                                (cdr d)
+                                :recognizer)
+                        var)))
+           #+acl2-loop-only
+           (let ((prop (getpropc x 'stobj nil wrld)))
+             (and prop
+                  (list (access stobj-property prop :recognizer)
+                        var))))))
 
 (defun defstobj-component-recognizer-axiomatic-defs (name template
                                                           field-templates wrld)
@@ -9498,6 +9509,7 @@
          (congruent-stobj-rep (if congruent-to
                                   (congruent-stobj-rep-raw congruent-to)
                                 name))
+         (recognizer (access defstobj-template template :recognizer))
          (creator (access defstobj-template template :creator))
          (non-memoizable (access defstobj-template template :non-memoizable))
          (non-executable (access defstobj-template template :non-executable))
@@ -9531,6 +9543,7 @@
                                          :field-templates))
            0)
        (let* ((event ',event)
+              (recognizer ',recognizer)
               (creator ',creator)
               (congruent-stobj-rep ',congruent-stobj-rep)
               (non-memoizable ',non-memoizable)
@@ -9562,6 +9575,7 @@
                  (cons 'defstobj
                        (make defstobj-redundant-raw-lisp-discriminator-value
                              :event event
+                             :recognizer recognizer
                              :creator creator
                              :congruent-stobj-rep congruent-stobj-rep
                              :non-memoizable non-memoizable

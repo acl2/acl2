@@ -60,3 +60,33 @@
   :elementp-of-nil nil
   :pred block-listp
   :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define blocks-ordered-even-p ((blocks block-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a sequence of blocks has
+          strictly increasing, even round numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The state of each (correct) validator includes
+     a list of blocks that models the blockchain (as seen by the validator):
+     see @(tsee validator-state).
+     As explained there, blocks go from right to left,
+     i.e. the @(tsee car) is the newest block.")
+   (xdoc::p
+    "Blocks are committed at even rounds,
+     using increasingly higher round numbers,
+     at most one block per (even) round.
+     So the blocks will have round numbers in stricly increasing order,
+     and they will all be even.
+     This predicate fomalizes these constraints on round numbers."))
+  (b* (((when (endp blocks)) t)
+       (block (car blocks))
+       (round (block->round block))
+       ((unless (evenp round)) nil)
+       ((when (endp (cdr blocks))) t)
+       ((unless (> round (block->round (cadr blocks)))) nil))
+    (blocks-ordered-even-p (cdr blocks)))
+  :hooks (:fix))
