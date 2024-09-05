@@ -113,7 +113,31 @@
      the model of AleoBFT with static committees.")
    (xdoc::p
     "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction)."))
+     explained in @(tsee update-committee-with-transaction).")
+   (xdoc::p
+    "The returned list of anchors is never empty,
+     and it always starts with (i.e. its @(tsee car) is)
+     the @('current-anchor') input,
+     as we prove below.")
+   (xdoc::p
+    "we also prove that the returned list of anchors has even,
+     strictly increasing (right to left) round numbers,
+     under suitable assumptions on some of the inputs.")
+   (xdoc::p
+    "We also show that the rounds of the returned anchors
+     are all above the last committed round,
+     provided that the round of the input anchor is.
+     More precisely, we say that the lowest-numbered anchor round
+     (i.e. the @(tsee car) of @(tsee last), i.e. the rightmost one)
+     is above the last committed round.
+     This assumption is satisfied when this function is called.
+     Note that, since we also proved that rounds are strictly increasing,
+     proving that the rightmost anchor has round above the last committed one
+     implies that all the other anchors do as well;
+     but in any case we need the theorem in this form,
+     with @(tsee car) of @(tsee last),
+     so it can be used to relieve the hypothesis
+     in a theorem about @(tsee extend-blockchain)."))
   (b* (((unless (and (mbt (and (natp previous-round)
                                (evenp previous-round)
                                (natp last-committed-round)
@@ -155,17 +179,41 @@
 
   ///
 
-  (defruled car-of-collect-anchors
-    (equal (car (collect-anchors current-anchor
-                                 previous-round
-                                 last-committed-round
-                                 dag
-                                 blockchain
-                                 all-vals))
-           (certificate-fix current-anchor))
-    :induct t))
+  (more-returns
+   (anchors consp :rule-classes :type-prescription))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (defret car-of-collect-anchors
+    (equal (car anchors)
+           (certificate-fix current-anchor))
+    :hints (("Goal" :induct t)))
+
+  (in-theory (disable car-of-collect-anchors))
+
+  (defret certificates-ordered-even-p-of-collect-anchors
+    (certificates-ordered-even-p anchors)
+    :hyp (and (evenp (certificate->round current-anchor))
+              (evenp previous-round)
+              (< previous-round
+                 (certificate->round current-anchor)))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable certificates-ordered-even-p
+                                car-of-collect-anchors))))
+
+  (in-theory (disable certificates-ordered-even-p-of-collect-anchors))
+
+  (defret collect-anchors-above-last-committed-round
+    (> (certificate->round (car (last anchors)))
+       last-committed-round)
+    :hyp (> (certificate->round current-anchor)
+            last-committed-round)
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable last))))
+
+  (in-theory (disable collect-anchors-above-last-committed-round)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define transactions-from-certificates ((certs certificate-setp))
   :returns (transs transaction-listp)
@@ -189,7 +237,7 @@
         (t (append (certificate->transactions (set::head certs))
                    (transactions-from-certificates (set::tail certs))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define extend-blockchain ((anchors certificate-listp)
                            (dag certificate-setp)
@@ -223,7 +271,26 @@
      we form a block, and we add it to the blockchain.
      The round of the block is the one of the anchor.
      We also update the set of committed certificates,
-     and return it along with the blockchain."))
+     and return it along with the blockchain.")
+   (xdoc::p
+    "We show that if the initial blockchain has
+     even, strictly increasing (right to left) rounds,
+     and the anchors have even, strictly increasing (right to left) rounds,
+     and the newest block of the original blockchain
+     has a round below the last anchor in the list
+     (unless the original blockchain is empty),
+     then the new blockchain has even, strictly increasing rounds.
+     The theorem assumes that the list of anchors is not empty,
+     which is always the case when this function is called.
+     This is an important property,
+     which serves to show the preservation of
+     the invariant that blockchains always have
+     even, strictly increasing rounds.
+     Note that the hypothesis about
+     the @(tsee car) of @(tsee last) having round above
+     the newest block of the original blockchain
+     matches a property we proved of @(tsee collect-anchors),
+     as also mentioned there."))
   (b* (((when (endp anchors))
         (mv (block-list-fix blockchain)
             (certificate-set-fix committed-certs)))
@@ -242,17 +309,33 @@
 
   ///
 
-  (defruled round-of-car-of-extend-blockchain
-    (implies (consp anchors)
-             (b* (((mv new-blockchain &)
-                   (extend-blockchain anchors dag blockchain committed-certs)))
-               (equal (block->round (car new-blockchain))
-                      (certificate->round (car anchors))))))
+  (defret consp-of-extend-blockchain
+    (equal (consp new-blockchain)
+           (or (consp blockchain)
+               (consp anchors)))
+    :hints (("Goal" :induct t)))
 
-  (defruled consp-of-extend-blockchain
-    (b* (((mv new-blockchain &)
-          (extend-blockchain anchors dag blockchain committed-certs)))
-      (equal (consp new-blockchain)
-             (or (consp blockchain)
-                 (consp anchors))))
-    :induct t))
+  (in-theory (disable consp-of-extend-blockchain))
+
+  (defret round-of-car-of-extend-blockchain
+    (equal (block->round (car new-blockchain))
+           (certificate->round (car anchors)))
+    :hyp (consp anchors))
+
+  (in-theory (disable round-of-car-of-extend-blockchain))
+
+  (defret blocks-ordered-even-p-of-extend-blockchain
+    (blocks-ordered-even-p new-blockchain)
+    :hyp (and (certificates-ordered-even-p anchors)
+              (blocks-ordered-even-p blockchain)
+              (consp anchors)
+              (or (endp blockchain)
+                  (> (certificate->round (car (last anchors)))
+                     (block->round (car blockchain)))))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable blocks-ordered-even-p
+                                certificates-ordered-even-p
+                                last))))
+
+  (in-theory (disable blocks-ordered-even-p-of-extend-blockchain)))
