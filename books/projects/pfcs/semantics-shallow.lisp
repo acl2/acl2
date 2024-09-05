@@ -14,7 +14,7 @@
 (include-book "abstract-syntax-operations")
 
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
-(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+(include-book "std/system/pseudo-event-form-listp" :dir :system)
 (include-book "std/strings/char-case" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defund-sk" :dir :system)

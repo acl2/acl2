@@ -26,9 +26,9 @@
 (in-package "APT")
 
 (include-book "simplify-defun-impl")
-(include-book "kestrel/std/system/defun-sk-queries" :dir :system) ; for defun-sk
+(include-book "std/system/defun-sk-queries" :dir :system) ; for defun-sk
 (include-book "kestrel/utilities/apply-fn-if-known" :dir :system) ; for defun-sk2
-(include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
+(include-book "std/system/install-not-normalized-event" :dir :system)
 
 (program)
 (set-state-ok t)

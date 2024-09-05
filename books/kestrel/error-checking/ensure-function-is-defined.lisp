@@ -12,8 +12,8 @@
 
 (include-book "def-error-checker")
 
-(include-book "kestrel/std/system/definedp" :dir :system)
-(include-book "kestrel/std/system/logic-function-namep" :dir :system)
+(include-book "std/system/definedp" :dir :system)
+(include-book "std/system/logic-function-namep" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

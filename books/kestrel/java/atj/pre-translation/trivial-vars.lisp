@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "kestrel/std/system/remove-trivial-vars" :dir :system)
+(include-book "std/system/remove-trivial-vars" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

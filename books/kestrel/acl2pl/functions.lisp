@@ -13,8 +13,8 @@
 (include-book "translated-terms")
 
 (include-book "kestrel/fty/defset" :dir :system)
-(include-book "kestrel/std/system/formals-plus" :dir :system)
-(include-book "kestrel/std/system/ubody-plus" :dir :system)
+(include-book "std/system/formals-plus" :dir :system)
+(include-book "std/system/ubody-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -20,11 +20,11 @@
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/utilities/untranslate-preprocessing" :dir :system)
 (include-book "std/util/tuple" :dir :system)
 
-(local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
+(local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

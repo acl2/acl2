@@ -11,7 +11,7 @@
 (in-package "JAVA")
 
 (include-book "std/basic/symbol-package-name-lst" :dir :system)
-(include-book "kestrel/std/system/known-packages-plus" :dir :system)
+(include-book "std/system/known-packages-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

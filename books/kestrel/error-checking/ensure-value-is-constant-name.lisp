@@ -12,7 +12,7 @@
 
 (include-book "def-error-checker")
 
-(include-book "kestrel/std/system/constant-namep" :dir :system)
+(include-book "std/system/constant-namep" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

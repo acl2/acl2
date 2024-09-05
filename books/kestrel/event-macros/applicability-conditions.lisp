@@ -15,9 +15,9 @@
 
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/try-event" :dir :system)
-(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
-(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
-(include-book "kestrel/std/system/untranslate-dollar" :dir :system)
+(include-book "std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "std/system/pseudo-event-form-listp" :dir :system)
+(include-book "std/system/untranslate-dollar" :dir :system)
 (include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/tuple" :dir :system)

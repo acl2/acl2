@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
+(include-book "std/system/pseudo-event-formp" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)

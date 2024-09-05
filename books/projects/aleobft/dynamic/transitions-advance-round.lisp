@@ -208,4 +208,32 @@
     (equal (faulty-addresses new-systate)
            (faulty-addresses systate))
     :hyp (advance-round-possiblep val systate)
-    :hints (("Goal" :in-theory (enable advance-round-possiblep)))))
+    :hints (("Goal" :in-theory (enable advance-round-possiblep))))
+
+  (defret validator-state->dag-of-advance-round-next
+    (equal (validator-state->dag (get-validator-state val1 new-systate))
+           (validator-state->dag (get-validator-state val1 systate)))
+    :hyp (and (set::in val1 (correct-addresses systate))
+              (advance-round-possiblep val systate))
+    :hints
+    (("Goal"
+      :in-theory (enable advance-round-possiblep
+                         get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->buffer-of-advance-round-next
+    (equal (validator-state->buffer (get-validator-state val1 new-systate))
+           (validator-state->buffer (get-validator-state val1 systate)))
+    :hyp (and (set::in val1 (correct-addresses systate))
+              (advance-round-possiblep val systate))
+    :hints
+    (("Goal"
+      :in-theory (enable advance-round-possiblep
+                         get-validator-state-of-update-validator-state))))
+
+  (defret get-network-state-of-advance-round-next
+    (equal (get-network-state new-systate)
+           (get-network-state systate)))
+
+  (in-theory (disable validator-state->dag-of-advance-round-next
+                      validator-state->buffer-of-advance-round-next
+                      get-network-state-of-advance-round-next)))

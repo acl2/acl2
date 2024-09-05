@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ pointed-integers
-  :parents (shallow-embedding)
+  :parents (representation)
   :short "An ACL2 representation of C integers manipulated by pointers."
   :long
   (xdoc::topstring

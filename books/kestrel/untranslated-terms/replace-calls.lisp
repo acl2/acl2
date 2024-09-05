@@ -30,7 +30,7 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 ;(include-book "kestrel/utilities/forms" :dir :system) ; for farg1, etc.
 (include-book "kestrel/utilities/terms" :dir :system) ;for rename-fns, todo reduce
-(include-book "kestrel/std/system/macro-namep" :dir :system)
+(include-book "std/system/macro-namep" :dir :system)
 (include-book "kestrel/utilities/magic-macroexpand1-dollar" :dir :system)
 
 ;; Returns a list like (:ARG1 :ARG2 :ARG3 :ARG4)
