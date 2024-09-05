@@ -689,7 +689,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun logext-unguarded (size i)
+(defund logext-unguarded (size i)
   (declare (xargs :guard t))
   (if (integerp size)
       (if (not (posp size))
