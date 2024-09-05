@@ -560,7 +560,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define certificates-ordered-event-p ((certs certificate-listp))
+(define certificates-ordered-even-p ((certs certificate-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of certificates has
           strictly increasing (right to left), even round numbers."
@@ -581,5 +581,5 @@
        ((unless (evenp round)) nil)
        ((when (endp (cdr certs))) t)
        ((unless (> round (certificate->round (cadr certs)))) nil))
-    (certificates-ordered-event-p (cdr certs)))
+    (certificates-ordered-even-p (cdr certs)))
   :hooks (:fix))
