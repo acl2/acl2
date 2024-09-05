@@ -1,6 +1,6 @@
 ; A book about discarding irrelevant array values
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
+(include-book "kestrel/lists-light/every-nth" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -57,96 +58,20 @@
 ;;                   (nth n (keep-vals-with-congruent-indices index vals 0 k))))
 ;;   :hints (("Goal" :induct (ind index vals n))))
 
-(defund every-nth-exec-aux (n vals acc)
-  (declare (xargs :guard (and (posp n)
-                              (true-listp vals)
-                              (true-listp acc))
-                  :measure (len vals)
-                  ))
-  (if (not (mbt (posp n))) ; for termination
-      nil
-    (if (endp vals)
-        (reverse acc)
-      (every-nth-exec-aux n (nthcdr n vals) (cons (first vals) acc)))))
 
-(defund every-nth-exec (n vals)
-  (declare (xargs :guard (and (posp n)
-                              (true-listp vals))))
-  (every-nth-exec-aux n vals nil))
-
-(defund every-nth (n vals)
-  (declare (xargs :guard (and (posp n)
-                              (true-listp vals))
-                  :verify-guards nil ; done below
-                  :measure (len vals)
-                  ))
-  (mbe :logic
-       (if (not (mbt (posp n))) ; for termination
-           nil
-         (if (endp vals)
-             nil
-           (cons (first vals)
-                 (every-nth n (nthcdr n vals)))))
-       :exec (every-nth-exec n vals)))
-
-(defthm every-nth-exec-aux-helper
-  (implies (and (true-listp acc)
-                (posp n))
-           (equal (every-nth-exec-aux n vals acc)
-                  (append (reverse acc)
-                          (every-nth n vals))))
-  :hints (("Goal" :in-theory (enable every-nth every-nth-exec-aux))))
-
-(verify-guards every-nth :hints (("Goal" :in-theory (enable every-nth-exec every-nth))))
-
-; (equal (every-nth 3 '(0 1 2 3 4 5 6 7 8 9 10)) '(0 3 6 9))
-
-(defthm consp-of-every-nth
-  (implies (posp n)
-           (equal (consp (every-nth n vals))
-                  (consp vals)))
-  :hints (("Goal" :in-theory (enable every-nth))))
-
-(local
- (defun ind (n vals n2)
-   (declare (xargs :measure (len vals)))
-   (if (not (posp n2))
-       nil
-     (if (endp vals)
-         (list n vals n2)
-       (ind (- n 1) (nthcdr n2 vals) n2)))))
-
-(defthm nth-of-every-nth
-  (implies (and (posp n2)
-                (natp n))
-           (equal (nth n (every-nth n2 vals))
-                  (nth (* n n2) vals)))
-  :hints (("Goal" :in-theory (enable every-nth)
-           :induct (ind n vals n2))))
-
-(defthmd nth-when-remainder-known
-  (implies (and (equal remainder (mod index modulus))
-                (natp index)
-                (posp modulus))
-           (equal (nth index vals)
-                  (nth (floor index modulus) (every-nth modulus (nthcdr remainder vals))))))
-
-(defthm len-of-every-nth
-  (implies (posp n)
-           (equal (len (every-nth n vals))
-                  (ceiling (len vals) n)))
-  :hints (("Goal" :cases ((equal n 1))
-           :in-theory (enable every-nth))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Discards some (usually, most) of the elements in the array:
+;; Example: If we know the index is of the form 4*i, then we can discard all array values
+;; whose indices are not multiples of 4.
 (defthm bv-array-read-of-bvmult-discard-vals
   (implies (and (syntaxp (and (quotep data)
                               (quotep k)
                               (quotep index-width)
                               (quotep len)))
-                (equal len (expt 2 index-width)) ; gen? or other rules might help establish this
+                (<= len (expt 2 index-width)) ; gen?? or other rules might help establish this
+                (integerp len)
                 (< (* k index) len) ; gen? the bvmult doesn't do any real chopping
                 (integerp (/ len k)) ; gen? requires k to be a power of 2
                 (< 1 k)
@@ -156,7 +81,7 @@
            (equal (bv-array-read element-size len (bvmult index-width k index) data)
                   ;; The call to every-nth gets evaluated:
                   (bv-array-read element-size (/ len k)
-                                 index ; consider ghis instead: (bvchop (- index-width (lg k)) index)
+                                 index ; consider this instead: (bvchop (- index-width (lg k)) index)
                                  (every-nth k data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvmult unsigned-byte-p))))
 
@@ -212,7 +137,8 @@
                               (quotep i)
                               (quotep index-width)
                               (quotep len)))
-                (equal len (expt 2 index-width)) ; gen? or other rules might help establish this
+                (<= len (expt 2 index-width)) ; gen?? or other rules might help establish this
+                (integerp len)
                 (< i k)
                 (< (+ i (* k index)) len) ; gen? the bvmult doesn't do any real chopping
                 (integerp (/ len k)) ; gen? requires k to be a power of 2
