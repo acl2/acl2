@@ -160,13 +160,6 @@
 ;;             (lookup-lst-equal (cdr key-lst) alist))
 ;;     nil))
 
-;drop?
-(defthmd alistp-consp-hack-equal
-  (implies (and (alistp x)
-                (assoc-equal v x))
-           (consp (assoc-equal v x)))
-  :hints (("Goal" :in-theory (enable alistp assoc-equal))))
-
 ;now using a scheme involving repeat-tail
 ;; (defun repeat-unguarded (n v)
 ;;   (declare (xargs :guard t))
