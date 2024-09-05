@@ -49,7 +49,6 @@
 (include-book "kestrel/lists-light/add-to-end" :dir :system)
 (include-book "kestrel/lists-light/group" :dir :system) ;drop?
 (include-book "kestrel/lists-light/group2" :dir :system) ;drop?
-(include-book "kestrel/lists-light/ungroup" :dir :system) ;drop?
 (include-book "kestrel/lists-light/first-non-member" :dir :system)
 (include-book "kestrel/lists-light/all-same" :dir :system)
 (include-book "kestrel/lists-light/repeat-tail" :dir :system)
@@ -587,6 +586,8 @@
 ;;           ;;these do have guards:
 ;;           binary-+ binary-* < unary-- unary-/ car cdr realpart imagpart complex numerator denominator char-code code-char symbol-package-name symbol-name coerce bad-atom<= pkg-witness pkg-imports intern-in-package-of-symbol))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (mutual-recursion
  ;; This is dag-aware
  (defund get-called-fns-aux (term acc)
@@ -618,7 +619,7 @@
 
 (make-flag get-called-fns-aux)
 
-;todo: see GET-FNS-IN-TERM
+;todo: see GET-FNS-IN-TERM and all-fnnames
 (defthm-flag-get-called-fns-aux
   (defthm symbol-listp-of-get-called-fns-aux
     (implies (and (pseudo-termp term)
@@ -643,6 +644,8 @@
   (implies (pseudo-termp term)
            (symbol-listp (get-called-fns term)))
   :hints (("Goal" :in-theory (enable get-called-fns))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;ffixme what about primitives and recursion and mutual recursion and constrained functions?
 ;TODO Would be nice to track the call chain so we can report it in the error message.
