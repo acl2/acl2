@@ -137,4 +137,10 @@
     :enable (set::emptyp-to-subset-of-nil
              set::intersect-mono-subset
              set::expensive-rules)
-    :disable set::emptyp-subset-2))
+    :disable set::emptyp-subset-2)
+
+  (defruled set::subset-of-intersect-if-subset-of-both
+    (implies (and (set::subset a b)
+                  (set::subset a c))
+             (set::subset a (set::intersect b c)))
+    :enable set::expensive-rules))

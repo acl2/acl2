@@ -122,8 +122,8 @@
                   (create-certificate-possiblep cert systate))
              (no-self-endorsed-p
               (create-certificate-next cert systate)))
-    :expand (no-self-endorsed-p (create-certificate-next cert systate))
-    :enable (no-self-endorsed-p-necc
+    :enable (no-self-endorsed-p
+             no-self-endorsed-p-necc
              validator-state->endorsed-of-create-certificate-next
              get-address+pos-pairs-with-address-of-insert
              create-certificate-possiblep
@@ -135,8 +135,8 @@
                   (receive-certificate-possiblep msg systate))
              (no-self-endorsed-p
               (receive-certificate-next msg systate)))
-    :expand (no-self-endorsed-p (receive-certificate-next msg systate))
-    :enable (no-self-endorsed-p-necc
+    :enable (no-self-endorsed-p
+             no-self-endorsed-p-necc
              validator-state->endorsed-of-receive-certificate-next
              get-address+pos-pairs-with-address-of-delete))
 
@@ -145,8 +145,8 @@
                   (store-certificate-possiblep val cert systate))
              (no-self-endorsed-p
               (store-certificate-next val cert systate)))
-    :expand (no-self-endorsed-p (store-certificate-next val cert systate))
-    :enable (no-self-endorsed-p-necc
+    :enable (no-self-endorsed-p
+             no-self-endorsed-p-necc
              validator-state->endorsed-of-store-certificate-next))
 
   (defruled no-self-endorsed-p-of-advance-round-next
@@ -154,8 +154,8 @@
                   (advance-round-possiblep val systate))
              (no-self-endorsed-p
               (advance-round-next val systate)))
-    :expand (no-self-endorsed-p (advance-round-next val systate))
-    :enable (no-self-endorsed-p-necc
+    :enable (no-self-endorsed-p
+             no-self-endorsed-p-necc
              validator-state->endorsed-of-advance-round-next))
 
   (defruled no-self-endorsed-p-of-commit-anchors-next
@@ -163,8 +163,8 @@
                   (commit-anchors-possiblep val systate))
              (no-self-endorsed-p
               (commit-anchors-next val systate)))
-    :expand (no-self-endorsed-p (commit-anchors-next val systate))
-    :enable (no-self-endorsed-p-necc
+    :enable (no-self-endorsed-p
+             no-self-endorsed-p-necc
              validator-state->endorsed-of-commit-anchors-next))
 
   (defruled no-self-endorsed-p-of-timer-expires-next
@@ -172,8 +172,8 @@
                   (timer-expires-possiblep val systate))
              (no-self-endorsed-p
               (timer-expires-next val systate)))
-    :expand (no-self-endorsed-p (timer-expires-next val systate))
-    :enable (no-self-endorsed-p-necc
+    :enable (no-self-endorsed-p
+             no-self-endorsed-p-necc
              validator-state->endorsed-of-timer-expires-next))
 
   (defruled no-self-endorsed-p-of-event-next

@@ -202,12 +202,19 @@
      This predicate checks whether a validator (represented by its state)
      calculates committees that are fault tolerant,
      for all the rounds for which it can calculate a committee,
-     given the validator's current blockchain."))
+     given the validator's current blockchain.")
+   (xdoc::p
+    "Note that we instantiate the @('all-vals') parameter
+     of @(tsee create-certificate-endorser-possiblep)
+     with the set of all the addresses of all validators in the system;
+     that is indeed the rols of @('all-vals'),
+     as explained in @(tsee update-committee-with-transaction)."))
   (forall (round)
           (implies (posp round)
                    (b* ((commtt (active-committee-at-round
                                  round
-                                 (validator-state->blockchain vstate))))
+                                 (validator-state->blockchain vstate)
+                                 (all-addresses systate))))
                      (implies commtt
                               (committee-fault-tolerant-p commtt systate))))))
 

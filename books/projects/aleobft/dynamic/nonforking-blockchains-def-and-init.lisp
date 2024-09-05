@@ -13,7 +13,7 @@
 
 (include-book "initialization")
 
-(include-book "../library-extensions/lists-nofork-p")
+(include-book "../library-extensions/lists-noforkp")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -62,7 +62,7 @@
   (forall (val1 val2)
           (implies (and (set::in val1 (correct-addresses systate))
                         (set::in val2 (correct-addresses systate)))
-                   (lists-nofork-p
+                   (lists-noforkp
                     (validator-state->blockchain
                      (get-validator-state val1 systate))
                     (validator-state->blockchain

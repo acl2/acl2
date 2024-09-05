@@ -63,4 +63,18 @@
   :short "Fixtype of sets of addresses."
   :elt-type address
   :elementp-of-nil nil
-  :pred address-setp)
+  :pred address-setp
+
+  ///
+
+  (defruled not-in-address-set-when-not-address
+    (implies (and (address-setp set)
+                  (not (addressp elem)))
+             (not (set::in elem set)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption address-option
+  address
+  :short "Fixtype of optional addresses."
+  :pred address-optionp)

@@ -67,6 +67,11 @@ occurring.
 <p>
   The easiest way to install ACL2s on Windows is to use the installer.
 </p>
+
+<p>A video walking through installation is available
+  <a href=\"https://youtu.be/Pwf2GWGBTD0\" target=\"_blank\">here for Windows 10</a> and
+  <a href=\"https://youtu.be/aunZ1K5BIrg\" target=\"_blank\">here for Windows 11</a>.
+</p>
 <ol>
   <li><b>If you are on Windows 11:</b> Download the installer <a href=\"https://github.com/acl2s/homebrew-acl2s/releases/download/acl2s-0.1.14/ACL2sInstallerWin11.exe\">from here</a>.</li>
   <li><b>If you are on Windows 10:</b> Download the installer <a href=\"https://github.com/acl2s/homebrew-acl2s/releases/download/acl2s-0.1.14/ACL2sInstallerWin10.exe\">from here</a>.</li>
@@ -287,7 +292,9 @@ occurring.
   <li>An Intel or AMD processor</li>
 </ul>
 <h3 id=\"instructions\">Instructions</h3>
-<p>These instructions are known to work on Ubuntu 20.04, and may work on
+<p>A video walking through installation is available
+  <a href=\"https://youtu.be/FVgDt0gHTTw\" target=\"_blank\">here</a>. 
+  These instructions are known to work on Ubuntu 24.04, and may work on
   other platforms as well. If you run into any issues, feel free to
   reach out to Cassidy.</p>
 <ol>

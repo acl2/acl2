@@ -113,8 +113,8 @@
     (implies (no-self-buffer-p systate)
              (no-self-buffer-p
               (create-certificate-next cert systate)))
-    :expand (no-self-buffer-p (create-certificate-next cert systate))
-    :enable (no-self-buffer-p-necc
+    :enable (no-self-buffer-p
+             no-self-buffer-p-necc
              validator-state->buffer-of-create-certificate-next))
 
   (defruled no-self-buffer-p-of-receive-certiicate-next
@@ -123,8 +123,8 @@
                   (receive-certificate-possiblep msg systate))
              (no-self-buffer-p
               (receive-certificate-next msg systate)))
-    :expand (no-self-buffer-p (receive-certificate-next msg systate))
-    :enable (no-self-buffer-p-necc
+    :enable (no-self-buffer-p
+             no-self-buffer-p-necc
              validator-state->buffer-of-receive-certificate-next
              get-certificate-with-author-of-insert
              receive-certificate-possiblep
@@ -139,8 +139,8 @@
                   (store-certificate-possiblep val cert systate))
              (no-self-buffer-p
               (store-certificate-next val cert systate)))
-    :expand (no-self-buffer-p (store-certificate-next val cert systate))
-    :enable (validator-state->buffer-of-store-certificate-next
+    :enable (no-self-buffer-p
+             validator-state->buffer-of-store-certificate-next
              no-self-buffer-p-necc-fixing
              get-certificate-with-author-of-delete))
 
@@ -149,8 +149,8 @@
                   (advance-round-possiblep val systate))
              (no-self-buffer-p
               (advance-round-next val systate)))
-    :expand (no-self-buffer-p (advance-round-next val systate))
     :enable (validator-state->buffer-of-advance-round-next
+             no-self-buffer-p
              no-self-buffer-p-necc))
 
   (defruled no-self-buffer-p-of-commit-anchors-next
@@ -158,8 +158,8 @@
                   (commit-anchors-possiblep val systate))
              (no-self-buffer-p
               (commit-anchors-next val systate)))
-    :expand (no-self-buffer-p (commit-anchors-next val systate))
     :enable (validator-state->buffer-of-commit-anchors-next
+             no-self-buffer-p
              no-self-buffer-p-necc))
 
   (defruled no-self-buffer-p-of-timer-expires-next
@@ -167,8 +167,8 @@
                   (timer-expires-possiblep val systate))
              (no-self-buffer-p
               (timer-expires-next val systate)))
-    :expand (no-self-buffer-p (timer-expires-next val systate))
     :enable (validator-state->buffer-of-timer-expires-next
+             no-self-buffer-p
              no-self-buffer-p-necc))
 
   (defruled no-self-buffer-p-of-event-next

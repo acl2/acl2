@@ -309,3 +309,93 @@
     "Note that the minimum @('unsigned signed') is just 0,
      so there is no need to introduce a function for it."))
   (1- (expt 2 (* 8 (ienv->llong-bytes ienv)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-rangep ((val integerp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed char')."
+  (and (<= (schar-min) val)
+       (<= val (schar-max))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uchar-rangep ((val integerp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('unsigned char')."
+  (and (<= 0 val)
+       (<= val (uchar-max))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sshort-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed short')."
+  (and (<= (sshort-min ienv) val)
+       (<= val (sshort-max ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ushort-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed short')."
+  (and (<= 0 val)
+       (<= val (ushort-max ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed int')."
+  (and (<= (sint-min ienv) val)
+       (<= val (sint-max ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uint-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed int')."
+  (and (<= 0 val)
+       (<= val (uint-max ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define slong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed long')."
+  (and (<= (slong-min ienv) val)
+       (<= val (slong-max ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ulong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed long')."
+  (and (<= 0 val)
+       (<= val (ulong-max ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sllong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed llong')."
+  (and (<= (sllong-min ienv) val)
+       (<= val (sllong-max ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ullong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed llong')."
+  (and (<= 0 val)
+       (<= val (ullong-max ienv))))

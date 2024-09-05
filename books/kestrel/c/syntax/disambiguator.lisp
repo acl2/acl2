@@ -863,12 +863,12 @@
             ((unless kind)
              (reterr (msg "The identifier ~x0 is used as an expression ~
                            but is not in scope."
-                          expr.unwrap))))
+                          (ident->unwrap expr.unwrap)))))
          (dimb-kind-case
           kind
           :typedef (reterr (msg "The identifier ~x0 denotes a typedef ~
                                  but it is used as an expression."
-                                expr.unwrap))
+                                (ident->unwrap expr.unwrap)))
           :objfun (retok (expr-fix expr)
                          (dimb-table-fix table))
           :enumconst (retok (expr-const (const-enum expr.unwrap))
@@ -1204,22 +1204,22 @@
                      ((unless kind)
                       (reterr
                        (msg "The identifier ~x0 is used as a type specifier ~
-                           but it is not in scope."
-                            tyspec.name))))
+                             but it is not in scope."
+                            (ident->unwrap tyspec.name)))))
                   (dimb-kind-case
                    kind
                    :typedef (retok (type-spec-typedef tyspec.name)
                                    (dimb-table-fix table))
                    :objfun (reterr
                             (msg "The identifier ~x0 denotes ~
-                                an object or function ~
-                                but it is used as a typedef name."
-                                 tyspec.name))
+                                  an object or function ~
+                                  but it is used as a typedef name."
+                                 (ident->unwrap tyspec.name)))
                    :enumconst (reterr
                                (msg "The identifier ~x0 denotes ~
-                                   an enumeration constant ~
-                                   but it is used as a typedef name."
-                                    tyspec.name))))
+                                     an enumeration constant ~
+                                     but it is used as a typedef name."
+                                    (ident->unwrap tyspec.name)))))
        :int128 (retok (type-spec-int128) (dimb-table-fix table))
        :float128 (retok (type-spec-float128) (dimb-table-fix table))
        :builtin-va-list (retok (type-spec-builtin-va-list)
@@ -2492,7 +2492,9 @@
        ((erp new-declor ident table) (dimb-declor ideclor.declor nil table))
        ((erp new-init? table) (dimb-initer-option ideclor.init? table))
        (table (dimb-add-ident ident kind table)))
-    (retok (make-initdeclor :declor new-declor :init? new-init?)
+    (retok (make-initdeclor :declor new-declor
+                            :asm? ideclor.asm?
+                            :init? new-init?)
            table))
   :hooks (:fix)
 
@@ -2557,7 +2559,6 @@
        (retok (make-decl-decl :extension decl.extension
                               :specs new-specs
                               :init new-init
-                              :asm? decl.asm?
                               :attrib decl.attrib)
               table))
      :statassert
@@ -2819,7 +2820,9 @@
        (retok (stmt-fix stmt) (dimb-table-fix table))
        :return
        (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
-         (retok (stmt-return new-expr?) table))))
+         (retok (stmt-return new-expr?) table))
+       :asm
+       (retok (stmt-fix stmt) (dimb-table-fix table))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
