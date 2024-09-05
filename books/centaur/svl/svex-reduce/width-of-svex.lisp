@@ -193,7 +193,7 @@
            (equal-len x.args 4)) ; ; ;
            ;; I don't expect to get partinst here for my use case. So I am not ; ; ;
            going to try to prove this here. ; ; ;
-; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
            ;; TODO: there  could be made  a slight improvement here  by checking ; ; ;
            ;; new-val's acutal size as well. (+ start new-val-size) can be added ; ; ;
            ;; into  the  final  calculation.  If  (+  start  size)  is  >=  than ; ; ;
@@ -262,6 +262,7 @@
                           sv::rsh
                           sv::lsh))|#)
          )
+
 
 (local
  (defthm logapp-of-integer-length
@@ -518,8 +519,6 @@
    :hints (("goal"
             :in-theory (e/d (4vec-correct-width-p) ())))))
 
-
-
 (local
  (defthm 4vec-correct-width-p-expand
    (implies (syntaxp (and (consp term)
@@ -605,22 +604,22 @@
  (in-theory (disable SV::SVEXLIST-EVAL$-IS-SVEXLIST-EVAL)))
 
 (defret-mutual integerp-of-<fn>
-   (defret return-val-of-<fn>
-     (implies width
-              (and (natp width)
-                   (integerp width)
-                   (rationalp width)))
-     :fn width-of-svex)
-   (defret return-val-of-<fn>
-     t
-     :fn widths-of-svexlist
-     :rule-classes nil)
-   ;;:otf-flg t
-   :mutual-recursion width-of-svex
-   :hints (("Goal"
-            :in-theory (e/d (width-of-svex
-                             widths-of-svexlist)
-                            ()))))
+  (defret return-val-of-<fn>
+    (implies width
+             (and (natp width)
+                  (integerp width)
+                  (rationalp width)))
+    :fn width-of-svex)
+  (defret return-val-of-<fn>
+    t
+    :fn widths-of-svexlist
+    :rule-classes nil)
+  ;;:otf-flg t
+  :mutual-recursion width-of-svex
+  :hints (("Goal"
+           :in-theory (e/d (width-of-svex
+                            widths-of-svexlist)
+                           ()))))
 
 (svex-eval-lemma-tmpl
  (defret-mutual svex-eval-width-is-correct-1
@@ -769,7 +768,6 @@
 ;; returns
 ;; 3.
 
-
 (progn
   (defthmd 4vec-correct-width-p-of-not-natp
     (implies (not (natp width))
@@ -792,7 +790,7 @@
         (acl2::template-subst
          '(defsection width-of-svex-extn-correct-of-<fn>
             ,@prepwork
-            
+
             (defthm width-of-svex-extn-correct-of-<fn>
               (b* ((obj (svl::make-width-of-svex-extn
                          :fn '<fn>
@@ -824,3 +822,60 @@
                        (<fn> . ,',fn))
          :str-alist '(("<FN>" . ,(symbol-name fn)))
          :pkg-sym ',fn)))))
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SVEX-INSERT-PARTSEL
+
+
+(local
+ (defthm natp-implies-svex-p
+   (implies (natp x)
+            (svex-p x))
+   :hints (("Goal"
+            :in-theory (e/d (svex-p) ())))))
+
+(define svex-insert-partsel ((svex sv::Svex-p)
+                             &key
+                             ((config svex-reduce-config-p) 'config))
+  :returns (res sv::Svex-p :hyp (sv::Svex-p svex))
+  (b* ((width (width-of-svex svex))
+       ((unless width) svex))
+    (sv::Svex-call 'sv::partsel (hons-list 0 width svex)))
+  ///
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-<fn>-is-correct
+     (implies (and (sv::svex-p svex)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)))
+              (and (equal (svex-eval res env)
+                          (svex-eval svex env)))))))
+
+(define svex-alist-insert-partsel ((svex-alist sv::svex-alist-p)
+                                   &key
+                                   ((config svex-reduce-config-p) 'config))
+  :returns (res-alist sv::svex-alist-p :hyp (sv::svex-alist-p svex-alist))
+  (if (atom svex-alist)
+      nil
+    (hons (hons (caar svex-alist)
+                (svex-insert-partsel (cdar svex-alist)))
+          (svex-alist-insert-partsel (cdr svex-alist))))
+  ///
+  (svex-eval-lemma-tmpl
+   (defret svex-alist-eval-<fn>-is-correct
+     (implies (and (sv::svex-alist-p svex-alist)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)))
+              (and (equal (svex-alist-eval res-alist env)
+                          (svex-alist-eval svex-alist env))))
+     :hints (("Goal"
+              :in-theory (e/d (svex-alist-eval) ()))))))
