@@ -127,10 +127,18 @@
      (which must be known because we have already checked that
      the active committee at the current, odd round is known),
      while the votes are calculated over
-     the active committee at the current, odd round."))
+     the active committee at the current, odd round.")
+   (xdoc::p
+    "Note that we instantiate the @('all-vals') parameter
+     of @(tsee active-committee-at-round)
+     with the set of all the addresses of all validators in the system;
+     that is indeed the rols of @('all-vals'),
+     as explained in @(tsee update-committee-with-transaction)."))
   (b* (((unless (set::in (address-fix val) (correct-addresses systate))) nil)
        ((validator-state vstate) (get-validator-state val systate))
-       (commtt (active-committee-at-round vstate.round vstate.blockchain))
+       (commtt (active-committee-at-round vstate.round
+                                          vstate.blockchain
+                                          (all-addresses systate)))
        ((unless commtt) nil)
        ((when (= vstate.round 1)) t))
     (if (evenp vstate.round)
@@ -144,7 +152,9 @@
                         (get-certificates-with-round vstate.round vstate.dag))
                        (committee-quorum commtt)))))
       (b* ((prev-commtt
-            (active-committee-at-round (1- vstate.round) vstate.blockchain))
+            (active-committee-at-round (1- vstate.round)
+                                       vstate.blockchain
+                                       (all-addresses systate)))
            (leader (leader-at-round (1- vstate.round) prev-commtt))
            (anchor? (get-certificate-with-author+round leader
                                                        (1- vstate.round)
@@ -213,8 +223,7 @@
   (defret validator-state->dag-of-advance-round-next
     (equal (validator-state->dag (get-validator-state val1 new-systate))
            (validator-state->dag (get-validator-state val1 systate)))
-    :hyp (and (set::in val1 (correct-addresses systate))
-              (advance-round-possiblep val systate))
+    :hyp (advance-round-possiblep val systate)
     :hints
     (("Goal"
       :in-theory (enable advance-round-possiblep
@@ -223,8 +232,7 @@
   (defret validator-state->buffer-of-advance-round-next
     (equal (validator-state->buffer (get-validator-state val1 new-systate))
            (validator-state->buffer (get-validator-state val1 systate)))
-    :hyp (and (set::in val1 (correct-addresses systate))
-              (advance-round-possiblep val systate))
+    :hyp (advance-round-possiblep val systate)
     :hints
     (("Goal"
       :in-theory (enable advance-round-possiblep
@@ -242,6 +250,25 @@
       (enable advance-round-possiblep
               get-validator-state-of-update-validator-state))))
 
+  (defret validator-state->last-of-advance-round-next
+    (equal (validator-state->last (get-validator-state val1 new-systate))
+           (validator-state->last (get-validator-state val1 systate)))
+    :hyp (advance-round-possiblep val systate)
+    :hints
+    (("Goal"
+      :in-theory (enable advance-round-possiblep
+                         get-validator-state-of-update-validator-state
+                         nfix))))
+
+  (defret validator-state->blockchain-of-advance-round-next
+    (equal (validator-state->blockchain (get-validator-state val1 new-systate))
+           (validator-state->blockchain (get-validator-state val1 systate)))
+    :hyp (advance-round-possiblep val systate)
+    :hints
+    (("Goal"
+      :in-theory (enable advance-round-possiblep
+                         get-validator-state-of-update-validator-state))))
+
   (defret get-network-state-of-advance-round-next
     (equal (get-network-state new-systate)
            (get-network-state systate)))
@@ -249,4 +276,6 @@
   (in-theory (disable validator-state->dag-of-advance-round-next
                       validator-state->buffer-of-advance-round-next
                       validator-state->endorsed-of-advance-round-next
+                      validator-state->blockchain-of-advance-round-next
+                      validator-state->blockchain-of-advance-round-next
                       get-network-state-of-advance-round-next)))

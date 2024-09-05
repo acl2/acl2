@@ -1256,7 +1256,11 @@
               :none (print-astring "restrict" pstate)
               :start (print-astring "__restrict" pstate)
               :both (print-astring "__restrict__" pstate))
-   :volatile (print-astring "volatile" pstate)
+   :volatile (keyword-uscores-case
+              tyqual.uscores
+              :none (print-astring "volatile" pstate)
+              :start (print-astring "__volatile" pstate)
+              :both (print-astring "__volatile__" pstate))
    :atomic (print-astring "_Atomic" pstate))
   :hooks (:fix))
 
@@ -2670,7 +2674,7 @@
      (b* ((pstate (print-ident attr.name pstate))
           (pstate (print-astring "(" pstate))
           ((unless (expr-list-unambp attr.param))
-           (raise "Internal error: unambiguous expressions in attribute ~x0."
+           (raise "Internal error: ambiguous expressions in attribute ~x0."
                   (attrib-fix attr))
            pstate)
           (pstate (if attr.param
@@ -2778,6 +2782,11 @@
   :short "Print an initializer declarator."
   (b* (((initdeclor initdeclor) initdeclor)
        (pstate (print-declor initdeclor.declor pstate))
+       (pstate (if initdeclor.asm?
+                   (b* ((pstate (print-astring " " pstate))
+                        (pstate (print-asm-name-spec initdeclor.asm? pstate)))
+                     pstate)
+                 pstate))
        ((when (initer-option-case initdeclor.init? :none)) pstate)
        (pstate (print-astring " = " pstate))
        (pstate (print-initer (initer-option-some->val initdeclor.init?)
@@ -2833,11 +2842,6 @@
                   (pstate (print-initdeclor-list decl.init pstate)))
                pstate)
            pstate))
-        (pstate (if decl.asm?
-                    (b* ((pstate (print-astring " " pstate))
-                         (pstate (print-asm-name-spec decl.asm? pstate)))
-                      pstate)
-                  pstate))
         (pstate (if decl.attrib
                     (b* ((pstate (print-astring " " pstate))
                          (pstate (print-attrib-spec-list decl.attrib pstate)))
@@ -2888,6 +2892,153 @@
                (pstate (print-const-expr label.unwrap pstate)))
             pstate)
    :default (print-astring "default" pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-qual ((qual asm-qualp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an assembler qualifier."
+  (asm-qual-case
+   qual
+   :volatile (keyword-uscores-case
+              qual.uscores
+              :none (print-astring "volatile" pstate)
+              :start (print-astring "__volatile" pstate)
+              :both (print-astring "__volatile__" pstate))
+   :inline (keyword-uscores-case
+            qual.uscores
+            :none (print-astring "inline" pstate)
+            :start (print-astring "__inline" pstate)
+            :both (print-astring "__inline__" pstate))
+   :goto (print-astring "goto" pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-qual-list ((quals asm-qual-listp) (pstate pristatep))
+  :guard (consp quals)
+  :returns (new-pstate pristatep)
+  :short "Print a list of one or more assembler specifiers."
+  (b* (((unless (mbt (consp quals))) (pristate-fix pstate))
+       (pstate (print-asm-qual (car quals) pstate))
+       ((when (endp (cdr quals))) pstate)
+       (pstate (print-astring " " pstate)))
+    (print-asm-qual-list (cdr quals) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-output ((output asm-outputp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an assembler output operand."
+  (b* (((asm-output output) output)
+       (pstate (if output.name
+                   (b* ((pstate (print-astring "[" pstate))
+                        (pstate (print-ident output.name pstate))
+                        (pstate (print-astring "] " pstate)))
+                     pstate)
+                 pstate))
+       (pstate (if (consp output.constraint)
+                   (print-stringlit-list output.constraint pstate)
+                 (prog2$
+                  (raise "Misusage error: ~
+                          no constraint in assembler output operand ~x0."
+                         (asm-output-fix output))
+                  pstate)))
+       (pstate (print-astring " (" pstate))
+       ((unless (expr-unambp output.lvalue))
+        (raise "Internal error: ~
+                ambiguous expression ~x0 in assembler output operand."
+               output.lvalue)
+        pstate)
+       (pstate (print-expr output.lvalue (expr-priority-expr) pstate))
+       (pstate (print-astring ")" pstate)))
+    pstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-output-list ((outputs asm-output-listp) (pstate pristatep))
+  :guard (consp outputs)
+  :returns (new-pstate pristatep)
+  :short "Print a list of one or more assembler output operands,
+          separated by commas."
+  (b* (((unless (mbt (consp outputs))) (pristate-fix pstate))
+       (pstate (print-asm-output (car outputs) pstate))
+       ((when (endp (cdr outputs))) pstate)
+       (pstate (print-astring ", " pstate)))
+    (print-asm-output-list (cdr outputs) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-input ((input asm-inputp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an assembler input operand."
+  (b* (((asm-input input) input)
+       (pstate (if input.name
+                   (b* ((pstate (print-astring "[" pstate))
+                        (pstate (print-ident input.name pstate))
+                        (pstate (print-astring "] " pstate)))
+                     pstate)
+                 pstate))
+       (pstate (if (consp input.constraint)
+                   (print-stringlit-list input.constraint pstate)
+                 (prog2$
+                  (raise "Misusage error: ~
+                          no constraint in assembler input operand ~x0."
+                         (asm-input-fix input))
+                  pstate)))
+       (pstate (print-astring " (" pstate))
+       ((unless (expr-unambp input.rvalue))
+        (raise "Internal error: ~
+                ambiguous expression ~x0 in assembler input operand."
+               input.rvalue)
+        pstate)
+       (pstate (print-expr input.rvalue (expr-priority-expr) pstate))
+       (pstate (print-astring ")" pstate)))
+    pstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-input-list ((inputs asm-input-listp) (pstate pristatep))
+  :guard (consp inputs)
+  :returns (new-pstate pristatep)
+  :short "Print a list of one or more assembler input operands,
+          separated by commas."
+  (b* (((unless (mbt (consp inputs))) (pristate-fix pstate))
+       (pstate (print-asm-input (car inputs) pstate))
+       ((when (endp (cdr inputs))) pstate)
+       (pstate (print-astring ", " pstate)))
+    (print-asm-input-list (cdr inputs) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-clobber ((clobber asm-clobberp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an assembler clobber."
+  (b* ((strings (asm-clobber->unwrap clobber))
+       ((unless (consp strings))
+        (raise "Misusage error: ~
+                no string literals in assembler clobber.")
+        (pristate-fix pstate)))
+    (print-stringlit-list strings pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-clobber-list ((clobbers asm-clobber-listp) (pstate pristatep))
+  :guard (consp clobbers)
+  :returns (new-pstate pristatep)
+  :short "Print a list of one or more assembler clobbers, separated by commas."
+  (b* (((unless (mbt (consp clobbers))) (pristate-fix pstate))
+       (pstate (print-asm-clobber (car clobbers) pstate))
+       ((when (endp (cdr clobbers))) pstate)
+       (pstate (print-astring ", " pstate)))
+    (print-asm-clobber-list (cdr clobbers) pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3132,6 +3283,92 @@
             :none pstate))
           (pstate (print-astring ";" pstate))
           (pstate (print-new-line pstate)))
+       pstate)
+     :asm
+     (b* ((pstate (print-indent pstate))
+          (pstate (keyword-uscores-case
+                   stmt.uscores
+                   :none (print-astring "asm" pstate)
+                   :start (print-astring "__asm" pstate)
+                   :both (print-astring "__asm__" pstate)))
+          (pstate (if (consp stmt.quals)
+                      (b* ((pstate (print-astring " " pstate))
+                           (pstate (print-asm-qual-list stmt.quals pstate)))
+                        pstate)
+                    pstate))
+          (pstate (print-astring " (" pstate))
+          ((unless (consp stmt.template))
+           (raise "Misusage error: no string literals in assembler template.")
+           pstate)
+          (pstate (print-stringlit-list stmt.template pstate))
+          ((unless (case stmt.num-colons
+                     (0 (and (endp stmt.outputs)
+                             (endp stmt.inputs)
+                             (endp stmt.clobbers)
+                             (endp stmt.labels)))
+                     (1 (and (endp stmt.inputs)
+                             (endp stmt.clobbers)
+                             (endp stmt.labels)))
+                     (2 (and (endp stmt.clobbers)
+                             (endp stmt.labels)))
+                     (3 (endp stmt.labels))
+                     (4 t)
+                     (otherwise nil)))
+           (raise "Misusage error: ~
+                   non-empty outputs, inputs, clobbers, or labels ~
+                   with insufficient number of colons ~
+                   in assembler statement ~x0."
+                  (stmt-fix stmt))
+           pstate)
+          (pstate
+           (if (>= stmt.num-colons 1)
+               (b* ((pstate (print-astring " :" pstate))
+                    (pstate
+                     (if (consp stmt.outputs)
+                         (b* ((pstate (print-astring " " pstate))
+                              (pstate (print-asm-output-list stmt.outputs
+                                                             pstate)))
+                           pstate)
+                       pstate)))
+                 pstate)
+             pstate))
+          (pstate
+           (if (>= stmt.num-colons 2)
+               (b* ((pstate (print-astring " :" pstate))
+                    (pstate
+                     (if (consp stmt.inputs)
+                         (b* ((pstate (print-astring " " pstate))
+                              (pstate (print-asm-input-list stmt.inputs
+                                                            pstate)))
+                           pstate)
+                       pstate)))
+                 pstate)
+             pstate))
+          (pstate
+           (if (>= stmt.num-colons 3)
+               (b* ((pstate (print-astring " :" pstate))
+                    (pstate
+                     (if (consp stmt.clobbers)
+                         (b* ((pstate (print-astring " " pstate))
+                              (pstate (print-asm-clobber-list stmt.clobbers
+                                                              pstate)))
+                           pstate)
+                       pstate)))
+                 pstate)
+             pstate))
+          (pstate
+           (if (>= stmt.num-colons 4)
+               (b* ((pstate (print-astring " :" pstate))
+                    (pstate
+                     (if (consp stmt.labels)
+                         (b* ((pstate (print-astring " " pstate))
+                              (pstate (print-ident-list stmt.labels pstate)))
+                           pstate)
+                       pstate)))
+                 pstate)
+             pstate))
+          (pstate (print-astring " );" pstate))
+          (pstate (print-new-line pstate)))
        pstate))
     :measure (two-nats-measure (stmt-count stmt) 0))
 
@@ -3237,6 +3474,11 @@
        ((unless (stmt-case fundef.body :compound))
         (raise "Misusage error: function body is not a compound statement.")
         (pristate-fix pstate))
+       (pstate (if fundef.asm?
+                   (b* ((pstate (print-astring " " pstate))
+                        (pstate (print-asm-name-spec fundef.asm? pstate)))
+                     pstate)
+                 pstate))
        (pstate (print-declspec-list fundef.spec pstate))
        (pstate (print-astring " " pstate))
        (pstate (print-declor fundef.declor pstate))
