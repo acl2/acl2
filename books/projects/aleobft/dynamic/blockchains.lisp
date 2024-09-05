@@ -151,7 +151,19 @@
   :guard-hints
   (("Goal"
     :in-theory (enable evenp
-                       active-committee-at-earlier-round-when-at-later-round))))
+                       active-committee-at-earlier-round-when-at-later-round)))
+
+  ///
+
+  (defruled car-of-collect-anchors
+    (equal (car (collect-anchors current-anchor
+                                 previous-round
+                                 last-committed-round
+                                 dag
+                                 blockchain
+                                 all-vals))
+           (certificate-fix current-anchor))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -226,4 +238,21 @@
        (blockchain (cons block blockchain))
        (committed-certs (set::union committed-certs certs-to-commit)))
     (mv blockchain committed-certs))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled round-of-car-of-extend-blockchain
+    (implies (consp anchors)
+             (b* (((mv new-blockchain &)
+                   (extend-blockchain anchors dag blockchain committed-certs)))
+               (equal (block->round (car new-blockchain))
+                      (certificate->round (car anchors))))))
+
+  (defruled consp-of-extend-blockchain
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (equal (consp new-blockchain)
+             (or (consp blockchain)
+                 (consp anchors))))
+    :induct t))
