@@ -45,7 +45,7 @@
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
 ;(include-book "kestrel/bv-lists/nth2" :dir :system) ; todo: drop?
 ;(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
-(include-book "kestrel/bv-lists/array-patterns" :dir :system) ; for every-nth
+(include-book "kestrel/lists-light/every-nth" :dir :system)
 (include-book "kestrel/lists-light/add-to-end" :dir :system)
 (include-book "kestrel/lists-light/group" :dir :system) ;drop?
 (include-book "kestrel/lists-light/group2" :dir :system) ;drop?
