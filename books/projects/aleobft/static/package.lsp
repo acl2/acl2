@@ -215,4 +215,4 @@
                                    pfcs::pfdef
                                    pfcs::pfmon
                                    pfcs::pfvar
-                                   aleobft::lists-nofork-p)))
+                                   aleobft::lists-noforkp)))

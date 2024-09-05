@@ -26,8 +26,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lists-nofork-p ((list1 true-listp)
-                        (list2 true-listp))
+(define lists-noforkp ((list1 true-listp)
+                       (list2 true-listp))
   :returns (yes/no booleanp)
   :short "Check that two lists do not fork in front."
   :long
@@ -70,30 +70,30 @@
 
   ///
 
-  (defrule lists-nofork-p-of-same
-    (lists-nofork-p list list))
+  (defrule lists-noforkp-of-same
+    (lists-noforkp list list))
 
-  (defrule lists-nofork-p-of-nil-left
+  (defrule lists-noforkp-of-nil-left
     (implies (true-listp list)
-             (lists-nofork-p nil list))
+             (lists-noforkp nil list))
     :enable fix)
 
-  (defrule lists-nofork-p-of-nil-right
+  (defrule lists-noforkp-of-nil-right
     (implies (true-listp list)
-             (lists-nofork-p list nil))
+             (lists-noforkp list nil))
     :enable fix)
 
-  (defrule lists-nofork-p-of-append-left
-    (lists-nofork-p (append list1 list2)
-                    list2)
+  (defrule lists-noforkp-of-append-left
+    (lists-noforkp (append list1 list2)
+                   list2)
     :enable (fix nfix))
 
-  (defrule lists-nofork-p-of-append-right
-    (lists-nofork-p list2
-                    (append list1 list2))
+  (defrule lists-noforkp-of-append-right
+    (lists-noforkp list2
+                   (append list1 list2))
     :enable (fix nfix))
 
-  (defrule lists-nofork-p-commutative
-    (equal (lists-nofork-p list1 list2)
-           (lists-nofork-p list2 list1))
-    :enable lists-nofork-p))
+  (defrule lists-noforkp-commutative
+    (equal (lists-noforkp list1 list2)
+           (lists-noforkp list2 list1))
+    :enable lists-noforkp))
