@@ -69,3 +69,64 @@
                     (> (* z x) (* z y))
                   (< (* z x) (* z y))))))
 
+
+(defun collect-factors (x)
+  (case-match x
+    (('quote &) nil)
+    (('binary-* a b) (append (collect-factors a)
+                             (collect-factors b)))
+    (& (list x))))
+
+(mutual-recursion
+ (defun find-common-terms-in-poly (x)
+  (declare (xargs :mode :program))
+  (case-match x
+    (('binary-+ a b) (find-common-terms a b))
+    (('unary-- a) (find-common-terms-in-poly a))
+    (('binary-* & &) (collect-factors x))
+    (& (list x))))
+
+ (defun find-common-terms (x y)
+   (cond ((equal x ''0) (find-common-terms-in-poly y))
+         ((equal y ''0) (find-common-terms-in-poly x))
+         (t (intersection-equal (find-common-terms-in-poly x)
+                                (find-common-terms-in-poly y))))))
+
+(defthmd divide-out-common-factors-equal
+  (implies (and (bind-free (and (or (not (equal x ''0))
+                                    (case-match y (('binary-+ & &) t)))
+                                (or (not (equal y ''0))
+                                    (case-match x (('binary-+ & &) t)))
+                                (let ((factors (find-common-terms x y)))
+                                  (and (consp factors)
+                                       `((factor . ,(car factors))))))
+                           (factor))
+                (acl2-numberp factor)
+                (not (equal 0 factor))
+                (acl2-numberp x)
+                (acl2-numberp y))
+           (iff (equal x y)
+                (equal (* (/ factor) x) (* (/ factor) y)))))
+
+(defthmd divide-out-common-factors-<
+  (implies (and (bind-free (and (or (not (equal x ''0))
+                                      (case-match y (('binary-+ & &) t)))
+                                (or (not (equal y ''0))
+                                    (case-match x (('binary-+ & &) t)))
+                                (let ((factors (find-common-terms x y)))
+                                  (and (consp factors)
+                                       `((factor . ,(car factors))))))
+                           (factor))
+                (rationalp factor)
+                (not (equal 0 factor))
+                (rationalp x)
+                (rationalp y))
+           (iff (< x y)
+                (if (< 0 factor)
+                    (< (* (/ factor) x) (* (/ factor) y))
+                  (> (* (/ factor) x) (* (/ factor) y))))))
+
+
+
+     
+       
