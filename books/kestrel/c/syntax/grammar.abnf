@@ -965,7 +965,38 @@ attribute-specifier = attribute-keyword "(" "(" [ attribute-list ] ")" ")"
 
 asm-name-specifier = asm-keyword "(" 1*string-literal ")"
 
-; Support for basic and extended assembler statements will be added later.
+; We capture basic and extended assembler statements together,
+; with the basic ones as a special case of the extended ones.
+; We follow the grammar in the GCC documentation (see links above).
+; Recall that we use ABNF repetitions of one or more string literals
+; in order to capture the string juxtaposition prior to string concatenation.
+
+asm-qualifier = volatile-keyword / inline-keyword / %s"goto"
+
+asm-statement = asm-keyword
+                *asm-qualifier
+                "("
+                1*string-literal
+                [ ":" asm-output-operands
+                [ ":" asm-input-operands
+                [ ":" asm-clobbers
+                [ ":" asm-goto-labels ] ] ] ]
+                ")"
+                ";"
+
+asm-output-operands = [ asm-output-operand *( "," asm-output-operand ) ]
+
+asm-output-operand = [ "[" identifier "]" ] 1*string-literal "(" expression ")"
+
+asm-input-operands = [ asm-input-operand *( "," asm-input-operand ) ]
+
+asm-input-operand = [ "[" identifier "]" ] 1*string-literal "(" expression ")"
+
+asm-clobbers = [ asm-clobber *( "," asm-clobber ) ]
+
+asm-clobber = 1*string-literal
+
+asm-goto-labels = [ identifier *( "," identifier ) ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1189,6 +1220,7 @@ statement = labeled-statement
           / selection-statement
           / iteration-statement
           / jump-statement
+          / asm-statement ; GCC extension
 
 labeled-statement = identifier ":" statement
                   / %s"case" constant-expression ":" statement

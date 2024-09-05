@@ -5974,6 +5974,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define token-asm-qualifier-p ((token? token-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional token is an assembler qualifier."
+  (or (token-keywordp token? "volatile")
+      (token-keywordp token? "__volatile")
+      (token-keywordp token? "__volatile__")
+      (token-keywordp token? "inline")
+      (token-keywordp token? "__inline")
+      (token-keywordp token? "__inline__")
+      (token-keywordp token? "goto"))
+  ///
+
+  (defrule non-nil-when-token-asm-qualifier-p
+    (implies (token-asm-qualifier-p token?)
+             token?)
+    :rule-classes :compound-recognizer))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define token-to-asm-qualifier ((token tokenp))
+  :guard (token-asm-qualifier-p token)
+  :returns (asmqual asm-qualp)
+  :short "Map a token that is an assembler qualifier
+          to the corresponding assembler qualifier."
+  (cond ((token-keywordp token "volatile")
+         (asm-qual-volatile (keyword-uscores-none)))
+        ((token-keywordp token "__volatile")
+         (asm-qual-volatile (keyword-uscores-start)))
+        ((token-keywordp token "__volatile__")
+         (asm-qual-volatile (keyword-uscores-both)))
+        ((token-keywordp token "inline")
+         (asm-qual-inline (keyword-uscores-none)))
+        ((token-keywordp token "__inline")
+         (asm-qual-inline (keyword-uscores-start)))
+        ((token-keywordp token "__inline__")
+         (asm-qual-inline (keyword-uscores-both)))
+        ((token-keywordp token "goto")
+         (asm-qual-goto))
+        (t (prog2$ (impossible) (irr-asm-qual))))
+  :prepwork ((local (in-theory (enable token-asm-qualifier-p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define token-declaration-specifier-start-p ((token? token-optionp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start a declaration specifier."
@@ -13087,6 +13130,494 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-*-asm-qualifier ((parstate parstatep))
+  :returns (mv erp
+               (quals asm-qual-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse zero or more assembler qualifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, parse a @('*asm-qualifier'), in ABNF notation.")
+   (xdoc::p
+    "If there are no assembler qualifiers,
+     we return an irrelevant span,
+     which the caller does not use."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token span parstate) (read-token parstate))
+       ((unless (token-asm-qualifier-p token))
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok nil (irr-span) parstate)))
+       (qual (token-to-asm-qualifier token))
+       ((erp quals last-span parstate) (parse-*-asm-qualifier parstate)))
+    (retok (cons qual quals)
+           (if quals (span-join span last-span) span)
+           parstate))
+  :measure (parsize parstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret parsize-of-parse-*-asm-qualifier-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-output-operand ((parstate parstatep))
+  :returns (mv erp
+               (output asm-outputp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse an assembler output operand."
+  (b* (((reterr) (irr-asm-output) (irr-span) parstate)
+       ((erp token span parstate) (read-token parstate)))
+    (cond
+     ;; If token is an open square bracket, we have a name to parse,
+     ;; followed by one or more string literals,
+     ;; followed by a parenthesized expression.
+     ((token-punctuatorp token "[") ; [
+      (b* (((erp name & parstate) (read-identifier parstate)) ; [ name
+           ((erp & parstate) (read-punctuator "]" parstate)) ; [ name ]
+           ((erp token2 span2 parstate) (read-token parstate))
+           ((unless (and token2 (token-case token2 :string)))
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "a string literal"
+                        :found (token-to-msg token2)))
+           ;; [ name ] string
+           (string (token-string->unwrap token2))
+           ((erp strings & parstate) ; [ name ] string strings
+            (parse-*-stringlit parstate))
+           (constraint (cons string strings)) ; [ name ] constraint
+           ((erp & parstate) ; [ name ] constraint (
+            (read-punctuator "(" parstate))
+           ((erp lvalue & parstate) ; [ name ] constraint ( expr
+            (parse-expression parstate))
+           ((erp last-span parstate) ; [ name ] constraint ( expr )
+            (read-punctuator ")" parstate)))
+        (retok (make-asm-output :name name
+                                :constraint constraint
+                                :lvalue lvalue)
+               (span-join span last-span)
+               parstate)))
+     ;; Otherwise, we must have one or more string literals,
+     ;; followed by a parenthesized expression.
+     (t ; other
+      (b* ((parstate (if token (unread-token parstate) parstate)) ;
+           ((erp token2 span2 parstate) (read-token parstate))
+           ((unless (and token2 (token-case token2 :string)))
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "a string literal"
+                        :found (token-to-msg token2)))
+           ;; string
+           (string (token-string->unwrap token2))
+           ((erp strings & parstate) ; string strings
+            (parse-*-stringlit parstate))
+           (constraint (cons string strings)) ; constraint
+           ((erp & parstate) ; constraint (
+            (read-punctuator "(" parstate))
+           ((erp lvalue & parstate) ; constraint ( expr
+            (parse-expression parstate))
+           ((erp last-span parstate) ; constraint ( expr )
+            (read-punctuator ")" parstate)))
+        (retok (make-asm-output :name nil
+                                :constraint constraint
+                                :lvalue lvalue)
+               (span-join span last-span)
+               parstate)))))
+
+  ///
+
+  (defret parsize-of-parse-asm-output-operand-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-asm-output-operand-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-output-operands ((parstate parstatep))
+  :returns (mv erp
+               (outputs asm-output-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse zero or more assembler output operands,
+          separated by commas."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the next token is an open square bracket or a string literal,
+     there must be at least one assembler output operand,
+     so we call the auxiliary recursive function
+     that parses one or more assembler output operands.
+     After parsing an assembler output operand,
+     the recursive function checks whether the following token is a comma,
+     in which case there must be at least another assembler output operand,
+     so the function calls itself recursively.
+     If there is no comma, we have reached the end.
+     If the caller of the recursive function
+     does not see an open square bracket or a string literal,
+     then there are no assembler output operands;
+     we return an irrelevant span in this case,
+     which callers do not use."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token & parstate) (read-token parstate))
+       ((when (and (not (token-punctuatorp token "["))
+                   (not (and token (token-case token :string)))))
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok nil (irr-span) parstate)))
+       ; [ or string
+       (parstate (unread-token parstate))) ;
+    (parse-asm-output-operands-loop parstate))
+
+  :prepwork
+
+  ((define parse-asm-output-operands-loop ((parstate parstatep))
+     :returns (mv erp
+                  (outputs asm-output-listp)
+                  (span spanp)
+                  (new-parstate parstatep :hyp (parstatep parstate)))
+     :parents nil
+     (b* (((reterr) nil (irr-span) parstate)
+          ((erp output span parstate) ; output
+           (parse-asm-output-operand parstate))
+          ((erp token & parstate) (read-token parstate))
+          ((unless (token-punctuatorp token ",")) ; output ,
+           (b* ((parstate (if token (unread-token parstate) parstate)))
+             (retok (list output) span parstate)))
+          ((erp outputs last-span parstate) ; output , outputs
+           (parse-asm-output-operands-loop parstate)))
+       (retok (cons output outputs)
+              (span-join span last-span)
+              parstate))
+     :measure (parsize parstate)
+     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret parsize-of-parse-asm-output-operands-loop
+       (<= (parsize new-parstate)
+           (parsize parstate))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret parsize-of-parse-*-asm-output-operand-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-input-operand ((parstate parstatep))
+  :returns (mv erp
+               (input asm-inputp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse an assembler input operand."
+  (b* (((reterr) (irr-asm-input) (irr-span) parstate)
+       ((erp token span parstate) (read-token parstate)))
+    (cond
+     ;; If token is an open square bracket, we have a name to parse,
+     ;; followed by one or more string literals,
+     ;; followed by a parenthesized expression.
+     ((token-punctuatorp token "[") ; [
+      (b* (((erp name & parstate) (read-identifier parstate)) ; [ name
+           ((erp & parstate) (read-punctuator "]" parstate)) ; [ name ]
+           ((erp token2 span2 parstate) (read-token parstate))
+           ((unless (and token2 (token-case token2 :string)))
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "a string literal"
+                        :found (token-to-msg token2)))
+           ;; [ name ] string
+           (string (token-string->unwrap token2))
+           ((erp strings & parstate) ; [ name ] string strings
+            (parse-*-stringlit parstate))
+           (constraint (cons string strings)) ; [ name ] constraint
+           ((erp & parstate) ; [ name ] constraint (
+            (read-punctuator "(" parstate))
+           ((erp rvalue & parstate) ; [ name ] constraint ( expr
+            (parse-expression parstate))
+           ((erp last-span parstate) ; [ name ] constraint ( expr )
+            (read-punctuator ")" parstate)))
+        (retok (make-asm-input :name name
+                               :constraint constraint
+                               :rvalue rvalue)
+               (span-join span last-span)
+               parstate)))
+     ;; Otherwise, we must have one or more string literals,
+     ;; followed by a parenthesized expression.
+     (t ; other
+      (b* ((parstate (if token (unread-token parstate) parstate)) ;
+           ((erp token2 span2 parstate) (read-token parstate))
+           ((unless (and token2 (token-case token2 :string)))
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "a string literal"
+                        :found (token-to-msg token2)))
+           ;; string
+           (string (token-string->unwrap token2))
+           ((erp strings & parstate) ; string strings
+            (parse-*-stringlit parstate))
+           (constraint (cons string strings)) ; constraint
+           ((erp & parstate) ; constraint (
+            (read-punctuator "(" parstate))
+           ((erp rvalue & parstate) ; constraint ( expr
+            (parse-expression parstate))
+           ((erp last-span parstate) ; constraint ( expr )
+            (read-punctuator ")" parstate)))
+        (retok (make-asm-input :name nil
+                               :constraint constraint
+                               :rvalue rvalue)
+               (span-join span last-span)
+               parstate)))))
+
+  ///
+
+  (defret parsize-of-parse-asm-input-operand-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-asm-input-operand-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-input-operands ((parstate parstatep))
+  :returns (mv erp
+               (inputs asm-input-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse zero or more assembler input operands,
+          separated by commas."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the next token is an open square bracket or a string literal,
+     there must be at least one assembler input operand,
+     so we call the auxiliary recursive function
+     that parses one or more assembler input operands.
+     After parsing an assembler input operand,
+     the recursive function checks whether the following token is a comma,
+     in which case there must be at least another assembler input operand,
+     so the function calls itself recursively.
+     If there is no comma, we have reached the end.
+     If the caller of the recursive function
+     does not see an open square bracket or a string literal,
+     then there are no assembler input operands;
+     we return an irrelevant span in this case,
+     which callers do not use."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token & parstate) (read-token parstate))
+       ((when (and (not (token-punctuatorp token "["))
+                   (not (and token (token-case token :string)))))
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok nil (irr-span) parstate)))
+       ; [ or string
+       (parstate (unread-token parstate))) ;
+    (parse-asm-input-operands-loop parstate))
+
+  :prepwork
+
+  ((define parse-asm-input-operands-loop ((parstate parstatep))
+     :returns (mv erp
+                  (inputs asm-input-listp)
+                  (span spanp)
+                  (new-parstate parstatep :hyp (parstatep parstate)))
+     :parents nil
+     (b* (((reterr) nil (irr-span) parstate)
+          ((erp input span parstate) ; input
+           (parse-asm-input-operand parstate))
+          ((erp token & parstate) (read-token parstate))
+          ((unless (token-punctuatorp token ",")) ; input ,
+           (b* ((parstate (if token (unread-token parstate) parstate)))
+             (retok (list input) span parstate)))
+          ((erp inputs last-span parstate) ; input , inputs
+           (parse-asm-input-operands-loop parstate)))
+       (retok (cons input inputs)
+              (span-join span last-span)
+              parstate))
+     :measure (parsize parstate)
+     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret parsize-of-parse-asm-input-operands-loop
+       (<= (parsize new-parstate)
+           (parsize parstate))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret parsize-of-parse-*-asm-input-operand-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-clobber ((parstate parstatep))
+  :returns (mv erp
+               (clobber asm-clobberp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse an assembler clobber."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a sequence of one or more juxtaposed string literals."))
+  (b* (((reterr) (irr-asm-clobber) (irr-span) parstate)
+       ((erp string span parstate) (read-stringlit parstate)) ; string
+       ((erp strings last-span parstate) ; string strings
+        (parse-*-stringlit parstate)))
+    (retok (asm-clobber (cons string strings))
+           (if (consp strings) (span-join span last-span) span)
+           parstate))
+
+  ///
+
+  (defret parsize-of-parse-asm-clobber-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-asm-clobber-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-clobbers ((parstate parstatep))
+  :returns (mv erp
+               (clobbers asm-clobber-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse zero or more assembler clobbers, separated by commas."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The structure of this code is similar to
+     @(tsee parse-asm-output-operands) and @(tsee parse-asm-input-operands)."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token & parstate) (read-token parstate))
+       ((unless (and token (token-case token :string))) ; string
+        (b* ((parstate (if token (unread-token parstate) parstate))) ;
+          (retok nil (irr-span) parstate)))
+       (parstate (unread-token parstate))) ;
+    (parse-asm-clobbers-loop parstate)) ; clobbers
+
+  :prepwork
+
+  ((define parse-asm-clobbers-loop ((parstate parstatep))
+     :returns (mv erp
+                  (clobbers asm-clobber-listp)
+                  (span spanp)
+                  (new-parstate parstatep :hyp (parstatep parstate)))
+     :parents nil
+     (b* (((reterr) nil (irr-span) parstate)
+          ((erp clobber span parstate) ; clobber
+           (parse-asm-clobber parstate))
+          ((erp token & parstate) (read-token parstate))
+          ((unless (token-punctuatorp token ",")) ; clobber ,
+           (b* ((parstate (if token (unread-token parstate) parstate)))
+             (retok (list clobber) span parstate)))
+          ((erp clobbers last-span parstate) ; clobber , clobbers
+           (parse-asm-clobbers-loop parstate)))
+       (retok (cons clobber clobbers)
+              (span-join span last-span)
+              parstate))
+     :measure (parsize parstate)
+     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret parsize-of-parse-asm-clobbers-loop
+       (<= (parsize new-parstate)
+           (parsize parstate))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret parsize-of-parse-*-asm-clobbers-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-goto-labels ((parstate parstatep))
+  :returns (mv erp
+               (labels ident-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse zero or more assembler goto labels."
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token & parstate) (read-token parstate))
+       ((unless (and token (token-case token :ident)))
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok nil (irr-span) parstate))))
+    (parse-asm-goto-labels-loop parstate))
+
+  :prepwork
+
+  ((define parse-asm-goto-labels-loop ((parstate parstatep))
+     :returns (mv erp
+                  (labels ident-listp)
+                  (span spanp)
+                  (new-parstate parstatep :hyp (parstatep parstate)))
+     :parents nil
+     (b* (((reterr) nil (irr-span) parstate)
+          ((erp label span parstate) (read-identifier parstate)) ; ident
+          ((erp token & parstate) (read-token parstate))
+          ((unless (token-punctuatorp token ",")) ; ident ,
+           (b* ((parstate (if token (unread-token parstate) parstate)))
+             (retok (list label) span parstate)))
+          ((erp labels last-span parstate) ; ident , idents
+           (parse-asm-goto-labels-loop parstate)))
+       (retok (cons label labels)
+              (span-join span last-span)
+              parstate))
+     :measure (parsize parstate)
+     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret parsize-of-parse-asm-goto-labels-loop
+       (<= (parsize new-parstate)
+           (parsize parstate))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret parsize-of-parse-asm-goto-labels
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines parse-stmts/blocks
   :short "Parse statements, blocks, and related entities."
   :long
@@ -13740,6 +14271,156 @@
           (retok (stmt-expr expr)
                  (span-join span last-span)
                  parstate)))
+       ;; If token is the 'asm' (or variant) keyword,
+       ;; which can only happen if GCC extensions are supported,
+       ;; we parse an assembler statement.
+       ((or (token-keywordp token "asm") ; asm
+            (token-keywordp token "__asm") ; __asm
+            (token-keywordp token "__asm__")) ; __asm__
+        (b* ((uscores
+              (cond ((token-keywordp token "asm") (keyword-uscores-none))
+                    ((token-keywordp token "__asm") (keyword-uscores-start))
+                    ((token-keywordp token "__asm__") (keyword-uscores-both))))
+             ((erp quals & parstate) ; asm [asmquals]
+              (parse-*-asm-qualifier parstate))
+             ((erp & parstate) ; asm [asmquals] (
+              (read-punctuator "(" parstate))
+             ((erp template & parstate) ; asm [asmquals] ( template
+              (parse-*-stringlit parstate))
+             ((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is a closed parenthesis,
+           ;; we have reached the end of the assembler statement.
+           ((token-punctuatorp token2 ")") ; asm [asmquals] ( template )
+            (b* (((erp last-span parstate) (read-punctuator ";" parstate)))
+              ;; asm [asmquals] ( template ) ;
+              (retok (make-stmt-asm :uscores uscores
+                                    :quals quals
+                                    :template template
+                                    :num-colons 0
+                                    :outputs nil
+                                    :inputs nil
+                                    :clobbers nil
+                                    :labels nil)
+                     (span-join span last-span)
+                     parstate)))
+           ;; If token2 is not a closed parenthesis,
+           ;; it must be a colon, and we continue parsing.
+           (t ; asm [asmquals] ( template ) other
+            (b* (((unless (token-punctuatorp token2 ":"))
+                  (reterr-msg :where (position-to-msg (span->start span2))
+                              :expected "a colon or a closed parenthesis"
+                              :found (token-to-msg token2)))
+                 ;; asm [asmquals] ( template :
+                 ((erp outputs & parstate)
+                  ;; asm [asmquals] ( template : [outputs]
+                  (parse-asm-output-operands parstate))
+                 ((erp token3 span3 parstate) (read-token parstate)))
+              (cond
+               ;; If token3 is a closed parenthesis,
+               ;; we have reached the end of the assembler statement.
+               ((token-punctuatorp token3 ")")
+                ;; asm [asmquals] ( template : [outputs] )
+                (retok (make-stmt-asm :uscores uscores
+                                      :quals quals
+                                      :template template
+                                      :num-colons 1
+                                      :outputs outputs
+                                      :inputs nil
+                                      :clobbers nil
+                                      :labels nil)
+                       (span-join span span3)
+                       parstate))
+               ;; If token3 is not a closed parenthesis,
+               ;; it must be a colon, and we continue parsing.
+               (t ; asm [asmquals] ( template : [outputs] other
+                (b* (((unless (token-punctuatorp token3 ":"))
+                      (reterr-msg :where (position-to-msg (span->start span3))
+                                  :expected "a colon or a closed parenthesis"
+                                  :found (token-to-msg token3)))
+                     ;; asm [asmquals] ( template : [outputs] :
+                     ((erp inputs & parstate)
+                      ;; asm [asmquals] ( template : [outputs] : [inputs]
+                      (parse-asm-input-operands parstate))
+                     ((erp token4 span4 parstate) (read-token parstate)))
+                  (cond
+                   ;; If token4 is a closed parenthesis,
+                   ;; we have reached the end of the assembler statement.
+                   ((token-punctuatorp token4 ")")
+                    ;; asm [asmquals] ( template : [outputs] : [inputs] )
+                    (retok (make-stmt-asm :uscores uscores
+                                          :quals quals
+                                          :template template
+                                          :num-colons 2
+                                          :outputs outputs
+                                          :inputs inputs
+                                          :clobbers nil
+                                          :labels nil)
+                           (span-join span span4)
+                           parstate))
+                   ;; If token4 is not a closed parenthesis,
+                   ;; it must be a colon, and we continue parsing.
+                   (t ; asm [asmquals] ( template : [outputs] : [inputs] other
+                    (b* (((unless (token-punctuatorp token4 ":"))
+                          (reterr-msg
+                           :where (position-to-msg (span->start span4))
+                           :expected "a colon or a closed parenthesis"
+                           :found (token-to-msg token4)))
+                         ;; asm [asmquals] ( template : [outputs] : [inputs] :
+                         ((erp clobbers & parstate)
+                          ;; asm [asmquals] ( template
+                          ;; : [outputs] : [inputs] : [clobbers]
+                          (parse-asm-clobbers parstate))
+                         ((erp token5 span5 parstate) (read-token parstate)))
+                      (cond
+                       ;; If token5 is a closed parenthesis,
+                       ;; we have reached the end of the assembler statement.
+                       ((token-punctuatorp token5 ")")
+                        ;; asm [asmquals] ( template
+                        ;; : [outputs] : [inputs] : [clobbers] )
+                        (retok (make-stmt-asm :uscores uscores
+                                              :quals quals
+                                              :template template
+                                              :num-colons 3
+                                              :outputs outputs
+                                              :inputs inputs
+                                              :clobbers clobbers
+                                              :labels nil)
+                               (span-join span span5)
+                               parstate))
+                       ;; If token5 is not a closed parenthesis,
+                       ;; it must be a colon, and we continue parsing.
+                       (t
+                        ;; asm [asmquals] ( template
+                        ;; : [outputs] : [inputs] : [clobbers] other
+                        (b* (((unless (token-punctuatorp token5 ":"))
+                              (reterr-msg
+                               :where (position-to-msg (span->start span5))
+                               :expected "a colon or a closed parenthesis"
+                               :found (token-to-msg token5)))
+                             ;; asm [asmquals] ( template
+                             ;; : [outputs] : [inputs] : [clobbers] :
+                             ((erp labels & parstate)
+                              ;; asm [asmquals] ( template
+                              ;; : [outputs] : [inputs] : [clobbers] : [labels]
+                              (parse-asm-goto-labels parstate))
+                             ((erp last-span parstate)
+                              ;; asm [asmquals] ( template
+                              ;; : [outputs]
+                              ;; : [inputs]
+                              ;; : [clobbers]
+                              ;; : [labels] )
+                              (read-punctuator ")" parstate)))
+                          (retok (make-stmt-asm :uscores uscores
+                                                :quals quals
+                                                :template template
+                                                :num-colons 4
+                                                :outputs outputs
+                                                :inputs inputs
+                                                :clobbers clobbers
+                                                :labels labels)
+                                 (span-join span last-span)
+                                 parstate)))))))))))))))
        ;; If token is anything else, it is an error.
        (t
         (reterr-msg :where (position-to-msg (span->start span))

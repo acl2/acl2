@@ -2748,6 +2748,108 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum asm-qual
+  :short "Fixtype of assembler qualifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are a GCC extension; see ABNF grammar."))
+  (:volatile ((uscores keyword-uscores)))
+  (:inline ((uscores keyword-uscores)))
+  (:goto ())
+  :pred asm-qualp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist asm-qual-list
+  :short "Fixtype of lists of assembler qualifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Assembler qualifiers are defined in @(tsee asm-qual)."))
+  :elt-type asm-qual
+  :true-listp t
+  :elementp-of-nil nil
+  :pred asm-qual-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod asm-output
+  :short "Fixtype of assembler output operands."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are a GCC extension; see ABNF grammar."))
+  ((name ident-option)
+   (constraint stringlit-list)
+   (lvalue expr))
+  :pred asm-outputp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist asm-output-list
+  :short "Fixtype of lists of assembler output operands."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Assembler output operands are defined in @(tsee asm-output)."))
+  :elt-type asm-output
+  :true-listp t
+  :elementp-of-nil nil
+  :pred asm-output-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod asm-input
+  :short "Fixtype of assembler input operands."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are a GCC extension; see ABNF grammar."))
+  ((name ident-option)
+   (constraint stringlit-list)
+   (rvalue expr))
+  :pred asm-inputp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist asm-input-list
+  :short "Fixtype of lists of assembler input operands."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Assembler input operands are defined in @(tsee asm-input)."))
+  :elt-type asm-input
+  :true-listp t
+  :elementp-of-nil nil
+  :pred asm-input-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod asm-clobber
+  :short "Fixtype of assembler clobbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are a GCC extension; see ABNF grammar."))
+  ((unwrap stringlit-list))
+  :pred asm-clobberp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist asm-clobber-list
+  :short "Fixtype of lists of assembler clobbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Assembler clobbers are defined in @(tsee asm-clobber)."))
+  :elt-type asm-clobber
+  :true-listp t
+  :elementp-of-nil nil
+  :pred asm-clobber-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes stmts/blocks
   :short "Fixtypes of statements, blocks, and related entities
           [C:6.8] [C:A.2.3]."
@@ -2787,7 +2889,26 @@
        is a statement expression,
        which is exactly what
        the initialization part of a @('for') looks like,
-       when it is an expression."))
+       when it is an expression.")
+     (xdoc::p
+      "As a GCC extension, we also include assembler statements.
+       These are based on their definition in the ABNF grammar,
+       which is in turn derived from the GCC documentation.
+       As is in the grammar,
+       we unify the representation of basic and extended assembler statements.
+       The grammar contains four nested optional parts (output operands etc.);
+       the nesting is such that any prefix of the sequence of four parts,
+       ranging from no parts to all four parts, may be present.
+       In the abstract syntax, we include a component
+       that counts the number of parts, or equivalently the number of colons,
+       since each part starts with a colon.
+       Then each part consists of a list of things, four lists, one per part.
+       If @('num-colons') is less than 4,
+       the fourth list must be empty;
+       if @('num-colons') is less than 3,
+       the fourth and third lists must be empty;
+       and so on, but we do not explicitly capture
+       these constraints in the fixtype."))
     (:labeled ((label label)
                (stmt stmt)))
     (:compound ((items block-item-list)))
@@ -2819,6 +2940,14 @@
     (:continue ())
     (:break ())
     (:return ((expr? expr-option)))
+    (:asm ((uscores keyword-uscores)
+           (quals asm-qual-list)
+           (template stringlit-list)
+           (num-colons nat)
+           (outputs asm-output-list)
+           (inputs asm-input-list)
+           (clobbers asm-clobber-list)
+           (labels ident-list)))
     :pred stmtp)
 
   (fty::deftagsum block-item

@@ -390,6 +390,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-asm-qual
+  :short "An irrelevant assembler qualifier."
+  :type asm-qualp
+  :body (asm-qual-goto))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-asm-output
+  :short "An irrelevant assembler output operand."
+  :type asm-outputp
+  :body (make-asm-output :name nil :constraint nil :lvalue (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-asm-input
+  :short "An irrelevant assembler input operand."
+  :type asm-inputp
+  :body (make-asm-input :name nil :constraint nil :rvalue (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-asm-clobber
+  :short "An irrelevant assembler clobber."
+  :type asm-clobberp
+  :body (asm-clobber nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-block-item
   :short "An irrelevant block item."
   :type block-itemp

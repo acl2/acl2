@@ -1580,7 +1580,8 @@
       :goto (stmt-fix stmt)
       :continue (stmt-fix stmt)
       :break (stmt-fix stmt)
-      :return (stmt-return (,(cdr (assoc-eq 'expr-option names)) stmt.expr? ,@extra-args-names)))
+      :return (stmt-return (,(cdr (assoc-eq 'expr-option names)) stmt.expr? ,@extra-args-names))
+      :asm (stmt-fix stmt))
    '(:returns (new-stmt stmtp)
      :measure (stmt-count stmt))))
 

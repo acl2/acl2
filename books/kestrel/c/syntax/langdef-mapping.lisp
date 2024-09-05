@@ -1280,7 +1280,9 @@
        :continue (retok (c::stmt-continue))
        :break (retok (c::stmt-break))
        :return (b* (((erp expr?) (ldm-expr-option stmt.expr?)))
-                 (retok (c::make-stmt-return :value expr?)))))
+                 (retok (c::make-stmt-return :value expr?)))
+       :asm (reterr (msg "Unsupported assembler statement ~x0."
+                         (stmt-fix stmt)))))
     :measure (stmt-count stmt))
 
   (define ldm-block-item ((item block-itemp))

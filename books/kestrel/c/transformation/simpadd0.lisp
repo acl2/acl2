@@ -1004,7 +1004,8 @@
      :goto (stmt-fix stmt)
      :continue (stmt-fix stmt)
      :break (stmt-fix stmt)
-     :return (stmt-return (simpadd0-expr-option stmt.expr?)))
+     :return (stmt-return (simpadd0-expr-option stmt.expr?))
+     :asm (stmt-fix stmt))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

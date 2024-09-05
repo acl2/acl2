@@ -1922,7 +1922,8 @@
                :goto t
                :continue t
                :break t
-               :return (expr-option-unambp stmt.expr?))
+               :return (expr-option-unambp stmt.expr?)
+               :asm t)
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2049,6 +2050,15 @@
     (equal (stmt-unambp (stmt-return expr?))
            (expr-option-unambp expr?))
     :expand (stmt-unambp (stmt-return expr?)))
+
+  (defrule stmt-unambp-of-when-asm
+    ;; The formulation (stmt-unambp (stmt-asm ...))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (stmt-case stmt :asm)
+             (stmt-unambp stmt)))
 
   (defrule block-item-unambp-of-block-item-decl
     (equal (block-item-unambp (block-item-decl decl))
