@@ -557,3 +557,29 @@
                         (equal (certificate->round cert1)
                                (certificate->round cert2)))
                    (equal cert1 cert2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define certificates-ordered-event-p ((certs certificate-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of certificates has
+          strictly increasing (right to left), even round numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee blocks-ordered-even-p),
+     but for certificates instead of blocks.
+     The reason for having this predicate on certificates is that
+     blockchains are extended from sequences of anchors,
+     which are lists of certificates;
+     the reason why blocks have strictly increasing, even round numbers
+     is that the collected lists of anchors also have
+     strictly increasing, even round numbers."))
+  (b* (((when (endp certs)) t)
+       (cert (car certs))
+       (round (certificate->round cert))
+       ((unless (evenp round)) nil)
+       ((when (endp (cdr certs))) t)
+       ((unless (> round (certificate->round (cadr certs)))) nil))
+    (certificates-ordered-event-p (cdr certs)))
+  :hooks (:fix))
