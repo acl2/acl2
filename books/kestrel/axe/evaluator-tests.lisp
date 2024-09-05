@@ -136,8 +136,7 @@
                                 (mv t (unsigned-byte-p-forced arg1 arg2)))
                            (trim (mv t (trim-unguarded arg1 arg2)))
                            (binary-+ (mv t (binary-+-unguarded arg1 arg2)))
-                           (all-items-less-than
-                                (mv t (all-items-less-than arg1 arg2)))
+                           ;; (all-items-less-than (mv t (all-items-less-than arg1 arg2)))
                            (every-nth (mv t (every-nth arg1 arg2)))
                            (intersection-equal
                                 (mv t (intersection-equal arg1 arg2)))
@@ -217,7 +216,7 @@
                              (unpackbv
                                  (mv t
                                      (unpackbv-less-guarded arg1 arg2 arg3)))
-                             (bvplus-lst (mv t (bvplus-lst arg1 arg2 arg3)))
+;;                             (bvplus-lst (mv t (bvplus-lst arg1 arg2 arg3)))
                              (bvequal
                                   (mv t (bvequal-unguarded arg1 arg2 arg3)))
                              (bvlt (mv t (bvlt-unguarded arg1 arg2 arg3)))
@@ -249,11 +248,9 @@
                              (update-nth (mv t (update-nth arg1 arg2 arg3)))
                              (if (mv t (if arg1 arg2 arg3)))
                              (slice
-                                  (mv t (slice-less-guarded arg1 arg2 arg3)))
+                                  (mv t (slice-unguarded arg1 arg2 arg3)))
                              (bvshl (mv t (bvshl arg1 arg2 arg3)))
-                             (keep-items-less-than (mv t
-                                                       (keep-items-less-than-unguarded
-                                                            arg1 arg2 arg3)))
+                             ;; (keep-items-less-than (mv t (keep-items-less-than-unguarded arg1 arg2 arg3)))
                              (subrange (mv t
                                            (subrange (nfix arg1)
                                                      (nfix arg2)
@@ -738,8 +735,7 @@
                                 (mv t (unsigned-byte-p-forced arg1 arg2)))
                            (trim (mv t (trim-unguarded arg1 arg2)))
                            (binary-+ (mv t (binary-+-unguarded arg1 arg2)))
-                           (all-items-less-than
-                                (mv t (all-items-less-than arg1 arg2)))
+                           ;; (all-items-less-than (mv t (all-items-less-than arg1 arg2)))
                            (every-nth (mv t (every-nth arg1 arg2)))
                            (intersection-equal
                                 (mv t (intersection-equal arg1 arg2)))
@@ -818,7 +814,7 @@
                             (unpackbv
                                  (mv t
                                      (unpackbv-less-guarded arg1 arg2 arg3)))
-                            (bvplus-lst (mv t (bvplus-lst arg1 arg2 arg3)))
+;;                            (bvplus-lst (mv t (bvplus-lst arg1 arg2 arg3)))
                             (bvequal
                                  (mv t (bvequal-unguarded arg1 arg2 arg3)))
                             (bvlt (mv t (bvlt-unguarded arg1 arg2 arg3)))
@@ -848,11 +844,9 @@
                             (update-nth (mv t (update-nth arg1 arg2 arg3)))
                             (if (mv t (if arg1 arg2 arg3)))
                             (slice
-                                 (mv t (slice-less-guarded arg1 arg2 arg3)))
+                                 (mv t (slice-unguarded arg1 arg2 arg3)))
                             (bvshl (mv t (bvshl arg1 arg2 arg3)))
-                            (keep-items-less-than (mv t
-                                                      (keep-items-less-than-unguarded
-                                                           arg1 arg2 arg3)))
+                            ;; (keep-items-less-than (mv t (keep-items-less-than-unguarded arg1 arg2 arg3)))
                             (subrange (mv t
                                           (subrange (nfix arg1)
                                                     (nfix arg2)

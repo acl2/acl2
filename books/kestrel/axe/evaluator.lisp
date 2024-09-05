@@ -91,11 +91,11 @@
   (declare (xargs :guard (true-listp x)))
   (revappend x nil))
 
-(defund equal-lst-exec (val lst acc)
-  (declare (xargs :guard (true-listp acc)))
-  (if (atom lst)
-      (reverse-fast acc)
-    (equal-lst-exec val (cdr lst) (cons (equal val (car lst)) acc))))
+;; (defund equal-lst-exec (val lst acc)
+;;   (declare (xargs :guard (true-listp acc)))
+;;   (if (atom lst)
+;;       (reverse-fast acc)
+;;     (equal-lst-exec val (cdr lst) (cons (equal val (car lst)) acc))))
 
 ;; ;without the max call this loops when n=0
 ;; (defund take-every-nth-aux (n lst acc)
@@ -109,51 +109,39 @@
 ;;   (declare (xargs :guard (true-listp lst)))
 ;;   (take-every-nth-aux n lst nil))
 
-(defund bvplus-lst (size val lst)
-  (declare (type (integer 0 *) size))
-  (if (atom lst)
-      nil
-    (cons (bvplus size val (car lst))
-          (bvplus-lst size val (cdr lst)))))
+;; (defund bvplus-lst (size val lst)
+;;   (declare (type (integer 0 *) size))
+;;   (if (atom lst)
+;;       nil
+;;     (cons (bvplus size val (car lst))
+;;           (bvplus-lst size val (cdr lst)))))
 
-;reverses the order - not any more, that caused problems
-(defund keep-items-less-than (bound lst acc)
-  (declare (xargs :guard (true-listp acc)))
-  (if (atom lst)
-      (reverse-fast acc)
-    (if (< (rfix (car lst)) (rfix bound))
-        (keep-items-less-than bound (cdr lst) (cons (car lst) acc))
-      (keep-items-less-than bound (cdr lst) acc))))
+;; ;reverses the order - not any more, that caused problems
+;; (defund keep-items-less-than (bound lst acc)
+;;   (declare (xargs :guard (true-listp acc)))
+;;   (if (atom lst)
+;;       (reverse-fast acc)
+;;     (if (< (rfix (car lst)) (rfix bound))
+;;         (keep-items-less-than bound (cdr lst) (cons (car lst) acc))
+;;       (keep-items-less-than bound (cdr lst) acc))))
 
-(defund items-have-len-unguarded (n lst)
-  (declare (xargs :guard t))
-  (if (atom lst)
-      t
-    (and (equal n (len (car lst))) ;faster to walk down the list and decrement n simultaneously?
-         (items-have-len-unguarded n (cdr lst)))))
+;; (defund keep-items-less-than-unguarded (bound lst acc)
+;;   (declare (xargs :guard t))
+;;   (keep-items-less-than bound lst (true-list-fix acc)))
 
-(defthm items-have-len-unguarded-correct
-  (equal (items-have-len-unguarded n lst)
-         (items-have-len n lst))
-  :hints (("Goal" :in-theory (enable items-have-len-unguarded))))
+;; (defthm keep-items-less-than-unguarded-correct
+;;   (equal (keep-items-less-than-unguarded bound lst acc)
+;;          (keep-items-less-than bound lst acc))
+;;   :hints (("Goal" :in-theory (enable keep-items-less-than-unguarded
+;;                                      keep-items-less-than
+;;                                      REVERSE-FAST))))
 
-(defund keep-items-less-than-unguarded (bound lst acc)
-  (declare (xargs :guard t))
-  (keep-items-less-than bound lst (true-list-fix acc)))
-
-(defthm keep-items-less-than-unguarded-correct
-  (equal (keep-items-less-than-unguarded bound lst acc)
-         (keep-items-less-than bound lst acc))
-  :hints (("Goal" :in-theory (enable keep-items-less-than-unguarded
-                                     keep-items-less-than
-                                     REVERSE-FAST))))
-
-(defund all-items-less-than (bound lst)
-  (declare (xargs :guard t))
-  (if (atom lst)
-      t
-    (and (< (rfix (car lst)) (rfix bound))
-         (all-items-less-than bound (cdr lst)))))
+;; (defund all-items-less-than (bound lst)
+;;   (declare (xargs :guard t))
+;;   (if (atom lst)
+;;       t
+;;     (and (< (rfix (car lst)) (rfix bound))
+;;          (all-items-less-than bound (cdr lst)))))
 
 ;; matches std
 (defthm consp-of-assoc-equal
@@ -188,6 +176,22 @@
 ;;   (equal (repeat-unguarded n v)
 ;;          (repeat n v)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund items-have-len-unguarded (n lst)
+  (declare (xargs :guard t))
+  (if (atom lst)
+      t
+    (and (equal n (len (car lst))) ;faster to walk down the list and decrement n simultaneously?
+         (items-have-len-unguarded n (cdr lst)))))
+
+(defthm items-have-len-unguarded-correct
+  (equal (items-have-len-unguarded n lst)
+         (items-have-len n lst))
+  :hints (("Goal" :in-theory (enable items-have-len-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund strip-cars-unguarded (x)
   (declare (xargs :guard t))
   (cond ((atom x) nil)
@@ -198,6 +202,8 @@
   (equal (strip-cars-unguarded x)
          (strip-cars x))
   :hints (("Goal" :in-theory (enable strip-cars-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund strip-cdrs-unguarded (x)
   (declare (xargs :guard t))
@@ -210,18 +216,7 @@
          (strip-cdrs x))
   :hints (("Goal" :in-theory (enable strip-cdrs-unguarded))))
 
-(defund slice-less-guarded (topbit bottombit val)
-  (declare (xargs :guard (and (natp topbit)
-                              (natp bottombit))))
-  (bvchop (nfix (+ 1 topbit (- bottombit))) ;prevents the first arg to bvchop from being negative
-           (logtail (nfix bottombit) (ifix val))))
-
-(defthm slice-less-guarded-correct
-  (implies (and (natp high)
-                (natp low))
-           (equal (slice-less-guarded high low x)
-                  (slice high low x)))
-  :hints (("Goal" :in-theory (e/d (slice slice-less-guarded) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bvchop-list-unguarded (size lst)
   (declare (xargs :guard t))
@@ -235,6 +230,8 @@
          (bvchop-list           size lst))
   :hints (("Goal" :in-theory (enable bvchop-list-unguarded bvchop-list))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund bvnot-list-unguarded (size lst)
   (declare (xargs :guard t))
   (if (atom lst)
@@ -242,12 +239,12 @@
     (cons (bvnot-unguarded size (car lst))
           (bvnot-list-unguarded size (cdr lst)))))
 
-(in-theory (disable bvnot-unguarded))
-
 (defthm bvnot-list-unguarded-correct
   (equal (bvnot-list-unguarded size lst)
          (bvnot-list           size lst))
   :hints (("Goal" :in-theory (enable bvnot-list-unguarded bvnot-list BVNOT-UNGUARDED-CORRECT))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bvxor-list-unguarded (size x y)
   (DECLARE (xargs :guard t))
@@ -261,16 +258,7 @@
          (bvxor-list size x y))
   :hints (("Goal" :in-theory (enable bvxor-list bvxor-list-unguarded))))
 
-;TODO finish removing all guards!
-(defund unpackbv-less-guarded (num size bv)
-  (declare (type (integer 0 *) size)
-           (type (integer 0 *) num))
-  (unpackbv num size (ifix bv)))
-
-(defthm unpackbv-less-guarded-correct
-  (equal (unpackbv-less-guarded size x y)
-         (unpackbv size x y))
-:hints (("Goal" :in-theory (enable unpackbv unpackbv-less-guarded))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund set::in-unguarded (a x)
   (declare (xargs :guard t))
@@ -282,6 +270,23 @@
   (equal (set::in-unguarded a x)
          (set::in a x))
   :hints (("Goal" :in-theory (enable set::in-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;TODO finish removing all guards!
+(defund unpackbv-less-guarded (num size bv)
+  (declare (type (integer 0 *) size)
+           (type (integer 0 *) num))
+  (unpackbv num size (ifix bv)))
+
+(defthm unpackbv-less-guarded-correct
+  (equal (unpackbv-less-guarded size x y)
+         (unpackbv size x y))
+:hints (("Goal" :in-theory (enable unpackbv unpackbv-less-guarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This justifies evaluating calls to EQL below by calling EQUAL.
 (local
@@ -412,7 +417,7 @@
                   (trim trim-unguarded arg1 arg2) ;see trim-unguarded-correct
                   (binary-+ binary-+-unguarded arg1 arg2) ;see binary-+-unguarded-correct
 
-                  (all-items-less-than all-items-less-than arg1 arg2)
+                  ;; (all-items-less-than all-items-less-than arg1 arg2)
                   (every-nth every-nth arg1 arg2)
                   (intersection-equal intersection-equal arg1 arg2)
 ;                  (push-bvchop-list push-bvchop-list arg1 arg2) ;do we need this?
@@ -490,7 +495,7 @@
 ;                         (map-packbv map-packbv arg1 arg2 arg3)
 
                          ;many of these call bvchop, whose guard should be improved..
-                         (bvplus-lst bvplus-lst arg1 arg2 arg3)
+                         ;; (bvplus-lst bvplus-lst arg1 arg2 arg3)
                          (bvequal    bvequal-unguarded arg1 arg2 arg3)  ;see   bvequal-unguarded-correct
                          (bvlt      bvlt-unguarded arg1 arg2 arg3)  ;see    bvlt-unguarded-correct
                          (bvle      bvle-unguarded arg1 arg2 arg3)  ;see    bvle-unguarded-correct
@@ -518,9 +523,9 @@
                          (array-elem-2d array-elem-2d arg1 arg2 arg3) ;drop?
                          (update-nth update-nth arg1 arg2 arg3)
                          (if if arg1 arg2 arg3) ;primitive
-                         (slice slice-less-guarded arg1 arg2 arg3)
+                         (slice slice-unguarded arg1 arg2 arg3)
                          (bvshl bvshl arg1 arg2 arg3)
-                         (keep-items-less-than keep-items-less-than-unguarded arg1 arg2 arg3) ;see keep-items-less-than-unguarded-correct
+                         ;; (keep-items-less-than keep-items-less-than-unguarded arg1 arg2 arg3) ;see keep-items-less-than-unguarded-correct
                          (subrange subrange (nfix arg1) (nfix arg2) arg3)
                          (bvxor-list bvxor-list-unguarded arg1 arg2 arg3))
                        (acons 4
