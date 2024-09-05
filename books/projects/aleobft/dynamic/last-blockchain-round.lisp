@@ -58,7 +58,21 @@
                      (equal (validator-state->last vstate)
                             (if (consp blockchain)
                                 (block->round (car blockchain))
-                              0))))))
+                              0)))))
+
+  ///
+
+  (defruled last-blockchain-round-p-necc-fixing
+    (implies (and (last-blockchain-round-p systate)
+                  (set::in (address-fix val) (correct-addresses systate)))
+             (b* (((validator-state vstate)
+                   (get-validator-state val systate))
+                  (blockchain (validator-state->blockchain vstate)))
+               (equal (validator-state->last vstate)
+                      (if (consp blockchain)
+                          (block->round (car blockchain))
+                        0))))
+    :use (:instance last-blockchain-round-p-necc (val (address-fix val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
