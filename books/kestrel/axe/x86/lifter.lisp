@@ -1855,6 +1855,7 @@
         ;; Perform the symbolic execution:
         ;; TODO: Suppress printing of result here?:
         ;; TODO: Add support for printing a combined summary at the end of all rewrite phases...
+        ;; TODO: Use the x86 rewriter!
         ((mv erp state-dag state)
          (simp-dag dag-to-run
                    :rules (set-difference-eq
