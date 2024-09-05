@@ -65,7 +65,7 @@
 
 (define blocks-ordered-even-p ((blocks block-listp))
   :returns (yes/no booleanp)
-  :short "Check if a sequence of blocks has
+  :short "Check if a list of blocks has
           strictly increasing, even round numbers."
   :long
   (xdoc::topstring
