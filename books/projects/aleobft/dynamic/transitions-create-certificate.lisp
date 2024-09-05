@@ -493,6 +493,11 @@
     (equal (validator-state->endorsed new-vstate)
            (validator-state->endorsed vstate)))
 
+  (defret validator-state->last-of-create-certificate-author-next
+    (equal (validator-state->last new-vstate)
+           (validator-state->last vstate))
+    :hints (("Goal" :in-theory (enable nfix))))
+
   (defret validator-state->blockchain-of-create-certificate-author-next
     (equal (validator-state->blockchain new-vstate)
            (validator-state->blockchain vstate)))
@@ -502,6 +507,7 @@
     validator-state->dag-of-create-certificate-author-next
     validator-state->buffer-of-create-certificate-author-next
     validator-state->endorsed-of-create-certificate-author-next
+    validator-state->last-of-create-certificate-author-next
     validator-state->blockchain-of-create-certificate-author-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -548,6 +554,11 @@
                          :pos (certificate->round cert))
                         (validator-state->endorsed vstate))))
 
+  (defret validator-state->last-of-create-certificate-endorser-next
+    (equal (validator-state->last new-vstate)
+           (validator-state->last vstate))
+    :hints (("Goal" :in-theory (enable nfix))))
+
   (defret validator-state->blockchain-of-create-certificate-endorser-next
     (equal (validator-state->blockchain new-vstate)
            (validator-state->blockchain vstate)))
@@ -557,6 +568,7 @@
     validator-state->dag-of-create-certificate-endorser-next
     validator-state->buffer-of-create-certificate-endorser-next
     validator-state->endorsed-of-create-certificate-endorser-next
+    validator-state->last-of-create-certificate-endorser-next
     validator-state->blockchain-of-create-certificate-endorser-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -659,6 +671,17 @@
          (enable validator-state->endorsed-of-create-certificate-endorser-next
                  get-validator-state-of-update-validator-state))))
 
+     (defret validator-state->last-of-create-certificate-endorsers-next-loop
+       (equal (validator-state->last (get-validator-state val new-systate))
+              (validator-state->last (get-validator-state val systate)))
+       :hints
+       (("Goal"
+         :induct t
+         :in-theory
+         (enable
+          validator-state->last-of-create-certificate-endorser-next
+          get-validator-state-of-update-validator-state))))
+
      (defret validator-state->blockchain-of-create-certificate-endorsers-next-loop
        (equal (validator-state->blockchain (get-validator-state val new-systate))
               (validator-state->blockchain (get-validator-state val systate)))
@@ -709,6 +732,10 @@
               (get-validator-state val systate))))
     :hyp (set::in val (correct-addresses systate)))
 
+  (defret validator-state->last-of-create-certificate-endorsers-next
+    (equal (validator-state->last (get-validator-state val new-systate))
+           (validator-state->last (get-validator-state val systate))))
+
   (defret validator-state->blockchain-of-create-certificate-endorsers-next
     (equal (validator-state->blockchain (get-validator-state val new-systate))
            (validator-state->blockchain (get-validator-state val systate))))
@@ -722,11 +749,13 @@
     validator-state->dag-of-create-certificate-endorsers-next-loop
     validator-state->buffer-of-create-certificate-endorsers-next-loop
     validator-state->endorsed-of-create-certificate-endorsers-next-loop
+    validator-state->last-of-create-certificate-endorsers-next-loop
     validator-state->blockchain-of-create-certificate-endorsers-next-loop
     get-network-state-of-create-certificate-endorsers-next-loop
     validator-state->dag-of-create-certificate-endorsers-next
     validator-state->buffer-of-create-certificate-endorsers-next
     validator-state->endorsed-of-create-certificate-endorsers-next
+    validator-state->last-of-create-certificate-endorsers-next
     validator-state->blockchain-of-create-certificate-endorsers-next
     get-network-state-of-create-certificate-endorsers-next)))
 
@@ -893,6 +922,17 @@
        validator-state->endorsed-of-create-certificate-author-next
        validator-state->endorsed-of-create-certificate-endorsers-next))))
 
+  (defret validator-state->last-of-create-certificate-next
+    (equal (validator-state->last (get-validator-state val new-systate))
+           (validator-state->last (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       validator-state->last-of-create-certificate-author-next
+       validator-state->last-of-create-certificate-endorsers-next
+       get-validator-state-of-update-validator-state))))
+
   (defret validator-state->blockchain-of-create-certificate-next
     (equal (validator-state->blockchain (get-validator-state val new-systate))
            (validator-state->blockchain (get-validator-state val systate)))
@@ -918,5 +958,6 @@
   (in-theory (disable validator-state->dag-of-create-certificate-next
                       validator-state->buffer-of-create-certificate-next
                       validator-state->endorsed-of-create-certificate-next
+                      validator-state->last-of-create-certificate-next
                       validator-state->blockchain-of-create-certificate-next
                       get-network-state-of-create-certificate-next)))
