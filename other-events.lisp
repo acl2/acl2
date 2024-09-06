@@ -8945,7 +8945,7 @@
 
 (defun cbd-fn (state)
   (or (f-get-global 'connected-book-directory state)
-      (er hard 'cbd
+      (er hard? 'cbd
           "The connected book directory has apparently not yet been set.  ~
            This could be a sign that the top-level ACL2 loop, generally ~
            entered using (LP), has not yet been entered.")))
