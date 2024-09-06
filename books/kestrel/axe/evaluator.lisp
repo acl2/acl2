@@ -407,7 +407,7 @@
                   (every-nth every-nth arg1 arg2)
                   (intersection-equal intersection-equal arg1 arg2)
 ;                  (push-bvchop-list push-bvchop-list arg1 arg2) ;do we need this?
-                  (all-equal$ all-equal$ arg1 arg2) ;unguarded
+                  (all-equal$ all-equal$-unguarded arg1 arg2)
                   (repeatbit repeatbit-unguarded arg1 arg2)
 ;                  (print-dag-expr print-dag-expr arg1 arg2)
                   ;; (binary-and binary-and arg1 arg2) ;unguarded
