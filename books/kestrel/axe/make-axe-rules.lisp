@@ -36,7 +36,6 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-(local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
@@ -51,7 +50,35 @@
 (in-theory (disable ilks-plist-worldp
                     plist-worldp)) ;move
 
-(add-known-boolean memberp) ;move?
+(local
+ (defthmd not-equal-of-car-when-not-member-equal-of-fns-in-term
+   (implies (and (not (member-equal a (fns-in-term x)))
+                 (consp x)
+                ;(pseudo-termp x)
+                 (not (equal 'quote a))
+                 (not (consp a))
+                 )
+            (not (equal a (car x))))
+   :hints (("Goal" :expand (fns-in-term x)
+            :in-theory (enable fns-in-term)))))
+
+(local
+ (defthm not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
+   (implies (and (pseudo-termp term)
+                 (not (member-equal fn (fns-in-term term))))
+            (not (member-equal fn (fns-in-term (expand-lambdas-in-term term)))))
+   :hints (("Goal" :use (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term)
+            :in-theory (disable not-member-equal-of-fns-in-term-of-expand-lambdas-in-term)))))
+
+;; (local
+;;  (defthm not-memberp-of-fns-in-term-of-cadr
+;;    (implies (and (not (memberp fn (fns-in-term x)))
+;;                  (not (equal 'quote (car x))))
+;;             (not (memberp fn (fns-in-term (car (cdr x))))))
+;;    :hints (("Goal" :expand (fns-in-term x)
+;;             :in-theory (enable fns-in-term)))))
+
+;(local (in-theory (disable pairlis$))) ;prevent inductions
 
 (defthm plist-worldp-of-cdr-of-assoc-equal-etc
   (implies (state-p1 state)
@@ -94,7 +121,6 @@
 (defthm lambda-free-termsp-of-fn-formals
   (lambda-free-termsp (fn-formals fun wrld))
   :hints (("Goal" :in-theory (enable lambda-free-termsp-when-symbol-listp))))
-
 
 ;; ;; Recognize a pseudo-term that is neither a variable, quoted constant, or lambda application.
 ;; (defun regular-function-callp (term)
@@ -328,10 +354,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;
-;;; make-axe-rule-hyps-for-hyp
-;;;
-
 ;; Returns (mv erp hyps bound-vars).  The HYPS returned may be empty if we drop a
 ;; hyp that is a non-nil constant. The BOUND-VARS returned is the list of vars
 ;; bound by the LHS, this hyp, and all previous hyps.
@@ -509,48 +531,6 @@
                     (list hyp)
                     bound-vars)))))))))
 
-(local
- (defthmd not-equal-of-car-when-not-memberp-of-fns-in-term
-   (implies (and (not (memberp a (fns-in-term x)))
-                 (consp x)
-                ;(pseudo-termp x)
-                 (not (equal 'quote a))
-                 (not (consp a))
-                 )
-            (not (equal a (car x))))
-   :hints (("Goal" :expand (fns-in-term x)
-            :in-theory (enable fns-in-term)))))
-
-(local
- (defthmd not-equal-of-car-when-not-member-equal-of-fns-in-term
-   (implies (and (not (member-equal a (fns-in-term x)))
-                 (consp x)
-                ;(pseudo-termp x)
-                 (not (equal 'quote a))
-                 (not (consp a))
-                 )
-            (not (equal a (car x))))
-   :hints (("Goal" :expand (fns-in-term x)
-            :in-theory (enable fns-in-term)))))
-
-;memberp version
-(local
- (defthm not-memberp-of-fns-in-term-of-expand-lambdas-in-term
-   (implies (and (pseudo-termp term)
-                 (not (memberp fn (fns-in-term term))))
-            (not (memberp fn (fns-in-term (expand-lambdas-in-term term)))))
-   :hints (("Goal" :use (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term)
-            :in-theory (disable not-member-equal-of-fns-in-term-of-expand-lambdas-in-term)))))
-
-(local
- (defthm not-memberp-of-fns-in-term-of-cadr
-   (implies (and (not (memberp fn (fns-in-term x)))
-                 (not (equal 'quote (car x))))
-            (not (memberp fn (fns-in-term (car (cdr x))))))
-   :hints (("Goal" :expand (fns-in-term x)
-            :in-theory (enable fns-in-term)))))
-
-;(local (in-theory (disable pairlis$))) ;prevent inductions
 
 (local
  (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-hyps-for-hyp
@@ -585,10 +565,10 @@
                     ;(EXPAND-LAMBDAS-IN-TERM HYP)
                      )
             :in-theory (e/d (axe-rule-hypp make-axe-rule-hyps-for-hyp symbolp-when-pseudo-termp
-                                           not-equal-of-car-when-not-memberp-of-fns-in-term
+                                           not-equal-of-car-when-not-member-equal-of-fns-in-term
                                            axe-rule-hyp-listp
                                            )
-                            (not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
+                            (;not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
                              MYQUOTEP
                             ;QUOTED-SYMBOL-LISTP
                             ;ALL-VAR-OR-MYQUOTEP
@@ -728,8 +708,6 @@
    (implies (pseudo-term-listp hyps)
             (axe-rule-hyp-listp (mv-nth 1 (make-axe-rule-hyps-simple hyps bound-vars rule-symbol wrld))))
    :hints (("Goal" :in-theory (enable make-axe-rule-hyps-simple)))))
-
-(local (in-theory (disable member-equal-becomes-memberp))) ;todo
 
 ;; (defthm-flag-expand-lambdas-in-term
 ;;   (defthm not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
@@ -1592,23 +1570,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp rules) where rules is a list of axe-rules.
-;; This version removes duplicate rules first.  (That may happen later anyway
-;; when making the rule-alist...).
-(defund make-axe-rules2 (rule-names wrld)
-  (declare (xargs :guard (and (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
-  (make-axe-rules (remove-duplicates-eq rule-names) ;slow?  use property worlds to speed up?
-                  wrld))
+;; ;; Returns (mv erp rules) where rules is a list of axe-rules.
+;; ;; This version removes duplicate rules first.  (That may happen later anyway
+;; ;; when making the rule-alist...).
+;; (defund make-axe-rules2 (rule-names wrld)
+;;   (declare (xargs :guard (and (symbol-listp rule-names)
+;;                               (ilks-plist-worldp wrld))))
+;;   (make-axe-rules (remove-duplicates-eq rule-names) ;slow?  use property worlds to speed up?
+;;                   wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
-(defun add-rules-to-rule-set (rules rule-set wrld)
-  (declare (xargs :guard (and (symbol-listp rules)
+(defun add-rules-to-rule-set (rule-names rule-set wrld)
+  (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-listp rule-set)
                               (ilks-plist-worldp wrld))))
-  (b* (((mv erp rules) (make-axe-rules rules wrld))
+  (b* (((mv erp rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp rule-set)))
     (mv (erp-nil)
         (union-equal rules rule-set))))
@@ -1628,19 +1606,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rule-sets).
-;; Add the RULES to each rule set in RULE-SETS.
+;; Add the given rules to each rule set in RULE-SETS.
 ;todo: optimze?
-(defun add-rules-to-rule-sets (rules rule-sets wrld)
-  (declare (xargs :guard (and (symbol-listp rules)
+(defun add-rules-to-rule-sets (rule-names rule-sets wrld)
+  (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-setsp rule-sets)
                               (ilks-plist-worldp wrld))))
   (if (endp rule-sets)
       (mv (erp-nil) nil)
     (b* (((mv erp first-rule-set)
-          (add-rules-to-rule-set rules (first rule-sets) wrld))
+          (add-rules-to-rule-set rule-names (first rule-sets) wrld))
          ((when erp) (mv erp nil))
          ((mv erp rest-rule-sets)
-          (add-rules-to-rule-sets rules (rest rule-sets) wrld))
+          (add-rules-to-rule-sets rule-names (rest rule-sets) wrld))
          ((when erp) (mv erp nil)))
       (mv (erp-nil)
           (cons first-rule-set
@@ -1649,24 +1627,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns the new rule-sets.  Does not return erp.
-(defun add-rules-to-rule-sets! (rules rule-sets wrld)
+(defun add-rules-to-rule-sets! (rule-names rule-sets wrld)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (axe-rule-setsp rule-sets)
+                              (ilks-plist-worldp wrld))))
   (mv-let (erp rule-sets)
-    (add-rules-to-rule-sets rules rule-sets wrld)
+    (add-rules-to-rule-sets rule-names rule-sets wrld)
     (if erp
         (er hard? 'add-rules-to-rule-sets! "Error adding rules to rule-sets.")
       rule-sets)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Add the RULES to each rule set in RULE-SETS.
-;todo: optimze?
-(defun add-axe-rules-to-rule-sets (axe-rules rule-sets)
-  (declare (xargs :guard (and (axe-rule-listp axe-rules)
-                              (axe-rule-setsp rule-sets))))
-  (if (endp rule-sets)
-      nil
-    (cons (union-equal axe-rules (first rule-sets))
-          (add-axe-rules-to-rule-sets axe-rules (rest rule-sets)))))
+;; ;; Add the RULES to each rule set in RULE-SETS.
+;; ;todo: optimze?
+;; (defun add-axe-rules-to-rule-sets (axe-rules rule-sets)
+;;   (declare (xargs :guard (and (axe-rule-listp axe-rules)
+;;                               (axe-rule-setsp rule-sets))))
+;;   (if (endp rule-sets)
+;;       nil
+;;     (cons (union-equal axe-rules (first rule-sets))
+;;           (add-axe-rules-to-rule-sets axe-rules (rest rule-sets)))))
 
 ;; (defun remove-rule-from-rule-set (rule rule-set)
 ;;   (declare (xargs :guard (and (symbolp rule)
