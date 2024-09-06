@@ -2298,7 +2298,7 @@
      acl2-numberp-of-len
 ;     equal-of-myif-same
 ;<-becomes-bvlt-alt
-     <-becomes-bvlt-axe-both
+     <-becomes-bvlt-axe-bind-free-and-bind-free
      equal-when-bvlt
      equal-when-bvlt-alt
      bvplus-of-bvuminus-tighten-gen-no-split-dag
@@ -2703,8 +2703,8 @@
      natp-of-len                ;new
      <-becomes-bvlt-dag-alt-gen ;new
      <-becomes-bvlt-dag-gen     ;new
-     <-becomes-bvlt-axe-2       ;new
-     <-becomes-bvlt-axe-3       ;new
+     <-becomes-bvlt-axe-bind-free-and-free       ;new
+     <-becomes-bvlt-axe-free-and-bind-free       ;new
      <-becomes-bvlt-free-alt    ;fri jan 14 04:10:47 2011
      <-becomes-bvlt-free        ;fri jan 14 04:10:49 2011
 
@@ -3079,7 +3079,7 @@
              equal-of-fix-same ;reorder?
              <-of-256
 
-             <-becomes-bvlt-dag-alt-gen-better ;these are from md5
+             <-becomes-bvlt-axe-bind-free-arg1-strong-safe ;these are from md5
              equal-of-bvplus-cancel-2-of-more-and-1-of-more
              equal-of-bvplus-cancel-3-of-more-and-1-of-more
 ;              bound-when-usb2
@@ -3119,7 +3119,7 @@
 
              ;;these are for the rolled proof:
              <-of-len-and-constant
-             <-becomes-bvlt-dag-alt-gen-better2
+             <-becomes-bvlt-axe-bind-free-arg1-strong ; todo: above we use the safe one
              <-becomes-bvlt-dag-gen-better2
 
              bvplus-of-bvuminus-of-bvcat-and-bvcat
@@ -3248,7 +3248,7 @@
              rationalp-of-ceiling
              integerp-of-ceiling
              bvlt-of-bvuminus-arg2-constant
-;    <-becomes-bvlt-axe-both
+;    <-becomes-bvlt-axe-bind-free-and-bind-free
              <-0-+-negative-2
 ;    +-of-myif-arg1 ;new5
 ;   +-of-myif-arg2 ;new5
@@ -3731,8 +3731,8 @@
              floor-of-floor
              <-of-0-and-floor
 
-             plus-becomes-bvplus-arg2-free-dag ;other ones?
-             plus-becomes-bvplus-arg1-free-dag ;other ones?
+             +-becomes-bvplus-axe-bind-free-and-free ;other ones?
+             +-becomes-bvplus-axe-free-and-bind-free ;other ones?
 ;bvmult-of-slice-when-bvchop-0 ;where did this rule go? ffixme
              bvlt-of-bvmult-hack200
              nth-of-group2-gen
@@ -3982,9 +3982,9 @@
 
 ;Wed Feb 24 16:04:04 2010
 ;this is cheap, so let's try it first
-(set-axe-rule-priority <-becomes-bvlt-axe-both -1)
-(set-axe-rule-priority <-becomes-bvlt-axe-2 -1)
-(set-axe-rule-priority <-becomes-bvlt-axe-3 -1)
+(set-axe-rule-priority <-becomes-bvlt-axe-bind-free-and-bind-free -1)
+(set-axe-rule-priority <-becomes-bvlt-axe-bind-free-and-free -1)
+(set-axe-rule-priority <-becomes-bvlt-axe-free-and-bind-free -1)
 
 ;;rules about if (or should we go straight to myif and have all the rules be about that?!):
 

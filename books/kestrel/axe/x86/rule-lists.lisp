@@ -2318,7 +2318,7 @@
             acl2::collect-constants-over-<-2
             acl2::<-of-negative-when-usbp
             x86isa::canonical-address-p-of-if
-            acl2::<-becomes-bvlt-axe-both
+            acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
             acl2::bvlt-of-bvplus-constant-and-constant-other
             acl2::bvlt-transitive-4-a
             acl2::bvlt-transitive-4-b
@@ -4366,7 +4366,7 @@
 ;; ;;             ;read-when-program-at
 ;; ;;             ;read-of-write-disjoint2
 ;; ;;             ;read-of-write-disjoint
-;; ;; ;acl2::<-becomes-bvlt-axe-both
+;; ;; ;acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
 ;; ;; ;            read-byte-from-segment-when-code-segment-assumptions32
 ;; ;;  ;           mv-nth-1-of-add-to-*sp
 ;; ;;   ;          not-mv-nth-0-of-add-to-*sp
@@ -4663,7 +4663,7 @@
             x86isa::integerp-of-xr-rgf
             acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
             min ; why is min arising?  or add min-same
-            acl2::<-becomes-bvlt-dag-alt-gen-better2
+            acl2::<-becomes-bvlt-axe-bind-free-arg1-strong
             acl2::<-becomes-bvlt-dag-gen-better2
             ;; after adding core-rules-bv:
             acl2::bvlt-tighten-bind-and-bind-dag
