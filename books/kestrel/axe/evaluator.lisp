@@ -143,13 +143,6 @@
 ;;     (and (< (rfix (car lst)) (rfix bound))
 ;;          (all-items-less-than bound (cdr lst)))))
 
-;; matches std
-(defthm consp-of-assoc-equal
-  (implies (alistp alist)
-           (iff (consp (assoc-equal key alist))
-                (assoc-equal key alist)))
-  :hints (("Goal" :in-theory (enable alistp assoc-equal))))
-
 ;; (defun lookup-lst-equal (key-lst alist)
 ;;   (declare (xargs :guard (and (alistp alist)
 ;; ;                              (true-listp key-lst) ;bozo consider putting this back?
