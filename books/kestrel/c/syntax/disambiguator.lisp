@@ -2492,7 +2492,9 @@
        ((erp new-declor ident table) (dimb-declor ideclor.declor nil table))
        ((erp new-init? table) (dimb-initer-option ideclor.init? table))
        (table (dimb-add-ident ident kind table)))
-    (retok (make-initdeclor :declor new-declor :init? new-init?)
+    (retok (make-initdeclor :declor new-declor
+                            :asm? ideclor.asm?
+                            :init? new-init?)
            table))
   :hooks (:fix)
 
@@ -2557,7 +2559,6 @@
        (retok (make-decl-decl :extension decl.extension
                               :specs new-specs
                               :init new-init
-                              :asm? decl.asm?
                               :attrib decl.attrib)
               table))
      :statassert
@@ -2819,7 +2820,9 @@
        (retok (stmt-fix stmt) (dimb-table-fix table))
        :return
        (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
-         (retok (stmt-return new-expr?) table))))
+         (retok (stmt-return new-expr?) table))
+       :asm
+       (retok (stmt-fix stmt) (dimb-table-fix table))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

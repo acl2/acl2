@@ -5073,7 +5073,6 @@
                                      bvchop-of-sum-cases
                                      ))))
 
-;newly disabled remove all the disables later
 (defthmd <-of-bvplus-becomes-bvlt-arg1
   (implies (unsigned-byte-p size y)
            (equal (< (bvplus size x z) y)
@@ -5470,9 +5469,7 @@
                             bvchop-when-top-bit-1)
                            (;<-of-bvchop-arg1
                             ;;fixme
-                            bvminus-becomes-bvplus-of-bvuminus
-                            <-of-bvplus-becomes-bvlt-arg1
-                            <-of-bvplus-becomes-bvlt-arg2)))))
+                            bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm bvplus-of-minus1-tighten-32
   (implies (and (unsigned-byte-p free x)

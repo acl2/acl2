@@ -460,6 +460,8 @@ gcc-keyword = %s"__alignof"
             / %s"typeof"
             / %s"__typeof"
             / %s"__typeof__"
+            / %s"__volatile"
+            / %s"__volatile__"
 
 ; Given that some GCC keyword variants are completely equivalent
 ; to each other and to some standard keywords,
@@ -479,6 +481,8 @@ restrict-keyword = %s"restrict" / %s"__restrict" / %s"__restrict__"
 signed-keyword = %s"signed" / %s"__signed" / %s"__signed__"
 
 typeof-keyword = %s"typeof" / %s"__typeof" / %s"__typeof__"
+
+volatile-keyword = %s"volatile" / %s"__volatile" / %s"__volatile__"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -939,18 +943,60 @@ attribute-specifier = attribute-keyword "(" "(" [ attribute-list ] ")" ")"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Assembler Name Specifiers (https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html)
+; Assembler
+; (https://gcc.gnu.org/onlinedocs/gcc/Using-Assembly-Language-with-C.html)
 
-; These are a GCC extension,
-; used to specify the assembler name of declared identifiers.
-; This construct starts with the 'asm' or '__asm' or '__asm__' keyword,
+; This is a GCC extension,
+; introduced by the keywords 'asm', '__asm', or '__asm__'.
+; The GCC documentation describes three instances of this:
+; 1. One to specify the assembler name of a function or variable
+;    (https://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html).
+;    We call this 'assembler name specifier', which seems fitting,
+;    although the GCC documentation does not seem to use a precise term.
+; 2. Basic assembler statements, i.e. instructions without operands
+;    (https://gcc.gnu.org/onlinedocs/gcc/Basic-Asm.html).
+; 3. Extended assembler statements, i.e. instructions with operands
+;    (https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html).
+
+; An assembler name specifier consists of an 'asm' or variant keyword
 ; followed by a parenthesized sequence of one or more string literals.
-
-; Although the GCC documentation does not seem to provide
-; a clear term to describe this construct,
-; we use the term 'assembler name specifier', which seems appropriate.
+; Recall that our grammar captures juxtaposed string literals,
+; not just their concatenation; this is why we allow one or more here.
 
 asm-name-specifier = asm-keyword "(" 1*string-literal ")"
+
+; We capture basic and extended assembler statements together,
+; with the basic ones as a special case of the extended ones.
+; We follow the grammar in the GCC documentation (see links above).
+; Recall that we use ABNF repetitions of one or more string literals
+; in order to capture the string juxtaposition prior to string concatenation.
+
+asm-qualifier = volatile-keyword / inline-keyword / %s"goto"
+
+asm-statement = asm-keyword
+                *asm-qualifier
+                "("
+                1*string-literal
+                [ ":" asm-output-operands
+                [ ":" asm-input-operands
+                [ ":" asm-clobbers
+                [ ":" asm-goto-labels ] ] ] ]
+                ")"
+                ";"
+
+asm-output-operands = [ asm-output-operand *( "," asm-output-operand ) ]
+
+asm-output-operand = [ "[" identifier "]" ] 1*string-literal "(" expression ")"
+
+asm-input-operands = [ asm-input-operand *( "," asm-input-operand ) ]
+
+asm-input-operand = [ "[" identifier "]" ] 1*string-literal "(" expression ")"
+
+asm-clobbers = [ asm-clobber *( "," asm-clobber ) ]
+
+asm-clobber = 1*string-literal
+
+asm-goto-labels = [ identifier *( "," identifier ) ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -979,11 +1025,8 @@ asm-name-specifier = asm-keyword "(" 1*string-literal ")"
 ; does not quite comply with the standard due to the presence of GCC extensions.
 
 ; As a GCC extension, we allow an optional assembler name specifier
-; just after the initializer declarators, and before the attributes (see below).
-; The GCC documentation says that an assembler name specifier
-; comes just after a declarator, so our grammar rule may be more liberal;
-; but currently our goal is just to handle practical code with GCC extensions,
-; not to provide a formalization of GCC extensions.
+; just after top-level declarators in initializer declarators,
+; and before the attributes (see below).
 
 ; As GCC extensions, we include
 ; the '__signed' and '__signed__' variants of 'signed' as type specifiers.
@@ -999,7 +1042,6 @@ asm-name-specifier = asm-keyword "(" 1*string-literal ")"
 declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
               [ init-declarator-list ]
-              [ asm-name-specifier ]
               *attribute-specifier ; GCC extension
               ";"
             / static-assert-declaration
@@ -1015,8 +1057,8 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
 init-declarator-list = init-declarator
                      / init-declarator-list "," init-declarator
 
-init-declarator = declarator
-                / declarator "=" initializer
+init-declarator = declarator [ asm-name-specifier ]
+                / declarator [ asm-name-specifier ] "=" initializer
 
 storage-class-specifier = %s"typedef"
                         / %s"extern"
@@ -1090,7 +1132,7 @@ atomic-type-specifier = %s"_Atomic" "(" type-name ")"
 
 type-qualifier = %s"const"
                / restrict-keyword
-               / %s"volatile"
+               / volatile-keyword
                / %s"_Atomic"
 
 function-specifier = inline-keyword
@@ -1178,6 +1220,7 @@ statement = labeled-statement
           / selection-statement
           / iteration-statement
           / jump-statement
+          / asm-statement ; GCC extension
 
 labeled-statement = identifier ":" statement
                   / %s"case" constant-expression ":" statement
@@ -1216,6 +1259,8 @@ jump-statement = %s"goto" identifier ";"
 
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a function definition.
+; We also allow an assembler name specifier
+; just after the declarator of a function definition.
 
 translation-unit = external-declaration
                  / translation-unit external-declaration
@@ -1225,7 +1270,7 @@ external-declaration = function-definition
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers
-                      declarator
+                      declarator [asm-name-specifier]
                       [ declaration-list ]
                       compound-statement
 

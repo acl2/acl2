@@ -20765,6 +20765,7 @@
                               (make
                                defstobj-redundant-raw-lisp-discriminator-value
                                :event event-form
+                               :recognizer recog-name
                                :creator creator-name
                                :congruent-stobj-rep
                                (or congruent-stobj-rep name)
@@ -21676,6 +21677,9 @@
 
   (let* ((the-live-name (the-live-var name))
          (recognizer (or recognizer (absstobj-name name :RECOGNIZER)))
+         (recognizer-name (if (consp recognizer)
+                              (car recognizer)
+                            recognizer))
          (st$c (cond ((null foundation) (absstobj-name name :C))
                      ((consp foundation) (car foundation))
                      (t foundation)))
@@ -21758,6 +21762,7 @@
                        (cons 'defabsstobj
                              (make defstobj-redundant-raw-lisp-discriminator-value
                                    :event ',event-form
+                                   :recognizer ',recognizer-name
                                    :creator ',creator-name
                                    :congruent-stobj-rep ',congruent-stobj-rep
                                    :non-memoizable
@@ -23735,6 +23740,7 @@
                                       (make
                                        defstobj-redundant-raw-lisp-discriminator-value
                                        :event event-form
+                                       :recognizer (car names)
                                        :creator creator-name
                                        :congruent-stobj-rep
                                        (or congruent-stobj-rep st-name)

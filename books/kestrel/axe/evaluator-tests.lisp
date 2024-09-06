@@ -141,7 +141,7 @@
                            (every-nth (mv t (every-nth arg1 arg2)))
                            (intersection-equal
                                 (mv t (intersection-equal arg1 arg2)))
-                           (all-equal$ (mv t (all-equal$ arg1 arg2)))
+                           (all-equal$ (mv t (all-equal$-unguarded arg1 arg2)))
                            (repeatbit (mv t (repeatbit-unguarded arg1 arg2)))
                            (implies (mv t (implies arg1 arg2)))
                            (first-non-member
@@ -743,7 +743,7 @@
                            (every-nth (mv t (every-nth arg1 arg2)))
                            (intersection-equal
                                 (mv t (intersection-equal arg1 arg2)))
-                           (all-equal$ (mv t (all-equal$ arg1 arg2)))
+                           (all-equal$ (mv t (all-equal$-unguarded arg1 arg2)))
                            (repeatbit (mv t (repeatbit-unguarded arg1 arg2)))
                            (implies (mv t (implies arg1 arg2)))
                            (first-non-member

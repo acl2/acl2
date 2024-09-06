@@ -19,6 +19,9 @@
 (include-book "signer-records")
 (include-book "fault-tolerance")
 (include-book "committees-in-system")
+(include-book "quorum-intersection")
+(include-book "last-blockchain-round")
+(include-book "ordered-even-blocks")
 (include-book "unequivocal-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
 
@@ -43,6 +46,9 @@
                     signer-records
                     fault-tolerance
                     committees-in-system
+                    quorum-intersection
+                    last-blockchain-round
+                    ordered-even-blocks
                     unequivocal-certificates-def-and-init
                     nonforking-blockchains-def-and-init))
 

@@ -260,6 +260,22 @@
       (enable commit-anchors-possiblep
               get-validator-state-of-update-validator-state))))
 
+  (defret validator-state->last-of-commit-anchors-next
+    (equal (validator-state->last
+            (get-validator-state val1 new-systate))
+           (if (equal (address-fix val1) (address-fix val))
+               (1- (validator-state->round
+                    (get-validator-state val systate)))
+             (validator-state->last
+              (get-validator-state val1 systate))))
+    :hyp (commit-anchors-possiblep val systate)
+    :hints
+    (("Goal"
+      :in-theory
+      (enable commit-anchors-possiblep
+              get-validator-state-of-update-validator-state
+              nfix))))
+
   (defret validator-state->blockchain-of-commit-anchors-next
     (equal (validator-state->blockchain
             (get-validator-state val1 new-systate))
@@ -300,5 +316,6 @@
   (in-theory (disable validator-state->dag-of-commit-anchors-next
                       validator-state->buffer-of-commit-anchors-next
                       validator-state->endorsed-of-commit-anchors-next
+                      validator-state->last-of-commit-anchors-next
                       validator-state->blockchain-of-commit-anchors-next
                       get-network-state-of-commit-anchors-next)))

@@ -1787,3 +1787,8 @@ error (int __status, int __errnum, const char *__format, ...)
    __error_alias (__status, __errnum, __format, __builtin_va_arg_pack ());
 }"
  :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "int foo asm (\"myfoo\") = 2;"
+ :gcc t)

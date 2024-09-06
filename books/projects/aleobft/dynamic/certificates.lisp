@@ -418,6 +418,23 @@
     :enable (in-of-get-certificates-with-author
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
+    :disable get-certificates-with-author)
+
+  (defruled certificate-with-author+round-in-certificates-with-author
+    (implies (and (certificate-setp certs)
+                  (get-certificate-with-author+round author round certs))
+             (set::in (get-certificate-with-author+round author round certs)
+                      (get-certificates-with-author author certs)))
+    :enable (in-of-get-certificates-with-author
+             get-certificate-with-author+round-element)
+    :disable get-certificates-with-author)
+
+  (defruled no-certificate-with-author+round-if-no-certificates-with-author
+    (implies (and (certificate-setp certs)
+                  (equal (get-certificates-with-author author certs)
+                         nil))
+             (not (get-certificate-with-author+round author round certs)))
+    :use certificate-with-author+round-in-certificates-with-author
     :disable get-certificates-with-author))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -540,3 +557,29 @@
                         (equal (certificate->round cert1)
                                (certificate->round cert2)))
                    (equal cert1 cert2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define certificates-ordered-even-p ((certs certificate-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of certificates has
+          strictly increasing (right to left), even round numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee blocks-ordered-even-p),
+     but for certificates instead of blocks.
+     The reason for having this predicate on certificates is that
+     blockchains are extended from sequences of anchors,
+     which are lists of certificates;
+     the reason why blocks have strictly increasing, even round numbers
+     is that the collected lists of anchors also have
+     strictly increasing, even round numbers."))
+  (b* (((when (endp certs)) t)
+       (cert (car certs))
+       (round (certificate->round cert))
+       ((unless (evenp round)) nil)
+       ((when (endp (cdr certs))) t)
+       ((unless (> round (certificate->round (cadr certs)))) nil))
+    (certificates-ordered-even-p (cdr certs)))
+  :hooks (:fix))

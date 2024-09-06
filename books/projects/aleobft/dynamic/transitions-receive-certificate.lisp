@@ -197,6 +197,16 @@
       :in-theory (enable receive-certificate-possiblep
                          get-validator-state-of-update-validator-state))))
 
+  (defret validator-state->last-of-receive-certificate-next
+    (equal (validator-state->last (get-validator-state val new-systate))
+           (validator-state->last (get-validator-state val systate)))
+    :hyp (receive-certificate-possiblep msg systate)
+    :hints
+    (("Goal" :in-theory (enable
+                         receive-certificate-possiblep
+                         get-validator-state-of-update-validator-state
+                         nfix))))
+
   (defret validator-state->blockchain-of-receive-certificate-next
     (equal (validator-state->blockchain (get-validator-state val new-systate))
            (validator-state->blockchain (get-validator-state val systate)))
@@ -214,5 +224,6 @@
   (in-theory (disable validator-state->dag-of-receive-certificate-next
                       validator-state->buffer-of-receive-certificate-next
                       validator-state->endorsed-of-receive-certificate-next
+                      validator-state->last-of-receive-certificate-next
                       validator-state->blockchain-of-receive-certificate-next
                       get-network-state-of-receive-certificate-next)))

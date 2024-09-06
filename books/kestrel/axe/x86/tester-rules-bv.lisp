@@ -119,7 +119,7 @@
            :cases ((<= x (/ K1 k2))))))
 
 ;gen
-;why is this needed? maybe because of ACL2::<-BECOMES-BVLT-DAG-ALT-GEN-BETTER2
+;why is this needed? maybe because of ACL2::<-BECOMES-BVLT-AXE-BIND-FREE-ARG1-STRONG
 (defthm UNSIGNED-BYTE-P-2-of-bvchop-when-bvlt-of-4
   (implies (BVLT '32 x '4)
            (UNSIGNED-BYTE-P '2 (BVCHOP '32 x))))

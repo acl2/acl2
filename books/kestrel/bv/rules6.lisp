@@ -580,6 +580,7 @@
                          (bvcat (+ -1 highsize) highval lowsize lowval))))
   :hints (("Goal" :in-theory (enable natp))))
 
+;rename
 (defthmd plus-becomes-bvplus
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (bind-free (bind-var-to-bv-term-size 'ysize y))
@@ -593,11 +594,14 @@
                            (r 2)
                            (i (min xsize ysize))
                            (j (max xsize ysize)))
-           :in-theory (e/d ( bvplus unsigned-byte-p unsigned-byte-p-forced) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
+           :in-theory (e/d (bvplus unsigned-byte-p unsigned-byte-p-forced) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                                                       <-of-expt-and-expt-same-base
                                                       ;;
                                                       )))))
 
+(theory-invariant (incompatible (:definition bvplus) (:rewrite plus-becomes-bvplus)))
+
+;rename
 (defthmd plus-becomes-bvplus-arg1-free
   (implies (and (unsigned-byte-p xsize x)
                 (bind-free (bind-var-to-bv-term-size 'ysize y))
@@ -608,6 +612,9 @@
   :hints (("Goal" :use plus-becomes-bvplus
            :in-theory (e/d (unsigned-byte-p-forced) (plus-becomes-bvplus)))))
 
+(theory-invariant (incompatible (:definition bvplus) (:rewrite plus-becomes-bvplus-arg1-free)))
+
+;rename
 (defthmd plus-becomes-bvplus-arg2-free
   (implies (and (unsigned-byte-p xsize x)
                 (bind-free (bind-var-to-bv-term-size 'ysize y))
@@ -617,4 +624,6 @@
                   (bvplus (+ 1 (max xsize ysize)) x y)))
   :hints (("Goal" :use plus-becomes-bvplus-arg1-free
            :in-theory (e/d (<-of-constant-when-unsigned-byte-p-size-param)
-                           ( plus-becomes-bvplus-arg1-free)))))
+                           (plus-becomes-bvplus-arg1-free)))))
+
+(theory-invariant (incompatible (:definition bvplus) (:rewrite plus-becomes-bvplus-arg2-free)))

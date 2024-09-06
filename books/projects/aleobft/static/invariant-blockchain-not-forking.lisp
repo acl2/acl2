@@ -52,11 +52,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use @(tsee lists-nofork-p), as in @(tsee system-anchors-nofork-p)."))
+    "We use @(tsee lists-noforkp), as in @(tsee system-anchors-nofork-p)."))
   (forall (val1 val2)
           (implies (and (set::in val1 (correct-addresses systate))
                         (set::in val2 (correct-addresses systate)))
-                   (lists-nofork-p
+                   (lists-noforkp
                     (validator-state->blockchain
                      (get-validator-state val1 systate))
                     (validator-state->blockchain
@@ -64,7 +64,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled lists-nofork-p-of-calculate-blockchain
+(defruled lists-noforkp-of-calculate-blockchain
   :short "The blockchains calculated in two validators do not fork."
   :long
   (xdoc::topstring
@@ -81,7 +81,7 @@
    (xdoc::p
     "So here we prove the property on @(tsee calculate-blockchain).
      We assume the non-forking of anchors (which has been proved previously),
-     and expand @(tsee lists-nofork-p) so that we get
+     and expand @(tsee lists-noforkp) so that we get
      different cases based on the lengths.
      But we have proved elsewhere the equality between
      the length of the blockchain and the length of the anchor sequence,
@@ -102,7 +102,7 @@
                 (system-last-anchor-present-p systate)
                 (set::in val1 (correct-addresses systate))
                 (set::in val2 (correct-addresses systate)))
-           (lists-nofork-p
+           (lists-noforkp
             (calculate-blockchain
              (validator-anchors (get-validator-state val1 systate)
                                 (all-addresses systate))
@@ -111,7 +111,7 @@
              (validator-anchors (get-validator-state val2 systate)
                                 (all-addresses systate))
              (validator-state->dag (get-validator-state val2 systate)))))
-  :enable (lists-nofork-p
+  :enable (lists-noforkp
            nthcdr-of-calculate-blockchain
            system-unequivocal-dag-p-necc
            system-unequivocal-dags-p-necc
@@ -140,12 +140,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled lists-nofork-p-of-validator-state->blockchain
+(defruled lists-noforkp-of-validator-state->blockchain
   :short "The blockchain state components do not fork."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We transfer @(tsee lists-nofork-p-of-calculate-blockchain)
+    "We transfer @(tsee lists-noforkp-of-calculate-blockchain)
      to the blockchain state components of validators,
      which are known to be equal to @(tsee calculate-blockchain)."))
   (implies (and (system-anchors-nofork-p systate)
@@ -156,13 +156,13 @@
                 (system-blockchain-redundantp systate)
                 (set::in val1 (correct-addresses systate))
                 (set::in val2 (correct-addresses systate)))
-           (lists-nofork-p
+           (lists-noforkp
             (validator-state->blockchain
              (get-validator-state val1 systate))
             (validator-state->blockchain
              (get-validator-state val2 systate))))
   :enable validator-blockchain-redundantp
-  :use (lists-nofork-p-of-calculate-blockchain
+  :use (lists-noforkp-of-calculate-blockchain
         (:instance system-blockchain-redundantp-necc (val val1))
         (:instance system-blockchain-redundantp-necc (val val2))))
 
@@ -173,7 +173,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The theorem @(tsee lists-nofork-p-of-validator-state->blockchain)
+    "The theorem @(tsee lists-noforkp-of-validator-state->blockchain)
      is enough to prove the desired system invariant.
      Note that this is proved from previously proved invariants,
      mainly the non-forking of anchors,
@@ -186,4 +186,4 @@
                 (system-blockchain-redundantp systate))
            (system-blockchain-nofork-p systate))
   :enable (system-blockchain-nofork-p
-           lists-nofork-p-of-validator-state->blockchain))
+           lists-noforkp-of-validator-state->blockchain))
