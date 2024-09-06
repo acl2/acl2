@@ -38,6 +38,7 @@
 (include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
+(include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
@@ -768,3 +769,17 @@
   (equal (negated-elems-listp-unguarded width lst1 lst2)
          (negated-elems-listp width lst1 lst2))
   :hints (("Goal" :in-theory (enable negated-elems-listp-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund all-equal$-unguarded (x lst)
+  (declare (xargs :guard t))
+  (if (not (consp lst))
+      t
+    (and (equal x (first lst))
+         (all-equal$-unguarded x (rest lst)))))
+
+(defthm all-equal$-unguarded-correct
+  (equal (all-equal$-unguarded x lst)
+         (all-equal$ x lst))
+  :hints (("Goal" :in-theory (enable all-equal$-unguarded all-equal$))))
