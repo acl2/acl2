@@ -7813,6 +7813,13 @@ lognot)
 
 (add-svex-simplify-rule not-equal-to-0-for-bitp)
 
+(def-rp-rule not-equal-to-0-for-booleanp
+  (implies (booleanp x)
+           (and (equal (if (equal x nil) nil t)
+                       (equal x t))
+                (equal (if (equal x t) nil t)
+                       (equal x nil)))))
+
 (def-rp-rule 4vec-branch-of-4vec-==-when-bitp
   (implies (bitp x)
            (and (equal (sv::4vec-?* (4vec-== 1 x) then else)
