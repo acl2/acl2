@@ -1733,7 +1733,7 @@
 
             x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
             ;; x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
-            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; or do we just always go to read?
+            ;; x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; todo: or do we just always go to read?
             ;;x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
 
             x86isa::canonical-address-listp-of-cons
@@ -2121,7 +2121,8 @@
 
             x86isa::chk-exc-fn ; for floating point and/or avx/vex?
 
-            program-at-of-set-flag
+            program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
+            ;; x86isa::program-at-of-set-undef ; do we not need something like this?
 
             x86isa::xmmi-size$inline
             x86isa::!xmmi-size$inline
@@ -3122,7 +3123,6 @@
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
             x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
             x86isa::write-*sp-when-64-bit-modep
-            ;; x86isa::program-at-of-set-undef ; do we not need something like this?
             )))
 
 (defund lifter-rules64-new ()
@@ -4263,8 +4263,6 @@
 ;; (set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
 ;; (set-axe-rule-priority read-when-program-at-4-bytes 2)
 ;; (set-axe-rule-priority read-when-program-at-8-bytes 2)
-
-
 
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
