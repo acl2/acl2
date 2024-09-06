@@ -270,7 +270,14 @@
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
-    read-when-program-at-1-byte ; read-when-program-at
+    read-when-program-at ; trying just this on
+    ;; since read-when-program-at can introduce bv-array-read-chunk-little
+    acl2::bv-array-read-chunk-little-base
+    acl2::bv-array-read-chunk-little-unroll
+    ;; read-when-program-at-1-byte-simple ; todo: use a more general rule?
+    ;; read-when-program-at-2-bytes
+    ;; read-when-program-at-4-bytes
+    ;; read-when-program-at-8-bytes
     read-of-logext
     read-when-equal-of-read
     read-when-equal-of-read-alt
@@ -1919,9 +1926,6 @@
             ;;x86isa::rip$a                           ;expose the call to xr
             ;;app-view$inline         ;expose the call to xr
 
-
-
-
             x86isa::mv-nth-1-rb-xw-undef
             x86isa::wb-xw-in-app-view
 
@@ -1957,9 +1961,6 @@
             x86isa::i48-when-canonical-address-p
             x86isa::select-address-size$inline
             ;x86isa::canonical-address-p-of-if
-            read-when-program-at-2-bytes ;move these
-            read-when-program-at-4-bytes
-            read-when-program-at-8-bytes
 
             cf-spec64-when-unsigned-byte-p
 
@@ -4251,11 +4252,17 @@
 (set-axe-rule-priority read-of-write-disjoint -1)
 
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
-;;(set-axe-rule-priority read-when-program-at-gen 1)
+(set-axe-rule-priority read-when-program-at 1)
+;;todo: these are no longer used:
 (set-axe-rule-priority read-when-program-at-1-byte 1)
 (set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
 (set-axe-rule-priority read-when-program-at-4-bytes 2)
 (set-axe-rule-priority read-when-program-at-8-bytes 2)
+
+(set-axe-rule-priority read-when-program-at-1-byte-simple 1)
+;; (set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
+;; (set-axe-rule-priority read-when-program-at-4-bytes 2)
+;; (set-axe-rule-priority read-when-program-at-8-bytes 2)
 
 
 
@@ -4675,7 +4682,7 @@
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-            read-of-2 ; splits into 2 reads -- todo: do better?
+            read-2-blast ; splits into 2 reads -- todo: do better?
             )
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
@@ -4752,7 +4759,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: move this?
 (defun extra-loop-lifter-rules ()
   (append ;or put these in symbolic-execution-rules-loop ?:
    '(stack-height-increased-wrt
@@ -4794,6 +4800,9 @@
      acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::mod-of-+-of-constant
      xr-of-if
+     ;; since we are still using the legacy rewriter, which can't eval bv-array-read-chunk-little:
+     ;acl2::bv-array-read-chunk-little-base
+     ;acl2::bv-array-read-chunk-little-unroll
      )
    (write-rules)
 ;(x86isa::lifter-rules)

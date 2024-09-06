@@ -665,10 +665,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;todo: compare to read-when-program-at
+;; "simple" because there is only one state var
+(defthm read-when-program-at-1-byte-simple
+  (implies (and (program-at paddr bytes x86) ; paddr and bytes are free vars
+                (<= paddr addr)
+                (< (- addr paddr) (len bytes))
+                (byte-listp bytes) ; todo: inefficient?  is there another byte-listp?
+                (integerp addr)
+                ;; (integerp paddr)
+                (canonical-address-p paddr)
+                (canonical-address-p (+ -1 (len bytes) paddr))
+                (app-view x86)
+                (x86p x86) ;too bad
+                )
+           (equal (read 1 addr x86)
+                  (nth (- addr paddr)
+                       bytes)))
+  :hints (("Goal" :in-theory (enable read read-byte-when-program-at-gen))))
+
 ;; Note that the program-at assumption we have will be about the initial x86 state,
 ;; which is unlikely to be the state we're reading from.  This rule deals with that.
-;; TODO: Generalize the 1
+;; todo: why wouldn't we be able to simplify the read until it is reading from the initial state var?
 (defthm read-when-program-at-1-byte
   (implies (and ;; find that a program is loaded in the initial state:
             (program-at paddr bytes x86-init) ;these are free vars
@@ -771,15 +788,15 @@
 ;todo: if we can't resolve the index, something like bv-array-read might be preferable.  but we would need multi-byte reads...
 ;rename
 ;compare to read-when-program-at-8-bytes, etc.
-(defthm read-when-program-at-gen
+(defthm read-when-program-at
   (implies (and (program-at paddr bytes x86)
                 (<= paddr addr)
-                (< (+ -1 n addr) (+ paddr (len bytes))) ; todo: rephrase
+                (< (+ addr (- paddr)) (+ 1 (- n) (len bytes)))
                 (canonical-address-p paddr)
                 (canonical-address-p (+ -1 (len bytes) paddr))
                 ;;(program-at paddr bytes x86-init)
                 ;;(program-at paddr bytes x86) ; ensure the bytes are still present (todo: might not be needed if we apply this rule last)
-                (byte-listp bytes)
+                (byte-listp bytes) ; drop?
                 (integerp addr)
                 (app-view x86)
                 ;; (app-view x86-init)
@@ -787,7 +804,7 @@
            (equal (read n addr x86)
                   ;; todo: consider what should happen here if ADDR is not a constant:
                   ;;(acl2::packbv-little n 8 (take n (nthcdr (- addr paddr) bytes)))
-                  (acl2::bv-array-read-chunk-little n 8 (len bytes) (- addr paddr) bytes)))
+                  (bv-array-read-chunk-little n 8 (len bytes) (- addr paddr) bytes)))
   :hints (("Goal" :in-theory (enable read
                                      read-byte-when-program-at-gen
                                      acl2::bv-array-read-chunk-little
@@ -1005,28 +1022,25 @@
                                      acl2::bvchop-of-+-becomes-bvplus))))
 
 
-;todo: gen the 1
-;todo: the hyps of read-when-program-at-1-byte seem better than this
-(defthm read-when-program-at-alt
-  (implies (and (program-at addr2 bytes x86)
-                (syntaxp (quotep bytes))
-                (< 0 (len bytes))
-                (byte-listp bytes)
-                (canonical-address-p$inline addr2)
-                (canonical-address-p$inline (+ -1 addr2 (len bytes)))
-                (<= addr2 addr)
-                (< (+ addr (- addr2)) (len bytes)) ; note this!
-                (integerp addr)
-                (integerp addr2)
-                (app-view x86)
-                (x86p x86))
-           ;;todo: gen the 1:
-           (equal (read 1 addr x86)
-                  (nth (- addr addr2) bytes)))
-  :hints (("Goal" :in-theory (e/d (program-at read-when-equal-of-read-gen)
-                                  (distributivity)))))
-
-
+;; ;todo: gen the 1
+;; ;todo: the hyps of read-when-program-at-1-byte seem better than this
+;; (defthm read-when-program-at-alt
+;;   (implies (and (program-at addr2 bytes x86)
+;;                 (syntaxp (quotep bytes))
+;;                 (< 0 (len bytes))
+;;                 (byte-listp bytes)
+;;                 (canonical-address-p$inline addr2)
+;;                 (canonical-address-p$inline (+ -1 addr2 (len bytes)))
+;;                 (<= addr2 addr)
+;;                 (< (+ addr (- addr2)) (len bytes)) ; note this!
+;;                 (integerp addr)
+;;                 (integerp addr2)
+;;                 (app-view x86)
+;;                 (x86p x86))
+;;            (equal (read 1 addr x86)
+;;                   (nth (- addr addr2) bytes)))
+;;   :hints (("Goal" :in-theory (e/d (program-at read-when-equal-of-read-gen)
+;;                                   (distributivity)))))
 
 ;; or do we want bvplus?
 (defthm read-of-bvplus
@@ -1077,7 +1091,7 @@
 
 ;; Splits into individual reads, which then get resolved
 ;; TODO: Instead, resolve a read of 2 bytes when we have an appropriate program-at claim
-(defthm read-of-2
+(defthm read-2-blast
   (equal (read 2 addr x86)
          (bvcat 8 (read 1 (+ 1 addr) x86)
                 8 (read 1 addr x86)))
