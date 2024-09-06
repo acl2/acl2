@@ -2061,7 +2061,7 @@
 
     bvchop-impossible-value ;gen to any bv?
     <-becomes-bvlt-dag-GEN-BETTER
-;    <-becomes-bvlt-dag-alt-gen ;Wed Feb 24 15:00:14 2010
+;    <-becomes-bvlt-axe-bind-free-arg1 ;Wed Feb 24 15:00:14 2010
 
     zp
     booleanp-of-all-same
@@ -2247,7 +2247,7 @@
      +-of-bvplus-1-same-and-unary-minus
      inverse-of-+
      bvlt-of-bvplus-of-1-and-same
-;                               <-becomes-bvlt-dag-alt-gen ;wed feb 24 15:00:17 2010
+     ;; <-becomes-bvlt-axe-bind-free-arg1 ;wed feb 24 15:00:17 2010
      len-when-equal-take
      car-of-nthcdr
      consp-of-nthcdr
@@ -2297,7 +2297,7 @@
      fix-when-acl2-numberp
      acl2-numberp-of-len
 ;     equal-of-myif-same
-;<-becomes-bvlt-alt
+     ;;<-becomes-bvlt-alt
      <-becomes-bvlt-axe-bind-free-and-bind-free
      equal-when-bvlt
      equal-when-bvlt-alt
@@ -2701,8 +2701,8 @@
 
      if-x-x-nil                     ;new
      natp-of-len                ;new
-     <-becomes-bvlt-dag-alt-gen ;new
-     <-becomes-bvlt-dag-gen     ;new
+     <-becomes-bvlt-axe-bind-free-arg1 ;new
+     <-becomes-bvlt-axe-bind-free-arg2     ;new
      <-becomes-bvlt-axe-bind-free-and-free       ;new
      <-becomes-bvlt-axe-free-and-bind-free       ;new
      <-becomes-bvlt-free-alt    ;fri jan 14 04:10:47 2011
@@ -3248,7 +3248,7 @@
              rationalp-of-ceiling
              integerp-of-ceiling
              bvlt-of-bvuminus-arg2-constant
-;    <-becomes-bvlt-axe-bind-free-and-bind-free
+             ;; <-becomes-bvlt-axe-bind-free-and-bind-free
              <-0-+-negative-2
 ;    +-of-myif-arg1 ;new5
 ;   +-of-myif-arg2 ;new5
@@ -3298,7 +3298,7 @@
              functional-self-inversion-of-minus
              distributivity-of-minus-over-+
 
-;    <-becomes-bvlt-dag-alt-gen ;Wed Feb 24 15:00:10 2010
+             ;; <-becomes-bvlt-axe-bind-free-arg1 ;Wed Feb 24 15:00:10 2010
              +-combine-constants
              <-of-negative-constant-and-unary-minus
              move-negative-addend-1
@@ -3721,7 +3721,7 @@
              true-listp-of-group2
              bvmult-of-bvplus-hack-gen-constant-version
              equal-of-bvmult-of-slice
-;                                <-becomes-bvlt-dag-alt-gen ;wed feb 24 15:00:22 2010
+             ;; <-becomes-bvlt-axe-bind-free-arg1 ;wed feb 24 15:00:22 2010
              <-of-floor-of-constant-and-constant-gen
 
              all-unsigned-byte-p-of-myif-strong
