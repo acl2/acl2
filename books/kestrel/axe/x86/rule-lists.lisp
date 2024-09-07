@@ -254,6 +254,16 @@
   '(mv-nth-1-of-wb-1-becomes-write
     mv-nth-1-of-wb-becomes-write))
 
+;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
+(defund program-at-rules ()
+  (declare (xargs :guard t))
+  '(program-at-of-write
+    x86isa::program-at-of-if
+    program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
+    program-at-of-set-undef ; do we not need something like this?
+    program-at-of-set-mxcsr
+    ))
+
 (defun read-byte-rules ()
   (declare (xargs :guard t))
   '(read-byte-of-xw-irrel
@@ -298,7 +308,6 @@
     alignment-checking-enabled-p-of-write
     get-flag-of-write
     ctri-of-write ; may be needed for lifter, which does not use the lifter-rules64-new (todo: move other similar rules here?)
-    program-at-of-write
     undef-of-write
     mxcsr-of-write
     ms-of-write
@@ -1134,7 +1143,7 @@
 (defun if-lifting-rules ()
   (declare (xargs :guard t))
   '(x86isa::app-view-of-if
-    x86isa::program-at-of-if
+    ;x86isa::program-at-of-if
     x86isa::x86p-of-if
     x86isa::alignment-checking-enabled-p-of-if
     x86isa::64-bit-modep-of-if
@@ -2121,9 +2130,6 @@
 
             x86isa::chk-exc-fn ; for floating point and/or avx/vex?
 
-            program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
-            ;; x86isa::program-at-of-set-undef ; do we not need something like this?
-
             x86isa::xmmi-size$inline
             x86isa::!xmmi-size$inline
             x86isa::zmmi-size$inline
@@ -2434,7 +2440,7 @@
     get-flag-of-set-esp
     get-flag-of-set-ebp
 
-    program-at-of-set-eip
+    program-at-of-set-eip ; only needed for loop lifter?
     program-at-of-set-eax
     program-at-of-set-ebx
     program-at-of-set-ecx
@@ -4802,6 +4808,7 @@
      ;acl2::bv-array-read-chunk-little-base
      ;acl2::bv-array-read-chunk-little-unroll
      )
+   (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)
 ;(x86isa::lifter-rules)
    ))
