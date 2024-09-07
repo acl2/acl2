@@ -432,11 +432,9 @@
      has members in @('all-vals'), so long as the genesis committee does.
      This derives from the analogous property
      of @(tsee committee-after-blocks)."))
-  (b* ((last (if (consp blocks)
-                 (block->round (car blocks))
-               0))
-       ((when (> (pos-fix round)
-                 (+ 2 last))) nil))
+  (b* (((when (> (pos-fix round)
+                 (+ 2 (blocks-last-round blocks))))
+        nil))
     (bonded-committee-at-round-loop round blocks all-vals))
   :hooks (:fix)
 
@@ -502,9 +500,7 @@
   (defruled bonded-committee-at-round-iff-round-upper-bound
     (iff (bonded-committee-at-round round blocks all-vals)
          (<= (pos-fix round)
-             (+ 2 (if (consp blocks)
-                      (block->round (car blocks))
-                    0))))))
+             (+ 2 (blocks-last-round blocks))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -633,9 +629,7 @@
   (defruled active-committee-at-round-iff-round-upper-bound
     (iff (active-committee-at-round round blocks all-vals)
          (<= (nfix (- (pos-fix round) (lookback)))
-             (+ 2 (if (consp blocks)
-                      (block->round (car blocks))
-                    0))))
+             (+ 2 (blocks-last-round blocks))))
     :enable (bonded-committee-at-round-iff-round-upper-bound
              nfix
              pos-fix

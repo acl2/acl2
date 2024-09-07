@@ -90,3 +90,21 @@
        ((unless (> round (block->round (cadr blocks)))) nil))
     (blocks-ordered-even-p (cdr blocks)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define blocks-last-round ((blocks block-listp))
+  :returns (last natp)
+  :short "Last round in a list of blocks, or 0 if there are no blocks."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee blocks-ordered-even-p) holds,
+     block rounds are in strictly increading order from right to left.
+     This function then returns the latest, i.e. highest, round.
+     If there are no blocks, we totalize this function to return 0.
+     However, we do not require @(tsee blocks-ordered-even-p) in the guard."))
+  (if (consp blocks)
+      (block->round (car blocks))
+    0)
+  :hooks (:fix))
