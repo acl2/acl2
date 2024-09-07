@@ -791,6 +791,8 @@
 (defthm read-when-program-at
   (implies (and (program-at paddr bytes x86)
                 (<= paddr addr)
+                ;; We expect any common addends in ADDR and PADDR to be removed when simplifying the difference, (+ addr (- paddr)).
+                ;; And we expect the term (+ 1 (- n) (len bytes)) to often be ground:
                 (< (+ addr (- paddr)) (+ 1 (- n) (len bytes)))
                 (canonical-address-p paddr)
                 (canonical-address-p (+ -1 (len bytes) paddr))
