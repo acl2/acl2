@@ -580,4 +580,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-fconst ((fconst fconstp))
+  :returns (type typep)
+  :short "Validate a floating constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A floating constant is always valid:
+     [C:6.4.4.2] states no restrictions,
+     except for a recommended practice
+     to provide a diagnostic message in certain cases,
+     which also instructs to proceed with compilation nonetheless,
+     suggesting that it should be only a warning, not an error.")
+   (xdoc::p
+    "The type is determined solely by the suffix, including its absence
+     [C:6.4.4.2/4]."))
+  (b* ((suffix? (fconst-case fconst
+                             :dec fconst.suffix?
+                             :hex fconst.suffix?)))
+    (cond ((not suffix?) (type-double))
+          ((or (fsuffix-case suffix? :locase-f)
+               (fsuffix-case suffix? :upcase-f))
+           (type-float))
+          ((or (fsuffix-case suffix? :locase-l)
+               (fsuffix-case suffix? :upcase-l))
+           (type-ldouble))
+          (t (prog2$ (impossible) (type-void)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: continue
