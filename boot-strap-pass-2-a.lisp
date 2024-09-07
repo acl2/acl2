@@ -225,6 +225,8 @@
 (verify-termination-boot-strap set-wormhole-data-fast) ; and guards
 (set-brr-data-attachments)
 (verify-termination-boot-strap brr-data-lst) ; and guards
+(verify-termination-boot-strap cbd-fn)
+(verify-guards cbd-fn :hints (("Goal" :in-theory (enable state-p1))))
 
 ; The following has caused the following error with "make proofs".
 ; > Error: HARD ACL2 ERROR in EXECUTABLE-BADGE:  It is illegal to call this function

@@ -70,8 +70,7 @@
 ;(local (in-theory (disable CADR-BECOMES-NTH-OF-1))) ;need better acl2-count rules about nth (maybe when we know the length...)
 
  ;for speed
-(local (in-theory (disable alistp-consp-hack-equal
-                           weak-dagp-aux
+(local (in-theory (disable weak-dagp-aux
                            ;consp-from-len-cheap
                            default-car
                            <-of-nth-and-alen1 ;todo

@@ -144,7 +144,7 @@
     (bitnot bitnot-unguarded)
 
     (leftrotate32 leftrotate32-unguarded)
-    ;; todo; leftrotate
+    (leftrotate leftrotate-unguarded)
     ;; todo; rightrotate
     ;; todo; rightrotate32
 
