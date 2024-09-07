@@ -1,7 +1,7 @@
 ; Axe rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,6 +26,7 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
 (add-known-boolean prefixp)
+(add-known-boolean memberp)
 
 (def-constant-opener memberp)
 
