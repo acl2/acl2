@@ -86,10 +86,10 @@
       (cons entry
             (get-entries-eq (cdr keys) alist)))))
 
-;; only for lists, not strings
-(defund reverse-fast (x)
-  (declare (xargs :guard (true-listp x)))
-  (revappend x nil))
+;; ;; only for lists, not strings
+;; (defund reverse-fast (x)
+;;   (declare (xargs :guard (true-listp x)))
+;;   (revappend x nil))
 
 ;; (defund equal-lst-exec (val lst acc)
 ;;   (declare (xargs :guard (true-listp acc)))
@@ -768,22 +768,24 @@
 ;;            :expand ((hide (dag-val2-no-array dag alist))
 ;;                     (eval-dag2-no-array dag alist)))))
 
-(defthm equal-of-true-list-fix-and-list-of-car
-  (equal (equal (true-list-fix l)
-                (list (car l)))
-         (equal 1 (len l)))
-  :hints (("Goal" :in-theory (enable true-list-fix))))
+;; (local
+;;  (defthm equal-of-true-list-fix-and-list-of-car
+;;    (equal (equal (true-list-fix l)
+;;                  (list (car l)))
+;;           (equal 1 (len l)))
+;;    :hints (("Goal" :in-theory (enable true-list-fix)))))
 
 ;(in-theory (disable LIST::LEN-EQUAL-1-REWRITE)) ;yuck
 
-(defthm consp-of-lookup-equal-when-items-have-len-of-strip-cdrs
-  (implies (and (items-have-len n (strip-cdrs l))
-                (lookup-equal key l)
-                (posp n))
-           (consp (lookup-equal key l)))
-  :hints (("Goal" :in-theory (enable lookup-equal
-                                     ITEMS-HAVE-LEN
-                                     assoc-equal))))
+;; (local
+;;  (defthm consp-of-lookup-equal-when-items-have-len-of-strip-cdrs
+;;    (implies (and (items-have-len n (strip-cdrs l))
+;;                  (lookup-equal key l)
+;;                  (posp n))
+;;             (consp (lookup-equal key l)))
+;;    :hints (("Goal" :in-theory (enable lookup-equal
+;;                                       ITEMS-HAVE-LEN
+;;                                       assoc-equal)))))
 
 ;todo: generalize this (it has *axe-evaluator-functions* baked in)
 ;include the fns themselves if they are not base fns
