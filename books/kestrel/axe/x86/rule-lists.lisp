@@ -4687,7 +4687,6 @@
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-            read-2-blast ; splits into 2 reads -- todo: do better?
             )
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
