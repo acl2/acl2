@@ -116,7 +116,19 @@
                        (block->round (car blocks2))))))
     :induct t
     :enable (append
-             last)))
+             last))
+
+  (defruled evenp-of-car-when-blocks-ordered-even-p
+    (implies (and (blocks-ordered-even-p blocks)
+                  (consp blocks))
+             (evenp (block->round (car blocks)))))
+
+  (defruled evenp-of-nth-when-blocks-ordered-even-p
+    (implies (and (blocks-ordered-even-p blocks)
+                  (< (nfix i) (len blocks)))
+             (evenp (block->round (nth i blocks))))
+    :induct t
+    :enable (nth nfix len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
