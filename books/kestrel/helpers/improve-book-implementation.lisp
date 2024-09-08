@@ -100,6 +100,7 @@
       (if skipp
           (submit-and-check-events (rest events) skip-proofsp skip-localsp print state)
         (mv-let (erp state)
+          ;; TODO: We need to strip hints here, in case they refer to a local name, or avoid checking hints:
           (submit-event (if skip-proofsp `(skip-proofs ,event) event)
                         nil ;print
                         nil state)

@@ -35,6 +35,10 @@
 ;;               (equal x (set::insert a y))
 ;;               (equal x (set::delete a y)))))
 
+;for Axe only, so disabled.
+(defthmd booleanp-of-in
+  (booleanp (set::in a x)))
+
 ;move
 (defthm 2set-when-not-consp
   (IMPLIES (NOT (CONSP ADDRS))
