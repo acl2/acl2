@@ -89,7 +89,34 @@
        ((when (endp (cdr blocks))) t)
        ((unless (> round (block->round (cadr blocks)))) nil))
     (blocks-ordered-even-p (cdr blocks)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled blocks-ordered-even-p-of-cdr
+    (implies (blocks-ordered-even-p blocks)
+             (blocks-ordered-even-p (cdr blocks))))
+
+  (defruled first-geq-last-when-blocks-ordered-even-p
+    (implies (and (blocks-ordered-even-p blocks)
+                  (consp blocks))
+             (>= (block->round (car blocks))
+                 (block->round (car (last blocks)))))
+    :rule-classes :linear
+    :induct t
+    :enable last)
+
+  (defruled blocks-ordered-even-p-of-append
+    (equal (blocks-ordered-even-p (append blocks1 blocks2))
+           (and (blocks-ordered-even-p blocks1)
+                (blocks-ordered-even-p blocks2)
+                (or (endp blocks1)
+                    (endp blocks2)
+                    (> (block->round (car (last blocks1)))
+                       (block->round (car blocks2))))))
+    :induct t
+    :enable (append
+             last)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
