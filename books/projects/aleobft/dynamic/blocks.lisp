@@ -146,4 +146,13 @@
   (if (consp blocks)
       (block->round (car blocks))
     0)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled oldest-of-prefix-gt-newest-of-suffix-when-blocks-ordered-even-p
+    (implies (and (blocks-ordered-even-p (append blocks1 blocks2))
+                  (consp blocks1))
+             (> (block->round (car (last blocks1)))
+                (blocks-last-round blocks2)))
+    :enable blocks-ordered-even-p-of-append))
