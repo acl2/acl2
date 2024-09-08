@@ -282,7 +282,8 @@
     read-of-set-flag
     read-when-program-at ; trying just this on
     ;; since read-when-program-at can introduce bv-array-read-chunk-little
-    acl2::bv-array-read-chunk-little-base
+    acl2::bv-array-read-chunk-little-constant-opener
+    acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
     ;; read-when-program-at-1-byte-simple ; todo: use a more general rule?
     ;; read-when-program-at-2-bytes
