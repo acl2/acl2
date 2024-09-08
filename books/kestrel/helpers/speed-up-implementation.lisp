@@ -241,29 +241,49 @@
 ;; Each line printed starts with a newline.
 ;rename?
 ;; Does not change the world.
-(defun try-to-drop-runes-from-defthm (runes body hints otf-flg time-to-beat min-time-savings print state)
-  (declare (xargs :guard (and (true-listp runes)
+(defun try-hints-for-defthm (hint-description-alist body otf-flg time-to-beat min-time-savings print state)
+  (declare (xargs :guard (and (alistp hint-description-alist)
                               (booleanp otf-flg)
                               (rationalp time-to-beat)
                               (print-levelp print))
                   :mode :program
                   :stobjs state))
-  (if (endp runes)
+  (if (endp hint-description-alist)
       state
-    (let ((rune-to-drop (first runes)))
-      (mv-let (erp provedp time state)
-        (prove$-nice-with-time body
-                               (disable-items-in-hints hints (list rune-to-drop) nil)
-                               nil ; instructions
-                               otf-flg
-                               time-to-beat ; time-limit ; warning: not portable!
-                               nil          ; step-limit
-                               state)
-        (if erp
-            (prog2$ (er hard? 'try-to-drop-runes-from-defthm "Error trying to disable ~x0." rune-to-drop)
-                    state)
-          (progn$ (maybe-print-speedup-message provedp time time-to-beat (concatenate 'string "Disable " (print-to-string rune-to-drop)) min-time-savings print)
-                  (try-to-drop-runes-from-defthm (rest runes) body hints otf-flg time-to-beat min-time-savings print state)))))))
+    (let* ((entry (first hint-description-alist))
+           (hints (car entry))
+           (description (cdr entry)))
+      (prog2$
+        (and (print-level-at-least-tp print) (cw "~%Trying ~x0:" description))
+        (mv-let (erp provedp time state)
+          (prove$-nice-with-time body
+                                 hints
+                                 nil ; instructions
+                                 otf-flg
+                                 time-to-beat ; time-limit
+                                 nil          ; step-limit
+                                 state)
+          (if erp
+              (prog2$ (er hard? 'try-hints-for-defthm "Error trying hints ~x0 representing ~x1." hints description)
+                      state)
+            (progn$ (maybe-print-speedup-message provedp time time-to-beat description min-time-savings print)
+                    (try-hints-for-defthm (rest hint-description-alist) body otf-flg time-to-beat min-time-savings print state))))))))
+
+;; Returns a list of entries of the form (hints . description-string).
+(defun hint-description-alist-that-disables-each-rune (runes hints acc)
+  (declare (xargs :guard (and (true-listp runes)
+                              (true-listp acc))
+                  :mode :program ;todo
+                  ))
+  (if (endp runes)
+      (reverse acc)
+    (let* ((rune (first runes))
+           (description (concatenate 'string "Disable " (print-to-string rune)))
+           (hints-that-disable-rune (disable-items-in-hints hints (list rune) nil)))
+      (hint-description-alist-that-disables-each-rune (rest runes)
+                                                     hints
+                                                     (cons (cons hints-that-disable-rune description)
+                                                           acc)))))
 
 ;; Returns state.  Prints a suggestion if disabling RUNE beforehand can significantly speed up EVENT.
 ;; Each line printed starts with a newline.
@@ -354,7 +374,7 @@
           (hintsp (assoc-keyword :hints keyword-value-list))
           (hints (cadr hintsp))
           (otf-flgp (assoc-keyword :otf-flg keyword-value-list))
-          (otf-flg (cdr otf-flgp))
+          (otf-flg (cadr otf-flgp))
           (instructionsp (assoc-keyword :instructions keyword-value-list)))
      (if instructionsp
          (progn$ ;; (cw "Not trying to speed up ~x0 because it uses :instructions." name) ; todo: elsewhere, could try to prove without instructions
@@ -393,29 +413,13 @@
                                       (cw " seconds)")))
                       ;; Get the list of runes used in the proof:
                          (let* ((runes-used (get-event-data 'rules state))
-                                (rules-to-try-to-drop (runes-to-try-disabling runes-used (w state)))
-                              ;; Try dropping each rule that contributed to the proof
-                                (state (try-to-drop-runes-from-defthm rules-to-try-to-drop body hints otf-flg original-time min-time-savings print state))
-                                ;; If the proof used induction, try again with :induct t (maybe time was wasted before reverting to proof by induction)
-                                (state (if (exists-rune-of-classp runes-used :induction)
-                                           (mv-let (erp provedp time-with-induct-t state)
-                                             (prove$-nice-with-time body
-                                                                    (merge-hint-setting-into-hint :induct t "Goal" hints)
-                                                                    nil ; instructions
-                                                                    otf-flg
-                                                                    original-time
-                                                                    nil ; step-limit
-                                                                    state)
-                                             (if erp
-                                                 (prog2$ (cw "~%   Error adding :induct t." name)
-                                                         state)
-                                               (if provedp
-                                                   (prog2$ (maybe-print-speedup-message provedp time-with-induct-t original-time "Add :induct t hint on Goal" min-time-savings print)
-                                                           state)
-                                                 (prog2$ (and (print-level-at-least-tp print) (cw "~%   Adding :induct t caused the proof to break."))
-                                                      ;; todo: print something here in verbose mode
-                                                         state))))
-                                         state)))
+                                ;; Try disabling each rule that contributed to the proof:
+                                (hint-description-alist (hint-description-alist-that-disables-each-rune (runes-to-try-disabling runes-used (w state)) hints nil))
+                                ;; If the proof used induction, try with :induct t (maybe time was wasted before reverting to proof by induction):
+                                (hint-description-alist (if (exists-rune-of-classp runes-used :induction)
+                                                            (acons (merge-hint-setting-into-hint :induct t "Goal" hints) "Add :induct t hint on Goal" hint-description-alist)
+                                                          hint-description-alist))
+                                (state (try-hints-for-defthm hint-description-alist body otf-flg original-time min-time-savings print state)))
                            (mv nil state))))))))))))
 
 ;; Returns (mv erp state).
