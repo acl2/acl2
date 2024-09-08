@@ -97,7 +97,7 @@
     (implies (blocks-ordered-even-p blocks)
              (blocks-ordered-even-p (cdr blocks))))
 
-  (defruled first-geq-last-when-blocks-ordered-even-p
+  (defruled newest-geq-oldest-when-blocks-ordered-even-p
     (implies (and (blocks-ordered-even-p blocks)
                   (consp blocks))
              (>= (block->round (car blocks))
