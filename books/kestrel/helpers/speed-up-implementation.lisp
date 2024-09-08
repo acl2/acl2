@@ -609,33 +609,34 @@
                               (member-eq print '(nil :brief t :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
-  (mv-let (erp events full-book-path state)
-    (read-book-contents bookname dir state)
-    (if erp
-        (mv erp state)
-      (let* ((state (widen-margins state))
-             ;; Suppress annoying time tracker messages.
-             (fake (time-tracker-fn nil nil nil nil nil nil nil)) ; from :trans (time-tracker nil)
-             (min-time-savings (if (eq :auto min-time-savings) *minimum-time-savings-to-report* min-time-savings))
-             (min-event-time (if (eq :auto min-event-time) *minimum-event-time-to-speed-up* min-event-time)))
-        (declare (ignore fake))
-        (prog2$
-          (and print (cw "~%~%(SPEEDING UP ~x0.~%" full-book-path)) ; matches the close paren below
-          (let* ((old-cbd (cbd-fn state))
-                 (full-book-dir (dir-of-path full-book-path))
-                ;; We set the CBD so that the book is replayed in its own directory:
-                 (state (set-cbd-simple full-book-dir state))
-                ;; Load the .port file, so that packages (especially) exist:
-                 (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
-            (progn$ (and (eq print :verbose) (cw "  (Book contains ~x0 forms.)~%" (len events)))
-                    (mv-let (erp state)
-                      (speed-up-and-submit-events events synonym-alist min-time-savings min-event-time print
-                                                  nil ; no error for unknown events
-                                                  state)
-                      (let* ((state (unwiden-margins state))
-                             (state (set-cbd-simple old-cbd state)))
-                        (prog2$ (cw ")~%")
-                                (mv erp state)))))))))))
+  (let ((full-book-path (full-book-path bookname dir state)))
+    (prog2$
+      (and print (cw "~%~%(SPEEDING UP ~x0.~%" full-book-path)) ; matches the close paren below
+      (let* ((old-cbd (cbd-fn state)) ; save the CBD so we can restore it below
+             (full-book-dir (dir-of-path full-book-path))
+             ;; We set the CBD so that the book is replayed in its own directory:
+             (state (set-cbd-simple full-book-dir state))
+             ;; Load the .port file, so that packages (especially) exist:
+             (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
+        (mv-let (erp events state)
+          (read-book-contents full-book-path state)
+          (if erp
+              (mv erp state)
+            (let* ((state (widen-margins state))
+                   ;; Suppress annoying time tracker messages.
+                   (fake (time-tracker-fn nil nil nil nil nil nil nil)) ; from :trans (time-tracker nil)
+                   (min-time-savings (if (eq :auto min-time-savings) *minimum-time-savings-to-report* min-time-savings))
+                   (min-event-time (if (eq :auto min-event-time) *minimum-event-time-to-speed-up* min-event-time)))
+              (declare (ignore fake))
+              (progn$ (and (eq print :verbose) (cw "  (Book contains ~x0 forms.)~%" (len events)))
+                      (mv-let (erp state)
+                        (speed-up-and-submit-events events synonym-alist min-time-savings min-event-time print
+                                                    nil ; no error for unknown events
+                                                    state)
+                        (let* ((state (unwiden-margins state))
+                               (state (set-cbd-simple old-cbd state)))
+                          (prog2$ (cw ")~%")
+                                  (mv erp state))))))))))))
 
 ;; Returns (mv erp nil state).  Does not change the world.
 (defun speed-up-book-fn (bookname ; no extension
