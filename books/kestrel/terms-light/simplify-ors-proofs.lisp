@@ -70,6 +70,14 @@
                               simplify-ors-lst
                               free-vars-in-terms-when-symbol-listp))))
 
+(defthm subsetp-equal-of-free-vars-in-term-of-simplify-ors-gen
+  (implies (and (subsetp-equal (free-vars-in-term term) x)
+                (pseudo-termp term))
+           (subsetp-equal (free-vars-in-term (simplify-ors term bool-fix))
+                          x))
+  :hints (("Goal" :use subsetp-equal-of-free-vars-in-term-of-simplify-ors
+           :in-theory (disable subsetp-equal-of-free-vars-in-term-of-simplify-ors))))
+
 (defthm-flag-simplify-ors
   (defthm lambdas-closed-in-termp-of-simplify-ors
     (implies (and (pseudo-termp term)

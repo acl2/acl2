@@ -21,6 +21,7 @@
 (local (include-book "drop-trivial-lambdas-proofs"))
 (local (include-book "substitute-unnecessary-lambda-vars2-proofs"))
 (local (include-book "substitute-constants-in-lambdas-proofs"))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
 ;; switches the evaluator
 (defthm drop-unused-lambda-bindings-correct-for-if-and-not-eval
@@ -129,4 +130,32 @@
                 (lambdas-closed-in-termp term))
            (equal (if-and-not-eval (pre-simplify-term term print) alist)
                   (if-and-not-eval term alist)))
+  :hints (("Goal" :in-theory (enable pre-simplify-term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm subsetp-equal-of-free-vars-in-term-of-pre-simplify-term-one-step
+  (implies (and (pseudo-termp term)
+                (no-duplicate-lambda-formals-in-termp term)
+                (lambdas-closed-in-termp term))
+           (subsetp-equal (free-vars-in-term (pre-simplify-term-one-step term))
+                          (free-vars-in-term term)))
+  :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
+
+(defthm subsetp-equal-of-free-vars-in-term-of-pre-simplify-term-loop
+  (implies (and (pseudo-termp term)
+                (no-duplicate-lambda-formals-in-termp term)
+                (no-nils-in-termp term)
+                (lambdas-closed-in-termp term))
+           (subsetp-equal (free-vars-in-term (pre-simplify-term-loop count term))
+                          (free-vars-in-term term)))
+  :hints (("Goal" :in-theory (enable pre-simplify-term-loop))))
+
+(defthm subsetp-equal-of-free-vars-in-term-of-pre-simplify-term
+  (implies (and (pseudo-termp term)
+                (no-duplicate-lambda-formals-in-termp term)
+                (no-nils-in-termp term)
+                (lambdas-closed-in-termp term))
+           (subsetp-equal (free-vars-in-term (pre-simplify-term term print))
+                          (free-vars-in-term term)))
   :hints (("Goal" :in-theory (enable pre-simplify-term))))
