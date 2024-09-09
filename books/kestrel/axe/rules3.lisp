@@ -16,7 +16,7 @@
 
 ;; TODO: Organize these rules and move thing to more fundamental libraries.
 
-(include-book "kestrel/lists-light/finalcdr" :dir :system)
+;(include-book "kestrel/lists-light/finalcdr" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system)
 (include-book "kestrel/bv/rules6" :dir :system)
 (include-book "kestrel/bv/rules4" :dir :system)
@@ -13920,15 +13920,15 @@
 
 ;slow!
 ;yuck? could strengthen true-listp to equal nil when len is 0... - use polarities?
-(defthmd equal-when-lens-0
-  (implies (and (equal free (len x))
-                (equal 0 free)
-                (equal free2 (len y))
-                (equal 0 free2)
-                (true-listp x)
-                (true-listp y))
-           (equal (equal x y)
-                  (equal (finalcdr x) (finalcdr y)))))
+;; (defthmd equal-when-lens-0
+;;   (implies (and (equal free (len x))
+;;                 (equal 0 free)
+;;                 (equal free2 (len y))
+;;                 (equal 0 free2)
+;;                 (true-listp x)
+;;                 (true-listp y))
+;;            (equal (equal x y)
+;;                   (equal (finalcdr x) (finalcdr y)))))
 
 ;; (thm
 ;;  (implies (not (BVLT '2 x '2))
