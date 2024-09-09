@@ -154,12 +154,24 @@
   :hints (("Goal" :in-theory (e/d (bvchop) (;FLOOR-MINUS-ERIC-BETTER ;drop the disable once this is fixed
                                             )))))
 
+(defthm <=-of-bvchop-same-linear
+  (implies (<= 0 x)
+           (<= (bvchop n x) x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvchop))))
+
+;; this is listed first so that it is tried after the main rule
+(defthm unsigned-byte-p-of-bvchop-when-already
+  (implies (unsigned-byte-p size x)
+           (unsigned-byte-p size (bvchop size2 x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
 (defthm unsigned-byte-p-of-bvchop
   (implies (<= size size1)
            (equal (unsigned-byte-p size1 (bvchop size i))
                   (and (>= size1 0)
                        (integerp size1))))
-  :hints (("Goal" :in-theory (enable bvchop UNSIGNED-BYTE-P))))
+  :hints (("Goal" :in-theory (enable bvchop unsigned-byte-p))))
 
 (defthm bitp-of-bvchop-of-1-type
   (bitp (bvchop 1 x))
@@ -554,10 +566,7 @@
            (not (< x (bvchop size x))))
   :hints (("Goal" :in-theory (enable bvchop))))
 
-(defthm <=-of-bvchop-same-linear
-  (implies (<= 0 x)
-           (<= (bvchop n x) x))
-  :rule-classes :linear)
+
 
 (defthm <-of-bvchop-and-bvchop-same
   (implies (and (<= s1 s2)
@@ -658,10 +667,7 @@
 (theory-invariant (incompatible (:definition bvchop)
                                 (:rewrite mod-of-expt-of-2)))
 
-(defthm unsigned-byte-p-of-bvchop-when-already
-  (implies (unsigned-byte-p n x)
-           (unsigned-byte-p n (bvchop m x)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
 
 ;; Replaces mod with bvchop
 ;; rename
