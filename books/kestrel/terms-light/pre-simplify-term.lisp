@@ -1,4 +1,4 @@
-; A tools to simplify terms in generic ways not involving full rewriting
+; A tool to simplify terms in generic ways not involving full rewriting
 ;
 ; Copyright (C) 2024 Kestrel Institute
 ;
@@ -12,7 +12,9 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; TODO: Add more kinds of simplifications (e.g., subst lambda vars bound to vars, replace hard-error/cw with nil, replace eql with equal, trivial lambdas, resolve ifs)
+;; TODO: Add more kinds of simplifications (e.g., subst lambda vars bound to
+;; other vars, replace hard-error/cw with nil, replace eql with equal, resolve
+;; ifs).
 
 ;; See correctness proof in pre-simplify-term-proofs.lisp.
 
@@ -29,10 +31,8 @@
   (let* ((term (substitute-constants-in-lambdas term))
          (term (drop-unused-lambda-bindings term))
          (term (substitute-unnecessary-lambda-vars-in-term2 term nil nil))
-         ;; todo: this is not really about lambdas.  rename this book?
          (term (simplify-ors term nil)) ; could pass in bool-fix, as for a hyp
-         (term (drop-trivial-lambdas term))
-         )
+         (term (drop-trivial-lambdas term)))
     term))
 
 (defthm pseudo-termp-of-pre-simplify-term-one-step
