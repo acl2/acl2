@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
-(include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/utilities/world" :dir :system) ; reduce?
 (include-book "kestrel/utilities/terms" :dir :system)
 ;(include-book "../utilities/basic")
 ;(include-book "kestrel/terms-light/drop-unused-lambda-bindings" :dir :system)
@@ -21,13 +21,12 @@
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
-(include-book "kestrel/utilities/acons-fast" :dir :system)
 (include-book "kestrel/utilities/remove-guard-holders" :dir :system)
 ;(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "known-booleans")
 (include-book "axe-rule-lists")
 (include-book "axe-syntax") ;since this book knows about axe-syntaxp and axe-bind-free
-(include-book "std/system/theorem-symbolp" :dir :system)
+(include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -47,8 +46,9 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
 
-(in-theory (disable ilks-plist-worldp
-                    plist-worldp)) ;move
+(local
+ (in-theory (disable ilks-plist-worldp
+                     plist-worldp)))
 
 (local
  (defthmd not-equal-of-car-when-not-member-equal-of-fns-in-term
@@ -1043,16 +1043,16 @@
         ; Form the rule (note that stored-rules take a different form):
         (list lhs rhs rule-symbol (append extra-hyps processed-hyps)))))
 
-(defthm len-of-mv-nth-1-of-make-axe-rule
-  (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
-           (equal (len (mv-nth 1 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
-                  4))
-  :hints (("Goal" :in-theory (enable make-axe-rule))))
+;; (defthm len-of-mv-nth-1-of-make-axe-rule
+;;   (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
+;;            (equal (len (mv-nth 1 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
+;;                   4))
+;;   :hints (("Goal" :in-theory (enable make-axe-rule))))
 
-(defthm true-listp-of-mv-nth-1-of-make-axe-rule
-  (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
-           (true-listp (mv-nth 1 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld))))
-  :hints (("Goal" :in-theory (enable make-axe-rule))))
+;; (defthm true-listp-of-mv-nth-1-of-make-axe-rule
+;;   (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
+;;            (true-listp (mv-nth 1 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld))))
+;;   :hints (("Goal" :in-theory (enable make-axe-rule))))
 
 (defthm rule-lhs-of-mv-nth-1-of-make-axe-rule
   (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
@@ -1437,14 +1437,14 @@
         (er hard? 'add-axe-rules-for-rule "QUOTE is an illegal name for an Axe rule.")
         (mv :bad-rule-name acc))
        ;; (- (cw "Making axe-rule for ~x0.~%" rule-name))
-       (theoremp (theorem-symbolp rule-name wrld))
+       (theoremp (defthm-or-defaxiom-symbolp rule-name wrld))
        (functionp (function-symbolp rule-name wrld)))
     (cond ((and (not functionp)
                 (not theoremp))
-           (prog2$ (er hard? 'add-axe-rules-for-rule "~x0 does not seem to be a theorem or defun." rule-name)
+           (prog2$ (er hard? 'add-axe-rules-for-rule "~x0 does not seem to be a theorem/axiom or defun." rule-name)
                    (mv :rule-not-found acc)))
           ((and functionp theoremp)
-           (prog2$ (er hard? 'add-axe-rules-for-rule "~x0 appears to be both a function and a theorem (so which is it?!)" rule-name)
+           (prog2$ (er hard? 'add-axe-rules-for-rule "~x0 appears to be both a function and a theorem/axiom (so which is it?!)" rule-name)
                    (mv :confusing-rule-name acc)))
           (functionp
            ;;it's a defun:
@@ -1472,7 +1472,7 @@
                 ((mv erp rule) (make-axe-rule lhs body rule-name nil nil print wrld))
                 ((when erp) (mv erp acc)))
              (mv (erp-nil) (cons rule acc))))
-          (t ;;it's a theorem:
+          (t ;;it's a theorem/axiom:
            (b* ((theorem-body (defthm-body rule-name wrld))
                 (rule-classes (defthm-rule-classes rule-name wrld))
                 ((when (not (symbol-alistp rule-classes)))
