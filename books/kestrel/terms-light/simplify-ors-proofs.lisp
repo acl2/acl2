@@ -233,6 +233,15 @@
                             not-member-equal-of-nil-when-no-nils-in-termsp)
                            (if-and-not-eval-of-fncall-args-back)))))
 
+;; If iffp is true, we only get IFF, not EQUAL.
+(defthm simplify-ors-of-nil-correct-iff
+  (implies (pseudo-termp term)
+           (iff (if-and-not-eval (simplify-ors term iffp) alist)
+                (if-and-not-eval term alist)))
+  :hints (("Goal" :use simplify-ors-correct
+           :in-theory (disable simplify-ors-correct))))
+
+;; If iffp is false, we get true equality:
 (defthm simplify-ors-of-nil-correct
   (implies (pseudo-termp term)
            (equal (if-and-not-eval (simplify-ors term nil) alist)
