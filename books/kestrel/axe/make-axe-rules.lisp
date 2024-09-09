@@ -470,23 +470,26 @@
                     (append vars-to-bind bound-vars)))
             ;; not a special hyp:
             (b* ((all-fns (fns-in-term hyp))
+                 ;; These 2 checks catch common errors:
                  ((when (member-eq 'axe-syntaxp all-fns))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-syntaxp that is not at the top level." hyp rule-symbol)
-                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (member-eq :axe-syntaxp all-fns)) ;todo: prove that this never happens?
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-syntaxp, which is not a legal function name." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
                  ((when (member-eq 'axe-bind-free all-fns))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-bind-free that is not at the top level." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (member-eq :axe-bind-free all-fns))
+                 ;; todo: check for work-hards not at the top-level?
+                 ;; These 3 checks ensure that expanding the lambdas in a normal hyp doesn't result in a special hyp:
+                 ((when (member-eq :axe-syntaxp all-fns)) ;todo: prove that this never happens?
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-syntaxp, which is not a legal function name." hyp rule-symbol)
+                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                 ((when (member-eq :axe-bind-free all-fns)) ;todo: prove that this never happens?
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-bind-free, which is not a legal function name." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (member-eq :free-vars all-fns))
+                 ((when (member-eq :free-vars all-fns)) ;todo: prove that this never happens?
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :free-vars which is not a legal function name." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ;; todo: check for work-hards not at the top-level?
-                 (hyp (expand-lambdas-in-term hyp)) ;could print a note here, if this does anything.  ;; TODO: What if we don't expand lambdas?  Maybe that's only needed for the free variable case?
+                 ;; Expand lambdas:
+                 (hyp (expand-lambdas-in-term hyp)) ;could print a note here, if this does anything.  ;; TODO: What if we don't expand lambdas?  Maybe that's only needed for the free variable case (but expanding lambdas may affect the free vars)?
                  ((when (not (consp hyp)))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is not a function call after expanding lambdas." hyp rule-symbol) ; could treat this like we treat variables above
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
@@ -530,51 +533,23 @@
                 ;; Normal hyp with no free vars (no wrapper):
                 (mv (erp-nil) (list hyp) bound-vars)))))))))
 
-
 (local
  (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-hyps-for-hyp
    (implies (pseudo-termp hyp)
             (axe-rule-hyp-listp (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
-   :hints (("Goal" :use (;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                        ;;            (fn 'axe-bind-free)
-                        ;;            (term hyp))
-                        ;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                        ;;            (fn 'axe-bind-free)
-                        ;;            (term (cadr hyp)))
-                        ;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                        ;;            (fn 'axe-syntaxp)
-                        ;;            (term hyp))
-                        ;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                        ;;            (fn 'axe-syntaxp)
-                        ;;            (term (cadr hyp)))
-                        ;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                        ;;            (fn 'work-hard)
-                        ;;            (term (cdr hyp)))
-                         )
-            :do-not '(generalize eliminate-destructors)
-            :expand (;(FNS-IN-TERM HYP)
-                    ;;(expand-lambdas-in-term hyp)
-                    ;(fns-in-term (expand-lambdas-in-term hyp))
-                    ;(pseudo-termp (cdr hyp))
-                    ;(PSEUDO-TERMP (CADDR HYP))
-                    ;(pseudo-term-listp (cddr hyp))
-                    ;(PSEUDO-TERM-LISTP (CDR HYP))
-                    ;;(PSEUDO-TERMP HYP)
-                     (AXE-SYNTAXP-EXPRP (CADR HYP))
-                    ;(EXPAND-LAMBDAS-IN-TERM HYP)
-                     )
-            :in-theory (e/d (axe-rule-hypp make-axe-rule-hyps-for-hyp symbolp-when-pseudo-termp
-                                           not-equal-of-car-when-not-member-equal-of-fns-in-term
-                                           axe-rule-hyp-listp
-                                           )
-                            (;not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                             MYQUOTEP
-                            ;QUOTED-SYMBOL-LISTP
-                            ;ALL-VAR-OR-MYQUOTEP
-                             fns-in-term
-                             add-to-set-equal
-                             EXPAND-LAMBDAS-IN-TERM
-                             ))))))
+   :hints (("Goal" :in-theory (e/d (make-axe-rule-hyps-for-hyp
+                                    axe-rule-hypp
+                                    symbolp-when-pseudo-termp
+                                    not-equal-of-car-when-not-member-equal-of-fns-in-term
+                                    axe-rule-hyp-listp)
+                                   (;not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
+                                    myquotep
+                                    ;;QUOTED-SYMBOL-LISTP
+                                    ;;ALL-VAR-OR-MYQUOTEP
+                                    ;fns-in-term
+                                    ;add-to-set-equal
+                                    ;EXPAND-LAMBDAS-IN-TERM
+                                    ))))))
 
 ;; (defthm axe-rule-hypp-of-mv-nth-0-of-make-axe-rule-hyp
 ;;   (implies (and (pseudo-termp hyp)
