@@ -1,6 +1,6 @@
 ; Tests of the basic prover.
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,7 @@
 (include-book "prover-basic") ; todo: test separately?
 (include-book "prover-basic-clause-processor")
 (include-book "kestrel/utilities/deftest" :dir :system)
-(include-book "kestrel/booleans/boolif" :dir :system)
+;(include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system) ;for boolif-when-quotep-arg3
 
 ;; TODO: Add more tests
