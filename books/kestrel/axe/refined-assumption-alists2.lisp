@@ -13,9 +13,8 @@
 (include-book "refined-assumption-alists")
 (include-book "conjunctions-and-disjunctions")
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
-(local (include-book "kestrel/lists-light/len" :dir :system))
 
-(local (in-theory (disable natp REFINED-ASSUMPTION-ALISTP)))
+(local (in-theory (disable natp refined-assumption-alistp)))
 
 (defthm darg-listp-of-dargs-when-possibly-negated-nodenump
   (implies (and (possibly-negated-nodenump possibly-negated-nodenum)
