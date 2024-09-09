@@ -814,11 +814,6 @@
                                      bv-array-read
                                      ))))
 
-;; we can usually unroll this into a bvcat if we can't do better
-;; todo: try last?
-(acl2::defopeners acl2::bv-array-read-chunk-little) ; move
-(acl2::def-constant-opener acl2::bv-array-read-chunk-little)
-
 ;(def-constant-opener acl2::packbv-little) ; move?
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
