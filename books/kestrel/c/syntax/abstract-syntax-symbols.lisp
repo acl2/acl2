@@ -73,6 +73,7 @@
     make-expr-binary
     make-expr-cond
     make-expr-comma
+    expr-stmt
     irr-expr
 
     expr-listp
@@ -313,23 +314,28 @@
 
     initdeclorp
     initdeclor-fix
+    initdeclor-count
     initdeclor
     make-initdeclor
 
     initdeclor-listp
     initdeclor-list-fix
+    initdeclor-list-count
 
     declp
     decl
     decl-fix
+    decl-count
     decl-case
     make-decl-decl
     decl-statassert
 
     decl-listp
+    decl-list-count
 
     labelp
     label-fix
+    label-count
     label-case
     label-const
 

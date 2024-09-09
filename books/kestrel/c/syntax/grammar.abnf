@@ -772,11 +772,17 @@ lexeme = token
 
 ; Expressions [C:A.2.1]
 
+; As a GCC extension, we include statement expressions,
+; i.e. expressions that consists of a parenthesized compound statement
+; (https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html).
+; Since they are parenthesized, we classify them as primary expressions.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
                    / "(" expression ")"
                    / generic-selection
+                   / "(" compound-statement ")"
 
 generic-selection =
     %s"_Generic" "(" assignment-expression "," generic-assoc-list ")"

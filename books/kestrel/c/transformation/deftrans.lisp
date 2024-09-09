@@ -163,7 +163,8 @@
        "                              (expr-fix expr))"
        "            :cast/and-ambig (prog2$"
        "                              (raise \"Misusage error: ~x0.\" (expr-fix expr))"
-       "                              (expr-fix expr)))))"
+       "                              (expr-fix expr))"
+       "            :stmt (expr-stmt (my-simpadd0-block-item-list expr.items))))"
        )))
   :order-subtopics t
   :default-parent t)
@@ -188,7 +189,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthy deftrans-theory-forward-chaining
-  '((:forward-chaining c$::declspec-kind-possibilities)
+  '((:forward-chaining c$::expr-kind-possibilities)
+    (:forward-chaining c$::decl-kind-possibilities)
+    (:forward-chaining c$::declspec-kind-possibilities)
     (:forward-chaining c$::dirabsdeclor-kind-possibilities)
     (:forward-chaining c$::dirdeclor-kind-possibilities)
     (:forward-chaining c$::genassoc-kind-possibilities)
@@ -205,19 +208,27 @@
     (:linear c$::align-spec-count-of-spec/qual-align->unwrap)
     (:linear c$::block-item-count-of-car)
     (:linear c$::block-item-list-count-of-cdr)
+    (:linear c$::block-item-list-count-of-expr-stmt->items)
     (:linear c$::block-item-list-count-of-stmt-compound->items)
     (:linear c$::const-expr-count-of-align-spec-alignas-expr->arg)
     (:linear c$::const-expr-count-of-const-expr-option-some->val)
     (:linear c$::const-expr-count-of-designor-sub->index)
+    (:linear c$::const-expr-count-of-label-const->unwrap)
     (:linear c$::const-expr-count-of-statassert->test)
     (:linear c$::const-expr-option-count-of-enumer->value)
     (:linear c$::const-expr-option-count-of-structdeclor->expr?)
+    (:linear c$::decl-count-of-car)
+    (:linear c$::decl-count-of-block-item-decl->unwrap)
+    (:linear c$::decl-count-of-stmt-for-decl->init)
+    (:linear c$::decl-list-count-of-cdr)
     (:linear c$::declor-count-of-declor-option-some->val)
     (:linear c$::declor-count-of-dirdeclor-paren->unwrap)
+    (:linear c$::declor-count-of-initdeclor->declor)
     (:linear c$::declor-count-of-paramdeclor-declor->unwrap)
     (:linear c$::declor-option-count-of-structdeclor->declor?)
     (:linear c$::declspec-count-of-car)
     (:linear c$::declspec-list-count-of-cdr)
+    (:linear c$::declspec-list-count-of-decl-decl->specs)
     (:linear c$::declspec-list-count-of-paramdecl->spec)
     (:linear c$::designor-count-of-car)
     (:linear c$::designor-list-count-of-cdr)
@@ -270,16 +281,33 @@
     (:linear c$::expr-count-of-genassoc-default->expr)
     (:linear c$::expr-count-of-genassoc-type->expr)
     (:linear c$::expr-count-of-initer-single->expr)
+    (:linear c$::expr-count-of-stmt-dowhile->test)
+    (:linear c$::expr-count-of-stmt-if->test)
+    (:linear c$::expr-count-of-stmt-ifelse->test)
+    (:linear c$::expr-count-of-stmt-switch->target)
+    (:linear c$::expr-count-of-stmt-while->test)
     (:linear c$::expr-count-of-type-spec-typeof-expr->expr)
     (:linear c$::expr-list-count-of-cdr)
     (:linear c$::expr-list-count-of-expr-funcall->args)
     (:linear c$::expr-option-count-of-dirabsdeclor-array->expr?)
     (:linear c$::expr-option-count-of-dirdeclor-array->expr?)
+    (:linear c$::expr-option-count-of-stmt-expr->expr?)
+    (:linear c$::expr-option-count-of-stmt-for-decl->next)
+    (:linear c$::expr-option-count-of-stmt-for-decl->test)
+    (:linear c$::expr-option-count-of-stmt-for-expr->init)
+    (:linear c$::expr-option-count-of-stmt-for-expr->next)
+    (:linear c$::expr-option-count-of-stmt-for-expr->test)
+    (:linear c$::expr-option-count-of-stmt-return->expr?)
     (:linear c$::genassoc-count-of-car)
     (:linear c$::genassoc-list-count-of-cdr)
     (:linear c$::genassoc-list-count-of-expr-gensel->assocs)
+    (:linear c$::initdeclor-count-of-car)
+    (:linear c$::initdeclor-list-count-of-cdr)
+    (:linear c$::initdeclor-list-count-of-decl-decl->init)
     (:linear c$::initer-count-of-desiniter->init)
     (:linear c$::initer-count-of-initer-option-some->val)
+    (:linear c$::initer-option-count-of-initdeclor->init?)
+    (:linear c$::label-count-of-stmt-labeled->label)
     (:linear c$::paramdecl-count-of-car)
     (:linear c$::paramdecl-list-count-of-cdr)
     (:linear c$::paramdecl-list-count-of-dirabsdeclor-function->params)
@@ -289,6 +317,7 @@
     (:linear c$::spec/qual-list-count-of-cdr)
     (:linear c$::spec/qual-list-count-of-structdecl-member->specqual)
     (:linear c$::spec/qual-list-count-of-tyname->specqual)
+    (:linear c$::statassert-count-of-decl-statassert->unwrap)
     (:linear c$::statassert-count-of-structdecl-statassert->unwrap)
     (:linear c$::stmt-count-of-block-item-stmt->unwrap)
     (:linear c$::stmt-count-of-stmt-dowhile->body)
@@ -379,6 +408,8 @@
     (:type-prescription c$::return-type-of-block-item-list-count.count)
     (:type-prescription c$::return-type-of-const-expr-count.count)
     (:type-prescription c$::return-type-of-const-expr-option-count.count)
+    (:type-prescription c$::return-type-of-decl-count.count)
+    (:type-prescription c$::return-type-of-decl-list-count.count)
     (:type-prescription c$::return-type-of-declor-count.count)
     (:type-prescription c$::return-type-of-declor-option-count.count)
     (:type-prescription c$::return-type-of-declspec-count.count)
@@ -398,8 +429,10 @@
     (:type-prescription c$::return-type-of-expr-option-count.count)
     (:type-prescription c$::return-type-of-genassoc-count.count)
     (:type-prescription c$::return-type-of-genassoc-list-count.count)
+    (:type-prescription c$::return-type-of-initdeclor-list-count.count)
     (:type-prescription c$::return-type-of-initer-count.count)
     (:type-prescription c$::return-type-of-initer-option-count.count)
+    (:type-prescription c$::return-type-of-label-count.count)
     (:type-prescription c$::return-type-of-paramdecl-count.count)
     (:type-prescription c$::return-type-of-paramdecl-list-count.count)
     (:type-prescription c$::return-type-of-paramdeclor-count.count)
@@ -429,6 +462,7 @@
     (:type-prescription const-expr)
     (:type-prescription const-expr-count)
     (:type-prescription const-expr-option-count)
+    (:type-prescription decl-count)
     (:type-prescription declor)
     (:type-prescription declor-count)
     (:type-prescription declor-option-count)
@@ -465,6 +499,7 @@
     (:type-prescription initer-count)
     (:type-prescription initer-option-count)
     (:type-prescription initer-single)
+    (:type-prescription initdeclor-count)
     (:type-prescription paramdecl)
     (:type-prescription paramdecl-count)
     (:type-prescription paramdecl-list-count)
@@ -661,7 +696,9 @@
                         (expr-fix expr))
       :cast/and-ambig (prog2$
                         (raise "Misusage error: ~x0." (expr-fix expr))
-                        (expr-fix expr)))
+                        (expr-fix expr))
+      :stmt (expr-stmt (,(cdr (assoc-eq 'block-item-list names)) expr.items ,@extra-args-names))
+      )
    '(:returns (new-expr exprp)
      :measure (expr-count expr))))
 
@@ -1452,7 +1489,8 @@
         :declor (,(cdr (assoc-eq 'declor names)) initdeclor.declor ,@extra-args-names)
         :asm? initdeclor.asm?
         :init? (,(cdr (assoc-eq 'initer-option names)) initdeclor.init? ,@extra-args-names)))
-   '(:returns (new-initdeclor initdeclorp))))
+   '(:returns (new-initdeclor initdeclorp)
+     :measure (initdeclor-count initdeclor))))
 
 (define deftrans-defn-initdeclor-list
   ((names alistp)
@@ -1469,7 +1507,8 @@
         nil
       (cons (,(cdr (assoc-eq 'initdeclor names)) (car initdeclors) ,@extra-args-names)
             (,(cdr (assoc-eq 'initdeclor-list names)) (cdr initdeclors) ,@extra-args-names)))
-   '(:returns (new-initdeclors initdeclor-listp))))
+   '(:returns (new-initdeclors initdeclor-listp)
+     :measure (initdeclor-list-count initdeclors))))
 
 (define deftrans-defn-decl
   ((names alistp)
@@ -1491,7 +1530,8 @@
               :attrib decl.attrib)
       :statassert (decl-statassert
                     (,(cdr (assoc-eq 'statassert names)) decl.unwrap ,@extra-args-names)))
-   '(:returns (new-decl declp))))
+   '(:returns (new-decl declp)
+     :measure (decl-count decl))))
 
 (define deftrans-defn-decl-list
   ((names alistp)
@@ -1509,8 +1549,7 @@
       (cons (,(cdr (assoc-eq 'decl names)) (car decls) ,@extra-args-names)
             (,(cdr (assoc-eq 'decl-list names)) (cdr decls) ,@extra-args-names)))
    '(:returns (new-decls decl-listp)
-     :measure (acl2-count decls)
-     :hints (("Goal" :in-theory nil)))))
+     :measure (decl-list-count decls))))
 
 (define deftrans-defn-label
   ((names alistp)
@@ -1528,7 +1567,8 @@
       :name (label-fix label)
       :const (label-const (,(cdr (assoc-eq 'const-expr names)) label.unwrap ,@extra-args-names))
       :default (label-fix label))
-   '(:returns (new-label labelp))))
+   '(:returns (new-label labelp)
+     :measure (label-count label))))
 
 (define deftrans-defn-stmt
   ((names alistp)
@@ -1830,14 +1870,13 @@
    (extra-args true-listp) ;; list of symbols or define-style guarded args
    (bodies alistp))
   (b* ((names (deftrans-mk-names name))
-       (name-exprs/decls (acl2::packn-pos (list name '-exprs/decls) name))
-       (name-stmts/blocks (acl2::packn-pos (list name '-stmts/blocks) name))
+       (name-exprs/decls/stmts (acl2::packn-pos (list name '-exprs/decls/stmts) name))
        (extra-args-names (deftrans-get-args extra-args)))
     `(progn
        ,(deftrans-defn-ident      names bodies extra-args)
        ,(deftrans-defn-ident-list names bodies extra-args extra-args-names)
        ,(deftrans-defn-const      names bodies extra-args)
-       (defines ,name-exprs/decls
+       (defines ,name-exprs/decls/stmts
          ,(deftrans-defn-expr                names bodies extra-args extra-args-names)
          ,(deftrans-defn-expr-list           names bodies extra-args extra-args-names)
          ,(deftrans-defn-expr-option         names bodies extra-args extra-args-names)
@@ -1877,23 +1916,18 @@
          ,(deftrans-defn-enumer              names bodies extra-args extra-args-names)
          ,(deftrans-defn-enumer-list         names bodies extra-args extra-args-names)
          ,(deftrans-defn-statassert          names bodies extra-args extra-args-names)
+         ,(deftrans-defn-initdeclor          names bodies extra-args extra-args-names)
+         ,(deftrans-defn-initdeclor-list     names bodies extra-args extra-args-names)
+         ,(deftrans-defn-decl                names bodies extra-args extra-args-names)
+         ,(deftrans-defn-decl-list           names bodies extra-args extra-args-names)
+         ,(deftrans-defn-label               names bodies extra-args extra-args-names)
+         ,(deftrans-defn-stmt                names bodies extra-args extra-args-names)
+         ,(deftrans-defn-block-item          names bodies extra-args extra-args-names)
+         ,(deftrans-defn-block-item-list     names bodies extra-args extra-args-names)
          :hints (("Goal" :in-theory '(deftrans-measure-theory)))
          :verify-guards nil
          ///
          (verify-guards ,(cdr (assoc-eq 'expr names))))
-       ,(deftrans-defn-initdeclor      names bodies extra-args extra-args-names)
-       ,(deftrans-defn-initdeclor-list names bodies extra-args extra-args-names)
-       ,(deftrans-defn-decl            names bodies extra-args extra-args-names)
-       ,(deftrans-defn-decl-list       names bodies extra-args extra-args-names)
-       ,(deftrans-defn-label           names bodies extra-args extra-args-names)
-       (defines ,name-stmts/blocks
-         ,(deftrans-defn-stmt            names bodies extra-args extra-args-names)
-         ,(deftrans-defn-block-item      names bodies extra-args extra-args-names)
-         ,(deftrans-defn-block-item-list names bodies extra-args extra-args-names)
-         :hints (("Goal" :in-theory '(deftrans-measure-theory)))
-         :verify-guards nil
-         ///
-         (verify-guards ,(cdr (assoc-eq 'stmt names))))
        ,(deftrans-defn-fundef       names bodies extra-args extra-args-names)
        ,(deftrans-defn-extdecl      names bodies extra-args extra-args-names)
        ,(deftrans-defn-extdecl-list names bodies extra-args extra-args-names)

@@ -131,6 +131,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-asm-name-spec
+  :short "An irrelevant assembler name specifier."
+  :type asm-name-specp
+  :body (asm-name-spec nil (keyword-uscores-none)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-asm-qual
+  :short "An irrelevant assembler qualifier."
+  :type asm-qualp
+  :body (asm-qual-goto))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-asm-clobber
+  :short "An irrelevant assembler clobber."
+  :type asm-clobberp
+  :body (asm-clobber nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-expr
   :short "An irrelevant expression."
   :type exprp
@@ -257,13 +278,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-structdeclor
-  :short "An irrelevant structure declarator."
-  :type structdeclorp
-  :body (make-structdeclor :declor? nil :expr? nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defirrelevant irr-structdecl
   :short "An irrelevant structure declaration."
   :type structdeclp
@@ -271,6 +285,13 @@
                                 :specqual nil
                                 :declor nil
                                 :attrib nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-structdeclor
+  :short "An irrelevant structure declarator."
+  :type structdeclorp
+  :body (make-structdeclor :declor? nil :expr? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,34 +317,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-expr/tyname
-  :short "An irrelevant expression or type name."
-  :type expr/tyname-p
-  :body (expr/tyname-expr (irr-expr)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-declor/absdeclor
-  :short "An irrelevant declarator or abstract declarator."
-  :type declor/absdeclor-p
-  :body (declor/absdeclor-declor (irr-declor)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-amb?-expr/tyname
-  :short "An irrelevant possibly ambiguous expression or type name."
-  :type amb?-expr/tyname-p
-  :body (amb?-expr/tyname-expr (irr-expr)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-amb?-declor/absdeclor
-  :short "An irrelevant possibly ambiguous declarators or abstract declarators."
-  :type amb?-declor/absdeclor-p
-  :body (amb?-declor/absdeclor-declor (irr-declor)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defirrelevant irr-attrib
   :short "An irrelevant attribute."
   :type attribp
@@ -335,13 +328,6 @@
   :short "An irrelevant attribute specifier."
   :type attrib-specp
   :body (attrib-spec nil nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-asm-name-spec
-  :short "An irrelevant assembler name specifier."
-  :type asm-name-specp
-  :body (asm-name-spec nil (keyword-uscores-none)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -369,34 +355,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-stmt
-  :short "An irrelevant statement."
-  :type stmtp
-  :body (stmt-compound nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-amb?-decl/stmt
-  :short "An irrelevant possibly ambiguous declaration or statement."
-  :type amb?-decl/stmt-p
-  :body (amb?-decl/stmt-stmt (irr-expr)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-decl/stmt
-  :short "An irrelevant declaration or statement."
-  :type decl/stmt-p
-  :body (decl/stmt-decl (irr-decl)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-asm-qual
-  :short "An irrelevant assembler qualifier."
-  :type asm-qualp
-  :body (asm-qual-goto))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defirrelevant irr-asm-output
   :short "An irrelevant assembler output operand."
   :type asm-outputp
@@ -411,10 +369,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-asm-clobber
-  :short "An irrelevant assembler clobber."
-  :type asm-clobberp
-  :body (asm-clobber nil))
+(defirrelevant irr-stmt
+  :short "An irrelevant statement."
+  :type stmtp
+  :body (stmt-compound nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -422,6 +380,48 @@
   :short "An irrelevant block item."
   :type block-itemp
   :body (block-item-stmt (irr-stmt)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-expr/tyname
+  :short "An irrelevant expression or type name."
+  :type expr/tyname-p
+  :body (expr/tyname-expr (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-declor/absdeclor
+  :short "An irrelevant declarator or abstract declarator."
+  :type declor/absdeclor-p
+  :body (declor/absdeclor-declor (irr-declor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-decl/stmt
+  :short "An irrelevant declaration or statement."
+  :type decl/stmt-p
+  :body (decl/stmt-decl (irr-decl)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-amb?-expr/tyname
+  :short "An irrelevant possibly ambiguous expression or type name."
+  :type amb?-expr/tyname-p
+  :body (amb?-expr/tyname-expr (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-amb?-declor/absdeclor
+  :short "An irrelevant possibly ambiguous declarators or abstract declarators."
+  :type amb?-declor/absdeclor-p
+  :body (amb?-declor/absdeclor-declor (irr-declor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-amb?-decl/stmt
+  :short "An irrelevant possibly ambiguous declaration or statement."
+  :type amb?-decl/stmt-p
+  :body (amb?-decl/stmt-stmt (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -480,7 +480,8 @@
                     :funcall
                     :member
                     :memberp
-                    :complit))
+                    :complit
+                    :stmt))
        t)
   :hooks (:fix))
 
@@ -512,7 +513,8 @@
                     :unary
                     :sizeof
                     :sizeof-ambig
-                    :alignof))
+                    :alignof
+                    :stmt))
        t)
   :hooks (:fix))
 
@@ -621,7 +623,8 @@
    :cast/mul-ambig (expr-priority-mul)
    :cast/add-ambig (expr-priority-add)
    :cast/sub-ambig (expr-priority-add)
-   :cast/and-ambig (expr-priority-and))
+   :cast/and-ambig (expr-priority-and)
+   :stmt (expr-priority-primary))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
