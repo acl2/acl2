@@ -48,7 +48,9 @@
 
 (local
  (in-theory (disable ilks-plist-worldp
-                     plist-worldp)))
+                     plist-worldp
+                     set-difference-equal intersection-equal symbol-listp true-listp ;prevent inductions
+                     )))
 
 (local
  (defthmd not-equal-of-car-when-not-member-equal-of-fns-in-term
@@ -486,10 +488,10 @@
                  ;; todo: check for work-hards not at the top-level?
                  (hyp (expand-lambdas-in-term hyp)) ;could print a note here, if this does anything.  ;; TODO: What if we don't expand lambdas?  Maybe that's only needed for the free variable case?
                  ((when (not (consp hyp)))
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is not a function call after expanding lambdas." hyp rule-symbol)
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is not a function call after expanding lambdas." hyp rule-symbol) ; could treat this like we treat variables above
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
                  ((when (fquotep hyp))
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is a quoted constant after expanding lambdas." hyp rule-symbol)
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is a quoted constant after expanding lambdas." hyp rule-symbol) ; could treat this like we treat constants above
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
                  (hyp-vars (free-vars-in-term hyp))
                  (free-vars (set-difference-eq hyp-vars bound-vars)))
@@ -525,11 +527,8 @@
                                 (list (cons :free-vars hyp)) ;tag the hyp to indicate it has free vars
                                 (append free-vars ;if the hyp is relieved by searching for matches in the context, any free vars in the hyp wil become bound
                                         bound-vars))))
-                ;; Normal hyp with no free vars:
-                ;; TODO: Wrap the hyp in a marker that indicates that no free vars are present?
-                (mv (erp-nil)
-                    (list hyp)
-                    bound-vars)))))))))
+                ;; Normal hyp with no free vars (no wrapper):
+                (mv (erp-nil) (list hyp) bound-vars)))))))))
 
 
 (local
@@ -634,6 +633,13 @@
           (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld)))
    :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-hyp)))))
 
+;; We always get either a single hyp or no hyps.
+;; Justifies not worrying about reversing the hyps added to the acc in make-axe-rule-hyps.
+(thm
+ (or (equal 0 (len (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
+     (equal 1 (len (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld)))))
+ :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-hyp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp processed-hyps bound-vars) where bound-vars is all the vars
@@ -650,8 +656,6 @@
          ((mv erp axe-rule-hyps bound-vars) (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))
          ((when erp) (mv erp *unrelievable-hyps* bound-vars)))
       (make-axe-rule-hyps (rest hyps) bound-vars rule-symbol wrld (append axe-rule-hyps acc)))))
-
-(local (in-theory (disable symbol-listp true-listp))) ;prevent inductions
 
 (local
  (defthm mv-nth-1-of-make-axe-rule-hyps-of-append
@@ -695,13 +699,12 @@
                                      ;make-axe-rule-hyps-for-hyp ;so we can see it r
                                       )))))
 
+;; error case
 (local
  (defthmd make-axe-rule-hyps-redef-0
    (equal (mv-nth 0 (make-axe-rule-hyps hyps bound-vars rule-symbol wrld acc))
           (mv-nth 0 (make-axe-rule-hyps-simple hyps bound-vars rule-symbol wrld)))
-   :hints (("Goal" :in-theory (enable make-axe-rule-hyps make-axe-rule-hyps-simple
-;make-axe-rule-hyps-for-hyp ;so we can see it r
-                                      )))))
+   :hints (("Goal" :in-theory (enable make-axe-rule-hyps make-axe-rule-hyps-simple)))))
 
 (local
  (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-hyps-simple
@@ -765,7 +768,7 @@
             :in-theory (disable not-equal-of-car-when-not-member-equal-of-fns-in-term
                                 not-member-equal-of-fns-in-term-of-expand-lambdas-in-term)))))
 
-(local (in-theory (disable FNS-IN-TERM MYQUOTEP QUOTED-SYMBOL-LISTP SET-DIFFERENCE-EQUAL)))
+(local (in-theory (disable FNS-IN-TERM MYQUOTEP QUOTED-SYMBOL-LISTP )))
 
 ;move up
 (local
@@ -785,8 +788,6 @@
             :in-theory (enable make-axe-rule-hyps-for-hyp
                                bound-vars-suitable-for-hypp
                                MAKE-AXE-SYNTAXP-HYP-FOR-SYNP-EXPR)))))
-
-(local (in-theory (disable INTERSECTION-EQUAL))) ;prevent indution
 
 (local
  (defthm free-vars-in-term-when-unary
@@ -1537,6 +1538,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
+;; Does not remove duplicates (that should be done when making the rule-alist).
 (defund make-axe-rules (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (ilks-plist-worldp wrld))))
@@ -1570,18 +1572,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; ;; Returns (mv erp rules) where rules is a list of axe-rules.
-;; ;; This version removes duplicate rules first.  (That may happen later anyway
-;; ;; when making the rule-alist...).
-;; (defund make-axe-rules2 (rule-names wrld)
-;;   (declare (xargs :guard (and (symbol-listp rule-names)
-;;                               (ilks-plist-worldp wrld))))
-;;   (make-axe-rules (remove-duplicates-eq rule-names) ;slow?  use property worlds to speed up?
-;;                   wrld))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
+; rename extend-rule-list
 (defun add-rules-to-rule-set (rule-names rule-set wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-listp rule-set)
@@ -1589,10 +1581,12 @@
   (b* (((mv erp rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp rule-set)))
     (mv (erp-nil)
+        ;; todo: append here would be fasters: think about duplicates and ordering
         (union-equal rules rule-set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Introduces all-axe-rule-listp:
 ;; this is really axe-rule-setsp:
 (defforall-simple axe-rule-listp)
 (verify-guards all-axe-rule-listp)
@@ -1608,6 +1602,7 @@
 ;; Returns (mv erp rule-sets).
 ;; Add the given rules to each rule set in RULE-SETS.
 ;todo: optimze?
+; rename extend-rule-lists
 (defun add-rules-to-rule-sets (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-setsp rule-sets)
@@ -1621,11 +1616,11 @@
           (add-rules-to-rule-sets rule-names (rest rule-sets) wrld))
          ((when erp) (mv erp nil)))
       (mv (erp-nil)
-          (cons first-rule-set
-                rest-rule-sets)))))
+          (cons first-rule-set rest-rule-sets)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; rename extend-rule-lists!
 ;; Returns the new rule-sets.  Does not return erp.
 (defun add-rules-to-rule-sets! (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
@@ -1638,16 +1633,6 @@
       rule-sets)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; ;; Add the RULES to each rule set in RULE-SETS.
-;; ;todo: optimze?
-;; (defun add-axe-rules-to-rule-sets (axe-rules rule-sets)
-;;   (declare (xargs :guard (and (axe-rule-listp axe-rules)
-;;                               (axe-rule-setsp rule-sets))))
-;;   (if (endp rule-sets)
-;;       nil
-;;     (cons (union-equal axe-rules (first rule-sets))
-;;           (add-axe-rules-to-rule-sets axe-rules (rest rule-sets)))))
 
 ;; (defun remove-rule-from-rule-set (rule rule-set)
 ;;   (declare (xargs :guard (and (symbolp rule)
@@ -1683,6 +1668,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Where should this stuff go?:
+
 ;; Can be used to determine which rules introduce a given function symbol
 (defund filter-axe-rules-for-rhses-mentioning (fn axe-rules)
   (declare (xargs :guard (and (symbolp fn)
@@ -1698,6 +1685,7 @@
                 (filter-axe-rules-for-rhses-mentioning fn (rest axe-rules)))
         (filter-axe-rules-for-rhses-mentioning fn (rest axe-rules))))))
 
+;; overkill to actually make the rules?
 (defund axe-rules-that-introduce (fn rule-names wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (symbol-listp rule-names)
