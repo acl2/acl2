@@ -610,4 +610,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-univ-char-name ((ucn univ-char-name-p))
+  :returns (mv erp (code natp))
+  :short "Validate a universal character name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If validation is successful, we return the numeric code of the character.")
+   (xdoc::p
+    "[C:6.4.3/2] states some restriction on the character code.
+     Another implicit restriction is that it should be
+     within the current range of Unicode character codes,
+     i.e. at most @('10FFFFh')."))
+  (b* (((reterr) 0)
+       (code (univ-char-name-case
+              ucn
+              :locase-u (str::hex-digit-chars-value
+                         (list (hex-quad->1st ucn.quad)
+                               (hex-quad->2nd ucn.quad)
+                               (hex-quad->3rd ucn.quad)
+                               (hex-quad->4th ucn.quad)))
+              :upcase-u (str::hex-digit-chars-value
+                         (list (hex-quad->1st ucn.quad1)
+                               (hex-quad->2nd ucn.quad1)
+                               (hex-quad->3rd ucn.quad1)
+                               (hex-quad->4th ucn.quad1)
+                               (hex-quad->1st ucn.quad2)
+                               (hex-quad->2nd ucn.quad2)
+                               (hex-quad->3rd ucn.quad2)
+                               (hex-quad->4th ucn.quad2)))))
+       ((when (and (< code #xa0)
+                   (not (= code #x24))
+                   (not (= code #x40))
+                   (not (= code #x60))))
+        (reterr (msg "The universal character name ~x0 ~
+                      has a code ~x1 that is below A0h ~
+                      but is not 24h or 40h or 60h."
+                     (univ-char-name-fix ucn) code)))
+       ((when (and (<= #xd800 code)
+                   (<= code #xdfff)))
+        (reterr (msg "The universal character name ~x0 ~
+                      has a code ~x1 between D800h and DFFFh."
+                     (univ-char-name-fix ucn) code)))
+       ((when (> code #x10ffff))
+        (reterr (msg "The universal character name ~x0 ~
+                      has a code ~x1 above 10FFFFh."
+                     (univ-char-name-fix ucn) code))))
+    (retok code))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: continue
