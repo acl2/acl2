@@ -1,7 +1,7 @@
-; Axe's rewrite rules in stored form
+; The "stored form" of Axe's rewrite rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,14 +13,9 @@
 (in-package "ACL2")
 
 (include-book "axe-rules")
-;(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/split-list-fast" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
-
-;;;
-;;; stored-rules
-;;;
 
 ;these are what are stored in rule-alists
 (defund make-stored-rule (lhs-args hyps rule-symbol rhs)
@@ -104,11 +99,16 @@
            (pseudo-termp (stored-rule-rhs item)))
   :hints (("Goal" :in-theory (enable stored-axe-rulep))))
 
-;;;
-;;; all-stored-axe-rulep
-;;;
+(defthm bound-vars-suitable-for-hypsp-of-var-in-terms-of-stored-rule-lhs-args-and-stored-rule-hyps
+  (implies (stored-axe-rulep stored-rule)
+           (bound-vars-suitable-for-hypsp (free-vars-in-terms (stored-rule-lhs-args stored-rule))
+                                          (stored-rule-hyps stored-rule)))
+  :hints (("Goal" :in-theory (enable stored-axe-rulep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: split out?
+;; Recognizes a true-list of stored-axe-rules.
 (defund stored-axe-rule-listp (rules)
   (declare (xargs :guard t))
   (if (atom rules)
@@ -139,13 +139,7 @@
               (stored-axe-rule-listp rules)))
   :hints (("Goal" :in-theory (enable stored-axe-rule-listp))))
 
-;; ;fixme the defforall could do this?
-;; ;make it an equality?
-;; (defthm all-stored-axe-rulep-of-revappend
-;;   (implies (and (all-stored-axe-rulep x)
-;;                 (all-stored-axe-rulep y))
-;;            (all-stored-axe-rulep (revappend x y)))
-;;   :hints (("Goal" :in-theory (enable revappend))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: For predictability, we could secondarily sort by name, using symbol<.
 (defun higher-priority (stored-rule1 stored-rule2 priorities)
@@ -159,6 +153,8 @@
          (priority1 (rfix (lookup-eq rule-symbol1 priorities))) ;fixme non-rational priorities should be errors? or is nil the default?
          (priority2 (rfix (lookup-eq rule-symbol2 priorities))))
     (< priority1 priority2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund merge-by-rule-priority (stored-rules1 stored-rules2 acc priorities)
   (declare (xargs :measure (+ (len stored-rules1) (len stored-rules2))
@@ -178,6 +174,7 @@
                                    (cons (first stored-rules2) acc) ;fixme redoes the "first" from above
                                    priorities))))
 
+;drop?
 (defthm true-listp-of-merge-by-rule-priority
   (implies (and (true-listp l1)
                 (true-listp l2)
@@ -185,7 +182,16 @@
            (true-listp (merge-by-rule-priority l1 l2 acc priorities)))
   :hints (("Goal" :in-theory (enable merge-by-rule-priority))))
 
-;fixme generic theorem saying merge-sort preserves foo-listp?
+(defthm stored-axe-rule-listp-of-merge-by-rule-priority
+  (implies (and (stored-axe-rule-listp l1)
+                (stored-axe-rule-listp l2)
+                (stored-axe-rule-listp acc))
+           (stored-axe-rule-listp (merge-by-rule-priority l1 l2 acc priorities)))
+  :hints (("Goal" :in-theory (enable merge-by-rule-priority))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: generic theorem saying merge-sort preserves foo-listp?
 
 ;todo: use defmergesort?
 ;; TODO: For stability, consider comparing the rule names if there priorities are the same.
@@ -207,6 +213,7 @@
                                       nil
                                       priorities)))))
 
+;; make these local?:
 ;defforall could do these too?
 (defthm stored-axe-rule-listp-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (stored-axe-rule-listp lst)
@@ -228,13 +235,6 @@
            (stored-axe-rule-listp (mv-nth 1 (split-list-fast lst))))
   :hints (("Goal" :in-theory (enable split-list-fast))))
 
-(defthm stored-axe-rule-listp-of-merge-by-rule-priority
-  (implies (and (stored-axe-rule-listp l1)
-                (stored-axe-rule-listp l2)
-                (stored-axe-rule-listp acc))
-           (stored-axe-rule-listp (merge-by-rule-priority l1 l2 acc priorities)))
-  :hints (("Goal" :in-theory (enable merge-by-rule-priority))))
-
 (verify-guards merge-sort-by-rule-priority
   :hints (("Goal" :induct (merge-sort-by-rule-priority stored-rules priorities))))
 
@@ -248,7 +248,9 @@
            (true-listp (merge-sort-by-rule-priority stored-rules priorities)))
   :hints (("Goal" :in-theory (enable merge-sort-by-rule-priority))))
 
-(defun rule-is-presentp (rule-symbol stored-axe-rules)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund rule-is-presentp (rule-symbol stored-axe-rules)
   (declare (xargs :guard (and (stored-axe-rule-listp stored-axe-rules)
                               (symbolp rule-symbol))
                   :guard-hints (("Goal" :expand ((stored-axe-rule-listp stored-axe-rules))
@@ -261,15 +263,9 @@
           t
         (rule-is-presentp rule-symbol (rest stored-axe-rules))))))
 
-(defthm bound-vars-suitable-for-hypsp-of-var-in-terms-of-stored-rule-lhs-args-and-stored-rule-hyps
-  (implies (stored-axe-rulep stored-rule)
-           (bound-vars-suitable-for-hypsp
-            (free-vars-in-terms (stored-rule-lhs-args stored-rule))
-            (stored-rule-hyps stored-rule)))
-  :hints (("Goal" :in-theory (enable stored-axe-rulep))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;disable
-(defun remove-from-stored-rules (rule-names-to-remove stored-rules)
+(defund remove-from-stored-rules (rule-names-to-remove stored-rules)
   (declare (xargs :guard (and (symbol-listp rule-names-to-remove)
                               (stored-axe-rule-listp stored-rules))
                   :guard-hints (("Goal" :in-theory (enable stored-axe-rule-listp stored-axe-rulep)))))
@@ -282,7 +278,10 @@
 
 (defthm stored-axe-rule-listp-of-remove-from-stored-rules
   (implies (stored-axe-rule-listp stored-rules)
-           (stored-axe-rule-listp (remove-from-stored-rules rule-names stored-rules))))
+           (stored-axe-rule-listp (remove-from-stored-rules rule-names stored-rules)))
+  :hints (("Goal" :in-theory (enable remove-from-stored-rules))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;rename.
 (defun rules-from-stored-axe-rules (stored-rules)
@@ -297,6 +296,8 @@
   (implies (stored-axe-rule-listp rules)
            (symbol-listp (rules-from-stored-axe-rules rules)))
   :hints (("Goal" :in-theory (enable stored-axe-rule-listp stored-axe-rulep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: drop once the guards of the accessors are changed
 (defthm <=-of-len-of-car-when-stored-axe-rule-listp

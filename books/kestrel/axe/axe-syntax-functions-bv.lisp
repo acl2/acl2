@@ -113,6 +113,7 @@
 ;returns an alist that binds VARNAME to the size of the nodenum-or-quotep, if it is a bit vector with a statically known size, or nil to indicate failure.
 ;bozo redo to support different sets of operators <- ??
 ;todo: can we save adding a quote to the returned size?
+;; todo: consider an option to not count constants as BV terms in this sense
 (defund bind-bv-size-axe (nodenum-or-quotep quoted-varname dag-array)
   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
                              (and (natp nodenum-or-quotep)

@@ -26,6 +26,7 @@
 (include-book "kestrel/axe/known-booleans" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ; for term-should-be-trimmed-axe
 (include-book "kestrel/axe/axe-syntax-functions" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
 ;; Register a bunch of x86-related functions as known booleans:
@@ -591,3 +592,5 @@
 (def-constant-opener rtl::set-flag) ; drop?
 
 (defthmd booleanp-of-canonical-address-p (booleanp (canonical-address-p lin-addr)))
+
+(defopeners bv-array-read-chunk-little)

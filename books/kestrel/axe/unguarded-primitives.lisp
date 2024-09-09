@@ -141,7 +141,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun intern-in-package-of-symbol-unguarded (str sym)
+(defund intern-in-package-of-symbol-unguarded (str sym)
   (declare (xargs :guard t))
   (if (and (stringp str) (symbolp sym))
       (intern-in-package-of-symbol str sym)

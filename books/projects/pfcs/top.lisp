@@ -75,8 +75,8 @@
    (xdoc::p
     "Currently this library contains
      a concrete syntax of PFCSes and a parser to CSTs (concrete syntax trees),
-     an abstract syntax of PFCSes and an abstractor from CSTs to ASTs (abstract
-     syntax trees),
+     an abstract syntax of PFCSes
+     and an abstractor from CSTs to ASTs (abstract syntax trees),
      parser interface functions to generate ASTs from strings,
      some operations on the abstract syntax,
      a notion of well-formedness,

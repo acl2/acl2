@@ -18,6 +18,7 @@
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, x86isa::get-one-byte-prefix-array-code-unguarded, etc.
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline
 (include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
 (local (include-book "kestrel/bv/logapp" :dir :system)) ; for loghead-becomes-bvchop
@@ -1122,6 +1123,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund bv-array-read-chunk-little-unguarded (element-count element-size array-len index array)
+  (declare (xargs :guard t))
+  (if (zp-unguarded element-count)
+      0
+    (bvcat-unguarded (binary-*-unguarded element-size (binary-+-unguarded -1 element-count))
+                     (bv-array-read-chunk-little-unguarded (binary-+-unguarded -1 element-count) element-size array-len (binary-+-unguarded 1 index) array)
+                     element-size
+                     (bv-array-read-unguarded element-size array-len index array))))
+
+(defthm bv-array-read-chunk-little-unguarded-correct
+  (equal (bv-array-read-chunk-little-unguarded element-count element-size array-len index array)
+         (bv-array-read-chunk-little element-count element-size array-len index array))
+  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little-unguarded
+                                     bv-array-read-chunk-little))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *axe-evaluator-x86-fns-and-aliases*
   (append '(implies ; push back to basic evaluator?
             (integer-range-p integer-range-p-unguarded)
@@ -1143,6 +1161,7 @@
             (loghead$inline loghead$inline-unguarded)
             (logapp logapp-unguarded) ; for flags
             (acl2::packbv acl2::packbv-unguarded)
+            (bv-array-read-chunk-little bv-array-read-chunk-little-unguarded)
             (x86isa::prefixes-fix$inline x86isa::prefixes-fix$inline-unguarded)
             (x86isa::prefixes->opr$inline x86isa::prefixes->opr-unguarded)
             (x86isa::prefixes->rep$inline x86isa::prefixes->rep-unguarded)
@@ -1218,7 +1237,6 @@
             (x86isa::check-instruction-length$inline x86isa::check-instruction-length$inline-unguarded)
             (x86isa::two-byte-opcode-modr/m-p$inline x86isa::two-byte-opcode-modr/m-p$inline-unguarded)
             (acl2::aref1 acl2::aref1-unguarded)
-            (acl2::every-nth acl2::every-nth-unguarded)
             (acl2::negated-elems-listp acl2::negated-elems-listp-unguarded)
             (x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline-unguarded)
             )

@@ -56,9 +56,7 @@
                          (get-validator-state val systate))
                         (blockchain (validator-state->blockchain vstate)))
                      (equal (validator-state->last vstate)
-                            (if (consp blockchain)
-                                (block->round (car blockchain))
-                              0)))))
+                            (blocks-last-round blockchain)))))
 
   ///
 
@@ -69,9 +67,7 @@
                    (get-validator-state val systate))
                   (blockchain (validator-state->blockchain vstate)))
                (equal (validator-state->last vstate)
-                      (if (consp blockchain)
-                          (block->round (car blockchain))
-                        0))))
+                      (blocks-last-round blockchain))))
     :use (:instance last-blockchain-round-p-necc (val (address-fix val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -170,7 +166,8 @@
              commit-anchors-possiblep
              consp-of-extend-blockchain
              round-of-car-of-extend-blockchain
-             car-of-collect-anchors))
+             car-of-collect-anchors
+             blocks-last-round))
 
   (defruled last-blockchain-round-p-of-timer-expires-next
     (implies (and (last-blockchain-round-p systate)

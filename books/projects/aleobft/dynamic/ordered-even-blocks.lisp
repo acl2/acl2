@@ -145,7 +145,8 @@
              commit-anchors-possiblep
              pos-fix
              posp
-             evenp))
+             evenp
+             blocks-last-round))
 
   (defruled ordered-even-p-of-timer-expires-next
     (implies (and (ordered-even-p systate)
