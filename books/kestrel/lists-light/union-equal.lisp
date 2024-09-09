@@ -77,3 +77,39 @@
                   (append x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable union-equal))))
+
+;; Disabling this for speed
+(defthmd union-equal-when-subsetp-equal
+  (implies (subsetp-equal x y)
+           (equal (union-equal x y)
+                  y))
+  :hints (("Goal" :in-theory (enable union-equal))))
+
+;; from subsetp-equal.lisp
+(local
+  (defthm subsetp-equal-of-cons-arg2
+    (implies (and (syntaxp (not (and (quotep a)
+                                     (quotep y))))
+                  (subsetp-equal x y))
+             (subsetp-equal x (cons a y)))
+    :hints (("Goal" :in-theory (enable subsetp-equal)))))
+
+;; from subsetp-equal.lisp
+(local
+  (defthm subsetp-equal-of-union-equal-arg2
+    (implies (or (subsetp-equal x y)
+                 (subsetp-equal x z))
+             (subsetp-equal x (union-equal y z)))
+    :hints (("Goal" :in-theory (enable subsetp-equal union-equal)))))
+
+;; from subsetp-equal.lisp
+(local
+  (defthm subsetp-equal-self
+    (subsetp-equal x x)
+    :hints (("Goal" :in-theory (enable subsetp-equal)))))
+
+(defthm union-equal-of-union-equal-same-arg1-arg1
+  (equal (union-equal x (union-equal x y))
+         (union-equal x y))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable union-equal union-equal-when-subsetp-equal))))
