@@ -27,7 +27,7 @@
   (defthm no-nils-in-termp-of-simplify-ors
     (implies (and (pseudo-termp term)
                   (no-nils-in-termp term))
-             (no-nils-in-termp (simplify-ors term bool-fix)))
+             (no-nils-in-termp (simplify-ors term iffp)))
     :flag simplify-ors)
   (defthm no-nils-in-termp-of-simplify-ors-lst
     (implies (and (pseudo-term-listp terms)
@@ -41,7 +41,7 @@
   (defthm no-duplicate-lambda-formals-in-termp-of-simplify-ors
     (implies (and (pseudo-termp term)
                   (no-duplicate-lambda-formals-in-termp term))
-             (no-duplicate-lambda-formals-in-termp (simplify-ors term bool-fix)))
+             (no-duplicate-lambda-formals-in-termp (simplify-ors term iffp)))
     :flag simplify-ors)
   (defthm no-duplicate-lambda-formals-in-termp-of-simplify-ors-lst
     (implies (and (pseudo-term-listp terms)
@@ -56,7 +56,7 @@
 (defthm-flag-simplify-ors
   (defthm subsetp-equal-of-free-vars-in-term-of-simplify-ors
     (implies (pseudo-termp term)
-             (subsetp-equal (free-vars-in-term (simplify-ors term bool-fix))
+             (subsetp-equal (free-vars-in-term (simplify-ors term iffp))
                             (free-vars-in-term term)))
     :flag simplify-ors)
   (defthm subsetp-equal-of-free-vars-in-terms-of-simplify-ors-lst
@@ -73,7 +73,7 @@
 (defthm subsetp-equal-of-free-vars-in-term-of-simplify-ors-gen
   (implies (and (subsetp-equal (free-vars-in-term term) x)
                 (pseudo-termp term))
-           (subsetp-equal (free-vars-in-term (simplify-ors term bool-fix))
+           (subsetp-equal (free-vars-in-term (simplify-ors term iffp))
                           x))
   :hints (("Goal" :use subsetp-equal-of-free-vars-in-term-of-simplify-ors
            :in-theory (disable subsetp-equal-of-free-vars-in-term-of-simplify-ors))))
@@ -82,7 +82,7 @@
   (defthm lambdas-closed-in-termp-of-simplify-ors
     (implies (and (pseudo-termp term)
                   (lambdas-closed-in-termp term))
-             (lambdas-closed-in-termp (simplify-ors term bool-fix)))
+             (lambdas-closed-in-termp (simplify-ors term iffp)))
     :flag simplify-ors)
   (defthm lambdas-closed-in-termp-of-simplify-ors-lst
     (implies (and (pseudo-term-listp terms)
@@ -97,7 +97,7 @@
   (defthm termp-of-simplify-ors
     (implies (and (termp term w)
                   (arities-okp '((if . 3)(not . 1)) w))
-             (termp (simplify-ors term bool-fix) w))
+             (termp (simplify-ors term iffp) w))
     :flag simplify-ors)
   (defthm termp-of-simplify-ors-lst
     (implies (and (term-listp terms w)
@@ -113,7 +113,7 @@
 (defthm-flag-simplify-ors
   (defthm logic-fnsp-of-simplify-ors
     (implies (logic-fnsp term w)
-             (logic-fnsp (simplify-ors term bool-fix) w))
+             (logic-fnsp (simplify-ors term iffp) w))
     :flag simplify-ors)
   (defthm logic-fns-listp-of-simplify-ors-lst
     (implies (logic-fns-listp terms w)
@@ -129,7 +129,7 @@
 (defthm logic-termp-of-simplify-ors
   (implies (and (logic-termp term w)
                 (arities-okp '((if . 3)(not . 1)) w))
-           (logic-termp (simplify-ors term bool-fix) w)))
+           (logic-termp (simplify-ors term iffp) w)))
 
 ;; Follows easily from term-listp and logic-fns-listp proofs.
 (defthm logic-term-listp-of-simplify-ors
@@ -142,20 +142,13 @@
 ;; The point here is to recur on a different alist for lambdas.
 (local
  (mutual-recursion
-  (defund simplify-ors-induct (term bool-fix alist)
+  (defund simplify-ors-induct (term iffp alist)
     (declare (irrelevant alist))
     (if (variablep term)
        term
      (let ((fn (ffn-symb term)))
        (case fn
-         (quote term
-                ;; todo: consider this:
-                ;; (if (and bool-fix
-                ;;          (not (booleanp (unquote term))))
-                ;;     ;; bool-fix the constant:
-                ;;     (kwote (if term t nil))
-                ;;   term)
-                )
+         (quote term)
          ;; (if test then else):
          (if (if (not (consp (cddr (fargs term)))) ; for guard proof
                  (prog2$ (er hard? 'simplify-ors "Bad term: ~x0." term)
@@ -164,9 +157,9 @@
                       (then (fargn term 2))
                       (else (fargn term 3))
                       (test (simplify-ors-induct test t alist)) ; use a boolean context for the test
-                      (then (simplify-ors-induct then bool-fix alist)) ; propagate boolean context to branches
-                      (else (simplify-ors-induct else bool-fix alist)))
-                 (if (and bool-fix
+                      (then (simplify-ors-induct then iffp alist)) ; propagate boolean context to branches
+                      (else (simplify-ors-induct else iffp alist)))
+                 (if (and iffp
                           (equal test then))
                      ;; replace (if x x y) with (if x 't y):
                      `(if ,test 't ,else)
@@ -187,7 +180,7 @@
                 (let* ((formals (lambda-formals fn))
                        (body (lambda-body fn))
                        ;; propagate boolean context:
-                       (body (simplify-ors-induct body bool-fix (pairlis$ (lambda-formals fn) (if-and-not-eval-list args alist)))))
+                       (body (simplify-ors-induct body iffp (pairlis$ (lambda-formals fn) (if-and-not-eval-list args alist)))))
                   ;; todo: use cons-with-hint
                   `((lambda ,formals ,body) ,@args))
               ;; non-lambda:
@@ -206,8 +199,8 @@
 (local
  (defthm-flag-simplify-ors-induct
    (defthm simplify-ors-induct-removal
-     (equal (simplify-ors-induct term bool-fix alist)
-            (simplify-ors term bool-fix))
+     (equal (simplify-ors-induct term iffp alist)
+            (simplify-ors term iffp))
      :flag simplify-ors-induct)
    (defthm simplify-ors-lst-induct-removal
      (equal (simplify-ors-lst-induct terms alist)
@@ -222,10 +215,10 @@
 (defthm-flag-simplify-ors-induct
   (defthm simplify-ors-correct
     (implies (pseudo-termp term)
-             (if bool-fix
-                 (iff (if-and-not-eval (simplify-ors term bool-fix) alist)
+             (if iffp
+                 (iff (if-and-not-eval (simplify-ors term iffp) alist)
                       (if-and-not-eval term alist))
-               (equal (if-and-not-eval (simplify-ors term bool-fix) alist)
+               (equal (if-and-not-eval (simplify-ors term iffp) alist)
                       (if-and-not-eval term alist))))
     :flag simplify-ors-induct)
   (defthm simplify-ors-lst-induct-correct
@@ -244,7 +237,7 @@
   (implies (pseudo-termp term)
            (equal (if-and-not-eval (simplify-ors term nil) alist)
                   (if-and-not-eval term alist)))
-  :hints (("Goal" :use (:instance simplify-ors-correct (bool-fix nil))
+  :hints (("Goal" :use (:instance simplify-ors-correct (iffp nil))
            :in-theory (disable simplify-ors-correct))))
 
 ;; (simplify-ors '(if (if x x y) tp ep) nil) = (if (if x 't y) tp ep)
