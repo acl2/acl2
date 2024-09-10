@@ -1059,7 +1059,11 @@
            table)))
        :stmt
        (b* (((erp items table) (dimb-block-item-list expr.items table)))
-         (retok (expr-stmt items) table))))
+         (retok (expr-stmt items) table))
+       :tycompat
+       (b* (((erp type1 table) (dimb-tyname expr.type1 table))
+            ((erp type2 table) (dimb-tyname expr.type2 table)))
+         (retok (make-expr-tycompat :type1 type1 :type2 type2) table))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1528,7 +1528,12 @@
       "As a GCC extension, we include statement expressions,
        i.e. expressions consisting of compound statements.
        The @(':stmt') case of this fixtype includes
-       the block items that comprise the compound statement."))
+       the block items that comprise the compound statement.")
+     (xdoc::p
+      "As a GCC extension, we include calls of
+       the built-in function @('__builtin_types_compatible_p').
+       This is not a regular function,
+       because its arguments are types names, not expressions."))
     (:ident ((unwrap ident)))
     (:const ((unwrap const)))
     (:string ((literals stringlit-list)))
@@ -1578,6 +1583,8 @@
                       (inc/dec inc/dec-op-list)
                       (arg/arg2 expr)))
     (:stmt ((items block-item-list)))
+    (:tycompat ((type1 tyname)
+                (type2 tyname)))
     :pred exprp
     :measure (two-nats-measure (acl2-count x) 0))
 

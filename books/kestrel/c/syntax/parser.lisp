@@ -1877,6 +1877,7 @@
                                         "__asm__"
                                         "__attribute"
                                         "__attribute__"
+                                        "__builtin_types_compatible_p"
                                         "__builtin_va_list"
                                         "__extension__"
                                         "_Float128"
@@ -5568,13 +5569,16 @@
      or a constant (which is a token),
      or a string literal (which is a token),
      or a parenthesizes expression (which starts with a certain punctuator),
-     or a generic selection (which starts a certain keyword)."))
+     or a generic selection (which starts a certain keyword),
+     or a call of the GCC built-in function @('__builtin_types_compatible_p')
+     (which is a keyword only if GCC extensions are supported)."))
   (and token?
        (or (token-case token? :ident)
            (token-case token? :const)
            (token-case token? :string)
            (token-punctuatorp token? "(")
-           (token-keywordp token? "_Generic")))
+           (token-keywordp token? "_Generic")
+           (token-keywordp token? "__builtin_types_compatible_p")))
   ///
 
   (defrule non-nil-when-token-primary-expression-start-p
@@ -8607,6 +8611,10 @@
        zero or more additional generic associations.
        Finally we parse a closed parenthesis and return a generic selection.")
      (xdoc::p
+      "If the token is the GCC keyword @('__builtin_types_compatible_p'),
+       we parse a call of this built-in function,
+       which has two type names as arguments.")
+     (xdoc::p
       "If the token is none of the above,
        including the token being absent,
        it is an error."))
@@ -8691,6 +8699,24 @@
               (read-punctuator ")" parstate)))
           (retok (make-expr-gensel :control expr
                                    :assocs genassocs)
+                 (span-join span last-span)
+                 parstate)))
+       ((token-keywordp token ; __builtin_types_compatible_p
+                        "__builtin_types_compatible_p")
+        (b* (((erp & parstate) (read-punctuator "(" parstate))
+             ;; __builtin_types_compatible_p (
+             (psize (parsize parstate))
+             ((erp type1 & parstate) (parse-type-name parstate))
+             ;; __builtin_types_compatible_p ( type1
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate) (read-punctuator "," parstate))
+             ;; __builtin_types_compatible_p ( type1 ,
+             ((erp type2 & parstate) (parse-type-name parstate))
+             ;; __builtin_types_compatible_p ( type1 , type2
+             ((erp last-span parstate) (read-punctuator ")" parstate)))
+          ;; __builtin_types_compatible_p ( type1 , type2 )
+          (retok (make-expr-tycompat :type1 type1 :type2 type2)
                  (span-join span last-span)
                  parstate)))
        (t ; other

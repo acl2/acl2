@@ -98,7 +98,9 @@
                :cast/add-ambig nil
                :cast/sub-ambig nil
                :cast/and-ambig nil
-               :stmt (block-item-list-unambp expr.items))
+               :stmt (block-item-list-unambp expr.items)
+               :tycompat (and (tyname-unambp expr.type1)
+                              (tyname-unambp expr.type2)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -966,6 +968,12 @@
            (block-item-list-unambp items))
     :expand (expr-unambp (expr-stmt items)))
 
+  (defrule expr-unambp-of-expr-tycompat
+    (equal (expr-unambp (expr-tycompat type1 type2))
+           (and (tyname-unambp type1)
+                (tyname-unambp type2)))
+    :expand (expr-unambp (expr-tycompat type1 type2)))
+
   (defrule const-expr-unambp-of-const-expr
     (equal (const-expr-unambp (const-expr expr))
            (expr-unambp expr))
@@ -1542,6 +1550,16 @@
     (implies (and (expr-unambp expr)
                   (expr-case expr :stmt))
              (block-item-list-unambp (expr-stmt->items expr))))
+
+  (defrule tyname-unambp-of-expr-tycompat->type1
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :tycompat))
+             (tyname-unambp (expr-tycompat->type1 expr))))
+
+  (defrule tyname-unambp-of-expr-tycompat->type2
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :tycompat))
+             (tyname-unambp (expr-tycompat->type2 expr))))
 
   (defrule not-cast/call-ambig-when-expr-unambp
     (implies (expr-unambp expr)

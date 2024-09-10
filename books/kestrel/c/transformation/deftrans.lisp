@@ -164,7 +164,10 @@
        "            :cast/and-ambig (prog2$"
        "                              (raise \"Misusage error: ~x0.\" (expr-fix expr))"
        "                              (expr-fix expr))"
-       "            :stmt (expr-stmt (my-simpadd0-block-item-list expr.items))))"
+       "            :stmt (expr-stmt (my-simpadd0-block-item-list expr.items))"
+       "            :tycompat (make-expr-tycompat"
+       "                        :type1 (my-simpadd0-tyname expr.type1)"
+       "                        :type2 (my-simpadd0-tyname expr.type2)))))"
        )))
   :order-subtopics t
   :default-parent t)
@@ -342,6 +345,8 @@
     (:linear c$::tyname-count-of-expr-cast->type)
     (:linear c$::tyname-count-of-expr-complit->type)
     (:linear c$::tyname-count-of-expr-sizeof->type)
+    (:linear c$::tyname-count-of-expr-tycompat->type1)
+    (:linear c$::tyname-count-of-expr-tycompat->type2)
     (:linear c$::tyname-count-of-genassoc-type->type)
     (:linear c$::tyname-count-of-type-spec-atomic->type)
     (:linear c$::tyname-count-of-type-spec-typeof-type->type)
@@ -698,6 +703,9 @@
                         (raise "Misusage error: ~x0." (expr-fix expr))
                         (expr-fix expr))
       :stmt (expr-stmt (,(cdr (assoc-eq 'block-item-list names)) expr.items ,@extra-args-names))
+      :tycompat (make-expr-tycompat
+                  :type1 (,(cdr (assoc-eq 'tyname names)) expr.type1 ,@extra-args-names)
+                  :type2 (,(cdr (assoc-eq 'tyname names)) expr.type2 ,@extra-args-names))
       )
    '(:returns (new-expr exprp)
      :measure (expr-count expr))))

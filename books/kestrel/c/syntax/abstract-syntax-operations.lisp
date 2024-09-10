@@ -481,7 +481,8 @@
                     :member
                     :memberp
                     :complit
-                    :stmt))
+                    :stmt
+                    :tycompat))
        t)
   :hooks (:fix))
 
@@ -514,7 +515,8 @@
                     :sizeof
                     :sizeof-ambig
                     :alignof
-                    :stmt))
+                    :stmt
+                    :tycompat))
        t)
   :hooks (:fix))
 
@@ -624,7 +626,8 @@
    :cast/add-ambig (expr-priority-add)
    :cast/sub-ambig (expr-priority-add)
    :cast/and-ambig (expr-priority-and)
-   :stmt (expr-priority-primary))
+   :stmt (expr-priority-primary)
+   :tycompat (expr-priority-primary))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

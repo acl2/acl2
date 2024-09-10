@@ -74,6 +74,7 @@
     make-expr-cond
     make-expr-comma
     expr-stmt
+    make-expr-tycompat
     irr-expr
 
     expr-listp

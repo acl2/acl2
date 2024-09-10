@@ -354,7 +354,8 @@
    :cast/add-ambig (impossible)
    :cast/sub-ambig (impossible)
    :cast/and-ambig (impossible)
-   :stmt nil)
+   :stmt nil
+   :tycompat nil)
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))

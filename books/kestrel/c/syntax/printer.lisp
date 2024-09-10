@@ -1813,6 +1813,13 @@
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-block expr.items pstate))
                 (pstate (print-astring ")" pstate)))
+             pstate)
+           :tycompat
+           (b* ((pstate (print-astring "__builtin_types_compatible_p(" pstate))
+                (pstate (print-tyname expr.type1 pstate))
+                (pstate (print-astring ", " pstate))
+                (pstate (print-tyname expr.type2 pstate))
+                (pstate (print-astring ")" pstate)))
              pstate)))
          (pstate (if parenp
                      (print-astring ")" pstate)

@@ -118,7 +118,10 @@
      :cast/add-ambig (prog2$ (impossible) (irr-expr))
      :cast/sub-ambig (prog2$ (impossible) (irr-expr))
      :cast/and-ambig (prog2$ (impossible) (irr-expr))
-     :stmt (expr-stmt (simpadd0-block-item-list expr.items)))
+     :stmt (expr-stmt (simpadd0-block-item-list expr.items))
+     :tycompat (make-expr-tycompat
+                :type1 (simpadd0-tyname expr.type1)
+                :type2 (simpadd0-tyname expr.type2)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
