@@ -13505,8 +13505,8 @@
                  ;; asm [asmquals] ( template :
                  ((erp outputs & parstate)
                   ;; asm [asmquals] ( template : [outputs]
-                  (parse-asm-output-operands parstate))
-                 ((unless (mbt (<= (parsize parstate) (1- psize))))
+                  (parse-?-asm-output-operands parstate))
+                 ((unless (mbt (<= (parsize parstate) psize)))
                   (reterr :impossible))
                  ((erp token3 span3 parstate) (read-token parstate)))
               (cond
@@ -13534,7 +13534,7 @@
                      ;; asm [asmquals] ( template : [outputs] :
                      ((erp inputs & parstate)
                       ;; asm [asmquals] ( template : [outputs] : [inputs]
-                      (parse-asm-input-operands parstate))
+                      (parse-?-asm-input-operands parstate))
                      ((erp token4 span4 parstate) (read-token parstate)))
                   (cond
                    ;; If token4 is a closed parenthesis,
