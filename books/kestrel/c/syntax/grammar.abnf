@@ -447,6 +447,7 @@ gcc-keyword = %s"__alignof"
             / %s"__asm__"
             / %s"__attribute"
             / %s"__attribute__"
+            / %s"__builtin_types_compatible_p"
             / %s"__builtin_va_list"
             / %s"__extension__"
             / %s"_Float128"
@@ -772,11 +773,28 @@ lexeme = token
 
 ; Expressions [C:A.2.1]
 
+; As a GCC extension, we include statement expressions,
+; i.e. expressions that consists of a parenthesized compound statement
+; (https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html).
+; Since they are parenthesized, we classify them as primary expressions.
+
+; As a GCC extension, we include calls of '__builtin_types_compatible_p'
+; (https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html),
+; which are not normal function calls, because the arguments are types names.
+; Although function calls are postfix expressions in general,
+; since here the called function is known,
+; it makes more sense for these to be primary expressions.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
                    / "(" expression ")"
                    / generic-selection
+                   / "(" compound-statement ")" ; GCC extension
+                   / types-compatible-call ; GCC extension
+
+types-compatible-call =
+    %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
 
 generic-selection =
     %s"_Generic" "(" assignment-expression "," generic-assoc-list ")"
