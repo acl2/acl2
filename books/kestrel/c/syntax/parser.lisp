@@ -7769,8 +7769,45 @@
        ;; and we may also have the ambiguities discussed in :DOC EXPR.
        ;; We try parsing a possibly ambiguous expression or type name,
        ;; after recording a checkpoint for possible backtracking.
+       ;; If GCC extensions are supported,
+       ;; we also need to check whether there is an open curly brace,
+       ;; in which case we have a statement expressions.
        ((token-punctuatorp token "(") ; (
-        (b* ((parstate (record-checkpoint parstate))
+        (b* (;; We read the next token to see if it is an open curly brace,
+             ;; but we also need to check that GCC extensions are supported.
+             ((erp token2 & parstate) (read-token parstate))
+             ((when (and (token-punctuatorp token2 "{") ; ( {
+                         (parstate->gcc parstate)))
+              (b* (((erp token3 & parstate) (read-token parstate)))
+                (cond
+                 ;; If token3 is a closed curly brace,
+                 ;; we have an empty block.
+                 ((token-punctuatorp token3 "}") ; ( { }
+                  (b* (((erp last-span parstate) ; ( { } )
+                        (read-punctuator ")" parstate)))
+                    (retok (expr-stmt nil)
+                           (span-join span last-span)
+                           parstate)))
+                 ;; If token 3 is not a closed curly brace,
+                 ;; we must have a non-empty block.
+                 (t ; ( { other
+                  (b* ((parstate ; ( {
+                        (if token3 (unread-token parstate) parstate))
+                       ((erp items & parstate) ; ( { items
+                        (parse-block-item-list parstate))
+                       ((erp & parstate) ; ( { items }
+                        (read-punctuator "}" parstate))
+                       ((erp last-span parstate) ; ( { items } )
+                        (read-punctuator ")" parstate)))
+                    (retok (expr-stmt items)
+                           (span-join span last-span)
+                           parstate))))))
+             ;; If we do not have an open curly brace,
+             ;; or if GCC extensions are not supported,
+             ;; we need to parse a possibly ambiguous expression or type name.
+             ;; We first need to puth back token2, if not NIL.
+             (parstate (if token2 (unread-token parstate) parstate)) ; (
+             (parstate (record-checkpoint parstate))
              (psize (parsize parstate))
              ((erp expr/tyname & parstate) ; ( expr/tyname
               (parse-expression-or-type-name parstate))
@@ -8066,8 +8103,45 @@
            ;; we are in a potentially ambiguous situation.
            ;; We parse an expression or type name,
            ;; and then the closed parenthesis.
+           ;; If GCC extensions are supported,
+           ;; we also need to check whether there is an open curly brace,
+           ;; in which case we have a statement expressions.
            ((token-punctuatorp token2 "(") ; sizeof (
-            (b* (((erp expr/tyname & parstate) ; sizeof ( exprtyname
+            (b* (;; We read the next token to see if it is an open curly brace,
+                 ;; but we also need to check that GCC extensions are supported.
+                 ((erp token2 & parstate) (read-token parstate))
+                 ((when (and (token-punctuatorp token2 "{") ; ( {
+                             (parstate->gcc parstate)))
+                  (b* (((erp token3 & parstate) (read-token parstate)))
+                    (cond
+                     ;; If token3 is a closed curly brace,
+                     ;; we have an empty block.
+                     ((token-punctuatorp token3 "}") ; ( { }
+                      (b* (((erp last-span parstate) ; ( { } )
+                            (read-punctuator ")" parstate)))
+                        (retok (expr-stmt nil)
+                               (span-join span last-span)
+                               parstate)))
+                     ;; If token 3 is not a closed curly brace,
+                     ;; we must have a non-empty block.
+                     (t ; ( { other
+                      (b* ((parstate ; ( {
+                            (if token3 (unread-token parstate) parstate))
+                           ((erp items & parstate) ; ( { items
+                            (parse-block-item-list parstate))
+                           ((erp & parstate) ; ( { items }
+                            (read-punctuator "}" parstate))
+                           ((erp last-span parstate) ; ( { items } )
+                            (read-punctuator ")" parstate)))
+                        (retok (expr-stmt items)
+                               (span-join span last-span)
+                               parstate))))))
+                 ;; If we do not have an open curly brace,
+                 ;; or if GCC extensions are not supported,
+                 ;; we need to parse a possibly ambiguous expression or type name.
+                 ;; We first need to puth back token2, if not NIL.
+                 (parstate (if token2 (unread-token parstate) parstate)) ; (
+                 ((erp expr/tyname & parstate) ; sizeof ( exprtyname
                   (parse-expression-or-type-name parstate))
                  ((erp last-span parstate) ; sizeof ( exprtyname )
                   (read-punctuator ")" parstate))
