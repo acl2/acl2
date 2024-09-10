@@ -6668,11 +6668,6 @@
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse zero or more assembler clobbers, separated by commas."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The structure of this code is similar to
-     @(tsee parse-asm-output-operands) and @(tsee parse-asm-input-operands)."))
   (b* (((reterr) nil (irr-span) parstate)
        ((erp token & parstate) (read-token parstate))
        ((unless (and token (token-case token :string))) ; string
