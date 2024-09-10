@@ -82,8 +82,17 @@
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (equal (if-and-not-eval (pre-simplify-term-one-step term) alist)
+           (equal (if-and-not-eval (pre-simplify-term-one-step term nil) alist)
                   (if-and-not-eval term alist)))
+  :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
+
+(defthm pre-simplify-term-one-step-correct-iff
+  (implies (and (pseudo-termp term)
+                (no-nils-in-termp term)
+                (no-duplicate-lambda-formals-in-termp term)
+                (lambdas-closed-in-termp term))
+           (iff (if-and-not-eval (pre-simplify-term-one-step term iffp) alist)
+                (if-and-not-eval term alist)))
   :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
 
 (defthm no-nils-in-termp-of-pre-simplify-term-one-step
@@ -91,7 +100,7 @@
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (no-nils-in-termp (pre-simplify-term-one-step term)))
+           (no-nils-in-termp (pre-simplify-term-one-step term iffp)))
   :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
 
 (defthm lambdas-closed-in-termp-of-pre-simplify-term-one-step
@@ -99,14 +108,14 @@
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (lambdas-closed-in-termp (pre-simplify-term-one-step term)))
+           (lambdas-closed-in-termp (pre-simplify-term-one-step term iffp)))
   :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
 
 (defthm no-duplicate-lambda-formals-in-termp-of-pre-simplify-term-one-step
   (implies (and (pseudo-termp term)
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term))
-           (no-duplicate-lambda-formals-in-termp (pre-simplify-term-one-step term)))
+           (no-duplicate-lambda-formals-in-termp (pre-simplify-term-one-step term iffp)))
   :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -116,8 +125,17 @@
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (equal (if-and-not-eval (pre-simplify-term-loop count term) alist)
+           (equal (if-and-not-eval (pre-simplify-term-loop count term nil) alist)
                   (if-and-not-eval term alist)))
+  :hints (("Goal" :in-theory (enable pre-simplify-term-loop))))
+
+(defthm pre-simplify-term-loop-correct-iff
+  (implies (and (pseudo-termp term)
+                (no-nils-in-termp term)
+                (no-duplicate-lambda-formals-in-termp term)
+                (lambdas-closed-in-termp term))
+           (iff (if-and-not-eval (pre-simplify-term-loop count term iffp) alist)
+                (if-and-not-eval term alist)))
   :hints (("Goal" :in-theory (enable pre-simplify-term-loop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,8 +146,17 @@
                 (no-nils-in-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (equal (if-and-not-eval (pre-simplify-term term print) alist)
+           (equal (if-and-not-eval (pre-simplify-term term nil print) alist)
                   (if-and-not-eval term alist)))
+  :hints (("Goal" :in-theory (enable pre-simplify-term))))
+
+(defthm pre-simplify-term-correct-iff
+  (implies (and (pseudo-termp term)
+                (no-nils-in-termp term)
+                (no-duplicate-lambda-formals-in-termp term)
+                (lambdas-closed-in-termp term))
+           (iff (if-and-not-eval (pre-simplify-term term iffp print) alist)
+                (if-and-not-eval term alist)))
   :hints (("Goal" :in-theory (enable pre-simplify-term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -138,7 +165,7 @@
   (implies (and (pseudo-termp term)
                 (no-duplicate-lambda-formals-in-termp term)
                 (lambdas-closed-in-termp term))
-           (subsetp-equal (free-vars-in-term (pre-simplify-term-one-step term))
+           (subsetp-equal (free-vars-in-term (pre-simplify-term-one-step term iffp))
                           (free-vars-in-term term)))
   :hints (("Goal" :in-theory (enable pre-simplify-term-one-step))))
 
@@ -147,7 +174,7 @@
                 (no-duplicate-lambda-formals-in-termp term)
                 (no-nils-in-termp term)
                 (lambdas-closed-in-termp term))
-           (subsetp-equal (free-vars-in-term (pre-simplify-term-loop count term))
+           (subsetp-equal (free-vars-in-term (pre-simplify-term-loop count term iffp))
                           (free-vars-in-term term)))
   :hints (("Goal" :in-theory (enable pre-simplify-term-loop))))
 
@@ -156,6 +183,6 @@
                 (no-duplicate-lambda-formals-in-termp term)
                 (no-nils-in-termp term)
                 (lambdas-closed-in-termp term))
-           (subsetp-equal (free-vars-in-term (pre-simplify-term term print))
+           (subsetp-equal (free-vars-in-term (pre-simplify-term term iffp print))
                           (free-vars-in-term term)))
   :hints (("Goal" :in-theory (enable pre-simplify-term))))
