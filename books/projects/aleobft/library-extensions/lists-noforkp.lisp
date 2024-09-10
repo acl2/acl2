@@ -29,6 +29,7 @@
 (define lists-noforkp ((list1 true-listp)
                        (list2 true-listp))
   :returns (yes/no booleanp)
+  :parents (library-extensions)
   :short "Check that two lists do not fork in front."
   :long
   (xdoc::topstring
