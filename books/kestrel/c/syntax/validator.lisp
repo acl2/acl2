@@ -661,4 +661,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-cconst ((cconst cconstp))
+  :returns (type typep)
+  :short "Validate a character constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[C:6.4.4.4] states a number of requirements,
+     but for now we do not actually impose any requirement,
+     and we just return the type of the character constant.")
+   (xdoc::p
+    "The requirements have to do with the size of the characters
+     with respect to the optional prefix of the character constant.
+     However, those refer to types defined in the standard library,
+     specifically @('wchar_t'), @('char16_t'), and @('char32_t').
+     These may vary across implementations.
+     In order to handle these in a general way,
+     we should probably extend our implementation environments
+     with information about which built-in types those types expand to.
+     We do not do that for now, which is why we do not impose requirements.")
+   (xdoc::p
+    "The character constant may also have one of those types [C:6.4.4.4/11].
+     So, for now, we return type @('int') if there is no prefix [C:6.4.4.4/10],
+     and instead we return an unknown type if there is a prefix."))
+  (b* (((cconst cconst) cconst))
+    (if cconst.prefix?
+        (type-unknown)
+      (type-sint)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: continue
