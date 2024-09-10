@@ -1,6 +1,6 @@
 ; An Axe Prover for R1CS reasoning
 ;
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -69,5 +69,5 @@
 (make-prover-simple r1cs
                     r1cs
                     r1cs
-                    basic
+                    basic ; just use the basic bind-free evaluator, at least for now
                     :default-global-rules (r1cs-prover-default-global-rules))

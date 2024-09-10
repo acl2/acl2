@@ -369,16 +369,16 @@
 
 ;deprecated?
 (defthmd <-becomes-bvlt-dag
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'free dag-array) '(free))
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'size dag-array) '(size))
                 (syntaxp (quotep k))
-                (unsigned-byte-p free k)
-                (unsigned-byte-p-forced free x))
-           (equal (< k x)
-                  (bvlt free k x)))
+                (unsigned-byte-p size k)
+                (unsigned-byte-p-forced size x))
+           (equal (< k x) ; rename vars
+                  (bvlt size k x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
-           :use (:instance <-becomes-bvlt))))
+           :use (:instance <-becomes-bvlt (free size)))))
 
-(defthmd <-becomes-bvlt-dag-gen
+(defthmd <-becomes-bvlt-axe-bind-free-arg2
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size dag-array) '(size))
                 ;;(syntaxp (quotep x))
                 (unsigned-byte-p size x)
@@ -388,15 +388,15 @@
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
            :use (:instance <-becomes-bvlt (free size) (x y) (k x)))))
 
-(defthmd <-becomes-bvlt-dag-alt-gen
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'free dag-array) '(free))
-                ;;(syntaxp (quotep k))
-               (unsigned-byte-p free k)
-               (unsigned-byte-p-forced free x))
-          (equal (< x k)
-                 (bvlt free x k)))
+(defthmd <-becomes-bvlt-axe-bind-free-arg1
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'size dag-array) '(size))
+                ;;(syntaxp (quotep y))
+               (unsigned-byte-p size y)
+               (unsigned-byte-p-forced size x))
+          (equal (< x y)
+                 (bvlt size x y)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced bvlt) (<-becomes-bvlt-free-alt <-becomes-bvlt-free))
-           :use (:instance <-becomes-bvlt (x k) (k x) (free size)))))
+           :use (:instance <-becomes-bvlt (x y) (k x)))))
 
 ;ttodo
 ;improve other rules like this!
@@ -412,7 +412,7 @@
                           (booland (unsigned-byte-p size k)
                                    (bvlt size k x)))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced unsigned-byte-p booland)
-           :use (:instance <-becomes-bvlt-dag-gen (x k) (y x)))))
+           :use (:instance <-becomes-bvlt-axe-bind-free-arg2 (x k) (y x)))))
 
 ;can loop when x=0?
 ;this one requires x not to be 0
@@ -443,11 +443,11 @@
                     (if (unsigned-byte-p xsize y)
                         (bvlt xsize x y)
                       t))))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-dag-alt-gen (k y) ( free xsize))
+  :hints (("Goal" :use (:instance <-becomes-bvlt-axe-bind-free-arg1 (size xsize))
            :in-theory (e/d (unsigned-byte-p
                             ;;unsigned-byte-p-when-unsigned-byte-p-free-better
                             unsigned-byte-p-forced)
-                           (<-becomes-bvlt-dag-alt-gen)))))
+                           (<-becomes-bvlt-axe-bind-free-arg1)))))
 
 ;fixme think about when x=0
 (defthmd <-becomes-bvlt-axe-bind-free-arg1-strong
