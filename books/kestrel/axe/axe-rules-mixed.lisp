@@ -131,8 +131,7 @@
                 (<= freesize size)
                 (natp size)
                 (unsigned-byte-p-forced freesize free))
-           (equal (unsigned-byte-p size x)
-                  t))
+           (unsigned-byte-p size x))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P-FORCED))))
 
 (defthmd equal-when-bv-sizes-differ-1-dag
@@ -153,8 +152,7 @@
                 (natp y-size)
                 (unsigned-byte-p-forced x-size x)
                 (unsigned-byte-p-forced y-size y))
-           (equal (unsigned-byte-p '31 (bvplus '32 x y))
-                  t))
+           (unsigned-byte-p '31 (bvplus '32 x y)))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus unsigned-byte-p-forced)
                                   ()))))
 
