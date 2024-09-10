@@ -24,6 +24,7 @@
 (include-book "ordered-even-blocks")
 (include-book "unequivocal-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
+(include-book "same-committees")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,6 +51,7 @@
                     last-blockchain-round
                     ordered-even-blocks
                     unequivocal-certificates-def-and-init
-                    nonforking-blockchains-def-and-init))
+                    nonforking-blockchains-def-and-init
+                    same-committees))
 
 ; TODO: continue

@@ -55,7 +55,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines exprs/decls-unambp
+(defines exprs/decls/stmts-unambp
   :short "Check if expressions, declarations, and related entities
           are unambiguous."
 
@@ -63,7 +63,7 @@
 
   (define expr-unambp ((expr exprp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an expression is unambiguous."
     (expr-case expr
                :ident t
@@ -97,14 +97,17 @@
                :cast/mul-ambig nil
                :cast/add-ambig nil
                :cast/sub-ambig nil
-               :cast/and-ambig nil)
+               :cast/and-ambig nil
+               :stmt (block-item-list-unambp expr.items)
+               :tycompat (and (tyname-unambp expr.type1)
+                              (tyname-unambp expr.type2)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define expr-list-unambp ((exprs expr-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list of expressions is unambiguous."
     (or (endp exprs)
         (and (expr-unambp (car exprs))
@@ -115,7 +118,7 @@
 
   (define expr-option-unambp ((expr? expr-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an optaional expression is unambiguous."
     (expr-option-case expr?
                       :some (expr-unambp expr?.val)
@@ -126,7 +129,7 @@
 
   (define const-expr-unambp ((cexpr const-exprp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a constant expression is unambiguous."
     (expr-unambp (const-expr->unwrap cexpr))
     :measure (const-expr-count cexpr))
@@ -135,7 +138,7 @@
 
   (define const-expr-option-unambp ((cexpr? const-expr-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an optional constant expression is unambiguous."
     (const-expr-option-case cexpr?
                             :some (const-expr-unambp cexpr?.val)
@@ -146,7 +149,7 @@
 
   (define genassoc-unambp ((assoc genassocp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a generic association is unambiguous."
     (genassoc-case assoc
                    :type (and (tyname-unambp assoc.type)
@@ -158,7 +161,7 @@
 
   (define genassoc-list-unambp ((assocs genassoc-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list of generic associations is unambiguous."
     (or (endp assocs)
         (and (genassoc-unambp (car assocs))
@@ -169,7 +172,7 @@
 
   (define type-spec-unambp ((tyspec type-specp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a type specifier is unambiguous."
     (type-spec-case tyspec
                     :void t
@@ -200,7 +203,7 @@
 
   (define spec/qual-unambp ((specqual spec/qual-p))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a specifier or qualifier is unambiguous."
     (spec/qual-case specqual
                     :tyspec (type-spec-unambp specqual.unwrap)
@@ -213,7 +216,7 @@
 
   (define spec/qual-list-unambp ((specquals spec/qual-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list of specifiers and qualifiers is unambiguous."
     (or (endp specquals)
         (and (spec/qual-unambp (car specquals))
@@ -224,7 +227,7 @@
 
   (define align-spec-unambp ((alignspec align-specp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an alignment specifier is unambiguous."
     (align-spec-case alignspec
                      :alignas-type (tyname-unambp alignspec.type)
@@ -236,7 +239,7 @@
 
   (define declspec-unambp ((declspec declspecp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a declaration specifier is unambiguous."
     (declspec-case declspec
                    :stocla t
@@ -251,7 +254,7 @@
 
   (define declspec-list-unambp ((declspecs declspec-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list of declaration specifiers is unambiguous."
     (or (endp declspecs)
         (and (declspec-unambp (car declspecs))
@@ -262,7 +265,7 @@
 
   (define initer-unambp ((initer initerp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an initializer is unambiguous."
     (initer-case initer
                  :single (expr-unambp initer.expr)
@@ -273,7 +276,7 @@
 
   (define initer-option-unambp ((initer? initer-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an optional initializer is unambiguous."
     (initer-option-case initer?
                         :some (initer-unambp initer?.val)
@@ -284,7 +287,7 @@
 
   (define desiniter-unambp ((desiniter desiniterp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an initializer with optional designations is unambiguous."
     (and (designor-list-unambp (desiniter->design desiniter))
          (initer-unambp (desiniter->init desiniter)))
@@ -294,7 +297,7 @@
 
   (define desiniter-list-unambp ((desiniters desiniter-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list of initialziers with optional designations
             is unambiguous."
     (or (endp desiniters)
@@ -306,7 +309,7 @@
 
   (define designor-unambp ((designor designorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a designator is unambiguous."
     (designor-case designor
                    :sub (const-expr-unambp designor.index)
@@ -317,7 +320,7 @@
 
   (define designor-list-unambp ((designors designor-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list of designators is unambiguous."
     (or (endp designors)
         (and (designor-unambp (car designors))
@@ -328,7 +331,7 @@
 
   (define declor-unambp ((declor declorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a declarator is unambiguous."
     (dirdeclor-unambp (declor->decl declor))
     :measure (declor-count declor))
@@ -337,7 +340,7 @@
 
   (define declor-option-unambp ((declor? declor-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an optional declarator is unambiguous."
     (declor-option-case declor?
                         :some (declor-unambp declor?.val)
@@ -348,7 +351,7 @@
 
   (define dirdeclor-unambp ((dirdeclor dirdeclorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a direct declarator is unambiguous."
     (dirdeclor-case
      dirdeclor
@@ -370,7 +373,7 @@
 
   (define absdeclor-unambp ((absdeclor absdeclorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an abstract declarator is unambiguous."
     (dirabsdeclor-option-unambp (absdeclor->decl? absdeclor))
     :measure (absdeclor-count absdeclor))
@@ -379,7 +382,7 @@
 
   (define absdeclor-option-unambp ((absdeclor? absdeclor-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an optional abstract declarator is unambiguous."
     (absdeclor-option-case absdeclor?
                            :some (absdeclor-unambp absdeclor?.val)
@@ -390,7 +393,7 @@
 
   (define dirabsdeclor-unambp ((dirabsdeclor dirabsdeclorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a direct abstract declarator is unambiguous."
     :long
     (xdoc::topstring
@@ -416,7 +419,7 @@
 
   (define dirabsdeclor-option-unambp ((dirabsdeclor? dirabsdeclor-optionp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an optional direct abstract declarator is unambiguous."
     (dirabsdeclor-option-case dirabsdeclor?
                               :some (dirabsdeclor-unambp dirabsdeclor?.val)
@@ -427,7 +430,7 @@
 
   (define paramdecl-unambp ((paramdecl paramdeclp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a parameter declaration is unambiguous."
     (and (declspec-list-unambp (paramdecl->spec paramdecl))
          (paramdeclor-unambp (paramdecl->decl paramdecl)))
@@ -437,7 +440,7 @@
 
   (define paramdecl-list-unambp ((paramdecls paramdecl-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list parameter declarations is unambiguous."
     (or (endp paramdecls)
         (and (paramdecl-unambp (car paramdecls))
@@ -448,7 +451,7 @@
 
   (define paramdeclor-unambp ((paramdeclor paramdeclorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a parameter declarator is unambiguous."
     (paramdeclor-case paramdeclor
                       :declor (declor-unambp paramdeclor.unwrap)
@@ -461,7 +464,7 @@
 
   (define tyname-unambp ((tyname tynamep))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a type name is unambiguous."
     (and (spec/qual-list-unambp (tyname->specqual tyname))
          (absdeclor-option-unambp (tyname->decl? tyname)))
@@ -471,7 +474,7 @@
 
   (define strunispec-unambp ((strunispec strunispecp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a structure or union specifier is unambiguous."
     (structdecl-list-unambp (strunispec->members strunispec))
     :measure (strunispec-count strunispec))
@@ -480,7 +483,7 @@
 
   (define structdecl-unambp ((structdecl structdeclp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a structure declaration is unambiguous."
     (structdecl-case structdecl
                      :member (and (spec/qual-list-unambp structdecl.specqual)
@@ -492,7 +495,7 @@
 
   (define structdecl-list-unambp ((structdecls structdecl-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list of structure declarations is unambiguous."
     (or (endp structdecls)
         (and (structdecl-unambp (car structdecls))
@@ -503,7 +506,7 @@
 
   (define structdeclor-unambp ((structdeclor structdeclorp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a structure declarator is unambiguous."
     (and (declor-option-unambp (structdeclor->declor? structdeclor))
          (const-expr-option-unambp (structdeclor->expr? structdeclor)))
@@ -513,7 +516,7 @@
 
   (define structdeclor-list-unambp ((structdeclors structdeclor-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list of structure declarators is unambiguous."
     (or (endp structdeclors)
         (and (structdeclor-unambp (car structdeclors))
@@ -524,7 +527,7 @@
 
   (define enumspec-unambp ((enumspec enumspecp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an enumeration specifier is unambiguous."
     (enumer-list-unambp (enumspec->list enumspec))
     :measure (enumspec-count enumspec))
@@ -533,7 +536,7 @@
 
   (define enumer-unambp ((enumer enumerp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an enumerator is unambiguous."
     (const-expr-option-unambp (enumer->value enumer))
     :measure (enumer-count enumer))
@@ -542,7 +545,7 @@
 
   (define enumer-list-unambp ((enumers enumer-listp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list of enumerators is unambiguous."
     (or (endp enumers)
         (and (enumer-unambp (car enumers))
@@ -553,10 +556,127 @@
 
   (define statassert-unambp ((statassert statassertp))
     :returns (yes/no booleanp)
-    :parents (unambiguity exprs/decls-unambp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a static assertion declaration is unambiguous."
     (const-expr-unambp (statassert->test statassert))
     :measure (statassert-count statassert))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define initdeclor-unambp ((initdeclor initdeclorp))
+    :returns (yes/no booleanp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
+    :short "Check if an initializer declarator is unambiguous."
+    (and (declor-unambp (initdeclor->declor initdeclor))
+         (initer-option-unambp (initdeclor->init? initdeclor)))
+    :measure (initdeclor-count initdeclor))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define initdeclor-list-unambp ((initdeclors initdeclor-listp))
+    :returns (yes/no booleanp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
+    :short "Check if a list of initializer declarators is unambiguous."
+    (or (endp initdeclors)
+        (and (initdeclor-unambp (car initdeclors))
+             (initdeclor-list-unambp (cdr initdeclors))))
+    :measure (initdeclor-list-count initdeclors))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define decl-unambp ((decl declp))
+    :returns (yes/no booleanp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
+    :short "Check if a declaration is unambiguous."
+    (decl-case decl
+               :decl (and (declspec-list-unambp decl.specs)
+                          (initdeclor-list-unambp decl.init))
+               :statassert (statassert-unambp decl.unwrap))
+    :measure (decl-count decl))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define decl-list-unambp ((decls decl-listp))
+    :returns (yes/no booleanp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
+    :short "Check if a list of declarations is unambiguous."
+    (or (endp decls)
+        (and (decl-unambp (car decls))
+             (decl-list-unambp (cdr decls))))
+    :measure (decl-list-count decls))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define label-unambp ((label labelp))
+    :returns (yes/no booleanp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
+    :short "Check if a label is unambiguous."
+    (label-case label
+                :name t
+                :const (const-expr-unambp label.unwrap)
+                :default t)
+    :measure (label-count label))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define stmt-unambp ((stmt stmtp))
+    :returns (yes/no booleanp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
+    :short "Check if a statement is unambiguous."
+    (stmt-case stmt
+               :labeled (and (label-unambp stmt.label)
+                             (stmt-unambp stmt.stmt))
+               :compound (block-item-list-unambp stmt.items)
+               :expr (expr-option-unambp stmt.expr?)
+               :if (and (expr-unambp stmt.test)
+                        (stmt-unambp stmt.then))
+               :ifelse (and (expr-unambp stmt.test)
+                            (stmt-unambp stmt.then)
+                            (stmt-unambp stmt.else))
+               :switch (and (expr-unambp stmt.target)
+                            (stmt-unambp stmt.body))
+               :while (and (expr-unambp stmt.test)
+                           (stmt-unambp stmt.body))
+               :dowhile (and (stmt-unambp stmt.body)
+                             (expr-unambp stmt.test))
+               :for-expr (and (expr-option-unambp stmt.init)
+                              (expr-option-unambp stmt.test)
+                              (expr-option-unambp stmt.next)
+                              (stmt-unambp stmt.body))
+               :for-decl (and (decl-unambp stmt.init)
+                              (expr-option-unambp stmt.test)
+                              (expr-option-unambp stmt.next)
+                              (stmt-unambp stmt.body))
+               :for-ambig nil
+               :goto t
+               :continue t
+               :break t
+               :return (expr-option-unambp stmt.expr?)
+               :asm t)
+    :measure (stmt-count stmt))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define block-item-unambp ((item block-itemp))
+    :returns (yes/no booleanp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
+    :short "Check if a block item is unambiguous."
+    (block-item-case item
+                     :decl (decl-unambp item.unwrap)
+                     :stmt (stmt-unambp item.unwrap)
+                     :ambig nil)
+    :measure (block-item-count item))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define block-item-list-unambp ((items block-item-listp))
+    :returns (yes/no booleanp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
+    :short "Check if a list of block items is unambiguous."
+    (or (endp items)
+        (and (block-item-unambp (car items))
+             (block-item-list-unambp (cdr items))))
+    :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -564,7 +684,7 @@
 
   ///
 
-  (fty::deffixequiv-mutual exprs/decls-unambp)
+  (fty::deffixequiv-mutual exprs/decls/stmts-unambp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -617,6 +737,21 @@
     :guard (enumer-listp x)
     :parents nil
     (enumer-unambp x))
+
+  (std::deflist initdeclor-list-unambp (x)
+    :guard (initdeclor-listp x)
+    :parents nil
+    (initdeclor-unambp x))
+
+  (std::deflist decl-list-unambp (x)
+    :guard (decl-listp x)
+    :parents nil
+    (decl-unambp x))
+
+  (std::deflist block-item-list-unambp (x)
+    :guard (block-item-listp x)
+    :parents nil
+    (block-item-unambp x))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -827,6 +962,17 @@
            (and (expr-unambp first)
                 (expr-unambp next)))
     :expand (expr-unambp (expr-comma first next)))
+
+  (defrule expr-unambp-of-expr-stmt
+    (equal (expr-unambp (expr-stmt items))
+           (block-item-list-unambp items))
+    :expand (expr-unambp (expr-stmt items)))
+
+  (defrule expr-unambp-of-expr-tycompat
+    (equal (expr-unambp (expr-tycompat type1 type2))
+           (and (tyname-unambp type1)
+                (tyname-unambp type2)))
+    :expand (expr-unambp (expr-tycompat type1 type2)))
 
   (defrule const-expr-unambp-of-const-expr
     (equal (const-expr-unambp (const-expr expr))
@@ -1118,6 +1264,143 @@
     (equal (statassert-unambp (statassert test message))
            (const-expr-unambp test)))
 
+  (defrule initdeclor-unambp-of-initdeclor
+    (equal (initdeclor-unambp (initdeclor declor asm? init?))
+           (and (declor-unambp declor)
+                (initer-option-unambp init?))))
+
+  (defrule decl-unambp-of-decl-decl
+    (equal (decl-unambp (decl-decl extension specs init attrib))
+           (and (declspec-list-unambp specs)
+                (initdeclor-list-unambp init)))
+    :expand (decl-unambp (decl-decl extension specs init attrib)))
+
+  (defrule decl-unambp-of-decl-statassert
+    (equal (decl-unambp (decl-statassert statassert))
+           (statassert-unambp statassert))
+    :expand (decl-unambp (decl-statassert statassert)))
+
+  (defrule label-unambp-of-label-const
+    (equal (label-unambp (label-const cexpr))
+           (const-expr-unambp cexpr))
+    :expand (label-unambp (label-const cexpr)))
+
+  (defrule label-unambp-when-not-const
+    ;; The formulations (label-unambp (label-... ...))
+    ;; do not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (not (label-case label :const))
+             (label-unambp label)))
+
+  (defrule label-unambp-of-label-default
+    (label-unambp (label-default)))
+
+  (defrule stmt-unambp-of-stmt-labeled
+    (equal (stmt-unambp (stmt-labeled label stmt))
+           (and (label-unambp label)
+                (stmt-unambp stmt)))
+    :expand (stmt-unambp (stmt-labeled label stmt)))
+
+  (defrule stmt-unambp-of-stmt-compound
+    (equal (stmt-unambp (stmt-compound items))
+           (block-item-list-unambp items))
+    :expand (stmt-unambp (stmt-compound items)))
+
+  (defrule stmt-unambp-of-stmt-expr
+    (equal (stmt-unambp (stmt-expr expr?))
+           (expr-option-unambp expr?))
+    :expand (stmt-unambp (stmt-expr expr?)))
+
+  (defrule stmt-unambp-of-stmt-if
+    (equal (stmt-unambp (stmt-if test then))
+           (and (expr-unambp test)
+                (stmt-unambp then)))
+    :expand (stmt-unambp (stmt-if test then)))
+
+  (defrule stmt-unambp-of-stmt-ifelse
+    (equal (stmt-unambp (stmt-ifelse test then else))
+           (and (expr-unambp test)
+                (stmt-unambp then)
+                (stmt-unambp else)))
+    :expand (stmt-unambp (stmt-ifelse test then else)))
+
+  (defrule stmt-unambp-of-stmt-switch
+    (equal (stmt-unambp (stmt-switch target body))
+           (and (expr-unambp target)
+                (stmt-unambp body)))
+    :expand (stmt-unambp (stmt-switch target body)))
+
+  (defrule stmt-unambp-of-stmt-while
+    (equal (stmt-unambp (stmt-while test body))
+           (and (expr-unambp test)
+                (stmt-unambp body)))
+    :expand (stmt-unambp (stmt-while test body)))
+
+  (defrule stmt-unambp-of-stmt-dowhile
+    (equal (stmt-unambp (stmt-dowhile body test))
+           (and (stmt-unambp body)
+                (expr-unambp test)))
+    :expand (stmt-unambp (stmt-dowhile body test)))
+
+  (defrule stmt-unambp-of-stmt-for-expr
+    (equal (stmt-unambp (stmt-for-expr init test next body))
+           (and (expr-option-unambp init)
+                (expr-option-unambp test)
+                (expr-option-unambp next)
+                (stmt-unambp body)))
+    :expand (stmt-unambp (stmt-for-expr init test next body)))
+
+  (defrule stmt-unambp-of-stmt-for-decl
+    (equal (stmt-unambp (stmt-for-decl init test next body))
+           (and (decl-unambp init)
+                (expr-option-unambp test)
+                (expr-option-unambp next)
+                (stmt-unambp body)))
+    :expand (stmt-unambp (stmt-for-decl init test next body)))
+
+  (defrule stmt-unambp-when-goto
+    ;; The formulation (stmt-unambp (stmt-goto label))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (stmt-case stmt :goto)
+             (stmt-unambp stmt)))
+
+  (defrule stmt-unambp-of-stmt-continue
+    (stmt-unambp (stmt-continue))
+    :expand (stmt-unambp (stmt-continue)))
+
+  (defrule stmt-unambp-of-stmt-break
+    (stmt-unambp (stmt-break))
+    :expand (stmt-unambp (stmt-break)))
+
+  (defrule stmt-unambp-of-stmt-return
+    (equal (stmt-unambp (stmt-return expr?))
+           (expr-option-unambp expr?))
+    :expand (stmt-unambp (stmt-return expr?)))
+
+  (defrule stmt-unambp-of-when-asm
+    ;; The formulation (stmt-unambp (stmt-asm ...))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (stmt-case stmt :asm)
+             (stmt-unambp stmt)))
+
+  (defrule block-item-unambp-of-block-item-decl
+    (equal (block-item-unambp (block-item-decl decl))
+           (decl-unambp decl))
+    :expand (block-item-unambp (block-item-decl decl)))
+
+  (defrule block-item-unambp-of-block-item-stmt
+    (equal (block-item-unambp (block-item-stmt stmt))
+           (stmt-unambp stmt))
+    :expand (block-item-unambp (block-item-stmt stmt)))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defrule expr-unambp-of-expr-paren->unwrap
@@ -1262,6 +1545,21 @@
                   (expr-case expr :comma))
              (expr-unambp (expr-comma->next expr)))
     :expand (expr-unambp expr))
+
+  (defrule block-item-list-unambp-of-expr-stmt->items
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :stmt))
+             (block-item-list-unambp (expr-stmt->items expr))))
+
+  (defrule tyname-unambp-of-expr-tycompat->type1
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :tycompat))
+             (tyname-unambp (expr-tycompat->type1 expr))))
+
+  (defrule tyname-unambp-of-expr-tycompat->type2
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :tycompat))
+             (tyname-unambp (expr-tycompat->type2 expr))))
 
   (defrule not-cast/call-ambig-when-expr-unambp
     (implies (expr-unambp expr)
@@ -1647,107 +1945,7 @@
   (defrule const-expr-unambp-of-statassert->test
     (implies (statassert-unambp statassert)
              (const-expr-unambp (statassert->test statassert)))
-    :expand (statassert-unambp statassert)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist type-spec-list-unambp (x)
-  :guard (type-spec-listp x)
-  :short "Check if a list of type specifiers is unambiguous."
-  (type-spec-unambp x)
-  ///
-  (fty::deffixequiv type-spec-list-unambp
-    :args ((x type-spec-listp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expr/tyname-unambp ((expr/tyname expr/tyname-p))
-  :returns (yes/no booleanp)
-  :short "Check if an expression or type name is unambiguous."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This fixtype does not appear in the abstract syntax trees,
-     but it is the result of @(tsee dimb-amb-expr/tyname),
-     so we need to define this predicate to state and prove, by induction,
-     that the disambiguator returns unambiguous abstract syntax."))
-  (expr/tyname-case expr/tyname
-                    :expr (expr-unambp expr/tyname.unwrap)
-                    :tyname (tyname-unambp expr/tyname.unwrap))
-  :hooks (:fix)
-
-  ///
-
-  (defrule expr/tyname-unambp-of-expr/tyname-expr
-    (equal (expr/tyname-unambp (expr/tyname-expr expr))
-           (expr-unambp expr)))
-
-  (defrule expr/tyname-unambp-of-expr/tyname-tyname
-    (equal (expr/tyname-unambp (expr/tyname-tyname tyname))
-           (tyname-unambp tyname)))
-
-  (defrule expr-unambp-of-expr/tyname-expr->unwrap
-    (implies (and (expr/tyname-unambp expr/tyname)
-                  (expr/tyname-case expr/tyname :expr))
-             (expr-unambp (expr/tyname-expr->unwrap expr/tyname))))
-
-  (defrule tyname-unambp-of-expr/tyname-tyname->unwrap
-    (implies (and (expr/tyname-unambp expr/tyname)
-                  (expr/tyname-case expr/tyname :tyname))
-             (tyname-unambp (expr/tyname-tyname->unwrap expr/tyname)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define declor/absdeclor-unambp ((declor/absdeclor declor/absdeclor-p))
-  :returns (yes/no booleanp)
-  :short "Check if a declarator or abstract declarator is unambiguous."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The purpose of this predicate is similar to @(tsee expr/tyname-unambp):
-     see its documentation."))
-  (declor/absdeclor-case declor/absdeclor
-                         :declor (declor-unambp declor/absdeclor.unwrap)
-                         :absdeclor (absdeclor-unambp declor/absdeclor.unwrap))
-  :hooks (:fix)
-
-  ///
-
-  (defrule declor/absdeclor-unambp-of-declor/absdeclor-declor
-    (equal (declor/absdeclor-unambp (declor/absdeclor-declor declor))
-           (declor-unambp declor)))
-
-  (defrule declor/absdeclor-unambp-of-declor/absdeclor-absdeclor
-    (equal (declor/absdeclor-unambp (declor/absdeclor-absdeclor absdeclor))
-           (absdeclor-unambp absdeclor)))
-
-  (defrule declor-unambp-of-declor/absdeclor-declor->unwrap
-    (implies (and (declor/absdeclor-unambp declor/absdeclor)
-                  (declor/absdeclor-case declor/absdeclor :declor))
-             (declor-unambp
-              (declor/absdeclor-declor->unwrap declor/absdeclor))))
-
-  (defrule absdeclor-unambp-of-declor/absdeclor-absdeclor->unwrap
-    (implies (and (declor/absdeclor-unambp declor/absdeclor)
-                  (declor/absdeclor-case declor/absdeclor :absdeclor))
-             (absdeclor-unambp
-              (declor/absdeclor-absdeclor->unwrap declor/absdeclor)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define initdeclor-unambp ((initdeclor initdeclorp))
-  :returns (yes/no booleanp)
-  :short "Check if an initializer declarator is unambiguous."
-  (and (declor-unambp (initdeclor->declor initdeclor))
-       (initer-option-unambp (initdeclor->init? initdeclor)))
-  :hooks (:fix)
-
-  ///
-
-  (defrule initdeclor-unambp-of-initdeclor
-    (equal (initdeclor-unambp (initdeclor declor asm? init?))
-           (and (declor-unambp declor)
-                (initer-option-unambp init?))))
+    :expand (statassert-unambp statassert))
 
   (defrule declor-unambp-of-initdeclor->declor
     (implies (initdeclor-unambp initdeclor)
@@ -1755,39 +1953,7 @@
 
   (defrule initer-option-unambp-of-initdeclor->init?
     (implies (initdeclor-unambp initdeclor)
-             (initer-option-unambp (initdeclor->init? initdeclor)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist initdeclor-list-unambp (x)
-  :guard (initdeclor-listp x)
-  :short "Check if a list of initializer declarators is unambiguous."
-  (initdeclor-unambp x)
-  ///
-  (fty::deffixequiv initdeclor-list-unambp
-    :args ((x initdeclor-listp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define decl-unambp ((decl declp))
-  :returns (yes/no booleanp)
-  :short "Check if a declaration is unambiguous."
-  (decl-case decl
-             :decl (and (declspec-list-unambp decl.specs)
-                        (initdeclor-list-unambp decl.init))
-             :statassert (statassert-unambp decl.unwrap))
-  :hooks (:fix)
-
-  ///
-
-  (defrule decl-unambp-of-decl-decl
-    (equal (decl-unambp (decl-decl extension specs init attrib))
-           (and (declspec-list-unambp specs)
-                (initdeclor-list-unambp init))))
-
-  (defrule decl-unambp-of-decl-statassert
-    (equal (decl-unambp (decl-statassert statassert))
-           (statassert-unambp statassert)))
+             (initer-option-unambp (initdeclor->init? initdeclor))))
 
   (defrule declspec-list-unambp-of-decl-decl->specs
     (implies (and (decl-unambp decl)
@@ -1802,275 +1968,12 @@
   (defrule statassert-unambp-of-decl-statassert->unwrap
     (implies (and (decl-unambp decl)
                   (decl-case decl :statassert))
-             (statassert-unambp (decl-statassert->unwrap decl)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist decl-list-unambp (x)
-  :guard (decl-listp x)
-  :short "Check if a list of declarations is unambiguous."
-  (decl-unambp x)
-  ///
-  (fty::deffixequiv decl-list-unambp
-    :args ((x decl-listp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define label-unambp ((label labelp))
-  :returns (yes/no booleanp)
-  :short "Check if a label is unambiguous."
-  (label-case label
-              :name t
-              :const (const-expr-unambp label.unwrap)
-              :default t)
-  :hooks (:fix)
-
-  ///
-
-  (defrule label-unambp-of-label-const
-    (equal (label-unambp (label-const cexpr))
-           (const-expr-unambp cexpr)))
-
-  (defrule label-unambp-when-not-const
-    ;; The formulations (label-unambp (label-... ...))
-    ;; do not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
-    (implies (not (label-case label :const))
-             (label-unambp label)))
-
-  (defrule label-unambp-of-label-default
-    (label-unambp (label-default)))
+             (statassert-unambp (decl-statassert->unwrap decl))))
 
   (defrule const-expr-unambp-of-label-const->unwrap
     (implies (and (label-unambp label)
                   (label-case label :const))
-             (const-expr-unambp (label-const->unwrap label)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define decl/stmt-unambp ((decl/stmt decl/stmt-p))
-  :returns (yes/no booleanp)
-  :short "Check if a declaration or statement is unambiguous."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The purpose of this predicate is similar to @(tsee expr/tyname-unambp):
-     see its documentation."))
-  (decl/stmt-case decl/stmt
-                  :decl (decl-unambp decl/stmt.unwrap)
-                  :stmt (expr-unambp decl/stmt.unwrap))
-  :hooks (:fix)
-
-  ///
-
-  (defrule decl/stmt-unambp-of-decl/stmt-decl
-    (equal (decl/stmt-unambp (decl/stmt-decl decl))
-           (decl-unambp decl)))
-
-  (defrule decl/stmt-unambp-of-decl/stmt-stmt
-    (equal (decl/stmt-unambp (decl/stmt-stmt expr))
-           (expr-unambp expr)))
-
-  (defrule decl-unambp-of-decl/stmt-decl->unwrap
-    (implies (and (decl/stmt-unambp decl/stmt)
-                  (decl/stmt-case decl/stmt :decl))
-             (decl-unambp (decl/stmt-decl->unwrap decl/stmt))))
-
-  (defrule stmt-unambp-of-decl/stmt-stmt->unwrap
-    (implies (and (decl/stmt-unambp decl/stmt)
-                  (decl/stmt-case decl/stmt :stmt))
-             (expr-unambp (decl/stmt-stmt->unwrap decl/stmt)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines stmts/blocks-unambp
-  :short "Check if statements, blocks, and related entities."
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define stmt-unambp ((stmt stmtp))
-    :returns (yes/no booleanp)
-    :parents (unambiguity stmts/blocks-unambp)
-    :short "Check if a statement is unambiguous."
-    (stmt-case stmt
-               :labeled (and (label-unambp stmt.label)
-                             (stmt-unambp stmt.stmt))
-               :compound (block-item-list-unambp stmt.items)
-               :expr (expr-option-unambp stmt.expr?)
-               :if (and (expr-unambp stmt.test)
-                        (stmt-unambp stmt.then))
-               :ifelse (and (expr-unambp stmt.test)
-                            (stmt-unambp stmt.then)
-                            (stmt-unambp stmt.else))
-               :switch (and (expr-unambp stmt.target)
-                            (stmt-unambp stmt.body))
-               :while (and (expr-unambp stmt.test)
-                           (stmt-unambp stmt.body))
-               :dowhile (and (stmt-unambp stmt.body)
-                             (expr-unambp stmt.test))
-               :for-expr (and (expr-option-unambp stmt.init)
-                              (expr-option-unambp stmt.test)
-                              (expr-option-unambp stmt.next)
-                              (stmt-unambp stmt.body))
-               :for-decl (and (decl-unambp stmt.init)
-                              (expr-option-unambp stmt.test)
-                              (expr-option-unambp stmt.next)
-                              (stmt-unambp stmt.body))
-               :for-ambig nil
-               :goto t
-               :continue t
-               :break t
-               :return (expr-option-unambp stmt.expr?)
-               :asm t)
-    :measure (stmt-count stmt))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define block-item-unambp ((item block-itemp))
-    :returns (yes/no booleanp)
-    :parents (unambiguity stmts/blocks-unambp)
-    :short "Check if a block item is unambiguous."
-    (block-item-case item
-                     :decl (decl-unambp item.unwrap)
-                     :stmt (stmt-unambp item.unwrap)
-                     :ambig nil)
-    :measure (block-item-count item))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define block-item-list-unambp ((items block-item-listp))
-    :returns (yes/no booleanp)
-    :parents (unambiguity stmts/blocks-unambp)
-    :short "Check if a list of block items is unambiguous."
-    (or (endp items)
-        (and (block-item-unambp (car items))
-             (block-item-list-unambp (cdr items))))
-    :measure (block-item-list-count items))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-
-  ///
-
-  (fty::deffixequiv-mutual stmts/blocks-unambp)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (std::deflist block-item-list-unambp (x)
-    :guard (block-item-listp x)
-    :parents nil
-    (block-item-unambp x))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defrule stmt-unambp-of-stmt-labeled
-    (equal (stmt-unambp (stmt-labeled label stmt))
-           (and (label-unambp label)
-                (stmt-unambp stmt)))
-    :expand (stmt-unambp (stmt-labeled label stmt)))
-
-  (defrule stmt-unambp-of-stmt-compound
-    (equal (stmt-unambp (stmt-compound items))
-           (block-item-list-unambp items))
-    :expand (stmt-unambp (stmt-compound items)))
-
-  (defrule stmt-unambp-of-stmt-expr
-    (equal (stmt-unambp (stmt-expr expr?))
-           (expr-option-unambp expr?))
-    :expand (stmt-unambp (stmt-expr expr?)))
-
-  (defrule stmt-unambp-of-stmt-if
-    (equal (stmt-unambp (stmt-if test then))
-           (and (expr-unambp test)
-                (stmt-unambp then)))
-    :expand (stmt-unambp (stmt-if test then)))
-
-  (defrule stmt-unambp-of-stmt-ifelse
-    (equal (stmt-unambp (stmt-ifelse test then else))
-           (and (expr-unambp test)
-                (stmt-unambp then)
-                (stmt-unambp else)))
-    :expand (stmt-unambp (stmt-ifelse test then else)))
-
-  (defrule stmt-unambp-of-stmt-switch
-    (equal (stmt-unambp (stmt-switch target body))
-           (and (expr-unambp target)
-                (stmt-unambp body)))
-    :expand (stmt-unambp (stmt-switch target body)))
-
-  (defrule stmt-unambp-of-stmt-while
-    (equal (stmt-unambp (stmt-while test body))
-           (and (expr-unambp test)
-                (stmt-unambp body)))
-    :expand (stmt-unambp (stmt-while test body)))
-
-  (defrule stmt-unambp-of-stmt-dowhile
-    (equal (stmt-unambp (stmt-dowhile body test))
-           (and (stmt-unambp body)
-                (expr-unambp test)))
-    :expand (stmt-unambp (stmt-dowhile body test)))
-
-  (defrule stmt-unambp-of-stmt-for-expr
-    (equal (stmt-unambp (stmt-for-expr init test next body))
-           (and (expr-option-unambp init)
-                (expr-option-unambp test)
-                (expr-option-unambp next)
-                (stmt-unambp body)))
-    :expand (stmt-unambp (stmt-for-expr init test next body)))
-
-  (defrule stmt-unambp-of-stmt-for-decl
-    (equal (stmt-unambp (stmt-for-decl init test next body))
-           (and (decl-unambp init)
-                (expr-option-unambp test)
-                (expr-option-unambp next)
-                (stmt-unambp body)))
-    :expand (stmt-unambp (stmt-for-decl init test next body)))
-
-  (defrule stmt-unambp-when-goto
-    ;; The formulation (stmt-unambp (stmt-goto label))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
-    (implies (stmt-case stmt :goto)
-             (stmt-unambp stmt)))
-
-  (defrule stmt-unambp-of-stmt-continue
-    (stmt-unambp (stmt-continue))
-    :expand (stmt-unambp (stmt-continue)))
-
-  (defrule stmt-unambp-of-stmt-break
-    (stmt-unambp (stmt-break))
-    :expand (stmt-unambp (stmt-break)))
-
-  (defrule stmt-unambp-of-stmt-return
-    (equal (stmt-unambp (stmt-return expr?))
-           (expr-option-unambp expr?))
-    :expand (stmt-unambp (stmt-return expr?)))
-
-  (defrule stmt-unambp-of-when-asm
-    ;; The formulation (stmt-unambp (stmt-asm ...))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
-    (implies (stmt-case stmt :asm)
-             (stmt-unambp stmt)))
-
-  (defrule block-item-unambp-of-block-item-decl
-    (equal (block-item-unambp (block-item-decl decl))
-           (decl-unambp decl))
-    :expand (block-item-unambp (block-item-decl decl)))
-
-  (defrule block-item-unambp-of-block-item-stmt
-    (equal (block-item-unambp (block-item-stmt stmt))
-           (stmt-unambp stmt))
-    :expand (block-item-unambp (block-item-stmt stmt)))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+             (const-expr-unambp (label-const->unwrap label))))
 
   (defrule label-unamb-of-stmt-labeled->label
     (implies (and (stmt-unambp stmt)
@@ -2221,8 +2124,6 @@
              (not (equal (stmt-kind stmt) :for-ambig)))
     :rule-classes :forward-chaining)
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (defrule decl-unamb-of-block-item-decl->unwrap
     (implies (and (block-item-unambp item)
                   (block-item-case item :decl))
@@ -2239,6 +2140,125 @@
     (implies (block-item-unambp item)
              (not (equal (block-item-kind item) :ambig)))
     :rule-classes :forward-chaining))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-spec-list-unambp (x)
+  :guard (type-spec-listp x)
+  :short "Check if a list of type specifiers is unambiguous."
+  (type-spec-unambp x)
+  ///
+  (fty::deffixequiv type-spec-list-unambp
+    :args ((x type-spec-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr/tyname-unambp ((expr/tyname expr/tyname-p))
+  :returns (yes/no booleanp)
+  :short "Check if an expression or type name is unambiguous."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This fixtype does not appear in the abstract syntax trees,
+     but it is the result of @(tsee dimb-amb-expr/tyname),
+     so we need to define this predicate to state and prove, by induction,
+     that the disambiguator returns unambiguous abstract syntax."))
+  (expr/tyname-case expr/tyname
+                    :expr (expr-unambp expr/tyname.unwrap)
+                    :tyname (tyname-unambp expr/tyname.unwrap))
+  :hooks (:fix)
+
+  ///
+
+  (defrule expr/tyname-unambp-of-expr/tyname-expr
+    (equal (expr/tyname-unambp (expr/tyname-expr expr))
+           (expr-unambp expr)))
+
+  (defrule expr/tyname-unambp-of-expr/tyname-tyname
+    (equal (expr/tyname-unambp (expr/tyname-tyname tyname))
+           (tyname-unambp tyname)))
+
+  (defrule expr-unambp-of-expr/tyname-expr->unwrap
+    (implies (and (expr/tyname-unambp expr/tyname)
+                  (expr/tyname-case expr/tyname :expr))
+             (expr-unambp (expr/tyname-expr->unwrap expr/tyname))))
+
+  (defrule tyname-unambp-of-expr/tyname-tyname->unwrap
+    (implies (and (expr/tyname-unambp expr/tyname)
+                  (expr/tyname-case expr/tyname :tyname))
+             (tyname-unambp (expr/tyname-tyname->unwrap expr/tyname)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define declor/absdeclor-unambp ((declor/absdeclor declor/absdeclor-p))
+  :returns (yes/no booleanp)
+  :short "Check if a declarator or abstract declarator is unambiguous."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The purpose of this predicate is similar to @(tsee expr/tyname-unambp):
+     see its documentation."))
+  (declor/absdeclor-case declor/absdeclor
+                         :declor (declor-unambp declor/absdeclor.unwrap)
+                         :absdeclor (absdeclor-unambp declor/absdeclor.unwrap))
+  :hooks (:fix)
+
+  ///
+
+  (defrule declor/absdeclor-unambp-of-declor/absdeclor-declor
+    (equal (declor/absdeclor-unambp (declor/absdeclor-declor declor))
+           (declor-unambp declor)))
+
+  (defrule declor/absdeclor-unambp-of-declor/absdeclor-absdeclor
+    (equal (declor/absdeclor-unambp (declor/absdeclor-absdeclor absdeclor))
+           (absdeclor-unambp absdeclor)))
+
+  (defrule declor-unambp-of-declor/absdeclor-declor->unwrap
+    (implies (and (declor/absdeclor-unambp declor/absdeclor)
+                  (declor/absdeclor-case declor/absdeclor :declor))
+             (declor-unambp
+              (declor/absdeclor-declor->unwrap declor/absdeclor))))
+
+  (defrule absdeclor-unambp-of-declor/absdeclor-absdeclor->unwrap
+    (implies (and (declor/absdeclor-unambp declor/absdeclor)
+                  (declor/absdeclor-case declor/absdeclor :absdeclor))
+             (absdeclor-unambp
+              (declor/absdeclor-absdeclor->unwrap declor/absdeclor)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define decl/stmt-unambp ((decl/stmt decl/stmt-p))
+  :returns (yes/no booleanp)
+  :short "Check if a declaration or statement is unambiguous."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The purpose of this predicate is similar to @(tsee expr/tyname-unambp):
+     see its documentation."))
+  (decl/stmt-case decl/stmt
+                  :decl (decl-unambp decl/stmt.unwrap)
+                  :stmt (expr-unambp decl/stmt.unwrap))
+  :hooks (:fix)
+
+  ///
+
+  (defrule decl/stmt-unambp-of-decl/stmt-decl
+    (equal (decl/stmt-unambp (decl/stmt-decl decl))
+           (decl-unambp decl)))
+
+  (defrule decl/stmt-unambp-of-decl/stmt-stmt
+    (equal (decl/stmt-unambp (decl/stmt-stmt expr))
+           (expr-unambp expr)))
+
+  (defrule decl-unambp-of-decl/stmt-decl->unwrap
+    (implies (and (decl/stmt-unambp decl/stmt)
+                  (decl/stmt-case decl/stmt :decl))
+             (decl-unambp (decl/stmt-decl->unwrap decl/stmt))))
+
+  (defrule stmt-unambp-of-decl/stmt-stmt->unwrap
+    (implies (and (decl/stmt-unambp decl/stmt)
+                  (decl/stmt-case decl/stmt :stmt))
+             (expr-unambp (decl/stmt-stmt->unwrap decl/stmt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

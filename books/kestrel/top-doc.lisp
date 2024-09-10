@@ -52,7 +52,6 @@
    (include-book "simpl-imp/top")
    (include-book "soft/top")
    (include-book "solidity/top")
-   (include-book "std/top")
    (include-book "strings-light/doc")
    (include-book "syntheto/top")
    (include-book "typed-lists-light/doc")
@@ -83,16 +82,16 @@
 
       (xdoc::p
        "The <b>Kestrel Books</b> are a collection of ACL2 books
-     contributed mainly by "
+        contributed mainly by "
        (xdoc::a :href "http://www.kestrel.edu" "Kestrel Institute")
        ". The Kestrel Books are freely available under a liberal license.
-     Specific copyright, author, and license information
-     is provided in the individual files and subdirectories.")
+        Specific copyright, author, and license information
+        is provided in the individual files and subdirectories.")
 
       (xdoc::p
        "As they become more stable,
-     parts of the Kestrel Books may be moved
-     to other locations in the "
+        parts of the Kestrel Books may be moved
+        to other locations in the "
        (xdoc::seetopic "community-books" "Community Books")
        ". For example, "
        (xdoc::seetopic "std" "STD")
@@ -102,9 +101,9 @@
 
       (xdoc::p
        "Many of the Kestrel Books build upon,
-     and are meant to extend and be compatible with,
-     the ACL2 system code
-     and various existing libraries such as "
+        and are meant to extend and be compatible with,
+        the ACL2 system code
+        and various existing libraries such as "
        (xdoc::seetopic "std" "STD") ", "
        (xdoc::seetopic "fty" "FTY") ", "
        (xdoc::seetopic "seq" "Seq") ", and others.")))
