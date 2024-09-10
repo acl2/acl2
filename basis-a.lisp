@@ -8452,9 +8452,6 @@
 ; fields, all fields are based on the original event: the possibility of an
 ; attached stobj is not considered in populating these fields.
 
-; At the time of this writing (6/14/2020), none of the accesses needs to be
-; efficient; if that changes then we can rearrange the fields.
-
   ((event recognizer . creator)
    .
    (congruent-stobj-rep non-memoizable . non-executable))
