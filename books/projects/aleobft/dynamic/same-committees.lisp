@@ -46,7 +46,7 @@
      we need to prove the non-equivocation of certificates,
      for which we need to prove the same committees invariant here:
      this is part of the mutual induction discussed
-     in @(see unequivocal-certificates-def-and-init
+     in @(see unequivocal-certificates-def-and-init)
      and @(see nonforking-blockchains-def-and-init).")
    (xdoc::p
     "If the blockchains of two validators do not fork,
@@ -316,7 +316,7 @@
      which is the one we are interested in,
      and which we will use in further proofs.
      While @('bonded-committee-at-round-loop') always calculates a committee,
-     @(tsee bonded-committee-at-round') has an initial check
+     @(tsee bonded-committee-at-round) has an initial check
      that the round is not too far ahead.
      So here we need an additional hypothesis that
      the committee is in fact calculable.
