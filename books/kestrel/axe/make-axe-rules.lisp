@@ -45,6 +45,7 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
+;(local (include-book "kestrel/terms-light/pre-simplify-term-proofs" :dir :system))
 
 (local
  (in-theory (disable ilks-plist-worldp
@@ -360,12 +361,14 @@
 ;; hyp that is a non-nil constant. The BOUND-VARS returned is the list of vars
 ;; bound by the LHS, this hyp, and all previous hyps.
 (defund make-axe-rule-hyps-for-hyp (hyp bound-vars rule-symbol wrld)
-  (declare (xargs :guard (and (pseudo-termp hyp)
+  (declare (xargs :guard (and (pseudo-termp hyp) ; todo: strengthen
                               (symbol-listp bound-vars)
                               (symbolp rule-symbol)
                               (plist-worldp wrld))
-                  :guard-hints (("Goal" :expand (AXE-SYNTAXP-EXPRP (CADR HYP))))
-                  ))
+                  :guard-hints (("Goal" :expand (AXE-SYNTAXP-EXPRP (CADR HYP))
+                                 :in-theory (enable
+                                             ;; member-equal-of-pre-simplify-term-and-free-vars-in-term-when-not-consp-of-pre-simplify-term
+                                             )))))
   (if (atom hyp) ;; can only be a variable
       ;;turn a hyp of <var> into (not (equal 'nil <var>)) which is equivalent.  Axe relies on the fact that a hyp cannot be a variable.
       (if (member-eq hyp bound-vars)
@@ -536,7 +539,7 @@
                 (b* ((hyp (pre-simplify-term hyp t t)) ; cleans up lambdas, improves translated ORs, etc.
                      ((when (atom hyp)) ;; can only be a variable
                       ;;turn a hyp of <var> into (not (equal 'nil <var>)) which is equivalent.  Axe relies on the fact that a hyp cannot be a variable.
-                      (if (not (member-equal hyp bound-vars)) ; todo: prove this can't happen
+                      (if (not (member-equal hyp bound-vars)) ; todo: prove this can't happen (but strengthen the guard)
                           (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Hyp, ~x0, is a free var in ~x1 after pre-simplification!" hyp rule-symbol)
                                   (mv :nil-hyp *unrelievable-hyps* bound-vars))
                         (mv (erp-nil) `((not (equal 'nil ,hyp))) bound-vars)))
