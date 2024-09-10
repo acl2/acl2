@@ -6727,7 +6727,8 @@
        ((erp token & parstate) (read-token parstate))
        ((unless (and token (token-case token :ident)))
         (b* ((parstate (if token (unread-token parstate) parstate)))
-          (retok nil (irr-span) parstate))))
+          (retok nil (irr-span) parstate)))
+       (parstate (unread-token parstate)))
     (parse-asm-goto-labels-loop parstate))
 
   :prepwork
