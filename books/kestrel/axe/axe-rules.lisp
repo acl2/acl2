@@ -168,27 +168,31 @@
                (and (pseudo-termp hyp)
                     (not (eq 'quote fn)) ; can't be a quoted constant
                     ;; consider relaxing this for efficiency of rewriting:
-                    (lambda-free-termp hyp))))))))
+                    ;; (lambda-free-termp hyp)
+                    )))))))
 
-(defthm axe-rule-hypp-when-not-special
-  (implies (and (consp hyp)
-                (not (equal :axe-syntaxp (car hyp)))
-                (not (equal :axe-bind-free (car hyp)))
-                (not (equal :free-vars (car hyp)))
-                (not (equal 'quote (car hyp))))
-           (equal (axe-rule-hypp hyp)
-                  (and (pseudo-termp hyp)
-                       (lambda-free-termp hyp))))
-  :hints (("Goal" :in-theory (enable axe-rule-hypp)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0 0 0 0))))
+;drop (see below)?
+;; (defthm axe-rule-hypp-when-not-special
+;;   (implies (and (consp hyp)
+;;                 (not (equal :axe-syntaxp (car hyp)))
+;;                 (not (equal :axe-bind-free (car hyp)))
+;;                 (not (equal :free-vars (car hyp)))
+;;                 (not (equal 'quote (car hyp))))
+;;            (equal (axe-rule-hypp hyp)
+;;                   (and (pseudo-termp hyp)
+;;                        ;; (lambda-free-termp hyp)
+;;                        )))
+;;   :hints (("Goal" :in-theory (enable axe-rule-hypp)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0 0 0 0 0))))
 
-(defthm axe-rule-hypp-when-equal-of-car-and-work-hard-cheap
-  (implies (equal 'work-hard (car hyp))
-           (equal (axe-rule-hypp hyp)
-                  (and (pseudo-termp hyp)
-                       (lambda-free-termp hyp))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable axe-rule-hypp))))
+;; (defthm axe-rule-hypp-when-equal-of-car-and-work-hard-cheap
+;;   (implies (equal 'work-hard (car hyp))
+;;            (equal (axe-rule-hypp hyp)
+;;                   (and (pseudo-termp hyp)
+;;                        ;; (lambda-free-termp hyp)
+;;                        )))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+;;   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
 (defthm axe-rule-hypp-when-simple
   (implies (and (not (equal :axe-syntaxp (car hyp)))
@@ -198,7 +202,8 @@
                   (and (consp hyp)
                        (not (equal 'quote (car hyp)))
                        (pseudo-termp hyp)
-                       (lambda-free-termp hyp))))
+                       ;; (lambda-free-termp hyp)
+                       )))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0 0)))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
