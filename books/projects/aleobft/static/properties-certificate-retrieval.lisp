@@ -22,6 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ properties-certificate-retrieval
+  :parents (correctness)
   :short "Some properties of the certificate retrieval operations,
           when applied to unequivocal sets of certificates."
   :long

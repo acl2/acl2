@@ -128,12 +128,13 @@
                                                                     systate))
                     (set::insert (certificate-fix cert)
                                  (certificates-owned-by val systate))))
-    :enable (certificates-owned-by
-             validator-state->dag-of-create-certificate-next
-             validator-state->buffer-of-create-certificate-next
-             get-network-state-of-create-certificate-next
-             message-certificates-with-destination-of-union
-             message-certificates-with-destination-of-make-certificate-message))
+    :enable
+    (certificates-owned-by
+     validator-state->dag-of-create-certificate-next
+     validator-state->buffer-of-create-certificate-next
+     get-network-state-of-create-certificate-next
+     message-certificates-with-destination-of-union
+     message-certificates-with-destination-of-make-certificate-messages))
 
   (defruled certificates-owned-by-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
