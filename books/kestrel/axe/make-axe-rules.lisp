@@ -1221,7 +1221,7 @@
   (b* (((mv erp lhs rhs) (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))
        ((when erp) acc) ;don't extend acc
        ;; Applies various simplifications:
-       (rhs (pre-simplify-term rhs nil))
+       (rhs (pre-simplify-term rhs nil nil)) ; must preserve equal, not just iff
        ((mv erp rule) (make-axe-rule lhs rhs
                                      (if counter
                                          ;; todo: make a pack-string and pass to add-suffix:
@@ -1457,7 +1457,7 @@
                 ;; faster to open functions defined using MBE:
                 (body (remove-guard-holders-and-clean-up-lambdas body) ;(strip-return-last body)
                       )
-                (body (pre-simplify-term body nil))
+                (body (pre-simplify-term body nil nil)) ; must preserve equal, not just iff
                 (clique (true-list-fix ; drop?
                           (recursivep rule-name nil wrld))) ; todo: consider :definition rules and the flg option here
                 (body-fns (all-fnnames body))
