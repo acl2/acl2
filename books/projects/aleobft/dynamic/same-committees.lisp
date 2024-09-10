@@ -316,7 +316,7 @@
      which is the one we are interested in,
      and which we will use in further proofs.
      While @('bonded-committee-at-round-loop') always calculates a committee,
-     @(tsee bonded-committee-at-round') has an initial check
+     @(tsee bonded-committee-at-round) has an initial check
      that the round is not too far ahead.
      So here we need an additional hypothesis that
      the committee is in fact calculable.
