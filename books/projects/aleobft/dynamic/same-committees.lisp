@@ -46,7 +46,7 @@
      we need to prove the non-equivocation of certificates,
      for which we need to prove the same committees invariant here:
      this is part of the mutual induction discussed
-     in @(see unequivocal-certificates-def-and-init
+     in @(see unequivocal-certificates-def-and-init)
      and @(see nonforking-blockchains-def-and-init).")
    (xdoc::p
     "If the blockchains of two validators do not fork,
