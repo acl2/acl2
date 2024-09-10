@@ -533,7 +533,7 @@
                 ;; Normal hyp with no free vars:
                 ;; Here we use hyp, not expanded-hyp, to make it cheaper to rewrite a hyp that contains lambdas:
                 ;; Previously, we did use the expanded-hyp.
-                (b* ((hyp (pre-simplify-term hyp t)) ; cleans up lambdas, improves translated ORs, etc.
+                (b* ((hyp (pre-simplify-term hyp t t)) ; cleans up lambdas, improves translated ORs, etc.
                      ((when (atom hyp)) ;; can only be a variable
                       ;;turn a hyp of <var> into (not (equal 'nil <var>)) which is equivalent.  Axe relies on the fact that a hyp cannot be a variable.
                       (if (not (member-equal hyp bound-vars)) ; todo: prove this can't happen
