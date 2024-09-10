@@ -35,6 +35,7 @@
 
 (defsection prettygoals
   :short "Experimental tool for displaying proof goals in a prettier way."
+  :parents (acl2::debugging)
 
   :long "<p>This tool changes how ACL2 prints proof goals to be ``prettier,''
  so that you can more quickly read them and understand why ACL2 is stuck.</p>
@@ -135,7 +136,7 @@
            ((AIRPLANE X))
            ((AIRPLANE Y)))
           \"WARNING: type confusion: ((X STUDENT X) (X AIRPLANE X))\"
-          (CONCL (LIST X.NAME X.AGE X.WINGS Y.WHEELS))) 
+          (CONCL (LIST X.NAME X.AGE X.WINGS Y.WHEELS)))
  })
 
 
