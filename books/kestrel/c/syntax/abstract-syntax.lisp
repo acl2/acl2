@@ -2111,7 +2111,7 @@
        the nested direct abstract declarators are optional,
        the @('...[*]') form has no type qualifiers just before the @('*'),
        and there is just the parameter form for functions.
-       Furthermore, as explained in @(see exprs/decls),
+       Furthermore, as explained in @(see exprs/decls/stmts),
        there is a dummy base case."))
     (:dummy-base ())
     (:paren ((unwrap absdeclor)))
@@ -2512,12 +2512,6 @@
   (fty::defprod initdeclor
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of initializer declarators [C:6.7] [C:A.2.2]."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This corresponds to <i>init-declarator</i> in the grammar in [C].
-       This is part of declarations,
-       but it is outside the mutual recursion in @(see exprs/decls)."))
     ((declor declor)
      (asm? asm-name-spec-option)
      (init? initer-option))
@@ -2548,10 +2542,6 @@
     :short "Fixtype of declarations [C:6.7] [C:A.2.2]."
     :long
     (xdoc::topstring
-     (xdoc::p
-      "This corresponds to <i>declaration</i> in the grammar in [C].
-       It is the top-level construct for declarations,
-       and it is outside the mutual recursion @(see exprs/decls).")
      (xdoc::p
       "As a GCC extension,
        we also include a list of zero or more attribute specifiers
