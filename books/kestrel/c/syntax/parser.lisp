@@ -8568,6 +8568,7 @@
                          (span-join span last-span)
                          parstate)))
                ;; If token3 is not a closed curly brace,
+               ;; or GCC extensions are not supported,
                ;; we must have a statement expression with a non-empty block.
                ;; We put back token3 and we parse one or more block items.
                (t ; ( { other
