@@ -73,6 +73,8 @@
     make-expr-binary
     make-expr-cond
     make-expr-comma
+    expr-stmt
+    make-expr-tycompat
     irr-expr
 
     expr-listp
@@ -114,6 +116,9 @@
     type-spec-struct
     type-spec-union
     type-spec-enum
+    make-type-spec-typeof-expr
+    make-type-spec-typeof-type
+    irr-type-spec
 
     spec/qual-p
     spec/qual-fix
@@ -310,23 +315,28 @@
 
     initdeclorp
     initdeclor-fix
+    initdeclor-count
     initdeclor
     make-initdeclor
 
     initdeclor-listp
     initdeclor-list-fix
+    initdeclor-list-count
 
     declp
     decl
     decl-fix
+    decl-count
     decl-case
     make-decl-decl
     decl-statassert
 
     decl-listp
+    decl-list-count
 
     labelp
     label-fix
+    label-count
     label-case
     label-const
 

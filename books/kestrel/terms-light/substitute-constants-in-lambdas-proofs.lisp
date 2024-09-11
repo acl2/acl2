@@ -850,3 +850,12 @@
                 (pseudo-termp term))
            (lambdas-closed-in-termp (substitute-constants-in-lambdas term)))
   :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas))))
+
+(defthm free-vars-in-term-of-substitute-constants-in-lambdas-gen
+  (implies (and (subsetp-equal (free-vars-in-term term) x)
+                (pseudo-termp term)
+                (lambdas-closed-in-termp term)
+                (no-duplicate-lambda-formals-in-termp term))
+           (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas term))
+                          x))
+  :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas))))

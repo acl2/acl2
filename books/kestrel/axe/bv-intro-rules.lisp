@@ -122,19 +122,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;add axe to name
-;todo: more rules like this?
-(defthmd mod-becomes-bvmod
+(defthmd mod-becomes-bvmod-axe-bind-free-arg1
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p xsize y)
+                (unsigned-byte-p-forced xsize x))
+           (equal (mod x y)
+                  (bvmod xsize x y)))
+  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1 (size xsize)))))
+
+(defthmd mod-becomes-bvmod-axe-bind-free-arg2
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced ysize y)
-                (unsigned-byte-p ysize x) ;new..
-                )
+                (unsigned-byte-p ysize x)
+                (unsigned-byte-p-forced ysize y))
            (equal (mod x y)
                   (bvmod ysize x y)))
-  :hints (("Goal" :in-theory (enable mod-becomes-bvmod-core unsigned-byte-p-forced))))
+  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1 (size xsize)))))
 
-;name
-(defthmd mod-becomes-bvmod-better-dag
+;drop?
+(defthmd mod-becomes-bvmod-axe-bind-free-and-bind-free
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced xsize x)
@@ -142,33 +147,30 @@
            (equal (mod x y)
                   (bvmod (max xsize ysize) x y)))
   :hints (("Goal"
-           :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
+           :use (:instance mod-becomes-bvmod-free-arg1 (size (max xsize ysize)))
+           :in-theory (enable unsigned-byte-p-forced))))
 
-;name
-(defthmd mod-becomes-bvmod-better-bind-free-and-free
+;drop?
+(defthmd mod-becomes-bvmod-axe-bind-free-and-free
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p ysize y)) ;ysize is a freevar
+                (unsigned-byte-p ysize y) ;ysize is a freevar
+                (unsigned-byte-p-forced xsize x))
            (equal (mod x y)
                   (bvmod (max xsize ysize) x y)))
   :hints (("Goal"
-           :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
+           :use (:instance mod-becomes-bvmod-free-arg1 (size (max xsize ysize)))
+           :in-theory (enable unsigned-byte-p-forced))))
 
-;name
-(defthmd mod-becomes-bvmod-better-free-and-bind-free
+;drop?
+(defthmd mod-becomes-bvmod-axe-free-and-bind-free
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced ysize y)
-                (unsigned-byte-p xsize x)) ;xsize is a freevar
+                (unsigned-byte-p xsize x) ;xsize is a freevar
+                (unsigned-byte-p-forced ysize y))
            (equal (mod x y)
                   (bvmod (max xsize ysize) x y)))
   :hints (("Goal"
-           :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
+           :use (:instance mod-becomes-bvmod-free-arg1 (size (max xsize ysize)))
+           :in-theory (enable unsigned-byte-p-forced))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -185,8 +187,7 @@
 (defthmd *-becomes-bvmult-2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p ysize y)
-                (unsigned-byte-p-forced xsize x)
-                )
+                (unsigned-byte-p-forced xsize x))
            (equal (* x y) (bvmult (+ ysize xsize) x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
            :use (:instance *-becomes-bvmult (n xsize) (m ysize)))))
@@ -203,8 +204,8 @@
 
 (defthmd logand-becomes-bvand-arg1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p-forced xsize x)
-                (natp y))
+                (natp y)
+                (unsigned-byte-p-forced xsize x))
            (equal (logand x y)
                   (bvand xsize x y)))
   :hints (("Goal" :use (:instance logand-becomes-bvand (size xsize) (y y))
@@ -212,8 +213,8 @@
 
 (defthmd logand-becomes-bvand-arg2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p-forced xsize x)
-                (natp y))
+                (natp y)
+                (unsigned-byte-p-forced xsize x))
            (equal (logand y x)
                   (bvand xsize y x)))
   :hints (("Goal":use (:instance logand-becomes-bvand (size xsize) (y y))
@@ -256,9 +257,10 @@
   (implies (and (axe-bind-free (bind-bv-size-axe x 'newsize dag-array) '(newsize))
                 (<= n newsize) ;drop?
                 (integerp newsize)
-                (unsigned-byte-p-forced newsize x) ;switched to usb-forced? (also elsewhere!)
                 (integerp x) ;drop
-                (natp n))
+                (natp n)
+                (unsigned-byte-p-forced newsize x) ;switched to usb-forced? (also elsewhere!))
+                )
            (equal (logtail n x)
                   (slice (+ -1 newsize) n x)))
   :hints (("Goal" :use (:instance logtail-becomes-slice-bind-free)
@@ -273,8 +275,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Pretty aggressive
 ;rename
-(defthmd plus-becomes-bvplus-arg1-free-dag
+(defthmd +-becomes-bvplus-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (posp xsize)
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y))
+           (equal (+ x y)
+                  (bvplus (+ 1 (max xsize ysize)) x y)))
+  :hints (("Goal" :use (:instance plus-becomes-bvplus)
+           :in-theory (disable plus-becomes-bvplus))))
+
+;fixme: uses force
+(defthmd +-becomes-bvplus-axe-free-and-bind-free
   (implies (and (unsigned-byte-p xsize x)
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (force (unsigned-byte-p-forced ysize y))
@@ -284,12 +299,11 @@
   :hints (("Goal" :use (:instance plus-becomes-bvplus)
            :in-theory (e/d (unsigned-byte-p-forced) (plus-becomes-bvplus)))))
 
-;rename
-(defthmd plus-becomes-bvplus-arg2-free-dag
+(defthmd +-becomes-bvplus-axe-bind-free-and-free
   (implies (and (unsigned-byte-p xsize x)
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced ysize y)
-                (posp xsize))
+                (posp xsize)
+                (unsigned-byte-p-forced ysize y))
            (equal (+ y x)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
   :hints (("Goal" :use (:instance plus-becomes-bvplus-arg2-free)
@@ -309,10 +323,23 @@
 ;;                                    <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
 ;;                                    )))))
 
+
+;; Special case for when the + is inside an unsigned-byte-p.
+(defthmd unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (posp xsize)
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y))
+           (equal (unsigned-byte-p size (+ x y))
+                  (unsigned-byte-p size (bvplus (+ 1 (max xsize ysize)) x y))))
+  :hints (("Goal" :use (:instance +-becomes-bvplus-axe)
+           :in-theory (disable +-becomes-bvplus-axe equal-of-+-and-bv))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;cheap
-(defthmd <-becomes-bvlt-axe-both
+;cheap, requires both x and y to be BVs (possibly constants)
+(defthmd <-becomes-bvlt-axe-bind-free-and-bind-free
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced xsize x)
@@ -322,90 +349,90 @@
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
            :use (:instance <-becomes-bvlt (k x) (x y)  (free (max xsize ysize))))))
 
-;cheap
-(defthmd <-becomes-bvlt-axe-2
+;cheap, requires both x and y to be BVs (possibly constants)
+(defthmd <-becomes-bvlt-axe-bind-free-and-free
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p freeysize y)
+                (unsigned-byte-p ysize y) ; free var
                 (unsigned-byte-p-forced xsize x))
            (equal (< x y)
-                  (bvlt (max xsize freeysize) x y)))
+                  (bvlt (max xsize ysize) x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvlt))))
 
-;cheap
-(defthmd <-becomes-bvlt-axe-3
+;cheap, requires both x and y to be BVs (possibly constants)
+(defthmd <-becomes-bvlt-axe-free-and-bind-free
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize axe-array) '(ysize))
-                (unsigned-byte-p freexsize x)
+                (unsigned-byte-p xsize x) ; free var
                 (unsigned-byte-p-forced ysize y))
            (equal (< x y)
-                  (bvlt (max freexsize ysize) x y)))
+                  (bvlt (max xsize ysize) x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvlt))))
 
 ;deprecated?
 (defthmd <-becomes-bvlt-dag
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'free dag-array) '(free))
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'size dag-array) '(size))
                 (syntaxp (quotep k))
-                (unsigned-byte-p-forced free x)
-                (unsigned-byte-p free k))
-           (equal (< k x)
-                  (bvlt free k x)))
+                (unsigned-byte-p size k)
+                (unsigned-byte-p-forced size x))
+           (equal (< k x) ; rename vars
+                  (bvlt size k x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
-           :use (:instance <-becomes-bvlt))))
+           :use (:instance <-becomes-bvlt (free size)))))
 
-(defthmd <-becomes-bvlt-dag-gen
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'free dag-array) '(free))
-                ;;(syntaxp (quotep k))
-               (unsigned-byte-p free k)
-               (unsigned-byte-p-forced free x))
-          (equal (< k x)
-                 (bvlt free k x)))
+(defthmd <-becomes-bvlt-axe-bind-free-arg2
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'size dag-array) '(size))
+                ;;(syntaxp (quotep x))
+                (unsigned-byte-p size x)
+                (unsigned-byte-p-forced size y))
+           (equal (< x y)
+                  (bvlt size x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
-           :use (:instance <-becomes-bvlt))))
+           :use (:instance <-becomes-bvlt (free size) (x y) (k x)))))
 
-(defthmd <-becomes-bvlt-dag-alt-gen
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'free dag-array) '(free))
-                ;;(syntaxp (quotep k))
-               (unsigned-byte-p free k)
-               (unsigned-byte-p-forced free x))
-          (equal (< x k)
-                 (bvlt free x k)))
+(defthmd <-becomes-bvlt-axe-bind-free-arg1
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'size dag-array) '(size))
+                ;;(syntaxp (quotep y))
+               (unsigned-byte-p size y)
+               (unsigned-byte-p-forced size x))
+          (equal (< x y)
+                 (bvlt size x y)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced bvlt) (<-becomes-bvlt-free-alt <-becomes-bvlt-free))
-           :use (:instance <-becomes-bvlt (x k) (k x)))))
+           :use (:instance <-becomes-bvlt (x y) (k x)))))
 
 ;ttodo
 ;improve other rules like this!
 (defthmd <-becomes-bvlt-dag-gen-better
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'free dag-array) '(free)) ;ffffixme here and elsewhere abstain if x is a quotep?!! ;why?
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'size dag-array) '(size)) ;ffffixme here and elsewhere abstain if x is a quotep?!! ;why?
                 (syntaxp (not (quotep x)))
-                (natp free)
+                (natp size)
                 (integerp k)
-                (unsigned-byte-p-forced free x))
+                (unsigned-byte-p-forced size x))
            (equal (< k x)
                   ;;redid conc
                   (boolor (< k 0)
-                          (booland (unsigned-byte-p free k)
-                                   (bvlt free k x)))))
+                          (booland (unsigned-byte-p size k)
+                                   (bvlt size k x)))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced unsigned-byte-p booland)
-           :use (:instance <-becomes-bvlt-dag-gen))))
+           :use (:instance <-becomes-bvlt-axe-bind-free-arg2 (x k) (y x)))))
 
 ;can loop when x=0?
-;this one lacks the not quote hyp but requires x not to be 0
+;this one requires x not to be 0
 (defthmd <-becomes-bvlt-dag-gen-better2
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'free dag-array) '(free)) ;ffffixme here and elsewhere abstain if x is a quotep?!! ;why? can loop if k is a difference?
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'size dag-array) '(size)) ;ffffixme here and elsewhere abstain if x is a quotep?!! ;why? can loop if k is a difference?
                 (syntaxp (not (quotep x)))
                 (not (equal x 0))
-                (natp free)
+                (natp size)
                 (integerp k)
-                (unsigned-byte-p-forced free x))
+                (unsigned-byte-p-forced size x))
            (equal (< k x)
 ;;redid conc to use bool ops
                   (boolor (< k 0)
-                          (booland (unsigned-byte-p free k) ;fixme this can loop when k is a difference? because of UNSIGNED-BYTE-P-OF-+-OF-MINUS
-                                   (bvlt free k x)))))
+                          (booland (unsigned-byte-p size k) ;fixme this can loop when k is a difference? because of UNSIGNED-BYTE-P-OF-+-OF-MINUS
+                                   (bvlt size k x)))))
   :hints (("Goal" :use (:instance <-becomes-bvlt-dag-gen-better)
            :in-theory (disable <-becomes-bvlt-dag-gen-better))))
 
-;put this in place
-(defthmd <-becomes-bvlt-dag-alt-gen-better
+;; "safe" because it doesn't allow X to be a quote, so X really is a BV term
+(defthmd <-becomes-bvlt-axe-bind-free-arg1-strong-safe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (syntaxp (not (quotep x))) ;why?
                 (integerp y) ;drop?
@@ -416,14 +443,14 @@
                     (if (unsigned-byte-p xsize y)
                         (bvlt xsize x y)
                       t))))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-dag-alt-gen (k y) ( free xsize))
+  :hints (("Goal" :use (:instance <-becomes-bvlt-axe-bind-free-arg1 (size xsize))
            :in-theory (e/d (unsigned-byte-p
                             ;;unsigned-byte-p-when-unsigned-byte-p-free-better
                             unsigned-byte-p-forced)
-                           (<-becomes-bvlt-dag-alt-gen)))))
+                           (<-becomes-bvlt-axe-bind-free-arg1)))))
 
 ;fixme think about when x=0
-(defthmd <-becomes-bvlt-dag-alt-gen-better2
+(defthmd <-becomes-bvlt-axe-bind-free-arg1-strong
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
 ;;;                (syntaxp (not (quotep x))) ;why?
                 (integerp y) ;drop?
@@ -434,8 +461,8 @@
                     (if (unsigned-byte-p xsize y)
                         (bvlt xsize x y)
                       t))))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-dag-alt-gen-better)
-           :in-theory (disable <-becomes-bvlt-dag-alt-gen-better))))
+  :hints (("Goal" :use (:instance <-becomes-bvlt-axe-bind-free-arg1-strong-safe)
+           :in-theory (disable <-becomes-bvlt-axe-bind-free-arg1-strong-safe))))
 
 ;move
 (defthmd <-becomes-bvlt-alt-dag

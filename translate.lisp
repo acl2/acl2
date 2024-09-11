@@ -17000,8 +17000,27 @@
 
                    (and (intersection-eq producer-vars bound-vars)
                         (not (non-memoizable-stobj-raw stobj))
-                        `(memoize-flush ,(congruent-stobj-rep-raw
-                                          stobj))))
+                        `(memoize-flush
+
+; Normally we can use here the :congruent-stobj-rep field of the
+; 'redundant-raw-lisp-discriminator property, by calling
+; congruent-stobj-rep-raw.  However, suppose are compiling or evaluating a
+; definition with a stobj-let form that references an attachable (hence
+; abstract) stobj that has an attached implementation.  (For more about
+; attachable stobjs and their implementations, see the Essay on Attachable
+; Stobjs.)  Then we want to reference the congruent stobj from that
+; implementation stobj, not from the redundant-raw-lisp-discriminator since
+; that is derived syntactically from the attachable stobj's defabsstobj event,
+; hence without reference to the implementation.  We may get this wrong during
+; early loading of a compiled file for include-book, since there may be no
+; attached stobj in the world at that point; but in that case we won't use that
+; definition (see the Essay mentioned above).
+
+                          ,(congruent-stobj-rep-raw
+                            (or (attached-stobj stobj
+                                                (w *the-live-state*)
+                                                t)
+                                stobj)))))
                   (form0
                    `(let* ,(stobj-let-fn-raw-let-bindings bound-vars
                                                           actuals

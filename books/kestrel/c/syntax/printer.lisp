@@ -256,7 +256,7 @@
   (fty::deffixequiv print-char
     :args ((pstate pristatep))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-chars ((chars nat-listp) (pstate pristatep))
   :guard (grammar-character-listp chars)
@@ -361,7 +361,7 @@
   (fty::deffixequiv print-dec-digit-achar
     :args ((pstate pristatep))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-dec-digit-achars ((achars dec-digit-char-listp)
                                 (pstate pristatep))
@@ -397,7 +397,7 @@
   (fty::deffixequiv print-oct-digit-achar
     :args ((pstate pristatep))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-oct-digit-achars ((achars oct-digit-char-listp)
                                 (pstate pristatep))
@@ -433,7 +433,7 @@
   (fty::deffixequiv print-hex-digit-achar
     :args ((pstate pristatep))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-hex-digit-achars ((achars hex-digit-char-listp)
                                 (pstate pristatep))
@@ -1230,6 +1230,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-inc/dec-op ((op inc/dec-opp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an increment or decrement operator."
+  (inc/dec-op-case
+   op
+   :inc (print-astring "++" pstate)
+   :dec (print-astring "--" pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-inc/dec-op-list ((ops inc/dec-op-listp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print a list of zero or more increment or decrement operators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We separate any two consecutive ones with a space."))
+  (b* (((when (endp ops)) (pristate-fix pstate))
+       (pstate (print-inc/dec-op (car ops) pstate))
+       ((when (endp (cdr ops))) pstate)
+       (pstate (print-astring " " pstate)))
+    (print-inc/dec-op-list (cdr ops) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-stor-spec ((stor-spec stor-specp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a storage class specifier."
@@ -1251,12 +1278,17 @@
   (type-qual-case
    tyqual
    :const (print-astring "const" pstate)
-   :restrict (print-astring "restrict" pstate)
-   :volatile (print-astring "volatile" pstate)
-   :atomic (print-astring "_Atomic" pstate)
-   ;; GCC extensions:
-   :__restrict (print-astring "__restrict" pstate)
-   :__restrict__ (print-astring "__restrict__" pstate))
+   :restrict (keyword-uscores-case
+              tyqual.uscores
+              :none (print-astring "restrict" pstate)
+              :start (print-astring "__restrict" pstate)
+              :both (print-astring "__restrict__" pstate))
+   :volatile (keyword-uscores-case
+              tyqual.uscores
+              :none (print-astring "volatile" pstate)
+              :start (print-astring "__volatile" pstate)
+              :both (print-astring "__volatile__" pstate))
+   :atomic (print-astring "_Atomic" pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1323,52 +1355,101 @@
   :short "Print a function specifier."
   (fun-spec-case
    funspec
-   :inline (print-astring "inline" pstate)
-   :noreturn (print-astring "_Noreturn" pstate)
-   ;; GCC extensions:
-   :__inline (print-astring "__inline" pstate)
-   :__inline__ (print-astring "__inline__" pstate))
+   :inline (keyword-uscores-case
+            funspec.uscores
+            :none (print-astring "inline" pstate)
+            :start (print-astring "__inline" pstate)
+            :both (print-astring "__inline__" pstate))
+   :noreturn (print-astring "_Noreturn" pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-inc/dec-op ((op inc/dec-opp) (pstate pristatep))
+(define print-asm-name-spec ((asmspec asm-name-specp) (pstate pristatep))
   :returns (new-pstate pristatep)
-  :short "Print an increment or decrement operator."
-  (inc/dec-op-case
-   op
-   :inc (print-astring "++" pstate)
-   :dec (print-astring "--" pstate))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-inc/dec-op-list ((ops inc/dec-op-listp) (pstate pristatep))
-  :returns (new-pstate pristatep)
-  :short "Print a list of zero or more increment or decrement operators."
+  :short "Print an assembler name specifier."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We separate any two consecutive ones with a space."))
-  (b* (((when (endp ops)) (pristate-fix pstate))
-       (pstate (print-inc/dec-op (car ops) pstate))
-       ((when (endp (cdr ops))) pstate)
+    "We check that there is at least one string literal."))
+  (b* (((asm-name-spec asmspec) asmspec)
+       (pstate (keyword-uscores-case
+                asmspec.uscores
+                :none (print-astring "asm (" pstate)
+                :start (print-astring "__asm (" pstate)
+                :both (print-astring "__asm__ (" pstate)))
+       ((unless (consp asmspec.strings))
+        (raise "Misusage error: ~
+                no string literals in assembler name specifier.")
+        pstate)
+       (pstate (print-stringlit-list asmspec.strings pstate))
+       (pstate (print-astring ")" pstate)))
+    pstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-qual ((qual asm-qualp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an assembler qualifier."
+  (asm-qual-case
+   qual
+   :volatile (keyword-uscores-case
+              qual.uscores
+              :none (print-astring "volatile" pstate)
+              :start (print-astring "__volatile" pstate)
+              :both (print-astring "__volatile__" pstate))
+   :inline (keyword-uscores-case
+            qual.uscores
+            :none (print-astring "inline" pstate)
+            :start (print-astring "__inline" pstate)
+            :both (print-astring "__inline__" pstate))
+   :goto (print-astring "goto" pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-qual-list ((quals asm-qual-listp) (pstate pristatep))
+  :guard (consp quals)
+  :returns (new-pstate pristatep)
+  :short "Print a list of one or more assembler specifiers."
+  (b* (((unless (mbt (consp quals))) (pristate-fix pstate))
+       (pstate (print-asm-qual (car quals) pstate))
+       ((when (endp (cdr quals))) pstate)
        (pstate (print-astring " " pstate)))
-    (print-inc/dec-op-list (cdr ops) pstate))
+    (print-asm-qual-list (cdr quals) pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines print-exprs/decls
-  :short "Print expressions, declarations, and related entities."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since expressions and declarations are mutually recursive
-     in our abstract syntax (as in the grammar),
-     their printing functions are mutually recursive.
-     Termination is easily proved,
-     based on the sizes of the fixtypes."))
+(define print-asm-clobber ((clobber asm-clobberp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an assembler clobber."
+  (b* ((strings (asm-clobber->unwrap clobber))
+       ((unless (consp strings))
+        (raise "Misusage error: ~
+                no string literals in assembler clobber.")
+        (pristate-fix pstate)))
+    (print-stringlit-list strings pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-asm-clobber-list ((clobbers asm-clobber-listp) (pstate pristatep))
+  :guard (consp clobbers)
+  :returns (new-pstate pristatep)
+  :short "Print a list of one or more assembler clobbers, separated by commas."
+  (b* (((unless (mbt (consp clobbers))) (pristate-fix pstate))
+       (pstate (print-asm-clobber (car clobbers) pstate))
+       ((when (endp (cdr clobbers))) pstate)
+       (pstate (print-astring ", " pstate)))
+    (print-asm-clobber-list (cdr clobbers) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines print-exprs/decls/stmts
+  :short "Print expressions, declarations, statements, and related entities."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1377,7 +1458,7 @@
                       (pstate pristatep))
     :guard (expr-unambp expr)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print an expression."
     :long
     (xdoc::topstring
@@ -1678,9 +1759,11 @@
              pstate)
            :sizeof-ambig (prog2$ (impossible) (pristate-fix pstate))
            :alignof
-           (b* ((pstate (if expr.uscores
-                            (print-astring "__alignof__(" pstate)
-                          (print-astring "_Alignof(" pstate)))
+           (b* ((pstate (keyword-uscores-case
+                         expr.uscores
+                         :none (print-astring "_Alignof(" pstate)
+                         :start (print-astring "__alignof(" pstate)
+                         :both (print-astring "__alignof__(" pstate)))
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
@@ -1725,12 +1808,24 @@
            :cast/mul-ambig (prog2$ (impossible) (pristate-fix pstate))
            :cast/add-ambig (prog2$ (impossible) (pristate-fix pstate))
            :cast/sub-ambig (prog2$ (impossible) (pristate-fix pstate))
-           :cast/and-ambig (prog2$ (impossible) (pristate-fix pstate))))
+           :cast/and-ambig (prog2$ (impossible) (pristate-fix pstate))
+           :stmt
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-block expr.items pstate))
+                (pstate (print-astring ")" pstate)))
+             pstate)
+           :tycompat
+           (b* ((pstate (print-astring "__builtin_types_compatible_p(" pstate))
+                (pstate (print-tyname expr.type1 pstate))
+                (pstate (print-astring ", " pstate))
+                (pstate (print-tyname expr.type2 pstate))
+                (pstate (print-astring ")" pstate)))
+             pstate)))
          (pstate (if parenp
                      (print-astring ")" pstate)
                    pstate)))
       pstate)
-    :measure (expr-count expr))
+    :measure (two-nats-measure (expr-count expr) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1738,7 +1833,7 @@
     :guard (and (consp exprs)
                 (expr-list-unambp exprs))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more expressions, separated by commas."
     :long
     (xdoc::topstring
@@ -1760,14 +1855,14 @@
          ((when (endp (cdr exprs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-expr-list (cdr exprs) pstate))
-    :measure (expr-list-count exprs))
+    :measure (two-nats-measure (expr-list-count exprs) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-const-expr ((cexpr const-exprp) (pstate pristatep))
     :guard (const-expr-unambp cexpr)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a constant expression."
     :long
     (xdoc::topstring
@@ -1776,14 +1871,14 @@
        a synonym of a conditional expression in the grammar,
        so we use that as priority."))
     (print-expr (const-expr->unwrap cexpr) (expr-priority-cond) pstate)
-    :measure (const-expr-count cexpr))
+    :measure (two-nats-measure (const-expr-count cexpr) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-genassoc ((genassoc genassocp) (pstate pristatep))
     :guard (genassoc-unambp genassoc)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a generic association."
     (genassoc-case
      genassoc
@@ -1796,7 +1891,7 @@
      (b* ((pstate (print-astring "default: " pstate))
           (pstate (print-expr genassoc.expr (expr-priority-asg) pstate)))
        pstate))
-    :measure (genassoc-count genassoc))
+    :measure (two-nats-measure (genassoc-count genassoc) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1804,7 +1899,7 @@
     :guard (and (consp genassocs)
                 (genassoc-list-unambp genassocs))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more generic associations,
             separated by commas."
     :long
@@ -1817,14 +1912,14 @@
          ((when (endp (cdr genassocs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-genassoc-list (cdr genassocs) pstate))
-    :measure (genassoc-list-count genassocs))
+    :measure (two-nats-measure (genassoc-list-count genassocs) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-type-spec ((tyspec type-specp) (pstate pristatep))
     :guard (type-spec-unambp tyspec)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a type specifier."
     (type-spec-case
      tyspec
@@ -1835,7 +1930,11 @@
      :long (print-astring "long" pstate)
      :float (print-astring "float" pstate)
      :double (print-astring "double" pstate)
-     :signed (print-astring "signed" pstate)
+     :signed (keyword-uscores-case
+              tyspec.uscores
+              :none (print-astring "signed" pstate)
+              :start (print-astring "__signed" pstate)
+              :both (print-astring "__signed__" pstate))
      :unsigned (print-astring "unsigned" pstate)
      :bool (print-astring "_Bool" pstate)
      :complex (print-astring "_Complex" pstate)
@@ -1852,15 +1951,37 @@
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enumspec tyspec.unwrap pstate)))
              pstate)
-     :typedef (print-ident tyspec.name pstate))
-    :measure (type-spec-count tyspec))
+     :typedef (print-ident tyspec.name pstate)
+     :int128 (print-astring "__int128" pstate)
+     :float128 (print-astring "_Float128" pstate)
+     :builtin-va-list (print-astring "__builtin_va_list" pstate)
+     :typeof-expr
+     (b* ((pstate (keyword-uscores-case
+                   tyspec.uscores
+                   :none (print-astring "typeof(" pstate)
+                   :start (print-astring "__typeof(" pstate)
+                   :both (print-astring "__typeof__(" pstate)))
+          (pstate (print-expr tyspec.expr (expr-priority-expr) pstate))
+          (pstate (print-astring ")" pstate)))
+       pstate)
+     :typeof-type
+     (b* ((pstate (keyword-uscores-case
+                   tyspec.uscores
+                   :none (print-astring "typeof(" pstate)
+                   :start (print-astring "__typeof(" pstate)
+                   :both (print-astring "__typeof__(" pstate)))
+          (pstate (print-tyname tyspec.type pstate))
+          (pstate (print-astring ")" pstate)))
+       pstate)
+     :typeof-ambig (prog2$ (impossible) (pristate-fix pstate)))
+    :measure (two-nats-measure (type-spec-count tyspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-spec/qual ((specqual spec/qual-p) (pstate pristatep))
     :guard (spec/qual-unambp specqual)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a specifier or qualifier."
     (spec/qual-case
      specqual
@@ -1868,7 +1989,7 @@
      :tyqual (print-type-qual specqual.unwrap pstate)
      :align (print-align-spec specqual.unwrap pstate)
      :attrib (print-attrib-spec specqual.unwrap pstate))
-    :measure (spec/qual-count specqual))
+    :measure (two-nats-measure (spec/qual-count specqual) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1876,7 +1997,7 @@
     :guard (and (consp specquals)
                 (spec/qual-list-unambp specquals))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more specifiers and qualifiers,
             separated by spaces."
     (b* (((unless (mbt (consp specquals))) (pristate-fix pstate))
@@ -1884,14 +2005,14 @@
          ((when (endp (cdr specquals))) pstate)
          (pstate (print-astring " " pstate)))
       (print-spec/qual-list (cdr specquals) pstate))
-    :measure (spec/qual-list-count specquals))
+    :measure (two-nats-measure (spec/qual-list-count specquals) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-align-spec ((alignspec align-specp) (pstate pristatep))
     :guard (align-spec-unambp alignspec)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print an alignment specifier."
     (b* ((pstate (print-astring "_Alignas(" pstate))
          (pstate
@@ -1902,14 +2023,14 @@
            :alignas-ambig (prog2$ (impossible) (pristate-fix pstate))))
          (pstate (print-astring ")" pstate)))
       pstate)
-    :measure (align-spec-count alignspec))
+    :measure (two-nats-measure (align-spec-count alignspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-declspec ((declspec declspecp) (pstate pristatep))
     :guard (declspec-unambp declspec)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration specifier."
     (declspec-case
      declspec
@@ -1919,7 +2040,7 @@
      :funspec (print-fun-spec declspec.unwrap pstate)
      :align (print-align-spec declspec.unwrap pstate)
      :attrib (print-attrib-spec declspec.unwrap pstate))
-    :measure (declspec-count declspec))
+    :measure (two-nats-measure (declspec-count declspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1927,7 +2048,7 @@
     :guard (and (consp declspecs)
                 (declspec-list-unambp declspecs))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declaration specifiers,
             separated by spaces."
     (b* (((unless (mbt (consp declspecs))) (pristate-fix pstate))
@@ -1935,14 +2056,14 @@
          ((when (endp (cdr declspecs))) pstate)
          (pstate (print-astring " " pstate)))
       (print-declspec-list (cdr declspecs) pstate))
-    :measure (declspec-list-count declspecs))
+    :measure (two-nats-measure (declspec-list-count declspecs) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-initer ((initer initerp) (pstate pristatep))
     :guard (initer-unambp initer)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer."
     :long
     (xdoc::topstring
@@ -1965,14 +2086,14 @@
                             (print-astring ", }" pstate)
                           (print-astring "}" pstate))))
              pstate))
-    :measure (initer-count initer))
+    :measure (two-nats-measure (initer-count initer) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-desiniter ((desiniter desiniterp) (pstate pristatep))
     :guard (desiniter-unambp desiniter)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer with optional designations."
     (b* (((desiniter desiniter) desiniter)
          (pstate (if desiniter.design
@@ -1982,7 +2103,7 @@
                    pstate))
          (pstate (print-initer desiniter.init pstate)))
       pstate)
-    :measure (desiniter-count desiniter))
+    :measure (two-nats-measure (desiniter-count desiniter) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1991,7 +2112,7 @@
     :guard (and (consp desiniters)
                 (desiniter-list-unambp desiniters))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more initializers with optional designations,
             separated by commas."
     (b* (((unless (mbt (consp desiniters))) (pristate-fix pstate))
@@ -1999,14 +2120,14 @@
          ((when (endp (cdr desiniters))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-desiniter-list (cdr desiniters) pstate))
-    :measure (desiniter-list-count desiniters))
+    :measure (two-nats-measure (desiniter-list-count desiniters) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-designor ((designor designorp) (pstate pristatep))
     :guard (designor-unambp designor)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a designator."
     (designor-case
      designor
@@ -2017,7 +2138,7 @@
      :dot (b* ((pstate (print-astring "." pstate))
                (pstate (print-ident designor.name pstate)))
             pstate))
-    :measure (designor-count designor))
+    :measure (two-nats-measure (designor-count designor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2026,7 +2147,7 @@
     :guard (and (consp designors)
                 (designor-list-unambp designors))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more designators."
     :long
     (xdoc::topstring
@@ -2036,14 +2157,14 @@
          (pstate (print-designor (car designors) pstate))
          ((when (endp (cdr designors))) pstate))
       (print-designor-list (cdr designors) pstate))
-    :measure (designor-list-count designors))
+    :measure (two-nats-measure (designor-list-count designors) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-declor ((declor declorp) (pstate pristatep))
     :guard (declor-unambp declor)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a declarator."
     (b* (((declor declor) declor)
          (pstate (if (consp declor.pointers)
@@ -2051,14 +2172,14 @@
                    pstate))
          (pstate (print-dirdeclor declor.decl pstate)))
       pstate)
-    :measure (declor-count declor))
+    :measure (two-nats-measure (declor-count declor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-dirdeclor ((dirdeclor dirdeclorp) (pstate pristatep))
     :guard (dirdeclor-unambp dirdeclor)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a direct declarator."
     :long
     (xdoc::topstring
@@ -2154,14 +2275,14 @@
                     pstate))
           (pstate (print-astring ")" pstate)))
        pstate))
-    :measure (dirdeclor-count dirdeclor))
+    :measure (two-nats-measure (dirdeclor-count dirdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-absdeclor ((absdeclor absdeclorp) (pstate pristatep))
     :guard (absdeclor-unambp absdeclor)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print an abstract declarator."
     :long
     (xdoc::topstring
@@ -2184,14 +2305,14 @@
                                          pstate)
                    pstate)))
       pstate)
-    :measure (absdeclor-count absdeclor))
+    :measure (two-nats-measure (absdeclor-count absdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-dirabsdeclor ((dirabsdeclor dirabsdeclorp) (pstate pristatep))
     :guard (dirabsdeclor-unambp dirabsdeclor)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a direct abstract declarator."
     (dirabsdeclor-case
      dirabsdeclor
@@ -2281,14 +2402,14 @@
                     pstate))
           (pstate (print-astring ")" pstate)))
        pstate))
-    :measure (dirabsdeclor-count dirabsdeclor))
+    :measure (two-nats-measure (dirabsdeclor-count dirabsdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-paramdecl ((paramdecl paramdeclp) (pstate pristatep))
     :guard (paramdecl-unambp paramdecl)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declaration."
     :long
     (xdoc::topstring
@@ -2301,7 +2422,7 @@
          (pstate (print-declspec-list paramdecl.spec pstate))
          (pstate (print-paramdeclor paramdecl.decl pstate)))
       pstate)
-    :measure (paramdecl-count paramdecl))
+    :measure (two-nats-measure (paramdecl-count paramdecl) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2309,7 +2430,7 @@
     :guard (and (consp paramdecls)
                 (paramdecl-list-unambp paramdecls))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more parameter declarations,
             separated by commas."
     (b* (((unless (mbt (consp paramdecls))) (pristate-fix pstate))
@@ -2317,14 +2438,14 @@
          ((when (endp (cdr paramdecls))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-paramdecl-list (cdr paramdecls) pstate))
-    :measure (paramdecl-list-count paramdecls))
+    :measure (two-nats-measure (paramdecl-list-count paramdecls) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-paramdeclor ((paramdeclor paramdeclorp) (pstate pristatep))
     :guard (paramdeclor-unambp paramdeclor)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declarator."
     :long
     (xdoc::topstring
@@ -2344,14 +2465,14 @@
                   pstate)
      :none (pristate-fix pstate)
      :ambig (prog2$ (impossible) (pristate-fix pstate)))
-    :measure (paramdeclor-count paramdeclor))
+    :measure (two-nats-measure (paramdeclor-count paramdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-tyname ((tyname tynamep) (pstate pristatep))
     :guard (tyname-unambp tyname)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a type name."
     :long
     (xdoc::topstring
@@ -2367,14 +2488,14 @@
          (pstate (print-absdeclor (absdeclor-option-some->val tyname.decl?)
                                   pstate)))
       pstate)
-    :measure (tyname-count tyname))
+    :measure (two-nats-measure (tyname-count tyname) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-strunispec ((strunispec strunispecp) (pstate pristatep))
     :guard (strunispec-unambp strunispec)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a structure or union specifier."
     :long
     (xdoc::topstring
@@ -2415,14 +2536,14 @@
          (pstate (print-structdecl-list strunispec.members pstate))
          (pstate (print-astring " }" pstate)))
       pstate)
-    :measure (strunispec-count strunispec))
+    :measure (two-nats-measure (strunispec-count strunispec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-structdecl ((structdecl structdeclp) (pstate pristatep))
     :guard (structdecl-unambp structdecl)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a structure declaration."
     :long
     (xdoc::topstring
@@ -2455,7 +2576,7 @@
           (pstate (print-astring ";" pstate)))
        pstate)
      :statassert (print-statassert structdecl.unwrap pstate))
-    :measure (structdecl-count structdecl))
+    :measure (two-nats-measure (structdecl-count structdecl) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2464,7 +2585,7 @@
     :guard (and (consp structdecls)
                 (structdecl-list-unambp structdecls))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more structure declarations,
             separated by spaces."
     :long
@@ -2482,14 +2603,14 @@
          ((when (endp (cdr structdecls))) pstate)
          (pstate (print-astring " " pstate)))
       (print-structdecl-list (cdr structdecls) pstate))
-    :measure (structdecl-list-count structdecls))
+    :measure (two-nats-measure (structdecl-list-count structdecls) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-structdeclor ((structdeclor structdeclorp) (pstate pristatep))
     :guard (structdeclor-unambp structdeclor)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a structure declarator."
     :long
     (xdoc::topstring
@@ -2518,7 +2639,7 @@
                           pstate)
                   :none pstate)))
       pstate)
-    :measure (structdeclor-count structdeclor))
+    :measure (two-nats-measure (structdeclor-count structdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2527,7 +2648,7 @@
     :guard (and (consp structdeclors)
                 (structdeclor-list-unambp structdeclors))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more structure declarators,
             separated by commas."
     (b* (((unless (mbt (consp structdeclors))) (pristate-fix pstate))
@@ -2535,14 +2656,14 @@
          ((when (endp (cdr structdeclors))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-structdeclor-list (cdr structdeclors) pstate))
-    :measure (structdeclor-list-count structdeclors))
+    :measure (two-nats-measure (structdeclor-list-count structdeclors) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-enumspec ((enumspec enumspecp) (pstate pristatep))
     :guard (enumspec-unambp enumspec)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print an enueration specifier."
     :long
     (xdoc::topstring
@@ -2569,14 +2690,14 @@
                      (print-astring ", }" pstate)
                    (print-astring "}" pstate))))
       pstate)
-    :measure (enumspec-count enumspec))
+    :measure (two-nats-measure (enumspec-count enumspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-enumer ((enumer enumerp) (pstate pristatep))
     :guard (enumer-unambp enumer)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print an enumerator."
     (b* (((enumer enumer) enumer)
          (pstate (print-ident enumer.name pstate))
@@ -2585,7 +2706,7 @@
          (pstate (print-const-expr (const-expr-option-some->val enumer.value)
                                    pstate)))
       pstate)
-    :measure (enumer-count enumer))
+    :measure (two-nats-measure (enumer-count enumer) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2593,21 +2714,21 @@
     :guard (and (consp enumers)
                 (enumer-list-unambp enumers))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more enumerators, separated by commas."
     (b* (((unless (mbt (consp enumers))) (pristate-fix pstate))
          (pstate (print-enumer (car enumers) pstate))
          ((when (endp (cdr enumers))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-enumer-list (cdr enumers) pstate))
-    :measure (enumer-list-count enumers))
+    :measure (two-nats-measure (enumer-list-count enumers) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-statassert ((statassert statassertp) (pstate pristatep))
     :guard (statassert-unambp statassert)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a static assertion declaration."
     (b* (((statassert statassert) statassert)
          (pstate (print-astring "_Static_assert(" pstate))
@@ -2620,13 +2741,13 @@
          (pstate (print-stringlit-list statassert.message pstate))
          (pstate (print-astring ");" pstate)))
       pstate)
-    :measure (statassert-count statassert))
+    :measure (two-nats-measure (statassert-count statassert) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib ((attr attribp) (pstate pristatep))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a GCC attribute."
     :long
     (xdoc::topstring
@@ -2640,7 +2761,7 @@
      (b* ((pstate (print-ident attr.name pstate))
           (pstate (print-astring "(" pstate))
           ((unless (expr-list-unambp attr.param))
-           (raise "Internal error: unambiguous expressions in attribute ~x0."
+           (raise "Internal error: ambiguous expressions in attribute ~x0."
                   (attrib-fix attr))
            pstate)
           (pstate (if attr.param
@@ -2648,36 +2769,38 @@
                     pstate))
           (pstate (print-astring ")" pstate)))
        pstate))
-    :measure (attrib-count attr))
+    :measure (two-nats-measure (attrib-count attr) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib-list ((attrs attrib-listp) (pstate pristatep))
     :guard (consp attrs)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more GCC attributes, comma-separated."
     (b* (((unless (mbt (consp attrs))) (pristate-fix pstate))
          (pstate (print-attrib (car attrs) pstate))
          ((when (endp (cdr attrs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-attrib-list (cdr attrs) pstate))
-    :measure (attrib-list-count attrs))
+    :measure (two-nats-measure (attrib-list-count attrs) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib-spec ((attrspec attrib-specp) (pstate pristatep))
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print an attribute specifier."
-    (b* ((pstate (print-astring "__attribute__ ((" pstate))
-         (attrs (attrib-spec->attribs attrspec))
-         (pstate (if (consp attrs)
-                     (print-attrib-list attrs pstate)
+    (b* (((attrib-spec attrspec) attrspec)
+         (pstate (if attrspec.uscores
+                     (print-astring "__attribute__ ((" pstate)
+                   (print-astring "__attribute ((" pstate)))
+         (pstate (if (consp attrspec.attribs)
+                     (print-attrib-list attrspec.attribs pstate)
                    pstate))
          (pstate (print-astring "))" pstate)))
       pstate)
-    :measure (attrib-spec-count attrspec))
+    :measure (two-nats-measure (attrib-spec-count attrspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2685,7 +2808,7 @@
                                   (pstate pristatep))
     :guard (consp attrspecs)
     :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more attribute specifiers,
           separated by single spaces."
     (b* (((unless (mbt (consp attrspecs))) (pristate-fix pstate))
@@ -2693,188 +2816,232 @@
          ((when (endp (cdr attrspecs))) pstate)
          (pstate (print-astring " " pstate)))
       (print-attrib-spec-list (cdr attrspecs) pstate))
-    :measure (attrib-spec-list-count attrspecs))
+    :measure (two-nats-measure (attrib-spec-list-count attrspecs) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :ruler-extenders :all
-
-  :hints (("Goal" :in-theory (enable o< o-finp)))
+  (define print-initdeclor ((initdeclor initdeclorp) (pstate pristatep))
+    :guard (initdeclor-unambp initdeclor)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print an initializer declarator."
+    (b* (((initdeclor initdeclor) initdeclor)
+         (pstate (print-declor initdeclor.declor pstate))
+         (pstate (if initdeclor.asm?
+                     (b* ((pstate (print-astring " " pstate))
+                          (pstate (print-asm-name-spec initdeclor.asm? pstate)))
+                       pstate)
+                   pstate))
+         ((when (initer-option-case initdeclor.init? :none)) pstate)
+         (pstate (print-astring " = " pstate))
+         (pstate (print-initer (initer-option-some->val initdeclor.init?)
+                               pstate)))
+      pstate)
+    :measure (two-nats-measure (initdeclor-count initdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :verify-guards nil
-
-  ///
-
-  (verify-guards print-expr
-    :hints (("Goal" :in-theory (disable (:e tau-system))))) ; for speed
+  (define print-initdeclor-list ((initdeclors initdeclor-listp)
+                                 (pstate pristatep))
+    :guard (and (consp initdeclors)
+                (initdeclor-list-unambp initdeclors))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a list of one or more initializer declarators,
+            separated by commas."
+    (b* (((unless (mbt (consp initdeclors))) (pristate-fix pstate))
+         (pstate (print-initdeclor (car initdeclors) pstate))
+         ((when (endp (cdr initdeclors))) pstate)
+         (pstate (print-astring ", " pstate)))
+      (print-initdeclor-list (cdr initdeclors) pstate))
+    :measure (two-nats-measure (initdeclor-list-count initdeclors) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deffixequiv-mutual print-exprs/decls))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-asm-name-spec ((asmspec asm-name-specp) (pstate pristatep))
-  :returns (new-pstate pristatep)
-  :short "Print an assembler name specifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check that there is at least one string literal."))
-  (b* (((asm-name-spec asmspec) asmspec)
-       (pstate (if asmspec.uscores
-                   (print-astring "__asm__ (" pstate)
-                 (print-astring "asm (" pstate)))
-       ((unless (consp asmspec.strings))
-        (raise "Misusage error: ~
-                no string literals in assembler name specifier.")
-        pstate)
-       (pstate (print-stringlit-list asmspec.strings pstate))
-       (pstate (print-astring ")" pstate)))
-    pstate)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-initdeclor ((initdeclor initdeclorp) (pstate pristatep))
-  :guard (initdeclor-unambp initdeclor)
-  :returns (new-pstate pristatep)
-  :short "Print an initializer declarator."
-  (b* (((initdeclor initdeclor) initdeclor)
-       (pstate (print-declor initdeclor.declor pstate))
-       ((when (initer-option-case initdeclor.init? :none)) pstate)
-       (pstate (print-astring " = " pstate))
-       (pstate (print-initer (initer-option-some->val initdeclor.init?)
-                             pstate)))
-    pstate)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-initdeclor-list ((initdeclors initdeclor-listp)
-                               (pstate pristatep))
-  :guard (and (consp initdeclors)
-              (initdeclor-list-unambp initdeclors))
-  :returns (new-pstate pristatep)
-  :short "Print a list of one or more initializer declarators,
-          separated by commas."
-  (b* (((unless (mbt (consp initdeclors))) (pristate-fix pstate))
-       (pstate (print-initdeclor (car initdeclors) pstate))
-       ((when (endp (cdr initdeclors))) pstate)
-       (pstate (print-astring ", " pstate)))
-    (print-initdeclor-list (cdr initdeclors) pstate))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-decl-inline ((decl declp) (pstate pristatep))
-  :guard (decl-unambp decl)
-  :returns (new-pstate pristatep)
-  :short "Print a declaration, inline."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Here `inline' means that we print is as part of the current line,
-     without adding new lines or indentation.")
-   (xdoc::p
-    "We ensure that there is at least one declaration specifier,
-     as required by the grammar."))
-  (decl-case
-   decl
-   :decl
-   (b* ((pstate (if decl.extension
-                    (print-astring "__extension__ " pstate)
-                  (pristate-fix pstate)))
-        ((unless decl.specs)
-         (raise "Misusage error: ~
+  (define print-decl-inline ((decl declp) (pstate pristatep))
+    :guard (decl-unambp decl)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a declaration, inline."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Here `inline' means that we print is as part of the current line,
+       without adding new lines or indentation.")
+     (xdoc::p
+      "We ensure that there is at least one declaration specifier,
+       as required by the grammar."))
+    (decl-case
+     decl
+     :decl
+     (b* ((pstate (if decl.extension
+                      (print-astring "__extension__ " pstate)
+                    (pristate-fix pstate)))
+          ((unless decl.specs)
+           (raise "Misusage error: ~
                  no declaration specifiers in declaration ~x0."
-                decl)
-         pstate)
-        (pstate (print-declspec-list decl.specs pstate))
-        (pstate
-         (if decl.init
-             (b* ((pstate (print-astring " " pstate))
-                  (pstate (print-initdeclor-list decl.init pstate)))
-               pstate)
-           pstate))
-        (pstate (if decl.asm?
-                    (b* ((pstate (print-astring " " pstate))
-                         (pstate (print-asm-name-spec decl.asm? pstate)))
-                      pstate)
-                  pstate))
-        (pstate (if decl.attrib
-                    (b* ((pstate (print-astring " " pstate))
-                         (pstate (print-attrib-spec-list decl.attrib pstate)))
-                      pstate)
-                  pstate))
-        (pstate (print-astring ";" pstate)))
-     pstate)
-   :statassert
-   (print-statassert decl.unwrap pstate))
-  :hooks (:fix))
+                  decl)
+           pstate)
+          (pstate (print-declspec-list decl.specs pstate))
+          (pstate
+           (if decl.init
+               (b* ((pstate (print-astring " " pstate))
+                    (pstate (print-initdeclor-list decl.init pstate)))
+                 pstate)
+             pstate))
+          (pstate (if decl.attrib
+                      (b* ((pstate (print-astring " " pstate))
+                           (pstate (print-attrib-spec-list decl.attrib pstate)))
+                        pstate)
+                    pstate))
+          (pstate (print-astring ";" pstate)))
+       pstate)
+     :statassert
+     (print-statassert decl.unwrap pstate))
+    :measure (two-nats-measure (decl-count decl) 0))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-decl ((decl declp) (pstate pristatep))
-  :guard (decl-unambp decl)
-  :returns (new-pstate pristatep)
-  :short "Print a declaration, in its own indented line."
-  (b* ((pstate (print-indent pstate))
-       (pstate (print-decl-inline decl pstate))
-       (pstate (print-new-line pstate)))
-    pstate)
-  :hooks (:fix))
+  (define print-decl ((decl declp) (pstate pristatep))
+    :guard (decl-unambp decl)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a declaration, in its own indented line."
+    (b* ((pstate (print-indent pstate))
+         (pstate (print-decl-inline decl pstate))
+         (pstate (print-new-line pstate)))
+      pstate)
+    :measure (two-nats-measure (decl-count decl) 1))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-decl-list ((decls decl-listp) (pstate pristatep))
-  :guard (and (consp decls)
-              (decl-list-unambp decls))
-  :returns (new-pstate pristatep)
-  :short "Print a list of one or more declarations,
+  (define print-decl-list ((decls decl-listp) (pstate pristatep))
+    :guard (and (consp decls)
+                (decl-list-unambp decls))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a list of one or more declarations,
           one per line, all with the same indentation."
-  (b* (((unless (mbt (consp decls))) (pristate-fix pstate))
-       (pstate (print-decl (car decls) pstate))
-       ((when (endp (cdr decls))) pstate))
-    (print-decl-list (cdr decls) pstate))
-  :hooks (:fix))
+    (b* (((unless (mbt (consp decls))) (pristate-fix pstate))
+         (pstate (print-decl (car decls) pstate))
+         ((when (endp (cdr decls))) pstate))
+      (print-decl-list (cdr decls) pstate))
+    :measure (two-nats-measure (decl-list-count decls) 0))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-label ((label labelp) (pstate pristatep))
-  :guard (label-unambp label)
-  :returns (new-pstate pristatep)
-  :short "Print a label."
-  (label-case
-   label
-   :name (print-ident label.unwrap pstate)
-   :const (b* ((pstate (print-astring "case " pstate))
-               (pstate (print-const-expr label.unwrap pstate)))
-            pstate)
-   :default (print-astring "default" pstate))
-  :hooks (:fix))
+  (define print-label ((label labelp) (pstate pristatep))
+    :guard (label-unambp label)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a label."
+    (label-case
+     label
+     :name (print-ident label.unwrap pstate)
+     :const (b* ((pstate (print-astring "case " pstate))
+                 (pstate (print-const-expr label.unwrap pstate)))
+              pstate)
+     :default (print-astring "default" pstate))
+    :measure (two-nats-measure (label-count label) 0))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines print-stmts/blocks
-  :short "Print statements, blocks, and related entities."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since statements and blocks are mutually recursive
-     in our abstract syntax (as in the grammar),
-     their printing functions are mutually recursive.
-     Termination is easily proved,
-     based on the sizes of the fixtypes."))
+  (define print-asm-output ((output asm-outputp) (pstate pristatep))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print an assembler output operand."
+    (b* (((asm-output output) output)
+         (pstate (if output.name
+                     (b* ((pstate (print-astring "[" pstate))
+                          (pstate (print-ident output.name pstate))
+                          (pstate (print-astring "] " pstate)))
+                       pstate)
+                   pstate))
+         (pstate (if (consp output.constraint)
+                     (print-stringlit-list output.constraint pstate)
+                   (prog2$
+                    (raise "Misusage error: ~
+                          no constraint in assembler output operand ~x0."
+                           (asm-output-fix output))
+                    pstate)))
+         (pstate (print-astring " (" pstate))
+         ((unless (expr-unambp output.lvalue))
+          (raise "Internal error: ~
+                ambiguous expression ~x0 in assembler output operand."
+                 output.lvalue)
+          pstate)
+         (pstate (print-expr output.lvalue (expr-priority-expr) pstate))
+         (pstate (print-astring ")" pstate)))
+      pstate)
+    :measure (two-nats-measure (asm-output-count output) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-asm-output-list ((outputs asm-output-listp) (pstate pristatep))
+    :guard (consp outputs)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a list of one or more assembler output operands,
+          separated by commas."
+    (b* (((unless (mbt (consp outputs))) (pristate-fix pstate))
+         (pstate (print-asm-output (car outputs) pstate))
+         ((when (endp (cdr outputs))) pstate)
+         (pstate (print-astring ", " pstate)))
+      (print-asm-output-list (cdr outputs) pstate))
+    :measure (two-nats-measure (asm-output-list-count outputs) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-asm-input ((input asm-inputp) (pstate pristatep))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print an assembler input operand."
+    (b* (((asm-input input) input)
+         (pstate (if input.name
+                     (b* ((pstate (print-astring "[" pstate))
+                          (pstate (print-ident input.name pstate))
+                          (pstate (print-astring "] " pstate)))
+                       pstate)
+                   pstate))
+         (pstate (if (consp input.constraint)
+                     (print-stringlit-list input.constraint pstate)
+                   (prog2$
+                    (raise "Misusage error: ~
+                          no constraint in assembler input operand ~x0."
+                           (asm-input-fix input))
+                    pstate)))
+         (pstate (print-astring " (" pstate))
+         ((unless (expr-unambp input.rvalue))
+          (raise "Internal error: ~
+                ambiguous expression ~x0 in assembler input operand."
+                 input.rvalue)
+          pstate)
+         (pstate (print-expr input.rvalue (expr-priority-expr) pstate))
+         (pstate (print-astring ")" pstate)))
+      pstate)
+    :measure (two-nats-measure (asm-input-count input) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-asm-input-list ((inputs asm-input-listp) (pstate pristatep))
+    :guard (consp inputs)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a list of one or more assembler input operands,
+            separated by commas."
+    (b* (((unless (mbt (consp inputs))) (pristate-fix pstate))
+         (pstate (print-asm-input (car inputs) pstate))
+         ((when (endp (cdr inputs))) pstate)
+         (pstate (print-astring ", " pstate)))
+      (print-asm-input-list (cdr inputs) pstate))
+    :measure (two-nats-measure (asm-input-list-count inputs) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-stmt ((stmt stmtp) (pstate pristatep))
     :guard (stmt-unambp stmt)
     :returns (new-pstate pristatep)
-    :parents (printer print-stmts/blocks)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a statement, in one or more lines, with proper indentation."
     :long
     (xdoc::topstring
@@ -3018,17 +3185,17 @@
           (pstate (print-astring "for (" pstate))
           (pstate (expr-option-case
                    stmt.init
-                   :some (print-expr stmt.init (expr-priority-expr) pstate)
+                   :some (print-expr stmt.init.val (expr-priority-expr) pstate)
                    :none (print-astring " " pstate)))
           (pstate (print-astring "; " pstate))
           (pstate (expr-option-case
                    stmt.test
-                   :some (print-expr stmt.test (expr-priority-expr) pstate)
+                   :some (print-expr stmt.test.val (expr-priority-expr) pstate)
                    :none pstate))
           (pstate (print-astring "; " pstate))
           (pstate (expr-option-case
                    stmt.next
-                   :some (print-expr stmt.next (expr-priority-expr) pstate)
+                   :some (print-expr stmt.next.val (expr-priority-expr) pstate)
                    :none pstate))
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.body :compound)
@@ -3048,12 +3215,12 @@
           (pstate (print-astring " " pstate))
           (pstate (expr-option-case
                    stmt.test
-                   :some (print-expr stmt.test (expr-priority-expr) pstate)
+                   :some (print-expr stmt.test.val (expr-priority-expr) pstate)
                    :none pstate))
           (pstate (print-astring "; " pstate))
           (pstate (expr-option-case
                    stmt.next
-                   :some (print-expr stmt.next (expr-priority-expr) pstate)
+                   :some (print-expr stmt.next.val (expr-priority-expr) pstate)
                    :none pstate))
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.body :compound)
@@ -3098,6 +3265,92 @@
             :none pstate))
           (pstate (print-astring ";" pstate))
           (pstate (print-new-line pstate)))
+       pstate)
+     :asm
+     (b* ((pstate (print-indent pstate))
+          (pstate (keyword-uscores-case
+                   stmt.uscores
+                   :none (print-astring "asm" pstate)
+                   :start (print-astring "__asm" pstate)
+                   :both (print-astring "__asm__" pstate)))
+          (pstate (if (consp stmt.quals)
+                      (b* ((pstate (print-astring " " pstate))
+                           (pstate (print-asm-qual-list stmt.quals pstate)))
+                        pstate)
+                    pstate))
+          (pstate (print-astring " (" pstate))
+          ((unless (consp stmt.template))
+           (raise "Misusage error: no string literals in assembler template.")
+           pstate)
+          (pstate (print-stringlit-list stmt.template pstate))
+          ((unless (case stmt.num-colons
+                     (0 (and (endp stmt.outputs)
+                             (endp stmt.inputs)
+                             (endp stmt.clobbers)
+                             (endp stmt.labels)))
+                     (1 (and (endp stmt.inputs)
+                             (endp stmt.clobbers)
+                             (endp stmt.labels)))
+                     (2 (and (endp stmt.clobbers)
+                             (endp stmt.labels)))
+                     (3 (endp stmt.labels))
+                     (4 t)
+                     (otherwise nil)))
+           (raise "Misusage error: ~
+                   non-empty outputs, inputs, clobbers, or labels ~
+                   with insufficient number of colons ~
+                   in assembler statement ~x0."
+                  (stmt-fix stmt))
+           pstate)
+          (pstate
+           (if (>= stmt.num-colons 1)
+               (b* ((pstate (print-astring " :" pstate))
+                    (pstate
+                     (if (consp stmt.outputs)
+                         (b* ((pstate (print-astring " " pstate))
+                              (pstate (print-asm-output-list stmt.outputs
+                                                             pstate)))
+                           pstate)
+                       pstate)))
+                 pstate)
+             pstate))
+          (pstate
+           (if (>= stmt.num-colons 2)
+               (b* ((pstate (print-astring " :" pstate))
+                    (pstate
+                     (if (consp stmt.inputs)
+                         (b* ((pstate (print-astring " " pstate))
+                              (pstate (print-asm-input-list stmt.inputs
+                                                            pstate)))
+                           pstate)
+                       pstate)))
+                 pstate)
+             pstate))
+          (pstate
+           (if (>= stmt.num-colons 3)
+               (b* ((pstate (print-astring " :" pstate))
+                    (pstate
+                     (if (consp stmt.clobbers)
+                         (b* ((pstate (print-astring " " pstate))
+                              (pstate (print-asm-clobber-list stmt.clobbers
+                                                              pstate)))
+                           pstate)
+                       pstate)))
+                 pstate)
+             pstate))
+          (pstate
+           (if (>= stmt.num-colons 4)
+               (b* ((pstate (print-astring " :" pstate))
+                    (pstate
+                     (if (consp stmt.labels)
+                         (b* ((pstate (print-astring " " pstate))
+                              (pstate (print-ident-list stmt.labels pstate)))
+                           pstate)
+                       pstate)))
+                 pstate)
+             pstate))
+          (pstate (print-astring " );" pstate))
+          (pstate (print-new-line pstate)))
        pstate))
     :measure (two-nats-measure (stmt-count stmt) 0))
 
@@ -3106,7 +3359,7 @@
   (define print-block-item ((item block-itemp) (pstate pristatep))
     :guard (block-item-unambp item)
     :returns (new-pstate pristatep)
-    :parents (printer print-stmts/blocks)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a block item."
     (block-item-case
      item
@@ -3120,7 +3373,7 @@
   (define print-block-item-list ((items block-item-listp) (pstate pristatep))
     :guard (block-item-list-unambp items)
     :returns (new-pstate pristatep)
-    :parents (printer print-stmts/blocks)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a list of zero or more block items."
     (b* (((when (endp items)) (pristate-fix pstate))
          (pstate (print-block-item (car items) pstate)))
@@ -3132,7 +3385,7 @@
   (define print-block ((items block-item-listp) (pstate pristatep))
     :guard (block-item-list-unambp items)
     :returns (new-pstate pristatep)
-    :parents (printer print-stmts/blocks)
+    :parents (printer print-exprs/decls/stmts)
     :short "Print a block."
     :long
     (xdoc::topstring
@@ -3165,11 +3418,20 @@
 
   :ruler-extenders :all
 
-  :verify-guards :after-returns
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards nil
 
   ///
 
-  (fty::deffixequiv-mutual print-stmts/blocks))
+  (verify-guards print-expr
+    :hints (("Goal" :in-theory (disable (:e tau-system))))) ; for speed
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deffixequiv-mutual print-exprs/decls/stmts))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3203,6 +3465,11 @@
        ((unless (stmt-case fundef.body :compound))
         (raise "Misusage error: function body is not a compound statement.")
         (pristate-fix pstate))
+       (pstate (if fundef.asm?
+                   (b* ((pstate (print-astring " " pstate))
+                        (pstate (print-asm-name-spec fundef.asm? pstate)))
+                     pstate)
+                 pstate))
        (pstate (print-declspec-list fundef.spec pstate))
        (pstate (print-astring " " pstate))
        (pstate (print-declor fundef.declor pstate))

@@ -38,6 +38,7 @@
 (include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
+(include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
@@ -281,6 +282,64 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund bvcat-unguarded (highsize highval lowsize lowval)
+  (declare (xargs :guard t))
+  (logapp (nfix lowsize)
+          (ifix lowval) (bvchop (nfix highsize) (ifix highval))))
+
+(defthm bvcat-unguarded-correct
+  (equal (bvcat-unguarded highsize highval lowsize lowval)
+         (bvcat highsize highval lowsize lowval))
+  :hints (("Goal" :in-theory (enable bvcat bvcat-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund logtail$inline-unguarded (size i)
+  (declare (xargs :guard t))
+  (logtail$inline (nfix size) (ifix i)))
+
+(defthm logtail$inline-unguarded-correct
+  (equal (logtail$inline-unguarded size i)
+         (logtail$inline size i))
+  :hints (("Goal" :in-theory (enable logtail$inline-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund slice-unguarded (high low val)
+  (declare (xargs :guard t))
+  (let ((low (ifix low))
+        (high (ifix high)))
+       (bvchop-unguarded (+ 1 high (- low))
+                         (logtail$inline-unguarded low val))))
+
+(defthm slice-unguarded-correct
+  (equal (slice-unguarded high low val)
+         (slice high low val))
+  :hints (("Goal" :in-theory (enable slice slice-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund leftrotate-unguarded (width amt val)
+  (declare (xargs :guard t))
+  (if (equal 0 width)
+      0
+    (let* ((amt (mod-unguarded (nfix amt) width)))
+      ;; leftify?
+      (bvcat-unguarded (binary-+-unguarded width (unary---unguarded amt))
+                       (slice-unguarded (binary-+-unguarded -1 (binary-+-unguarded width (unary---unguarded amt))) 0 val)
+                       amt
+                       (slice-unguarded (binary-+-unguarded -1 width)
+                                        (binary-+-unguarded width (unary---unguarded amt))
+                                        val)))))
+
+(defthm leftrotate-unguarded-correct
+  (equal (leftrotate-unguarded width amt val)
+         (leftrotate width amt val))
+  :hints (("Goal" :in-theory (enable leftrotate-unguarded
+                                     leftrotate))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund leftrotate32-unguarded (amt val)
   (declare (xargs :guard t))
   (leftrotate 32 (ifix amt) (ifix val)))
@@ -324,31 +383,6 @@
   :hints (("Goal" :in-theory (enable width-of-widest-int-unguarded
                                      width-of-widest-int
                                      integer-length))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund logtail$inline-unguarded (size i)
-  (declare (xargs :guard t))
-  (logtail$inline (nfix size) (ifix i)))
-
-(defthm logtail$inline-unguarded-correct
-  (equal (logtail$inline-unguarded size i)
-         (logtail$inline size i))
-  :hints (("Goal" :in-theory (enable logtail$inline-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund slice-unguarded (high low val)
-  (declare (xargs :guard t))
-  (let ((low (ifix low))
-        (high (ifix high)))
-       (bvchop-unguarded (+ 1 high (- low))
-                         (logtail$inline-unguarded low val))))
-
-(defthm slice-unguarded-correct
-  (equal (slice-unguarded high low val)
-         (slice high low val))
-  :hints (("Goal" :in-theory (enable slice slice-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -519,18 +553,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund bvcat-unguarded (highsize highval lowsize lowval)
-  (declare (xargs :guard t))
-  (logapp (nfix lowsize)
-          (ifix lowval) (bvchop (nfix highsize) (ifix highval))))
-
-(defthm bvcat-unguarded-correct
-  (equal (bvcat-unguarded highsize highval lowsize lowval)
-         (bvcat highsize highval lowsize lowval))
-  :hints (("Goal" :in-theory (enable bvcat bvcat-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defund eql-unguarded (x y)
   (declare (xargs :guard t))
   (equal x y))
@@ -615,29 +637,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; ;todo:
-;; (defund leftrotate-unguarded (width amt val)
-;;   (declare (xargs :guard t))
-;;   ;;(leftrotate (nfix width) (ifix amt) (ifix val))
-;;   (IF (equal 0 WIDTH)
-;;       0
-;;       (LET* ((AMT (MOD-unguarded (NFIX AMT) WIDTH)))
-;;             (BVCAT-unguarded (- WIDTH AMT)
-;;                              (SLICE-unguarded (+ -1 WIDTH (- AMT)) 0 VAL)
-;;                              AMT
-;;                              (SLICE-unguarded (+ -1 WIDTH)
-;;                                               (+ WIDTH (- AMT))
-;;                                               VAL))))
-;;   )
-
-;; (defthm leftrotate-unguarded-correct
-;;   (equal (leftrotate-unguarded width amt val)
-;;          (leftrotate width amt val))
-;;   :hints (("Goal" :in-theory (enable leftrotate-unguarded
-;;                                      leftrotate))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defund bvshl-unguarded (width x shift-amount)
   (declare (xargs :guard t))
   (let ((shift-amount (nfix shift-amount)))
@@ -689,7 +688,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun logext-unguarded (size i)
+(defund logext-unguarded (size i)
   (declare (xargs :guard t))
   (if (integerp size)
       (if (not (posp size))
@@ -768,3 +767,17 @@
   (equal (negated-elems-listp-unguarded width lst1 lst2)
          (negated-elems-listp width lst1 lst2))
   :hints (("Goal" :in-theory (enable negated-elems-listp-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund all-equal$-unguarded (x lst)
+  (declare (xargs :guard t))
+  (if (not (consp lst))
+      t
+    (and (equal x (first lst))
+         (all-equal$-unguarded x (rest lst)))))
+
+(defthm all-equal$-unguarded-correct
+  (equal (all-equal$-unguarded x lst)
+         (all-equal$ x lst))
+  :hints (("Goal" :in-theory (enable all-equal$-unguarded all-equal$))))

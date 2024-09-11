@@ -1870,15 +1870,29 @@
                                    "_Static_assert"
                                    "_Thread_local"))
             (and (parstate->gcc parstate)
-                 (member-equal string '("__alignof__"
+                 (member-equal string '("__alignof"
+                                        "__alignof__"
                                         "asm"
+                                        "__asm"
                                         "__asm__"
+                                        "__attribute"
                                         "__attribute__"
+                                        "__builtin_types_compatible_p"
+                                        "__builtin_va_list"
                                         "__extension__"
+                                        "_Float128"
                                         "__inline"
                                         "__inline__"
+                                        "__int128"
                                         "__restrict"
-                                        "__restrict__"))))
+                                        "__restrict__"
+                                        "__signed"
+                                        "__signed__"
+                                        "typeof"
+                                        "__typeof"
+                                        "__typeof__"
+                                        "__volatile"
+                                        "__volatile__"))))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
@@ -5555,13 +5569,16 @@
      or a constant (which is a token),
      or a string literal (which is a token),
      or a parenthesizes expression (which starts with a certain punctuator),
-     or a generic selection (which starts a certain keyword)."))
+     or a generic selection (which starts a certain keyword),
+     or a call of the GCC built-in function @('__builtin_types_compatible_p')
+     (which is a keyword only if GCC extensions are supported)."))
   (and token?
        (or (token-case token? :ident)
            (token-case token? :const)
            (token-case token? :string)
            (token-punctuatorp token? "(")
-           (token-keywordp token? "_Generic")))
+           (token-keywordp token? "_Generic")
+           (token-keywordp token? "__builtin_types_compatible_p")))
   ///
 
   (defrule non-nil-when-token-primary-expression-start-p
@@ -5590,7 +5607,8 @@
      or an @('_Alignof') keyword.")
    (xdoc::p
     "We also compare the token against
-     the GCC extension variant @('__alignof__') of @('_Alignof').
+     the GCC extension variants
+     @('__alignof') and @('__alignof__') of @('_Alignof').
      Note that this variant is a keywords only if GCC extensions are supported:
      @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
      So the comparison here with that variant keyword
@@ -5608,6 +5626,7 @@
       (token-punctuatorp token? "!")
       (token-keywordp token? "sizeof")
       (token-keywordp token? "_Alignof")
+      (token-keywordp token? "__alignof")
       (token-keywordp token? "__alignof__"))
   ///
 
@@ -5729,7 +5748,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There are a number of type specifiers that consist of single keywords."))
+    "There are a number of type specifiers that consist of single keywords.")
+   (xdoc::p
+    "We also compare the token against the GCC variants
+     @('__signed') and @('__signed__') of @('signed').
+     Note that these variants are keywords only if GCC extensions are supported:
+     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     So the comparison here with those variant keywords
+     will always fail if GCC extensions are not supported,
+     because in that case both @('__signed') and @('__signed__')
+     would be identifier tokens, not keyword tokens.")
+   (xdoc::p
+    "We similarly include the GCC extension types
+     @('__int128'), @('_Float128'), @('__builtin_va_list')."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
       (token-keywordp token? "short")
@@ -5738,9 +5769,14 @@
       (token-keywordp token? "float")
       (token-keywordp token? "double")
       (token-keywordp token? "signed")
+      (token-keywordp token? "__signed")
+      (token-keywordp token? "__signed__")
       (token-keywordp token? "unsigned")
       (token-keywordp token? "_Bool")
-      (token-keywordp token? "_Complex"))
+      (token-keywordp token? "_Complex")
+      (token-keywordp token? "__int128")
+      (token-keywordp token? "_Float128")
+      (token-keywordp token? "__builtin_va_list"))
   ///
 
   (defrule non-nil-when-token-type-specifier-keyword-p
@@ -5762,10 +5798,18 @@
         ((token-keywordp token "long") (type-spec-long))
         ((token-keywordp token "float") (type-spec-float))
         ((token-keywordp token "double") (type-spec-double))
-        ((token-keywordp token "signed") (type-spec-signed))
+        ((token-keywordp token "signed")
+         (type-spec-signed (keyword-uscores-none)))
+        ((token-keywordp token "__signed")
+         (type-spec-signed (keyword-uscores-start)))
+        ((token-keywordp token "__signed__")
+         (type-spec-signed (keyword-uscores-both)))
         ((token-keywordp token "unsigned") (type-spec-unsigned))
         ((token-keywordp token "_Bool") (type-spec-bool))
         ((token-keywordp token "_Complex") (type-spec-complex))
+        ((token-keywordp token "__int128") (type-spec-int128))
+        ((token-keywordp token "_Float128") (type-spec-float128))
+        ((token-keywordp token "__builtin_va_list") (type-spec-builtin-va-list))
         (t (prog2$ (impossible) (irr-type-spec))))
   :prepwork ((local (in-theory (enable token-type-specifier-keyword-p)))))
 
@@ -5785,6 +5829,9 @@
       (token-keywordp token? "struct")
       (token-keywordp token? "union")
       (token-keywordp token? "enum")
+      (token-keywordp token? "typeof")
+      (token-keywordp token? "__typeof")
+      (token-keywordp token? "__typeof__")
       (and token? (token-case token? :ident)))
   ///
 
@@ -5810,13 +5857,18 @@
      So the comparison here with those variant keywords
      will always fail if GCC extensions are not supported,
      because in that case both @('__restrict') and @('__restrict__')
-     would be identifier tokens, not keyword tokens."))
+     would be identifier tokens, not keyword tokens.")
+   (xdoc::p
+    "We do the same for the @('__volatile') and @('__volatile__')
+     variants of @('volatile')."))
   (or (token-keywordp token? "const")
       (token-keywordp token? "restrict")
-      (token-keywordp token? "volatile")
-      (token-keywordp token? "_Atomic")
       (token-keywordp token? "__restrict")
-      (token-keywordp token? "__restrict__"))
+      (token-keywordp token? "__restrict__")
+      (token-keywordp token? "volatile")
+      (token-keywordp token? "__volatile")
+      (token-keywordp token? "__volatile__")
+      (token-keywordp token? "_Atomic"))
   ///
 
   (defrule non-nil-when-token-type-qualifier-p
@@ -5832,11 +5884,19 @@
   :short "Map a token that is a type qualifier
           to the correspoding type qualifier."
   (cond ((token-keywordp token "const") (type-qual-const))
-        ((token-keywordp token "restrict") (type-qual-restrict))
-        ((token-keywordp token "volatile") (type-qual-volatile))
+        ((token-keywordp token "restrict")
+         (type-qual-restrict (keyword-uscores-none)))
+        ((token-keywordp token "__restrict")
+         (type-qual-restrict (keyword-uscores-start)))
+        ((token-keywordp token "__restrict__")
+         (type-qual-restrict (keyword-uscores-both)))
+        ((token-keywordp token "volatile")
+         (type-qual-volatile (keyword-uscores-none)))
+        ((token-keywordp token "__volatile")
+         (type-qual-volatile (keyword-uscores-start)))
+        ((token-keywordp token "__volatile__")
+         (type-qual-volatile (keyword-uscores-both)))
         ((token-keywordp token "_Atomic") (type-qual-atomic))
-        ((token-keywordp token "__restrict") (type-qual-__restrict))
-        ((token-keywordp token "__restrict__") (type-qual-__restrict__))
         (t (prog2$ (impossible) (irr-type-qual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 
@@ -5889,9 +5949,9 @@
      because in that case both @('__inline') and @('__inline__')
      would be identifier tokens, not keyword tokens."))
   (or (token-keywordp token? "inline")
-      (token-keywordp token? "_Noreturn")
       (token-keywordp token? "__inline")
-      (token-keywordp token? "__inline__"))
+      (token-keywordp token? "__inline__")
+      (token-keywordp token? "_Noreturn"))
   ///
 
   (defrule non-nil-when-token-function-specifier-p
@@ -5906,12 +5966,58 @@
   :returns (funspec fun-specp)
   :short "Map a token that is a function specifier
           to the corresponding function specifier."
-  (cond ((token-keywordp token "inline") (fun-spec-inline))
+  (cond ((token-keywordp token "inline")
+         (fun-spec-inline (keyword-uscores-none)))
+        ((token-keywordp token "__inline")
+         (fun-spec-inline (keyword-uscores-start)))
+        ((token-keywordp token "__inline__")
+         (fun-spec-inline (keyword-uscores-both)))
         ((token-keywordp token "_Noreturn") (fun-spec-noreturn))
-        ((token-keywordp token "__inline") (fun-spec-__inline))
-        ((token-keywordp token "__inline__") (fun-spec-__inline__))
         (t (prog2$ (impossible) (irr-fun-spec))))
   :prepwork ((local (in-theory (enable token-function-specifier-p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define token-asm-qualifier-p ((token? token-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional token is an assembler qualifier."
+  (or (token-keywordp token? "volatile")
+      (token-keywordp token? "__volatile")
+      (token-keywordp token? "__volatile__")
+      (token-keywordp token? "inline")
+      (token-keywordp token? "__inline")
+      (token-keywordp token? "__inline__")
+      (token-keywordp token? "goto"))
+  ///
+
+  (defrule non-nil-when-token-asm-qualifier-p
+    (implies (token-asm-qualifier-p token?)
+             token?)
+    :rule-classes :compound-recognizer))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define token-to-asm-qualifier ((token tokenp))
+  :guard (token-asm-qualifier-p token)
+  :returns (asmqual asm-qualp)
+  :short "Map a token that is an assembler qualifier
+          to the corresponding assembler qualifier."
+  (cond ((token-keywordp token "volatile")
+         (asm-qual-volatile (keyword-uscores-none)))
+        ((token-keywordp token "__volatile")
+         (asm-qual-volatile (keyword-uscores-start)))
+        ((token-keywordp token "__volatile__")
+         (asm-qual-volatile (keyword-uscores-both)))
+        ((token-keywordp token "inline")
+         (asm-qual-inline (keyword-uscores-none)))
+        ((token-keywordp token "__inline")
+         (asm-qual-inline (keyword-uscores-start)))
+        ((token-keywordp token "__inline__")
+         (asm-qual-inline (keyword-uscores-both)))
+        ((token-keywordp token "goto")
+         (asm-qual-goto))
+        (t (prog2$ (impossible) (irr-asm-qual))))
+  :prepwork ((local (in-theory (enable token-asm-qualifier-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6231,11 +6337,11 @@
      (t ; other
       (reterr-msg :where (position-to-msg (span->start span))
                   :expected "a keyword in {~
-                               const, ~
-                               restrict, ~
-                               volatile, ~
-                               _Atomic~
-                               }"
+                             const, ~
+                             restrict, ~
+                             volatile, ~
+                             _Atomic~
+                             }"
                   :found (token-to-msg token)))))
   :measure (parsize parstate)
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -6393,14 +6499,288 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines parse-exprs/decls
-  :short "Parse expressions, declarations, and related entities."
+(define parse-asm-name-specifier ((uscores keyword-uscores-p)
+                                  (first-span spanp)
+                                  (parstate parstatep))
+  :returns (mv erp
+               (asmspec asm-name-specp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse an assembler name specifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used only if GCC extensions are supported.")
+   (xdoc::p
+    "This is called after parsing the initial @('asm') or @('__asm__').
+     We pass to this function a flag distinguishing the two keywords
+     (i.e. whether it has underscores or not),
+     as well as the span of that keyword.
+     We parse the rest of the assembler name specifier,
+     and return its abstract syntax representation.
+     We ensure that there is at least one string literal;
+     see grammar rule for @('asm-name-specifier'), which uses @('1*')."))
+  (b* (((reterr) (irr-asm-name-spec) (irr-span) parstate)
+       ;; asm
+       ((erp & parstate) (read-punctuator "(" parstate)) ; asm (
+       ((erp token span parstate) (read-token parstate))
+       ((unless (and token (token-case token :string)))
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a string literal"
+                    :found (token-to-msg token)))
+       (parstate (unread-token parstate)) ; asm-or-__asm__ (
+       ((erp strings & parstate) ; asm-or-__asm__ ( strings
+        (parse-*-stringlit parstate))
+       ((erp last-span parstate) ; asm-or-__asm__ ( strings )
+        (read-punctuator ")" parstate)))
+    (retok (make-asm-name-spec :strings strings
+                               :uscores uscores)
+           (span-join first-span last-span)
+           parstate))
+
+  ///
+
+  (defret parsize-of-parse-asm-name-specifier-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-asm-name-specifier-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-?-asm-name-specifier ((parstate parstatep))
+  :returns (mv erp
+               (asmspec? asm-name-spec-optionp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse an optional assembler name specifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The optionality is conveyed by
+     the question mark in the name of this function.
+     If the next token is the @('asm') or @('__asm__') keyword,
+     we must have an assembler name specifier, which we parse.
+     Otherwise, we put back the token
+     and return no assembler name specifier;
+     in this case, the returned span is an irrelevant one."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token span parstate) (read-token parstate)))
+    (cond
+     ((token-keywordp token "asm")
+      (parse-asm-name-specifier (keyword-uscores-none) span parstate))
+     ((token-keywordp token "__asm")
+      (parse-asm-name-specifier (keyword-uscores-start) span parstate))
+     ((token-keywordp token "__asm__")
+      (parse-asm-name-specifier (keyword-uscores-both) span parstate))
+     (t
+      (b* ((parstate (if token (unread-token parstate) parstate)))
+        (retok nil (irr-span) parstate)))))
+
+  ///
+
+  (defret parsize-of-parse-?-asm-name-specifier
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-*-asm-qualifier ((parstate parstatep))
+  :returns (mv erp
+               (quals asm-qual-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse zero or more assembler qualifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, parse a @('*asm-qualifier'), in ABNF notation.")
+   (xdoc::p
+    "If there are no assembler qualifiers,
+     we return an irrelevant span,
+     which the caller does not use."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token span parstate) (read-token parstate))
+       ((unless (token-asm-qualifier-p token))
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok nil (irr-span) parstate)))
+       (qual (token-to-asm-qualifier token))
+       ((erp quals last-span parstate) (parse-*-asm-qualifier parstate)))
+    (retok (cons qual quals)
+           (if quals (span-join span last-span) span)
+           parstate))
+  :measure (parsize parstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret parsize-of-parse-*-asm-qualifier-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-clobber ((parstate parstatep))
+  :returns (mv erp
+               (clobber asm-clobberp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse an assembler clobber."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a sequence of one or more juxtaposed string literals."))
+  (b* (((reterr) (irr-asm-clobber) (irr-span) parstate)
+       ((erp string span parstate) (read-stringlit parstate)) ; string
+       ((erp strings last-span parstate) ; string strings
+        (parse-*-stringlit parstate)))
+    (retok (asm-clobber (cons string strings))
+           (if (consp strings) (span-join span last-span) span)
+           parstate))
+
+  ///
+
+  (defret parsize-of-parse-asm-clobber-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-asm-clobber-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-clobbers ((parstate parstatep))
+  :returns (mv erp
+               (clobbers asm-clobber-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse zero or more assembler clobbers, separated by commas."
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token & parstate) (read-token parstate))
+       ((unless (and token (token-case token :string))) ; string
+        (b* ((parstate (if token (unread-token parstate) parstate))) ;
+          (retok nil (irr-span) parstate)))
+       (parstate (unread-token parstate))) ;
+    (parse-asm-clobbers-loop parstate)) ; clobbers
+
+  :prepwork
+
+  ((define parse-asm-clobbers-loop ((parstate parstatep))
+     :returns (mv erp
+                  (clobbers asm-clobber-listp)
+                  (span spanp)
+                  (new-parstate parstatep :hyp (parstatep parstate)))
+     :parents nil
+     (b* (((reterr) nil (irr-span) parstate)
+          ((erp clobber span parstate) ; clobber
+           (parse-asm-clobber parstate))
+          ((erp token & parstate) (read-token parstate))
+          ((unless (token-punctuatorp token ",")) ; clobber ,
+           (b* ((parstate (if token (unread-token parstate) parstate)))
+             (retok (list clobber) span parstate)))
+          ((erp clobbers last-span parstate) ; clobber , clobbers
+           (parse-asm-clobbers-loop parstate)))
+       (retok (cons clobber clobbers)
+              (span-join span last-span)
+              parstate))
+     :measure (parsize parstate)
+     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret parsize-of-parse-asm-clobbers-loop
+       (<= (parsize new-parstate)
+           (parsize parstate))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret parsize-of-parse-*-asm-clobbers-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-asm-goto-labels ((parstate parstatep))
+  :returns (mv erp
+               (labels ident-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse zero or more assembler goto labels."
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token & parstate) (read-token parstate))
+       ((unless (and token (token-case token :ident)))
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok nil (irr-span) parstate)))
+       (parstate (unread-token parstate)))
+    (parse-asm-goto-labels-loop parstate))
+
+  :prepwork
+
+  ((define parse-asm-goto-labels-loop ((parstate parstatep))
+     :returns (mv erp
+                  (labels ident-listp)
+                  (span spanp)
+                  (new-parstate parstatep :hyp (parstatep parstate)))
+     :parents nil
+     (b* (((reterr) nil (irr-span) parstate)
+          ((erp label span parstate) (read-identifier parstate)) ; ident
+          ((erp token & parstate) (read-token parstate))
+          ((unless (token-punctuatorp token ",")) ; ident ,
+           (b* ((parstate (if token (unread-token parstate) parstate)))
+             (retok (list label) span parstate)))
+          ((erp labels last-span parstate) ; ident , idents
+           (parse-asm-goto-labels-loop parstate)))
+       (retok (cons label labels)
+              (span-join span last-span)
+              parstate))
+     :measure (parsize parstate)
+     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret parsize-of-parse-asm-goto-labels-loop
+       (<= (parsize new-parstate)
+           (parsize parstate))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret parsize-of-parse-asm-goto-labels
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines parse-exprs/decls/stmts
+  :short "Parse expressions, declarations, statements, and related entities."
   :long
   (xdoc::topstring
    (xdoc::p
     "In accordance with the mutual recursion in the C grammar,
-     and with the mutual recursion @(tsee exprs/decls) in our abstract syntax,
-     the functions to parse expressions, declarations, and related entities
+     and with the mutual recursion @(tsee exprs/decls/stmts)
+     in our abstract syntax,
+     the functions to parse
+     expressions, declarations, statements, and related entities
      are mutually recursive.")
    (xdoc::p
     "Some functions in this mutually recursive clique
@@ -6443,7 +6823,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an expression."
     :long
     (xdoc::topstring
@@ -6482,7 +6862,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of an expression."
     :long
     (xdoc::topstring
@@ -6533,7 +6913,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an assignment expression."
     :long
     (xdoc::topstring
@@ -6584,7 +6964,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a conditional expression."
     :long
     (xdoc::topstring
@@ -6627,7 +7007,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a logical disjunction expression."
     :long
     (xdoc::topstring
@@ -6652,7 +7032,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of a logical disjunction expression."
     :long
     (xdoc::topstring
@@ -6686,7 +7066,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a logical conjunction expression."
     :long
     (xdoc::topstring
@@ -6711,7 +7091,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of a logical conjunction expression."
     :long
     (xdoc::topstring
@@ -6745,7 +7125,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an inclusive disjunction expression."
     :long
     (xdoc::topstring
@@ -6770,7 +7150,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of an inclusive disjunction expression."
     :long
     (xdoc::topstring
@@ -6804,7 +7184,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an exclusive disjunction expression."
     :long
     (xdoc::topstring
@@ -6829,7 +7209,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of an exclusive disjunction expression."
     :long
     (xdoc::topstring
@@ -6862,7 +7242,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a conjunction expression."
     :long
     (xdoc::topstring
@@ -6887,7 +7267,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of a conjunction expression."
     :long
     (xdoc::topstring
@@ -6921,7 +7301,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an equality expression."
     :long
     (xdoc::topstring
@@ -6946,7 +7326,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of an equality expression."
     :long
     (xdoc::topstring
@@ -6981,7 +7361,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a relational expression."
     :long
     (xdoc::topstring
@@ -7006,7 +7386,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of a relational expression."
     :long
     (xdoc::topstring
@@ -7040,7 +7420,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a shift expression."
     :long
     (xdoc::topstring
@@ -7065,7 +7445,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of a shift expression."
     :long
     (xdoc::topstring
@@ -7099,7 +7479,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an additive expression."
     :long
     (xdoc::topstring
@@ -7124,7 +7504,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of an additive expression."
     :long
     (xdoc::topstring
@@ -7158,7 +7538,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a multiplicative expression."
     :long
     (xdoc::topstring
@@ -7183,7 +7563,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of a multiplicative expression."
     :long
     (xdoc::topstring
@@ -7219,7 +7599,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a cast expression."
     :long
     (xdoc::topstring
@@ -7389,8 +7769,45 @@
        ;; and we may also have the ambiguities discussed in :DOC EXPR.
        ;; We try parsing a possibly ambiguous expression or type name,
        ;; after recording a checkpoint for possible backtracking.
+       ;; If GCC extensions are supported,
+       ;; we also need to check whether there is an open curly brace,
+       ;; in which case we have a statement expressions.
        ((token-punctuatorp token "(") ; (
-        (b* ((parstate (record-checkpoint parstate))
+        (b* (;; We read the next token to see if it is an open curly brace,
+             ;; but we also need to check that GCC extensions are supported.
+             ((erp token2 & parstate) (read-token parstate))
+             ((when (and (token-punctuatorp token2 "{") ; ( {
+                         (parstate->gcc parstate)))
+              (b* (((erp token3 & parstate) (read-token parstate)))
+                (cond
+                 ;; If token3 is a closed curly brace,
+                 ;; we have an empty block.
+                 ((token-punctuatorp token3 "}") ; ( { }
+                  (b* (((erp last-span parstate) ; ( { } )
+                        (read-punctuator ")" parstate)))
+                    (retok (expr-stmt nil)
+                           (span-join span last-span)
+                           parstate)))
+                 ;; If token 3 is not a closed curly brace,
+                 ;; we must have a non-empty block.
+                 (t ; ( { other
+                  (b* ((parstate ; ( {
+                        (if token3 (unread-token parstate) parstate))
+                       ((erp items & parstate) ; ( { items
+                        (parse-block-item-list parstate))
+                       ((erp & parstate) ; ( { items }
+                        (read-punctuator "}" parstate))
+                       ((erp last-span parstate) ; ( { items } )
+                        (read-punctuator ")" parstate)))
+                    (retok (expr-stmt items)
+                           (span-join span last-span)
+                           parstate))))))
+             ;; If we do not have an open curly brace,
+             ;; or if GCC extensions are not supported,
+             ;; we need to parse a possibly ambiguous expression or type name.
+             ;; We first need to puth back token2, if not NIL.
+             (parstate (if token2 (unread-token parstate) parstate)) ; (
+             (parstate (record-checkpoint parstate))
              (psize (parsize parstate))
              ((erp expr/tyname & parstate) ; ( expr/tyname
               (parse-expression-or-type-name parstate))
@@ -7631,7 +8048,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a unary expression."
     :long
     (xdoc::topstring
@@ -7686,8 +8103,45 @@
            ;; we are in a potentially ambiguous situation.
            ;; We parse an expression or type name,
            ;; and then the closed parenthesis.
+           ;; If GCC extensions are supported,
+           ;; we also need to check whether there is an open curly brace,
+           ;; in which case we have a statement expressions.
            ((token-punctuatorp token2 "(") ; sizeof (
-            (b* (((erp expr/tyname & parstate) ; sizeof ( exprtyname
+            (b* (;; We read the next token to see if it is an open curly brace,
+                 ;; but we also need to check that GCC extensions are supported.
+                 ((erp token2 & parstate) (read-token parstate))
+                 ((when (and (token-punctuatorp token2 "{") ; ( {
+                             (parstate->gcc parstate)))
+                  (b* (((erp token3 & parstate) (read-token parstate)))
+                    (cond
+                     ;; If token3 is a closed curly brace,
+                     ;; we have an empty block.
+                     ((token-punctuatorp token3 "}") ; ( { }
+                      (b* (((erp last-span parstate) ; ( { } )
+                            (read-punctuator ")" parstate)))
+                        (retok (expr-stmt nil)
+                               (span-join span last-span)
+                               parstate)))
+                     ;; If token 3 is not a closed curly brace,
+                     ;; we must have a non-empty block.
+                     (t ; ( { other
+                      (b* ((parstate ; ( {
+                            (if token3 (unread-token parstate) parstate))
+                           ((erp items & parstate) ; ( { items
+                            (parse-block-item-list parstate))
+                           ((erp & parstate) ; ( { items }
+                            (read-punctuator "}" parstate))
+                           ((erp last-span parstate) ; ( { items } )
+                            (read-punctuator ")" parstate)))
+                        (retok (expr-stmt items)
+                               (span-join span last-span)
+                               parstate))))))
+                 ;; If we do not have an open curly brace,
+                 ;; or if GCC extensions are not supported,
+                 ;; we need to parse a possibly ambiguous expression or type name.
+                 ;; We first need to puth back token2, if not NIL.
+                 (parstate (if token2 (unread-token parstate) parstate)) ; (
+                 ((erp expr/tyname & parstate) ; sizeof ( exprtyname
                   (parse-expression-or-type-name parstate))
                  ((erp last-span parstate) ; sizeof ( exprtyname )
                   (read-punctuator ")" parstate))
@@ -7712,9 +8166,10 @@
                      parstate))))))
        ;; If token is '_Alignof',
        ;; we parse an open parenthesis, a type name, and a closed parenthesis.
-       ;; We also allow '__alignof__',
-       ;; which can be a keyword only if GCC extensions are supported.
+       ;; We also allow '__alignof' and '__alignof__',
+       ;; which can be keywords only if GCC extensions are supported.
        ((or (token-keywordp token "_Alignof") ; _Alignof
+            (token-keywordp token "__alignof") ; __alignof
             (token-keywordp token "__alignof__")) ; __alignof__
         (b* (((erp & parstate) ; _Alignof (
               (read-punctuator "(" parstate))
@@ -7724,7 +8179,12 @@
               (read-punctuator ")" parstate)))
           (retok (make-expr-alignof
                   :type tyname
-                  :uscores (token-keywordp token "__alignof__"))
+                  :uscores (cond ((token-keywordp token "_Alignof")
+                                  (keyword-uscores-none))
+                                 ((token-keywordp token "__alignof")
+                                  (keyword-uscores-start))
+                                 ((token-keywordp token "__alignof__")
+                                  (keyword-uscores-both))))
                  (span-join span last-span)
                  parstate)))
        ;; If token is anything else, it is an error.
@@ -7759,7 +8219,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a postfix expression."
     :long
     (xdoc::topstring
@@ -7933,7 +8393,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of a postfix expression."
     :long
     (xdoc::topstring
@@ -8022,7 +8482,7 @@
                  (exprs expr-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse zero or more argument expressions."
     :long
     (xdoc::topstring
@@ -8072,7 +8532,7 @@
                  (exprs expr-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of one or more argument expressions."
     :long
     (xdoc::topstring
@@ -8114,7 +8574,7 @@
                  (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a primary expression."
     :long
     (xdoc::topstring
@@ -8123,12 +8583,21 @@
      (xdoc::p
       "We read a token.")
      (xdoc::p
-      "If the token is an identifier or a constant or a string literal,
+      "If the token is an identifier or a constant,
        that is the whole expression.")
      (xdoc::p
+      "If the token is a string literal,
+       we read zero or more that may follow,
+       and we have a string literal expression.
+       Recall that C supports
+       automatically concatenated adjacent string literals,
+       and that our abstract syntax preserves the distinct string literals.")
+     (xdoc::p
       "If the token is an open parenthesis,
-       we parse an expression and a closed parenthesis:
-       we have a parenthesized expression.")
+       we read another token to see whether it is an open curly brace.
+       If it is, we have a statement expression (a GCC extension);
+       otherwise, we have a parenthesized expression.
+       We only allow this if GCC extensions are supported.")
      (xdoc::p
       "If the token is the keyword @('_Generic'),
        we parse an open parenthesis and an assignment expression,
@@ -8137,6 +8606,10 @@
        Then we call a separate function to parse
        zero or more additional generic associations.
        Finally we parse a closed parenthesis and return a generic selection.")
+     (xdoc::p
+      "If the token is the GCC keyword @('__builtin_types_compatible_p'),
+       we parse a call of this built-in function,
+       which has two type names as arguments.")
      (xdoc::p
       "If the token is none of the above,
        including the token being absent,
@@ -8155,13 +8628,51 @@
                  (if strings (span-join span last-span) span)
                  parstate)))
        ((token-punctuatorp token "(") ; (
-        (b* (((erp expr & parstate) ; ( expr
-              (parse-expression parstate))
-             ((erp last-span parstate) ; ( expr )
-              (read-punctuator ")" parstate)))
-          (retok (expr-paren expr)
-                 (span-join span last-span)
-                 parstate)))
+        (b* (((erp token2 & parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is an open curly brace, and GCC extensions are enabled,
+           ;; we have a statement expression.
+           ((and (token-punctuatorp token2 "{") ; ( {
+                 (parstate->gcc parstate))
+            (b* (((erp token3 & parstate) (read-token parstate)))
+              (cond
+               ;; If token3 is a closed curly brace,
+               ;; we must have a statement expression with an empty block,
+               ;; which seems odd but not syntactically wrong.
+               ((token-punctuatorp token3 "}") ; ( { }
+                (b* (((erp last-span parstate) ; ( { } )
+                      (read-punctuator ")" parstate)))
+                  (retok (expr-stmt nil)
+                         (span-join span last-span)
+                         parstate)))
+               ;; If token3 is not a closed curly brace,
+               ;; or GCC extensions are not supported,
+               ;; we must have a statement expression with a non-empty block.
+               ;; We put back token3 and we parse one or more block items.
+               (t ; ( { other
+                (b* ((parstate ; ( {
+                      (if token3 (unread-token parstate) parstate))
+                     ((erp items & parstate) ; ( { items
+                      (parse-block-item-list parstate))
+                     ((erp & parstate) ; ( { items }
+                      (read-punctuator "}" parstate))
+                     ((erp last-span parstate) ; ( { items } )
+                      (read-punctuator ")" parstate)))
+                  (retok (expr-stmt items)
+                         (span-join span last-span)
+                         parstate))))))
+           ;; If token2 is not an open curly brace,
+           ;; we must have a parenthesized expression.
+           ;; We put back token2 and we parse the expression.
+           (t ; ( other
+            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; (
+                 ((erp expr & parstate) ; ( expr
+                  (parse-expression parstate))
+                 ((erp last-span parstate) ; ( expr )
+                  (read-punctuator ")" parstate)))
+              (retok (expr-paren expr)
+                     (span-join span last-span)
+                     parstate))))))
        ((token-keywordp token "_Generic") ; _Generic
         (b* (((erp & parstate) (read-punctuator "(" parstate)) ; _Generic (
              (psize (parsize parstate))
@@ -8186,6 +8697,24 @@
                                    :assocs genassocs)
                  (span-join span last-span)
                  parstate)))
+       ((token-keywordp token ; __builtin_types_compatible_p
+                        "__builtin_types_compatible_p")
+        (b* (((erp & parstate) (read-punctuator "(" parstate))
+             ;; __builtin_types_compatible_p (
+             (psize (parsize parstate))
+             ((erp type1 & parstate) (parse-type-name parstate))
+             ;; __builtin_types_compatible_p ( type1
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate) (read-punctuator "," parstate))
+             ;; __builtin_types_compatible_p ( type1 ,
+             ((erp type2 & parstate) (parse-type-name parstate))
+             ;; __builtin_types_compatible_p ( type1 , type2
+             ((erp last-span parstate) (read-punctuator ")" parstate)))
+          ;; __builtin_types_compatible_p ( type1 , type2 )
+          (retok (make-expr-tycompat :type1 type1 :type2 type2)
+                 (span-join span last-span)
+                 parstate)))
        (t ; other
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "an identifier ~
@@ -8198,45 +8727,33 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-generic-associations-rest ((prev-genassocs genassoc-listp)
-                                           (prev-span spanp)
-                                           (parstate parstatep))
+  (define parse-compound-literal ((tyname tynamep)
+                                  (first-span spanp)
+                                  (parstate parstatep))
     :returns (mv erp
-                 (genassocs genassoc-listp)
+                 (expr exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
-    :short "Parse zero or more reamaining generic associations."
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a compound literal."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is called after parsing
-       the first generic association of a generic selection,
-       which is required (i.e. there must be at least one).
-       Thus, each generic association to parse (if any),
-       is preceded by a comma.
-       We stop when there is no more comma.")
-     (xdoc::p
-      "We pass to this function
-       the list of generic expressions parsed so far,
-       along with their span.
-       This makes it easier to handle the span calculation."))
-    (b* (((reterr) nil (irr-span) parstate)
-         ((erp token & parstate) (read-token parstate))
-         ((when (not (token-punctuatorp token ",")))
-          (b* ((parstate (if token (unread-token parstate) parstate)))
-            (retok (genassoc-list-fix prev-genassocs)
-                   (span-fix prev-span)
-                   parstate)))
-         ;; ,
-         (psize (parsize parstate))
-         ((erp genassoc span parstate) ; , genassoc
-          (parse-generic-association parstate))
-         ((unless (mbt (<= (parsize parstate) (1- psize))))
-          (reterr :impossible))
-         (curr-genassocs (append prev-genassocs (list genassoc)))
-         (curr-span (span-join prev-span span)))
-      (parse-generic-associations-rest curr-genassocs curr-span parstate))
+      "This is called after parsing the parenthesized type name.
+       So we start by parsing an open curly brace,
+       a list of initializers,
+       and a closed curly brace."))
+    (b* (((reterr) (irr-expr) (irr-span) parstate)
+         ((erp & parstate) (read-punctuator "{" parstate)) ; {
+         ((erp desiniters final-comma & parstate) ; { inits [,]
+          (parse-initializer-list parstate))
+         ((erp last-span parstate)
+          (read-punctuator "}" parstate))) ; { inits [,] }
+      (retok (make-expr-complit :type tyname
+                                :elems desiniters
+                                :final-comma final-comma)
+             (span-join first-span last-span)
+             parstate))
     :measure (two-nats-measure (parsize parstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8246,7 +8763,7 @@
                  (genassoc genassocp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a generic association."
     :long
     (xdoc::topstring
@@ -8313,33 +8830,45 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-compound-literal ((tyname tynamep)
-                                  (first-span spanp)
-                                  (parstate parstatep))
+  (define parse-generic-associations-rest ((prev-genassocs genassoc-listp)
+                                           (prev-span spanp)
+                                           (parstate parstatep))
     :returns (mv erp
-                 (expr exprp)
+                 (genassocs genassoc-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
-    :short "Parse a compound literal."
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse zero or more reamaining generic associations."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is called after parsing the parenthesized type name.
-       So we start by parsing an open curly brace,
-       a list of initializers,
-       and a closed curly brace."))
-    (b* (((reterr) (irr-expr) (irr-span) parstate)
-         ((erp & parstate) (read-punctuator "{" parstate)) ; {
-         ((erp desiniters final-comma & parstate) ; { inits [,]
-          (parse-initializer-list parstate))
-         ((erp last-span parstate)
-          (read-punctuator "}" parstate))) ; { inits [,] }
-      (retok (make-expr-complit :type tyname
-                                :elems desiniters
-                                :final-comma final-comma)
-             (span-join first-span last-span)
-             parstate))
+      "This is called after parsing
+       the first generic association of a generic selection,
+       which is required (i.e. there must be at least one).
+       Thus, each generic association to parse (if any),
+       is preceded by a comma.
+       We stop when there is no more comma.")
+     (xdoc::p
+      "We pass to this function
+       the list of generic expressions parsed so far,
+       along with their span.
+       This makes it easier to handle the span calculation."))
+    (b* (((reterr) nil (irr-span) parstate)
+         ((erp token & parstate) (read-token parstate))
+         ((when (not (token-punctuatorp token ",")))
+          (b* ((parstate (if token (unread-token parstate) parstate)))
+            (retok (genassoc-list-fix prev-genassocs)
+                   (span-fix prev-span)
+                   parstate)))
+         ;; ,
+         (psize (parsize parstate))
+         ((erp genassoc span parstate) ; , genassoc
+          (parse-generic-association parstate))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
+         (curr-genassocs (append prev-genassocs (list genassoc)))
+         (curr-span (span-join prev-span span)))
+      (parse-generic-associations-rest curr-genassocs curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8349,7 +8878,7 @@
                  (cexpr const-exprp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a constant expression."
     :long
     (xdoc::topstring
@@ -8376,7 +8905,7 @@
                  (statassert statassertp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a static assert declaration."
     :long
     (xdoc::topstring
@@ -8410,7 +8939,7 @@
                  (designor designorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a designator."
     :long
     (xdoc::topstring
@@ -8441,7 +8970,7 @@
                  (designors designor-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a designator list."
     :long
     (xdoc::topstring
@@ -8483,7 +9012,7 @@
                  (initer initerp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an initializer."
     :long
     (xdoc::topstring
@@ -8543,7 +9072,7 @@
                  (desiniter desiniterp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an initializer with an optional designation."
     :long
     (xdoc::topstring
@@ -8612,7 +9141,7 @@
                  (final-comma booleanp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a list of one or more initializers."
     :long
     (xdoc::topstring
@@ -8726,7 +9255,7 @@
                  (enumer enumerp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an enumerator."
     (b* (((reterr) (irr-enumer) (irr-span) parstate)
          ;; An enumerator always starts with (or is) an identifier.
@@ -8760,7 +9289,7 @@
                  (final-comma booleanp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a list of one or more enumerators."
     :long
     (xdoc::topstring
@@ -8850,7 +9379,7 @@
                  (specqual spec/qual-p)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a specifier or qualifier."
     :long
     (xdoc::topstring
@@ -8970,6 +9499,37 @@
                 (type-spec-typedef (token-ident->unwrap token)))
                span
                parstate))
+       ;; If token is 'typeof' or '__typeof' or '__typeof__',
+       ;; we parse an open parenthesis,
+       ;; then a possibly ambiguous expression or type name,
+       ;; and finally a closed parenthesis.
+       ((or (token-keywordp token "typeof") ; typeof
+            (token-keywordp token "__typeof") ; __typeof
+            (token-keywordp token "__typeof__")) ; __typeof__
+        (b* ((uscores (cond ((token-keywordp token "typeof")
+                             (keyword-uscores-none))
+                            ((token-keywordp token "__typeof")
+                             (keyword-uscores-start))
+                            ((token-keywordp token "__typeof__")
+                             (keyword-uscores-both))))
+             ((erp & parstate) ; typeof (
+              (read-punctuator "(" parstate))
+             ((erp expr/tyname & parstate) ; typeof ( expr/tyname
+              (parse-expression-or-type-name parstate))
+             ((erp last-span parstate) ; typeof ( expr/tyname )
+              (read-punctuator ")" parstate))
+             (tyspec
+              (amb?-expr/tyname-case
+               expr/tyname
+               :expr (make-type-spec-typeof-expr :expr expr/tyname.unwrap
+                                                 :uscores uscores)
+               :tyname (make-type-spec-typeof-type :type expr/tyname.unwrap
+                                                   :uscores uscores)
+               :ambig (make-type-spec-typeof-ambig :expr/type expr/tyname.unwrap
+                                                   :uscores uscores))))
+          (retok (spec/qual-tyspec tyspec)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is a type qualifier, which is always a single keyword,
        ;; we have that type qualifier.
        ((token-type-qualifier-p token) ; tyqual
@@ -8984,12 +9544,14 @@
           (retok (spec/qual-align alignspec)
                  (span-join span last-span)
                  parstate)))
-       ;; If token is the keyword __attribute__,
+       ;; If token is the keyword '__attribute' or '__attribute__',
        ;; which can only happen if GCC extensions are enabled,
        ;; we must have an attribute specifier.
-       ((token-keywordp token "__attribute__") ; __attribute__
-        (b* (((erp attrspec last-span parstate) ; attrspec
-              (parse-attribute-specifier span parstate)))
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((uscores (token-keywordp token "__attribute__"))
+             ((erp attrspec last-span parstate) ; attrspec
+              (parse-attribute-specifier uscores span parstate)))
           (retok (spec/qual-attrib attrspec)
                  (span-join span last-span)
                  parstate)))
@@ -9030,7 +9592,7 @@
                  (specquals spec/qual-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a list of one or more specifiers and qualifiers."
     :long
     (xdoc::topstring
@@ -9104,7 +9666,7 @@
                  (declspec declspecp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a declaration specifier."
     :long
     (xdoc::topstring
@@ -9229,6 +9791,37 @@
         (retok (declspec-tyspec (type-spec-typedef (token-ident->unwrap token)))
                span
                parstate))
+       ;; If token is 'typeof' or '__typeof' or '__typeof__',
+       ;; we parse an open parenthesis,
+       ;; then a possibly ambiguous expression or type name,
+       ;; and finally a closed parenthesis.
+       ((or (token-keywordp token "typeof") ; typeof
+            (token-keywordp token "__typeof") ; __typeof
+            (token-keywordp token "__typeof__")) ; __typeof__
+        (b* ((uscores (cond ((token-keywordp token "typeof")
+                             (keyword-uscores-none))
+                            ((token-keywordp token "__typeof")
+                             (keyword-uscores-start))
+                            ((token-keywordp token "__typeof__")
+                             (keyword-uscores-both))))
+             ((erp & parstate) ; typeof (
+              (read-punctuator "(" parstate))
+             ((erp expr/tyname & parstate) ; typeof ( expr/tyname
+              (parse-expression-or-type-name parstate))
+             ((erp last-span parstate) ; typeof ( expr/tyname )
+              (read-punctuator ")" parstate))
+             (tyspec
+              (amb?-expr/tyname-case
+               expr/tyname
+               :expr (make-type-spec-typeof-expr :expr expr/tyname.unwrap
+                                                 :uscores uscores)
+               :tyname (make-type-spec-typeof-type :type expr/tyname.unwrap
+                                                   :uscores uscores)
+               :ambig (make-type-spec-typeof-ambig :expr/type expr/tyname.unwrap
+                                                   :uscores uscores))))
+          (retok (declspec-tyspec tyspec)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is a type qualifier, which is always a single keyword,
        ;; we have that type qualifier.
        ((token-type-qualifier-p token) ; tyqual
@@ -9249,12 +9842,14 @@
           (retok (declspec-align alignspec)
                  (span-join span last-span)
                  parstate)))
-       ;; If token is the keyword __attribute__,
+       ;; If token is the keyword '__attribute' or '__attribute__',
        ;; which can only happen if GCC extensions are enabled,
        ;; we must have an attribute specifier.
-       ((token-keywordp token "__attribute__") ; __attribute__
-        (b* (((erp attrspec last-span parstate) ; attrspec
-              (parse-attribute-specifier span parstate)))
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((uscores (token-keywordp token "__attribute__"))
+             ((erp attrspec last-span parstate) ; attrspec
+              (parse-attribute-specifier uscores span parstate)))
           (retok (declspec-attrib attrspec)
                  (span-join span last-span)
                  parstate)))
@@ -9303,7 +9898,7 @@
                  (declspecs declspec-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a list of one or more declaration specifiers."
     :long
     (xdoc::topstring
@@ -9400,7 +9995,7 @@
                  (strunispec strunispecp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse or structure or union specifier."
     :long
     (xdoc::topstring
@@ -9476,7 +10071,7 @@
                  (enumspec enumspecp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an enumeration specifier."
     :long
     (xdoc::topstring
@@ -9549,7 +10144,7 @@
                  (alignspec align-specp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an alignment specifier."
     :long
     (xdoc::topstring
@@ -9592,7 +10187,7 @@
                  (dirabsdeclor dirabsdeclorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an array or function abstract declarator."
     :long
     (xdoc::topstring
@@ -9788,7 +10383,7 @@
                  (dirabsdeclor dirabsdeclorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a direct abstract declarator."
     :long
     (xdoc::topstring
@@ -9896,7 +10491,7 @@
                  (dirabsdeclor dirabsdeclorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of a direct abstract declartor."
     :long
     (xdoc::topstring
@@ -9958,7 +10553,7 @@
                  (absdeclor absdeclorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an abstract declarator."
     :long
     (xdoc::topstring
@@ -10034,7 +10629,7 @@
                  (dirdeclor dirdeclorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an array or function declarator."
     :long
     (xdoc::topstring
@@ -10291,7 +10886,7 @@
                  (dirdeclor dirdeclorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a direct declarator."
     :long
     (xdoc::topstring
@@ -10343,7 +10938,7 @@
                  (dirdeclor dirdeclorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse the rest of a direct declarator."
     :long
     (xdoc::topstring
@@ -10397,7 +10992,7 @@
                  (declor declorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a declarator."
     :long
     (xdoc::topstring
@@ -10436,7 +11031,7 @@
                  (structdeclor structdeclorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a structure declarator."
     :long
     (xdoc::topstring
@@ -10499,7 +11094,7 @@
                  (structdeclors structdeclor-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a list of one or more structure declarator."
     :long
     (xdoc::topstring
@@ -10540,7 +11135,7 @@
                  (structdecl structdeclp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a structure declaration."
     :long
     (xdoc::topstring
@@ -10653,7 +11248,7 @@
                  (structdecls structdecl-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a list of one or more structure declarations."
     :long
     (xdoc::topstring
@@ -10691,7 +11286,7 @@
                  (paramdecl paramdeclp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a parameter declaration."
     :long
     (xdoc::topstring
@@ -10770,7 +11365,7 @@
                  (ellipsis booleanp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a list of one or more parameter declarations."
     :long
     (xdoc::topstring
@@ -10830,7 +11425,7 @@
                  (tyname tynamep)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a type name."
     :long
     (xdoc::topstring
@@ -10872,7 +11467,7 @@
                  (expr/tyname amb?-expr/tyname-p)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an expression or a type name."
     :long
     (xdoc::topstring
@@ -11115,7 +11710,7 @@
                  (declor/absdeclor amb?-declor/absdeclor-p)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a declarator or an abstract declarator."
     :long
     (xdoc::topstring
@@ -11320,7 +11915,7 @@
                  (attrparams expr-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse attribute parameters."
     :long
     (xdoc::topstring
@@ -11347,7 +11942,7 @@
                  (attr attribp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an attribute."
     :long
     (xdoc::topstring
@@ -11379,7 +11974,7 @@
                  (attrs attrib-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse a list of one or more attributes, separated by commas."
     :long
     (xdoc::topstring
@@ -11409,12 +12004,14 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-attribute-specifier ((first-span spanp) (parstate parstatep))
+  (define parse-attribute-specifier ((uscores booleanp)
+                                     (first-span spanp)
+                                     (parstate parstatep))
     :returns (mv erp
                  (attrspec attrib-specp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse an attribute specifier."
     :long
     (xdoc::topstring
@@ -11434,7 +12031,9 @@
           (read-punctuator ")" parstate))
          ((erp last-span parstate) ; __attribute__ ( ( attrs ) )
           (read-punctuator ")" parstate)))
-      (retok (attrib-spec attrs) (span-join first-span last-span) parstate))
+      (retok (make-attrib-spec :uscores uscores :attribs attrs)
+             (span-join first-span last-span)
+             parstate))
     :measure (two-nats-measure (parsize parstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -11444,7 +12043,7 @@
                  (attrspecs attrib-spec-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls)
+    :parents (parser parse-exprs/decls/stmts)
     :short "Parse zero or more attribute specifiers."
     :long
     (xdoc::topstring
@@ -11472,13 +12071,15 @@
        only if GCC extensions are supported."))
     (b* (((reterr) nil (irr-span) parstate)
          ((erp token first-span parstate) (read-token parstate))
-         ((unless (token-keywordp token "__attribute__"))
+         ((unless (or (token-keywordp token "__attribute")
+                      (token-keywordp token "__attribute__")))
           (b* ((parstate (if token (unread-token parstate) parstate)))
             (retok nil (irr-span) parstate)))
          ;; __attribute__
+         (uscores (token-keywordp token "__attribute__"))
          (psize (parsize parstate))
          ((erp attrspec span parstate)
-          (parse-attribute-specifier first-span parstate))
+          (parse-attribute-specifier uscores first-span parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
          ;; __attribute__ ( ( ... ) )
@@ -11489,6 +12090,1697 @@
              (if attrspecs (span-join span last-span) span)
              parstate))
     :measure (two-nats-measure (parsize parstate) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-init-declarator ((parstate parstatep))
+    :returns (mv erp
+                 (initdeclor initdeclorp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse an initializer declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An initializer declarator consists of a declarator,
+       optionally followed by an assembler name specifier,
+       optionally followed by an equal sign and an initializer."))
+    (b* (((reterr) (irr-initdeclor) (irr-span) parstate)
+         (psize (parsize parstate))
+         ((erp declor span parstate) (parse-declarator parstate)) ; declor
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
+         ((erp asmspec? asmspec?-span parstate) ; declor [asmspec]
+          (parse-?-asm-name-specifier parstate))
+         ((erp token & parstate) (read-token parstate)))
+      (cond
+       ;; If token is an equal sign, there must be an initializer.
+       ((token-punctuatorp token "=") ; declor [asmspec] =
+        (b* (((erp initer last-span parstate) ; declor [asmspec] = initer
+              (parse-initializer parstate)))
+          (retok (make-initdeclor :declor declor
+                                  :asm? asmspec?
+                                  :init? initer)
+                 (span-join span last-span)
+                 parstate)))
+       ;; Otherwise, there is no initializer.
+       (t ; declor [asnspec] other
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          ;; declor [asmspec]
+          (retok (make-initdeclor :declor declor
+                                  :asm? asmspec?
+                                  :init? nil)
+                 (if asmspec?
+                     (span-join span asmspec?-span)
+                   span)
+                 parstate)))))
+    :measure (two-nats-measure (parsize parstate) 2))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-init-declarator-list ((parstate parstatep))
+    :returns (mv erp
+                 (initdeclors initdeclor-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a list of one or more initializer declarators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We parse the first one, which must be present.
+       If there is a comma after that,
+       we recursively parse one or more after the comma."))
+    (b* (((reterr) nil (irr-span) parstate)
+         (psize (parsize parstate))
+         ((erp initdeclor span parstate) ; initdeclor
+          (parse-init-declarator parstate))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
+         ((erp token & parstate) (read-token parstate)))
+      (cond
+       ;; If token is a comma,
+       ;; recursively parse one or more initializer declarators,
+       ;; and combine with the one just parsed.
+       ((token-punctuatorp token ",") ; initdeclor ,
+        (b* (((erp initdeclors last-span parstate) ; initdeclor , initdeclors
+              (parse-init-declarator-list parstate)))
+          (retok (cons initdeclor initdeclors)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is anything else, we have reached the end of the list.
+       (t ; initdeclor other
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok (list initdeclor) span parstate)))))
+    :measure (two-nats-measure (parsize parstate) 3))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-declaration ((parstate parstatep))
+    :returns (mv erp
+                 (decl declp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a declaration."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A declaration is either an assert declaration,
+       recognized by the starting @('_Static_assert') keyword,
+       or a list of one or more declaration specifiers
+       optionally followed by a list of one or more initializer declarators
+       and mandatorily followed by a semicolon.")
+     (xdoc::p
+      "If GCC extensions are supported, we must also allow for
+       an optional assembler name specifier,
+       as well as for zero or more attribute specifiers,
+       ending a declaration, just before the semicolon;
+       and we must also allow for an @('__extension__') keyword
+       just before the declaration.
+       See the ABNF grammar rule for @('declaration')."))
+    (b* (((reterr) (irr-decl) (irr-span) parstate)
+         ((erp token span parstate) (read-token parstate)))
+      (cond
+       ;; If token may start a declaration specifier, we put it back and
+       ;; we parse a list or one or more declaration specifiers.
+       ;; Then we read more tokens to see if we have initializer declarators.
+       ;; But if GCC extensions are supported,
+       ;; and if token is the '__extension__' keyword,
+       ;; we need to take that into account as well.
+       ((or (token-declaration-specifier-start-p token) ; declspec...
+            (and (token-keywordp token "__extension__") ; __extension__
+                 (parstate->gcc parstate)))
+        (b* (((mv extension parstate)
+              (if (and (token-keywordp token "__extension__")
+                       (parstate->gcc parstate))
+                  (mv t parstate)
+                (b* ((parstate (unread-token parstate)))
+                  (mv nil parstate))))
+             ;; [__extension__]
+             (psize (parsize parstate))
+             ((erp declspecs span parstate) ; [__extension__] declspecs
+              (parse-declaration-specifiers nil parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is the keyword '__attribute__',
+           ;; and if GCC extensions are supported,
+           ;; we have no initializer declarators;
+           ;; we parse the attribute specifiers,
+           ;; and the ending semicolon.
+           ;; Note that we have no assembler name specifier in this case.
+           ((and (token-keywordp token2 "__attribute__")
+                 (parstate->gcc parstate))
+            ;; [__extension__] declspecs __attribute__
+            (b* ((parstate (unread-token parstate))
+                 ((erp attrspecs & parstate)
+                  ;; [__extension__] declspecs attrspecs
+                  (parse-*-attribute-specifier parstate))
+                 ((erp last-span parstate)
+                  ;; [__extension__] declspecs attrspecs ;
+                  (read-punctuator ";" parstate)))
+              (retok (make-decl-decl :extension extension
+                                     :specs declspecs
+                                     :init nil
+                                     :attrib attrspecs)
+                     (span-join span last-span)
+                     parstate)))
+           ;; If token2 may start a declarator,
+           ;; which is equivalent to saying that
+           ;; it may start an initializer declarator,
+           ;; we parse the list of one or more initializer declarators,
+           ;; then an optional assembler name specifier,
+           ;; then a list of zero or more attribute specifiers,
+           ;; and then the final semicolon.
+           ((token-declarator-start-p token2)
+            ;; [__extension__] declspecs declor...
+            (b* ((parstate (unread-token parstate))
+                 ;; [__extension__] declspecs
+                 (psize (parsize parstate))
+                 ((erp initdeclors & parstate)
+                  ;; [__extension__] declspecs initdeclors
+                  (parse-init-declarator-list parstate))
+                 ((unless (mbt (<= (parsize parstate) (1- psize))))
+                  (reterr :impossible))
+                 ((erp attrspecs & parstate)
+                  ;; [__extension__] declspecs initdeclors [attrspecs]
+                  (if (parstate->gcc parstate)
+                      (parse-*-attribute-specifier parstate)
+                    (retok nil (irr-span) parstate)))
+                 ((erp last-span parstate)
+                  ;; [__extension__] declspecs initdeclors [attrspecs] ;
+                  (read-punctuator ";" parstate)))
+              (retok (make-decl-decl :extension extension
+                                     :specs declspecs
+                                     :init initdeclors
+                                     :attrib attrspecs)
+                     (span-join span last-span)
+                     parstate)))
+           ;; If token2 is a semicolon,
+           ;; we have no initializer declarators.
+           ;; If GCC extensions are supported,
+           ;; this also means that we have no attribute specifiers.
+           ((token-punctuatorp token2 ";") ; [__extension__] declspecs ;
+            (retok (make-decl-decl :extension extension
+                                   :specs declspecs
+                                   :init nil
+                                   :attrib nil)
+                   (span-join span span2)
+                   parstate))
+           ;; If token2 is anything else, it is an error.
+           (t ; [__extension__] declspecs other
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "a declarator or a semicolon"
+                        :found (token-to-msg token2))))))
+       ;; If token is the keyword @('_Static_assert'),
+       ;; we have an assert declaration.
+       ((token-keywordp token "_Static_assert") ; _Static_assert
+        (b* (((erp statassert last-span parstate) ; statassert
+              (parse-static-assert-declaration span parstate)))
+          (retok (decl-statassert statassert)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is anything else, it is an error.
+       (t ; other
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a declaration specifier ~
+                             or the _Static_assert keyword"
+                    :found (token-to-msg token)))))
+    :measure (two-nats-measure (parsize parstate) 2))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-declaration-list ((parstate parstatep))
+    :returns (mv erp
+                 (decls decl-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a list of one or more declarations."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We parse the first one, which must be present.
+       Then we stop if the next token is an open curly brace,
+       because the only place where we parse declaration lists
+       is in function definitions, between declarator and body.
+       Otherwise we recursively call this function to parse more."))
+    (b* (((reterr) nil (irr-span) parstate)
+         (psize (parsize parstate))
+         ((erp decl span parstate) (parse-declaration parstate)) ; decl
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
+         ((erp token & parstate) (read-token parstate)))
+      (cond
+       ;; If token is an open curly brace, we stop.
+       ((token-punctuatorp token "{")  ; decl {
+        (retok (list decl) span parstate))
+       ;; If token is anything else, we parse more declarations.
+       (t ; decl other
+        (b* ((parstate (if token (unread-token parstate) parstate)) ; decl
+             ((erp decls last-span parstate) ; decl decls
+              (parse-declaration-list parstate)))
+          (retok (cons decl decls)
+                 (span-join span last-span)
+                 parstate)))))
+    :measure (two-nats-measure (parsize parstate) 3))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-declaration-or-statement ((parstate parstatep))
+    :returns (mv erp
+                 (decl/stmt amb?-decl/stmt-p)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a declaration or a statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called when a block item
+       may be a declaration or an expression statement,
+       which have a complex syntactic overlap,
+       as explained in @(tsee amb-decl/stmt).
+       Thus, this parsing function returns
+       a possibly ambiguous declaration or statement.")
+     (xdoc::p
+      "We try to parse both a declaration
+       and an expression followed by a semicolon
+       (note that a declaration always ends in semicolon).
+       If only one succeeds, there is no ambiguity,
+       and we return either a declaration or a statement (wrapped);
+       since the statement is always an expression statement,
+       we actually return an expression in this case.
+       If both succeed, there is an ambiguity,
+       which we return as such.
+       If none succeeds, it is an error."))
+    (b* (((reterr) (irr-amb?-decl/stmt) (irr-span) parstate)
+         (parstate (record-checkpoint parstate)) ; we will backtrack here
+         (psize (parsize parstate))
+         ((mv erp expr span-expr parstate) (parse-expression parstate)))
+      (if erp
+          ;; If the parsing of an expression fails,
+          ;; we must have a declaration.
+          (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+               ((unless (<= (parsize parstate) psize))
+                (raise "Internal error: ~
+                        size ~x0 after backtracking exceeds ~
+                        size ~x1 before backtracking."
+                       (parsize parstate) psize)
+                ;; Here we have (> (parsize parstate) psize),
+                ;; but we need to return a parser state
+                ;; no larger than the initial one,
+                ;; so we just return the empty parser state.
+                ;; This is just logical: execution stops at the RAISE above.
+                (b* ((parstate (init-parstate nil nil parstate)))
+                  (reterr t)))
+               ((erp decl span parstate) (parse-declaration parstate)))
+            (retok (amb?-decl/stmt-decl decl) span parstate))
+        ;; If the parsing of an expression succeeds,
+        ;; we also need to parse a semicolon.
+        ;; Note that an expression may be a prefix of a declaration,
+        ;; e.g. 'x y;', where 'x' and 'y' are identifiers,
+        ;; must be a declaration, even though x could be an expression.
+        (b* (((erp token span-semicolon parstate) (read-token parstate))
+             (span-stmt (span-join span-expr span-semicolon)))
+          (if (token-punctuatorp token ";")
+              ;; If a semicolon follows,
+              ;; the parsing of an expression statement has succeeded,
+              ;; but we must see whether we can also parse a declaration.
+              ;; So we backtrack and we attempt to parse a declaration.
+              (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+                   ((unless (<= (parsize parstate) psize))
+                    (raise "Internal error: ~
+                            size ~x0 after backtracking exceeds ~
+                            size ~x1 before backtracking."
+                           (parsize parstate) psize)
+                    ;; Here we have (> (parsize parstate) psize),
+                    ;; but we need to return a parser state
+                    ;; no larger than the initial one,
+                    ;; so we just return the empty parser state.
+                    ;; This is just logical:
+                    ;; execution stops at the RAISE above.
+                    (b* ((parstate (init-parstate nil nil parstate)))
+                      (reterr t)))
+                   (parstate
+                    (record-checkpoint parstate)) ; we may backtrack again
+                   ((mv erp decl span-decl parstate)
+                    (parse-declaration parstate)))
+                (if erp
+                    ;; If the parsing of a declaration fails,
+                    ;; we have an expression statement.
+                    ;; We need to backtrack and re-parse it right now,
+                    ;; but we will look into improving this inefficiency.
+                    (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+                         ((unless (<= (parsize parstate) psize))
+                          (raise "Internal error: ~
+                                  size ~x0 after backtracking exceeds ~
+                                  size ~x1 before backtracking."
+                                 (parsize parstate) psize)
+                          ;; Here we have (> (parsize parstate) psize),
+                          ;; but we need to return a parser state
+                          ;; no larger than the initial one,
+                          ;; so we just return the empty parser state.
+                          ;; This is just logical:
+                          ;; execution stops at the RAISE above.
+                          (b* ((parstate (init-parstate nil nil parstate)))
+                            (reterr t)))
+                         ((mv erp expr1 span-expr1 parstate)
+                          (parse-expression parstate))
+                         ((when erp)
+                          (raise "Internal error: ~
+                                  parsing the same expression ~x0 twice ~
+                                  gives the error ~x1."
+                                 expr erp)
+                          (reterr t))
+                         ((unless (equal expr1 expr))
+                          (raise "Internal error: ~
+                                  parsing the same expression ~x0 twice ~
+                                  gives a different expression ~x1."
+                                 expr expr1)
+                          (reterr t))
+                         ((unless (equal span-expr1 span-expr))
+                          (raise "Internal error: ~
+                                  parsing the same expression ~x0 twice ~
+                                  gives a different span ~x1 from ~x2."
+                                 expr span-expr1 span-expr)
+                          (reterr t))
+                         ((mv erp span-semicolon1 parstate)
+                          (read-punctuator ";" parstate))
+                         ((when erp)
+                          (raise "Internal error: ~
+                                  parsing the semicolon twice ~
+                                  after the same expression ~x0 ~
+                                  gives the error ~x1."
+                                 expr erp)
+                          (reterr t))
+                         ((unless (equal span-semicolon1 span-semicolon))
+                          (raise "Internal error: ~
+                                  parsing the same semicolon twice ~
+                                  after the same expression ~x0 ~
+                                  gives a span ~x1 different from ~
+                                  the span ~x2 from the previous time."
+                                 expr span-semicolon1 span-semicolon)
+                          (reterr t)))
+                      (retok (amb?-decl/stmt-stmt expr)
+                             (span-join span-expr span-semicolon)
+                             parstate))
+                  ;; If the parsing of a declaration succeeds,
+                  ;; we return an ambiguous declaration or statement.
+                  ;; We double-check that the spans are the same,
+                  ;; which is always expected to succeed.
+                  (b* ((parstate (clear-checkpoint parstate)) ; no backtracking
+                       ((unless (equal span-stmt span-decl))
+                        (raise "Internal error:
+                                span ~x0 of expression statement ~x1 ~
+                                differs from ~
+                                span ~x2 of declaration ~x3."
+                               span-stmt expr span-decl decl)
+                        (reterr t)))
+                    (retok (amb?-decl/stmt-ambig
+                            (make-amb-decl/stmt :stmt expr
+                                                :decl decl))
+                           span-stmt ; = span-decl
+                           parstate))))
+            ;; If a semicolon does not follow the expression,
+            ;; we cannot have an expression statement.
+            ;; Thus, we backtrack and proceed to parse a declaration.
+            (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+                 ((unless (<= (parsize parstate) psize))
+                  (raise "Internal error: ~
+                          size ~x0 after backtracking exceeds ~
+                          size ~x1 before backtracking."
+                         (parsize parstate) psize)
+                  ;; Here we have (> (parsize parstate) psize),
+                  ;; but we need to return a parser state
+                  ;; no larger than the initial one,
+                  ;; so we just return the empty parser state.
+                  ;; This is just logical:
+                  ;; execution stops at the RAISE above.
+                  (b* ((parstate (init-parstate nil nil parstate)))
+                    (reterr t)))
+                 ((erp decl span parstate) (parse-declaration parstate)))
+              (retok (amb?-decl/stmt-decl decl) span parstate))))))
+    :measure (two-nats-measure (parsize parstate) 17))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-asm-output-operand ((parstate parstatep))
+    :returns (mv erp
+                 (output asm-outputp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse an assembler output operand."
+    (b* (((reterr) (irr-asm-output) (irr-span) parstate)
+         ((erp token span parstate) (read-token parstate)))
+      (cond
+       ;; If token is an open square bracket, we have a name to parse,
+       ;; followed by one or more string literals,
+       ;; followed by a parenthesized expression.
+       ((token-punctuatorp token "[") ; [
+        (b* (((erp name & parstate) (read-identifier parstate)) ; [ name
+             ((erp & parstate) (read-punctuator "]" parstate)) ; [ name ]
+             ((erp token2 span2 parstate) (read-token parstate))
+             ((unless (and token2 (token-case token2 :string)))
+              (reterr-msg :where (position-to-msg (span->start span2))
+                          :expected "a string literal"
+                          :found (token-to-msg token2)))
+             ;; [ name ] string
+             (string (token-string->unwrap token2))
+             ((erp strings & parstate) ; [ name ] string strings
+              (parse-*-stringlit parstate))
+             (constraint (cons string strings)) ; [ name ] constraint
+             ((erp & parstate) ; [ name ] constraint (
+              (read-punctuator "(" parstate))
+             ((erp lvalue & parstate) ; [ name ] constraint ( expr
+              (parse-expression parstate))
+             ((erp last-span parstate) ; [ name ] constraint ( expr )
+              (read-punctuator ")" parstate)))
+          (retok (make-asm-output :name name
+                                  :constraint constraint
+                                  :lvalue lvalue)
+                 (span-join span last-span)
+                 parstate)))
+       ;; Otherwise, we must have one or more string literals,
+       ;; followed by a parenthesized expression.
+       (t ; other
+        (b* ((parstate (if token (unread-token parstate) parstate)) ;
+             ((erp token2 span2 parstate) (read-token parstate))
+             ((unless (and token2 (token-case token2 :string)))
+              (reterr-msg :where (position-to-msg (span->start span2))
+                          :expected "a string literal"
+                          :found (token-to-msg token2)))
+             ;; string
+             (string (token-string->unwrap token2))
+             ((erp strings & parstate) ; string strings
+              (parse-*-stringlit parstate))
+             (constraint (cons string strings)) ; constraint
+             ((erp & parstate) ; constraint (
+              (read-punctuator "(" parstate))
+             ((erp lvalue & parstate) ; constraint ( expr
+              (parse-expression parstate))
+             ((erp last-span parstate) ; constraint ( expr )
+              (read-punctuator ")" parstate)))
+          (retok (make-asm-output :name nil
+                                  :constraint constraint
+                                  :lvalue lvalue)
+                 (span-join span last-span)
+                 parstate)))))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-asm-output-operands ((parstate parstatep))
+    :returns (mv erp
+                 (outputs asm-output-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse one or more assembler output operands, separated by commas."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "After parsing an assembler output operand,
+       we check whether the following token is a comma,
+       in which case there must be at least another assembler output operand,
+       so we recursively parse one or more assembler output operands."))
+    (b* (((reterr) nil (irr-span) parstate)
+         (psize (parsize parstate))
+         ((erp output span parstate) ; output
+          (parse-asm-output-operand parstate))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
+         ((erp token & parstate) (read-token parstate))
+         ((unless (token-punctuatorp token ",")) ; output ,
+          (b* ((parstate (if token (unread-token parstate) parstate)))
+            (retok (list output) span parstate)))
+         ((erp outputs last-span parstate) ; output , outputs
+          (parse-asm-output-operands parstate)))
+      (retok (cons output outputs)
+             (span-join span last-span)
+             parstate))
+    :measure (two-nats-measure (parsize parstate) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-?-asm-output-operands ((parstate parstatep))
+    :returns (mv erp
+                 (outputs asm-output-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse zero or more assembler output operands, separated by commas."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the next token is an open square bracket or a string literal,
+       there must be at least one assembler output operand,
+       so we call the function that parses
+       one or more assembler output operands.
+       If the next token is not an open square bracket or a string literal,
+       then there are no assembler output operands;
+       we return an irrelevant span in this case,
+       which callers do not use."))
+    (b* (((reterr) nil (irr-span) parstate)
+         ((erp token & parstate) (read-token parstate))
+         ((when (and (not (token-punctuatorp token "["))
+                     (not (and token (token-case token :string)))))
+          (b* ((parstate (if token (unread-token parstate) parstate)))
+            (retok nil (irr-span) parstate)))
+       ; [ or string
+         (parstate (unread-token parstate))) ;
+      (parse-asm-output-operands parstate))
+    :measure (two-nats-measure (parsize parstate) 2))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-asm-input-operand ((parstate parstatep))
+    :returns (mv erp
+                 (input asm-inputp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse an assembler input operand."
+    (b* (((reterr) (irr-asm-input) (irr-span) parstate)
+         ((erp token span parstate) (read-token parstate)))
+      (cond
+       ;; If token is an open square bracket, we have a name to parse,
+       ;; followed by one or more string literals,
+       ;; followed by a parenthesized expression.
+       ((token-punctuatorp token "[") ; [
+        (b* (((erp name & parstate) (read-identifier parstate)) ; [ name
+             ((erp & parstate) (read-punctuator "]" parstate)) ; [ name ]
+             ((erp token2 span2 parstate) (read-token parstate))
+             ((unless (and token2 (token-case token2 :string)))
+              (reterr-msg :where (position-to-msg (span->start span2))
+                          :expected "a string literal"
+                          :found (token-to-msg token2)))
+             ;; [ name ] string
+             (string (token-string->unwrap token2))
+             ((erp strings & parstate) ; [ name ] string strings
+              (parse-*-stringlit parstate))
+             (constraint (cons string strings)) ; [ name ] constraint
+             ((erp & parstate) ; [ name ] constraint (
+              (read-punctuator "(" parstate))
+             ((erp rvalue & parstate) ; [ name ] constraint ( expr
+              (parse-expression parstate))
+             ((erp last-span parstate) ; [ name ] constraint ( expr )
+              (read-punctuator ")" parstate)))
+          (retok (make-asm-input :name name
+                                 :constraint constraint
+                                 :rvalue rvalue)
+                 (span-join span last-span)
+                 parstate)))
+       ;; Otherwise, we must have one or more string literals,
+       ;; followed by a parenthesized expression.
+       (t ; other
+        (b* ((parstate (if token (unread-token parstate) parstate)) ;
+             ((erp token2 span2 parstate) (read-token parstate))
+             ((unless (and token2 (token-case token2 :string)))
+              (reterr-msg :where (position-to-msg (span->start span2))
+                          :expected "a string literal"
+                          :found (token-to-msg token2)))
+             ;; string
+             (string (token-string->unwrap token2))
+             ((erp strings & parstate) ; string strings
+              (parse-*-stringlit parstate))
+             (constraint (cons string strings)) ; constraint
+             ((erp & parstate) ; constraint (
+              (read-punctuator "(" parstate))
+             ((erp rvalue & parstate) ; constraint ( expr
+              (parse-expression parstate))
+             ((erp last-span parstate) ; constraint ( expr )
+              (read-punctuator ")" parstate)))
+          (retok (make-asm-input :name nil
+                                 :constraint constraint
+                                 :rvalue rvalue)
+                 (span-join span last-span)
+                 parstate)))))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-asm-input-operands ((parstate parstatep))
+    :returns (mv erp
+                 (inputs asm-input-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse one or more assembler input operands, separated by commas."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "After parsing an assembler input operand,
+       we check whether the following token is a comma,
+       in which case there must be at least another assembler input operand,
+       so we recursively parse one or more assembler input operands."))
+    (b* (((reterr) nil (irr-span) parstate)
+         (psize (parsize parstate))
+         ((erp input span parstate) ; input
+          (parse-asm-input-operand parstate))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
+         ((erp token & parstate) (read-token parstate))
+         ((unless (token-punctuatorp token ",")) ; input ,
+          (b* ((parstate (if token (unread-token parstate) parstate)))
+            (retok (list input) span parstate)))
+         ((erp inputs last-span parstate) ; input , inputs
+          (parse-asm-input-operands parstate)))
+      (retok (cons input inputs)
+             (span-join span last-span)
+             parstate))
+    :measure (two-nats-measure (parsize parstate) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-?-asm-input-operands ((parstate parstatep))
+    :returns (mv erp
+                 (inputs asm-input-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse zero or more assembler input operands, separated by commas."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the next token is an open square bracket or a string literal,
+       there must be at least one assembler input operand,
+       so we call the function that parses
+       one or more assembler input operands.
+       If the next token is not an open square bracket or a string literal,
+       then there are no assembler input operands;
+       we return an irrelevant span in this case,
+       which callers do not use."))
+    (b* (((reterr) nil (irr-span) parstate)
+         ((erp token & parstate) (read-token parstate))
+         ((when (and (not (token-punctuatorp token "["))
+                     (not (and token (token-case token :string)))))
+          (b* ((parstate (if token (unread-token parstate) parstate)))
+            (retok nil (irr-span) parstate)))
+       ; [ or string
+         (parstate (unread-token parstate))) ;
+      (parse-asm-input-operands parstate))
+    :measure (two-nats-measure (parsize parstate) 2))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-statement ((parstate parstatep))
+    :returns (mv erp
+                 (stmt stmtp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Most statements start with distinct keywords or punctuators
+       (one punctuator, the open curly brace),
+       but both labeled statements and expression statements
+       may start with an identifier.
+       However, for a labeled statement,
+       the token after the identifier is a colon,
+       which cannot be an expression.
+       So we are able to distinguish all kinds of statements
+       based on the first one or two tokens.")
+     (xdoc::p
+      "The well-known dangling-else grammatical ambiguity is dealt with
+       by associating the @('else') with the closest @('if'),
+       as required in [C:6.8.4/3].")
+     (xdoc::p
+      "There is a syntactic overlap between the two kinds of @('for') loops,
+       the one with an expression and the one with a declaration.
+       An identifier may be a declaration specifier
+       or (the start of) an expression.
+       For now we handle the situation approximately:
+       if the token there may start an expresison,
+       we commit to parsing an expression;
+       otherwise we parse a declaration.
+       In other words, we may fail to accept the case of
+       a declaration that starts with a @('typedef') name for now.
+       We plan to rectify this situation soon."))
+    (b* (((reterr) (irr-stmt) (irr-span) parstate)
+         ((erp token span parstate) (read-token parstate)))
+      (cond
+       ;; If token is an identifier,
+       ;; we could have a labeled statement or an expression statement.
+       ;; So we need to read another token.
+       ((and token (token-case token :ident)) ; ident
+        (b* ((ident (token-ident->unwrap token))
+             ((erp token2 & parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is a colon,
+           ;; we must have a labeled statement.
+           ((token-punctuatorp token2 ":") ; ident :
+            (b* (((erp stmt last-span parstate) ; ident : stmt
+                  (parse-statement parstate)))
+              (retok (make-stmt-labeled :label (label-name ident)
+                                        :stmt stmt)
+                     (span-join span last-span)
+                     parstate)))
+           ;; If token2 is not a colon,
+           ;; we put it back along with the previous token,
+           ;; and we attempt to parse an expression followed by a semicolon.
+           (t ; ident other
+            (b* ((parstate
+                  (if token2 (unread-token parstate) parstate)) ; ident
+                 (parstate (unread-token parstate)) ;
+                 ((erp expr span parstate) (parse-expression parstate)) ; expr
+                 ((erp last-span parstate)
+                  (read-punctuator ";" parstate))) ; expr ;
+              (retok (stmt-expr expr)
+                     (span-join span last-span)
+                     parstate))))))
+       ;; If token is an open curly brace,
+       ;; we must have a compound statement.
+       ((token-punctuatorp token "{") ; {
+        (b* (((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is a closed curly brace,
+           ;; we have an empty compound statement.
+           ((token-punctuatorp token2 "}") ; { }
+            (retok (stmt-compound nil)
+                   (span-join span span2)
+                   parstate))
+           ;; Otherwise, we parse a list of one or more block items.
+           (t ; { other
+            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; {
+                 ((erp items & parstate) ; { blockitems
+                  (parse-block-item-list parstate))
+                 ((erp last-span parstate) ; { blockitems }
+                  (read-punctuator "}" parstate)))
+              (retok (stmt-compound items)
+                     (span-join span last-span)
+                     parstate))))))
+       ;; If token is a semicolon,
+       ;; we have an expression statement without expression.
+       ((token-punctuatorp token ";") ; ;
+        (retok (stmt-expr nil) span parstate))
+       ;; If token is the 'case' keyword,
+       ;; we must have a labeled statement.
+       ((token-keywordp token "case") ; case
+        (b* ((psize (parsize parstate))
+             ((erp cexpr & parstate) ; case constexpr
+              (parse-constant-expression parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate)
+              (read-punctuator ":" parstate)) ; case constexpr :
+             ((erp stmt last-span parstate) ; case constexpr : stmt
+              (parse-statement parstate)))
+          (retok (make-stmt-labeled :label (label-const cexpr)
+                                    :stmt stmt)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is the default keyword,
+       ;; we must have a labeled statement.
+       ((token-keywordp token "default") ; default
+        (b* (((erp & parstate) (read-punctuator ":" parstate)) ; default :
+             ((erp stmt last-span parstate) ; default : stmt
+              (parse-statement parstate)))
+          (retok (make-stmt-labeled :label (label-default)
+                                    :stmt stmt)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is the 'goto' keyword, we have a jump statement.
+       ((token-keywordp token "goto") ; goto
+        (b* (((erp ident & parstate) (read-identifier parstate)) ; goto ident
+             ((erp last-span parstate) ; goto ident ;
+              (read-punctuator ";" parstate)))
+          (retok (stmt-goto ident)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is the keyword 'continue', we have a jump statement.
+       ((token-keywordp token "continue") ; continue
+        (b* (((erp last-span parstate) ; continue ;
+              (read-punctuator ";" parstate)))
+          (retok (stmt-continue)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is the keyword 'break', we have a jump statement.
+       ((token-keywordp token "break") ; break
+        (b* (((erp last-span parstate) ; break ;
+              (read-punctuator ";" parstate)))
+          (retok (stmt-break)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is the keyword 'return', we have a jump statement.
+       ;; There may be an expression or not.
+       ((token-keywordp token "return") ; return
+        (b* (((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ;; If token2 may start an expression, we must have an expression.
+           ((token-expression-start-p token2) ; return expr...
+            (b* ((parstate (unread-token parstate)) ; return
+                 ((erp expr & parstate)
+                  (parse-expression parstate)) ; return expr
+                 ((erp last-span parstate) ; return expr ;
+                  (read-punctuator ";" parstate)))
+              (retok (stmt-return expr)
+                     (span-join span last-span)
+                     parstate)))
+           ;; If token2 is a semicolon, there is no expression.
+           ((token-punctuatorp token2 ";") ; return ;
+            (retok (stmt-return nil)
+                   (span-join span span2)
+                   parstate))
+           ;; If token2 is anything else, it is an error.
+           (t ; return other
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "an expression or a semicolon"
+                        :found (token-to-msg token2))))))
+       ;; If token is the keyword 'if', we have a selection statement.
+       ;; If there is an 'else'
+       ;; after the parenthesized expression and the statement,
+       ;; we continue parsing that as part of the current selection statement
+       ;; (see documenttion of this function above).
+       ((token-keywordp token "if") ; if
+        (b* (((erp & parstate) (read-punctuator "(" parstate)) ; if (
+             (psize (parsize parstate))
+             ((erp expr & parstate) (parse-expression parstate)) ; if ( expr
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate) (read-punctuator ")" parstate)) ; if ( expr )
+             (psize (parsize parstate))
+             ((erp stmt stmt-span parstate) ; if ( expr ) stmt
+              (parse-statement parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp token2 & parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is the 'else' keyword,
+           ;; we continue to parse this selection statement.
+           ((token-keywordp token2 "else") ; if ( expr ) stmt else
+            (b* (((erp stmt-else last-span parstate)
+                  ;; if ( expr ) stmt else stmt
+                  (parse-statement parstate)))
+              (retok (make-stmt-ifelse :test expr
+                                       :then stmt
+                                       :else stmt-else)
+                     (span-join span last-span)
+                     parstate)))
+           ;; If token is not the 'else' keyword,
+           ;; we have an 'if' statement without 'else'.
+           (t ; if ( expr ) stmt other
+            (b* ((parstate ; if ( expr ) stmt
+                  (if token2 (unread-token parstate) parstate)))
+              (retok (make-stmt-if :test expr
+                                   :then stmt)
+                     (span-join span stmt-span)
+                     parstate))))))
+       ;; If token is the 'switch' keyword, we have a selection statement.
+       ((token-keywordp token "switch") ; switch
+        (b* (((erp & parstate) (read-punctuator "(" parstate)) ; switch (
+             (psize (parsize parstate))
+             ((erp expr & parstate) (parse-expression parstate)) ; switch ( expr
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate) (read-punctuator ")" parstate)) ; switch ( expr )
+             ((erp stmt last-span parstate) ; switch ( expr ) stmt
+              (parse-statement parstate)))
+          (retok (make-stmt-switch :target expr
+                                   :body stmt)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is the 'while' keyword, we have an iteration statement.
+       ((token-keywordp token "while") ; while
+        (b* (((erp & parstate) (read-punctuator "(" parstate)) ; while (
+             (psize (parsize parstate))
+             ((erp expr & parstate) (parse-expression parstate)) ; while ( expr
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate) (read-punctuator ")" parstate)) ; while ( expr )
+             ((erp stmt last-span parstate) ; while ( expr ) stmt
+              (parse-statement parstate)))
+          (retok (make-stmt-while :test expr
+                                  :body stmt)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is the 'do' keyword, we have an iteration statement.
+       ((token-keywordp token "do") ; do
+        (b* ((psize (parsize parstate))
+             ((erp stmt & parstate) (parse-statement parstate)) ; do stmt
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate) (read-keyword "while" parstate)) ; do stmt while
+             ((erp & parstate) (read-punctuator "(" parstate)) ; do stmt while (
+             ((erp expr & parstate) ; do stmt while ( expr
+              (parse-expression parstate))
+             ((erp & parstate) ; do stmt while ( expr )
+              (read-punctuator ")" parstate))
+             ((erp last-span parstate) ; do stmt while ( expr ) ;
+              (read-punctuator ";" parstate)))
+          (retok (make-stmt-dowhile :body stmt
+                                    :test expr)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is the 'for' keyword, we have an iteration statement.
+       ((token-keywordp token "for") ; for
+        (b* (((erp & parstate) (read-punctuator "(" parstate)) ; for (
+             ((erp token2 & parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is a semicolon,
+           ;; we have no initializing expression or declaration.
+           ((token-punctuatorp token2 ";") ; for ( ;
+            (b* (((erp token3 span3 parstate) (read-token parstate)))
+              (cond
+               ;; If token3 may start an expression,
+               ;; we must have a test expression.
+               ((token-expression-start-p token3) ; for ( ; expr...
+                (b* ((parstate (unread-token parstate)) ; for ( ;
+                     (psize (parsize parstate))
+                     ((erp test-expr & parstate) ; for ( ; expr
+                      (parse-expression parstate))
+                     ((unless (mbt (<= (parsize parstate) (1- psize))))
+                      (reterr :impossible))
+                     ((erp & parstate) ; for ( ; expr ;
+                      (read-punctuator ";" parstate))
+                     ((erp token4 span4 parstate) (read-token parstate)))
+                  (cond
+                   ;; If token4 may start an expression,
+                   ;; we must have an update expression.
+                   ((token-expression-start-p token4) ; for ( ; expr ; expr...
+                    (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
+                         (psize (parsize parstate))
+                         ((erp next-expr & parstate) ; for ( ; expr ; expr
+                          (parse-expression parstate))
+                         ((unless (mbt (<= (parsize parstate) (1- psize))))
+                          (reterr :impossible))
+                         ((erp & parstate) ; for ( ; expr ; expr )
+                          (read-punctuator ")" parstate))
+                         ((erp stmt last-span parstate)
+                          ;; for ( ; expr ; expr ) stmt
+                          (parse-statement parstate)))
+                      (retok (make-stmt-for-expr :init nil
+                                                 :test test-expr
+                                                 :next next-expr
+                                                 :body stmt)
+                             (span-join span last-span)
+                             parstate)))
+                   ;; If token4 is a closed parenthesis,
+                   ;; we have no update expression.
+                   ((token-punctuatorp token4 ")") ; for ( ; expr ; )
+                    (b* (((erp stmt last-span parstate) ; for ( ; expr ; ) stmt
+                          (parse-statement parstate)))
+                      (retok (make-stmt-for-expr :init nil
+                                                 :test test-expr
+                                                 :next nil
+                                                 :body stmt)
+                             (span-join span last-span)
+                             parstate)))
+                   ;; If token4 is anything else, it is an error.
+                   (t ; for ( ; expr ; other
+                    (reterr-msg :where (position-to-msg (span->start span4))
+                                :expected "an expression ~
+                                           or a closed parenthesis"
+                                :found (token-to-msg token4))))))
+               ;; If token3 is a semicolon, we have no test expression.
+               ((token-punctuatorp token3 ";") ; for ( ; ;
+                (b* (((erp token4 span4 parstate) (read-token parstate)))
+                  (cond
+                   ;; If token4 may start an expression,
+                   ;; we must have an update expression.
+                   ((token-expression-start-p token4) ; for ( ; ; expr...
+                    (b* ((parstate (unread-token parstate)) ; for ( ; ;
+                         (psize (parsize parstate))
+                         ((erp next-expr & parstate) ; for ( ; ; expr
+                          (parse-expression parstate))
+                         ((unless (mbt (<= (parsize parstate) (1- psize))))
+                          (reterr :impossible))
+                         ((erp & parstate) ; for ( ; ; expr )
+                          (read-punctuator ")" parstate))
+                         ((erp stmt last-span parstate) ; for ( ; ; expr ) stmt
+                          (parse-statement parstate)))
+                      (retok (make-stmt-for-expr :init nil
+                                                 :test nil
+                                                 :next next-expr
+                                                 :body stmt)
+                             (span-join span last-span)
+                             parstate)))
+                   ;; If token4 is a closed parenthesis,
+                   ;; we have no udpate expression.
+                   ((token-punctuatorp token4 ")") ; for ( ; ; )
+                    (b* (((erp stmt last-span parstate) ; for ( ; ; ) stmt
+                          (parse-statement parstate)))
+                      (retok (make-stmt-for-expr :init nil
+                                                 :test nil
+                                                 :next nil
+                                                 :body stmt)
+                             (span-join span last-span)
+                             parstate)))
+                   ;; If token4 is anything else, it is an error.
+                   (t ; for ( ; ; other
+                    (reterr-msg :where (position-to-msg (span->start span4))
+                                :expected "an expression ~
+                                           or a closed parenthesis"
+                                :found (token-to-msg token4))))))
+               ;; If token3 is anything else, it is an error.
+               (t ; for ( ; other
+                (reterr-msg :where (position-to-msg (span->start span3))
+                            :expected "an expression ~
+                                       or a semicolon"
+                            :found (token-to-msg token3))))))
+           ;; If token2 is not a semicolon,
+           ;; we may have an initializing expression or declaration.
+           ;; Since the initializing expression must be followed by semicolon,
+           ;; we are in the same situation as when parsing
+           ;; a declaration or an expression statement,
+           ;; so we use the parsing function for that.
+           (t ; for ( other
+            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; for (
+                 (psize (parsize parstate))
+                 ((erp decl/stmt & parstate) ; for ( decl/stmt
+                  (parse-declaration-or-statement parstate))
+                 ((unless (mbt (<= (parsize parstate) (1- psize))))
+                  (reterr :impossible)))
+              (amb?-decl/stmt-case
+               decl/stmt
+               ;; If the initialization part is a declaration,
+               ;; the 'for' is not ambiguous, and we parse the rest.
+               :decl
+               (b* ((decl (amb?-decl/stmt-decl->unwrap decl/stmt))
+                    ((erp token3 span3 parstate) (read-token parstate)))
+                 (cond
+                  ;; If token3 may start an expression,
+                  ;; we must have a test expression.
+                  ((token-expression-start-p token3) ; for ( ; expr...
+                   (b* ((parstate (unread-token parstate)) ; for ( ;
+                        (psize (parsize parstate))
+                        ((erp test-expr & parstate) ; for ( ; expr
+                         (parse-expression parstate))
+                        ((unless (mbt (<= (parsize parstate) (1- psize))))
+                         (reterr :impossible))
+                        ((erp & parstate) ; for ( ; expr ;
+                         (read-punctuator ";" parstate))
+                        ((erp token4 span4 parstate) (read-token parstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4)
+                       ;; for ( ; expr ; expr...
+                       (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
+                            (psize (parsize parstate))
+                            ((erp next-expr & parstate) ; for ( ; expr ; expr
+                             (parse-expression parstate))
+                            ((unless (mbt (<= (parsize parstate) (1- psize))))
+                             (reterr :impossible))
+                            ((erp & parstate) ; for ( ; expr ; expr )
+                             (read-punctuator ")" parstate))
+                            ((erp stmt last-span parstate)
+                             ;; for ( ; expr ; expr ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-decl :init decl
+                                                    :test test-expr
+                                                    :next next-expr
+                                                    :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no update expression.
+                      ((token-punctuatorp token4 ")") ; for ( ; expr ; )
+                       (b* (((erp stmt last-span parstate)
+                             ;; for ( ; expr ; ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-decl :init decl
+                                                    :test test-expr
+                                                    :next nil
+                                                    :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; expr ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
+                                           or a closed parenthesis"
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is a semicolon, we have no test expression.
+                  ((token-punctuatorp token3 ";") ; for ( ; ;
+                   (b* (((erp token4 span4 parstate) (read-token parstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4) ; for ( ; ; expr...
+                       (b* ((parstate (unread-token parstate)) ; for ( ; ;
+                            (psize (parsize parstate))
+                            ((erp next-expr & parstate) ; for ( ; ; expr
+                             (parse-expression parstate))
+                            ((unless (mbt (<= (parsize parstate) (1- psize))))
+                             (reterr :impossible))
+                            ((erp & parstate) ; for ( ; ; expr )
+                             (read-punctuator ")" parstate))
+                            ((erp stmt last-span parstate)
+                             ;; for ( ; ; expr ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-decl :init decl
+                                                    :test nil
+                                                    :next next-expr
+                                                    :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no udpate expression.
+                      ((token-punctuatorp token4 ")") ; for ( ; ; )
+                       (b* (((erp stmt last-span parstate) ; for ( ; ; ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-decl :init decl
+                                                    :test nil
+                                                    :next nil
+                                                    :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
+                                           or a closed parenthesis"
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is anything else, it is an error.
+                  (t ; for ( ; other
+                   (reterr-msg :where (position-to-msg (span->start span3))
+                               :expected "an expression ~
+                                       or a semicolon"
+                               :found (token-to-msg token3)))))
+               ;; If the initialization part is an expression,
+               ;; the 'for' is not ambiguous, and we parse the rest.
+               :stmt
+               (b* ((expr (amb?-decl/stmt-stmt->unwrap decl/stmt))
+                    ((erp token3 span3 parstate) (read-token parstate)))
+                 (cond
+                  ;; If token3 may start an expression,
+                  ;; we must have a test expression.
+                  ((token-expression-start-p token3) ; for ( ; expr...
+                   (b* ((parstate (unread-token parstate)) ; for ( ;
+                        (psize (parsize parstate))
+                        ((erp test-expr & parstate) ; for ( ; expr
+                         (parse-expression parstate))
+                        ((unless (mbt (<= (parsize parstate) (1- psize))))
+                         (reterr :impossible))
+                        ((erp & parstate) ; for ( ; expr ;
+                         (read-punctuator ";" parstate))
+                        ((erp token4 span4 parstate) (read-token parstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4)
+                       ;; for ( ; expr ; expr...
+                       (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
+                            (psize (parsize parstate))
+                            ((erp next-expr & parstate) ; for ( ; expr ; expr
+                             (parse-expression parstate))
+                            ((unless (mbt (<= (parsize parstate) (1- psize))))
+                             (reterr :impossible))
+                            ((erp & parstate) ; for ( ; expr ; expr )
+                             (read-punctuator ")" parstate))
+                            ((erp stmt last-span parstate)
+                             ;; for ( ; expr ; expr ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-expr :init expr
+                                                    :test test-expr
+                                                    :next next-expr
+                                                    :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no update expression.
+                      ((token-punctuatorp token4 ")") ; for ( ; expr ; )
+                       (b* (((erp stmt last-span parstate)
+                             ;; for ( ; expr ; ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-expr :init expr
+                                                    :test test-expr
+                                                    :next nil
+                                                    :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; expr ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
+                                           or a closed parenthesis"
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is a semicolon, we have no test expression.
+                  ((token-punctuatorp token3 ";") ; for ( ; ;
+                   (b* (((erp token4 span4 parstate) (read-token parstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4) ; for ( ; ; expr...
+                       (b* ((parstate (unread-token parstate)) ; for ( ; ;
+                            (psize (parsize parstate))
+                            ((erp next-expr & parstate) ; for ( ; ; expr
+                             (parse-expression parstate))
+                            ((unless (mbt (<= (parsize parstate) (1- psize))))
+                             (reterr :impossible))
+                            ((erp & parstate) ; for ( ; ; expr )
+                             (read-punctuator ")" parstate))
+                            ((erp stmt last-span parstate)
+                             ;; for ( ; ; expr ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-expr :init expr
+                                                    :test nil
+                                                    :next next-expr
+                                                    :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no udpate expression.
+                      ((token-punctuatorp token4 ")") ; for ( ; ; )
+                       (b* (((erp stmt last-span parstate) ; for ( ; ; ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-expr :init expr
+                                                    :test nil
+                                                    :next nil
+                                                    :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
+                                           or a closed parenthesis"
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is anything else, it is an error.
+                  (t ; for ( ; other
+                   (reterr-msg :where (position-to-msg (span->start span3))
+                               :expected "an expression ~
+                                       or a semicolon"
+                               :found (token-to-msg token3)))))
+               ;; If the initialization part is ambiguous,
+               ;; we have an ambiguous 'for', and we parse the rest.
+               :ambig
+               (b* ((decl/expr (amb?-decl/stmt-ambig->unwrap decl/stmt))
+                    ((erp token3 span3 parstate) (read-token parstate)))
+                 (cond
+                  ;; If token3 may start an expression,
+                  ;; we must have a test expression.
+                  ((token-expression-start-p token3) ; for ( ; expr...
+                   (b* ((parstate (unread-token parstate)) ; for ( ;
+                        (psize (parsize parstate))
+                        ((erp test-expr & parstate) ; for ( ; expr
+                         (parse-expression parstate))
+                        ((unless (mbt (<= (parsize parstate) (1- psize))))
+                         (reterr :impossible))
+                        ((erp & parstate) ; for ( ; expr ;
+                         (read-punctuator ";" parstate))
+                        ((erp token4 span4 parstate) (read-token parstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4)
+                       ;; for ( ; expr ; expr...
+                       (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
+                            (psize (parsize parstate))
+                            ((erp next-expr & parstate) ; for ( ; expr ; expr
+                             (parse-expression parstate))
+                            ((unless (mbt (<= (parsize parstate) (1- psize))))
+                             (reterr :impossible))
+                            ((erp & parstate) ; for ( ; expr ; expr )
+                             (read-punctuator ")" parstate))
+                            ((erp stmt last-span parstate)
+                             ;; for ( ; expr ; expr ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-ambig :init decl/expr
+                                                     :test test-expr
+                                                     :next next-expr
+                                                     :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no update expression.
+                      ((token-punctuatorp token4 ")") ; for ( ; expr ; )
+                       (b* (((erp stmt last-span parstate)
+                             ;; for ( ; expr ; ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-ambig :init decl/expr
+                                                     :test test-expr
+                                                     :next nil
+                                                     :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; expr ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
+                                           or a closed parenthesis"
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is a semicolon, we have no test expression.
+                  ((token-punctuatorp token3 ";") ; for ( ; ;
+                   (b* (((erp token4 span4 parstate) (read-token parstate)))
+                     (cond
+                      ;; If token4 may start an expression,
+                      ;; we must have an update expression.
+                      ((token-expression-start-p token4) ; for ( ; ; expr...
+                       (b* ((parstate (unread-token parstate)) ; for ( ; ;
+                            (psize (parsize parstate))
+                            ((erp next-expr & parstate) ; for ( ; ; expr
+                             (parse-expression parstate))
+                            ((unless (mbt (<= (parsize parstate) (1- psize))))
+                             (reterr :impossible))
+                            ((erp & parstate) ; for ( ; ; expr )
+                             (read-punctuator ")" parstate))
+                            ((erp stmt last-span parstate)
+                             ;; for ( ; ; expr ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-ambig :init decl/expr
+                                                     :test nil
+                                                     :next next-expr
+                                                     :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is a closed parenthesis,
+                      ;; we have no udpate expression.
+                      ((token-punctuatorp token4 ")") ; for ( ; ; )
+                       (b* (((erp stmt last-span parstate) ; for ( ; ; ) stmt
+                             (parse-statement parstate)))
+                         (retok (make-stmt-for-ambig :init decl/expr
+                                                     :test nil
+                                                     :next nil
+                                                     :body stmt)
+                                (span-join span last-span)
+                                parstate)))
+                      ;; If token4 is anything else, it is an error.
+                      (t ; for ( ; ; other
+                       (reterr-msg :where (position-to-msg (span->start span4))
+                                   :expected "an expression ~
+                                           or a closed parenthesis"
+                                   :found (token-to-msg token4))))))
+                  ;; If token3 is anything else, it is an error.
+                  (t ; for ( ; other
+                   (reterr-msg :where (position-to-msg (span->start span3))
+                               :expected "an expression ~
+                                       or a semicolon"
+                               :found (token-to-msg token3)))))))))))
+       ;; If token may start an expression,
+       ;; we must have an expression statement.
+       ((token-expression-start-p token) ; expr...
+        (b* ((parstate (unread-token parstate)) ;
+             ((erp expr span parstate) (parse-expression parstate)) ; expr
+             ((erp last-span parstate) (read-punctuator ";" parstate))) ; expr ;
+          (retok (stmt-expr expr)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is the 'asm' (or variant) keyword,
+       ;; which can only happen if GCC extensions are supported,
+       ;; we parse an assembler statement.
+       ((or (token-keywordp token "asm") ; asm
+            (token-keywordp token "__asm") ; __asm
+            (token-keywordp token "__asm__")) ; __asm__
+        (b* ((uscores
+              (cond ((token-keywordp token "asm") (keyword-uscores-none))
+                    ((token-keywordp token "__asm") (keyword-uscores-start))
+                    ((token-keywordp token "__asm__") (keyword-uscores-both))))
+             ((erp quals & parstate) ; asm [asmquals]
+              (parse-*-asm-qualifier parstate))
+             ((erp & parstate) ; asm [asmquals] (
+              (read-punctuator "(" parstate))
+             ((erp template & parstate) ; asm [asmquals] ( template
+              (parse-*-stringlit parstate))
+             ((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is a closed parenthesis,
+           ;; we have reached the end of the assembler statement.
+           ((token-punctuatorp token2 ")") ; asm [asmquals] ( template )
+            (b* (((erp last-span parstate) (read-punctuator ";" parstate)))
+              ;; asm [asmquals] ( template ) ;
+              (retok (make-stmt-asm :uscores uscores
+                                    :quals quals
+                                    :template template
+                                    :num-colons 0
+                                    :outputs nil
+                                    :inputs nil
+                                    :clobbers nil
+                                    :labels nil)
+                     (span-join span last-span)
+                     parstate)))
+           ;; If token2 is not a closed parenthesis,
+           ;; it must be a colon, and we continue parsing.
+           (t ; asm [asmquals] ( template ) other
+            (b* (((unless (token-punctuatorp token2 ":"))
+                  (reterr-msg :where (position-to-msg (span->start span2))
+                              :expected "a colon or a closed parenthesis"
+                              :found (token-to-msg token2)))
+                 (psize (parsize parstate))
+                 ;; asm [asmquals] ( template :
+                 ((erp outputs & parstate)
+                  ;; asm [asmquals] ( template : [outputs]
+                  (parse-?-asm-output-operands parstate))
+                 ((unless (mbt (<= (parsize parstate) psize)))
+                  (reterr :impossible))
+                 ((erp token3 span3 parstate) (read-token parstate)))
+              (cond
+               ;; If token3 is a closed parenthesis,
+               ;; we have reached the end of the assembler statement.
+               ((token-punctuatorp token3 ")")
+                ;; asm [asmquals] ( template : [outputs] )
+                (retok (make-stmt-asm :uscores uscores
+                                      :quals quals
+                                      :template template
+                                      :num-colons 1
+                                      :outputs outputs
+                                      :inputs nil
+                                      :clobbers nil
+                                      :labels nil)
+                       (span-join span span3)
+                       parstate))
+               ;; If token3 is not a closed parenthesis,
+               ;; it must be a colon, and we continue parsing.
+               (t ; asm [asmquals] ( template : [outputs] other
+                (b* (((unless (token-punctuatorp token3 ":"))
+                      (reterr-msg :where (position-to-msg (span->start span3))
+                                  :expected "a colon or a closed parenthesis"
+                                  :found (token-to-msg token3)))
+                     ;; asm [asmquals] ( template : [outputs] :
+                     ((erp inputs & parstate)
+                      ;; asm [asmquals] ( template : [outputs] : [inputs]
+                      (parse-?-asm-input-operands parstate))
+                     ((erp token4 span4 parstate) (read-token parstate)))
+                  (cond
+                   ;; If token4 is a closed parenthesis,
+                   ;; we have reached the end of the assembler statement.
+                   ((token-punctuatorp token4 ")")
+                    ;; asm [asmquals] ( template : [outputs] : [inputs] )
+                    (retok (make-stmt-asm :uscores uscores
+                                          :quals quals
+                                          :template template
+                                          :num-colons 2
+                                          :outputs outputs
+                                          :inputs inputs
+                                          :clobbers nil
+                                          :labels nil)
+                           (span-join span span4)
+                           parstate))
+                   ;; If token4 is not a closed parenthesis,
+                   ;; it must be a colon, and we continue parsing.
+                   (t ; asm [asmquals] ( template : [outputs] : [inputs] other
+                    (b* (((unless (token-punctuatorp token4 ":"))
+                          (reterr-msg
+                           :where (position-to-msg (span->start span4))
+                           :expected "a colon or a closed parenthesis"
+                           :found (token-to-msg token4)))
+                         ;; asm [asmquals] ( template : [outputs] : [inputs] :
+                         ((erp clobbers & parstate)
+                          ;; asm [asmquals] ( template
+                          ;; : [outputs] : [inputs] : [clobbers]
+                          (parse-asm-clobbers parstate))
+                         ((erp token5 span5 parstate) (read-token parstate)))
+                      (cond
+                       ;; If token5 is a closed parenthesis,
+                       ;; we have reached the end of the assembler statement.
+                       ((token-punctuatorp token5 ")")
+                        ;; asm [asmquals] ( template
+                        ;; : [outputs] : [inputs] : [clobbers] )
+                        (retok (make-stmt-asm :uscores uscores
+                                              :quals quals
+                                              :template template
+                                              :num-colons 3
+                                              :outputs outputs
+                                              :inputs inputs
+                                              :clobbers clobbers
+                                              :labels nil)
+                               (span-join span span5)
+                               parstate))
+                       ;; If token5 is not a closed parenthesis,
+                       ;; it must be a colon, and we continue parsing.
+                       (t
+                        ;; asm [asmquals] ( template
+                        ;; : [outputs] : [inputs] : [clobbers] other
+                        (b* (((unless (token-punctuatorp token5 ":"))
+                              (reterr-msg
+                               :where (position-to-msg (span->start span5))
+                               :expected "a colon or a closed parenthesis"
+                               :found (token-to-msg token5)))
+                             ;; asm [asmquals] ( template
+                             ;; : [outputs] : [inputs] : [clobbers] :
+                             ((erp labels & parstate)
+                              ;; asm [asmquals] ( template
+                              ;; : [outputs] : [inputs] : [clobbers] : [labels]
+                              (parse-asm-goto-labels parstate))
+                             ((erp last-span parstate)
+                              ;; asm [asmquals] ( template
+                              ;; : [outputs]
+                              ;; : [inputs]
+                              ;; : [clobbers]
+                              ;; : [labels] )
+                              (read-punctuator ")" parstate)))
+                          (retok (make-stmt-asm :uscores uscores
+                                                :quals quals
+                                                :template template
+                                                :num-colons 4
+                                                :outputs outputs
+                                                :inputs inputs
+                                                :clobbers clobbers
+                                                :labels labels)
+                                 (span-join span last-span)
+                                 parstate)))))))))))))))
+       ;; If token is anything else, it is an error.
+       (t
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "an identifier ~
+                               or a keyword in {~
+                               break, ~
+                               case, ~
+                               continue, ~
+                               default, ~
+                               do, ~
+                               for, ~
+                               goto, ~
+                               if, ~
+                               return, ~
+                               switch, ~
+                               while~
+                               } ~
+                               or a punctuator in {~
+                               \"++\", ~
+                               \"--\", ~
+                               \"+\", ~
+                               \"-\", ~
+                               \"~~\", ~
+                               \"!\", ~
+                               \"*\", ~
+                               \"&\", ~
+                               \"(\", ~
+                               \"{\", ~
+                               \";\"~
+                               }"
+                    :found (token-to-msg token)))))
+    :measure (two-nats-measure (parsize parstate) 17))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-block-item ((parstate parstatep))
+    :returns (mv erp
+                 (item block-itemp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a block item."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "As explained in @(tsee amb-decl/stmt),
+       there is a complex syntactic overlap
+       between expression statements and declarations,
+       which are the two kinds of block items;
+       the overlap cannot be disambiguated purely syntactically.
+       Thus, under the appropriate conditions,
+       we parse a possibly ambiguous declaration or statement."))
+    (b* (((reterr) (irr-block-item) (irr-span) parstate)
+         ((erp token & parstate) (read-token parstate)))
+      (cond
+       ;; If token is an identifier, we need to read another token.
+       ((and token (token-case token :ident)) ; ident
+        (b* (((erp token2 & parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is a colon, we must have a labeled statement.
+           ;; We put back colon and label, and parse a statement.
+           ((token-punctuatorp token2 ":") ; ident :
+            (b* ((parstate (unread-token parstate)) ; ident
+                 (parstate (unread-token parstate)) ;
+                 ((erp stmt span parstate) (parse-statement parstate))) ; stmt
+              (retok (block-item-stmt stmt) span parstate)))
+           ;; Otherwise, we may have a declaration or an expression statement,
+           ;; so we read a possibly ambiguous declaration or statement.
+           (t ; ident other
+            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; ident
+                 (parstate (unread-token parstate)) ;
+                 ((erp decl/stmt span parstate) ; decl/stmt
+                  (parse-declaration-or-statement parstate)))
+              (amb?-decl/stmt-case
+               decl/stmt
+               ;; If we parse an unambiguous declaration,
+               ;; we return a block item that is a declaration.
+               :decl
+               (retok (block-item-decl decl/stmt.unwrap)
+                      span
+                      parstate)
+               ;; If we parse an unambiguous statement,
+               ;; we return a block item that is a statement.
+               :stmt
+               (retok (block-item-stmt (stmt-expr decl/stmt.unwrap))
+                      span
+                      parstate)
+               ;; If we parse an ambiguous declaration or statement,
+               ;; we return an ambiguous block item.
+               :ambig
+               (retok (block-item-ambig decl/stmt.unwrap)
+                      span
+                      parstate)))))))
+       ;; If token may start a declaration specifier,
+       ;; since we have already considered the case of an identifier above,
+       ;; we must have a declaration.
+       ((token-declaration-specifier-start-p token) ; declspec...
+        (b* ((parstate (unread-token parstate)) ;
+             ((erp decl span parstate) ; decl
+              (parse-declaration parstate)))
+          (retok (block-item-decl decl) span parstate)))
+       ;; Otherwise, we must have a statement.
+       (t ; other
+        (b* ((parstate (if token (unread-token parstate) parstate)) ;
+             ((erp stmt span parstate) ; stmt
+              (parse-statement parstate)))
+          (retok (block-item-stmt stmt) span parstate)))))
+    :measure (two-nats-measure (parsize parstate) 18))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-block-item-list ((parstate parstatep))
+    :returns (mv erp
+                 (items block-item-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a list of one or more block items."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We parse the first block item, which must be present.
+       Then, unless we have a closed curly brace,
+       we recursively parse one or more block items."))
+    (b* (((reterr) nil (irr-span) parstate)
+         (psize (parsize parstate))
+         ((erp item span parstate) (parse-block-item parstate)) ; item
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
+         ((erp token & parstate) (read-token parstate)))
+      (cond
+       ;; If token is a closed curly brace, we have reached the end of the list.
+       ((token-punctuatorp token "}") ; item }
+        (b* ((parstate (unread-token parstate))) ; item
+          (retok (list item) span parstate)))
+       ;; Otherwise, we recursively parse more block items,
+       ;; and we combine them with the one just parsed.
+       (t ; item other
+        (b* ((parstate (if token (unread-token parstate) parstate)) ; item
+             ((erp items last-span parstate) ; item items
+              (parse-block-item-list parstate)))
+          (retok (cons item items)
+                 (span-join span last-span)
+                 parstate)))))
+    :measure (two-nats-measure (parsize parstate) 19))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11508,7 +13800,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual parsize-of-parse-exprs/decls-uncond
+  (defret-mutual parsize-of-parse-exprs/decls/stmts-uncond
     (defret parsize-of-parse-expression-uncond
       (<= (parsize new-parstate)
           (parsize parstate))
@@ -11869,34 +14161,377 @@
           (parsize parstate))
       :rule-classes :linear
       :fn parse-*-attribute-specifier)
+    (defret parsize-of-parse-init-declarator-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-init-declarator)
+    (defret parsize-of-parse-init-declarator-list-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-init-declarator-list)
+    (defret parsize-of-parse-declaration-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-declaration)
+    (defret parsize-of-parse-declaration-list-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-declaration-list)
+    (defret parsize-of-parse-declaration-or-statement-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-declaration-or-statement)
+    (defret parsize-of-parse-asm-output-operand-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-asm-output-operand)
+    (defret parsize-of-parse-asm-output-operands
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-asm-output-operands)
+    (defret parsize-of-parse-?-asm-output-operands-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-?-asm-output-operands)
+    (defret parsize-of-parse-asm-input-operand-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-asm-input-operand)
+    (defret parsize-of-parse-asm-input-operands
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-asm-input-operands)
+    (defret parsize-of-parse-?-asm-input-operands-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-?-asm-input-operands)
+    (defret parsize-of-parse-statement-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-statement)
+    (defret parsize-of-parse-block-item-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-block-item)
+    (defret parsize-of-parse-block-item-list-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-block-item-list)
     :hints
     (("Goal" :in-theory (enable fix nfix))
      (cond
+      ((acl2::occur-lst '(acl2::flag-is 'parse-expression)
+                        clause)
+       '(:expand (parse-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-expression-rest)
+                        clause)
+       '(:expand (parse-expression-rest prev-expr prev-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-assignment-expression)
+                        clause)
+       '(:expand (parse-assignment-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-conditional-expression)
+                        clause)
+       '(:expand (parse-conditional-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-or-expression)
+                        clause)
+       '(:expand (parse-logical-or-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-or-expression-rest)
+                        clause)
+       '(:expand (parse-logical-or-expression-rest prev-expr
+                                                   prev-span
+                                                   parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-and-expression)
+                        clause)
+       '(:expand (parse-logical-and-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-and-expression-rest)
+                        clause)
+       '(:expand (parse-logical-and-expression-rest prev-expr
+                                                    prev-span
+                                                    parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-inclusive-or-expression)
+                        clause)
+       '(:expand (parse-inclusive-or-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-inclusive-or-expression-rest)
+                        clause)
+       '(:expand (parse-inclusive-or-expression-rest prev-expr
+                                                     prev-span
+                                                     parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-exclusive-or-expression)
+                        clause)
+       '(:expand (parse-exclusive-or-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-exclusive-or-expression-rest)
+                        clause)
+       '(:expand (parse-exclusive-or-expression-rest prev-expr
+                                                     prev-span
+                                                     parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-and-expression)
+                        clause)
+       '(:expand (parse-and-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-and-expression-rest)
+                        clause)
+       '(:expand (parse-and-expression-rest prev-expr
+                                            prev-span
+                                            parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-equality-expression)
+                        clause)
+       '(:expand (parse-equality-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-equality-expression-rest)
+                        clause)
+       '(:expand (parse-equality-expression-rest prev-expr
+                                                 prev-span
+                                                 parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-relational-expression)
+                        clause)
+       '(:expand (parse-relational-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-relational-expression-rest)
+                        clause)
+       '(:expand (parse-relational-expression-rest prev-expr
+                                                   prev-span
+                                                   parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-shift-expression)
+                        clause)
+       '(:expand (parse-shift-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-shift-expression-rest)
+                        clause)
+       '(:expand (parse-shift-expression-rest prev-expr
+                                              prev-span
+                                              parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-additive-expression)
+                        clause)
+       '(:expand (parse-additive-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-additive-expression-rest)
+                        clause)
+       '(:expand (parse-additive-expression-rest prev-expr
+                                                 prev-span
+                                                 parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-multiplicative-expression)
+                        clause)
+       '(:expand (parse-multiplicative-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-multiplicative-expression-rest)
+                        clause)
+       '(:expand (parse-multiplicative-expression-rest prev-expr
+                                                       prev-span
+                                                       parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-cast-expression)
                         clause)
        '(:expand (parse-cast-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-unary-expression)
+                        clause)
+       '(:expand (parse-unary-expression parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-postfix-expression)
                         clause)
        '(:expand (parse-postfix-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-postfix-expression-rest)
+                        clause)
+       '(:expand (parse-postfix-expression-rest prev-expr
+                                                prev-span
+                                                parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-argument-expressions)
+                        clause)
+       '(:expand (parse-argument-expressions parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-argument-expressions-rest)
+                        clause)
+       '(:expand (parse-argument-expressions-rest prev-exprs
+                                                  prev-span
+                                                  parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-primary-expression)
+                        clause)
+       '(:expand (parse-primary-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-literal)
+                        clause)
+       '(:expand (parse-compound-literal tyname first-span parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-generic-association)
                         clause)
        '(:expand (parse-generic-association parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-generic-associations-rest)
+                        clause)
+       '(:expand (parse-generic-associations-rest prev-genassocs
+                                                  prev-span
+                                                  parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-constant-expression)
+                        clause)
+       '(:expand (parse-constant-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-static-assert-declaration)
+                        clause)
+       '(:expand (parse-static-assert-declaration first-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-designator)
+                        clause)
+       '(:expand (parse-designator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-designator-list)
+                        clause)
+       '(:expand (parse-designator-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer)
+                        clause)
+       '(:expand (parse-initializer parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-designation?-initializer)
+                        clause)
+       '(:expand (parse-designation?-initializer parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer-list)
+                        clause)
+       '(:expand (parse-initializer-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator)
+                        clause)
+       '(:expand (parse-enumerator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator-list)
+                        clause)
+       '(:expand (parse-enumerator-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier/qualifier)
+                        clause)
+       '(:expand ((parse-specifier/qualifier tyspec-seenp parstate)
+                  (parse-specifier/qualifier nil parstate))))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
+                        clause)
+       '(:expand ((parse-specifier-qualifier-list tyspec-seenp parstate)
+                  (parse-specifier-qualifier-list nil parstate))))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifier)
+                        clause)
+       '(:expand ((parse-declaration-specifier tyspec-seenp parstate)
+                  (parse-declaration-specifier nil parstate))))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
+                        clause)
+       '(:expand ((parse-declaration-specifiers tyspec-seenp parstate)
+                  (parse-declaration-specifiers nil parstate))))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-or-union-specifier)
+                        clause)
+       '(:expand (parse-struct-or-union-specifier parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-enum-specifier)
+                        clause)
+       '(:expand (parse-enum-specifier first-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-alignment-specifier)
+                        clause)
+       '(:expand (parse-alignment-specifier first-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-abstract-declarator)
+                        clause)
+       '(:expand (parse-abstract-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-abstract-declarator-rest)
+                        clause)
+       '(:expand (parse-direct-abstract-declarator-rest prev-dirabsdeclor
+                                                        prev-span
+                                                        parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-abstract-declarator)
+                        clause)
+       '(:expand (parse-array/function-abstract-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-declarator)
+                        clause)
+       '(:expand (parse-array/function-declarator prev-dirdeclor
+                                                  prev-span
+                                                  parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-direct-abstract-declarator)
                         clause)
        '(:expand (parse-direct-abstract-declarator parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-direct-declarator)
                         clause)
        '(:expand (parse-direct-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
+      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-declarator-rest)
                         clause)
-       '(:expand (parse-specifier-qualifier-list tyspec-seenp parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
+       '(:expand (parse-direct-declarator-rest prev-dirdeclor
+                                               prev-span
+                                               parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator)
                         clause)
-       '(:expand (parse-declaration-specifiers tyspec-seenp parstate))))))
+       '(:expand (parse-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator)
+                        clause)
+       '(:expand (parse-struct-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator-list)
+                        clause)
+       '(:expand (parse-struct-declarator-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration)
+                        clause)
+       '(:expand (parse-struct-declaration parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration-list)
+                        clause)
+       '(:expand (parse-struct-declaration-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration)
+                        clause)
+       '(:expand (parse-parameter-declaration parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration-list)
+                        clause)
+       '(:expand (parse-parameter-declaration-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-type-name)
+                        clause)
+       '(:expand (parse-type-name parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-expression-or-type-name)
+                        clause)
+       '(:expand (parse-expression-or-type-name parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator-or-abstract-declarator)
+                        clause)
+       '(:expand (parse-declarator-or-abstract-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-parameters)
+                        clause)
+       '(:expand (parse-attribute-parameters parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute)
+                        clause)
+       '(:expand (parse-attribute parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-list)
+                        clause)
+       '(:expand (parse-attribute-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
+                        clause)
+       '(:expand (parse-attribute-specifier uscores first-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-*-attribute-specifier)
+                        clause)
+       '(:expand (parse-*-attribute-specifier parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator)
+                        clause)
+       '(:expand (parse-init-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator-list)
+                        clause)
+       '(:expand (parse-init-declarator-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration)
+                        clause)
+       '(:expand (parse-declaration parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-list)
+                        clause)
+       '(:expand (parse-declaration-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-or-statement)
+                        clause)
+       '(:expand (parse-declaration-or-statement parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operand)
+                        clause)
+       '(:expand (parse-asm-output-operand parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operands)
+                        clause)
+       '(:expand (parse-asm-output-operands parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-?-asm-output-operands)
+                        clause)
+       '(:expand (parse-?-asm-output-operands parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operand)
+                        clause)
+       '(:expand (parse-asm-input-operand parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operands)
+                        clause)
+       '(:expand (parse-asm-input-operands parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-?-asm-input-operands)
+                        clause)
+       '(:expand (parse-?-asm-input-operands parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-statement)
+                        clause)
+       '(:expand (parse-statement parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item)
+                        clause)
+       '(:expand (parse-block-item parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item-list)
+                        clause)
+       '(:expand (parse-block-item-list parstate))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual parsize-of-parse-exprs/decls-cond
+  (defret-mutual parsize-of-parse-exprs/decls/stmts-cond
     (defret parsize-of-parse-expression-cond
       (implies (not erp)
                (<= (parsize new-parstate)
@@ -12293,6 +14928,86 @@
       t
       :rule-classes nil
       :fn parse-*-attribute-specifier)
+    (defret parsize-of-parse-init-declarator-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-init-declarator)
+    (defret parsize-of-parse-init-declarator-list-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-init-declarator-list)
+    (defret parsize-of-parse-declaration-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-declaration)
+    (defret parsize-of-parse-declaration-list-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-declaration-list)
+    (defret parsize-of-parse-declaration-or-statement-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-declaration-or-statement)
+    (defret parsize-of-parse-asm-output-operand-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-asm-output-operand)
+    (defret parsize-of-parse-asm-output-operands-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-asm-output-operands)
+    (defret parsize-of-parse-?-asm-output-operands-cond
+      t
+      :rule-classes nil
+      :fn parse-?-asm-output-operands)
+    (defret parsize-of-parse-asm-input-operand-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-asm-input-operand)
+    (defret parsize-of-parse-asm-input-operands-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-asm-input-operands)
+    (defret parsize-of-parse-?-asm-input-operands-cond
+      t
+      :rule-classes nil
+      :fn parse-?-asm-input-operands)
+    (defret parsize-of-parse-statement-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-statement)
+    (defret parsize-of-parse-block-item-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-block-item)
+    (defret parsize-of-parse-block-item-list-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-block-item-list)
     :hints
     (("Goal" :in-theory (enable fix nfix))
      (cond
@@ -12302,6 +15017,9 @@
       ((acl2::occur-lst '(acl2::flag-is 'parse-assignment-expression)
                         clause)
        '(:expand (parse-assignment-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-conditional-expression)
+                        clause)
+       '(:expand (parse-conditional-expression parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-logical-or-expression)
                         clause)
        '(:expand (parse-logical-or-expression parstate)))
@@ -12338,21 +15056,168 @@
       ((acl2::occur-lst '(acl2::flag-is 'parse-postfix-expression)
                         clause)
        '(:expand (parse-postfix-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-unary-expression)
+                        clause)
+       '(:expand (parse-unary-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-primary-expression)
+                        clause)
+       '(:expand (parse-primary-expression parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-generic-association)
                         clause)
        '(:expand (parse-generic-association parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-literal)
+                        clause)
+       '(:expand (parse-compound-literal tyname first-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-constant-expression)
+                        clause)
+       '(:expand (parse-constant-expression parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-static-assert-declaration)
+                        clause)
+       '(:expand (parse-static-assert-declaration first-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-abstract-declarator)
+                        clause)
+       '(:expand (parse-abstract-declarator parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-direct-abstract-declarator)
                         clause)
        '(:expand (parse-direct-abstract-declarator parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-direct-declarator)
                         clause)
        '(:expand (parse-direct-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-designator)
+                        clause)
+       '(:expand (parse-designator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-designator-list)
+                        clause)
+       '(:expand (parse-designator-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer)
+                        clause)
+       '(:expand (parse-initializer parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-designation?-initializer)
+                        clause)
+       '(:expand (parse-designation?-initializer parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer-list)
+                        clause)
+       '(:expand (parse-initializer-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator)
+                        clause)
+       '(:expand (parse-enumerator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator-list)
+                        clause)
+       '(:expand (parse-enumerator-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier/qualifier)
+                        clause)
+       '(:expand ((parse-specifier/qualifier tyspec-seenp parstate)
+                  (parse-specifier/qualifier nil parstate))))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
                         clause)
-       '(:expand (parse-specifier-qualifier-list tyspec-seenp parstate)))
+       '(:expand ((parse-specifier-qualifier-list tyspec-seenp parstate)
+                  (parse-specifier-qualifier-list nil parstate))))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-statement)
+                        clause)
+       '(:expand (parse-statement parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifier)
+                        clause)
+       '(:expand ((parse-declaration-specifier tyspec-seenp parstate)
+                  (parse-declaration-specifier nil parstate))))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
                         clause)
-       '(:expand (parse-declaration-specifiers tyspec-seenp parstate))))))
+       '(:expand ((parse-declaration-specifiers tyspec-seenp parstate)
+                  (parse-declaration-specifiers nil parstate))))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-or-union-specifier)
+                        clause)
+       '(:expand (parse-struct-or-union-specifier parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
+                        clause)
+       '(:expand (parse-attribute-specifier uscores first-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-enum-specifier)
+                        clause)
+       '(:expand (parse-enum-specifier first-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-alignment-specifier)
+                        clause)
+       '(:expand (parse-alignment-specifier first-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-abstract-declarator)
+                        clause)
+       '(:expand (parse-array/function-abstract-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-declarator)
+                        clause)
+       '(:expand (parse-array/function-declarator prev-dirdeclor
+                                                  prev-span
+                                                  parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator)
+                        clause)
+       '(:expand (parse-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator)
+                        clause)
+       '(:expand (parse-struct-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator-list)
+                        clause)
+       '(:expand (parse-struct-declarator-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration)
+                        clause)
+       '(:expand (parse-struct-declaration parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration-list)
+                        clause)
+       '(:expand (parse-struct-declaration-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration)
+                        clause)
+       '(:expand (parse-parameter-declaration parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration-list)
+                        clause)
+       '(:expand (parse-parameter-declaration-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-type-name)
+                        clause)
+       '(:expand (parse-type-name parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-expression-or-type-name)
+                        clause)
+       '(:expand (parse-expression-or-type-name parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator-or-abstract-declarator)
+                        clause)
+       '(:expand (parse-declarator-or-abstract-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-parameters)
+                        clause)
+       '(:expand (parse-attribute-parameters parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute)
+                        clause)
+       '(:expand (parse-attribute parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-list)
+                        clause)
+       '(:expand (parse-attribute-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
+                        clause)
+       '(:expand (parse-attribute-specifier uscores first-span parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator)
+                        clause)
+       '(:expand (parse-init-declarator parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator-list)
+                        clause)
+       '(:expand (parse-init-declarator-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration)
+                        clause)
+       '(:expand (parse-declaration parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-list)
+                        clause)
+       '(:expand (parse-declaration-list parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-or-statement)
+                        clause)
+       '(:expand (parse-declaration-or-statement parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operand)
+                        clause)
+       '(:expand (parse-asm-output-operand parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operands)
+                        clause)
+       '(:expand (parse-asm-output-operands parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operand)
+                        clause)
+       '(:expand (parse-asm-input-operand parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operands)
+                        clause)
+       '(:expand (parse-asm-input-operands parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item)
+                        clause)
+       '(:expand (parse-block-item parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item-list)
+                        clause)
+       '(:expand (parse-block-item-list parstate))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12370,1472 +15235,6 @@
     :hints (("Goal" :in-theory (e/d (acl2::member-of-cons
                                      token-additive-operator-p)
                                     ((:e tau-system))))))) ; for speed
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-asm-name-specifier ((uscores booleanp)
-                                  (first-span spanp)
-                                  (parstate parstatep))
-  :returns (mv erp
-               (asmspec asm-name-specp)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse an assembler name specifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used only if GCC extensions are supported.")
-   (xdoc::p
-    "This is called after parsing the initial @('asm') or @('__asm__').
-     We pass to this function a flag distinguishing the two keywords
-     (i.e. whether it has underscores or not),
-     as well as the span of that keyword.
-     We parse the rest of the assembler name specifier,
-     and return its abstract syntax representation.
-     We ensure that there is at least one string literal;
-     see grammar rule for @('asm-name-specifier'), which uses @('1*')."))
-  (b* (((reterr) (irr-asm-name-spec) (irr-span) parstate)
-       ;; asm-or-__asm__
-       ((erp & parstate) (read-punctuator "(" parstate)) ; asm-or-__asm__ (
-       ((erp token span parstate) (read-token parstate))
-       ((unless (and token (token-case token :string)))
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a string literal"
-                    :found (token-to-msg token)))
-       (parstate (unread-token parstate)) ; asm-or-__asm__ (
-       ((erp strings & parstate) ; asm-or-__asm__ ( strings
-        (parse-*-stringlit parstate))
-       ((erp last-span parstate) ; asm-or-__asm__ ( strings )
-        (read-punctuator ")" parstate)))
-    (retok (make-asm-name-spec :strings strings
-                               :uscores uscores)
-           (span-join first-span last-span)
-           parstate))
-
-  ///
-
-  (defret parsize-of-parse-asm-name-specifier-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-asm-name-specifier-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-?-asm-name-specifier ((parstate parstatep))
-  :returns (mv erp
-               (asmspec? asm-name-spec-optionp)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse an optional assembler name specifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The optionality is conveyed by
-     the question mark in the name of this function.
-     If the next token is the @('asm') or @('__asm__') keyword,
-     we must have an assembler name specifier, which we parse.
-     Otherwise, we put back the token
-     and return no assembler name specifier;
-     in this case, the returned span is an irrelevant one."))
-  (b* (((reterr) nil (irr-span) parstate)
-       ((erp token span parstate) (read-token parstate)))
-    (cond
-     ((token-keywordp token "asm")
-      (parse-asm-name-specifier nil span parstate))
-     ((token-keywordp token "__asm__")
-      (parse-asm-name-specifier t span parstate))
-     (t
-      (b* ((parstate (if token (unread-token parstate) parstate)))
-        (retok nil (irr-span) parstate)))))
-
-  ///
-
-  (defret parsize-of-parse-?-asm-name-specifier
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-init-declarator ((parstate parstatep))
-  :returns (mv erp
-               (initdeclor initdeclorp)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse an initializer declarator."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "An initializer declarator consists of a declarator,
-     optionally followed by an equal sign and an initializer."))
-  (b* (((reterr) (irr-initdeclor) (irr-span) parstate)
-       ((erp declor span parstate) (parse-declarator parstate)) ; declor
-       ((erp token & parstate) (read-token parstate)))
-    (cond
-     ;; If token is an equal sign, there must be an initializer.
-     ((token-punctuatorp token "=") ; declor =
-      (b* (((erp initer last-span parstate) ; declor = initer
-            (parse-initializer parstate)))
-        (retok (make-initdeclor :declor declor :init? initer)
-               (span-join span last-span)
-               parstate)))
-     ;; Otherwise, there is no initializer.
-     (t ; declor other
-      (b* ((parstate (if token (unread-token parstate) parstate))) ; declor
-        (retok (make-initdeclor :declor declor :init? nil)
-               span
-               parstate)))))
-
-  ///
-
-  (defret parsize-of-parse-init-declarator-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-init-declarator-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-init-declarator-list ((parstate parstatep))
-  :returns (mv erp
-               (initdeclors initdeclor-listp)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a list of one or more initializer declarators."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We parse the first one, which must be present.
-     If there is a comma after that,
-     we recursively parse one or more after the comma."))
-  (b* (((reterr) nil (irr-span) parstate)
-       ((erp initdeclor span parstate) ; initdeclor
-        (parse-init-declarator parstate))
-       ((erp token & parstate) (read-token parstate)))
-    (cond
-     ;; If token is a comma,
-     ;; recursively parse one or more initializer declarators,
-     ;; and combine with the one just parsed.
-     ((token-punctuatorp token ",") ; initdeclor ,
-      (b* (((erp initdeclors last-span parstate) ; initdeclor , initdeclors
-            (parse-init-declarator-list parstate)))
-        (retok (cons initdeclor initdeclors)
-               (span-join span last-span)
-               parstate)))
-     ;; If token is anything else, we have reached the end of the list.
-     (t ; initdeclor other
-      (b* ((parstate (if token (unread-token parstate) parstate)))
-        (retok (list initdeclor) span parstate)))))
-  :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns
-
-  ///
-
-  (defret parsize-of-parse-init-declarator-list-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret parsize-of-parse-init-declarator-list-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-declaration ((parstate parstatep))
-  :returns (mv erp
-               (decl declp)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a declaration."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A declaration is either an assert declaration,
-     recognized by the starting @('_Static_assert') keyword,
-     or a list of one or more declaration specifiers
-     optionally followed by a list of one or more initializer declarators
-     and mandatorily followed by a semicolon.")
-   (xdoc::p
-    "If GCC extensions are supported, we must also allow for
-     an optional assembler name specifier,
-     as well as for zero or more attribute specifiers,
-     ending a declaration, just before the semicolon;
-     and we must also allow for an @('__extension__') keyword
-     just before the declaration.
-     See the ABNF grammar rule for @('declaration')."))
-  (b* (((reterr) (irr-decl) (irr-span) parstate)
-       ((erp token span parstate) (read-token parstate)))
-    (cond
-     ;; If token may start a declaration specifier, we put it back and
-     ;; we parse a list or one or more declaration specifiers.
-     ;; Then we read more tokens to see if we have initializer declarators.
-     ;; But if GCC extensions are supported,
-     ;; and if token is the '__extension__' keyword,
-     ;; we need to take that into account as well.
-     ((or (token-declaration-specifier-start-p token) ; declspec...
-          (and (token-keywordp token "__extension__") ; __extension__
-               (parstate->gcc parstate)))
-      (b* (((mv extension parstate)
-            (if (and (token-keywordp token "__extension__")
-                     (parstate->gcc parstate))
-                (mv t parstate)
-              (b* ((parstate (unread-token parstate)))
-                (mv nil parstate))))
-           ;; [__extension__]
-           ((erp declspecs span parstate) ; [__extension__] declspecs
-            (parse-declaration-specifiers nil parstate))
-           ((erp token2 span2 parstate) (read-token parstate)))
-        (cond
-         ;; If token2 is the keyword 'asm' or '__asm__',
-         ;; and if GCC extensions are supported,
-         ;; we have no initializer declarators;
-         ;; parse the assembler name specifier,
-         ;; any attribute specifiers after that,
-         ;; and the ending semicolon.
-         ((and (or (token-keywordp token2 "asm")
-                   (token-keywordp token2 "__asm__"))
-               (parstate->gcc parstate))
-          ;; [__extension__] declspecs asm-or__asm__
-          (b* ((uscores (token-keywordp token2 "__asm__"))
-               ((erp asmspec & parstate)
-                ;; [__extension__] declspecs asmspec
-                (parse-asm-name-specifier uscores span2 parstate))
-               ((erp attrspecs & parstate)
-                ;; [__extension__] declspecs asmspec [attrspecs]
-                (parse-*-attribute-specifier parstate))
-               ((erp last-span parstate)
-                ;; [__extension__] declspecs asmspec [attrspecs] ;
-                (read-punctuator ";" parstate)))
-            (retok (make-decl-decl :extension extension
-                                   :specs declspecs
-                                   :init nil
-                                   :asm? asmspec
-                                   :attrib attrspecs)
-                   (span-join span last-span)
-                   parstate)))
-         ;; If token2 is the keyword '__attribute__',
-         ;; and if GCC extensions are supported,
-         ;; we have no initializer declarators;
-         ;; we parse the attribute specifiers,
-         ;; and the ending semicolon.
-         ;; Note that we have no assembler name specifier in this case.
-         ((and (token-keywordp token2 "__attribute__")
-               (parstate->gcc parstate))
-          ;; [__extension__] declspecs __attribute__
-          (b* ((parstate (unread-token parstate))
-               ((erp attrspecs & parstate)
-                ;; [__extension__] declspecs attrspecs
-                (parse-*-attribute-specifier parstate))
-               ((erp last-span parstate)
-                ;; [__extension__] declspecs attrspecs ;
-                (read-punctuator ";" parstate)))
-            (retok (make-decl-decl :extension extension
-                                   :specs declspecs
-                                   :init nil
-                                   :asm? nil
-                                   :attrib attrspecs)
-                   (span-join span last-span)
-                   parstate)))
-         ;; If token2 may start a declarator,
-         ;; which is equivalent to saying that
-         ;; it may start an initializer declarator,
-         ;; we parse the list of one or more initializer declarators,
-         ;; then an optional assembler name specifier,
-         ;; then a list of zero or more attribute specifiers,
-         ;; and then the final semicolon.
-         ((token-declarator-start-p token2)
-          ;; [__extension__] declspecs declor...
-          (b* ((parstate (unread-token parstate))
-               ;; [__extension__] declspecs
-               ((erp initdeclors & parstate)
-                ;; [__extension__] declspecs initdeclors
-                (parse-init-declarator-list parstate))
-               ((erp asmspec? & parstate)
-                ;; [__extension__] declspecs initdeclors [asmspec]
-                (if (parstate->gcc parstate)
-                    (parse-?-asm-name-specifier parstate)
-                  (retok nil (irr-span) parstate)))
-               ((erp attrspecs & parstate)
-                ;; [__extension__] declspecs initdeclors [asmspec] [attrspecs]
-                (if (parstate->gcc parstate)
-                    (parse-*-attribute-specifier parstate)
-                  (retok nil (irr-span) parstate)))
-               ((erp last-span parstate)
-                ;; [__extension__] declspecs initdeclors [asmspec] [attrspecs] ;
-                (read-punctuator ";" parstate)))
-            (retok (make-decl-decl :extension extension
-                                   :specs declspecs
-                                   :init initdeclors
-                                   :asm? asmspec?
-                                   :attrib attrspecs)
-                   (span-join span last-span)
-                   parstate)))
-         ;; If token2 is a semicolon,
-         ;; we have no initializer declarators.
-         ;; If GCC extensions are supported,
-         ;; this also means that we have no attribute specifiers.
-         ((token-punctuatorp token2 ";") ; [__extension__] declspecs ;
-          (retok (make-decl-decl :extension extension
-                                 :specs declspecs
-                                 :init nil
-                                 :asm? nil
-                                 :attrib nil)
-                 (span-join span span2)
-                 parstate))
-         ;; If token2 is anything else, it is an error.
-         (t ; [__extension__] declspecs other
-          (reterr-msg :where (position-to-msg (span->start span2))
-                      :expected "a declarator or a semicolon"
-                      :found (token-to-msg token2))))))
-     ;; If token is the keyword @('_Static_assert'),
-     ;; we have an assert declaration.
-     ((token-keywordp token "_Static_assert") ; _Static_assert
-      (b* (((erp statassert last-span parstate) ; statassert
-            (parse-static-assert-declaration span parstate)))
-        (retok (decl-statassert statassert)
-               (span-join span last-span)
-               parstate)))
-     ;; If token is anything else, it is an error.
-     (t ; other
-      (reterr-msg :where (position-to-msg (span->start span))
-                  :expected "a declaration specifier ~
-                             or the _Static_assert keyword"
-                  :found (token-to-msg token)))))
-
-  ///
-
-  (defret parsize-of-parse-declaration-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-declaration-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-declaration-list ((parstate parstatep))
-  :returns (mv erp
-               (decls decl-listp)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a list of one or more declarations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We parse the first one, which must be present.
-     Then we stop if the next token is an open curly brace,
-     because the only place where we parse declaration lists
-     is in function definitions, between declarator and body.
-     Otherwise we recursively call this function to parse more."))
-  (b* (((reterr) nil (irr-span) parstate)
-       ((erp decl span parstate) (parse-declaration parstate)) ; decl
-       ((erp token & parstate) (read-token parstate)))
-    (cond
-     ;; If token is an open curly brace, we stop.
-     ((token-punctuatorp token "{")  ; decl {
-      (retok (list decl) span parstate))
-     ;; If token is anything else, we parse more declarations.
-     (t ; decl other
-      (b* ((parstate (if token (unread-token parstate) parstate)) ; decl
-           ((erp decls last-span parstate) ; decl decls
-            (parse-declaration-list parstate)))
-        (retok (cons decl decls)
-               (span-join span last-span)
-               parstate)))))
-  :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns
-
-  ///
-
-  (defret parsize-of-parse-declaration-list-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret parsize-of-parse-declaration-list-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-declaration-or-statement ((parstate parstatep))
-  :returns (mv erp
-               (decl/stmt amb?-decl/stmt-p)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a declaration or a statement."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called when a block item
-     may be a declaration or an expression statement,
-     which have a complex syntactic overlap,
-     as explained in @(tsee amb-decl/stmt).
-     Thus, this parsing function returns
-     a possibly ambiguous declaration or statement.")
-   (xdoc::p
-    "We try to parse both a declaration
-     and an expression followed by a semicolon
-     (note that a declaration always ends in semicolon).
-     If only one succeeds, there is no ambiguity,
-     and we return either a declaration or a statement (wrapped);
-     since the statement is always an expression statement,
-     we actually return an expression in this case.
-     If both succeed, there is an ambiguity,
-     which we return as such.
-     If none succeeds, it is an error."))
-  (b* (((reterr) (irr-amb?-decl/stmt) (irr-span) parstate)
-       (parstate (record-checkpoint parstate)) ; we will backtrack here
-       (psize (parsize parstate))
-       ((mv erp expr span-expr parstate) (parse-expression parstate)))
-    (if erp
-        ;; If the parsing of an expression fails,
-        ;; we must have a declaration.
-        (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-             ((unless (<= (parsize parstate) psize))
-              (raise "Internal error: ~
-                        size ~x0 after backtracking exceeds ~
-                        size ~x1 before backtracking."
-                     (parsize parstate) psize)
-              ;; Here we have (> (parsize parstate) psize),
-              ;; but we need to return a parser state
-              ;; no larger than the initial one,
-              ;; so we just return the empty parser state.
-              ;; This is just logical: execution stops at the RAISE above.
-              (b* ((parstate (init-parstate nil nil parstate)))
-                (reterr t)))
-             ((erp decl span parstate) (parse-declaration parstate)))
-          (retok (amb?-decl/stmt-decl decl) span parstate))
-      ;; If the parsing of an expression succeeds,
-      ;; we also need to parse a semicolon.
-      ;; Note that an expression may be a prefix of a declaration,
-      ;; e.g. 'x y;', where 'x' and 'y' are identifiers,
-      ;; must be a declaration, even though x could be an expression.
-      (b* (((erp token span-semicolon parstate) (read-token parstate))
-           (span-stmt (span-join span-expr span-semicolon)))
-        (if (token-punctuatorp token ";")
-            ;; If a semicolon follows,
-            ;; the parsing of an expression statement has succeeded,
-            ;; but we must see whether we can also parse a declaration.
-            ;; So we backtrack and we attempt to parse a declaration.
-            (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-                 ((unless (<= (parsize parstate) psize))
-                  (raise "Internal error: ~
-                            size ~x0 after backtracking exceeds ~
-                            size ~x1 before backtracking."
-                         (parsize parstate) psize)
-                  ;; Here we have (> (parsize parstate) psize),
-                  ;; but we need to return a parser state
-                  ;; no larger than the initial one,
-                  ;; so we just return the empty parser state.
-                  ;; This is just logical:
-                  ;; execution stops at the RAISE above.
-                  (b* ((parstate (init-parstate nil nil parstate)))
-                    (reterr t)))
-                 (parstate
-                  (record-checkpoint parstate)) ; we may backtrack again
-                 ((mv erp decl span-decl parstate)
-                  (parse-declaration parstate)))
-              (if erp
-                  ;; If the parsing of a declaration fails,
-                  ;; we have an expression statement.
-                  ;; We need to backtrack and re-parse it right now,
-                  ;; but we will look into improving this inefficiency.
-                  (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-                       ((unless (<= (parsize parstate) psize))
-                        (raise "Internal error: ~
-                              size ~x0 after backtracking exceeds ~
-                              size ~x1 before backtracking."
-                               (parsize parstate) psize)
-                        ;; Here we have (> (parsize parstate) psize),
-                        ;; but we need to return a parser state
-                        ;; no larger than the initial one,
-                        ;; so we just return the empty parser state.
-                        ;; This is just logical:
-                        ;; execution stops at the RAISE above.
-                        (b* ((parstate (init-parstate nil nil parstate)))
-                          (reterr t)))
-                       ((mv erp expr1 span-expr1 parstate)
-                        (parse-expression parstate))
-                       ((when erp)
-                        (raise "Internal error: ~
-                              parsing the same expression ~x0 twice ~
-                              gives the error ~x1."
-                               expr erp)
-                        (reterr t))
-                       ((unless (equal expr1 expr))
-                        (raise "Internal error: ~
-                              parsing the same expression ~x0 twice ~
-                              gives a different expression ~x1."
-                               expr expr1)
-                        (reterr t))
-                       ((unless (equal span-expr1 span-expr))
-                        (raise "Internal error: ~
-                              parsing the same expression ~x0 twice ~
-                              gives a different span ~x1 from ~x2."
-                               expr span-expr1 span-expr)
-                        (reterr t))
-                       ((mv erp span-semicolon1 parstate)
-                        (read-punctuator ";" parstate))
-                       ((when erp)
-                        (raise "Internal error: ~
-                              parsing the semicolon twice ~
-                              after the same expression ~x0 ~
-                              gives the error ~x1."
-                               expr erp)
-                        (reterr t))
-                       ((unless (equal span-semicolon1 span-semicolon))
-                        (raise "Internal error: ~
-                              parsing the same semicolon twice ~
-                              after the same expression ~x0 ~
-                              gives a span ~x1 different from ~
-                              the span ~x2 from the previous time."
-                               expr span-semicolon1 span-semicolon)
-                        (reterr t)))
-                    (retok (amb?-decl/stmt-stmt expr)
-                           (span-join span-expr span-semicolon)
-                           parstate))
-                ;; If the parsing of a declaration succeeds,
-                ;; we return an ambiguous declaration or statement.
-                ;; We double-check that the spans are the same,
-                ;; which is always expected to succeed.
-                (b* ((parstate (clear-checkpoint parstate)) ; no backtracking
-                     ((unless (equal span-stmt span-decl))
-                      (raise "Internal error:
-                              span ~x0 of expression statement ~x1 ~
-                              differs from ~
-                              span ~x2 of declaration ~x3."
-                             span-stmt expr span-decl decl)
-                      (reterr t)))
-                  (retok (amb?-decl/stmt-ambig
-                          (make-amb-decl/stmt :stmt expr
-                                              :decl decl))
-                         span-stmt ; = span-decl
-                         parstate))))
-          ;; If a semicolon does not follow the expression,
-          ;; we cannot have an expression statement.
-          ;; Thus, we backtrack and proceed to parse a declaration.
-          (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-               ((unless (<= (parsize parstate) psize))
-                (raise "Internal error: ~
-                        size ~x0 after backtracking exceeds ~
-                        size ~x1 before backtracking."
-                       (parsize parstate) psize)
-                ;; Here we have (> (parsize parstate) psize),
-                ;; but we need to return a parser state
-                ;; no larger than the initial one,
-                ;; so we just return the empty parser state.
-                ;; This is just logical:
-                ;; execution stops at the RAISE above.
-                (b* ((parstate (init-parstate nil nil parstate)))
-                  (reterr t)))
-               ((erp decl span parstate) (parse-declaration parstate)))
-            (retok (amb?-decl/stmt-decl decl) span parstate))))))
-
-  ///
-
-  (defret parsize-of-parse-declaration-or-statement-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-declaration-or-statement-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines parse-stmts/blocks
-  :short "Parse statements, blocks, and related entities."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This clique of mutually recursive functions shares some characteristics
-     with the clique to parse expressions, declarations, and related entities.
-     See @(tsee parse-exprs/decls) for a discussion of
-     technicalities that also apply to this clique."))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define parse-statement ((parstate parstatep))
-    :returns (mv erp
-                 (stmt stmtp)
-                 (span spanp)
-                 (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-stmts/blocks)
-    :short "Parse a statement."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Most statements start with distinct keywords or punctuators
-       (one punctuator, the open curly brace),
-       but both labeled statements and expression statements
-       may start with an identifier.
-       However, for a labeled statement,
-       the token after the identifier is a colon,
-       which cannot be an expression.
-       So we are able to distinguish all kinds of statements
-       based on the first one or two tokens.")
-     (xdoc::p
-      "The well-known dangling-else grammatical ambiguity is dealt with
-       by associating the @('else') with the closest @('if'),
-       as required in [C:6.8.4/3].")
-     (xdoc::p
-      "There is a syntactic overlap between the two kinds of @('for') loops,
-       the one with an expression and the one with a declaration.
-       An identifier may be a declaration specifier
-       or (the start of) an expression.
-       For now we handle the situation approximately:
-       if the token there may start an expresison,
-       we commit to parsing an expression;
-       otherwise we parse a declaration.
-       In other words, we may fail to accept the case of
-       a declaration that starts with a @('typedef') name for now.
-       We plan to rectify this situation soon."))
-    (b* (((reterr) (irr-stmt) (irr-span) parstate)
-         ((erp token span parstate) (read-token parstate)))
-      (cond
-       ;; If token is an identifier,
-       ;; we could have a labeled statement or an expression statement.
-       ;; So we need to read another token.
-       ((and token (token-case token :ident)) ; ident
-        (b* ((ident (token-ident->unwrap token))
-             ((erp token2 & parstate) (read-token parstate)))
-          (cond
-           ;; If token2 is a colon,
-           ;; we must have a labeled statement.
-           ((token-punctuatorp token2 ":") ; ident :
-            (b* (((erp stmt last-span parstate) ; ident : stmt
-                  (parse-statement parstate)))
-              (retok (make-stmt-labeled :label (label-name ident)
-                                        :stmt stmt)
-                     (span-join span last-span)
-                     parstate)))
-           ;; If token2 is not a colon,
-           ;; we put it back along with the previous token,
-           ;; and we attempt to parse an expression followed by a semicolon.
-           (t ; ident other
-            (b* ((parstate
-                  (if token2 (unread-token parstate) parstate)) ; ident
-                 (parstate (unread-token parstate)) ;
-                 ((erp expr span parstate) (parse-expression parstate)) ; expr
-                 ((erp last-span parstate)
-                  (read-punctuator ";" parstate))) ; expr ;
-              (retok (stmt-expr expr)
-                     (span-join span last-span)
-                     parstate))))))
-       ;; If token is an open curly brace,
-       ;; we must have a compound statement.
-       ((token-punctuatorp token "{") ; {
-        (b* (((erp token2 span2 parstate) (read-token parstate)))
-          (cond
-           ;; If token2 is a closed curly brace,
-           ;; we have an empty compound statement.
-           ((token-punctuatorp token2 "}") ; { }
-            (retok (stmt-compound nil)
-                   (span-join span span2)
-                   parstate))
-           ;; Otherwise, we parse a list of one or more block items.
-           (t ; { other
-            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; {
-                 ((erp items & parstate) ; { blockitems
-                  (parse-block-item-list parstate))
-                 ((erp last-span parstate) ; { blockitems }
-                  (read-punctuator "}" parstate)))
-              (retok (stmt-compound items)
-                     (span-join span last-span)
-                     parstate))))))
-       ;; If token is a semicolon,
-       ;; we have an expression statement without expression.
-       ((token-punctuatorp token ";") ; ;
-        (retok (stmt-expr nil) span parstate))
-       ;; If token is the 'case' keyword,
-       ;; we must have a labeled statement.
-       ((token-keywordp token "case") ; case
-        (b* (((erp cexpr & parstate) ; case constexpr
-              (parse-constant-expression parstate))
-             ((erp & parstate)
-              (read-punctuator ":" parstate)) ; case constexpr :
-             ((erp stmt last-span parstate) ; case constexpr : stmt
-              (parse-statement parstate)))
-          (retok (make-stmt-labeled :label (label-const cexpr)
-                                    :stmt stmt)
-                 (span-join span last-span)
-                 parstate)))
-       ;; If token is the default keyword,
-       ;; we must have a labeled statement.
-       ((token-keywordp token "default") ; default
-        (b* (((erp & parstate) (read-punctuator ":" parstate)) ; default :
-             ((erp stmt last-span parstate) ; default : stmt
-              (parse-statement parstate)))
-          (retok (make-stmt-labeled :label (label-default)
-                                    :stmt stmt)
-                 (span-join span last-span)
-                 parstate)))
-       ;; If token is the 'goto' keyword, we have a jump statement.
-       ((token-keywordp token "goto") ; goto
-        (b* (((erp ident & parstate) (read-identifier parstate)) ; goto ident
-             ((erp last-span parstate) ; goto ident ;
-              (read-punctuator ";" parstate)))
-          (retok (stmt-goto ident)
-                 (span-join span last-span)
-                 parstate)))
-       ;; If token is the keyword 'continue', we have a jump statement.
-       ((token-keywordp token "continue") ; continue
-        (b* (((erp last-span parstate) ; continue ;
-              (read-punctuator ";" parstate)))
-          (retok (stmt-continue)
-                 (span-join span last-span)
-                 parstate)))
-       ;; If token is the keyword 'break', we have a jump statement.
-       ((token-keywordp token "break") ; break
-        (b* (((erp last-span parstate) ; break ;
-              (read-punctuator ";" parstate)))
-          (retok (stmt-break)
-                 (span-join span last-span)
-                 parstate)))
-       ;; If token is the keyword 'return', we have a jump statement.
-       ;; There may be an expression or not.
-       ((token-keywordp token "return") ; return
-        (b* (((erp token2 span2 parstate) (read-token parstate)))
-          (cond
-           ;; If token2 may start an expression, we must have an expression.
-           ((token-expression-start-p token2) ; return expr...
-            (b* ((parstate (unread-token parstate)) ; return
-                 ((erp expr & parstate)
-                  (parse-expression parstate)) ; return expr
-                 ((erp last-span parstate) ; return expr ;
-                  (read-punctuator ";" parstate)))
-              (retok (stmt-return expr)
-                     (span-join span last-span)
-                     parstate)))
-           ;; If token2 is a semicolon, there is no expression.
-           ((token-punctuatorp token2 ";") ; return ;
-            (retok (stmt-return nil)
-                   (span-join span span2)
-                   parstate))
-           ;; If token2 is anything else, it is an error.
-           (t ; return other
-            (reterr-msg :where (position-to-msg (span->start span2))
-                        :expected "an expression or a semicolon"
-                        :found (token-to-msg token2))))))
-       ;; If token is the keyword 'if', we have a selection statement.
-       ;; If there is an 'else'
-       ;; after the parenthesized expression and the statement,
-       ;; we continue parsing that as part of the current selection statement
-       ;; (see documenttion of this function above).
-       ((token-keywordp token "if") ; if
-        (b* (((erp & parstate) (read-punctuator "(" parstate)) ; if (
-             ((erp expr & parstate) (parse-expression parstate)) ; if ( expr
-             ((erp & parstate) (read-punctuator ")" parstate)) ; if ( expr )
-             (psize (parsize parstate))
-             ((erp stmt stmt-span parstate) ; if ( expr ) stmt
-              (parse-statement parstate))
-             ((unless (mbt (<= (parsize parstate) (1- psize))))
-              (reterr :impossible))
-             ((erp token2 & parstate) (read-token parstate)))
-          (cond
-           ;; If token2 is the 'else' keyword,
-           ;; we continue to parse this selection statement.
-           ((token-keywordp token2 "else") ; if ( expr ) stmt else
-            (b* (((erp stmt-else last-span parstate)
-                  ;; if ( expr ) stmt else stmt
-                  (parse-statement parstate)))
-              (retok (make-stmt-ifelse :test expr
-                                       :then stmt
-                                       :else stmt-else)
-                     (span-join span last-span)
-                     parstate)))
-           ;; If token is not the 'else' keyword,
-           ;; we have an 'if' statement without 'else'.
-           (t ; if ( expr ) stmt other
-            (b* ((parstate ; if ( expr ) stmt
-                  (if token2 (unread-token parstate) parstate)))
-              (retok (make-stmt-if :test expr
-                                   :then stmt)
-                     (span-join span stmt-span)
-                     parstate))))))
-       ;; If token is the 'switch' keyword, we have a selection statement.
-       ((token-keywordp token "switch") ; switch
-        (b* (((erp & parstate) (read-punctuator "(" parstate)) ; switch (
-             ((erp expr & parstate) (parse-expression parstate)) ; switch ( expr
-             ((erp & parstate) (read-punctuator ")" parstate)) ; switch ( expr )
-             ((erp stmt last-span parstate) ; switch ( expr ) stmt
-              (parse-statement parstate)))
-          (retok (make-stmt-switch :target expr
-                                   :body stmt)
-                 (span-join span last-span)
-                 parstate)))
-       ;; If token is the 'while' keyword, we have an iteration statement.
-       ((token-keywordp token "while") ; while
-        (b* (((erp & parstate) (read-punctuator "(" parstate)) ; while (
-             ((erp expr & parstate) (parse-expression parstate)) ; while ( expr
-             ((erp & parstate) (read-punctuator ")" parstate)) ; while ( expr )
-             ((erp stmt last-span parstate) ; while ( expr ) stmt
-              (parse-statement parstate)))
-          (retok (make-stmt-while :test expr
-                                  :body stmt)
-                 (span-join span last-span)
-                 parstate)))
-       ;; If token is the 'do' keyword, we have an iteration statement.
-       ((token-keywordp token "do") ; do
-        (b* (((erp stmt & parstate) (parse-statement parstate)) ; do stmt
-             ((erp & parstate) (read-keyword "while" parstate)) ; do stmt while
-             ((erp & parstate) (read-punctuator "(" parstate)) ; do stmt while (
-             ((erp expr & parstate) ; do stmt while ( expr
-              (parse-expression parstate))
-             ((erp & parstate) ; do stmt while ( expr )
-              (read-punctuator ")" parstate))
-             ((erp last-span parstate) ; do stmt while ( expr ) ;
-              (read-punctuator ";" parstate)))
-          (retok (make-stmt-dowhile :body stmt
-                                    :test expr)
-                 (span-join span last-span)
-                 parstate)))
-       ;; If token is the 'for' keyword, we have an iteration statement.
-       ((token-keywordp token "for") ; for
-        (b* (((erp & parstate) (read-punctuator "(" parstate)) ; for (
-             ((erp token2 & parstate) (read-token parstate)))
-          (cond
-           ;; If token2 is a semicolon,
-           ;; we have no initializing expression or declaration.
-           ((token-punctuatorp token2 ";") ; for ( ;
-            (b* (((erp token3 span3 parstate) (read-token parstate)))
-              (cond
-               ;; If token3 may start an expression,
-               ;; we must have a test expression.
-               ((token-expression-start-p token3) ; for ( ; expr...
-                (b* ((parstate (unread-token parstate)) ; for ( ;
-                     ((erp test-expr & parstate) ; for ( ; expr
-                      (parse-expression parstate))
-                     ((erp & parstate) ; for ( ; expr ;
-                      (read-punctuator ";" parstate))
-                     ((erp token4 span4 parstate) (read-token parstate)))
-                  (cond
-                   ;; If token4 may start an expression,
-                   ;; we must have an update expression.
-                   ((token-expression-start-p token4) ; for ( ; expr ; expr...
-                    (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
-                         ((erp next-expr & parstate) ; for ( ; expr ; expr
-                          (parse-expression parstate))
-                         ((erp & parstate) ; for ( ; expr ; expr )
-                          (read-punctuator ")" parstate))
-                         ((erp stmt last-span parstate)
-                          ;; for ( ; expr ; expr ) stmt
-                          (parse-statement parstate)))
-                      (retok (make-stmt-for-expr :init nil
-                                                 :test test-expr
-                                                 :next next-expr
-                                                 :body stmt)
-                             (span-join span last-span)
-                             parstate)))
-                   ;; If token4 is a closed parenthesis,
-                   ;; we have no update expression.
-                   ((token-punctuatorp token4 ")") ; for ( ; expr ; )
-                    (b* (((erp stmt last-span parstate) ; for ( ; expr ; ) stmt
-                          (parse-statement parstate)))
-                      (retok (make-stmt-for-expr :init nil
-                                                 :test test-expr
-                                                 :next nil
-                                                 :body stmt)
-                             (span-join span last-span)
-                             parstate)))
-                   ;; If token4 is anything else, it is an error.
-                   (t ; for ( ; expr ; other
-                    (reterr-msg :where (position-to-msg (span->start span4))
-                                :expected "an expression ~
-                                           or a closed parenthesis"
-                                :found (token-to-msg token4))))))
-               ;; If token3 is a semicolon, we have no test expression.
-               ((token-punctuatorp token3 ";") ; for ( ; ;
-                (b* (((erp token4 span4 parstate) (read-token parstate)))
-                  (cond
-                   ;; If token4 may start an expression,
-                   ;; we must have an update expression.
-                   ((token-expression-start-p token4) ; for ( ; ; expr...
-                    (b* ((parstate (unread-token parstate)) ; for ( ; ;
-                         ((erp next-expr & parstate) ; for ( ; ; expr
-                          (parse-expression parstate))
-                         ((erp & parstate) ; for ( ; ; expr )
-                          (read-punctuator ")" parstate))
-                         ((erp stmt last-span parstate) ; for ( ; ; expr ) stmt
-                          (parse-statement parstate)))
-                      (retok (make-stmt-for-expr :init nil
-                                                 :test nil
-                                                 :next next-expr
-                                                 :body stmt)
-                             (span-join span last-span)
-                             parstate)))
-                   ;; If token4 is a closed parenthesis,
-                   ;; we have no udpate expression.
-                   ((token-punctuatorp token4 ")") ; for ( ; ; )
-                    (b* (((erp stmt last-span parstate) ; for ( ; ; ) stmt
-                          (parse-statement parstate)))
-                      (retok (make-stmt-for-expr :init nil
-                                                 :test nil
-                                                 :next nil
-                                                 :body stmt)
-                             (span-join span last-span)
-                             parstate)))
-                   ;; If token4 is anything else, it is an error.
-                   (t ; for ( ; ; other
-                    (reterr-msg :where (position-to-msg (span->start span4))
-                                :expected "an expression ~
-                                           or a closed parenthesis"
-                                :found (token-to-msg token4))))))
-               ;; If token3 is anything else, it is an error.
-               (t ; for ( ; other
-                (reterr-msg :where (position-to-msg (span->start span3))
-                            :expected "an expression ~
-                                       or a semicolon"
-                            :found (token-to-msg token3))))))
-           ;; If token2 is not a semicolon,
-           ;; we may have an initializing expression or declaration.
-           ;; Since the initializing expression must be followed by semicolon,
-           ;; we are in the same situation as when parsing
-           ;; a declaration or an expression statement,
-           ;; so we use the parsing function for that.
-           (t ; for ( other
-            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; for (
-                 ((erp decl/stmt & parstate) ; for ( decl/stmt
-                  (parse-declaration-or-statement parstate)))
-              (amb?-decl/stmt-case
-               decl/stmt
-               ;; If the initialization part is a declaration,
-               ;; the 'for' is not ambiguous, and we parse the rest.
-               :decl
-               (b* ((decl (amb?-decl/stmt-decl->unwrap decl/stmt))
-                    ((erp token3 span3 parstate) (read-token parstate)))
-                 (cond
-                  ;; If token3 may start an expression,
-                  ;; we must have a test expression.
-                  ((token-expression-start-p token3) ; for ( ; expr...
-                   (b* ((parstate (unread-token parstate)) ; for ( ;
-                        ((erp test-expr & parstate) ; for ( ; expr
-                         (parse-expression parstate))
-                        ((erp & parstate) ; for ( ; expr ;
-                         (read-punctuator ";" parstate))
-                        ((erp token4 span4 parstate) (read-token parstate)))
-                     (cond
-                      ;; If token4 may start an expression,
-                      ;; we must have an update expression.
-                      ((token-expression-start-p token4)
-                       ;; for ( ; expr ; expr...
-                       (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
-                            ((erp next-expr & parstate) ; for ( ; expr ; expr
-                             (parse-expression parstate))
-                            ((erp & parstate) ; for ( ; expr ; expr )
-                             (read-punctuator ")" parstate))
-                            ((erp stmt last-span parstate)
-                             ;; for ( ; expr ; expr ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-decl :init decl
-                                                    :test test-expr
-                                                    :next next-expr
-                                                    :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is a closed parenthesis,
-                      ;; we have no update expression.
-                      ((token-punctuatorp token4 ")") ; for ( ; expr ; )
-                       (b* (((erp stmt last-span parstate)
-                              ;; for ( ; expr ; ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-decl :init decl
-                                                    :test test-expr
-                                                    :next nil
-                                                    :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is anything else, it is an error.
-                      (t ; for ( ; expr ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
-                                   :expected "an expression ~
-                                           or a closed parenthesis"
-                                   :found (token-to-msg token4))))))
-                  ;; If token3 is a semicolon, we have no test expression.
-                  ((token-punctuatorp token3 ";") ; for ( ; ;
-                   (b* (((erp token4 span4 parstate) (read-token parstate)))
-                     (cond
-                      ;; If token4 may start an expression,
-                      ;; we must have an update expression.
-                      ((token-expression-start-p token4) ; for ( ; ; expr...
-                       (b* ((parstate (unread-token parstate)) ; for ( ; ;
-                            ((erp next-expr & parstate) ; for ( ; ; expr
-                             (parse-expression parstate))
-                            ((erp & parstate) ; for ( ; ; expr )
-                             (read-punctuator ")" parstate))
-                            ((erp stmt last-span parstate)
-                              ;; for ( ; ; expr ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-decl :init decl
-                                                    :test nil
-                                                    :next next-expr
-                                                    :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is a closed parenthesis,
-                      ;; we have no udpate expression.
-                      ((token-punctuatorp token4 ")") ; for ( ; ; )
-                       (b* (((erp stmt last-span parstate) ; for ( ; ; ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-decl :init decl
-                                                    :test nil
-                                                    :next nil
-                                                    :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is anything else, it is an error.
-                      (t ; for ( ; ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
-                                   :expected "an expression ~
-                                           or a closed parenthesis"
-                                   :found (token-to-msg token4))))))
-                  ;; If token3 is anything else, it is an error.
-                  (t ; for ( ; other
-                   (reterr-msg :where (position-to-msg (span->start span3))
-                               :expected "an expression ~
-                                       or a semicolon"
-                               :found (token-to-msg token3)))))
-               ;; If the initialization part is an expression,
-               ;; the 'for' is not ambiguous, and we parse the rest.
-               :stmt
-               (b* ((expr (amb?-decl/stmt-stmt->unwrap decl/stmt))
-                    ((erp token3 span3 parstate) (read-token parstate)))
-                 (cond
-                  ;; If token3 may start an expression,
-                  ;; we must have a test expression.
-                  ((token-expression-start-p token3) ; for ( ; expr...
-                   (b* ((parstate (unread-token parstate)) ; for ( ;
-                        ((erp test-expr & parstate) ; for ( ; expr
-                         (parse-expression parstate))
-                        ((erp & parstate) ; for ( ; expr ;
-                         (read-punctuator ";" parstate))
-                        ((erp token4 span4 parstate) (read-token parstate)))
-                     (cond
-                      ;; If token4 may start an expression,
-                      ;; we must have an update expression.
-                      ((token-expression-start-p token4)
-                        ;; for ( ; expr ; expr...
-                       (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
-                            ((erp next-expr & parstate) ; for ( ; expr ; expr
-                             (parse-expression parstate))
-                            ((erp & parstate) ; for ( ; expr ; expr )
-                             (read-punctuator ")" parstate))
-                            ((erp stmt last-span parstate)
-                             ;; for ( ; expr ; expr ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-expr :init expr
-                                                    :test test-expr
-                                                    :next next-expr
-                                                    :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is a closed parenthesis,
-                      ;; we have no update expression.
-                      ((token-punctuatorp token4 ")") ; for ( ; expr ; )
-                       (b* (((erp stmt last-span parstate)
-                              ;; for ( ; expr ; ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-expr :init expr
-                                                    :test test-expr
-                                                    :next nil
-                                                    :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is anything else, it is an error.
-                      (t ; for ( ; expr ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
-                                   :expected "an expression ~
-                                           or a closed parenthesis"
-                                   :found (token-to-msg token4))))))
-                  ;; If token3 is a semicolon, we have no test expression.
-                  ((token-punctuatorp token3 ";") ; for ( ; ;
-                   (b* (((erp token4 span4 parstate) (read-token parstate)))
-                     (cond
-                      ;; If token4 may start an expression,
-                      ;; we must have an update expression.
-                      ((token-expression-start-p token4) ; for ( ; ; expr...
-                       (b* ((parstate (unread-token parstate)) ; for ( ; ;
-                            ((erp next-expr & parstate) ; for ( ; ; expr
-                             (parse-expression parstate))
-                            ((erp & parstate) ; for ( ; ; expr )
-                             (read-punctuator ")" parstate))
-                            ((erp stmt last-span parstate)
-                              ;; for ( ; ; expr ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-expr :init expr
-                                                    :test nil
-                                                    :next next-expr
-                                                    :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is a closed parenthesis,
-                      ;; we have no udpate expression.
-                      ((token-punctuatorp token4 ")") ; for ( ; ; )
-                       (b* (((erp stmt last-span parstate) ; for ( ; ; ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-expr :init expr
-                                                    :test nil
-                                                    :next nil
-                                                    :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is anything else, it is an error.
-                      (t ; for ( ; ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
-                                   :expected "an expression ~
-                                           or a closed parenthesis"
-                                   :found (token-to-msg token4))))))
-                  ;; If token3 is anything else, it is an error.
-                  (t ; for ( ; other
-                   (reterr-msg :where (position-to-msg (span->start span3))
-                               :expected "an expression ~
-                                       or a semicolon"
-                               :found (token-to-msg token3)))))
-               ;; If the initialization part is ambiguous,
-               ;; we have an ambiguous 'for', and we parse the rest.
-               :ambig
-               (b* ((decl/expr (amb?-decl/stmt-ambig->unwrap decl/stmt))
-                    ((erp token3 span3 parstate) (read-token parstate)))
-                 (cond
-                  ;; If token3 may start an expression,
-                  ;; we must have a test expression.
-                  ((token-expression-start-p token3) ; for ( ; expr...
-                   (b* ((parstate (unread-token parstate)) ; for ( ;
-                        ((erp test-expr & parstate) ; for ( ; expr
-                         (parse-expression parstate))
-                        ((erp & parstate) ; for ( ; expr ;
-                         (read-punctuator ";" parstate))
-                        ((erp token4 span4 parstate) (read-token parstate)))
-                     (cond
-                      ;; If token4 may start an expression,
-                      ;; we must have an update expression.
-                      ((token-expression-start-p token4)
-                        ;; for ( ; expr ; expr...
-                       (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
-                            ((erp next-expr & parstate) ; for ( ; expr ; expr
-                             (parse-expression parstate))
-                            ((erp & parstate) ; for ( ; expr ; expr )
-                             (read-punctuator ")" parstate))
-                            ((erp stmt last-span parstate)
-                             ;; for ( ; expr ; expr ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-ambig :init decl/expr
-                                                     :test test-expr
-                                                     :next next-expr
-                                                     :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is a closed parenthesis,
-                      ;; we have no update expression.
-                      ((token-punctuatorp token4 ")") ; for ( ; expr ; )
-                       (b* (((erp stmt last-span parstate)
-                              ;; for ( ; expr ; ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-ambig :init decl/expr
-                                                     :test test-expr
-                                                     :next nil
-                                                     :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is anything else, it is an error.
-                      (t ; for ( ; expr ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
-                                   :expected "an expression ~
-                                           or a closed parenthesis"
-                                   :found (token-to-msg token4))))))
-                  ;; If token3 is a semicolon, we have no test expression.
-                  ((token-punctuatorp token3 ";") ; for ( ; ;
-                   (b* (((erp token4 span4 parstate) (read-token parstate)))
-                     (cond
-                      ;; If token4 may start an expression,
-                      ;; we must have an update expression.
-                      ((token-expression-start-p token4) ; for ( ; ; expr...
-                       (b* ((parstate (unread-token parstate)) ; for ( ; ;
-                            ((erp next-expr & parstate) ; for ( ; ; expr
-                             (parse-expression parstate))
-                            ((erp & parstate) ; for ( ; ; expr )
-                             (read-punctuator ")" parstate))
-                            ((erp stmt last-span parstate)
-                              ;; for ( ; ; expr ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-ambig :init decl/expr
-                                                     :test nil
-                                                     :next next-expr
-                                                     :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is a closed parenthesis,
-                      ;; we have no udpate expression.
-                      ((token-punctuatorp token4 ")") ; for ( ; ; )
-                       (b* (((erp stmt last-span parstate) ; for ( ; ; ) stmt
-                             (parse-statement parstate)))
-                         (retok (make-stmt-for-ambig :init decl/expr
-                                                     :test nil
-                                                     :next nil
-                                                     :body stmt)
-                                (span-join span last-span)
-                                parstate)))
-                      ;; If token4 is anything else, it is an error.
-                      (t ; for ( ; ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
-                                   :expected "an expression ~
-                                           or a closed parenthesis"
-                                   :found (token-to-msg token4))))))
-                  ;; If token3 is anything else, it is an error.
-                  (t ; for ( ; other
-                   (reterr-msg :where (position-to-msg (span->start span3))
-                               :expected "an expression ~
-                                       or a semicolon"
-                               :found (token-to-msg token3)))))))))))
-       ;; If token may start an expression,
-       ;; we must have an expression statement.
-       ((token-expression-start-p token) ; expr...
-        (b* ((parstate (unread-token parstate)) ;
-             ((erp expr span parstate) (parse-expression parstate)) ; expr
-             ((erp last-span parstate) (read-punctuator ";" parstate))) ; expr ;
-          (retok (stmt-expr expr)
-                 (span-join span last-span)
-                 parstate)))
-       ;; If token is anything else, it is an error.
-       (t
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "an identifier ~
-                               or a keyword in {~
-                               break, ~
-                               case, ~
-                               continue, ~
-                               default, ~
-                               do, ~
-                               for, ~
-                               goto, ~
-                               if, ~
-                               return, ~
-                               switch, ~
-                               while~
-                               } ~
-                               or a punctuator in {~
-                               \"++\", ~
-                               \"--\", ~
-                               \"+\", ~
-                               \"-\", ~
-                               \"~~\", ~
-                               \"!\", ~
-                               \"*\", ~
-                               \"&\", ~
-                               \"(\", ~
-                               \"{\", ~
-                               \";\"~
-                               }"
-                    :found (token-to-msg token)))))
-    :measure (two-nats-measure (parsize parstate) 0))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define parse-block-item ((parstate parstatep))
-    :returns (mv erp
-                 (item block-itemp)
-                 (span spanp)
-                 (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-stmts/blocks)
-    :short "Parse a block item."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "As explained in @(tsee amb-decl/stmt),
-       there is a complex syntactic overlap
-       between expression statements and declarations,
-       which are the two kinds of block items;
-       the overlap cannot be disambiguated purely syntactically.
-       Thus, under the appropriate conditions,
-       we parse a possibly ambiguous declaration or statement."))
-    (b* (((reterr) (irr-block-item) (irr-span) parstate)
-         ((erp token & parstate) (read-token parstate)))
-      (cond
-       ;; If token is an identifier, we need to read another token.
-       ((and token (token-case token :ident)) ; ident
-        (b* (((erp token2 & parstate) (read-token parstate)))
-          (cond
-           ;; If token2 is a colon, we must have a labeled statement.
-           ;; We put back colon and label, and parse a statement.
-           ((token-punctuatorp token2 ":") ; ident :
-            (b* ((parstate (unread-token parstate)) ; ident
-                 (parstate (unread-token parstate)) ;
-                 ((erp stmt span parstate) (parse-statement parstate))) ; stmt
-              (retok (block-item-stmt stmt) span parstate)))
-           ;; Otherwise, we may have a declaration or an expression statement,
-           ;; so we read a possibly ambiguous declaration or statement.
-           (t ; ident other
-            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; ident
-                 (parstate (unread-token parstate)) ;
-                 ((erp decl/stmt span parstate) ; decl/stmt
-                  (parse-declaration-or-statement parstate)))
-              (amb?-decl/stmt-case
-               decl/stmt
-               ;; If we parse an unambiguous declaration,
-               ;; we return a block item that is a declaration.
-               :decl
-               (retok (block-item-decl decl/stmt.unwrap)
-                      span
-                      parstate)
-               ;; If we parse an unambiguous statement,
-               ;; we return a block item that is a statement.
-               :stmt
-               (retok (block-item-stmt (stmt-expr decl/stmt.unwrap))
-                      span
-                      parstate)
-               ;; If we parse an ambiguous declaration or statement,
-               ;; we return an ambiguous block item.
-               :ambig
-               (retok (block-item-ambig decl/stmt.unwrap)
-                      span
-                      parstate)))))))
-       ;; If token may start a declaration specifier,
-       ;; since we have already considered the case of an identifier above,
-       ;; we must have a declaration.
-       ((token-declaration-specifier-start-p token) ; declspec...
-        (b* ((parstate (unread-token parstate)) ;
-             ((erp decl span parstate) ; decl
-              (parse-declaration parstate)))
-          (retok (block-item-decl decl) span parstate)))
-       ;; Otherwise, we must have a statement.
-       (t ; other
-        (b* ((parstate (if token (unread-token parstate) parstate)) ;
-             ((erp stmt span parstate) ; stmt
-              (parse-statement parstate)))
-          (retok (block-item-stmt stmt) span parstate)))))
-    :measure (two-nats-measure (parsize parstate) 1))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define parse-block-item-list ((parstate parstatep))
-    :returns (mv erp
-                 (items block-item-listp)
-                 (span spanp)
-                 (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-stmts/blocks)
-    :short "Parse a list of one or more block items."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We parse the first block item, which must be present.
-       Then, unless we have a closed curly brace,
-       we recursively parse one or more block items."))
-    (b* (((reterr) nil (irr-span) parstate)
-         (psize (parsize parstate))
-         ((erp item span parstate) (parse-block-item parstate)) ; item
-         ((unless (mbt (<= (parsize parstate) (1- psize))))
-          (reterr :impossible))
-         ((erp token & parstate) (read-token parstate)))
-      (cond
-       ;; If token is a closed curly brace, we have reached the end of the list.
-       ((token-punctuatorp token "}") ; item }
-        (b* ((parstate (unread-token parstate))) ; item
-          (retok (list item) span parstate)))
-       ;; Otherwise, we recursively parse more block items,
-       ;; and we combine them with the one just parsed.
-       (t ; item other
-        (b* ((parstate (if token (unread-token parstate) parstate)) ; item
-             ((erp items last-span parstate) ; item items
-              (parse-block-item-list parstate)))
-          (retok (cons item items)
-                 (span-join span last-span)
-                 parstate)))))
-    :measure (two-nats-measure (parsize parstate) 2))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :hints (("Goal" :in-theory (enable nfix fix)))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :verify-guards nil ; done below
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  ///
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defret-mutual parsize-of-parse-stmts/blocks-uncond
-    (defret parsize-of-parse-statement-uncond
-      (<= (parsize new-parstate)
-          (parsize parstate))
-      :rule-classes :linear
-      :fn parse-statement)
-    (defret parsize-of-parse-block-item-uncond
-      (<= (parsize new-parstate)
-          (parsize parstate))
-      :rule-classes :linear
-      :fn parse-block-item)
-    (defret parsize-of-parse-block-item-list-uncond
-      (<= (parsize new-parstate)
-          (parsize parstate))
-      :rule-classes :linear
-      :fn parse-block-item-list)
-    :hints (("Goal" :expand ((parse-statement parstate)
-                             (parse-block-item parstate)
-                             (parse-block-item-list parstate)))))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defret-mutual parsize-of-parse-stmts/blocks-cond
-    (defret parsize-of-parse-statement-cond
-      (implies (not erp)
-               (<= (parsize new-parstate)
-                   (1- (parsize parstate))))
-      :rule-classes :linear
-      :fn parse-statement)
-    (defret parsize-of-parse-block-item-cond
-      (implies (not erp)
-               (<= (parsize new-parstate)
-                   (1- (parsize parstate))))
-      :rule-classes :linear
-      :fn parse-block-item)
-    (defret parsize-of-parse-block-item-list-cond
-      (implies (not erp)
-               (<= (parsize new-parstate)
-                   (1- (parsize parstate))))
-      :rule-classes :linear
-      :fn parse-block-item-list)
-    :hints (("Goal"
-             :in-theory (enable fix)
-             :expand ((parse-statement parstate)
-                      (parse-block-item parstate)
-                      (parse-block-item-list parstate)))))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (verify-guards parse-statement))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13883,8 +15282,7 @@
      ;; if GCC extensions are supported.
      (t
       (b* (((mv extension parstate)
-            (if (and (token-keywordp token "__extension__")
-                     (parstate->gcc parstate))
+            (if (token-keywordp token "__extension__")
                 (mv t parstate)
               (b* ((parstate (if token (unread-token parstate) parstate)))
                 (mv nil parstate))))
@@ -13899,44 +15297,15 @@
           (retok (extdecl-decl (make-decl-decl :extension extension
                                                :specs declspecs
                                                :init nil
-                                               :asm? nil
                                                :attrib nil))
                  (span-join span span2)
                  parstate))
-         ;; If token2 is the 'asm' or '__asm__' keyword,
-         ;; and if GCC extensions are supported,
-         ;; we parse an assembler name specifier,
-         ;; and this external declaration must be a declaration
-         ;; (we do not support attributes of function definitions).
-         ;; We also conditionally parse any attributes before the semicolon.
-         ((and (or (token-keywordp token2 "asm")
-                   (token-keywordp token2 "__asm__"))
-               (parstate->gcc parstate))
-          ;; [__extension__] declspecs asm-or-__asm__
-          (b* ((uscores (token-keywordp token2 "__asm__"))
-               ((erp asmspec & parstate)
-                ;; [__extension__] declspecs asmspec
-                (parse-asm-name-specifier uscores span2 parstate))
-               ((erp attrspecs & parstate)
-                ;; [__extension__] declspecs asmspec [attrspecs]
-                (parse-*-attribute-specifier parstate))
-               ((erp last-span parstate)
-                ;; [__extension__] declspecs asmspec [attrspecs] ;
-                (read-punctuator ";" parstate)))
-            (retok (extdecl-decl (make-decl-decl :extension extension
-                                                 :specs declspecs
-                                                 :init nil
-                                                 :asm? asmspec
-                                                 :attrib attrspecs))
-                   (span-join span last-span)
-                   parstate)))
-         ;; If token2 is the '__attribute__' keyword,
-         ;; and if GCC extensions are supported,
+         ;; If token2 is the '__attribute' or '__attribute__' keyword,
          ;; we parse one or more attribute specifiers,
          ;; and this external declaration must be a declaration
          ;; (we do not support attributes of function definitions).
-         ((and (token-keywordp token2 "__attribute__")
-               (parstate->gcc parstate))
+         ((or (token-keywordp token2 "__attribute")
+              (token-keywordp token2 "__attribute__"))
           ;; [__extension__] declspecs __attribute__
           (b* ((parstate (unread-token parstate)) ; [__extension__] declspecs
                ((erp attrspecs & parstate) ; [__extension__] declspecs attrspecs
@@ -13946,19 +15315,20 @@
             (retok (extdecl-decl (make-decl-decl :extension extension
                                                  :specs declspecs
                                                  :init nil
-                                                 :asm? nil
                                                  :attrib attrspecs))
                    (span-join span last-span)
                    parstate)))
-         ;; If token2 is not a semicolon,
-         ;; and either GCC extensions are not supported
-         ;; or token2 is not any of the keywords
-         ;; 'asm', '__asm__', or '__attribute__'.
+         ;; If token2 is not a semicolon and is not '__attribute__',
          ;; we must have at least one declarator, which we parse.
+         ;; We also parse an optional assembler name specifier.
          (t ; [__extension__] declspecs other
           (b* ((parstate (if token2 (unread-token parstate) parstate))
+               ;; [__extension__] declspecs
                ((erp declor & parstate) ; [__extension__] declspecs declor
                 (parse-declarator parstate))
+               ((erp asmspec? & parstate)
+                ;; [__extension__] declspecs declor [asmspec]
+                (parse-?-asm-name-specifier parstate))
                ((erp token3 span3 parstate) (read-token parstate)))
             (cond
              ;; If token3 is an equal sign,
@@ -13966,55 +15336,46 @@
              ;; and therefore the external declaration must be a declaration.
              ;; We parse the rest of the initialization declarator,
              ;; then possibly more initialization declarators.
-             ;; If GCC extensions are supported,
-             ;; we also parse an optional assembler name specifier
-             ;; as well as zero or more attribute specifiers,
-             ;; before the ending semicolon.
              ((token-punctuatorp token3 "=")
-              ;; [__extension__] declspecs declor =
+              ;; [__extension__] declspecs declor [asmspec] =
               (b* (((erp initer & parstate)
-                    ;; [__extension__] declspecs declor = initer
+                    ;; [__extension__] declspecs declor [asmspec] = initer
                     (parse-initializer parstate))
                    ((erp token4 span4 parstate) (read-token parstate)))
                 (cond
                  ;; If token4 is a semicolon,
                  ;; we have reached the end of the declarator.
                  ((token-punctuatorp token4 ";")
-                  ;; [__extension__] declspecs declor = initer ;
+                  ;; [__extension__] declspecs declor [asmspec] = initer ;
                   (retok (extdecl-decl
                           (make-decl-decl
                            :extension extension
                            :specs declspecs
                            :init (list (make-initdeclor
                                         :declor declor
+                                        :asm? asmspec?
                                         :init? initer))
-                           :asm? nil
                            :attrib nil))
                          (span-join span span4)
                          parstate))
                  ;; If token4 is a comma,
                  ;; we must have more initialization declarators.
                  ((token-punctuatorp token4 ",")
-                  ;; [__extension__] declspecs declor = initer ,
+                  ;; [__extension__] declspecs declor [asmspec] = initer ,
                   (b* (((erp initdeclors & parstate)
-                        ;; [__extension__] declspecs declor =
-                        ;;     initer , initdeclors
+                        ;; [__extension__] declspecs
+                        ;;     declor [asmspec] = initer , initdeclors
                         (parse-init-declarator-list parstate))
-                       ((erp asmspec? & parstate)
-                        ;; [__extension__] declspecs declor =
-                        ;;   initer , initdeclors [asmspec]
-                        (if (parstate->gcc parstate)
-                            (parse-?-asm-name-specifier parstate)
-                          (retok nil (irr-span) parstate)))
                        ((erp attrspecs & parstate)
-                        ;; [__extension__] declspecs declor =
-                        ;;   initer, initdeclors [asmspec] [attrspecs]
+                        ;; [__extension__] declspecs
+                        ;;   declor [asmspec] = initer, initdeclors [attrspecs]
                         (if (parstate->gcc parstate)
                             (parse-*-attribute-specifier parstate)
                           (retok nil (irr-span) parstate)))
                        ((erp last-span parstate)
-                        ;; [__extension__] declspecs declor =
-                        ;;   initer , initdeclors [asmspec] [attrspecs] ;
+                        ;; [__extension__] declspecs
+                        ;;   declor [asmspec] = initer , initdeclors
+                        ;;       [attrspecs] ;
                         (read-punctuator ";" parstate)))
                     (retok (extdecl-decl
                             (make-decl-decl
@@ -14022,41 +15383,9 @@
                              :specs declspecs
                              :init (cons (make-initdeclor
                                           :declor declor
+                                          :asm? asmspec?
                                           :init? initer)
                                          initdeclors)
-                             :asm? asmspec?
-                             :attrib attrspecs))
-                           (span-join span last-span)
-                           parstate)))
-                 ;; If token4 is the keyword 'asm' or '__asm__',
-                 ;; and GCC extensions are supported,
-                 ;; we have just one declarator with the initializer,
-                 ;; followed by an assembler name specifier,
-                 ;; and possibly by attribute specifiers.
-                 ((and (or (token-keywordp token4 "asm")
-                           (token-keywordp token4 "__asm__"))
-                       (parstate->gcc parstate))
-                  ;; [__extension__] declspecs declor = initer asm-or-__asm__
-                  (b* ((uscore (token-keywordp token4 "__asm__"))
-                       ((erp asmspec & parstate)
-                        ;; [__extension__] declspecs declor = initer asmspec
-                        (parse-asm-name-specifier uscore span4 parstate))
-                       ((erp attrspecs & parstate)
-                        ;; [__extension__] declspecs declor =
-                        ;;   initer asmspec [attrspecs]
-                        (parse-*-attribute-specifier parstate))
-                       ((erp last-span parstate)
-                        ;; [__extension__] declspecs declor =
-                        ;;   initer asmspec [attrspecs] ;
-                        (read-punctuator ";" parstate)))
-                    (retok (extdecl-decl
-                            (make-decl-decl
-                             :extension extension
-                             :specs declspecs
-                             :init (list (make-initdeclor
-                                          :declor declor
-                                          :init? initer))
-                             :asm? asmspec
                              :attrib attrspecs))
                            (span-join span last-span)
                            parstate)))
@@ -14064,16 +15393,19 @@
                  ;; and GCC extensions are supported,
                  ;; we have just one declarator with the initializer,
                  ;; followed by attribute specifiers, which we parse.
-                 ((and (token-keywordp token4 "__attribute__")
-                       (parstate->gcc parstate))
-                  ;; [__extension__] declspecs declor = initer __attribute__
+                 ((or (token-keywordp token4 "__attribute")
+                      (token-keywordp token4 "__attribute__"))
+                  ;; [__extension__] declspecs
+                  ;;     declor [asmspec] = initer __attribute__
                   (b* ((parstate (unread-token parstate))
-                       ;; [__extension__] declspecs declor = initer
+                       ;; [__extension__] declspecs declor [asmspec] = initer
                        ((erp attrspecs & parstate)
                         (parse-*-attribute-specifier parstate))
-                       ;; [__extension__] declspecs declor = initer attrspecs
+                       ;; [__extension__] declspecs
+                       ;;     declor [asmspec] = initer attrspecs
                        ((erp last-span parstate)
-                        ;; [__extension__] declspecs declor = initer attrspecs ;
+                        ;; [__extension__] declspecs
+                        ;;     declor [asmspec] = initer attrspecs ;
                         (read-punctuator ";" parstate)))
                     (retok (extdecl-decl
                             (make-decl-decl
@@ -14081,13 +15413,13 @@
                              :specs declspecs
                              :init (list (make-initdeclor
                                           :declor declor
+                                          :asm? asmspec?
                                           :init? initer))
-                             :asm? nil
                              :attrib attrspecs))
                            (span-join span last-span)
                            parstate)))
                  ;; If token4 is anything else, it is an error.
-                 (t ; [__extension__] declspecs declor = initer other
+                 (t ; [__extension__] declspecs declor [asmspec] = initer other
                   (reterr-msg :where (position-to-msg (span->start span4))
                               :expected "a semicolon or a comma"
                               :found (token-to-msg token4))))))
@@ -14097,15 +15429,15 @@
              ;; and the external declaration must be a declaration,
              ;; which the semicolon concludes.
              ((token-punctuatorp token3 ";")
-              ;; [__extension__] declspecs declor ;
+              ;; [__extension__] declspecs declor [asmspec] ;
               (retok (extdecl-decl
                       (make-decl-decl
                        :extension extension
                        :specs declspecs
                        :init (list (make-initdeclor
                                     :declor declor
+                                    :asm? asmspec?
                                     :init? nil))
-                       :asm? nil
                        :attrib nil))
                      (span-join span span3)
                      parstate))
@@ -14114,27 +15446,20 @@
              ;; an external declaration that is a declaration.
              ;; There must be more initialization declarations,
              ;; which we parse.
-             ;; If GCC extensions are supported,
-             ;; we also parse an optional assembler name specifier
-             ;; as well as zero or more attribute specifiers,
-             ;; just before the final semicolon.
              ((token-punctuatorp token3 ",")
-              ;; [__extension__] declspecs declor ,
+              ;; [__extension__] declspecs declor [asmspec] ,
               (b* (((erp initdeclors & parstate)
-                    ;; [__extension__] declspecs declor , initdeclors
+                    ;; [__extension__] declspecs declor [asmspec] , initdeclors
                     (parse-init-declarator-list parstate))
-                   ((erp asmspec? & parstate)
-                    ;; [__extension__] declspecs declor , initdeclors [asmspec]
-                    (parse-?-asm-name-specifier parstate))
                    ((erp attrspecs & parstate)
-                    ;; [__extension__] declspecs declor, initdeclors
-                    ;;   [asmspec] [attrspecs]
+                    ;; [__extension__] declspecs declor [asmspec] , initdeclors
+                    ;;     [attrspecs]
                     (if (parstate->gcc parstate)
                         (parse-*-attribute-specifier parstate)
                       (retok nil (irr-span) parstate)))
                    ((erp last-span parstate)
-                    ;; [__extension__] declspecs declor , initdeclors
-                    ;;   [asmspec] [attrspecs] ;
+                    ;; [__extension__] declspecs declor [asmspec] , initdeclors
+                    ;;     [attrspecs] ;
                     (read-punctuator ";" parstate)))
                 (retok (extdecl-decl
                         (make-decl-decl
@@ -14142,57 +15467,25 @@
                          :specs declspecs
                          :init (cons (make-initdeclor
                                       :declor declor
+                                      :asm? asmspec?
                                       :init? nil)
                                      initdeclors)
-                         :asm? asmspec?
                          :attrib attrspecs))
                        (span-join span last-span)
                        parstate)))
-             ;; If token3 is the 'asm' or '__asm__' keyword
-             ;; and GCC extensions are supported,
-             ;; this external declaration must be a declaration,
-             ;; and we parse the assembler name specifier,
-             ;; followed by zero or more attribute specifiers,
-             ;; and then the final semicolon.
-             ((and (or (token-keywordp token3 "asm")
-                       (token-keywordp token3 "__asm__"))
-                   (parstate->gcc parstate))
-              ;; [__extension__] declspecs declor asm-or-__asm__
-              (b* ((uscores (token-keywordp token3 "__asm__"))
-                   ((erp asmspec & parstate)
-                    ;; [__extension__] declspecs declor asmspec
-                    (parse-asm-name-specifier uscores span3 parstate))
-                   ((erp attrspecs & parstate)
-                    ;; [__extension__] declspecs declor asmspec [attrspecs]
-                    (parse-*-attribute-specifier parstate))
-                   ((erp last-span parstate)
-                    ;; [__extension__] declspecs declor asmspec [attrspecs] ;
-                    (read-punctuator ";" parstate)))
-                (retok (extdecl-decl
-                        (make-decl-decl
-                         :extension extension
-                         :specs declspecs
-                         :init (list (make-initdeclor
-                                      :declor declor
-                                      :init? nil))
-                         :asm? asmspec
-                         :attrib attrspecs))
-                       (span-join span last-span)
-                       parstate)))
-             ;; If token3 is the '__attribute__' keyword
-             ;; and GCC extensions are supported,
+             ;; If token3 is the '__attribute' or '__attribute__' keyword,
              ;; this external declaration must be a declaration,
              ;; and we parse one or more attribute specifiers.
-             ((and (token-keywordp token3 "__attribute__")
-                   (parstate->gcc parstate))
-              ;; [__extension__] declspecs declor __attribute
+             ((or (token-keywordp token3 "__attribute")
+                  (token-keywordp token3 "__attribute__"))
+              ;; [__extension__] declspecs declor [asmspec] __attribute__
               (b* ((parstate (unread-token parstate))
-                   ;; [__extension__] declspecs declor
+                   ;; [__extension__] declspecs declor [asmspec]
                    ((erp attrspecs & parstate)
-                    ;; [__extension__] declspecs declor attrspecs
+                    ;; [__extension__] declspecs declor [asmspec] attrspecs
                     (parse-*-attribute-specifier parstate))
                    ((erp last-span parstate)
-                    ;; [__extension__] declspecs declor attrspecs ;
+                    ;; [__extension__] declspecs declor [asmspec] attrspecs ;
                     (read-punctuator ";" parstate)))
                 (retok (extdecl-decl
                         (make-decl-decl
@@ -14200,33 +15493,26 @@
                          :specs declspecs
                          :init (list (make-initdeclor
                                       :declor declor
+                                      :asm? asmspec?
                                       :init? nil))
-                         :asm? nil
                          :attrib attrspecs))
                        (span-join span last-span)
                        parstate)))
-             ;; If token3 is something else,
+             ;; If token3 is an open curly brace,
              ;; the external declaration must be a function definition.
-             ;; Since we have just parsed the declarator,
-             ;; we check and see whether we have the compound statement
-             ;; or a list of one or more declarations first.
-             ;; Thus, if the token is an open curly brace,
-             ;; we must have the function body,
-             ;; and no declarations
-             ;; between the declarator and the function body.
-             ;; We put back the token and we parse the statement,
-             ;; which must be a compound statement as required by the grammar.
+             ;; We parse the function body.
              ((token-punctuatorp token3 "{")
-              ;; [__extension__] declspecs declor {
+              ;; [__extension__] declspecs declor [asmspec] {
               (b* ((parstate (unread-token parstate))
                    ;; [__extension__] declspecs declor
                    ((erp stmt last-span parstate)
-                    ;; [__extension__] declspecs declor stmt
+                    ;; [__extension__] declspecs declor [asmspec] stmt
                     (parse-statement parstate)))
                 (retok (extdecl-fundef
                         (make-fundef :extension extension
                                      :spec declspecs
                                      :declor declor
+                                     :asm? asmspec?
                                      :decls nil
                                      :body stmt))
                        (span-join span last-span)
@@ -14234,27 +15520,28 @@
              ;; If token is not an open curly brace,
              ;; we must have one or more declarations, which we parse.
              ;; Then we parse the compound statement.
-             (t ; [__extension__] declspecs declor other
-              (b* ((parstate ; [__extension__] declspecs declor
+             (t ; [__extension__] declspecs declor [asmspec] other
+              (b* ((parstate ; [__extension__] declspecs declor [asmspec]
                     (if token3 (unread-token parstate) parstate))
                    ((erp decls & parstate)
-                    ;; [__extension__] declspecs declor decls
+                    ;; [__extension__] declspecs declor [asmspec] decls
                     (parse-declaration-list parstate))
                    ((erp token4 span4 parstate) (read-token parstate))
                    ((unless (token-punctuatorp token4 "{"))
                     (reterr-msg :where (position-to-msg (span->start span4))
                                 :expected "an open curly brace"
                                 :found (token-to-msg token4)))
-                   ;; [__extension__] declspecs declor decls {
+                   ;; [__extension__] declspecs declor [asmspec] decls {
                    (parstate (unread-token parstate))
-                   ;; [__extension__] declspecs declor decls
+                   ;; [__extension__] declspecs declor [asmspec] decls
                    ((erp stmt last-span parstate)
-                    ;; [__extension__] declspecs declor decls stmt
+                    ;; [__extension__] declspecs declor [asmspec] decls stmt
                     (parse-statement parstate)))
                 (retok (extdecl-fundef
                         (make-fundef :extension extension
                                      :spec declspecs
                                      :declor declor
+                                     :asm? asmspec?
                                      :decls decls
                                      :body stmt))
                        (span-join span last-span)

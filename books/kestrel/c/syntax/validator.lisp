@@ -495,4 +495,201 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-iconst ((iconst iconstp) (ienv ienvp))
+  :returns (mv erp (type typep))
+  :short "Validate an integer constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An integer constant is valid iff
+     it has a type according to the table in [C:6.4.4.1/5].
+     We formalize that table here, and we return the type of the constant.
+     If the constant is too large,
+     it does not have a type, and it is invalid."))
+  (b* (((reterr) (type-void))
+       ((iconst iconst) iconst)
+       (value (valid-dec/oct/hex-const iconst.core)))
+    (cond
+     ((not iconst.suffix?)
+      (if (dec/oct/hex-const-case iconst.core :dec)
+          (cond ((sint-rangep value ienv) (retok (type-sint)))
+                ((slong-rangep value ienv) (retok (type-slong)))
+                ((sllong-rangep value ienv) (retok (type-sllong)))
+                (t (reterr (msg "The constant ~x0 is too large."
+                                (iconst-fix iconst)))))
+        (cond ((sint-rangep value ienv) (retok (type-sint)))
+              ((uint-rangep value ienv) (retok (type-uint)))
+              ((slong-rangep value ienv) (retok (type-slong)))
+              ((ulong-rangep value ienv) (retok (type-ulong)))
+              ((sllong-rangep value ienv) (retok (type-sllong)))
+              ((ullong-rangep value ienv) (retok (type-ullong)))
+              (t (reterr (msg "The constant ~x0 is too large."
+                              (iconst-fix iconst)))))))
+     ((isuffix-case iconst.suffix? :u)
+      (cond ((uint-rangep value ienv) (retok (type-uint)))
+            ((ulong-rangep value ienv) (retok (type-ulong)))
+            ((ullong-rangep value ienv) (retok (type-ullong)))
+            (t (reterr (msg "The constant ~x0 is too large."
+                            (iconst-fix iconst))))))
+     ((isuffix-case iconst.suffix? :l)
+      (cond ((member-eq (lsuffix-kind (isuffix-l->length iconst.suffix?))
+                        '(:locase-l :upcase-l))
+             (if (dec/oct/hex-const-case iconst.core :dec)
+                 (cond ((slong-rangep value ienv) (retok (type-slong)))
+                       ((sllong-rangep value ienv) (retok (type-sllong)))
+                       (t (reterr (msg "The constant ~x0 is too large."
+                                       (iconst-fix iconst)))))
+               (cond ((slong-rangep value ienv) (retok (type-slong)))
+                     ((ulong-rangep value ienv) (retok (type-ulong)))
+                     ((sllong-rangep value ienv) (retok (type-sllong)))
+                     ((ullong-rangep value ienv) (retok (type-ullong)))
+                     (t (reterr (msg "The constant ~x0 is too large."
+                                     (iconst-fix iconst)))))))
+            ((member-eq (lsuffix-kind (isuffix-l->length iconst.suffix?))
+                        '(:locase-ll :upcase-ll))
+             (if (dec/oct/hex-const-case iconst.core :dec)
+                 (cond ((sllong-rangep value ienv) (retok (type-sllong)))
+                       (t (reterr (msg "The constant ~x0 is too large."
+                                       (iconst-fix iconst)))))
+               (cond ((sllong-rangep value ienv) (retok (type-sllong)))
+                     ((ullong-rangep value ienv) (retok (type-ullong)))
+                     (t (reterr (msg "The constant ~x0 is too large."
+                                     (iconst-fix iconst)))))))
+            (t (prog2$ (impossible) (reterr t)))))
+     ((or (and (isuffix-case iconst.suffix? :ul)
+               (member-eq (lsuffix-kind (isuffix-ul->length iconst.suffix?))
+                          '(:locase-l :upcase-l)))
+          (and (isuffix-case iconst.suffix? :lu)
+               (member-eq (lsuffix-kind (isuffix-lu->length iconst.suffix?))
+                          '(:locase-l :upcase-l))))
+      (cond ((ulong-rangep value ienv) (retok (type-ulong)))
+            ((ullong-rangep value ienv) (retok (type-ullong)))
+            (t (reterr (msg "The constant ~x0 is too large."
+                            (iconst-fix iconst))))))
+     ((or (and (isuffix-case iconst.suffix? :ul)
+               (member-eq (lsuffix-kind (isuffix-ul->length iconst.suffix?))
+                          '(:locase-ll :upcase-ll)))
+          (and (isuffix-case iconst.suffix? :lu)
+               (member-eq (lsuffix-kind (isuffix-lu->length iconst.suffix?))
+                          '(:locase-ll :upcase-ll))))
+      (cond ((ullong-rangep value ienv) (retok (type-ullong)))
+            (t (reterr (msg "The constant ~x0 is too large."
+                            (iconst-fix iconst))))))
+     (t (prog2$ (impossible) (reterr t)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-fconst ((fconst fconstp))
+  :returns (type typep)
+  :short "Validate a floating constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A floating constant is always valid:
+     [C:6.4.4.2] states no restrictions,
+     except for a recommended practice
+     to provide a diagnostic message in certain cases,
+     which also instructs to proceed with compilation nonetheless,
+     suggesting that it should be only a warning, not an error.")
+   (xdoc::p
+    "The type is determined solely by the suffix, including its absence
+     [C:6.4.4.2/4]."))
+  (b* ((suffix? (fconst-case fconst
+                             :dec fconst.suffix?
+                             :hex fconst.suffix?)))
+    (cond ((not suffix?) (type-double))
+          ((or (fsuffix-case suffix? :locase-f)
+               (fsuffix-case suffix? :upcase-f))
+           (type-float))
+          ((or (fsuffix-case suffix? :locase-l)
+               (fsuffix-case suffix? :upcase-l))
+           (type-ldouble))
+          (t (prog2$ (impossible) (type-void)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-univ-char-name ((ucn univ-char-name-p))
+  :returns (mv erp (code natp))
+  :short "Validate a universal character name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If validation is successful, we return the numeric code of the character.")
+   (xdoc::p
+    "[C:6.4.3/2] states some restriction on the character code.
+     Another implicit restriction is that it should be
+     within the current range of Unicode character codes,
+     i.e. at most @('10FFFFh')."))
+  (b* (((reterr) 0)
+       (code (univ-char-name-case
+              ucn
+              :locase-u (str::hex-digit-chars-value
+                         (list (hex-quad->1st ucn.quad)
+                               (hex-quad->2nd ucn.quad)
+                               (hex-quad->3rd ucn.quad)
+                               (hex-quad->4th ucn.quad)))
+              :upcase-u (str::hex-digit-chars-value
+                         (list (hex-quad->1st ucn.quad1)
+                               (hex-quad->2nd ucn.quad1)
+                               (hex-quad->3rd ucn.quad1)
+                               (hex-quad->4th ucn.quad1)
+                               (hex-quad->1st ucn.quad2)
+                               (hex-quad->2nd ucn.quad2)
+                               (hex-quad->3rd ucn.quad2)
+                               (hex-quad->4th ucn.quad2)))))
+       ((when (and (< code #xa0)
+                   (not (= code #x24))
+                   (not (= code #x40))
+                   (not (= code #x60))))
+        (reterr (msg "The universal character name ~x0 ~
+                      has a code ~x1 that is below A0h ~
+                      but is not 24h or 40h or 60h."
+                     (univ-char-name-fix ucn) code)))
+       ((when (and (<= #xd800 code)
+                   (<= code #xdfff)))
+        (reterr (msg "The universal character name ~x0 ~
+                      has a code ~x1 between D800h and DFFFh."
+                     (univ-char-name-fix ucn) code)))
+       ((when (> code #x10ffff))
+        (reterr (msg "The universal character name ~x0 ~
+                      has a code ~x1 above 10FFFFh."
+                     (univ-char-name-fix ucn) code))))
+    (retok code))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-cconst ((cconst cconstp))
+  :returns (type typep)
+  :short "Validate a character constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[C:6.4.4.4] states a number of requirements,
+     but for now we do not actually impose any requirement,
+     and we just return the type of the character constant.")
+   (xdoc::p
+    "The requirements have to do with the size of the characters
+     with respect to the optional prefix of the character constant.
+     However, those refer to types defined in the standard library,
+     specifically @('wchar_t'), @('char16_t'), and @('char32_t').
+     These may vary across implementations.
+     In order to handle these in a general way,
+     we should probably extend our implementation environments
+     with information about which built-in types those types expand to.
+     We do not do that for now, which is why we do not impose requirements.")
+   (xdoc::p
+    "The character constant may also have one of those types [C:6.4.4.4/11].
+     So, for now, we return type @('int') if there is no prefix [C:6.4.4.4/10],
+     and instead we return an unknown type if there is a prefix."))
+  (b* (((cconst cconst) cconst))
+    (if cconst.prefix?
+        (type-unknown)
+      (type-sint)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: continue

@@ -15,7 +15,7 @@
 (include-book "invariant-signers-have-author-round")
 (include-book "invariant-signers-are-quorum")
 
-(local (include-book "lib-ext"))
+(local (include-book "../library-extensions/oset-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -137,7 +137,7 @@
      This key theorem suffices to then prove the main theorem,
      with some additional structural hints for the quantification:
      the proof of that main theorem will consider all pairs of certificates,
-     both involving the new one or not,
+     both involving the new one and not involving the new one,
      taking care of all cases automatically
      except for the case of an old certificate and the new certificate,
      which is where the key property,

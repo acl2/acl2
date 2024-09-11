@@ -119,7 +119,7 @@
            :cases ((<= x (/ K1 k2))))))
 
 ;gen
-;why is this needed? maybe because of ACL2::<-BECOMES-BVLT-DAG-ALT-GEN-BETTER2
+;why is this needed? maybe because of ACL2::<-BECOMES-BVLT-AXE-BIND-FREE-ARG1-STRONG
 (defthm UNSIGNED-BYTE-P-2-of-bvchop-when-bvlt-of-4
   (implies (BVLT '32 x '4)
            (UNSIGNED-BYTE-P '2 (BVCHOP '32 x))))
@@ -259,7 +259,7 @@
                          (quotep k2)))
            (equal (bvuminus 32 (bvif 1 test k1 k2))
                   (bvif 32 test (bvuminus 32 (bvchop 1 k1)) (bvuminus 32 (bvchop 1 k2)))))
-  :hints (("Goal" :in-theory (enable bvif))))
+  :hints (("Goal" :in-theory (enable bvif getbit))))
 
 (defthm ifix-of-if
   (equal (ifix (if test x86 x86_2))

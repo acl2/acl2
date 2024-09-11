@@ -37,7 +37,7 @@
                            ;; for speed:
                            acl2::getbit-when-bound
                            acl2::unsigned-byte-p-from-bounds
-                           )))
+                           acl2::unsigned-byte-p-of-bvchop-bigger)))
 
 
 (defthm acl2::equal-of-bvchops-when-equal-of-getbits-8
@@ -589,12 +589,13 @@
                             ;; logext
                             acl2::sbvlt
                             acl2::bvlt
+                            ;;getbit
                             )
-                           ( ;
-                            acl2::bvminus-becomes-bvplus-of-bvuminus
+                           (acl2::bvminus-becomes-bvplus-of-bvuminus
                             ;;acl2::plus-bvcat-with-0 ;looped
                             ;;acl2::plus-bvcat-with-0-alt ;looped
                             acl2::signed-byte-p-forward ; for speed
+                            acl2::unsigned-byte-p-of-bvchop-bigger
                             )))))
 
 ;; (defthmd jnl-condition-rewrite-1-32-helper
@@ -908,7 +909,7 @@
                                  (sub-sf-spec32 dst src)
                                  (sub-of-spec32 dst src))
                   (sbvle 32 dst src)))
-  :hints (("Goal" :in-theory (enable jle-condition
+  :hints (("Goal" :in-theory (e/d (jle-condition
                                      ;zf-spec
                                      OF-SPEC32
                                      sF-SPEC32
@@ -922,7 +923,8 @@
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
                                      acl2::equal-of-bvchops-when-equal-of-getbits
-                                     acl2::sbvlt-rewrite))))
+                                     acl2::sbvlt-rewrite)
+                                  (acl2::unsigned-byte-p-of-bvchop-bigger)))))
 
 ;nice
 (defthm jle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
@@ -1180,7 +1182,7 @@
   (implies (signed-byte-p 64 x) ;t;(unsigned-byte-p 64 x)
            (equal (jnl-condition (sf-spec64 x) (of-spec64 x))
                   (sbvle 64 0 x)))
-  :hints (("Goal" :in-theory (enable sf-spec64 of-spec64 jnl-condition))))
+  :hints (("Goal" :in-theory (enable sf-spec64 of-spec64 jnl-condition acl2::bvchop-1-becomes-getbit))))
 
 ;; (defthm jnl-condition-of-sf-spec64-and-0
 ;;   (equal (jnl-condition (sf-spec64 x) 0)
@@ -1620,7 +1622,8 @@
                                      acl2::getbit-of-+
                                      bvplus
                                      bvminus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::bvchop-1-becomes-getbit))))
 
 ;nice?
 (defthm js-condition-of-sub-sf-spec16
@@ -1636,7 +1639,8 @@
                                      acl2::getbit-of-+
                                      bvplus
                                      bvminus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::bvchop-1-becomes-getbit))))
 
 ;nice?
 (defthm js-condition-of-sub-sf-spec32
@@ -1652,7 +1656,8 @@
                                      acl2::getbit-of-+
                                      bvplus
                                      bvminus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::bvchop-1-becomes-getbit))))
 
 ;nice?
 (defthm js-condition-of-sub-sf-spec64
@@ -1668,7 +1673,8 @@
                                      acl2::getbit-of-+
                                      bvplus
                                      bvminus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::bvchop-1-becomes-getbit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

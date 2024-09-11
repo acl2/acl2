@@ -60,3 +60,99 @@
   :elementp-of-nil nil
   :pred block-listp
   :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define blocks-ordered-even-p ((blocks block-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of blocks has
+          strictly increasing (right to left), even round numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The state of each (correct) validator includes
+     a list of blocks that models the blockchain (as seen by the validator):
+     see @(tsee validator-state).
+     As explained there, blocks go from right to left,
+     i.e. the @(tsee car) is the newest block.")
+   (xdoc::p
+    "Blocks are committed at even rounds,
+     using increasingly higher round numbers,
+     at most one block per (even) round.
+     So the blocks will have round numbers in stricly increasing order,
+     and they will all be even.
+     This predicate fomalizes these constraints on round numbers."))
+  (b* (((when (endp blocks)) t)
+       (block (car blocks))
+       (round (block->round block))
+       ((unless (evenp round)) nil)
+       ((when (endp (cdr blocks))) t)
+       ((unless (> round (block->round (cadr blocks)))) nil))
+    (blocks-ordered-even-p (cdr blocks)))
+  :hooks (:fix)
+
+  ///
+
+  (defruled blocks-ordered-even-p-of-cdr
+    (implies (blocks-ordered-even-p blocks)
+             (blocks-ordered-even-p (cdr blocks))))
+
+  (defruled newest-geq-oldest-when-blocks-ordered-even-p
+    (implies (and (blocks-ordered-even-p blocks)
+                  (consp blocks))
+             (>= (block->round (car blocks))
+                 (block->round (car (last blocks)))))
+    :rule-classes :linear
+    :induct t
+    :enable last)
+
+  (defruled blocks-ordered-even-p-of-append
+    (equal (blocks-ordered-even-p (append blocks1 blocks2))
+           (and (blocks-ordered-even-p blocks1)
+                (blocks-ordered-even-p blocks2)
+                (or (endp blocks1)
+                    (endp blocks2)
+                    (> (block->round (car (last blocks1)))
+                       (block->round (car blocks2))))))
+    :induct t
+    :enable (append
+             last))
+
+  (defruled evenp-of-car-when-blocks-ordered-even-p
+    (implies (and (blocks-ordered-even-p blocks)
+                  (consp blocks))
+             (evenp (block->round (car blocks)))))
+
+  (defruled evenp-of-nth-when-blocks-ordered-even-p
+    (implies (and (blocks-ordered-even-p blocks)
+                  (< (nfix i) (len blocks)))
+             (evenp (block->round (nth i blocks))))
+    :induct t
+    :enable (nth nfix len)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define blocks-last-round ((blocks block-listp))
+  :returns (last natp)
+  :short "Last round in a list of blocks, or 0 if there are no blocks."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee blocks-ordered-even-p) holds,
+     block rounds are in strictly increading order from right to left.
+     This function then returns the latest, i.e. highest, round.
+     If there are no blocks, we totalize this function to return 0.
+     However, we do not require @(tsee blocks-ordered-even-p) in the guard."))
+  (if (consp blocks)
+      (block->round (car blocks))
+    0)
+  :hooks (:fix)
+
+  ///
+
+  (defruled oldest-of-prefix-gt-newest-of-suffix-when-blocks-ordered-even-p
+    (implies (and (blocks-ordered-even-p (append blocks1 blocks2))
+                  (consp blocks1))
+             (> (block->round (car (last blocks1)))
+                (blocks-last-round blocks2)))
+    :enable blocks-ordered-even-p-of-append))

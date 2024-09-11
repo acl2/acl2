@@ -11,6 +11,7 @@
 
 (in-package "ALEOBFT")
 
+(include-book "library-extensions/top")
 (include-book "static/top")
 (include-book "dynamic/top")
 
@@ -85,5 +86,6 @@
      mainly as state invariants, which we show
      to hold in the initial states
      and to be preserved by state transitions."))
-  :order-subtopics (aleobft-static::aleobft-static
+  :order-subtopics (library-extensions
+                    aleobft-static::aleobft-static
                     aleobft-dynamic::aleobft-dynamic))

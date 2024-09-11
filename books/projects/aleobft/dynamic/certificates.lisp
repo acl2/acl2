@@ -17,7 +17,7 @@
 (include-book "kestrel/fty/pos-set" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "lib-ext"))
+(local (include-book "../library-extensions/oset-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -309,7 +309,133 @@
     (implies cert?
              (equal (certificate->round cert?)
                     (pos-fix round)))
-    :hints (("Goal" :induct t))))
+    :hints (("Goal" :induct t)))
+
+  (defruled get-certificate-with-author+round-element
+    (implies (and (certificate-setp certs)
+                  (get-certificate-with-author+round author round certs))
+             (set::in (get-certificate-with-author+round author round certs)
+                      certs))
+    :induct t)
+
+  (defruled get-certificate-with-author+round-when-element
+    (implies (and (set::in cert certs)
+                  (equal (certificate->author cert) author)
+                  (equal (certificate->round cert) round))
+             (get-certificate-with-author+round author round certs))
+    :induct t)
+
+  (defruled get-certificate-with-author+round-when-subset
+    (implies (and (get-certificate-with-author+round author round certs0)
+                  (set::subset certs0 certs))
+             (get-certificate-with-author+round author round certs))
+    :induct t
+    :enable (get-certificate-with-author+round-when-element
+             set::subset))
+
+  (defruled get-certificate-with-author+round-of-insert-iff
+    (iff (get-certificate-with-author+round
+          author round (set::insert cert certs))
+         (or (and (equal (certificate->author cert) author)
+                  (equal (certificate->round cert) round))
+             (get-certificate-with-author+round author round certs)))
+    :induct (set::weak-insert-induction cert certs)
+    :enable (get-certificate-with-author+round-when-element))
+
+  (defruled get-certificate-with-author+round-when-delete
+    (implies (get-certificate-with-author+round author
+                                                round
+                                                (set::delete cert certs))
+             (get-certificate-with-author+round author round certs))
+    :enable get-certificate-with-author+round-when-subset)
+
+  (defruled get-certificate-with-author+round-of-delete
+    (implies (and (get-certificate-with-author+round author round certs)
+                  (or (not (equal (certificate->author cert) author))
+                      (not (equal (certificate->round cert) round))))
+             (get-certificate-with-author+round author
+                                                round
+                                                (set::delete cert certs)))
+    :induct t
+    :enable (set::delete
+             get-certificate-with-author+round-of-insert-iff)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-certificates-with-author ((author addressp)
+                                      (certs certificate-setp))
+  :returns (certs-with-author certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with a given author."
+  (b* (((when (set::emptyp certs)) nil)
+       ((certificate cert) (set::head certs)))
+    (if (equal (address-fix author) cert.author)
+        (set::insert (certificate-fix cert)
+                     (get-certificates-with-author author (set::tail certs)))
+      (get-certificates-with-author author (set::tail certs))))
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv get-certificates-with-author
+    :args ((author addressp)))
+
+  (defruled in-of-get-certificates-with-author
+    (implies (certificate-setp certs)
+             (equal (set::in cert (get-certificates-with-author author certs))
+                    (and (set::in cert certs)
+                         (equal (certificate->author cert)
+                                (address-fix author)))))
+    :induct t)
+
+  (defruled get-certificates-with-author-when-emptyp
+    (implies (set::emptyp certs)
+             (equal (get-certificates-with-author author certs)
+                    nil)))
+
+  (defruled get-certificate-with-author-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (equal (get-certificates-with-author author
+                                                  (set::insert cert certs))
+                    (if (equal (certificate->author cert)
+                               (address-fix author))
+                        (set::insert cert
+                                     (get-certificates-with-author author
+                                                                   certs))
+                      (get-certificates-with-author author certs))))
+    :enable (in-of-get-certificates-with-author
+             set::double-containment-no-backchain-limit
+             set::pick-a-point-subset-strategy)
+    :disable (get-certificates-with-author))
+
+  (defruled get-certificate-with-author-of-delete
+    (implies (certificate-setp certs)
+             (equal (get-certificates-with-author author
+                                                  (set::delete cert certs))
+                    (set::delete cert
+                                 (get-certificates-with-author author certs))))
+    :enable (in-of-get-certificates-with-author
+             set::double-containment-no-backchain-limit
+             set::pick-a-point-subset-strategy)
+    :disable get-certificates-with-author)
+
+  (defruled certificate-with-author+round-in-certificates-with-author
+    (implies (and (certificate-setp certs)
+                  (get-certificate-with-author+round author round certs))
+             (set::in (get-certificate-with-author+round author round certs)
+                      (get-certificates-with-author author certs)))
+    :enable (in-of-get-certificates-with-author
+             get-certificate-with-author+round-element)
+    :disable get-certificates-with-author)
+
+  (defruled no-certificate-with-author+round-if-no-certificates-with-author
+    (implies (and (certificate-setp certs)
+                  (equal (get-certificates-with-author author certs)
+                         nil))
+             (not (get-certificate-with-author+round author round certs)))
+    :use certificate-with-author+round-in-certificates-with-author
+    :disable get-certificates-with-author))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -320,11 +446,16 @@
           the subset of certificates with a given round."
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs)))
-    (if (equal round cert.round)
+    (if (equal (pos-fix round) cert.round)
         (set::insert (certificate-fix cert)
                      (get-certificates-with-round round (set::tail certs)))
       (get-certificates-with-round round (set::tail certs))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv get-certificates-with-round
+    :args ((round posp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,3 +557,29 @@
                         (equal (certificate->round cert1)
                                (certificate->round cert2)))
                    (equal cert1 cert2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define certificates-ordered-even-p ((certs certificate-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of certificates has
+          strictly increasing (right to left), even round numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee blocks-ordered-even-p),
+     but for certificates instead of blocks.
+     The reason for having this predicate on certificates is that
+     blockchains are extended from sequences of anchors,
+     which are lists of certificates;
+     the reason why blocks have strictly increasing, even round numbers
+     is that the collected lists of anchors also have
+     strictly increasing, even round numbers."))
+  (b* (((when (endp certs)) t)
+       (cert (car certs))
+       (round (certificate->round cert))
+       ((unless (evenp round)) nil)
+       ((when (endp (cdr certs))) t)
+       ((unless (> round (certificate->round (cadr certs)))) nil))
+    (certificates-ordered-even-p (cdr certs)))
+  :hooks (:fix))

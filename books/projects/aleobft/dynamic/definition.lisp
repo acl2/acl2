@@ -31,7 +31,10 @@
      the possible initial states,
      and the possible transitions by which
      an event takes a state to a new state
-     (the events `label' the transitions between states)."))
+     (the events `label' the transitions between states).")
+   (xdoc::p
+    "The definition of our labeled state transition is executable,
+     in the sense explained in @(tsee transitions), useful as a simulator."))
   :order-subtopics (states
                     events
                     initialization

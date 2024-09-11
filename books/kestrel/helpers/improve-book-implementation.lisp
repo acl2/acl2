@@ -100,6 +100,7 @@
       (if skipp
           (submit-and-check-events (rest events) skip-proofsp skip-localsp print state)
         (mv-let (erp state)
+          ;; TODO: We need to strip hints here, in case they refer to a local name, or avoid checking hints:
           (submit-event (if skip-proofsp `(skip-proofs ,event) event)
                         nil ;print
                         nil state)
@@ -578,32 +579,33 @@
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
-  (mv-let (erp events full-book-path state)
-    (read-book-contents bookname dir state)
-    (if erp
-        (mv erp state)
-      (let* ((state (widen-margins state))
-             ;; Suppress annoying time tracker messages.
-             (fake (time-tracker-fn nil nil nil nil nil nil nil)) ; from :trans (time-tracker nil)
-             )
-        (declare (ignore fake))
-        (prog2$
-         (and print (cw "~%~%(IMPROVING ~x0.~%" full-book-path)) ; matches the close paren below
-         (let* ((old-cbd (cbd-fn state))
-                (full-book-dir (dir-of-path full-book-path))
-                ;; We set the CBD so that the book is replayed in its own directory:
-                (state (set-cbd-simple full-book-dir state))
-                ;; Load the .port file, so that packages (especially) exist:
-                (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state))
-                ;; We cannot try omitting these from the book:
-                (initial-included-books (all-included-books (w state))))
-           (progn$ (and (eq print :verbose) (cw "  Book contains ~x0 forms.~%~%" (len events)))
-                   (mv-let (erp state)
-                     (improve-events events initial-included-books print state)
-                     (let* ((state (unwiden-margins state))
-                            (state (set-cbd-simple old-cbd state)))
-                       (prog2$ (cw ")~%")
-                               (mv erp state)))))))))))
+  (let ((full-book-path (full-book-path bookname dir state)))
+    (prog2$
+      (and print (cw "~%~%(IMPROVING ~x0.~%" full-book-path)) ; matches the close paren below
+      (let* ((old-cbd (cbd-fn state)) ; save the CBD so we can restore it below
+             (full-book-dir (dir-of-path full-book-path))
+             ;; We set the CBD so that the book is replayed in its own directory:
+             (state (set-cbd-simple full-book-dir state))
+             ;; Load the .port file, so that packages (especially) exist:
+             (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
+        (mv-let (erp events state)
+          (read-book-contents full-book-path state)
+          (if erp
+              (mv erp state)
+            (let* ((state (widen-margins state))
+                   ;; Suppress annoying time tracker messages.
+                   (fake (time-tracker-fn nil nil nil nil nil nil nil)) ; from :trans (time-tracker nil)
+                   )
+              (declare (ignore fake))
+              (let* (;; We cannot try omitting these from the book:
+                     (initial-included-books (all-included-books (w state))))
+                (progn$ (and (eq print :verbose) (cw "  Book contains ~x0 forms.~%~%" (len events)))
+                        (mv-let (erp state)
+                          (improve-events events initial-included-books print state)
+                          (let* ((state (unwiden-margins state))
+                                 (state (set-cbd-simple old-cbd state)))
+                            (prog2$ (cw ")~%")
+                                    (mv erp state)))))))))))))
 
 ;; Returns (mv erp nil state).  Does not change the world.
 (defun improve-book-fn (bookname ; no extension

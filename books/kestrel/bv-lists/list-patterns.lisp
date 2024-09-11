@@ -1,7 +1,7 @@
 ; A book about patterns of values in BV lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,6 @@
 (include-book "kestrel/bv/getbit" :dir :system)
 ;(include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "bvnth")
-(include-book "bvnot-list")
 
 ;; (in-theory (disable firstn-of-one-more))
 ;; (theory-invariant (incompatible (:rewrite cons-nth-onto-firstn) (:rewrite  firstn-of-one-more)))

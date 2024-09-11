@@ -1920,6 +1920,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defparameter *inside-include-book-fn*
 
+; The value of this variable is t when we are inside an include-book that is
+; not being performed by the local compatibility check of certify-book.
+; Otherwise the value is nil unless we are inside certify-book in either of two
+; cases: inside hcomp-build-from-state, or inside a call of include-book made
+; by the local compatibility check.
+
 ; We trust include-book-fn and certify-book-fn to take care of all include-book
 ; processing without any need to call the raw Lisp include-book.  It seems that
 ; the only way this could be a bad idea is if include-book or certify-book
@@ -14282,6 +14288,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     get-cert-obj-and-cert-filename
     include-book-raw-error
     add-global-stobj remove-global-stobj
+    translate-stobj-type-to-guard
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -14527,7 +14534,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     delete-include-book-dir delete-include-book-dir! certify-book progn!
     f-put-global push-untouchable
     set-backchain-limit set-default-hints! set-dwp!
-    set-rw-cache-state! set-induction-depth-limit! set-override-hints-macro
+    set-rw-cache-state! set-induction-depth-limit!
+    attach-stobj set-override-hints-macro
     deftheory pstk verify-guards defchoose
     set-default-backchain-limit set-state-ok
     set-ignore-ok set-non-linearp set-tau-auto-mode with-output

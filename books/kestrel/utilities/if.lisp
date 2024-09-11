@@ -61,6 +61,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; this pattern can arise from an OR
 ;rename if-same-arg2-when-booleanp
 (defthm if-x-x-y-when-booleanp
   (implies (and (syntaxp (not (quotep test))) ; avoid loops

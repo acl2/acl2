@@ -91,7 +91,11 @@
                               (expr-fix expr))
             :cast/and-ambig (prog2$
                               (raise "Misusage error: ~x0." (expr-fix expr))
-                              (expr-fix expr)))))
+                              (expr-fix expr))
+            :stmt (expr-stmt (my-simpadd0-block-item-list expr.items))
+            :tycompat (make-expr-tycompat
+                        :type1 (my-simpadd0-tyname expr.type1)
+                        :type2 (my-simpadd0-tyname expr.type2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

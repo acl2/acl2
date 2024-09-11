@@ -1,6 +1,6 @@
 ; A clause processor to flatten literals
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -107,7 +107,7 @@
     (iff (all-eval-to-false-with-con-and-dis-eval (get-disjuncts-of-term2 term) a)
          (not (con-and-dis-eval term a)))
     :flag get-disjuncts-of-term2)
-  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2))))
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2 myif))))
 
 (defthm con-and-dis-eval-of-disjoin-of-flatten-disjuncts
   (iff (con-and-dis-eval (disjoin (flatten-disjuncts clause)) a)

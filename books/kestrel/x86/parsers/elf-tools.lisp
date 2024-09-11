@@ -1,6 +1,6 @@
 ; Tools for processing the alists that represent parsed ELF files.
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -103,7 +103,7 @@
         (parse-elf-file-bytes bytes)
         state)))
 
-;; Returns an error triple
+;; Returns an error triple (mv erp res state) where res contains information about the given ELF file.
 (defun elf-info-fn (filename state)
   (declare (xargs :guard (stringp filename)
                   :stobjs state
@@ -112,15 +112,17 @@
                   ))
   (b* (((mv erp parsed-elf state) (parse-elf filename state))
        ((when erp) (mv erp nil state))
-       (sections (lookup-eq-safe :sections parsed-elf))
-       (section-names (strip-cars sections))
-       (info nil)
-       (info (acons :section-names section-names info))
-       (info (acons :symbol-table (lookup-eq-safe :symbol-table parsed-elf) info))
+       ;; (sections (lookup-eq-safe :sections parsed-elf))
+       ;; (section-names (strip-cars sections))
+       (info nil) ; to be extended below
+       (info (acons :type (lookup-eq-safe :type parsed-elf) info))
+       ;; (info (acons :section-names section-names info))
        (info (acons :section-header-table (lookup-eq-safe :section-header-table parsed-elf) info))
+       (info (acons :program-header-table (lookup-eq-safe :program-header-table parsed-elf) info))
+       (info (acons :symbol-table (lookup-eq-safe :symbol-table parsed-elf) info))
        ;(info (acons :sections sections info))
        ;; todo: extract more info, like section sizes
-       )
+       (info (reverse info)))
     (mv nil info state)))
 
 (defmacro elf-info (filename)

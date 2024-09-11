@@ -175,7 +175,8 @@
   (xdoc::topstring
    (xdoc::p
     "This depends on the implementation environment."))
-  (- (expt 2 (1- (* 8 (ienv->short-bytes ienv))))))
+  (- (expt 2 (1- (* 8 (ienv->short-bytes ienv)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,7 +187,8 @@
   (xdoc::topstring
    (xdoc::p
     "This depends on the implementation environment."))
-  (1- (expt 2 (1- (* 8 (ienv->short-bytes ienv))))))
+  (1- (expt 2 (1- (* 8 (ienv->short-bytes ienv)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,7 +202,8 @@
    (xdoc::p
     "Note that the minimum @('unsigned signed') is just 0,
      so there is no need to introduce a function for it."))
-  (1- (expt 2 (* 8 (ienv->short-bytes ienv)))))
+  (1- (expt 2 (* 8 (ienv->short-bytes ienv))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -211,7 +214,8 @@
   (xdoc::topstring
    (xdoc::p
     "This depends on the implementation environment."))
-  (- (expt 2 (1- (* 8 (ienv->int-bytes ienv))))))
+  (- (expt 2 (1- (* 8 (ienv->int-bytes ienv)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -222,7 +226,8 @@
   (xdoc::topstring
    (xdoc::p
     "This depends on the implementation environment."))
-  (1- (expt 2 (1- (* 8 (ienv->int-bytes ienv))))))
+  (1- (expt 2 (1- (* 8 (ienv->int-bytes ienv)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,7 +241,8 @@
    (xdoc::p
     "Note that the minimum @('unsigned signed') is just 0,
      so there is no need to introduce a function for it."))
-  (1- (expt 2 (* 8 (ienv->int-bytes ienv)))))
+  (1- (expt 2 (* 8 (ienv->int-bytes ienv))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -247,7 +253,8 @@
   (xdoc::topstring
    (xdoc::p
     "This depends on the implementation environment."))
-  (- (expt 2 (1- (* 8 (ienv->long-bytes ienv))))))
+  (- (expt 2 (1- (* 8 (ienv->long-bytes ienv)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -258,7 +265,8 @@
   (xdoc::topstring
    (xdoc::p
     "This depends on the implementation environment."))
-  (1- (expt 2 (1- (* 8 (ienv->long-bytes ienv))))))
+  (1- (expt 2 (1- (* 8 (ienv->long-bytes ienv)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -272,7 +280,8 @@
    (xdoc::p
     "Note that the minimum @('unsigned signed') is just 0,
      so there is no need to introduce a function for it."))
-  (1- (expt 2 (* 8 (ienv->long-bytes ienv)))))
+  (1- (expt 2 (* 8 (ienv->long-bytes ienv))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,7 +292,8 @@
   (xdoc::topstring
    (xdoc::p
     "This depends on the implementation environment."))
-  (- (expt 2 (1- (* 8 (ienv->llong-bytes ienv))))))
+  (- (expt 2 (1- (* 8 (ienv->llong-bytes ienv)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -294,7 +304,8 @@
   (xdoc::topstring
    (xdoc::p
     "This depends on the implementation environment."))
-  (1- (expt 2 (1- (* 8 (ienv->llong-bytes ienv))))))
+  (1- (expt 2 (1- (* 8 (ienv->llong-bytes ienv)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -308,4 +319,105 @@
    (xdoc::p
     "Note that the minimum @('unsigned signed') is just 0,
      so there is no need to introduce a function for it."))
-  (1- (expt 2 (* 8 (ienv->llong-bytes ienv)))))
+  (1- (expt 2 (* 8 (ienv->llong-bytes ienv))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-rangep ((val integerp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed char')."
+  (and (<= (schar-min) (ifix val))
+       (<= (ifix val) (schar-max)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uchar-rangep ((val integerp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('unsigned char')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (uchar-max)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sshort-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed short')."
+  (and (<= (sshort-min ienv) (ifix val))
+       (<= (ifix val) (sshort-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ushort-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed short')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ushort-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed int')."
+  (and (<= (sint-min ienv) (ifix val))
+       (<= (ifix val) (sint-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uint-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed int')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (uint-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define slong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed long')."
+  (and (<= (slong-min ienv) (ifix val))
+       (<= (ifix val) (slong-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ulong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed long')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ulong-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sllong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed llong')."
+  (and (<= (sllong-min ienv) (ifix val))
+       (<= (ifix val) (sllong-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ullong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is
+          in the range of (i.e. representable in) type @('signed llong')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ullong-max ienv)))
+  :hooks (:fix))

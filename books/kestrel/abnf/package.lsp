@@ -24,6 +24,7 @@
                           chars=>nats
                           constant-namep
                           constant-value
+                          cw-event
                           defmacro+
                           defxdoc+
                           ensure-symbol-is-fresh-event-name$
@@ -33,6 +34,11 @@
                           ensure-value-is-symbol$
                           er-soft+
                           erp
+                          evmac-input-print-p
+                          evmac-input-print-<
+                          evmac-input-print-<=
+                          evmac-input-print->
+                          evmac-input-print->=
                           explode
                           fun
                           implode
@@ -65,6 +71,7 @@
                           pseudo-event-formp
                           pseudo-event-form-listp
                           read-file-characters
+                          restore-output?
                           reterr
                           retok
                           return-raw

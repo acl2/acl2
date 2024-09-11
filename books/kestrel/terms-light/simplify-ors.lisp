@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 ;; The pattern (if x x y) can come from translating (or x y), but we don't want to rewrite X twice if we can avoid it.
-;; TODO: Consider also bool-fixing constants (see below)
+;; TODO: Consider also bool-fixing constants (see below, or sepatately?)
 ;; TODO: Consider lambda binding the X when we don't have boolean info.
 
 (local (include-book "tools/flag" :dir :system))
@@ -19,9 +19,10 @@
 
 ;; todo: what should we name this?  it may soon also also bool-fix constants.
 (mutual-recursion
- (defun simplify-ors (term bool-fix)
+  ;; If iffp is true, the result must only be boolean equivalent to the input.  Otherwise it must be EQUAL.
+ (defun simplify-ors (term iffp)
    (declare (xargs :guard (and (pseudo-termp term)
-                               (booleanp bool-fix))
+                               (booleanp iffp))
                    :verify-guards nil ;done below
                    ))
    (if (variablep term)
@@ -30,7 +31,7 @@
        (case fn
          (quote term
                 ;; todo: consider this:
-                ;; (if (and bool-fix
+                ;; (if (and iffp
                 ;;          (not (booleanp (unquote term))))
                 ;;     ;; bool-fix the constant:
                 ;;     (kwote (if term t nil))
@@ -43,10 +44,10 @@
                (let* ((test (fargn term 1))
                       (then (fargn term 2))
                       (else (fargn term 3))
-                      (test (simplify-ors test t)) ; use a boolean context for the test
-                      (then (simplify-ors then bool-fix)) ; propagate boolean context to branches
-                      (else (simplify-ors else bool-fix)))
-                 (if (and bool-fix
+                      (test (simplify-ors test t)) ; only have to preserve IFF for the test
+                      (then (simplify-ors then iffp)) ; propagate IFF context to branches
+                      (else (simplify-ors else iffp)))
+                 (if (and iffp
                           (equal test then))
                      ;; replace (if x x y) with (if x 't y):
                      `(if ,test 't ,else)
@@ -67,13 +68,13 @@
                 (let* ((formals (lambda-formals fn))
                        (body (lambda-body fn))
                        ;; propagate boolean context:
-                       (body (simplify-ors body bool-fix)))
+                       (body (simplify-ors body iffp)))
                   ;; todo: use cons-with-hint
                   `((lambda ,formals ,body) ,@args))
               ;; non-lambda:
               (cons-with-hint fn args term))))))))
 
- ;; TODO: Generalize to take bool-fix arguments for each of the terms?
+ ;; TODO: Generalize to take iffp arguments for each of the terms?
  (defun simplify-ors-lst (terms)
    (declare (xargs :guard (pseudo-term-listp terms)))
    (if (endp terms)
@@ -93,7 +94,7 @@
  (defthm-flag-simplify-ors
    (defthm pseudo-termp-of-simplify-ors
      (implies (pseudo-termp term)
-              (pseudo-termp (simplify-ors term bool-fix)))
+              (pseudo-termp (simplify-ors term iffp)))
      :flag simplify-ors)
    (defthm pseudo-termp-of-simplify-ors-lst
      (implies (pseudo-term-listp terms)
@@ -104,7 +105,7 @@
 ;; redundant and non-local
 (defthm pseudo-termp-of-simplify-ors
   (implies (pseudo-termp term)
-           (pseudo-termp (simplify-ors term bool-fix))))
+           (pseudo-termp (simplify-ors term iffp))))
 
 ;; redundant and non-local
 (defthm pseudo-term-listp-of-simplify-ors-lst

@@ -445,14 +445,6 @@
          (bvif size test a b))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-;move
-(defthm myif-same-arg1-arg2-when-booleanp
-  (implies (and (syntaxp (not (equal x *t*))) ;prevent loops
-                (booleanp x))
-           (equal (myif x x y)
-                  (myif x t y)))
-  :hints (("Goal" :in-theory (enable myif))))
-
 ;; Helps justify the correctness of Axe using IFF when dealing with contexts
 (defthm bvif-of-bool-fix
   (equal (bvif size (bool-fix test) x y)

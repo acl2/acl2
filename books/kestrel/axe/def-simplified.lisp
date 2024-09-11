@@ -31,7 +31,7 @@
 (include-book "boolean-rules-axe") ;for MYIF-BECOMES-BOOLIF-AXE
 (include-book "list-rules-axe") ;for BOOLEANP-OF-ITEMS-HAVE-LEN
 (include-book "bv-rules-axe0")
-(include-book "bv-rules-axe") ;for MYIF-SAME-ARG1-ARG2-WHEN-BOOLEANP-AXE
+(include-book "bv-rules-axe") ;for BVPLUS-COMMUTATIVE-AXE, etc
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?

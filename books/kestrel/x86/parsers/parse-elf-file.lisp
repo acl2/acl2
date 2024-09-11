@@ -1,6 +1,6 @@
 ; A parser for ELF executables
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,7 @@
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/bv/bvcat" :dir :system))
 
 (defconst *elf-magic-number* #x464C457F) ; 7F"ELF" (but note the byte order)
 
@@ -37,21 +38,80 @@
     (1 . :elfdata2lsb)
     (2 . :elfdata2msb)))
 
+(defconst *segment-mask-flag-alist*
+  `((#x1 . :pf_x)
+    (#x2 . :pf_w)
+    (#x4 . :pf_r)))
+
+;; Usually each car of the mask-flag-alist has a single bit set
+(defund decode-val-with-mask-flag-alist (val mask-flag-alist)
+  (declare (xargs :guard (and (integerp val)
+                              (alistp mask-flag-alist)
+                              (nat-listp (strip-cars mask-flag-alist)))))
+  (if (endp mask-flag-alist)
+      nil
+    (let* ((pair (first mask-flag-alist))
+           (mask (car pair))
+           (flag (cdr pair)))
+      (if (not (equal 0 (logand val mask)))
+          (cons flag (decode-val-with-mask-flag-alist val (rest mask-flag-alist)))
+        (decode-val-with-mask-flag-alist val (rest mask-flag-alist))))))
+
+;; todo: There is an entry for Linux, but I don't see it being used.
 (defconst *osabis*
   `((0 . :elfosabi_sysv)
     (1 . :elfosabi_hpux)
     (255 . :elfosabi_standalone)))
 
+(defconst *program-header-types*
+  `((0 . :PT_NULL)
+    (1 . :PT_LOAD)
+    (2 . :PT_DYNAMIC)
+    (3 . :PT_INTERP)
+    (4 . :PT_NOTE)
+    (5 . :PT_SHLIB)
+    (6 . :PT_PHDR)
+    (7 . :PT_TLS)
+    ;; From https://raw.githubusercontent.com/wiki/hjl-tools/linux-abi/linux-abi-draft.pdf (System V Application Binary Interface Linux Extensions, Version 0.1, November 28, 2018)
+    ;; and https://refspecs.linuxbase.org/LSB_4.1.0/LSB-Core-generic/LSB-Core-generic/progheader.html:
+    (#x6474e550 . :PT_GNU_EH_FRAME)
+    (#x6474e551 . :PT_GNU_STACK)
+    (#x6474e552 . :PT_GNU_RELRO)
+    (#x6474e553 . :PT_GNU_PROPERTY)
+    ))
+
+(defun decode-program-header-type (p_type)
+  (declare (xargs :guard (unsigned-byte-p 32 p_type)))
+  (let ((res (lookup p_type *program-header-types*)))
+    (if res
+        res
+      (if (and (<= #x60000000 p_type)
+               (<= p_type #x6FFFFFFF))
+          :operating-system-specific
+        (if (and (<= #x70000000 p_type)
+                 (<= p_type #x7FFFFFFF))
+            :processor-specific
+          (er hard? 'decode-program-header-type "Bad program header type: ~x0." p_type))))))
+
 (defconst *elf-file-types* ; acl2::*file-types* is already defined
-  `((0 . :none)
-    (1 . :rel)
-    (2 . :exec)
-    (3 . :dyn)
-    (4 . :core)
-    (#xfe00 . :loos)
-    (#xfeff . :hios)
-    (#xff00 . :loproc)
-    (#xffff . :hiproc)))
+  `((#x0 . :none)
+    (#x1 . :rel)
+    (#x2 . :exec)
+    (#x3 . :dyn)
+    (#x4 . :core)))
+
+(defun decode-file-type (e_type)
+  (declare (xargs :guard (unsigned-byte-p 16 e_type)))
+  (let ((res (lookup e_type *elf-file-types*)))
+    (if res
+        res
+      (if (and (<= #xfe00 e_type)
+               (<= e_type #xfeff))
+          :operating-system-specific
+        (if (and (<= #xff00 e_type)
+                 (<= e_type #xffff))
+            :processor-specific
+          (er hard? 'decode-file-type "Unknown file type: ~x0." e_type))))))
 
 (defconst *elf-machine-types*
   '((0 . :EM_NONE)
@@ -142,41 +202,36 @@
     (100 . :EM_ST200) ;     STMicroelectronics (www.st.com) ST200 microcontroller
     ))
 
-;; Returns (mv item bytes).
+;; Returns (mv item bytes).  Little endian.
 (defun parse-half (bytes)
-  (declare (xargs :guard (byte-listp bytes)
-                  :verify-guards nil
-                  ))
+  (declare (xargs :guard (and (byte-listp bytes)
+                              (<= 2 (len bytes)))))
   (parse-u16 bytes))
 
-;; Returns (mv item bytes).
+;; Returns (mv item bytes).  Little endian.
 (defun parse-word (bytes)
-  (declare (xargs :guard (byte-listp bytes)
-                  :verify-guards nil
-                  ))
+  (declare (xargs :guard (and (byte-listp bytes)
+                              (<= 4 (len bytes)))))
   (parse-u32 bytes))
 
-;; Returns (mv item bytes).
+;; Returns (mv item bytes).  Little endian.
 (defun parse-addr (64bitp bytes)
   (declare (xargs :guard (and (booleanp 64bitp)
-                              (byte-listp bytes))
-                  :verify-guards nil
-                  ))
+                              (byte-listp bytes)
+                              (if 64bitp (<= 8 (len bytes)) (<= 4 (len bytes))))))
   (if 64bitp (parse-u64 bytes) (parse-u32 bytes)))
 
-;; Returns (mv item bytes).
+;; Returns (mv item bytes).  Little endian.
 (defun parse-offset (64bitp bytes)
   (declare (xargs :guard (and (booleanp 64bitp)
-                              (byte-listp bytes))
-                  :verify-guards nil
-                  ))
+                              (byte-listp bytes)
+                              (if 64bitp (<= 8 (len bytes)) (<= 4 (len bytes))))))
   (parse-addr 64bitp bytes))
 
-;; Returns (mv item bytes).
+;; Returns (mv item bytes).  Little endian.
 (defun parse-xword (bytes)
-  (declare (xargs :guard (byte-listp bytes)
-                  :verify-guards nil
-                  ))
+  (declare (xargs :guard (and (byte-listp bytes)
+                              (<= 8 (len bytes)))))
   (parse-u64 bytes))
 
 (defun parse-string-chars (bytes acc)
@@ -338,37 +393,97 @@
       (extract-elf-sections (rest section-header-table) all-bytes
                             (acons name bytes acc)))))
 
+;move up
+;; Returns (mv program-header bytes).
+(defun parse-elf-program-header (64-bitp bytes)
+  (declare (xargs :guard (and (booleanp 64-bitp)
+                              (byte-listp bytes)
+                              (len-at-least (if 64-bitp #x38 #x20) bytes))))
+  (b* (((mv p_type bytes) (parse-word bytes))
+       (p_type (decode-program-header-type p_type))
+       ((mv p_flags bytes)                    ; flags are read later if 32-bit
+        (if 64-bitp
+            (parse-word bytes)
+          (mv :to-be-read-later bytes)))
+       ;; flags not stored until below
+       ((mv p_offset bytes) (parse-offset 64-bitp bytes))
+       ((mv p_vaddr bytes) (parse-addr 64-bitp bytes))
+       ((mv p_paddr bytes) (parse-addr 64-bitp bytes))
+       ((mv p_filesz bytes) (if 64-bitp (parse-xword bytes) (parse-word bytes)))
+       ((mv p_memsz bytes) (if 64-bitp (parse-xword bytes) (parse-word bytes)))
+       ((mv p_flags bytes) ; flags already read above if 64-bit
+        (if 64-bitp
+            (mv p_flags bytes) ; already read above
+          (parse-word bytes)))
+       ((mv p_align bytes) (if 64-bitp (parse-xword bytes) (parse-word bytes)))
+       ;; Assemble the result:
+       (result nil) ; an alist, to be extended
+       (result (acons :type p_type result))
+       ;; we put the flags second, as they come second for 64-bit (the order shouldn't matter much):
+       (result (acons :flags (decode-val-with-mask-flag-alist p_flags *segment-mask-flag-alist*) result))
+       (result (acons :offset p_offset result))
+       (result (acons :vaddr p_vaddr result))
+       (result (acons :paddr p_paddr result))
+       (result (acons :filesz p_filesz result))
+       (result (acons :memsz p_memsz result))
+       (result (acons :align p_align result)))
+    (mv (reverse result) bytes)))
+
+;move up
+; todo: guard
+;; Returns the program headers
+(defun parse-elf-program-headers (index count 64-bitp acc bytes)
+  (declare (xargs :measure (nfix (- count index))))
+  (if (or (<= count index)
+          (not (natp index))
+          (not (natp count)))
+      (reverse acc)
+    (mv-let (program-header bytes)
+      (parse-elf-program-header 64-bitp bytes)
+      (parse-elf-program-headers (+ 1 index)
+                                 count
+                                 64-bitp
+                                 (acons index program-header acc)
+                                 bytes))))
+
+;; TODO: Some of this parsing need not be done for all callers (e.g., when loading an image)
 (defun parse-elf-file-bytes (bytes)
   (b* ((all-bytes bytes) ;capture for later looking up things at given offsets
-       (result nil) ; empty alist
        ((mv e_ident bytes) (parse-n-bytes 16 bytes))
-       (elfmag0 (nth 0 e_ident))
-       (elfmag1 (nth 1 e_ident))
-       (elfmag2 (nth 2 e_ident))
-       (elfmag3 (nth 3 e_ident))
-       ((when (not (and (= #x7F elfmag0)
-                        (= (char-code #\E) elfmag1)
-                        (= (char-code #\L) elfmag2)
-                        (= (char-code #\F) elfmag3))))
-        (er hard? 'parse-elf-file-bytes "Bad magic number: ~x0." (take 4 e_ident)))
+       (ei_mag0 (nth 0 e_ident))
+       (ei_mag1 (nth 1 e_ident))
+       (ei_mag2 (nth 2 e_ident))
+       (ei_mag3 (nth 3 e_ident))
        (ei_class (nth 4 e_ident))
+       (ei_data (nth 5 e_ident))
+       (ei_version (nth 6 e_ident))
+       (ei_osabi (nth 7 e_ident))
+       (ei_abiversion (nth 8 e_ident))
+       ;; todo: parse more fields of e_ident?
+
+       ;; Check that the magic number is right:
+       ((when (not (and (= #x7F ei_mag0)
+                        (= (char-code #\E) ei_mag1)
+                        (= (char-code #\L) ei_mag2)
+                        (= (char-code #\F) ei_mag3))))
+        (er hard? 'parse-elf-file-bytes "Bad magic number: ~x0." (take 4 e_ident)))
+
        (class (lookup-safe ei_class *classes*))
        (64-bitp (eq :elfclass64 class))
-       (result (acons :class class result))
+
+       (result nil) ; empty alist, to be extended
        ;; Now we can set the magic number:
        (result (acons :magic (if 64-bitp :elf-64 :elf-32) result)) ; for use by parsed-executable-type
-       (ei_data (nth 5 e_ident))
+       (result (acons :class class result))
        (data (lookup-safe ei_data *data-encodings*))
        (result (acons :data data result))
-       (ei_version (nth 6 e_ident))
        (result (acons :version ei_version result))
-       (ei_osabi (nth 7 e_ident))
        (osabi (lookup-safe ei_osabi *osabis*))
        (result (acons :osabi osabi result))
-       (ei_abiversion (nth 8 e_ident))
        (result (acons :abiversion ei_abiversion result))
+       ;; Done with e_ident.
        ((mv e_type bytes) (parse-half bytes)) ; todo: consider endianness for these values
-       (type (lookup-safe e_type *elf-file-types*))
+       (type (decode-file-type e_type))
        (result (acons :type type result))
        ((mv e_machine bytes) (parse-half bytes))
        (machine (lookup-safe e_machine *elf-machine-types*))
@@ -396,6 +511,9 @@
        ((mv e_shstrndx & ;bytes
             ) (parse-half bytes))
        (result (acons :shstrndx e_shstrndx result))
+       ;; Parse the program header table:
+       (program-header-table (parse-elf-program-headers 0 e_phnum 64-bitp nil (nthcdr e_phoff all-bytes)))
+       (result (acons :program-header-table program-header-table result))
        ;; Parse the section header table:
        (section-header-table-without-names (parse-elf-section-headers 0 e_shnum 64-bitp nil (nthcdr e_shoff all-bytes)))
        ;; Add the names to the section headers:

@@ -21,6 +21,7 @@
 (include-book "projects/pfcs/portcullis" :dir :system)
 (include-book "rtl/rel11/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
+(include-book "../portcullis")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,4 +214,5 @@
                                     pfcs::pfconst
                                     pfcs::pfdef
                                     pfcs::pfmon
-                                    pfcs::pfvar)))
+                                    pfcs::pfvar
+                                    aleobft::lists-noforkp)))

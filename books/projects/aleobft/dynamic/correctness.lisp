@@ -13,7 +13,18 @@
 
 (include-book "owned-certificates")
 (include-book "same-owned-certificates")
+(include-book "no-self-messages")
+(include-book "no-self-buffer")
+(include-book "no-self-endorsed")
+(include-book "signer-records")
+(include-book "fault-tolerance")
+(include-book "committees-in-system")
+(include-book "quorum-intersection")
+(include-book "last-blockchain-round")
+(include-book "ordered-even-blocks")
 (include-book "unequivocal-certificates-def-and-init")
+(include-book "nonforking-blockchains-def-and-init")
+(include-book "same-committees")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,6 +41,17 @@
      here we are generalizing it for dynamic committees."))
   :order-subtopics (owned-certificates
                     same-owned-certificates
-                    unequivocal-certificates-def-and-init))
+                    no-self-messages
+                    no-self-buffer
+                    no-self-endorsed
+                    signer-records
+                    fault-tolerance
+                    committees-in-system
+                    quorum-intersection
+                    last-blockchain-round
+                    ordered-even-blocks
+                    unequivocal-certificates-def-and-init
+                    nonforking-blockchains-def-and-init
+                    same-committees))
 
 ; TODO: continue

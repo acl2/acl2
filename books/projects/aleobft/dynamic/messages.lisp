@@ -200,8 +200,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled message-certificates-with-destination-of-make-certificate-message
-  :parents (make-certificate-message
+(defruled message-certificates-with-destination-of-make-certificate-messages
+  :parents (make-certificate-messages
             message-certificates-with-destination)
   :short "Relation between message extraction and message creation."
   (implies (address-setp dests)

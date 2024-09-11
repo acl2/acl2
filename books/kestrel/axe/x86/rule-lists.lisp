@@ -254,10 +254,20 @@
   '(mv-nth-1-of-wb-1-becomes-write
     mv-nth-1-of-wb-becomes-write))
 
+;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
+(defund program-at-rules ()
+  (declare (xargs :guard t))
+  '(program-at-of-write
+    x86isa::program-at-of-if
+    program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
+    program-at-of-set-undef ; do we not need something like this?
+    program-at-of-set-mxcsr
+    ))
+
 (defun read-byte-rules ()
   (declare (xargs :guard t))
   '(read-byte-of-xw-irrel
-    read-byte-when-program-at
+    ;;read-byte-when-program-at read-byte-when-program-at-gen
     read-byte-of-set-flag
     read-byte-of-write-byte
     read-byte-of-logext
@@ -270,7 +280,15 @@
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
-    read-in-terms-of-nth-and-pos-eric ; read-when-program-at
+    read-when-program-at ; trying just this on
+    ;; since read-when-program-at can introduce bv-array-read-chunk-little
+    acl2::bv-array-read-chunk-little-constant-opener
+    acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
+    acl2::bv-array-read-chunk-little-unroll
+    ;; read-when-program-at-1-byte-simple ; todo: use a more general rule?
+    ;; read-when-program-at-2-bytes
+    ;; read-when-program-at-4-bytes
+    ;; read-when-program-at-8-bytes
     read-of-logext
     read-when-equal-of-read
     read-when-equal-of-read-alt
@@ -291,7 +309,6 @@
     alignment-checking-enabled-p-of-write
     get-flag-of-write
     ctri-of-write ; may be needed for lifter, which does not use the lifter-rules64-new (todo: move other similar rules here?)
-    program-at-of-write
     undef-of-write
     mxcsr-of-write
     ms-of-write
@@ -1127,7 +1144,7 @@
 (defun if-lifting-rules ()
   (declare (xargs :guard t))
   '(x86isa::app-view-of-if
-    x86isa::program-at-of-if
+    ;x86isa::program-at-of-if
     x86isa::x86p-of-if
     x86isa::alignment-checking-enabled-p-of-if
     x86isa::64-bit-modep-of-if
@@ -1726,7 +1743,7 @@
 
             x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
             ;; x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
-            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; or do we just always go to read?
+            ;; x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; todo: or do we just always go to read?
             ;;x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
 
             x86isa::canonical-address-listp-of-cons
@@ -1919,9 +1936,6 @@
             ;;x86isa::rip$a                           ;expose the call to xr
             ;;app-view$inline         ;expose the call to xr
 
-
-
-
             x86isa::mv-nth-1-rb-xw-undef
             x86isa::wb-xw-in-app-view
 
@@ -1957,9 +1971,6 @@
             x86isa::i48-when-canonical-address-p
             x86isa::select-address-size$inline
             ;x86isa::canonical-address-p-of-if
-            read-in-terms-of-nth-and-pos-eric-2-bytes
-            read-in-terms-of-nth-and-pos-eric-4-bytes
-            read-in-terms-of-nth-and-pos-eric-8-bytes
 
             cf-spec64-when-unsigned-byte-p
 
@@ -2119,8 +2130,6 @@
             cr4bits->osfxsr-of-bvchop
 
             x86isa::chk-exc-fn ; for floating point and/or avx/vex?
-
-            program-at-of-set-flag
 
             x86isa::xmmi-size$inline
             x86isa::!xmmi-size$inline
@@ -2317,7 +2326,7 @@
             acl2::collect-constants-over-<-2
             acl2::<-of-negative-when-usbp
             x86isa::canonical-address-p-of-if
-            acl2::<-becomes-bvlt-axe-both
+            acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
             acl2::bvlt-of-bvplus-constant-and-constant-other
             acl2::bvlt-transitive-4-a
             acl2::bvlt-transitive-4-b
@@ -2432,7 +2441,7 @@
     get-flag-of-set-esp
     get-flag-of-set-ebp
 
-    program-at-of-set-eip
+    program-at-of-set-eip ; only needed for loop lifter?
     program-at-of-set-eax
     program-at-of-set-ebx
     program-at-of-set-ecx
@@ -3121,7 +3130,6 @@
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
             x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
             x86isa::write-*sp-when-64-bit-modep
-            ;; x86isa::program-at-of-set-undef ; do we not need something like this?
             )))
 
 (defund lifter-rules64-new ()
@@ -4251,13 +4259,17 @@
 (set-axe-rule-priority read-of-write-disjoint -1)
 
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
-;;(set-axe-rule-priority read-when-program-at-gen 1)
-(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric 1)
-(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric-2-bytes 2) ; try these after the 1-byte one just above
-(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric-4-bytes 2)
-(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric-8-bytes 2)
+(set-axe-rule-priority read-when-program-at 1)
+;;todo: these are no longer used:
+(set-axe-rule-priority read-when-program-at-1-byte 1)
+(set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
+(set-axe-rule-priority read-when-program-at-4-bytes 2)
+(set-axe-rule-priority read-when-program-at-8-bytes 2)
 
-
+(set-axe-rule-priority read-when-program-at-1-byte-simple 1)
+;; (set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
+;; (set-axe-rule-priority read-when-program-at-4-bytes 2)
+;; (set-axe-rule-priority read-when-program-at-8-bytes 2)
 
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
@@ -4359,7 +4371,7 @@
 ;; ;;             ;read-when-program-at
 ;; ;;             ;read-of-write-disjoint2
 ;; ;;             ;read-of-write-disjoint
-;; ;; ;acl2::<-becomes-bvlt-axe-both
+;; ;; ;acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
 ;; ;; ;            read-byte-from-segment-when-code-segment-assumptions32
 ;; ;;  ;           mv-nth-1-of-add-to-*sp
 ;; ;;   ;          not-mv-nth-0-of-add-to-*sp
@@ -4656,7 +4668,7 @@
             x86isa::integerp-of-xr-rgf
             acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
             min ; why is min arising?  or add min-same
-            acl2::<-becomes-bvlt-dag-alt-gen-better2
+            acl2::<-becomes-bvlt-axe-bind-free-arg1-strong
             acl2::<-becomes-bvlt-dag-gen-better2
             ;; after adding core-rules-bv:
             acl2::bvlt-tighten-bind-and-bind-dag
@@ -4675,7 +4687,6 @@
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-            read-of-2 ; splits into 2 reads -- todo: do better?
             )
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
@@ -4752,7 +4763,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: move this?
 (defun extra-loop-lifter-rules ()
   (append ;or put these in symbolic-execution-rules-loop ?:
    '(stack-height-increased-wrt
@@ -4784,17 +4794,21 @@
      read-of-set-flag
      read-of-write-disjoint2
      write-of-write-same
-     read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
-     read-in-terms-of-nth-and-pos-eric-4-bytes ; this is for resolving reads of the program.
-     read-in-terms-of-nth-and-pos-eric-2-bytes ; this is for resolving reads of the program.
-     read-in-terms-of-nth-and-pos-eric-8-bytes ; this is for resolving reads of the program.
+     read-when-program-at-1-byte ; this is for resolving reads of the program.
+     read-when-program-at-4-bytes ; this is for resolving reads of the program.
+     read-when-program-at-2-bytes ; this is for resolving reads of the program.
+     read-when-program-at-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
      acl2::equal-of-bvplus-constant-and-constant
      acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::mod-of-+-of-constant
      xr-of-if
+     ;; since we are still using the legacy rewriter, which can't eval bv-array-read-chunk-little:
+     ;acl2::bv-array-read-chunk-little-base
+     ;acl2::bv-array-read-chunk-little-unroll
      )
+   (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)
 ;(x86isa::lifter-rules)
    ))

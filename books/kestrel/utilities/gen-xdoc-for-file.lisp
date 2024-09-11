@@ -1,6 +1,6 @@
 ; A utility for building xdoc by extracting text from .lisp files
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -48,8 +48,6 @@
 (include-book "kestrel/file-io-light/read-file-into-line-list" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "strings")
-
-(verify-termination cbd-fn) ;todo: move
 
 (local (in-theory (disable SEARCH-FN)))
 

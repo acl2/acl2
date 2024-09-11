@@ -1,7 +1,7 @@
 ; Taking the and of two bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -100,7 +100,7 @@
 (defthm bvand-1-of-getbit-arg2
   (equal (bvand 1 x (getbit 0 y))
          (bvand 1 x y))
-  :hints (("Goal" :in-theory (enable bvand))))
+  :hints (("Goal" :in-theory (enable bvand getbit))))
 
 ;todo: rename to have 0 in the name
 (defthm bvand-1-of-getbit-arg1
@@ -207,7 +207,8 @@
          (if (and (equal (bvchop 1 x) 1)
                   (equal (bvchop 1 y) 1))
              1
-           0)))
+           0))
+  :hints (("Goal" :in-theory (enable bitand getbit))))
 
 (defthm equal-of-1-and-bitand
   (equal (equal 1 (bitand x y))

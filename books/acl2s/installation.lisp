@@ -67,9 +67,14 @@ occurring.
 <p>
   The easiest way to install ACL2s on Windows is to use the installer.
 </p>
+
+<p>A video walking through installation is available
+  <a href=\"https://youtu.be/Pwf2GWGBTD0\" target=\"_blank\">here for Windows 10</a> and
+  <a href=\"https://youtu.be/aunZ1K5BIrg\" target=\"_blank\">here for Windows 11</a>.
+</p>
 <ol>
-  <li><b>If you are on Windows 11:</b> Download the installer <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.8/ACL2sInstallerWin11.exe\">from here</a>.</li>
-  <li><b>If you are on Windows 10:</b> Download the installer <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.8/ACL2sInstallerWin10.exe\">from here</a>.</li>
+  <li><b>If you are on Windows 11:</b> Download the installer <a href=\"https://github.com/acl2s/homebrew-acl2s/releases/download/acl2s-0.1.14/ACL2sInstallerWin11.exe\">from here</a>.</li>
+  <li><b>If you are on Windows 10:</b> Download the installer <a href=\"https://github.com/acl2s/homebrew-acl2s/releases/download/acl2s-0.1.14/ACL2sInstallerWin10.exe\">from here</a>.</li>
   <li>Double click on the installer and allow the installer to run if Windows asks.</li>
   <li>Follow the steps that the installer specifies. If you don't have
     VcXsrv installed and you are on Windows 10, the installer will ask you
@@ -116,7 +121,7 @@ occurring.
   </li>
   <li>Download and set up the ACL2s WSL image
     <ol>
-      <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.8/distro.tar.gz\">distro.tar.gz</a> to your Downloads folder.</li>
+      <li>Download <a href=\"https://github.com/acl2s/homebrew-acl2s/releases/download/acl2s-0.1.14/distro.tar.gz\">distro.tar.gz</a> to your Downloads folder.</li>
       <li>Open up a new <b>non-admininistrator</b> terminal by opening the Windows
         menu at the bottom left hand side of the screen and searching for
         @('cmd').
@@ -134,7 +139,7 @@ occurring.
       <li>At the end of the installation process, uncheck the option to launch
         VcXsrv after the installation is complete.</li>
       <li>Download our VcXsrv launch profile
-        <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.8/acl2s-vcxsrv.xlaunch\"><b>here</b></a>
+        <a href=\"https://github.com/acl2s/homebrew-acl2s/releases/download/acl2s-0.1.8/acl2s-vcxsrv.xlaunch\"><b>here</b></a>
         and put it somewhere memorable. <b>You may need to right-click on
           the link and select \"Save As...\" if your browser doesn't
           download it automatically.</b></li>
@@ -157,7 +162,7 @@ occurring.
   </li>
   <li>Run Eclipse
     <ol>
-      <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.8/run-acl2s-manual.bat\">run-acl2s-manual.bat</a> and save it somewhere memorable. Note that depending on your browser, you might get a warning when you download this file, but you should click \"Keep\" or \"Download Anyways\".</li>
+      <li>Download <a href=\"https://github.com/acl2s/homebrew-acl2s/releases/download/acl2s-0.1.8/run-acl2s-manual.bat\">run-acl2s-manual.bat</a> and save it somewhere memorable. Note that depending on your browser, you might get a warning when you download this file, but you should click \"Keep\" or \"Download Anyways\".</li>
       <li>Double click on @('run-acl2s.bat') to launch a WSL terminal and Eclipse. A window titled \"Windows protected your PC\" may appear. If so, click on \"More info\" and then \"Run anyways\" at the bottom of the window.</li>
       <li>When Eclipse asks for a workspace, enter @('/mnt/c/<FOLDER>'),
           where @('<FOLDER>') should be replaced with the name of the folder
@@ -177,7 +182,7 @@ occurring.
 <ul>
   <li>at least 5GB of free hard drive space</li>
   <li>at least 4GB of RAM</li>
-  <li>macOS Monterey (12), Ventura (13), or Sonoma (14)  on a Mac with an Intel processor, or macOS Ventura (13) or Sonoma (14) on a Mac with an M1/M2 processor</li>
+  <li>macOS Monterey (12), Ventura (13), or Sonoma (14) on a Mac with an Intel processor, or macOS Ventura (13) or Sonoma (14) on a Mac with an M1/M2 processor</li>
 </ul>
 <p>Installation should take less than an hour, though installation time
   will depend on your computer's specs and on the speed of your internet
@@ -191,7 +196,7 @@ occurring.
 
 <h3 id=\"instructions\">Instructions</h3>
 <p>A video walking through installation is available
-  <a href=\"https://youtu.be/AFluHK99-A0\" target=\"_blank\">here</a>.</p>
+  <a href=\"https://youtu.be/X21cDY06X8E\" target=\"_blank\">here</a>.</p>
 <ol>
   <li>Determine if your Mac uses an M1/M2 processor and check your macOS version<ol>
       <li>Click on the Apple icon at the top left of the screen and
@@ -218,8 +223,8 @@ occurring.
         instructions it provides to do this. </li>
   </ol></li>
   <li>Tap and install ACL2s<ol>
-      <li>Run @({brew tap mister-walter/acl2s}) and then @({brew install acl2s --force-bottle}) inside of Terminal.</li>
-      <li><b>Note:</b> if the above command fails with an error like @('--force-bottle passed but mister-walter/acl2s/acl2s has no bottle!'),
+      <li>Run @({brew tap acl2s/acl2s}) and then @({brew install acl2s/acl2s/acl2s --force-bottle}) inside of Terminal.</li>
+      <li><b>Note:</b> if the above command fails with an error like @('--force-bottle passed but acl2s/acl2s/acl2s has no bottle!'),
         then your macOS version is probably older than our supported version for your processor.
         If you can update your macOS version, you should do so. If you cannot update
         or do not wish to, please follow the instructions in the first entry of the
@@ -237,9 +242,9 @@ occurring.
         Mac) or the x64 DMG installer. Then, open the DMG and run the
         installer inside of it.</li></ol></li>
   <li>Install Eclipse<ol>
-      <li>Download the Eclipse version appropriate for your machine: <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.27-202303020300/eclipse-platform-4.27-macosx-cocoa-aarch64.dmg&amp;r=1\">M1/M2
+      <li>Download the Eclipse version appropriate for your machine: <a href=\"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2024-06/R/eclipse-java-2024-06-R-macosx-cocoa-aarch64.dmg&amp;r=1\">M1/M2
           Mac</a>
-        or <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.27-202303020300/eclipse-platform-4.27-macosx-cocoa-x86_64.dmg&amp;r=1\">x86
+        or <a href=\"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2024-06/R/eclipse-java-2024-06-R-macosx-cocoa-x86_64.dmg&amp;r=1\">x86
           Mac</a>.</li>
       <li>Open the downloaded file and click and drag the Eclipse icon
         into your Applications folder.</li>
@@ -260,7 +265,7 @@ occurring.
       <li>In the menu bar, click on Help &rarr; Install New Software...</li>
       <li>Click on \"Add...\" in the screen that comes up. In the resulting
         window, enter @('ACL2s') next to \"Name:\" and
-        @('http://cs2800.atwalter.com/p2') next to \"Location\". Then, click
+        @('https://cs2800.atwalter.com/p2') next to \"Location\". Then, click
         \"Add\", which will close the pop-up.</li>
       <li>The middle of the window should now show \"ACL2s Plugin Update
         Site\". Click on the checkbox to the left of it as well as the
@@ -287,9 +292,11 @@ occurring.
   <li>An Intel or AMD processor</li>
 </ul>
 <h3 id=\"instructions\">Instructions</h3>
-<p>These instructions are known to work on Ubuntu 20.04, and may work on
+<p>A video walking through installation is available
+  <a href=\"https://youtu.be/FVgDt0gHTTw\" target=\"_blank\">here</a>. 
+  These instructions are known to work on Ubuntu 24.04, and may work on
   other platforms as well. If you run into any issues, feel free to
-  reach out to Drew.</p>
+  reach out to Cassidy.</p>
 <ol>
   <li>Ensure the following software is installed on your machine. If not,
     install using your Linux distribution's package manager.<ul>
@@ -309,15 +316,15 @@ occurring.
         times throughout the process.</li>
   </ol></li>
   <li>Tap and install ACL2s<ol>
-      <li>Run <code>brew tap mister-walter/acl2s</code> and then <code>brew install acl2s --force-bottle</code> inside of a terminal. <b>Do not</b> follow any of Homebrew's suggestions regarding installing @('gcc').</li></ol></li>
+      <li>Run <code>brew tap acl2s/acl2s</code> and then <code>brew install acl2s/acl2s/acl2s --force-bottle</code> inside of a terminal. <b>Do not</b> follow any of Homebrew's suggestions regarding installing @('gcc').</li></ol></li>
   <li>Install Eclipse<ol>
-      <li>Download <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.27-202303020300/eclipse-platform-4.27-linux-gtk-x86_64.tar.gz&amp;r=1\">Eclipse</a> and unpack it somewhere on your computer.</li>
+      <li>Download <a href=\"https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2024-06/R/eclipse-java-2024-06-R-linux-gtk-x86_64.tar.gz&amp;r=1\">Eclipse</a> and unpack it somewhere on your computer.</li>
       <li>Run Eclipse by running <code>./eclipse/eclipse</code> from the directory
         that you unpacked the Eclipse package inside of.</li>
       <li>In the menu bar, click on Help &rarr; Install New Software...</li>
       <li>Click on \"Add...\" in the screen that comes up. In the resulting
         window, enter @('ACL2s') next to \"Name:\" and
-        @('http://cs2800.atwalter.com/p2') next to \"Location\". Then, click
+        @('https://cs2800.atwalter.com/p2') next to \"Location\". Then, click
         \"Add\", which will close the pop-up.</li>
       <li>The middle of the window should now show \"ACL2s Plugin Update
         Site\". Click on the checkbox to the left of it as well as the
@@ -427,13 +434,13 @@ reinstall Xming if you already have it installed.
 
 <h4>macOS FAQ</h4>
 <ul class=\"morespace\">
-  <li><span class=\"question\">When I run <code>brew install acl2s --force-bottle</code>
+  <li><span class=\"question\">When I run <code>brew install acl2s/acl2s/acl2s --force-bottle</code>
       , Homebrew tells me there is no bottle available!</span><br/>  If
     you are on a M1/M2 Mac and you are not running macOS Ventura, you
     can either update to macOS Ventura and re-run the command, or you
     can build ACL2s from scratch, which will take a fair amount of
     time (at least an hour). To build ACL2s from scratch, run
-    <code>brew install acl2s</code>.<br/>If you are on an Intel Mac and
+    <code>brew install acl2s/acl2s/acl2s</code>.<br/>If you are on an Intel Mac and
     are running macOS Catalina or earlier, you can either update to
     macOS Big Sur or later (if that is supported on your computer),
     or build ACL2s from scratch using the instructions above.
@@ -443,7 +450,7 @@ reinstall Xming if you already have it installed.
     and select \"Light\" in the dropdown next to \"Theme\".</li>
   <li><span class=\"question\">When I try to start a session, Eclipse tells me that an error
       occurred and that it could not start a session!</span><br/>Ensure that
-    the <code>brew install acl2s --force-bottle</code> command
+    the <code>brew install acl2s/acl2s/acl2s --force-bottle</code> command
     succeeded. Try running it again to ensure that it worked.
   </li>
   <li><span class=\"question\">When I try to run any of the brew commands, I get a message

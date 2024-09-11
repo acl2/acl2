@@ -144,7 +144,7 @@
     (bitnot bitnot-unguarded)
 
     (leftrotate32 leftrotate32-unguarded)
-    ;; todo; leftrotate
+    (leftrotate leftrotate-unguarded)
     ;; todo; rightrotate
     ;; todo; rightrotate32
 
@@ -155,7 +155,10 @@
     ;; bv-array functions:
 
     (bv-array-read bv-array-read-unguarded)
-    (bv-array-write bv-array-write-unguarded)))
+    (bv-array-write bv-array-write-unguarded)
+
+    (every-nth every-nth-unguarded)
+    (all-equal$ all-equal$-unguarded)))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):
 (make-evaluator-simple basic *axe-evaluator-basic-fns-and-aliases*)

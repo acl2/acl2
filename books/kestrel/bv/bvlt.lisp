@@ -821,11 +821,8 @@
            (not (BVLT size x k)))
   :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
                                    bvchop-of-sum-cases
-                                   bvplus
-                                   )
-                                  (;<-of-bvplus-becomes-bvlt-arg1
-                                   ;<-of-bvplus-becomes-bvlt-arg2
-                                   )))))
+                                   bvplus)
+                                  ()))))
 
 (defthm bvlt-when-not-bvlt-one-more
   (implies (and (syntaxp (quotep const)) ;new
@@ -907,7 +904,7 @@
   (equal (bvlt 1 x y)
          (and (equal 0 (getbit 0 x))
               (equal 1 (getbit 0 y))))
-  :hints (("Goal" :in-theory (enable bvlt))))
+  :hints (("Goal" :in-theory (enable bvlt getbit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

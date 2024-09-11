@@ -12,12 +12,13 @@
 (in-package "ALEOBFT-STATIC")
 
 (include-book "operations-anchors")
-(include-book "operations-non-forking")
 (include-book "properties-anchors")
 (include-book "properties-anchors-extension")
 (include-book "invariant-last-is-even")
 (include-book "invariant-last-anchor-present")
 (include-book "invariant-paths-to-other-last-anchor")
+
+(include-book "../library-extensions/lists-noforkp")
 
 (include-book "std/util/define-sk" :dir :system)
 
@@ -75,7 +76,7 @@
   (forall (val1 val2)
           (implies (and (set::in val1 (correct-addresses systate))
                         (set::in val2 (correct-addresses systate)))
-                   (lists-nofork-p
+                   (lists-noforkp
                     (validator-anchors (get-validator-state val1 systate)
                                        (all-addresses systate))
                     (validator-anchors (get-validator-state val2 systate)
@@ -106,7 +107,7 @@
     (implies (equal (validator-state->last
                      (get-validator-state val1 systate))
                     0)
-             (lists-nofork-p
+             (lists-noforkp
               (validator-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
@@ -120,7 +121,7 @@
     (implies (equal (validator-state->last
                      (get-validator-state val2 systate))
                     0)
-             (lists-nofork-p
+             (lists-noforkp
               (validator-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
@@ -148,7 +149,7 @@
                           (get-validator-state val1 systate))
                          (validator-state->last
                           (get-validator-state val2 systate))))
-             (lists-nofork-p
+             (lists-noforkp
               (validator-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
@@ -178,7 +179,7 @@
   ;; to replace the longer anchor sequence
   ;; with the APPEND of the shorter one and something else
   ;; (that something else being the anchors in between),
-  ;; and then a rule about LISTS-NOFORK-P and APPEND fires.
+  ;; and then a rule about LISTS-NOFORKP and APPEND fires.
 
   (defruledl case-last1-before-last2
     (implies (and (system-unequivocal-dag-p systate)
@@ -196,7 +197,7 @@
                       (get-validator-state val2 systate))
                      (validator-state->last
                       (get-validator-state val1 systate))))
-             (lists-nofork-p
+             (lists-noforkp
               (validator-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
@@ -242,7 +243,7 @@
                       (get-validator-state val1 systate))
                      (validator-state->last
                       (get-validator-state val2 systate))))
-             (lists-nofork-p
+             (lists-noforkp
               (validator-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)
@@ -267,7 +268,7 @@
                   (system-paths-to-other-last-anchor-p systate)
                   (set::in val1 (correct-addresses systate))
                   (set::in val2 (correct-addresses systate)))
-             (lists-nofork-p
+             (lists-noforkp
               (validator-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
               (validator-anchors (get-validator-state val2 systate)

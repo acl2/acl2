@@ -178,7 +178,7 @@
             myif-same-branches
             myif-same-test
             myif-same-test2
-            myif-same-arg1-arg2-when-booleanp-axe
+            myif-same-arg1-arg2-when-booleanp
 
             ;; todo: compare to the myif rules:
             if-of-t
@@ -755,9 +755,9 @@
 
 ;bvmod-of-bvplus-of-bvmod ;has a work-hard
      bvlt-of-bvmod-same
-     mod-becomes-bvmod-better-free-and-free ;fixme add more!
-     mod-becomes-bvmod-better-free-and-bind-free
-     mod-becomes-bvmod-better-bind-free-and-free
+     mod-becomes-bvmod-free-and-free ; use a better one? ; todo: include more rules?
+     mod-becomes-bvmod-axe-free-and-bind-free
+     mod-becomes-bvmod-axe-bind-free-and-free
 
      bvcat-of-0-arg2 ;trying... for when the highval is 0
 
@@ -1043,7 +1043,7 @@
      sbvdiv-same
 
      bvchop-of-ifix ; more like this?
-     acl2::slice-tighten-top-dag
+     slice-tighten-top-axe
 
      unsigned-byte-p-when-unsigned-byte-p-smaller
 
@@ -1883,7 +1883,7 @@
   (declare (xargs :guard t))
   (append (bvplus-rules) ; todo: maybe drop, as these are bad for md5, for example
           ;; todo: a lot of cruft in here:
-          '(;bvand-of-constant-tighten-dag-version ; warning: can change the size of the bvand
+          '(;bvand-of-constant-tighten-axe ; warning: can change the size of the bvand
 
             max-constants-lemma ;bozo more like this?
             myif-not-myif-same  ;bozo more like this?
@@ -1917,7 +1917,6 @@
             myif-myif-myif-1
             myif-myif-myif-2
 
-            slice-tighten-top-dag
             bvif-tighten
             bvif-test-test2-test
             bvif-test-test2-test-alt
@@ -2062,7 +2061,7 @@
 
     bvchop-impossible-value ;gen to any bv?
     <-becomes-bvlt-dag-GEN-BETTER
-;    <-becomes-bvlt-dag-alt-gen ;Wed Feb 24 15:00:14 2010
+;    <-becomes-bvlt-axe-bind-free-arg1 ;Wed Feb 24 15:00:14 2010
 
     zp
     booleanp-of-all-same
@@ -2098,7 +2097,7 @@
     bvlt-of-bvcat-arg3-bvmult-version
     bvdiv-31-4
 
-    bvlt-when-bound-dag
+    bvlt-when-bound-axe
     ;; bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:15:59 2010
 ;    not-bvlt-of-max-arg2          ;alt version?
     ;bvlt-of-bvchop-arg3-same  ;gen and move? or drop?
@@ -2248,7 +2247,7 @@
      +-of-bvplus-1-same-and-unary-minus
      inverse-of-+
      bvlt-of-bvplus-of-1-and-same
-;                               <-becomes-bvlt-dag-alt-gen ;wed feb 24 15:00:17 2010
+     ;; <-becomes-bvlt-axe-bind-free-arg1 ;wed feb 24 15:00:17 2010
      len-when-equal-take
      car-of-nthcdr
      consp-of-nthcdr
@@ -2298,8 +2297,8 @@
      fix-when-acl2-numberp
      acl2-numberp-of-len
 ;     equal-of-myif-same
-;<-becomes-bvlt-alt
-     <-becomes-bvlt-axe-both
+     ;;<-becomes-bvlt-alt
+     <-becomes-bvlt-axe-bind-free-and-bind-free
      equal-when-bvlt
      equal-when-bvlt-alt
      bvplus-of-bvuminus-tighten-gen-no-split-dag
@@ -2427,10 +2426,10 @@
      bvlt-of-bvmod-hack
      bvplus-of-1-33-32
      unsigned-byte-p-of-bvmod-hack
-     bvmod-tighten-dag
+     bvmod-tighten-axe
      bvdiv-tighten-dag ;new
      bvmod-cancel-hack-8-1-44-6-1
-     bvmod-tighten-dag-free-1
+     bvmod-tighten-axe-free-1
      bvmod-does-nothing-6-44
      unsigned-byte-p-of-bvmod ;gen and add to usb rules
      unsigned-byte-p-of-mod
@@ -2702,10 +2701,10 @@
 
      if-x-x-nil                     ;new
      natp-of-len                ;new
-     <-becomes-bvlt-dag-alt-gen ;new
-     <-becomes-bvlt-dag-gen     ;new
-     <-becomes-bvlt-axe-2       ;new
-     <-becomes-bvlt-axe-3       ;new
+     <-becomes-bvlt-axe-bind-free-arg1 ;new
+     <-becomes-bvlt-axe-bind-free-arg2     ;new
+     <-becomes-bvlt-axe-bind-free-and-free       ;new
+     <-becomes-bvlt-axe-free-and-bind-free       ;new
      <-becomes-bvlt-free-alt    ;fri jan 14 04:10:47 2011
      <-becomes-bvlt-free        ;fri jan 14 04:10:49 2011
 
@@ -3080,7 +3079,7 @@
              equal-of-fix-same ;reorder?
              <-of-256
 
-             <-becomes-bvlt-dag-alt-gen-better ;these are from md5
+             <-becomes-bvlt-axe-bind-free-arg1-strong-safe ;these are from md5
              equal-of-bvplus-cancel-2-of-more-and-1-of-more
              equal-of-bvplus-cancel-3-of-more-and-1-of-more
 ;              bound-when-usb2
@@ -3120,7 +3119,7 @@
 
              ;;these are for the rolled proof:
              <-of-len-and-constant
-             <-becomes-bvlt-dag-alt-gen-better2
+             <-becomes-bvlt-axe-bind-free-arg1-strong ; todo: above we use the safe one
              <-becomes-bvlt-dag-gen-better2
 
              bvplus-of-bvuminus-of-bvcat-and-bvcat
@@ -3249,7 +3248,7 @@
              rationalp-of-ceiling
              integerp-of-ceiling
              bvlt-of-bvuminus-arg2-constant
-;    <-becomes-bvlt-axe-both
+             ;; <-becomes-bvlt-axe-bind-free-and-bind-free
              <-0-+-negative-2
 ;    +-of-myif-arg1 ;new5
 ;   +-of-myif-arg2 ;new5
@@ -3299,7 +3298,7 @@
              functional-self-inversion-of-minus
              distributivity-of-minus-over-+
 
-;    <-becomes-bvlt-dag-alt-gen ;Wed Feb 24 15:00:10 2010
+             ;; <-becomes-bvlt-axe-bind-free-arg1 ;Wed Feb 24 15:00:10 2010
              +-combine-constants
              <-of-negative-constant-and-unary-minus
              move-negative-addend-1
@@ -3716,13 +3715,13 @@
              acl2-numberp-of-len
              ;; jvm::acl2-numberp-of-call-stack-size ;trying
              equal-of-append
-             bvmult-tighten-dag-power-of-2
+             bvmult-tighten-axe-power-of-2
              bvplus-tighten-better
-             bvmult-tighten-dag ;can we do better for a power of 2?? ffixme
+             bvmult-tighten-axe ;can we do better for a power of 2?? ffixme
              true-listp-of-group2
              bvmult-of-bvplus-hack-gen-constant-version
              equal-of-bvmult-of-slice
-;                                <-becomes-bvlt-dag-alt-gen ;wed feb 24 15:00:22 2010
+             ;; <-becomes-bvlt-axe-bind-free-arg1 ;wed feb 24 15:00:22 2010
              <-of-floor-of-constant-and-constant-gen
 
              all-unsigned-byte-p-of-myif-strong
@@ -3732,8 +3731,8 @@
              floor-of-floor
              <-of-0-and-floor
 
-             plus-becomes-bvplus-arg2-free-dag ;other ones?
-             plus-becomes-bvplus-arg1-free-dag ;other ones?
+             +-becomes-bvplus-axe-bind-free-and-free ;other ones?
+             +-becomes-bvplus-axe-free-and-bind-free ;other ones?
 ;bvmult-of-slice-when-bvchop-0 ;where did this rule go? ffixme
              bvlt-of-bvmult-hack200
              nth-of-group2-gen
@@ -3983,9 +3982,9 @@
 
 ;Wed Feb 24 16:04:04 2010
 ;this is cheap, so let's try it first
-(set-axe-rule-priority <-becomes-bvlt-axe-both -1)
-(set-axe-rule-priority <-becomes-bvlt-axe-2 -1)
-(set-axe-rule-priority <-becomes-bvlt-axe-3 -1)
+(set-axe-rule-priority <-becomes-bvlt-axe-bind-free-and-bind-free -1)
+(set-axe-rule-priority <-becomes-bvlt-axe-bind-free-and-free -1)
+(set-axe-rule-priority <-becomes-bvlt-axe-free-and-bind-free -1)
 
 ;;rules about if (or should we go straight to myif and have all the rules be about that?!):
 

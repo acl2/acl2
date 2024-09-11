@@ -11182,13 +11182,14 @@
               (t (collect-hereditarily-constrained-fnnames
                   (cdr names) wrld ans)))))))
 
-(defun putprop-hereditarily-constrained-fnnames-lst (names bodies wrld)
+(defun putprop-hereditarily-constrained-fnnames-lst (names fnnames-bodies
+                                                           wrld)
 
-; Names is a non-empty list of defined function names and bodies is in
-; 1:1 correspondence.  We set the hereditarily-constrained-fnnames
+; Names is a non-empty list of defined function names, and fnnames-bodies is in
+; 1:1 correspondence with names.  We set the hereditarily-constrained-fnnames
 ; property of each name in names, by collecting all the function names
-; appearing in the bodies and filtering for the hereditarily
-; constrained ones.  We also add each name in names to the world global
+; belonging to fnnames-bodies and filtering for the hereditarily constrained
+; ones.  We also add each name in names to the world global
 ; defined-hereditarily-constrained-fns.
 
 ; A ``hereditarily constrained function'' is either a constrained
@@ -11209,9 +11210,7 @@
 ; fns in the clique.  One cannot assume the car of the list is fn.
 
   (let ((fnnames (collect-hereditarily-constrained-fnnames
-                  (all-fnnames1 t bodies nil)
-                  wrld
-                  nil)))
+                  fnnames-bodies wrld nil)))
     (cond
      (fnnames
       (global-set
@@ -11222,6 +11221,55 @@
                        (append names fnnames)
                        wrld)))
      (t wrld))))
+
+(defun split-inlines (names inlines not-inlines)
+  (declare (xargs :guard (symbol-listp names)))
+  (cond ((endp names)
+         (mv inlines not-inlines))
+        ((let ((sname (symbol-name (car names))))
+           (terminal-substringp *inline-suffix*
+                                sname
+                                *inline-suffix-len-minus-1*
+                                (1- (length sname))))
+         (split-inlines (cdr names)
+                        (cons (car names) inlines)
+                        not-inlines))
+        (t
+         (split-inlines (cdr names)
+                        inlines
+                        (cons (car names) not-inlines)))))
+
+(defun put-ext-gen-info (ext-gens ext-gen-barriers names fnnames-bodies guards
+                                  wrld)
+
+; Ext-gens and ext-gen-barriers are the values of world globals 'ext-gen and
+; 'ext-gen-barriers in wrld, respectively, except that ext-gen-barriers may be
+; :skip.  We extend wrld by extending those globals as per the Essay on
+; Attachable Stobjs, except that if input ext-gen-barriers is :skip then we do
+; not extend the global, 'ext-gen-barriers.  The extensions correspond to
+; names, whose guards are the input, guards, and whose bodies call the function
+; symbols in input fnnames-bodies.
+
+  (cond
+   ((null ext-gens) ; optimization
+    (assert$ (eq ext-gen-barriers nil)
+             wrld))
+   ((or (intersectp-eq ext-gens fnnames-bodies)
+        (intersectp-eq ext-gens (all-fnnames-lst guards)))
+    (mv-let (inlines not-inlines)
+      (split-inlines names nil nil)
+      (let* ((wrld (if inlines
+                       (global-set 'ext-gens
+                                   (append inlines ext-gens)
+                                   wrld)
+                     wrld))
+             (wrld (if not-inlines
+                       (global-set 'ext-gen-barriers
+                                   (append not-inlines ext-gen-barriers)
+                                   wrld)
+                     wrld)))
+        wrld)))
+   (t wrld)))
 
 (defun defuns-fn1 (tuple ens big-mutrec names arglists docs pairs guards
                          guard-hints std-hints otf-flg guard-debug
@@ -11240,8 +11288,11 @@
   #-:non-standard-analysis
   (declare (ignore std-hints))
   (declare (ignore docs pairs))
-  (let ((col (car tuple))
-        (subversive-p (cdddr tuple)))
+  (let* ((col (car tuple))
+         (subversive-p (cdddr tuple))
+         (wrld0 (w state))
+         (ext-gens (global-val 'ext-gens wrld0))
+         (ext-gen-barriers (global-val 'ext-gen-barriers wrld0)))
     (er-let*
      ((wrld1 (update-w big-mutrec (cadr tuple)))
       (wrld2 (update-w big-mutrec
@@ -11330,7 +11381,8 @@
                    (global-set 'loop$-alist
                                (union-equal new-loop$-alist-pairs
                                             loop$-alist-wrld6b)
-                               wrld6b))))
+                               wrld6b)))
+                (fnnames-bodies (all-fnnames1 t bodies nil)))
            (er-progn
             (update-w big-mutrec wrld6c)
             (er-let*
@@ -11341,7 +11393,7 @@
                                    names wrld7)))
                  (wrld9 (update-w big-mutrec
                                   (putprop-hereditarily-constrained-fnnames-lst
-                                   names bodies wrld8)))
+                                   names fnnames-bodies wrld8)))
                  (wrld10 (update-w big-mutrec
                                    (put-invariant-risk
                                     names
@@ -11355,32 +11407,37 @@
                                     names 'pequivs nil
                                     (putprop-x-lst1 names 'congruences nil
                                                     wrld10))))
-                 (wrld11a (update-w big-mutrec
-                                    (putprop-x-lst1 names 'coarsenings nil
-                                                    wrld11)))
-                 (wrld11b (update-w big-mutrec
-                                    (if non-executablep
-                                        (putprop-x-lst1
-                                         names 'non-executablep
-                                         non-executablep
-                                         wrld11a)
-                                        wrld11a))))
-              (let ((wrld12
+                 (wrld12 (update-w big-mutrec
+                                   (putprop-x-lst1 names 'coarsenings nil
+                                                   wrld11)))
+                 (wrld13 (update-w big-mutrec
+                                   (if non-executablep
+                                       (putprop-x-lst1
+                                        names 'non-executablep
+                                        non-executablep
+                                        wrld12)
+                                     wrld12)))
+                 (wrld14 (update-w big-mutrec
+                                   (put-ext-gen-info
+                                    ext-gens ext-gen-barriers
+                                    names fnnames-bodies guards wrld13))))
+                                      
+              (let ((wrld15
                      #+:non-standard-analysis
                      (if std-p
                          (putprop-x-lst1
                           names 'unnormalized-body nil
-                          (putprop-x-lst1 names 'def-bodies nil wrld11b))
-                         wrld11b)
+                          (putprop-x-lst1 names 'def-bodies nil wrld14))
+                         wrld14)
                      #-:non-standard-analysis
-                     wrld11b))
+                     wrld14))
                 (pprogn
-                 (print-defun-msg names ttree2 wrld12 col state)
-                 (set-w 'extension wrld12 state)
+                 (print-defun-msg names ttree2 wrld15 col state)
+                 (set-w 'extension wrld15 state)
                  (er-progn
                   (chk-type-prescription-lst names arglists
                                              type-prescription-lst
-                                             ens wrld12 ctx state)
+                                             ens wrld15 ctx state)
                   (cond
                    ((eq symbol-class :common-lisp-compliant)
                     (er-let*
@@ -11388,7 +11445,7 @@
                                           (translate-hints
                                            (cons "Guard for" (car names))
                                            guard-hints
-                                           ctx wrld12 state)
+                                           ctx wrld15 state)
                                         (value nil)))
                          (pair (verify-guards-fn1 names guard-hints otf-flg
                                                   guard-debug guard-simplify
@@ -11405,7 +11462,7 @@
                                               ttree2
                                               (cdr pair)))))))
                    (t (value
-                       (cons wrld12
+                       (cons wrld15
                              (cons-tag-trees ttree1
                                              ttree2))))))))))))))))))
 

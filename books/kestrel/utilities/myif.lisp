@@ -1,7 +1,7 @@
 ; MYIF, an alias for IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -102,6 +102,14 @@
 (defthm myif-same-test2
   (equal (myif test (myif test x y) z)
          (myif test x z))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; this pattern can arise from an OR
+(defthm myif-same-arg1-arg2-when-booleanp
+  (implies (and (syntaxp (not (quotep test))) ; avoid loops
+                (booleanp test))
+           (equal (myif test test else)
+                  (myif test t else)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;expensive?

@@ -414,6 +414,7 @@
     x86isa::ctri
 
     x86isa::cr0bits-p$inline
+    x86isa::cr0bits-p
     x86isa::cr0bits->pe
     x86isa::cr0bits->mp
     x86isa::cr0bits->em
@@ -452,6 +453,7 @@
     x86isa::cr3bits->res3
 
     x86isa::cr4bits-p$inline
+    x86isa::cr4bits-p
     x86isa::cr4bits->vme
     x86isa::cr4bits->pvi
     x86isa::cr4bits->tsd
@@ -822,6 +824,7 @@
     bv-array-to-list-aux
     bv-array-read
     bv-array-write
+    bv-array-read-chunk-little
     bv-arrayp
 
     ;; Stuff supporting b*
@@ -862,8 +865,9 @@
     submit-event
     must-be-redundant
 
-    ;; x86 stuff (more to x package?):
+    ;; x86 stuff (move to x package?):
     elf-info
+    parse-elf-file-bytes ; helpful for tracing
     ))
 
 ;; Ideally, these would all be rewritten to BV ops
