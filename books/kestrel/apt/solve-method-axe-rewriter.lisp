@@ -13,6 +13,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "kestrel/axe/rewriter-basic" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

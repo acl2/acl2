@@ -301,7 +301,7 @@
                ;; First, we substitute in for all the vars in HYP:
                (mv-let
                  (instantiated-hyp free-vars-flg)
-                 (instantiate-hyp hyp alist nil interpreted-function-alist)
+                 (instantiate-hyp hyp alist nil interpreted-function-alist) ; todo: could call a instantiate-hyp-no-free-vars function here, but with which evaluator?
                  (declare (ignore free-vars-flg))
                  ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums (from vars already bound).
                  ;; TODO: Consider adding a special case here to check whether the hyp is a constant (can happen during instantiation and may be very common).

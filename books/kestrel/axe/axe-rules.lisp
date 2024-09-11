@@ -1,7 +1,7 @@
 ; Axe's representation of rewrite rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -137,10 +137,7 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable axe-bind-free-function-applicationp))))
 
-
-;;;
-;;; axe-rule-hypp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; An axe-rule-hyp (hypothesis of an axe rule) is a special kind of structure
 ;; that represents an axe-syntaxp hyp, an axe-bind-free hyp, or a lambda-free
@@ -171,27 +168,31 @@
                (and (pseudo-termp hyp)
                     (not (eq 'quote fn)) ; can't be a quoted constant
                     ;; consider relaxing this for efficiency of rewriting:
-                    (lambda-free-termp hyp))))))))
+                    ;; (lambda-free-termp hyp)
+                    )))))))
 
-(defthm axe-rule-hypp-when-not-special
-  (implies (and (consp hyp)
-                (not (equal :axe-syntaxp (car hyp)))
-                (not (equal :axe-bind-free (car hyp)))
-                (not (equal :free-vars (car hyp)))
-                (not (equal 'quote (car hyp))))
-           (equal (axe-rule-hypp hyp)
-                  (and (pseudo-termp hyp)
-                       (lambda-free-termp hyp))))
-  :hints (("Goal" :in-theory (enable axe-rule-hypp)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0 0 0 0))))
+;drop (see below)?
+;; (defthm axe-rule-hypp-when-not-special
+;;   (implies (and (consp hyp)
+;;                 (not (equal :axe-syntaxp (car hyp)))
+;;                 (not (equal :axe-bind-free (car hyp)))
+;;                 (not (equal :free-vars (car hyp)))
+;;                 (not (equal 'quote (car hyp))))
+;;            (equal (axe-rule-hypp hyp)
+;;                   (and (pseudo-termp hyp)
+;;                        ;; (lambda-free-termp hyp)
+;;                        )))
+;;   :hints (("Goal" :in-theory (enable axe-rule-hypp)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0 0 0 0 0))))
 
-(defthm axe-rule-hypp-when-equal-of-car-and-work-hard-cheap
-  (implies (equal 'work-hard (car hyp))
-           (equal (axe-rule-hypp hyp)
-                  (and (pseudo-termp hyp)
-                       (lambda-free-termp hyp))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable axe-rule-hypp))))
+;; (defthm axe-rule-hypp-when-equal-of-car-and-work-hard-cheap
+;;   (implies (equal 'work-hard (car hyp))
+;;            (equal (axe-rule-hypp hyp)
+;;                   (and (pseudo-termp hyp)
+;;                        ;; (lambda-free-termp hyp)
+;;                        )))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+;;   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
 (defthm axe-rule-hypp-when-simple
   (implies (and (not (equal :axe-syntaxp (car hyp)))
@@ -201,7 +202,8 @@
                   (and (consp hyp)
                        (not (equal 'quote (car hyp)))
                        (pseudo-termp hyp)
-                       (lambda-free-termp hyp))))
+                       ;; (lambda-free-termp hyp)
+                       )))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0 0)))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
@@ -239,9 +241,7 @@
           (not (quotep hyp)))
  :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
-;;;
-;;; axe-rule-hyp-listp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund axe-rule-hyp-listp (hyps)
   (declare (xargs :guard t))
@@ -281,58 +281,7 @@
 (defconst *unrelievable-hyps*
   (list *unrelievable-hyp*))
 
-(defund-inline rule-lhs (axe-rule)
-  (declare (xargs :guard (equal 4 (len axe-rule))))
-  (first axe-rule))
-
-(defund-inline rule-rhs (axe-rule)
-  (declare (xargs :guard (equal 4 (len axe-rule))))
-  (second axe-rule))
-
-(defund-inline rule-symbol (axe-rule)
-  (declare (xargs :guard (equal 4 (len axe-rule))))
-  (third axe-rule))
-
-(defund-inline rule-hyps (axe-rule)
-  (declare (xargs :guard (equal 4 (len axe-rule))))
-  (fourth axe-rule))
-
-;;;
-;;; axe-rule-lhsp
-;;;
-
-;; The LHS of an Axe rule is a lambda-free pseudo-term that is a function call
-;; (i.e., not a variable or constant).
-(defund axe-rule-lhsp (lhs)
-  (declare (xargs :guard t))
-  (and (pseudo-termp lhs)
-       (lambda-free-termp lhs)
-       (consp lhs)
-       (not (eq 'quote (ffn-symb lhs)))))
-
-(defthm axe-rule-lhsp-forward-to-pseudo-termp
-  (implies (axe-rule-lhsp lhs)
-           (pseudo-termp lhs))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable axe-rule-lhsp))))
-
-(defthm axe-rule-lhsp-forward-to-consp
-  (implies (axe-rule-lhsp lhs)
-           (consp lhs))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable axe-rule-lhsp))))
-
-(defthm axe-rule-lhsp-of-cons
-  (equal (axe-rule-lhsp (cons fn args))
-         (and (symbolp fn)
-              (not (equal 'quote fn))
-              (pseudo-term-listp args)
-              (lambda-free-termsp args)))
-  :hints (("Goal" :in-theory (enable axe-rule-lhsp))))
-
-;;;
-;;; checking bound-vars
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks whether BOUND-VARS is suitable for the strip-cars of the alist upon
 ;; reaching HYP and attempting to relieve it.
@@ -365,20 +314,19 @@
 (defcong perm equal (bound-vars-suitable-for-hypp bound-vars hyp) 1
   :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypp))))
 
-;;;
-;;; bound-vars-after-hyp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Updates the BOUND-VARS as they will be when HYP is successfully relieved.
 (defund bound-vars-after-hyp (bound-vars hyp)
   (declare (xargs :guard (and (symbol-listp bound-vars)
                               (axe-rule-hypp hyp))
                   :guard-hints (("Goal" :in-theory (enable axe-rule-hypp)))))
   (case (ffn-symb hyp)
     (:axe-syntaxp bound-vars) ; no change
-    (:axe-bind-free (let ((vars-to-bind (cddr hyp)))
+    (:axe-bind-free (let ((vars-to-bind (cddr hyp))) ; (:axe-bind-free <expr> . <vars>)
                       ;; some vars get bound:
                       (append vars-to-bind bound-vars)))
-    (:free-vars (let* ((expr (cdr hyp))  ;; (:free-vars . expr)
+    (:free-vars (let* ((expr (cdr hyp)) ; (:free-vars . expr)
                        (hyp-vars (free-vars-in-term expr))
                        (free-vars (set-difference-eq hyp-vars bound-vars)))
                   ;; some vars get bound:
@@ -401,10 +349,9 @@
 (defcong perm perm (bound-vars-after-hyp bound-vars hyp) 1
   :hints (("Goal" :in-theory (enable bound-vars-after-hyp))))
 
-;;;
-;;; bound-vars-after-hyps
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Updates the BOUND-VARS as they will be when the HYPS are successfully relieved.
 (defund bound-vars-after-hyps (bound-vars hyps)
   (declare (xargs :guard (and (symbol-listp bound-vars)
                               (axe-rule-hyp-listp hyps))
@@ -437,9 +384,7 @@
          bound-vars)
   :hints (("Goal" :in-theory (enable bound-vars-after-hyps))))
 
-;;;
-;;; bound-vars-suitable-for-hypsp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks whether BOUND-VARS is suitable for the strip-cars of the alist upon
 ;; reaching HYPS and attempting to relieve them.
@@ -527,10 +472,56 @@
   :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypsp
                                      bound-vars-after-hyps))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;
-;;; axe-rulep
-;;;
+(defund-inline rule-lhs (axe-rule)
+  (declare (xargs :guard (equal 4 (len axe-rule))))
+  (first axe-rule))
+
+(defund-inline rule-rhs (axe-rule)
+  (declare (xargs :guard (equal 4 (len axe-rule))))
+  (second axe-rule))
+
+(defund-inline rule-symbol (axe-rule)
+  (declare (xargs :guard (equal 4 (len axe-rule))))
+  (third axe-rule))
+
+(defund-inline rule-hyps (axe-rule)
+  (declare (xargs :guard (equal 4 (len axe-rule))))
+  (fourth axe-rule))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The LHS of an Axe rule is a lambda-free pseudo-term that is a function call
+;; (i.e., not a variable or constant).
+(defund axe-rule-lhsp (lhs)
+  (declare (xargs :guard t))
+  (and (pseudo-termp lhs)
+       (lambda-free-termp lhs)
+       (consp lhs)
+       (not (eq 'quote (ffn-symb lhs)))))
+
+(defthm axe-rule-lhsp-forward-to-pseudo-termp
+  (implies (axe-rule-lhsp lhs)
+           (pseudo-termp lhs))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable axe-rule-lhsp))))
+
+(defthm axe-rule-lhsp-forward-to-consp
+  (implies (axe-rule-lhsp lhs)
+           (consp lhs))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable axe-rule-lhsp))))
+
+(defthm axe-rule-lhsp-of-cons
+  (equal (axe-rule-lhsp (cons fn args))
+         (and (symbolp fn)
+              (not (equal 'quote fn))
+              (pseudo-term-listp args)
+              (lambda-free-termsp args)))
+  :hints (("Goal" :in-theory (enable axe-rule-lhsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; An axe-rule is a 4-tuple containing: LHS, RHS, rule name ("rule-symbol"), and hyps.
 ;; See also stored-axe-rulep.

@@ -186,3 +186,17 @@
            (subsetp-equal (free-vars-in-term (pre-simplify-term term iffp print))
                           (free-vars-in-term term)))
   :hints (("Goal" :in-theory (enable pre-simplify-term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; If it's a var, it's one of the original free-vars.
+(defthmd member-equal-of-pre-simplify-term-and-free-vars-in-term-when-not-consp-of-pre-simplify-term
+  (implies (and (not (consp (pre-simplify-term term iffp print)))
+                (pseudo-termp term)
+                (no-duplicate-lambda-formals-in-termp term)
+                (no-nils-in-termp term)
+                (lambdas-closed-in-termp term))
+           (member-equal (pre-simplify-term term iffp print)
+                         (free-vars-in-term term)))
+  :hints (("Goal" :use subsetp-equal-of-free-vars-in-term-of-pre-simplify-term
+           :in-theory (disable subsetp-equal-of-free-vars-in-term-of-pre-simplify-term))))

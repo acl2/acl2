@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
-(include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/utilities/world" :dir :system) ; reduce?
 (include-book "kestrel/utilities/terms" :dir :system)
 ;(include-book "../utilities/basic")
 ;(include-book "kestrel/terms-light/drop-unused-lambda-bindings" :dir :system)
@@ -21,13 +21,12 @@
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
-(include-book "kestrel/utilities/acons-fast" :dir :system)
 (include-book "kestrel/utilities/remove-guard-holders" :dir :system)
 ;(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "known-booleans")
 (include-book "axe-rule-lists")
 (include-book "axe-syntax") ;since this book knows about axe-syntaxp and axe-bind-free
-(include-book "std/system/theorem-symbolp" :dir :system)
+(include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -46,9 +45,13 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
+;(local (include-book "kestrel/terms-light/pre-simplify-term-proofs" :dir :system))
 
-(in-theory (disable ilks-plist-worldp
-                    plist-worldp)) ;move
+(local
+ (in-theory (disable ilks-plist-worldp
+                     plist-worldp
+                     set-difference-equal intersection-equal symbol-listp true-listp ;prevent inductions
+                     )))
 
 (local
  (defthmd not-equal-of-car-when-not-member-equal-of-fns-in-term
@@ -358,12 +361,14 @@
 ;; hyp that is a non-nil constant. The BOUND-VARS returned is the list of vars
 ;; bound by the LHS, this hyp, and all previous hyps.
 (defund make-axe-rule-hyps-for-hyp (hyp bound-vars rule-symbol wrld)
-  (declare (xargs :guard (and (pseudo-termp hyp)
+  (declare (xargs :guard (and (pseudo-termp hyp) ; todo: strengthen
                               (symbol-listp bound-vars)
                               (symbolp rule-symbol)
                               (plist-worldp wrld))
-                  :guard-hints (("Goal" :expand (AXE-SYNTAXP-EXPRP (CADR HYP))))
-                  ))
+                  :guard-hints (("Goal" :expand (AXE-SYNTAXP-EXPRP (CADR HYP))
+                                 :in-theory (enable
+                                             ;; member-equal-of-pre-simplify-term-and-free-vars-in-term-when-not-consp-of-pre-simplify-term
+                                             )))))
   (if (atom hyp) ;; can only be a variable
       ;;turn a hyp of <var> into (not (equal 'nil <var>)) which is equivalent.  Axe relies on the fact that a hyp cannot be a variable.
       (if (member-eq hyp bound-vars)
@@ -468,34 +473,37 @@
                     (append vars-to-bind bound-vars)))
             ;; not a special hyp:
             (b* ((all-fns (fns-in-term hyp))
+                 ;; These 2 checks catch common errors:
                  ((when (member-eq 'axe-syntaxp all-fns))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-syntaxp that is not at the top level." hyp rule-symbol)
-                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (member-eq :axe-syntaxp all-fns)) ;todo: prove that this never happens?
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-syntaxp, which is not a legal function name." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
                  ((when (member-eq 'axe-bind-free all-fns))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-bind-free that is not at the top level." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (member-eq :axe-bind-free all-fns))
+                 ;; todo: check for work-hards not at the top-level?
+                 ;; These 3 checks ensure that expanding the lambdas in a normal hyp doesn't result in a special hyp:
+                 ((when (member-eq :axe-syntaxp all-fns)) ;todo: prove that this never happens?
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-syntaxp, which is not a legal function name." hyp rule-symbol)
+                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                 ((when (member-eq :axe-bind-free all-fns)) ;todo: prove that this never happens?
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-bind-free, which is not a legal function name." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (member-eq :free-vars all-fns))
+                 ((when (member-eq :free-vars all-fns)) ;todo: prove that this never happens?
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :free-vars which is not a legal function name." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ;; todo: check for work-hards not at the top-level?
-                 (hyp (expand-lambdas-in-term hyp)) ;could print a note here, if this does anything.  ;; TODO: What if we don't expand lambdas?  Maybe that's only needed for the free variable case?
-                 ((when (not (consp hyp)))
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is not a function call after expanding lambdas." hyp rule-symbol)
-                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (fquotep hyp))
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is a quoted constant after expanding lambdas." hyp rule-symbol)
-                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 (hyp-vars (free-vars-in-term hyp))
-                 (free-vars (set-difference-eq hyp-vars bound-vars)))
-              (if free-vars
-                  ;; Normal hyp with free vars that will get bound by matching with assumptions:
-                  (b* (;; (- (cw "NOTE: Free vars in rule ~x0.~%" rule-symbol))
+                 ;; Check for free vars in the hyp:
+                 (hyp-free-vars (set-difference-eq (free-vars-in-term hyp) bound-vars)))
+              (if hyp-free-vars
+                  ;; A hyp with free vars is relieved by matching against assumptions:
+                  (b* (;; Must expand lambdas to allow for matching:
+                       (expanded-hyp (expand-lambdas-in-term hyp)) ; todo: print a note here, if this does anything.
+                       (expanded-hyp-free-vars (set-difference-eq (free-vars-in-term expanded-hyp) bound-vars))
+                       ((when (not expanded-hyp-free-vars)) ; unusual case: such a hyp doesn't really fit this case or the normal case
+                        (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 has free vars that disappear when lambdas are expanded." hyp rule-symbol)
+                        (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                       ;; todo: consider cleaning up the hyp in other ways?
+                       (hyp expanded-hyp)
+                       ;; (- (cw "NOTE: Free vars in rule ~x0.~%" rule-symbol))
                        ;; Strip and note the work-hard, if any:
                        ;; Previously, a work-hard with free vars was an error, but Axe generates some rules like that.
                        ((mv hyp work-hardp)
@@ -503,7 +511,7 @@
                                  (= 1 (len (fargs hyp))))
                             (mv (farg1 hyp) t)
                           (mv hyp nil)))
-                       (- (and work-hardp free-vars
+                       (- (and work-hardp
                                (cw "NOTE: Hyp ~x0 in rule ~x1 is a call of work-hard but contains free-variables." hyp rule-symbol)))
                        ((when (not (consp hyp)))
                         (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is not a function call after expanding lambdas and possibly stripping a work-hard." hyp rule-symbol)
@@ -523,59 +531,53 @@
                              )
                             (mv (erp-nil)
                                 (list (cons :free-vars hyp)) ;tag the hyp to indicate it has free vars
-                                (append free-vars ;if the hyp is relieved by searching for matches in the context, any free vars in the hyp wil become bound
-                                        bound-vars))))
+                                ;; if the hyp is successfully relieved (by searching for matches in the context), all of the free-vars in the hyp wil become bound:
+                                (append expanded-hyp-free-vars bound-vars))))
                 ;; Normal hyp with no free vars:
-                ;; TODO: Wrap the hyp in a marker that indicates that no free vars are present?
-                (mv (erp-nil)
-                    (list hyp)
-                    bound-vars)))))))))
-
+                ;; Here we use hyp, not expanded-hyp, to make it cheaper to rewrite a hyp that contains lambdas:
+                ;; Previously, we did use the expanded-hyp.
+                (b* ((hyp (pre-simplify-term hyp t t)) ; cleans up lambdas, improves translated ORs, etc.
+                     ((when (atom hyp)) ;; can only be a variable
+                      ;;turn a hyp of <var> into (not (equal 'nil <var>)) which is equivalent.  Axe relies on the fact that a hyp cannot be a variable.
+                      (if (not (member-equal hyp bound-vars)) ; todo: prove this can't happen (but strengthen the guard)
+                          (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Hyp, ~x0, is a free var in ~x1 after pre-simplification!" hyp rule-symbol)
+                                  (mv :nil-hyp *unrelievable-hyps* bound-vars))
+                        (mv (erp-nil) `((not (equal 'nil ,hyp))) bound-vars)))
+                     ((when (fquotep hyp))
+                      (if (equal *nil* hyp)
+                          (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Found a hyp of nil (after pre-simplification) in rule ~x0!" rule-symbol)
+                                  (mv :nil-hyp *unrelievable-hyps* bound-vars))
+                        (prog2$ (cw "Note: Skipping a constant, non-nil hyp of ~x0 in ~x1 (after pre-simplification).~%" hyp rule-symbol)
+                                (mv (erp-nil)
+                                    nil ;no hyps!
+                                    bound-vars))))
+                     ((when (or (eq :axe-syntaxp (ffn-symb hyp))
+                                (eq :axe-bind-free (ffn-symb hyp))
+                                (eq :free-vars (ffn-symb hyp))
+                                (not (subsetp-equal (FREE-VARS-IN-TERM hyp) bound-vars)))) ; todo: prove that this can't happen: pre-simplify can't introduce new functions
+                      (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Unexpected form of hyp, ~x0, in ~x1 after pre-simplification!" hyp rule-symbol)
+                              (mv :nil-hyp *unrelievable-hyps* bound-vars))))
+                  (mv (erp-nil)
+                      (list hyp) ; hyp is not wrapped
+                      bound-vars))))))))))
 
 (local
  (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-hyps-for-hyp
    (implies (pseudo-termp hyp)
             (axe-rule-hyp-listp (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
-   :hints (("Goal" :use (;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                        ;;            (fn 'axe-bind-free)
-                        ;;            (term hyp))
-                        ;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                        ;;            (fn 'axe-bind-free)
-                        ;;            (term (cadr hyp)))
-                        ;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                        ;;            (fn 'axe-syntaxp)
-                        ;;            (term hyp))
-                        ;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                        ;;            (fn 'axe-syntaxp)
-                        ;;            (term (cadr hyp)))
-                        ;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                        ;;            (fn 'work-hard)
-                        ;;            (term (cdr hyp)))
-                         )
-            :do-not '(generalize eliminate-destructors)
-            :expand (;(FNS-IN-TERM HYP)
-                    ;;(expand-lambdas-in-term hyp)
-                    ;(fns-in-term (expand-lambdas-in-term hyp))
-                    ;(pseudo-termp (cdr hyp))
-                    ;(PSEUDO-TERMP (CADDR HYP))
-                    ;(pseudo-term-listp (cddr hyp))
-                    ;(PSEUDO-TERM-LISTP (CDR HYP))
-                    ;;(PSEUDO-TERMP HYP)
-                     (AXE-SYNTAXP-EXPRP (CADR HYP))
-                    ;(EXPAND-LAMBDAS-IN-TERM HYP)
-                     )
-            :in-theory (e/d (axe-rule-hypp make-axe-rule-hyps-for-hyp symbolp-when-pseudo-termp
-                                           not-equal-of-car-when-not-member-equal-of-fns-in-term
-                                           axe-rule-hyp-listp
-                                           )
-                            (;not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-                             MYQUOTEP
-                            ;QUOTED-SYMBOL-LISTP
-                            ;ALL-VAR-OR-MYQUOTEP
-                             fns-in-term
-                             add-to-set-equal
-                             EXPAND-LAMBDAS-IN-TERM
-                             ))))))
+   :hints (("Goal" :in-theory (e/d (make-axe-rule-hyps-for-hyp
+                                    axe-rule-hypp
+                                    symbolp-when-pseudo-termp
+                                    not-equal-of-car-when-not-member-equal-of-fns-in-term
+                                    axe-rule-hyp-listp)
+                                   (;not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
+                                    myquotep
+                                    ;;QUOTED-SYMBOL-LISTP
+                                    ;;ALL-VAR-OR-MYQUOTEP
+                                    ;fns-in-term
+                                    ;add-to-set-equal
+                                    ;EXPAND-LAMBDAS-IN-TERM
+                                    ))))))
 
 ;; (defthm axe-rule-hypp-of-mv-nth-0-of-make-axe-rule-hyp
 ;;   (implies (and (pseudo-termp hyp)
@@ -634,6 +636,13 @@
           (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld)))
    :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-hyp)))))
 
+;; We always get either a single hyp or no hyps.
+;; Justifies not worrying about reversing the hyps added to the acc in make-axe-rule-hyps.
+(thm
+ (or (equal 0 (len (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
+     (equal 1 (len (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld)))))
+ :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-hyp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp processed-hyps bound-vars) where bound-vars is all the vars
@@ -650,8 +659,6 @@
          ((mv erp axe-rule-hyps bound-vars) (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))
          ((when erp) (mv erp *unrelievable-hyps* bound-vars)))
       (make-axe-rule-hyps (rest hyps) bound-vars rule-symbol wrld (append axe-rule-hyps acc)))))
-
-(local (in-theory (disable symbol-listp true-listp))) ;prevent inductions
 
 (local
  (defthm mv-nth-1-of-make-axe-rule-hyps-of-append
@@ -695,13 +702,12 @@
                                      ;make-axe-rule-hyps-for-hyp ;so we can see it r
                                       )))))
 
+;; error case
 (local
  (defthmd make-axe-rule-hyps-redef-0
    (equal (mv-nth 0 (make-axe-rule-hyps hyps bound-vars rule-symbol wrld acc))
           (mv-nth 0 (make-axe-rule-hyps-simple hyps bound-vars rule-symbol wrld)))
-   :hints (("Goal" :in-theory (enable make-axe-rule-hyps make-axe-rule-hyps-simple
-;make-axe-rule-hyps-for-hyp ;so we can see it r
-                                      )))))
+   :hints (("Goal" :in-theory (enable make-axe-rule-hyps make-axe-rule-hyps-simple)))))
 
 (local
  (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-hyps-simple
@@ -765,7 +771,7 @@
             :in-theory (disable not-equal-of-car-when-not-member-equal-of-fns-in-term
                                 not-member-equal-of-fns-in-term-of-expand-lambdas-in-term)))))
 
-(local (in-theory (disable FNS-IN-TERM MYQUOTEP QUOTED-SYMBOL-LISTP SET-DIFFERENCE-EQUAL)))
+(local (in-theory (disable FNS-IN-TERM MYQUOTEP QUOTED-SYMBOL-LISTP )))
 
 ;move up
 (local
@@ -784,9 +790,8 @@
                      )
             :in-theory (enable make-axe-rule-hyps-for-hyp
                                bound-vars-suitable-for-hypp
-                               MAKE-AXE-SYNTAXP-HYP-FOR-SYNP-EXPR)))))
-
-(local (in-theory (disable INTERSECTION-EQUAL))) ;prevent indution
+                               make-axe-syntaxp-hyp-for-synp-expr
+                               fns-in-term)))))
 
 (local
  (defthm free-vars-in-term-when-unary
@@ -1043,16 +1048,16 @@
         ; Form the rule (note that stored-rules take a different form):
         (list lhs rhs rule-symbol (append extra-hyps processed-hyps)))))
 
-(defthm len-of-mv-nth-1-of-make-axe-rule
-  (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
-           (equal (len (mv-nth 1 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
-                  4))
-  :hints (("Goal" :in-theory (enable make-axe-rule))))
+;; (defthm len-of-mv-nth-1-of-make-axe-rule
+;;   (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
+;;            (equal (len (mv-nth 1 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
+;;                   4))
+;;   :hints (("Goal" :in-theory (enable make-axe-rule))))
 
-(defthm true-listp-of-mv-nth-1-of-make-axe-rule
-  (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
-           (true-listp (mv-nth 1 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld))))
-  :hints (("Goal" :in-theory (enable make-axe-rule))))
+;; (defthm true-listp-of-mv-nth-1-of-make-axe-rule
+;;   (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
+;;            (true-listp (mv-nth 1 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld))))
+;;   :hints (("Goal" :in-theory (enable make-axe-rule))))
 
 (defthm rule-lhs-of-mv-nth-1-of-make-axe-rule
   (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
@@ -1437,14 +1442,14 @@
         (er hard? 'add-axe-rules-for-rule "QUOTE is an illegal name for an Axe rule.")
         (mv :bad-rule-name acc))
        ;; (- (cw "Making axe-rule for ~x0.~%" rule-name))
-       (theoremp (theorem-symbolp rule-name wrld))
+       (theoremp (defthm-or-defaxiom-symbolp rule-name wrld))
        (functionp (function-symbolp rule-name wrld)))
     (cond ((and (not functionp)
                 (not theoremp))
-           (prog2$ (er hard? 'add-axe-rules-for-rule "~x0 does not seem to be a theorem or defun." rule-name)
+           (prog2$ (er hard? 'add-axe-rules-for-rule "~x0 does not seem to be a theorem/axiom or defun." rule-name)
                    (mv :rule-not-found acc)))
           ((and functionp theoremp)
-           (prog2$ (er hard? 'add-axe-rules-for-rule "~x0 appears to be both a function and a theorem (so which is it?!)" rule-name)
+           (prog2$ (er hard? 'add-axe-rules-for-rule "~x0 appears to be both a function and a theorem/axiom (so which is it?!)" rule-name)
                    (mv :confusing-rule-name acc)))
           (functionp
            ;;it's a defun:
@@ -1472,7 +1477,7 @@
                 ((mv erp rule) (make-axe-rule lhs body rule-name nil nil print wrld))
                 ((when erp) (mv erp acc)))
              (mv (erp-nil) (cons rule acc))))
-          (t ;;it's a theorem:
+          (t ;;it's a theorem/axiom:
            (b* ((theorem-body (defthm-body rule-name wrld))
                 (rule-classes (defthm-rule-classes rule-name wrld))
                 ((when (not (symbol-alistp rule-classes)))
@@ -1537,6 +1542,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
+;; Does not remove duplicates (that should be done when making the rule-alist).
 (defund make-axe-rules (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (ilks-plist-worldp wrld))))
@@ -1570,18 +1576,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; ;; Returns (mv erp rules) where rules is a list of axe-rules.
-;; ;; This version removes duplicate rules first.  (That may happen later anyway
-;; ;; when making the rule-alist...).
-;; (defund make-axe-rules2 (rule-names wrld)
-;;   (declare (xargs :guard (and (symbol-listp rule-names)
-;;                               (ilks-plist-worldp wrld))))
-;;   (make-axe-rules (remove-duplicates-eq rule-names) ;slow?  use property worlds to speed up?
-;;                   wrld))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
+; rename extend-rule-list
 (defun add-rules-to-rule-set (rule-names rule-set wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-listp rule-set)
@@ -1589,10 +1585,12 @@
   (b* (((mv erp rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp rule-set)))
     (mv (erp-nil)
+        ;; todo: append here would be fasters: think about duplicates and ordering
         (union-equal rules rule-set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Introduces all-axe-rule-listp:
 ;; this is really axe-rule-setsp:
 (defforall-simple axe-rule-listp)
 (verify-guards all-axe-rule-listp)
@@ -1608,6 +1606,7 @@
 ;; Returns (mv erp rule-sets).
 ;; Add the given rules to each rule set in RULE-SETS.
 ;todo: optimze?
+; rename extend-rule-lists
 (defun add-rules-to-rule-sets (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-setsp rule-sets)
@@ -1621,11 +1620,11 @@
           (add-rules-to-rule-sets rule-names (rest rule-sets) wrld))
          ((when erp) (mv erp nil)))
       (mv (erp-nil)
-          (cons first-rule-set
-                rest-rule-sets)))))
+          (cons first-rule-set rest-rule-sets)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; rename extend-rule-lists!
 ;; Returns the new rule-sets.  Does not return erp.
 (defun add-rules-to-rule-sets! (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
@@ -1638,16 +1637,6 @@
       rule-sets)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; ;; Add the RULES to each rule set in RULE-SETS.
-;; ;todo: optimze?
-;; (defun add-axe-rules-to-rule-sets (axe-rules rule-sets)
-;;   (declare (xargs :guard (and (axe-rule-listp axe-rules)
-;;                               (axe-rule-setsp rule-sets))))
-;;   (if (endp rule-sets)
-;;       nil
-;;     (cons (union-equal axe-rules (first rule-sets))
-;;           (add-axe-rules-to-rule-sets axe-rules (rest rule-sets)))))
 
 ;; (defun remove-rule-from-rule-set (rule rule-set)
 ;;   (declare (xargs :guard (and (symbolp rule)
@@ -1683,6 +1672,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Where should this stuff go?:
+
 ;; Can be used to determine which rules introduce a given function symbol
 (defund filter-axe-rules-for-rhses-mentioning (fn axe-rules)
   (declare (xargs :guard (and (symbolp fn)
@@ -1698,6 +1689,7 @@
                 (filter-axe-rules-for-rhses-mentioning fn (rest axe-rules)))
         (filter-axe-rules-for-rhses-mentioning fn (rest axe-rules))))))
 
+;; overkill to actually make the rules?
 (defund axe-rules-that-introduce (fn rule-names wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (symbol-listp rule-names)
