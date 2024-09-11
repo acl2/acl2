@@ -131,11 +131,22 @@
                 (blocks-ordered-even-p blocks2)
                 (or (endp blocks1)
                     (endp blocks2)
-                    (> (block->round (car (last blocks1)))
-                       (block->round (car blocks2))))))
+                    (>= (block->round (car (last blocks1)))
+                        (+ 2 (block->round (car blocks2)))))))
     :induct t
-    :enable (append
-             last)))
+    :enable (append last)
+    :hints ('(:use ((:instance lemma
+                               (x (block->round (car blocks2)))
+                               (y (block->round (car (last blocks1))))))))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (natp x)
+                     (natp y)
+                     (evenp x)
+                     (evenp y)
+                     (< x y))
+                (<= (+ 2 x) y))
+       :enable evenp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
