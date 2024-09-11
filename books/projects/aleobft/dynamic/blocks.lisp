@@ -106,18 +106,6 @@
     :induct t
     :enable last)
 
-  (defruled blocks-ordered-even-p-of-append
-    (equal (blocks-ordered-even-p (append blocks1 blocks2))
-           (and (blocks-ordered-even-p blocks1)
-                (blocks-ordered-even-p blocks2)
-                (or (endp blocks1)
-                    (endp blocks2)
-                    (> (block->round (car (last blocks1)))
-                       (block->round (car blocks2))))))
-    :induct t
-    :enable (append
-             last))
-
   (defruled evenp-of-car-when-blocks-ordered-even-p
     (implies (and (blocks-ordered-even-p blocks)
                   (consp blocks))
@@ -128,7 +116,19 @@
                   (< (nfix i) (len blocks)))
              (evenp (block->round (nth i blocks))))
     :induct t
-    :enable (nth nfix len)))
+    :enable (nth nfix len))
+
+  (defruled blocks-ordered-even-p-of-append
+    (equal (blocks-ordered-even-p (append blocks1 blocks2))
+           (and (blocks-ordered-even-p blocks1)
+                (blocks-ordered-even-p blocks2)
+                (or (endp blocks1)
+                    (endp blocks2)
+                    (> (block->round (car (last blocks1)))
+                       (block->round (car blocks2))))))
+    :induct t
+    :enable (append
+             last)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
