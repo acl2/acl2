@@ -111,6 +111,13 @@
                   (consp blocks))
              (evenp (block->round (car blocks)))))
 
+  (defruled evenp-of-car-of-last-when-blocks-ordered-even-p
+    (implies (and (blocks-ordered-even-p blocks)
+                  (consp blocks))
+             (evenp (block->round (car (last blocks)))))
+    :induct t
+    :enable last)
+
   (defruled evenp-of-nth-when-blocks-ordered-even-p
     (implies (and (blocks-ordered-even-p blocks)
                   (< (nfix i) (len blocks)))
