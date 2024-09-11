@@ -7886,22 +7886,66 @@
                 ((erp token2 & parstate) (read-token parstate)))
              (cond
               ;; If token2 is an open parenthesis,
-              ;; it must start a postfix expression,
-              ;; and we are in an ambiguous situation
+              ;; it may start a postfix expression,
+              ;; in which case we are in an ambiguous situation
               ;; (see the first pattern in :DOC EXPR).
-              ;; We also clear the checkpoint,
+              ;; But if the ambiguous expression or type name is a type name,
+              ;; and if there are no increment and decrement operators,
+              ;; the open parenthesis may start a cast expression,
+              ;; so we parse a cast expression to cover both cases,
+              ;; if there are no increment and decrement operators.
+              ;; In any case, we clear the checkpoint,
               ;; since we no longer need to backtrack.
               ((token-punctuatorp token2 "(") ; ( expr/tyname ) [ops] (
                (b* ((parstate (clear-checkpoint parstate))
-                    (parstate (unread-token parstate)) ; ( expr/tyname ) [ops]
-                    ((erp expr last-span parstate) ; ( expr/tyname ) [ops] expr
-                     (parse-postfix-expression parstate)))
-                 (retok (make-expr-cast/call-ambig
-                         :type/fun expr/tyname.unwrap
-                         :inc/dec incdecops
-                         :arg/rest expr)
-                        (span-join span last-span)
-                        parstate)))
+                    (parstate (unread-token parstate))) ; ( expr/tyname ) [ops]
+                 (cond
+                  ;; If there are increment and decrement operators,
+                  ;; we parse a postfix expression,
+                  ;; and we have an ambiguous situation.
+                  ((consp incdecops)
+                   (b* (((erp expr last-span parstate)
+                         ;; ( expr/tyname ) [ops] expr
+                         (parse-postfix-expression parstate)))
+                     (retok (make-expr-cast/call-ambig
+                             :type/fun expr/tyname.unwrap
+                             :inc/dec incdecops
+                             :arg/rest expr)
+                            (span-join span last-span)
+                            parstate)))
+                  ;; If there are no increment and decrement operators,
+                  ;; we must parse a cast expression
+                  ;; in case the ambiguous expression or type name
+                  ;; is a type name.
+                  (t ; ( expr/tyname )
+                   (b* (((erp expr last-span parstate)
+                         ;; ( expr/tyname ) expr
+                         (parse-cast-expression parstate)))
+                     (cond
+                      ;; If the cast expression just parsed is actually postfix,
+                      ;; then we have again the same ambiguity as above.
+                      ((expr-postfix/primary-p expr)
+                       (retok (make-expr-cast/call-ambig
+                               :type/fun expr/tyname.unwrap
+                               :inc/dec incdecops
+                               :arg/rest expr)
+                              (span-join span last-span)
+                              parstate))
+                      ;; If the cast expression just parsed is not postfix,
+                      ;; then it must be a proper cast expression,
+                      ;; because we know from above that
+                      ;; the expression starts with open parenthesis.
+                      ;; In this case we have resolved the ambiguity:
+                      ;; the previously parsed ambiguout expression or type name
+                      ;; must be a type name,
+                      ;; and we have a (nested) cast expression.
+                      (t
+                       (retok (make-expr-cast
+                               :type (amb-expr/tyname->tyname
+                                      expr/tyname.unwrap)
+                               :arg expr)
+                              (span-join span last-span)
+                              parstate))))))))
               ;; If token2 is a star, we have an ambiguity.
               ;; We parse a cast expression after the star,
               ;; which is the same kind of expected expression
