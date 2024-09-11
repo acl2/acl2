@@ -468,7 +468,15 @@
                 :in-theory
                 (enable committee-after-blocks-subset-all-vals))))
 
-     (in-theory (disable bonded-committee-at-round-loop-subset-all-vals))))
+     (in-theory (disable bonded-committee-at-round-loop-subset-all-vals))
+
+     (defruled bonded-committee-at-round-loop-of-round-leq-2
+       (implies (and (blocks-ordered-even-p blocks)
+                     (<= (pos-fix round) 2))
+                (equal (bonded-committee-at-round-loop round blocks all-vals)
+                       (genesis-committee)))
+       :induct t
+       :hints ('(:use evenp-of-car-when-blocks-ordered-even-p)))))
 
   ///
 
@@ -500,7 +508,14 @@
   (defruled bonded-committee-at-round-iff-round-upper-bound
     (iff (bonded-committee-at-round round blocks all-vals)
          (<= (pos-fix round)
-             (+ 2 (blocks-last-round blocks))))))
+             (+ 2 (blocks-last-round blocks)))))
+
+  (defruled bonded-committee-at-round-of-round-leq-2
+    (implies (and (blocks-ordered-even-p blocks)
+                  (<= (pos-fix round) 2))
+             (equal (bonded-committee-at-round round blocks all-vals)
+                    (genesis-committee)))
+    :enable bonded-committee-at-round-loop-of-round-leq-2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -633,7 +648,15 @@
     :enable (bonded-committee-at-round-iff-round-upper-bound
              nfix
              pos-fix
-             posp)))
+             posp))
+
+  (defruled active-committee-at-round-of-round-leq-2+lookback
+    (implies (and (blocks-ordered-even-p blocks)
+                  (<= (pos-fix round) (+ 2 (lookback))))
+             (equal (active-committee-at-round round blocks all-vals)
+                    (genesis-committee)))
+    :enable bonded-committee-at-round-of-round-leq-2
+    :prep-books ((include-book "arithmetic/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
