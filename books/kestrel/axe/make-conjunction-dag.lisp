@@ -1,7 +1,7 @@
 ; Making a conjunction of two DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "dags")
+;(include-book "dags")
 (include-book "merge-dag-into-dag-quick")
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 

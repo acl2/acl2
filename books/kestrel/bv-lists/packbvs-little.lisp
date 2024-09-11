@@ -17,6 +17,7 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 ;; "Pack bit-vectors little"
 ;; Packs the ITEMS into larger bit-vectors.  Take ITEMS-PER-CHUNK elements of
@@ -53,6 +54,53 @@
                   (/ (len items) items-per-chunk)))
   :hints (("Goal" :in-theory (enable packbvs-little))))
 
+(defthm consp-of-packbvs-little
+  (implies (posp items-per-chunk)
+           (equal (consp (packbvs-little items-per-chunk itemsize items))
+                  (consp items)))
+  :hints (("Goal" :in-theory (enable packbvs-little))))
+
 ;; (thm
 ;;  (equal (packbvs-little 4 8 '(0 0 0 1  1 0 0 1  0 0 0 0))
 ;;         '(16777216 16777217 0)))
+
+(defthm car-of-packbvs-little
+  (implies (posp items-per-chunk)
+           (equal (car (packbvs-little items-per-chunk itemsize items))
+                  (if (endp items)
+                      nil
+                    (packbv-little items-per-chunk itemsize (take items-per-chunk items)))))
+  :hints (("Goal" :in-theory (enable packbvs-little))))
+
+(local (include-book "kestrel/lists-light/nth" :dir :system))
+
+(local
+  (defun ind (items-per-chunk itemsize items n)
+    (if (not (mbt (posp items-per-chunk))) ; ensure termination
+        (list items-per-chunk itemsize items n)
+      (if (endp items)
+          nil
+        (ind items-per-chunk itemsize (nthcdr items-per-chunk items) (+ -1 n))))))
+
+;; or could phrase the RHS using subrange
+(defthm nth-of-packbvs-little
+  (implies (and (posp items-per-chunk)
+                ;; (equal (mod (len items) items-per-chunk) 0)
+                (natp n)
+                (< n (/ (len items) items-per-chunk)) ; gen?
+                )
+           (equal (nth n (packbvs-little items-per-chunk itemsize items))
+                  (packbv-little items-per-chunk itemsize (take items-per-chunk (nthcdr (* n items-per-chunk) items)))))
+  :hints (("Goal" :induct (ind items-per-chunk itemsize items n)
+           :in-theory (enable packbvs-little (:i nthcdr)))))
+
+(defthm nth-of-packbvs-little-alt
+  (implies (and (posp items-per-chunk)
+                (equal (mod (len items) items-per-chunk) 0)
+                (natp n))
+           (equal (nth n (packbvs-little items-per-chunk itemsize items))
+                  (if (< n (/ (len items) items-per-chunk))
+                      (packbv-little items-per-chunk itemsize (take items-per-chunk (nthcdr (* n items-per-chunk) items)))
+                    nil)))
+  :hints (("Goal" :induct (ind items-per-chunk itemsize items n)
+           :in-theory (enable packbvs-little (:i nthcdr)))))

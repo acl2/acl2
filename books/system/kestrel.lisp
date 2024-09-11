@@ -155,6 +155,10 @@
 
 (verify-termination chk-all-but-new-name-cmp) ; and guards
 
+(verify-termination attach-stobj-guard-msg) ; and guards
+
+(verify-termination attach-stobj-guard) ; and guards
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (verify-termination partition-rest-and-keyword-args1) ; and guards

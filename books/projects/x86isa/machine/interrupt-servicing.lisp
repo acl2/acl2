@@ -36,6 +36,16 @@
 ; Original Author(s):
 ; Yahya Sohail        <yahya.sohail@intel.com>
 
+; Matt K. addition: On an Intel-based 2019 MacBook Pro with 64 GB of memory,
+; running "make -j 4 regression GCL_MEM_MULTIPLE=0.25" with ACL2 based on GCL,
+; this book's certification failed with the following error (whitespace added
+; here):
+;   Error: Condition in CREATE-X86$C [or a callee]: INTERNAL-SIMPLE-ERROR: The
+;   storage for RELOCATABLE-BLOCKS is exhausted. 161774 pages allocated. Use
+;   ALLOCATE to expand the space.
+; So I am excluding this book from regressions with ACL2 built on GCL.
+; cert_param: (non-gcl)
+
 (in-package "X86ISA")
 
 (local (include-book "arithmetic-5/top" :dir :system))

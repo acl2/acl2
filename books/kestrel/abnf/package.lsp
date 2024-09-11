@@ -71,6 +71,7 @@
                           pseudo-event-formp
                           pseudo-event-form-listp
                           read-file-characters
+                          restore-output?
                           reterr
                           retok
                           return-raw

@@ -29,6 +29,18 @@
                   (program-at prog-addr bytes x86)))
   :hints (("Goal" :in-theory (enable set-flag program-at))))
 
+(defthm program-at-of-set-undef
+  (implies (app-view x86)
+           (equal (program-at prog-addr bytes (set-undef undef x86))
+                  (program-at prog-addr bytes x86)))
+  :hints (("Goal" :in-theory (enable set-undef program-at))))
+
+(defthm program-at-of-set-mxcsr
+  (implies (app-view x86)
+           (equal (program-at prog-addr bytes (set-mxcsr mxcsr x86))
+                  (program-at prog-addr bytes x86)))
+  :hints (("Goal" :in-theory (enable set-mxcsr program-at))))
+
 (defthm x86p-of-set-flag (implies (x86p x86) (x86p (set-flag flag val x86))) :hints (("Goal" :in-theory (enable set-flag))))
 (defthm x86p-of-!rflags (implies (x86p x86) (x86p (!rflags v x86))))
 

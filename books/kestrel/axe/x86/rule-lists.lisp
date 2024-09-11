@@ -254,6 +254,16 @@
   '(mv-nth-1-of-wb-1-becomes-write
     mv-nth-1-of-wb-becomes-write))
 
+;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
+(defund program-at-rules ()
+  (declare (xargs :guard t))
+  '(program-at-of-write
+    x86isa::program-at-of-if
+    program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
+    program-at-of-set-undef ; do we not need something like this?
+    program-at-of-set-mxcsr
+    ))
+
 (defun read-byte-rules ()
   (declare (xargs :guard t))
   '(read-byte-of-xw-irrel
@@ -272,7 +282,8 @@
     read-of-set-flag
     read-when-program-at ; trying just this on
     ;; since read-when-program-at can introduce bv-array-read-chunk-little
-    acl2::bv-array-read-chunk-little-base
+    acl2::bv-array-read-chunk-little-constant-opener
+    acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
     ;; read-when-program-at-1-byte-simple ; todo: use a more general rule?
     ;; read-when-program-at-2-bytes
@@ -298,7 +309,6 @@
     alignment-checking-enabled-p-of-write
     get-flag-of-write
     ctri-of-write ; may be needed for lifter, which does not use the lifter-rules64-new (todo: move other similar rules here?)
-    program-at-of-write
     undef-of-write
     mxcsr-of-write
     ms-of-write
@@ -1134,7 +1144,7 @@
 (defun if-lifting-rules ()
   (declare (xargs :guard t))
   '(x86isa::app-view-of-if
-    x86isa::program-at-of-if
+    ;x86isa::program-at-of-if
     x86isa::x86p-of-if
     x86isa::alignment-checking-enabled-p-of-if
     x86isa::64-bit-modep-of-if
@@ -1733,7 +1743,7 @@
 
             x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
             ;; x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
-            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; or do we just always go to read?
+            ;; x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; todo: or do we just always go to read?
             ;;x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
 
             x86isa::canonical-address-listp-of-cons
@@ -2121,8 +2131,6 @@
 
             x86isa::chk-exc-fn ; for floating point and/or avx/vex?
 
-            program-at-of-set-flag
-
             x86isa::xmmi-size$inline
             x86isa::!xmmi-size$inline
             x86isa::zmmi-size$inline
@@ -2433,7 +2441,7 @@
     get-flag-of-set-esp
     get-flag-of-set-ebp
 
-    program-at-of-set-eip
+    program-at-of-set-eip ; only needed for loop lifter?
     program-at-of-set-eax
     program-at-of-set-ebx
     program-at-of-set-ecx
@@ -3122,7 +3130,6 @@
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
             x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
             x86isa::write-*sp-when-64-bit-modep
-            ;; x86isa::program-at-of-set-undef ; do we not need something like this?
             )))
 
 (defund lifter-rules64-new ()
@@ -4264,8 +4271,6 @@
 ;; (set-axe-rule-priority read-when-program-at-4-bytes 2)
 ;; (set-axe-rule-priority read-when-program-at-8-bytes 2)
 
-
-
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
 (defun low-level-rules-32 ()
@@ -4803,6 +4808,7 @@
      ;acl2::bv-array-read-chunk-little-base
      ;acl2::bv-array-read-chunk-little-unroll
      )
+   (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)
 ;(x86isa::lifter-rules)
    ))

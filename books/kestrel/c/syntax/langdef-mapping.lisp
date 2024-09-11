@@ -672,7 +672,9 @@
        :cast/mul-ambig (prog2$ (impossible) (reterr t))
        :cast/add-ambig (prog2$ (impossible) (reterr t))
        :cast/sub-ambig (prog2$ (impossible) (reterr t))
-       :cast/and-ambig (prog2$ (impossible) (reterr t))))
+       :cast/and-ambig (prog2$ (impossible) (reterr t))
+       :stmt (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
+       :tycompat (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))))
     :measure (expr-count expr))
 
   (define ldm-expr-list ((exprs expr-listp))

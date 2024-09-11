@@ -55,7 +55,6 @@
 (include-book "make-substitution-code-simple")
 ;; (include-book "make-instantiation-code-simple")
 (include-book "make-instantiation-code-simple-free-vars")
-;(include-book "make-instantiation-code-simple-no-free-vars")
 (include-book "make-instantiation-code-simple-no-free-vars2")
 (include-book "make-dag-indices")
 ;(include-book "dag-array-builders")
@@ -450,6 +449,7 @@
        (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
        (local (include-book "kestrel/axe/rewriter-support" :dir :system))
        (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; reduce?
+       (local (include-book "tools/mv-nth" :dir :system)) ; todo
 
        (local (in-theory (disable mv-nth
                                   wf-dagp wf-dagp-expander

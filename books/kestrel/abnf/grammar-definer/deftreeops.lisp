@@ -21,6 +21,7 @@
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/fty/symbol-pseudoeventform-alist" :dir :system)
 (include-book "std/system/constant-namep" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
@@ -1556,7 +1557,7 @@
         (and get-tree-fn-event?
              (append get-tree-fn-event?
                      (and (evmac-input-print->= print :result)
-                          `((cw-event "Function ~x0."
+                          `((cw-event "Function ~x0.~%"
                                       ',info.get-tree-fn)))))))
     (mv matching-thm-events
         get-tree-list-fn-events
@@ -2624,6 +2625,12 @@
                                    (call pseudo-event-formp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the @(':print') input is @(':all'),
+     we use @(tsee restore-output?) to restore all the output,
+     which @(tsee make-event-terse) otherwise suppresses."))
   (b* (((mv matchers
             matchers-event-alist)
         (deftreeops-gen-matchers grammar prefix print))
@@ -2660,7 +2667,8 @@
                  ,@numrange-events
                  ,@charval-events
                  ,@rulename-events
-                 ,(deftreeops-table-add grammar table-value))))
+                 ,(deftreeops-table-add grammar table-value)))
+       (event (restore-output? (eq print :all) event)))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2697,7 +2705,7 @@
   :parents (deftreeops-implementation)
   :short "Definition of @(tsee deftreeops)."
   (defmacro deftreeops (&whole call &rest args)
-    `(make-event (deftreeops-fn ',args ',call 'deftreeops state))))
+    `(make-event-terse (deftreeops-fn ',args ',call 'deftreeops state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
