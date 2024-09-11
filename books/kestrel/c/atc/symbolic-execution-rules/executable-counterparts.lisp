@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "kestrel/utilities/omaps/core" :dir :system)
+(include-book "std/omaps/core" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 

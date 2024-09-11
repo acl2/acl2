@@ -16,7 +16,7 @@
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
-(include-book "kestrel/utilities/omaps/core" :dir :system)
+(include-book "std/omaps/core" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
