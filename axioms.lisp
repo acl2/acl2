@@ -1050,7 +1050,7 @@
 ; Historical Note: Through Version_8.2, for a stobj named st, (the-live-var st)
 ; was a special variable whose value was the live object.  E.g., if you
 ; did (defstobj st ...) then in raw Lisp *the-live-st* held the actual
-; vector or hash-table.  Now it's (cdr (assoc 'st *user-stobj-alist*)).
+; vector or hash table.  Now it's (cdr (assoc 'st *user-stobj-alist*)).
 
   nil)
 
@@ -8700,7 +8700,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; At one time we checked that producers and others satisfy eqlable-listp,
 ; presumably because we also used no-duplicatesp and intersectp in place of
 ; no-duplicatesp-equal and intersectp-equal, respectively.  But that was when
-; hash-tables did not contain stobjs, so that indexed accesses in stobj-let
+; hash tables did not contain stobjs, so that indexed accesses in stobj-let
 ; were only for array indices, which are numbers, not hash-table indices, which
 ; might be arbitrary.
 

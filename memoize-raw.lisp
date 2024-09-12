@@ -422,7 +422,7 @@
 ; when performing atomic operations.  Moreover, as of this writing only CCL,
 ; among the supported host Lisps, pays attention to :shared (or :lock-free).
 
-; Pons tables contain flex-alists, which can contain hash-tables.  Since
+; Pons tables contain flex-alists, which can contain hash tables.  Since
 ; hons-raw.lisp is loaded before memoize-raw.lisp, we define our own interface
 ; with hl-flex-acons; see mf-flex-acons.  See "SECTION: Ponsing: Creating keys
 ; ("ponses") for memoization tables".
@@ -519,9 +519,9 @@
 (defparameter *record-mht-calls*
 
 ; If *RECORD-MHT-CALLS* is not NIL at the time a function is memoized, we
-; record the number of times that a memoize hash-table is created for the
+; record the number of times that a memoize hash table is created for the
 ; function.  See *report-mht-calls* below for an explanation of why we
-; might create many hash-tables for a function.
+; might create many hash tables for a function.
 
   t)
 
@@ -585,7 +585,7 @@
 (defv *report-mht-calls*
 
 ; When memoize-summary is invoked, print the number of times that a memo
-; hash-table for the function was created, if this variable is not nil at that
+; hash table for the function was created, if this variable is not nil at that
 ; time.  This may be of interest to those who memoize functions with stobj
 ; arguments, since when such a stobj changes, the function's memoization hash
 ; table is deleted, and then later, when necessary, created afresh.
@@ -1047,7 +1047,7 @@
 ; and outputs.
 
 ; Note: Consider locking uses of this function, since it updates a global
-; hash-table.
+; hash table.
 
   (mf-sethash fn (cons nargs nvals) *number-of-arguments-and-values-ht*))
 
@@ -1755,7 +1755,7 @@
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
 
 ; Note: Consider locking uses of this function, since it updates a global
-; hash-table.
+; hash table.
 
   (mf-sethash fn t *never-memoize-ht*)
   nil)
@@ -3904,7 +3904,7 @@
 ; *callers-array*) of such.
 
 ; Note: We might be tempted to lock uses of this function, since it calls
-; symbol-to-fixnum, which uses a global hash-table.  But currently that is not
+; symbol-to-fixnum, which uses a global hash table.  But currently that is not
 ; necessary: all callers of coerce-index are functions defined in this Section,
 ; and their intended use is in sorting of memsum results; see
 ; *memoize-summary-order-list*.
@@ -4181,7 +4181,7 @@
 ; This function symbol can be included in *memoize-summary-order-list*.
 
 ; For a memoized function x, (number-of-mht-calls x) is the number
-; of times that the memoize hash-table for x was created.
+; of times that the memoize hash table for x was created.
 
   (setq x (coerce-index x))
   (aref *memoize-call-array*

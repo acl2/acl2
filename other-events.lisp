@@ -52,7 +52,7 @@
 (defvar *hcomp-macro-alist* nil)
 (defconstant *hcomp-fake-value* 'acl2_invisible::hcomp-fake-value)
 (defvar *hcomp-book-ht*
-; Note that the keys of this hash-table are full-book-names.
+; Note that the keys of this hash table are full-book-names.
   nil)
 (defvar *hcomp-const-restore-ht* nil)
 (defvar *hcomp-fn-macro-restore-ht*
@@ -20117,7 +20117,7 @@
                                      (t
 
 ; This case includes the case of stobj-tablep.  Note that a stobj-table's
-; underlying hash-table doesn't use stobj names as keys (see
+; underlying hash table doesn't use stobj names as keys (see
 ; current-stobj-gensym) and the keys are all symbols anyhow.  So even though k
 ; should be a symbol, there is no need to complicate the guard with that
 ; requirement.
@@ -21449,7 +21449,7 @@
 ; fields with elements of stobj type.  We arrange this in the following ways.
 ; (1) We speak of a "child" of a stobj for a given field, which is the field
 ; value itself in the scalar case but otherwise is a value in that field's
-; array or hash-table.  (2) We speak of two "isomorphic" field values in the
+; array or hash table.  (2) We speak of two "isomorphic" field values in the
 ; non-scalar case, to mean that they have the same array length in the array
 ; case, and they have the same keys in the hash-table case.  (3) We speak of
 ; "comparable" child values for two values of a given field, which are the two
@@ -24089,7 +24089,7 @@
                                                :creator (cadr names)
                                                :names
                                                (sort-absstobj-names
-                                                (butlast (cddr names) 1)
+                                                (cddr names)
                                                 accessors
                                                 updaters))
                                          (putprop-x-lst1
@@ -24227,10 +24227,10 @@
 ; Essay on Nested Stobjs
 
 ; After Version_6.1 we introduced a new capability: allowing fields of stobjs
-; to themselves be stobjs or arrays of stobjs.  (Hash-tables of stobjs were
-; added after Version_8.4.)  Initially we resisted this idea because of an
-; aliasing problem, which we review now, as it is fundamental to understanding
-; our implementation.
+; to themselves be stobjs or arrays of stobjs.  (Hash-table fields with stobj
+; values were added after Version_8.4.)  Initially we resisted this idea
+; because of an aliasing problem, which we review now, as it is fundamental to
+; understanding our implementation.
 
 ; Consider the following events.
 
