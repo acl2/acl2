@@ -1172,6 +1172,13 @@
             (equal (expr-cast/call-ambig->inc/dec ast)
                    (list (inc/dec-op-inc)))))
 
+(test-parse
+ parse-cast-expression
+ "(( __be16)(__u16)f());"
+ :cond (and (expr-case ast :paren)
+            (expr-case (expr-paren->unwrap ast) :cast)
+            (expr-case (expr-cast->arg (expr-paren->unwrap ast)) :cast)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-unary-expression
@@ -1237,6 +1244,11 @@
 (test-parse
  parse-expression
  "__builtin_types_compatible_p(typeof(a), signed long long)"
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "__builtin_offsetof(struct pt_regs, ss)"
  :gcc t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

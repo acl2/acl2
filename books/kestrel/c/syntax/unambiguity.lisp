@@ -100,7 +100,9 @@
                :cast/and-ambig nil
                :stmt (block-item-list-unambp expr.items)
                :tycompat (and (tyname-unambp expr.type1)
-                              (tyname-unambp expr.type2)))
+                              (tyname-unambp expr.type2))
+               :offsetof (and (tyname-unambp expr.type)
+                              (member-designor-unambp expr.member)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -167,6 +169,20 @@
         (and (genassoc-unambp (car assocs))
              (genassoc-list-unambp (cdr assocs))))
     :measure (genassoc-list-count assocs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define member-designor-unambp ((memdes member-designorp))
+    :returns (yes/no booleanp)
+    :parents (unambiguity exprs/decls/stmts-unambp)
+    :short "Check if a member designator is unambiguous."
+    (member-designor-case
+     memdes
+     :ident t
+     :dot (member-designor-unambp memdes.member)
+     :sub (and (member-designor-unambp memdes.member)
+               (expr-unambp memdes.index)))
+    :measure (member-designor-count memdes))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -974,6 +990,12 @@
                 (tyname-unambp type2)))
     :expand (expr-unambp (expr-tycompat type1 type2)))
 
+  (defrule expr-unambp-of-expr-offsetof
+    (equal (expr-unambp (expr-offsetof type memdes))
+           (and (tyname-unambp type)
+                (member-designor-unambp memdes)))
+    :expand (expr-unambp (expr-offsetof type memdes)))
+
   (defrule const-expr-unambp-of-const-expr
     (equal (const-expr-unambp (const-expr expr))
            (expr-unambp expr))
@@ -989,6 +1011,26 @@
     (equal (genassoc-unambp (genassoc-default expr))
            (expr-unambp expr))
     :expand (genassoc-unambp (genassoc-default expr)))
+
+  (defrule member-designor-unambp-when-ident
+    ;; The formulation (member-designor-unambp (member-designor-ident ...))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (member-designor-case memdes :ident)
+             (member-designor-unambp memdes)))
+
+  (defrule member-designor-unambp-of-member-designor-dot
+    (equal (member-designor-unambp (member-designor-dot member name))
+           (member-designor-unambp member))
+    :expand (member-designor-unambp (member-designor-dot member name)))
+
+  (defrule member-designor-unambp-of-member-designor-sub
+    (equal (member-designor-unambp (member-designor-sub member index))
+           (and (member-designor-unambp member)
+                (expr-unambp index)))
+    :expand (member-designor-unambp (member-designor-sub member index)))
 
   (defrule type-spec-unambp-when-not-atomic/struct/union/enum
     ;; The formulation (type-spec-unambp (type-spec-... ...))
@@ -1546,21 +1588,6 @@
              (expr-unambp (expr-comma->next expr)))
     :expand (expr-unambp expr))
 
-  (defrule block-item-list-unambp-of-expr-stmt->items
-    (implies (and (expr-unambp expr)
-                  (expr-case expr :stmt))
-             (block-item-list-unambp (expr-stmt->items expr))))
-
-  (defrule tyname-unambp-of-expr-tycompat->type1
-    (implies (and (expr-unambp expr)
-                  (expr-case expr :tycompat))
-             (tyname-unambp (expr-tycompat->type1 expr))))
-
-  (defrule tyname-unambp-of-expr-tycompat->type2
-    (implies (and (expr-unambp expr)
-                  (expr-case expr :tycompat))
-             (tyname-unambp (expr-tycompat->type2 expr))))
-
   (defrule not-cast/call-ambig-when-expr-unambp
     (implies (expr-unambp expr)
              (not (equal (expr-kind expr) :cast/call-ambig)))
@@ -1586,6 +1613,31 @@
              (not (equal (expr-kind expr) :cast/and-ambig)))
     :rule-classes :forward-chaining)
 
+  (defrule block-item-list-unambp-of-expr-stmt->items
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :stmt))
+             (block-item-list-unambp (expr-stmt->items expr))))
+
+  (defrule tyname-unambp-of-expr-tycompat->type1
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :tycompat))
+             (tyname-unambp (expr-tycompat->type1 expr))))
+
+  (defrule tyname-unambp-of-expr-tycompat->type2
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :tycompat))
+             (tyname-unambp (expr-tycompat->type2 expr))))
+
+  (defrule tyname-unambp-of-expr-offsetof->type
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :offsetof))
+             (tyname-unambp (expr-offsetof->type expr))))
+
+  (defrule member-designor-unambp-of-expr-offset->member
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :offsetof))
+             (member-designor-unambp (expr-offsetof->member expr))))
+
   (defrule expr-unambp-of-expr-const-expr->unwrap
     (implies (const-expr-unambp cexpr)
              (expr-unambp (const-expr->unwrap cexpr)))
@@ -1608,6 +1660,21 @@
                   (genassoc-case assoc :default))
              (expr-unambp (genassoc-default->expr assoc)))
     :expand (genassoc-unambp assoc))
+
+  (defrule member-designor-unambp-of-member-designor-dot->member
+    (implies (and (member-designor-unambp memdes)
+                  (member-designor-case memdes :dot))
+             (member-designor-unambp (member-designor-dot->member memdes))))
+
+  (defrule member-designor-unambp-of-member-designor-sub->member
+    (implies (and (member-designor-unambp memdes)
+                  (member-designor-case memdes :sub))
+             (member-designor-unambp (member-designor-sub->member memdes))))
+
+  (defrule expr-unambp-of-member-designor-dot->index
+    (implies (and (member-designor-unambp memdes)
+                  (member-designor-case memdes :sub))
+             (expr-unambp (member-designor-sub->index memdes))))
 
   (defrule tyname-unambp-of-type-spec-atomic->type
     (implies (and (type-spec-unambp tyspec)

@@ -106,29 +106,47 @@
     :induct t
     :enable last)
 
-  (defruled blocks-ordered-even-p-of-append
-    (equal (blocks-ordered-even-p (append blocks1 blocks2))
-           (and (blocks-ordered-even-p blocks1)
-                (blocks-ordered-even-p blocks2)
-                (or (endp blocks1)
-                    (endp blocks2)
-                    (> (block->round (car (last blocks1)))
-                       (block->round (car blocks2))))))
-    :induct t
-    :enable (append
-             last))
-
   (defruled evenp-of-car-when-blocks-ordered-even-p
     (implies (and (blocks-ordered-even-p blocks)
                   (consp blocks))
              (evenp (block->round (car blocks)))))
+
+  (defruled evenp-of-car-of-last-when-blocks-ordered-even-p
+    (implies (and (blocks-ordered-even-p blocks)
+                  (consp blocks))
+             (evenp (block->round (car (last blocks)))))
+    :induct t
+    :enable last)
 
   (defruled evenp-of-nth-when-blocks-ordered-even-p
     (implies (and (blocks-ordered-even-p blocks)
                   (< (nfix i) (len blocks)))
              (evenp (block->round (nth i blocks))))
     :induct t
-    :enable (nth nfix len)))
+    :enable (nth nfix len))
+
+  (defruled blocks-ordered-even-p-of-append
+    (equal (blocks-ordered-even-p (append blocks1 blocks2))
+           (and (blocks-ordered-even-p blocks1)
+                (blocks-ordered-even-p blocks2)
+                (or (endp blocks1)
+                    (endp blocks2)
+                    (>= (block->round (car (last blocks1)))
+                        (+ 2 (block->round (car blocks2)))))))
+    :induct t
+    :enable (append last)
+    :hints ('(:use ((:instance lemma
+                               (x (block->round (car blocks2)))
+                               (y (block->round (car (last blocks1))))))))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (natp x)
+                     (natp y)
+                     (evenp x)
+                     (evenp y)
+                     (< x y))
+                (<= (+ 2 x) y))
+       :enable evenp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

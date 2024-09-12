@@ -167,7 +167,10 @@
        "            :stmt (expr-stmt (my-simpadd0-block-item-list expr.items))"
        "            :tycompat (make-expr-tycompat"
        "                        :type1 (my-simpadd0-tyname expr.type1)"
-       "                        :type2 (my-simpadd0-tyname expr.type2)))))"
+       "                        :type2 (my-simpadd0-tyname expr.type2))"
+       "            :offsetof (make-expr-offsetof"
+       "                        :type (my-simpadd0-tyname expr.type)"
+       "                        :member (my-simpadd0-member-designor expr.member)))))"
        )))
   :order-subtopics t
   :default-parent t)
@@ -199,6 +202,7 @@
     (:forward-chaining c$::dirdeclor-kind-possibilities)
     (:forward-chaining c$::genassoc-kind-possibilities)
     (:forward-chaining c$::initer-kind-possibilities)
+    (:forward-chaining c$::member-designor-kind-possibilities)
     (:forward-chaining c$::spec/qual-kind-possibilities)
     (:forward-chaining c$::structdecl-kind-possibilities)))
 
@@ -284,6 +288,7 @@
     (:linear c$::expr-count-of-genassoc-default->expr)
     (:linear c$::expr-count-of-genassoc-type->expr)
     (:linear c$::expr-count-of-initer-single->expr)
+    (:linear c$::expr-count-of-member-designor-sub->index)
     (:linear c$::expr-count-of-stmt-dowhile->test)
     (:linear c$::expr-count-of-stmt-if->test)
     (:linear c$::expr-count-of-stmt-ifelse->test)
@@ -311,6 +316,9 @@
     (:linear c$::initer-count-of-initer-option-some->val)
     (:linear c$::initer-option-count-of-initdeclor->init?)
     (:linear c$::label-count-of-stmt-labeled->label)
+    (:linear c$::member-designor-count-of-expr-offsetof->member)
+    (:linear c$::member-designor-count-of-member-designor-dot->member)
+    (:linear c$::member-designor-count-of-member-designor-sub->member)
     (:linear c$::paramdecl-count-of-car)
     (:linear c$::paramdecl-list-count-of-cdr)
     (:linear c$::paramdecl-list-count-of-dirabsdeclor-function->params)
@@ -348,6 +356,7 @@
     (:linear c$::tyname-count-of-expr-tycompat->type1)
     (:linear c$::tyname-count-of-expr-tycompat->type2)
     (:linear c$::tyname-count-of-genassoc-type->type)
+    (:linear c$::tyname-count-of-expr-offsetof->type)
     (:linear c$::tyname-count-of-type-spec-atomic->type)
     (:linear c$::tyname-count-of-type-spec-typeof-type->type)
     (:linear c$::type-spec-count-of-declspec-tyspec->unwrap)
@@ -438,6 +447,7 @@
     (:type-prescription c$::return-type-of-initer-count.count)
     (:type-prescription c$::return-type-of-initer-option-count.count)
     (:type-prescription c$::return-type-of-label-count.count)
+    (:type-prescription c$::return-type-of-member-designor-count.count)
     (:type-prescription c$::return-type-of-paramdecl-count.count)
     (:type-prescription c$::return-type-of-paramdecl-list-count.count)
     (:type-prescription c$::return-type-of-paramdeclor-count.count)
@@ -706,6 +716,9 @@
       :tycompat (make-expr-tycompat
                   :type1 (,(cdr (assoc-eq 'tyname names)) expr.type1 ,@extra-args-names)
                   :type2 (,(cdr (assoc-eq 'tyname names)) expr.type2 ,@extra-args-names))
+      :offsetof (make-expr-offsetof
+                  :type (,(cdr (assoc-eq 'tyname names)) expr.type ,@extra-args-names)
+                  :member (,(cdr (assoc-eq 'member-designor names)) expr.member ,@extra-args-names))
       )
    '(:returns (new-expr exprp)
      :measure (expr-count expr))))
@@ -816,6 +829,29 @@
             (,(cdr (assoc-eq 'genassoc-list names)) (cdr genassocs) ,@extra-args-names)))
    '(:returns (new-genassocs genassoc-listp)
      :measure (genassoc-list-count genassocs))))
+
+(define deftrans-defn-member-designor
+  ((names alistp)
+   (bodies alistp)
+   (extra-args true-listp)
+   (extra-args-names true-listp))
+  (deftrans-defn
+   'member-designor
+   names
+   bodies
+   '((memdes member-designorp))
+   extra-args
+   `(member-designor-case
+     memdes
+     :ident (member-designor-fix memdes)
+     :dot (make-member-designor-dot
+            :member (,(cdr (assoc-eq 'member-designor names)) memdes.member ,@extra-args-names)
+            :name memdes.name)
+     :sub (make-member-designor-sub
+            :member (,(cdr (assoc-eq 'member-designor names)) memdes.member ,@extra-args-names)
+            :index (,(cdr (assoc-eq 'expr names)) memdes.index ,@extra-args-names)))
+   '(:returns (new-memdes member-designorp)
+     :measure (member-designor-count memdes))))
 
 (define deftrans-defn-type-spec
   ((names alistp)
@@ -1759,6 +1795,7 @@
     const-expr-option
     genassoc
     genassoc-list
+    member-designor
     type-spec
     spec/qual
     spec/qual-list
@@ -1892,6 +1929,7 @@
          ,(deftrans-defn-const-expr-option   names bodies extra-args extra-args-names)
          ,(deftrans-defn-genassoc            names bodies extra-args extra-args-names)
          ,(deftrans-defn-genassoc-list       names bodies extra-args extra-args-names)
+         ,(deftrans-defn-member-designor     names bodies extra-args extra-args-names)
          ,(deftrans-defn-type-spec           names bodies extra-args extra-args-names)
          ,(deftrans-defn-spec/qual           names bodies extra-args extra-args-names)
          ,(deftrans-defn-spec/qual-list      names bodies extra-args extra-args-names)

@@ -1820,6 +1820,13 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-tyname expr.type2 pstate))
                 (pstate (print-astring ")" pstate)))
+             pstate)
+           :offsetof
+           (b* ((pstate (print-astring "__builtin_offsetof(" pstate))
+                (pstate (print-tyname expr.type pstate))
+                (pstate (print-astring ", " pstate))
+                (pstate (print-member-designor expr.member pstate))
+                (pstate (print-astring ")" pstate)))
              pstate)))
          (pstate (if parenp
                      (print-astring ")" pstate)
@@ -1913,6 +1920,26 @@
          (pstate (print-astring ", " pstate)))
       (print-genassoc-list (cdr genassocs) pstate))
     :measure (two-nats-measure (genassoc-list-count genassocs) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-member-designor ((memdes member-designorp) (pstate pristatep))
+    :guard (member-designor-unambp memdes)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a member designator."
+    (member-designor-case
+     memdes
+     :ident (print-ident memdes.unwrap pstate)
+     :dot (b* ((pstate (print-member-designor memdes.member pstate))
+               (pstate (print-astring "." pstate))
+               (pstate (print-ident memdes.name pstate)))
+            pstate)
+     :sub (b* ((pstate (print-member-designor memdes.member pstate))
+               (pstate (print-astring "[" pstate))
+               (pstate (print-expr memdes.index (expr-priority-expr) pstate)))
+            pstate))
+    :measure (two-nats-measure (member-designor-count memdes) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
