@@ -5867,7 +5867,7 @@
 ; symbol of the Common Lisp definition to be installed.
 
 ; An attempt is made to install a definition for name from the suitable
-; hash-table, but only when that is appropriate as explained below.
+; hash table, but only when that is appropriate as explained below.
 
 ; Wrld is nil unless we are installing on behalf of a defun(s), defstobj, or
 ; defabsstobj event in which case it is non-nil.  (Remark.  In those cases,
@@ -5876,10 +5876,10 @@
 
 ; If def is non-nil then it is a definition starting with defun, defconst,
 ; defmacro, or defabbrev.  In this case, if no definition is installed from a
-; hash-table, then def is evaluated, and the return value is irrelevant.
+; hash table, then def is evaluated, and the return value is irrelevant.
 
 ; Otherwise (when def is nil), the return value is t if a definition is
-; installed from a hash-table.  Otherwise the return value is nil, with one
+; installed from a hash table.  Otherwise the return value is nil, with one
 ; exception: if it is intended that a future definition is to be not only
 ; installed but also compiled, then 'to-compile is returned.
 
@@ -6208,7 +6208,7 @@
 ; Cltl-cmds is a list of cltl-command values, each the cddr of some triple in
 ; the world.  We are certifying a book, and we have performed any rolling back
 ; of the world that will be done and installed the resulting world.  Here we
-; populate the *hcomp-xxx-ht* hash-tables and *declaim-list* based on that
+; populate the *hcomp-xxx-ht* hash tables and *declaim-list* based on that
 ; world, much as we do when processing events in the book after the rollback
 ; (if there is a rollback).
 
@@ -10087,8 +10087,8 @@ such that feature :acl2-loop-only is true."))
 (defun stack-access-defeat-hook-cert-ht ()
 
 ; This function either returns nil or, if ccl::*stack-access-winners* is bound
-; to a hash-table, a hash-table whose keys are names of currently-known
-; "winners".  Each such name is the name of a function FN that is a key of
+; to a hash table, one whose keys are names of currently-known "winners".  Each
+; such name is the name of a function FN that is a key of
 ; ccl::*stack-access-winners* such that FN is the current symbol-function of
 ; FN.
 
@@ -10113,7 +10113,7 @@ such that feature :acl2-loop-only is true."))
 (defun stack-access-defeat-hook-cert (fn)
 
 ; This function assumes that *stack-access-defeat-hook-cert-ht* is bound to a
-; hash-table of names of "winners"; see function
+; hash table of names of "winners"; see function
 ; stack-access-defeat-hook-cert-ht.
 
   (and (symbolp fn)

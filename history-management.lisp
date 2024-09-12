@@ -7670,9 +7670,21 @@
                                             0 1))
                               (cons #\6 (if (defstobj-supporterp name wrld)
                                             1 0))
-                              (cons #\7 (getpropc (defstobj-supporterp name
-                                                    wrld)
-                                                  'stobj nil wrld))
+                              (cons #\7
+                                    (let ((prop (getpropc (defstobj-supporterp
+                                                            name wrld)
+                                                          'stobj nil wrld)))
+                                      (list* name
+
+; We skip (access stobj-property prop :live-var) since that information
+; doesn't seem helpful to users
+
+                                             (access stobj-property prop
+                                                     :recognizer)
+                                             (access stobj-property prop
+                                                     :creator)
+                                             (access stobj-property prop
+                                                     :names))))
                               (cons #\8
                                     (if rest
                                         (msg ", and Y! will assume a Y ~

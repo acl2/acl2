@@ -1144,7 +1144,7 @@
 ; WARNING: Keep this in sync with make-apply$-prim-body-fn.
 
 ; The present function's name is perhaps a bit misleading, since it doesn't
-; create a function body, but rather, it populates the given hash-table, which
+; create a function body, but rather, it populates the given hash table, which
 ; will actually be *apply$-prim-ht*.
 
 ; See make-apply$-prim-body-fn.  Note that we do not handle return-last
