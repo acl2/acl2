@@ -52,7 +52,7 @@
 (include-book "kestrel/java/portcullis" :dir :system)
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
-(include-book "kestrel/utilities/omaps/portcullis" :dir :system)
+(include-book "std/omaps/portcullis" :dir :system)
 (include-book "kestrel/yul/portcullis" :dir :system)
 
 ; Book release notes are sometimes disorganized.
@@ -403,6 +403,10 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "Moved from @('[books]/kestrel/utilities/omaps/')
+     to @('[books]/std/omaps/').")
 
    (xdoc::p
     "Added some theorems.")
