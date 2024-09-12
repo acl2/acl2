@@ -51,22 +51,33 @@
 ; cert_param (acl2xskip)
 ; (depends-rec "top")
 (make-event
- '(:or
-   (acl2::acl2x-replace (include-book
-                         "top" :uncertified-okp :ignore-certs)
-                        (value-triple :invisible)
-                        :outside-certification
-                        (include-book
-                         "top" :uncertified-okp :ignore-certs))
-   (make-event
-    (er hard? 'defs-program
-        "~%************************* DEFS-PROGRAM FAILURE *************************~%~
+ (b* ((state (f-put-global 'acl2::port-file-enabled-original-value
+                           (f-get-global 'acl2::port-file-enabled state)
+                           state))
+      (state (f-put-global 'acl2::port-file-enabled nil state)))
+   (value
+    '(:or
+      (acl2::acl2x-replace (include-book
+                            "top" :uncertified-okp :ignore-certs)
+                           (value-triple :invisible)
+                           :outside-certification
+                           (include-book
+                            "top" :uncertified-okp :ignore-certs))
+      (make-event
+       (er hard? 'defs-program
+           "~%************************* DEFS-PROGRAM FAILURE *************************~%~
          Failed to include std/strings/top.  It may be that something has ~
          changed in this book or one of the books it includes that makes it ~
          impossible to include uncertified.  Please check this by running ~
          \"make clean\" followed by \"make std/strings/defs-program.cert\".~%~
-           ************************************************************************"))))
+           ************************************************************************"))))))
 
+
+(make-event
+ (b* ((state (f-put-global 'acl2::port-file-enabled
+                           (f-get-global 'acl2::port-file-enabled-original-value state)
+                           state)))
+   (value '(value-triple :port-file-enabled-restored))))
 
 (program)
 
