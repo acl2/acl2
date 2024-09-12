@@ -37,7 +37,7 @@
 
 (defxdoc svtv-idealize-internals
   :short "Umbrella topic for internal concepts used in the proofs for the svtv-idealize framework."
-  :parents (svtv-idealize))
+  :parents (def-svtv-ideal))
 
 
 ;; (define 4vec-override-values-ok-<<= ((test 4vec-p)

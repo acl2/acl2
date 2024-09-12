@@ -32,6 +32,7 @@
 (in-package "SV")
 
 (include-book "new-svtv-doc")
+(include-book "svtv-to-fsm")
 (include-book "svtv-stobj-defsvtv")
 (include-book "svtv-stobj-defcycle")
 (include-book "svtv-stobj-debug")
