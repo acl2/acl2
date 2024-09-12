@@ -1877,6 +1877,7 @@
                                         "__asm__"
                                         "__attribute"
                                         "__attribute__"
+                                        "__builtin_offsetof"
                                         "__builtin_types_compatible_p"
                                         "__builtin_va_list"
                                         "__extension__"
@@ -5578,6 +5579,7 @@
            (token-case token? :string)
            (token-punctuatorp token? "(")
            (token-keywordp token? "_Generic")
+           (token-keywordp token? "__builtin_offsetof")
            (token-keywordp token? "__builtin_types_compatible_p")))
   ///
 
@@ -8655,6 +8657,10 @@
        we parse a call of this built-in function,
        which has two type names as arguments.")
      (xdoc::p
+      "If the token is the GCC keyword @('__builtin_offsetof'),
+       we parse a call of this built-in function,
+       which has a type name and a member designator as arguments.")
+     (xdoc::p
       "If the token is none of the above,
        including the token being absent,
        it is an error."))
@@ -8757,6 +8763,28 @@
              ((erp last-span parstate) (read-punctuator ")" parstate)))
           ;; __builtin_types_compatible_p ( type1 , type2 )
           (retok (make-expr-tycompat :type1 type1 :type2 type2)
+                 (span-join span last-span)
+                 parstate)))
+       ((token-keywordp token "__builtin_offsetof") ; __builtin_offsetof
+        (b* (((erp & parstate)
+              ;; __builtin_offsetof (
+              (read-punctuator "(" parstate))
+             (psize (parsize parstate))
+             ((erp tyname & parstate)
+              ;; __builtin_offsetof ( type
+              (parse-type-name parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate)
+              ;; __builtin_offset ( type ,
+              (read-punctuator "," parstate))
+             ((erp memdes & parstate)
+              ;; __builtin_offset ( type , memdes
+              (parse-member-designor parstate))
+             ((erp last-span parstate)
+              ;; __builtin_offset ( type , memdes )
+              (read-punctuator ")" parstate)))
+          (retok (make-expr-offsetof :type tyname :member memdes)
                  (span-join span last-span)
                  parstate)))
        (t ; other
@@ -8913,6 +8941,67 @@
          (curr-genassocs (append prev-genassocs (list genassoc)))
          (curr-span (span-join prev-span span)))
       (parse-generic-associations-rest curr-genassocs curr-span parstate))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-member-designor ((parstate parstatep))
+    :returns (mv erp
+                 (memdes member-designorp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a member designator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A member designator always starts with an identifier, which we parse.
+       Then we parse zero or more dotted or subscript notations,
+       using a separate parsing function."))
+    (b* (((reterr) (irr-member-designor) (irr-span) parstate)
+         ((erp ident span parstate) (read-identifier parstate))
+         (curr-memdes (member-designor-ident ident))
+         (curr-span span))
+      (parse-member-designor-rest curr-memdes curr-span parstate))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-member-designor-rest ((prev-memdes member-designorp)
+                                      (prev-span spanp)
+                                      (parstate parstatep))
+    :returns (mv erp
+                 (memdes member-designorp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse the rest of a member designator."
+    (b* (((reterr) (irr-member-designor) (irr-span) parstate)
+         ((erp token & parstate) (read-token parstate)))
+      (cond
+       ((token-punctuatorp token ".") ; .
+        (b* (((erp ident span parstate) (read-identifier parstate)) ; . ident
+             (curr-memdes (make-member-designor-dot
+                           :member prev-memdes
+                           :name ident))
+             (curr-span (span-join prev-span span)))
+          (parse-member-designor-rest curr-memdes curr-span parstate)))
+       ((token-punctuatorp token "[") ; [
+        (b* ((psize (parsize parstate))
+             ((erp index & parstate) (parse-expression parstate)) ; [ expr
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp span parstate) (read-punctuator "]" parstate)) ; [ expr ]
+             (curr-memdes (make-member-designor-sub
+                           :member prev-memdes
+                           :index index))
+             (curr-span (span-join prev-span span)))
+          (parse-member-designor-rest curr-memdes curr-span parstate)))
+       (t ; other
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok (member-designor-fix prev-memdes)
+                 (span-fix prev-span)
+                 parstate)))))
     :measure (two-nats-measure (parsize parstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -14015,6 +14104,16 @@
           (parsize parstate))
       :rule-classes :linear
       :fn parse-compound-literal)
+    (defret parsize-of-parse-member-designor-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-member-designor)
+    (defret parsize-of-parse-member-designor-rest-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-member-designor-rest)
     (defret parsize-of-parse-constant-expression-uncond
       (<= (parsize new-parstate)
           (parsize parstate))
@@ -14744,6 +14843,16 @@
                    (1- (parsize parstate))))
       :rule-classes :linear
       :fn parse-generic-association)
+    (defret parsize-of-parse-member-designor-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-member-designor)
+    (defret parsize-of-parse-member-designor-rest-cond
+      t
+      :rule-classes nil
+      :fn parse-member-designor-rest)
     (defret parsize-of-parse-compound-literal-cond
       (implies (not erp)
                (<= (parsize new-parstate)
@@ -15109,6 +15218,9 @@
       ((acl2::occur-lst '(acl2::flag-is 'parse-generic-association)
                         clause)
        '(:expand (parse-generic-association parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-member-designor)
+                        clause)
+       '(:expand (parse-member-designor parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-compound-literal)
                         clause)
        '(:expand (parse-compound-literal tyname first-span parstate)))

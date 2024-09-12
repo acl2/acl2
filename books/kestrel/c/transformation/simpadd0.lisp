@@ -121,7 +121,10 @@
      :stmt (expr-stmt (simpadd0-block-item-list expr.items))
      :tycompat (make-expr-tycompat
                 :type1 (simpadd0-tyname expr.type1)
-                :type2 (simpadd0-tyname expr.type2)))
+                :type2 (simpadd0-tyname expr.type2))
+     :offsetof (make-expr-offsetof
+                :type (simpadd0-tyname expr.type)
+                :member (simpadd0-member-designor expr.member)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -198,6 +201,24 @@
           (t (cons (simpadd0-genassoc (car genassocs))
                    (simpadd0-genassoc-list (cdr genassocs)))))
     :measure (genassoc-list-count genassocs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define simpadd0-member-designor ((memdes member-designorp))
+    :guard (member-designor-unambp memdes)
+    :returns (new-memdes member-designorp)
+    :parents (simpadd0 simpadd0-exprs/decls/stmts)
+    :short "Transform a member designator."
+    (member-designor-case
+     memdes
+     :ident (member-designor-fix memdes)
+     :dot (make-member-designor-dot
+           :member (simpadd0-member-designor memdes.member)
+           :name memdes.name)
+     :sub (make-member-designor-sub
+           :member (simpadd0-member-designor memdes.member)
+           :index (simpadd0-expr memdes.index)))
+    :measure (member-designor-count memdes))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -870,6 +891,9 @@
     (defret genassoc-list-unambp-of-simpadd0-genassoc-list
       (genassoc-list-unambp new-genassocs)
       :fn simpadd0-genassoc-list)
+    (defret member-designor-unambp-of-simpadd0-member-designor
+      (member-designor-unambp new-memdes)
+      :fn simpadd0-member-designor)
     (defret type-spec-unambp-of-simpadd0-type-spec
       (type-spec-unambp new-tyspec)
       :fn simpadd0-type-spec)

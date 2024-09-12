@@ -75,6 +75,7 @@
     make-expr-comma
     expr-stmt
     make-expr-tycompat
+    make-expr-offsetof
     irr-expr
 
     expr-listp
@@ -107,6 +108,13 @@
     genassoc-listp
     genassoc-list-fix
     genassoc-list-count
+
+    member-designorp
+    member-designor-fix
+    member-designor-count
+    member-designor-case
+    make-member-designor-dot
+    make-member-designor-sub
 
     type-specp
     type-spec-fix
@@ -419,6 +427,7 @@
     const-expr-option-unambp
     genassoc-unambp
     genassoc-list-unambp
+    member-designor-unambp
     type-spec-unambp
     type-spec-list-unambp
     spec/qual-unambp

@@ -1246,6 +1246,11 @@
  "__builtin_types_compatible_p(typeof(a), signed long long)"
  :gcc t)
 
+(test-parse
+ parse-expression
+ "__builtin_offsetof(struct pt_regs, ss)"
+ :gcc t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-array/function-abstract-declarator

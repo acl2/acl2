@@ -1063,7 +1063,11 @@
        :tycompat
        (b* (((erp type1 table) (dimb-tyname expr.type1 table))
             ((erp type2 table) (dimb-tyname expr.type2 table)))
-         (retok (make-expr-tycompat :type1 type1 :type2 type2) table))))
+         (retok (make-expr-tycompat :type1 type1 :type2 type2) table))
+       :offsetof
+       (b* (((erp type table) (dimb-tyname expr.type table))
+            ((erp memdes table) (dimb-member-designor expr.member table)))
+         (retok (make-expr-offsetof :type type :member memdes) table))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1147,6 +1151,30 @@
          ((erp new-assocs table) (dimb-genassoc-list (cdr assocs) table)))
       (retok (cons new-assoc new-assocs) table))
     :measure (genassoc-list-count assocs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dimb-member-designor ((memdes member-designorp) (table dimb-tablep))
+    :returns (mv erp (new-memdes member-designorp) (new-table dimb-tablep))
+    :parents (disambiguator dimb-exprs/decls/stmts)
+    :short "Disambiguate a member designator."
+    (b* (((reterr) (irr-member-designor) (irr-dimb-table)))
+      (member-designor-case
+       memdes
+       :ident (retok (member-designor-fix memdes) (dimb-table-fix table))
+       :dot (b* (((erp new-memdes table)
+                  (dimb-member-designor memdes.member table)))
+              (retok (make-member-designor-dot :member new-memdes
+                                               :name memdes.name)
+                     table))
+       :sub (b* (((erp new-memdes table)
+                  (dimb-member-designor memdes.member table))
+                 ((erp new-index table)
+                  (dimb-expr memdes.index table)))
+              (retok (make-member-designor-sub :member new-memdes
+                                               :index new-index)
+                     table))))
+    :measure (member-designor-count memdes))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2699,6 +2727,10 @@
       (implies (not erp)
                (genassoc-list-unambp new-assocs))
       :fn dimb-genassoc-list)
+    (defret member-designor-unambp-of-dimb-member-designor
+      (implies (not erp)
+               (member-designor-unambp new-memdes))
+      :fn dimb-member-designor)
     (defret type-spec-unambp-of-dimb-type-spec
       (implies (not erp)
                (type-spec-unambp new-tyspec))
