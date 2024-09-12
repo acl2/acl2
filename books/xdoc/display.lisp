@@ -737,7 +737,7 @@
                          (desired    (get-indent-level open-tags))
                          (spaces  (make-list (nfix (- desired bullet-len))
                                              :initial-element #\Space))
-                         (acc     (maybe-newline acc))
+                         (acc     (maybe-doublespace acc))
                          (acc     (append spaces acc))
                          (acc     (str::revappend-chars bullet acc)))
                       acc))

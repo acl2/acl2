@@ -740,6 +740,12 @@
      tweaked to be properly in sync with that of source function
      @('simplify-clause').")
 
+   (xdoc::p
+    "For textual rendering of documentation, added blank lines between list
+     items within @('<ul>..</ul>') or @('<ol>..</ol>').  This affects both
+     @(see documentation) displays at the terminal with the @(':')@(tsee doc)
+     command as well as displays in the @(see acl2-doc) browser.")
+
    ))
 
 (defxdoc note-8-5-books
