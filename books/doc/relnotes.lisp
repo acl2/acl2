@@ -318,6 +318,23 @@
      refactor to this new stateful variant, the old version was retained and
      moved to a new book under the name @(tsee tshell-call-unsound).")
 
+   (xdoc::p
+    "Improvements to decomposition proof methodology in VL/SVTV framework. New
+     support for reasoning about FSMs based on SVTV symbolic simulations. New
+     efficient method for equivalence checking two different evaluations of the
+     same SVEX.  Improvements to SVTV-CHASE debugging tool including mode for
+     comparing two runs.")
+
+   (xdoc::p
+    "Improved AIGNET transforms -- new BDD parametrization transform, updates to
+     allow AIG pointer arguments to transformation configs")
+
+   (xdoc::p
+    "Add exhaustive AIG simulation as a SAT checking option in FGL")
+
+   (xdoc::p
+    "Clean up and add various improvements to @(see def-bounds) tool")
+   
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Demos Library")
