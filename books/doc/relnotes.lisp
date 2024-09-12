@@ -405,6 +405,10 @@
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
+    "Moved from @('[books]/kestrel/utilities/omaps/')
+     to @('[books]/std/omaps/').")
+
+   (xdoc::p
     "Added some theorems.")
 
    (xdoc::p
