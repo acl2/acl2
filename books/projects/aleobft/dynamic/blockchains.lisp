@@ -14,6 +14,8 @@
 (include-book "elections")
 (include-book "dags")
 
+(local (include-book "std/lists/top" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -290,7 +292,11 @@
      the @(tsee car) of @(tsee last) having round above
      the newest block of the original blockchain
      matches a property we proved of @(tsee collect-anchors),
-     as also mentioned there."))
+     as also mentioned there.")
+   (xdoc::p
+    "We show that extending the blockchain
+     does not change the active committee at a round,
+     if that committee can be calculated in the original blockchain."))
   (b* (((when (endp anchors))
         (mv (block-list-fix blockchain)
             (certificate-set-fix committed-certs)))
@@ -338,4 +344,37 @@
                                 certificates-ordered-even-p
                                 last))))
 
-  (in-theory (disable blocks-ordered-even-p-of-extend-blockchain)))
+  (in-theory (disable blocks-ordered-even-p-of-extend-blockchain))
+
+  (defruled extend-blockchain-as-append
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (equal new-blockchain
+             (append (take (- (len new-blockchain)
+                              (len blockchain))
+                           new-blockchain)
+                     (block-list-fix blockchain))))
+    :induct t
+    :enable (len
+             fix))
+
+  (defruled active-committee-at-round-of-extend-blockchain-no-change
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (implies (and (block-listp blockchain)
+                    (blocks-ordered-even-p new-blockchain)
+                    (active-committee-at-round round blockchain all-vals))
+               (equal (active-committee-at-round round new-blockchain all-vals)
+                      (active-committee-at-round round blockchain all-vals))))
+    :disable extend-blockchain
+    :use (extend-blockchain-as-append
+          (:instance active-committee-at-round-of-append
+                     (blocks1 (b* (((mv new-blockchain &)
+                                    (extend-blockchain anchors
+                                                       dag
+                                                       blockchain
+                                                       committed-certs)))
+                                (take (- (len new-blockchain)
+                                         (len blockchain))
+                                      new-blockchain)))
+                     (blocks blockchain)))))
