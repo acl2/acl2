@@ -198,34 +198,6 @@
 (defthm x86isa::bitp-of-sub-zf-spec32 (bitp (x86isa::sub-zf-spec32 dst src)))
 (defthm x86isa::bitp-of-sub-zf-spec64 (bitp (x86isa::sub-zf-spec64 dst src)))
 
-(defthm x86isa::bitp-of-cf-spec8 (bitp (x86isa::cf-spec8 x)))
-(defthm x86isa::bitp-of-cf-spec16 (bitp (x86isa::cf-spec16 x)))
-(defthm x86isa::bitp-of-cf-spec32 (bitp (x86isa::cf-spec32 x)))
-(defthm x86isa::bitp-of-cf-spec64 (bitp (x86isa::cf-spec64 x)))
-
-(defthm x86isa::bitp-of-of-spec8 (bitp (x86isa::of-spec8 x)))
-(defthm x86isa::bitp-of-of-spec16 (bitp (x86isa::of-spec16 x)))
-(defthm x86isa::bitp-of-of-spec32 (bitp (x86isa::of-spec32 x)))
-(defthm x86isa::bitp-of-of-spec64 (bitp (x86isa::of-spec64 x)))
-
-(defthm x86isa::bitp-of-pf-spec8 (bitp (x86isa::pf-spec8 x)))
-(defthm x86isa::bitp-of-pf-spec16 (bitp (x86isa::pf-spec16 x)))
-(defthm x86isa::bitp-of-pf-spec32 (bitp (x86isa::pf-spec32 x)))
-(defthm x86isa::bitp-of-pf-spec64 (bitp (x86isa::pf-spec64 x)))
-
-(defthm x86isa::bitp-of-sf-spec8 (bitp (x86isa::sf-spec8 x)))
-(defthm x86isa::bitp-of-sf-spec16 (bitp (x86isa::sf-spec16 x)))
-(defthm x86isa::bitp-of-sf-spec32 (bitp (x86isa::sf-spec32 x)))
-(defthm x86isa::bitp-of-sf-spec64 (bitp (x86isa::sf-spec64 x)))
-
-(defthm x86isa::bitp-of-zf-spec (bitp (x86isa::zf-spec x)))
-
-;todo: more like this?
-(defthm x86isa::bitp-of-add-af-spec8 (bitp (x86isa::add-af-spec8 dst src)))
-(defthm x86isa::bitp-of-add-af-spec16 (bitp (x86isa::add-af-spec16 dst src)))
-(defthm x86isa::bitp-of-add-af-spec32 (bitp (x86isa::add-af-spec32 dst src)))
-(defthm x86isa::bitp-of-add-af-spec64 (bitp (x86isa::add-af-spec64 dst src)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm integerp-of-sub-zf-spec8

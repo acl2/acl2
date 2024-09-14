@@ -1061,13 +1061,7 @@
 ;;                             ACL2::LOGtail-OF-LOGext ;loop
 ;;                             )))))
 
-(defthm unsigned-byte-p-1-of-sf-spec32
-  (acl2::unsigned-byte-p 1 (sf-spec32 result)))
-
-(defthm unsigned-byte-p-1-of-sub-af-spec32
-  (acl2::unsigned-byte-p 1 (sub-af-spec32 dst src)))
-
-(in-theory (disable zf-spec))
+(in-theory (disable zf-spec)) ; move?
 
 ;gen?
 (defthm integerp-of-xr-rgf-4

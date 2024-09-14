@@ -65,8 +65,6 @@
                (x86isa::rflagsbits->af$inline ep)))
   :hints (("Goal" :in-theory (enable myif))))
 
-
-
 (defthm of-spec-of-logext-32
   (equal (of-spec32 (logext 32 x))
          0)
@@ -82,9 +80,6 @@
                 (integerp size))
            (equal (logext size (zf-spec result))
                   (zf-spec result))))
-
-(defthm integerp-of-zf-spec
-  (integerp (zf-spec result)))
 
 (defthm sf-spec64-of-bvchop-64
   (equal (sf-spec64 (bvchop 64 x))
