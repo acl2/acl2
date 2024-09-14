@@ -3913,9 +3913,9 @@
 ; symbol-function for foo, whether foo calls p directly or instead foo invokes
 ; a chain of inlined functions ending with a call of p.  Now suppose a
 ; function, bar, is introduced later and calls foo.  This problem does not
-; invalidate the precompiled symbol-function for bar, provided foo is declaimed
-; notinline when compiling bar (so that the call of p made by foo is not
-; macroexpanded when compiling bar).
+; invalidate the precompiled symbol-function for bar, provided foo is
+; proclaimed notinline before compiling bar (so that the call of p made by foo
+; is not macroexpanded when compiling bar).
 ; 
 ; We thus introduce two categories of function symbols that together are
 ; intended to include all ACL2 function symbols that should not be called by
@@ -3930,17 +3930,16 @@
 ; because there are no built-in generic stobjs.)
 
 ; Add-trip will refuse to use a book's precompiled code for a function that is
-; an extended generic or an extended-generic barrier.  Also, a book's compiled
-; file will declaim notinline each extended-generic barrier introduced by the
-; book directly (not by an included sub-book, as discussed below).
+; an extended generic or an extended-generic barrier.  Also, every
+; extended-generic barrier will be proclaimed notinline; more on that below.
 
 ; For each such notinline function, the corresponding *1* function is also
-; declaimed notinline.  It is necessary to do this for *1* functions, if for no
-; other reason than that the *1* function for an extended-generic barrier F can
-; call a stobj primitive called in the guard for F.  Because of that
+; proclaimed notinline.  It is necessary to do this for *1* functions, if for
+; no other reason than that the *1* function for an extended-generic barrier F
+; can call a stobj primitive called in the guard for F.  Because of that
 ; observation and because of mbe and ec-call, we feel justified simply to treat
 ; the *1* function for a function F just as we treat F, for purposes of
-; declaiming notinline and for having add-trip avoid precompiled code.  This
+; proclaiming notinline and for having add-trip avoid precompiled code.  This
 ; treatment of *1* functions also has the advantage of simplicity, as opposed
 ; to teasing apart cases where we might treat *1* functions differently.
 
@@ -4007,24 +4006,10 @@
 ; comment above the call of congruent-stobj-rep-raw in the definition of
 ; stobj-let-fn-raw.
 
-; When the expansion file is written near the end of certification, after pass
-; 2 (hence events local to the book are ignored), each function in
-; ext-gen-barriers that was introduced in that book is declaimed notinline in
-; the expansion file above its definition.  As noted above, don't write those
-; declaims for functions introduced in included sub-books, though we do write
-; them for functions introduced in portcullis commands.  We can ignore
-; sub-books for this purpose because their compiled files take responsibility
-; for containing these declaim forms -- here is why that works out.  Suppose an
-; extended-generic-barrier, foo, is defined in a sub-book and we are in the
-; process of including pre-compiled definitions (i.e., doing the early load of
-; compiled files using hash tables; see the Essay on Hash Table Support for
-; Compilation).  We are relying on that sub-book's notinline declaim form for
-; foo, to avoid using pre-compiled code for foo that was compiled with a
-; primitive for a generic stobj.  A concern could be that the early loading of
-; compiled files is aborted before loading that declaim form.  But then that
-; sub-book's compiled code for foo will also not be loaded, and for that
-; matter, the entire process of early load of compiled files would be aborted
-; at that point.
+; Before a book's expansion file is compiled, each function called in the book
+; that is in ext-gen-barriers is proclaimed notinline.  This is carried out
+; by function install-defs-for-add-trip, which is called in add-trip, which
+; has processed any such function by the point compilation is invoked.
 
 ; When add-trip is processing an ACL2 function symbol F or its *1* function, it
 ; will skip hash-table lookup to obtain the symbol-function if F is in ext-gens
@@ -4049,7 +4034,7 @@
 ; clearly need to include a function symbol (possibly the new one itself) in
 ; one of the two new world globals, ext-gens or ext-gen-barriers.  So either
 ; add-trip would avoid the pre-compiled code for F, or else every such path of
-; calls would go through an existing function declaimed notinline, whose code
+; calls would go through an existing function proclaimed notinline, whose code
 ; is correct by the inductive hypothesis.  The argument is similar for
 ; defabsstobj.
 
@@ -4073,11 +4058,11 @@
 ; can avoid looking at those properties.)
 
 ; (Remark. A drawback to this proposal is that once a function symbol is
-; declaimed notinline, Common Lisp provides no way to undo that declaim form
-; other than to declaim the symbol inline.  So if an encapsulate locally
-; includes a book where F is declaimed notinline, and after the encapsulate a
+; proclaimed notinline, Common Lisp provides no way to undo that proclaim form
+; other than to proclaim the symbol inline.  So if an encapsulate locally
+; includes a book where F is proclaimed notinline, and after the encapsulate a
 ; different function is defined that also is named F, the new one will also be
-; treated as notinline by the compiler (unless subsequently declaimed inline
+; treated as notinline by the compiler (unless subsequently proclaimed inline
 ; somehow) during that ACL2 session.  This seems to be a small price to pay,
 ; since probably rather few functions are automatically inlined by a compiler,
 ; and an ACL2 user who really cares for a function to be inlined can use

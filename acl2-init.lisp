@@ -360,12 +360,12 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
 ; COMMON-LISP::*PRINT-PPRINT-DISPATCH* is unbound, then something is wrong with
 ; this Lisp.  In particular, with-standard-io-syntax might not work correctly.
 
-   (format t
-           "ERROR: We do not support building ACL2 in~%~
-            a host ANSI Common Lisp when variable ~s is unbound.  Please~%~
-            obtain a more recent version of your Lisp implementation."
-           'COMMON-LISP::*PRINT-PPRINT-DISPATCH*)
-   (exit-lisp))
+   (exit-with-build-error
+    "ERROR: We do not support building ACL2 in~%~
+     a host ANSI Common Lisp when variable ~s is~%~
+     unbound.  Please obtain a more recent version of your Lisp~%~
+     implementation."
+    'COMMON-LISP::*PRINT-PPRINT-DISPATCH*))
 
 #+(and gcl cltl2)
 ; Deal with undefined cltl2 symbols in ANSI GCL, using values that would be
