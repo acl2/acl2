@@ -3664,6 +3664,729 @@
                          wrld
                          nil))))))
 
+(defun attach-stobj-guard-msg (gen impl wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (cond ((not (and (symbolp gen)
+                   (symbolp impl)))
+         (msg "The arguments to ~x0 must evaluate to symbols but ~&1 ~
+               ~#1~[is not a symbol~/are not symbols~]."
+              'attach-stobj
+              (append (if (symbolp gen) nil (list gen))
+                      (if (symbolp impl) nil (list impl)))))
+        ((not (new-namep gen wrld))
+         (msg "The name ~x0 is in use, so it cannot serve here as an ~
+               attachable stobj.  See :DOC attach-stobj."
+              gen))
+        ((or (null impl)
+             (getpropc impl 'absstobj-info nil wrld))
+         nil)
+        (t
+         (msg "Since ~x0 is not currently the name of an abstract stobj, it ~
+               is not available to be attached to a stobj.  See :DOC ~
+               attach-stobj."
+              impl))))
+
+(defun attach-stobj-guard (gen impl wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (null (attach-stobj-guard-msg gen impl wrld)))
+   
+(set-table-guard attach-stobj-table
+                 (attach-stobj-guard key val world)
+                 :topic attach-stobj
+                 :coda (attach-stobj-guard-msg key val world))
+
+#+acl2-loop-only
+(defmacro attach-stobj (gen impl)
+
+; Essay on Attachable Stobjs
+
+; This Essay is derived from a proposal developed over time in the summer of
+; 2024.  We thank Warren Hunt and Yahya Sohail for requesting a feature like
+; attachable stobjs to support their work, as described in the next paragraph.
+; We thank Warren, Sol Swords, and especially Yahya for feedback on this
+; proposal (in particular, the name "attachable" was suggested by Yahya).
+
+; Consider a certifiable book, say x86.lisp, that introduces an abstract stobj
+; to represent the x86 state.  That book contains a child stobj, itself an
+; abstract stobj, that models the memory.  This x86 book might also contain a
+; number of theorems proved about the x86 stobj.  Yahya and Warren have posed
+; the following challenge: allow, in different ACL2 sessions, different
+; executable versions of the x86 stobj's memory -- without having to recertify
+; x86.lisp, and without allocating significant space that will never be used.
+
+; Part of our work in response to this request was to support the
+; :non-executable keyword for abstract stobjs, not just concrete stobjs.
+; Another part was to support switching a stobj between being global and not
+; global -- that is, allow it to be added to the user-stobj-alist of state or
+; removed from it.  This Essay is about a third part of our response, which
+; evolved into the notion of "attachable stobj".
+
+; Before reading further, it may be useful to see :DOC attach-stobj for much
+; briefer discussion of attachable stobjs from a user perspective.  In
+; particular, that topic notes that there are examples in
+; books/system/tests/attachable-stobjs/.  However, this Essay is intended to be
+; self-contained (in the usual sense for Essays in this source code, that is,
+; assuming familiarity by the user of relevant background -- in this case,
+; abstract stobjs and perhaps a general ability to navigate ACL2 source code).
+
+; Section I begins with a brief summary, followed by more details in Section
+; II.  Section III works out a tricky aspect involving compiled files.  Finally
+; we show in Section IV how the proposal solves the original problem, followed
+; by an appendix that gives further support for Section III.
+
+; === I. Summary ===
+
+; We allow an abstract stobj, abs, to have all aspects of its execution be
+; overridden, including its foundation, by a previously introduced abstract
+; stobj, impl.  This is accomplished by specifying (defabsstobj abs
+; ... :attachable t ...) after having executed (attach-stobj abs impl),
+; provided the logical functions of abs and impl suitably agree.  In this case,
+; we call abs a "generic" or "attachable" stobj with "attachment" impl.  When
+; :attachable is nil, the default), the new abstract stobj is an
+; "implementation" stobj.
+
+; The key idea is that when an attachable stobj abs is introduced with an
+; implementation impl to be attached, abs should be viewed as having its
+; execution-related fields -- in particular its :foundation and :exec values --
+; replaced by those of impl.  Thus, abs may be viewed as an implementation
+; stobj when it has an implementation attached.  Actually, abs can be attached
+; to an attachable stobj whether or not abs is itself attachable.
+
+; On the other hand, when a generic stobj abs does not have an attached
+; implementation, as set up with attach-stobj, we may say that abs is "purely
+; generic".
+
+; === II. The Proposal (Modulo Details that Follow) ===
+
+; We support :attachable t for a defabsstobj call, creating a so-called
+; "attachable" or "generic" stobj, gen.  Gen may have another stobj "attached"
+; to it, as described below; if not, then gen is "purely generic", and there is
+; no functional effect of :attachable t (but compilation may be affected; see
+; Section III below).  Any abstract stobj that is not purely generic is called
+; an "implementation" stobj.  The event (attach-stobj gen impl) specifies that
+; the implementation stobj impl may be attached to a generic (attachable) stobj
+; gen that is introduced later.
+
+; Attach-stobj generates a table event that stores the desired association.
+; Thus, attach-stobj can be local, and it can be undone, like other events.
+; The call (attach-stobj gen impl) is illegal after introducing gen.
+
+; Before proceeding, we define the "logical skeleton" of a defabsstobj event as
+; follows.  This is obtained by starting with the function specs (see :DOC
+; defabsstobj) for keywords :recognizer, :creator, and :exports, then filling
+; them in with defaults, and finally collecting their :LOGIC/:UPDATER pairs.
+
+; Now consider an event (defabsstobj gen ... :attachable t ...) preceded by the
+; event (attach-stobj gen impl).  This event is admissible if the usual
+; requirements for a defabsstobj event hold, and moreover, the logical skeleton
+; of this event corresponds to the logical skeleton of the defabsstobj event
+; introducing impl (as discussed in :DOC attach-stobj and implemented in
+; function absstobj-logical-skeleton-difference-msg).  In that case, the
+; defabsstobj event for gen is effectively modified as followed.
+
+; - The :foundation for gen is replaced by the :foundation for impl.
+; 
+; - The function specs for gen -- that is, for the :recognizer, :creator, and
+; :exports -- are replaced by the filled-in function specs for impl, except
+; that in each case the name is preserved and the updater, if any, is replaced
+; by the corresponding updater.  For example, if an export's function spec for
+; gen with name FOO is FOO or (FOO ...), and the corresponding filled-in
+; function spec for impl is (BAR :bar-key1 bar-val1 ...), then the function
+; spec for gen with name FOO will effectively be (FOO :bar-key1 bar-val1 ....).
+; Note that this doesn't change the values of keyword :logic, which are the
+; same already between gen and impl (by the requirement on logical skeletons
+; discussed above).
+
+; - The values of :corr-fn, :congruent-to, and :protect-default for gen are
+; replaced by those of impl.  Note that :corr-fn is not used by the
+; implementation when a stobj is attached, but one can think of it as being
+; present when considering why the event as modified is admissible.
+
+; - The value of :non-executable for gen is left as is.
+
+; Consider the case that an event (attach-stobj gen impl) is local.  Such an
+; event might well be rather pointless in a book, so it seems unimportant to
+; avoid the warning for this case, especially since the warning can be turned
+; off.  Of greater concern is the fact that the subsequent defabsstobj event
+; for gen will initially be based on impl, but later, when skipping proofs and
+; local events, it will not (or it may even be based on an earlier, non-local
+; attach-stobj event).  All necessary checks are done to ensure that this later
+; evaluation of the defabsstobj event for gen is truly OK.
+
+; As has been the case before an abstract stobj could be generic, a defabsstobj
+; event is redundant when an identical such event is in the world.  There is no
+; need to over-think redundancy; as long as necessary checks are made during
+; include-book to ensure soundness regardless of whether or not a given event
+; is skipped (which is the case for defabsstobj, as discussed above),
+; redundancy can be any reasonable notion of when to ignore an event.
+
+; === III. Avoiding Certain Compiled Code from Included Books ===
+
+; This section describes a somewhat tricky problem and then presents the
+; algorithm to be used for solving it.  The many examples in
+; books/system/tests/attachable-stobjs/ may shed light on what is said below,
+; in particular by executing the following forms for defstobj and defabsstobj
+; events, respectively.
+
+; (trace$ defstobj-raw-defs defstobj-axiomatic-defs)
+; (trace$ defabsstobj-raw-defs defabsstobj-axiomatic-defs)
+
+; The following sequence of steps exhibits what can go wrong if we are not
+; careful to avoid certain compiled code.
+
+; 1. Certify the book gen.lisp, which introduces a purely generic stobj, gen.
+
+; 2. In a new ACL2 session, certify the book impl.lisp, which introduces the
+; abstract stobj, impl, and contains the event (attach-stobj gen impl), but
+; does not define gen.
+
+; 3. In yet another ACL2 session, certify the "application" book app.lisp,
+; which defines a function foo that takes the stobj gen as an argument.  We
+; assume that app.lisp includes gen.lisp but does not define impl, so that gen
+; can be provided different implementations by including a variety of books
+; (one of which could be impl.lisp) before including app.lisp.
+
+; 4. Evaluate the following sequence of events in a single ACL2 session.
+
+; ; Introduce impl and establish that it is to be attached later to gen:
+; (include-book "impl")
+;
+; ; Introduce gen; optional, since gen.lisp will be included by "app",below:
+; (include-book "gen")
+;
+; ; Include an "application" book, which includes gen.lisp but not impl.lisp:
+; (include-book "app")
+
+; 5. Evaluate a call (foo gen ...).
+
+; The intention is presumably that the evaluation of (foo gen ...) takes
+; advantage of the attachment of impl to gen.  However, this might not happen
+; with a naive implementation.  The reason is that the defun of foo was
+; compiled when app.lisp was certified, at which time the original generic
+; definition of gen was available but not its implementation.  So suppose that
+; foo calls a primitive p of gen.  During certification of gen.lisp, p is a
+; macro in Lisp -- abstract stobj primitives are always macros in raw Lisp --
+; and its calls expand to calls of its generated :exec function, call it p_gen.
+; So in the compiled file for the book app.lisp, the compiled code for foo is
+; based on a call of p_gen as the expansion of each call of p.  No attempt to
+; define gen in terms of impl will change that, since p was expanded away when
+; creating this compiled code.  We had better not use that compiled code!
+; (Normally we would, as per the Essay on Hash Table Support for Compilation.)
+
+; Note that the user-stobj-alist is extended at the time an event is processed,
+; not by loading the compiled file.  So the copy of gen in the user-stobj-alist
+; is based on the :foundation of impl, not on the :foundation of gen.  An
+; attempt to call p_gen on a copy of impl could be disastrous.
+
+; It is not sufficient to fix this problem merely for functions that call a
+; primitive of gen.  The compiler may inline a function called by foo, where
+; that function calls p; so again, the compiled code for foo would be created
+; by expanding a call of p to code based on p_gen.
+
+; The Appendix shows files that provide a sort of simulation of this
+; problem.
+
+; Suppose we change "gen.lisp" to "gen-attached.lisp", to include "impl.lisp"
+; before introducing gen, so that gen has attached implementation impl.  Even
+; then, code in the compiled file for "gen.lisp" whose compilation involves
+; gen's primitives must be ignored, regardless of whether those primitives are
+; defined merely using gen or also taking impl into account.  Now suppose that
+; in a new ACL2 session we evaluate the following sequence of events, where the
+; book "impl2.lisp" defines stobj impl2 followed by event (attach-stobj gen
+; impl2).
+
+; (include-book "impl")
+; (include-book "impl2")
+; (attach-stobj gen impl2)
+; (include-book "gen-attached")
+
+; Then the form (include-book "impl") in "gen-attached.lisp" will be redundant;
+; so impl2, not impl, will be attached to gen.  The compilation of code for the
+; primitives of gen will do macroexpansion without taking into account the
+; attachment of impl2, so we have the same problem as before.
+; 
+; We have seen above that compiled code from books must be ignored when it is
+; based on macroexpanding generic stobj primitives.  Thus, suppose that ACL2 is
+; processing a defun event for a function symbol, foo, whose code thus depends
+; on generic stobj primitive p.  (This includes not just the body, but also the
+; guard; we say more about guards below.)  We want to avoid the precompiled
+; symbol-function for foo, whether foo calls p directly or instead foo invokes
+; a chain of inlined functions ending with a call of p.  Now suppose a
+; function, bar, is introduced later and calls foo.  This problem does not
+; invalidate the precompiled symbol-function for bar, provided foo is declaimed
+; notinline when compiling bar (so that the call of p made by foo is not
+; macroexpanded when compiling bar).
+; 
+; We thus introduce two categories of function symbols that together are
+; intended to include all ACL2 function symbols that should not be called by
+; code obtained from a book's compiled file.  First, we define an "extended
+; generic" function to be a user-defined function symbol whose translated guard
+; or body contains a call of a generic stobj primitive or, recursively, a call
+; of an inlined function -- one whose symbol-name ends in "$INLINE" -- that is
+; an extended generic.  Second, we define an "extended-generic barrier"
+; function to be a user-defined function symbol that is not inlined, whose
+; translated guard or body calls an extended-generic function.  (The
+; restrictions to user-defined functions is actually no restriction at all,
+; because there are no built-in generic stobjs.)
+
+; Add-trip will refuse to use a book's precompiled code for a function that is
+; an extended generic or an extended-generic barrier.  Also, a book's compiled
+; file will declaim notinline each extended-generic barrier introduced by the
+; book directly (not by an included sub-book, as discussed below).
+
+; For each such notinline function, the corresponding *1* function is also
+; declaimed notinline.  It is necessary to do this for *1* functions, if for no
+; other reason than that the *1* function for an extended-generic barrier F can
+; call a stobj primitive called in the guard for F.  Because of that
+; observation and because of mbe and ec-call, we feel justified simply to treat
+; the *1* function for a function F just as we treat F, for purposes of
+; declaiming notinline and for having add-trip avoid precompiled code.  This
+; treatment of *1* functions also has the advantage of simplicity, as opposed
+; to teasing apart cases where we might treat *1* functions differently.
+
+; With that simplicity in mind, we consider all :logic or :exec functions (for
+; mbe, and also for abstract stobj primitives although for those the defun
+; events take care of the :logic functions), and we consider not only bodies
+; but also guards of defun forms, when determining whether a function symbol is
+; an extended generic or an extended-generic barrier.
+
+; We now describe an algorithm, as promised above, for determining extended
+; generics and extended-generic barriers.  Two respective world globals are
+; maintained, ext-gens and ext-gen-barriers.  These are both initially nil and
+; are extended by the events that introduce new function symbols: defun,
+; defstobj, and defabsstobj.  First consider defstobj: it extends those globals
+; by way of the defun events that they generate (and we'll discuss defun last),
+; and that is sufficient (as the raw Lisp code uses only function symbols
+; appearing in those defuns).  Second, consider defabsstobj.  Note that the
+; primitives are macros in raw Lisp.  The two globals are extended according to
+; two cases.  For a generic stobj, each of its primitives is added to ext-gens.
+; Otherwise, the primitives added are those whose :exec function is in
+; ext-gens.  (The *1* functions for the primitives need to be dealt with as
+; well, as discussed earlier.  But defun events for the primitives call their
+; :logic functions and guards, so these defuns will extend the two globals to
+; cover their :logic functions and guards.)  Finally consider a defun event for
+; function F whose guard or body calls a function in ext-gens; then there are
+; two cases.  (We could skip this if F is non-executable, since then the
+; compiled definitions for F and *1*F are fine -- they just cause an error.
+; But we have chosen to keep it simple and not bother with this exception, both
+; for simplicity and in case some day ACL2 provides a way to remove or ignore
+; non-executability, at least for *1*F.)  If F is a user-defined inlined
+; function -- i.e., the symbol-name ends in "$INLINE" -- then F is added to
+; ext-gens.  Otherwise F is added to ext-gen-barriers.
+
+; Let us address what might seem like a hole in the algorithm above.  Suppose
+; that st is a generic stobj that is a field of a concrete stobj, for example
+; as follows.  In the discussion below, the presence or absence of keyword
+; value :inline t makes no difference.
+
+;   (defstobj top1
+;     (st1 :type st))
+;     :inline t ; optional
+;     )
+ 
+; It may seem unfortunate that st1 is in neither ext-gen-barriers nor ext-gen,
+; if one is concerned about compiled calls of st1 made by subsequently defined
+; functions.  However, (st1 top1) is defined to be (svref top1 0) in raw Lisp.
+; Moreover, st1 is never called in ACL2 code except by way of stobj-let, in
+; which case there will be a call of a stobj primitive for st, which thus will
+; be in ext-gens.  Thus it does not matter that st1 is in neither
+; ext-gen-barriers nor ext-gen, because any call of st1 in the body or guard of
+; a subsequent defun will result in marking the function being defined as being
+; in ext-gen or ext-gen-barriers (by virtue of an st primitive).
+
+; We have seen a benefit, above, from the following fact: the use of stobj-let,
+; on an attachable stobj field of a stobj, triggers inclusion in ext-gens or
+; ext-gen-barriers of the function being defined (because of the call of a
+; child stobj primitive).  That fact provides another benefit.  The use of
+; memoize-flush should be based on the congruent stobj representative for the
+; stobj attached to gen, not gen itself.  The call of congruent-stobj-rep-raw
+; in the definition of stobj-let-fn-raw could get the wrong result in raw Lisp
+; code, from a book's compiled file, for a function whose body calls stobj-let.
+; However, that wrong result is not used because that code is skipped, thanks
+; to inclusion of that function in ext-gens or ext-gen-barriers.  See also a
+; comment above the call of congruent-stobj-rep-raw in the definition of
+; stobj-let-fn-raw.
+
+; When the expansion file is written near the end of certification, after pass
+; 2 (hence events local to the book are ignored), each function in
+; ext-gen-barriers that was introduced in that book is declaimed notinline in
+; the expansion file above its definition.  As noted above, don't write those
+; declaims for functions introduced in included sub-books, though we do write
+; them for functions introduced in portcullis commands.  We can ignore
+; sub-books for this purpose because their compiled files take responsibility
+; for containing these declaim forms -- here is why that works out.  Suppose an
+; extended-generic-barrier, foo, is defined in a sub-book and we are in the
+; process of including pre-compiled definitions (i.e., doing the early load of
+; compiled files using hash tables; see the Essay on Hash Table Support for
+; Compilation).  We are relying on that sub-book's notinline declaim form for
+; foo, to avoid using pre-compiled code for foo that was compiled with a
+; primitive for a generic stobj.  A concern could be that the early loading of
+; compiled files is aborted before loading that declaim form.  But then that
+; sub-book's compiled code for foo will also not be loaded, and for that
+; matter, the entire process of early load of compiled files would be aborted
+; at that point.
+
+; When add-trip is processing an ACL2 function symbol F or its *1* function, it
+; will skip hash-table lookup to obtain the symbol-function if F is in ext-gens
+; or ext-gen-barriers.  Note that if F is an abstract stobj primitive, then F
+; is an ACL2 function but F is a raw Lisp macro, so for F we will avoid looking
+; up the macro-function for F, but for *1*F it will still be the
+; symbol-function that is not looked up.
+
+; (Technical detail: Why not take similar care for ACL2 constants and macros?
+; The use of stobj primitives would have to be by way of with-local-stobj in
+; these cases.  However, with-local-stobj is illegal in a defconst form, and it
+; is an error to invoke with-local-stobj during macroexpansion.)
+
+; An induction on the world establishes that no function suffers from the
+; problem identified in this section, of having compiled code that depends on a
+; generic stobj primitive that has been superseded using an :exec functions
+; from an implementation stobj.  Suppose in particular that add-trip is
+; handling a new function symbol F introduced by defun or defstobj that could
+; call a primitive for a generic stobj, the concern being that compiled code
+; for the function is somehow based on the generic (unattached) version of that
+; primitive.  A sequence of calls from the new function to the primitive would
+; clearly need to include a function symbol (possibly the new one itself) in
+; one of the two new world globals, ext-gens or ext-gen-barriers.  So either
+; add-trip would avoid the pre-compiled code for F, or else every such path of
+; calls would go through an existing function declaimed notinline, whose code
+; is correct by the inductive hypothesis.  The argument is similar for
+; defabsstobj.
+
+; When a pre-compiled symbol-function is avoided, the resulting symbol-function
+; might consist of interpreted code, not compiled code, if the Lisp is other
+; than SBCL or CCL.  ACL2 will compile the definition in this case -- the
+; hash-table lookup will be used only to decide whether to compile, according
+; to whether the looked-up function is compiled.  If that compilation turns out
+; to be inconveniently slow for the user, we could avoid it and instead just
+; document that users may want to compile such functions, though we should
+; perhaps then issue a warning or observation when this case is encountered.
+
+; (Remark.  Instead of dealing with this issue by using two world globals,
+; ext-gens and ext-gen-barriers, we could use a new property that could take
+; any of three values: nil, 'extended-generic, or 'extended-generic-barrier.
+; That approach would avoid the risk of slowdown when the two existing globals
+; have values that are very long lists.  On the other hand, repeated property
+; list lookup might well be more expensive in practice.  If we adopt this
+; alternate approach then as an optimization, we may still maintain a world
+; global to indicate whether any such property has been set, so that if not, we
+; can avoid looking at those properties.)
+
+; (Remark. A drawback to this proposal is that once a function symbol is
+; declaimed notinline, Common Lisp provides no way to undo that declaim form
+; other than to declaim the symbol inline.  So if an encapsulate locally
+; includes a book where F is declaimed notinline, and after the encapsulate a
+; different function is defined that also is named F, the new one will also be
+; treated as notinline by the compiler (unless subsequently declaimed inline
+; somehow) during that ACL2 session.  This seems to be a small price to pay,
+; since probably rather few functions are automatically inlined by a compiler,
+; and an ACL2 user who really cares for a function to be inlined can use
+; defun-inline (or directly provide an "$INLINE" suffix).
+
+; (Remark.  The discussion above suggests that add-trip should avoid using a
+; hash table that was created during an early load of a compiled file, for
+; obtaining a symbol-function for a symbol in world globals ext-gens or
+; ext-gen-barriers.  That restriction could be avoided when for a function
+; symbol whose relevant generic stobjs all have no attachments.  But that
+; optimization may add considerable complexity and may not often apply anyhow,
+; so we don't do it.)
+
+; === IV. An Application ===
+
+; This section shows how the proposal above can solve the original problem.
+; Thus, it supports including a single certified book ("x86 book") that
+; introduces the x86 abstract stobj, but with a choice of executable memory
+; model for each ACL2 session -- efficiently and without recertifying the x86
+; book.
+
+; First let's review the current x86 stobj.  It looks as follows (as of
+; mid-August 2024).
+
+; (DEFABSSTOBJ X86
+;  :FOUNDATION X86$C
+;  ...
+;  (MEMI :LOGIC MEMI$A :EXEC READ-MEM$C)
+;  ...)
+
+; Here's its foundation.
+
+; (DEFSTOBJ X86$C
+;  ...
+;  (MEM$C :TYPE BIGMEM::MEM)
+;  ...)
+
+; And here is the memory model, realized as an abstract stobj that is the type
+; of mem$c as noted just above.
+
+; (DEFABSSTOBJ BIGMEM::MEM
+;  :FOUNDATION BIGMEM::MEM$C
+;  ...
+;  :EXPORTS
+;  ((BIGMEM::READ-MEM
+;           :LOGIC BIGMEM::READ-MEM$A
+;           :EXEC BIGMEM::READ-MEM$C
+;           :CORRESPONDENCE BIGMEM::READ-MEM{CORRESPONDENCE}
+;           :GUARD-THM BIGMEM::READ-MEM{GUARD-THM})
+;   (BIGMEM::WRITE-MEM
+;           :LOGIC BIGMEM::WRITE-MEM$A
+;           :EXEC BIGMEM::WRITE-MEM$C
+;           :CORRESPONDENCE BIGMEM::WRITE-MEM{CORRESPONDENCE}
+;           :GUARD-THM BIGMEM::WRITE-MEM{GUARD-THM})))
+
+; Here is the foundation for the abstract stobj just above.
+
+; (DEFSTOBJ BIGMEM::MEM$C
+;   (BIGMEM::LEVEL1 :TYPE (ARRAY BIGMEM::L1 (4194304))
+;                   :RESIZABLE NIL)
+;   :INLINE T
+;   :NON-MEMOIZABLE T)
+
+; For the revised x86 stobj we would modify bigmem::mem to be a generic stobj.
+; We also would make it non-global since we don't plan to use a global copy --
+; it will only be instantiated as a part of the x86 stobj.  So in (DEFABSSTOBJ
+; BIGMEM::MEM ...), we would add keyword values :ATTACHABLE T and
+; :NON-EXECUTABLE T.
+
+; We can view the resulting bigmem::mem as the default memory model for the x86
+; stobj.  If we want a different memory model, say mem2, we can first include a
+; book that contains the event
+; (DEFABSSTOBJ MEM2 ...)
+; where mem2 has the same logical skeleton as bigmem::mem, followed by the
+; event
+; (ATTACH-STOBJ BIGMEM::MEM MEM2).
+
+; Of course, by appropriate use of the keyword value :non-executable t for
+; defabsstobj together with add-global-stobj, we can avoid allocating memory
+; until we need it.
+
+; === Appendix: More about Including Books Without Compiled Files ===
+
+; Here are the files promised by Section III.  The last, script.lsp, explains
+; how to use the two certifiable books shown above it, absstobj-simple.lisp and
+; foo.lisp, to illustrate the issue.  The first of these is a simpler version
+; of community book demos/defabsstobj-example-1.lisp.
+
+; The idea here is for a book, absstobj-simple.lisp, to introduce an abstract
+; stobj, st, with an export, misc, whose :exec function causes an error.  After
+; certifying that book, we might wish to include it in an environment where the
+; :exec function of misc does not cause an error, in analogy to including a
+; book with an implementation stobj before including the book with the
+; corresponding abstract stobj (whose role is played by st).  Below, it is
+; shown that this doesn't work: the error still in an application book
+; (foo.lisp) even after modifying the :exec function to avoid causing an error,
+; unless the application book is included with :load-compiled-file nil.
+
+; ---------- absstobj-simple.lisp ----------
+
+; (in-package "ACL2")
+; 
+; (defstobj st$c
+;   (misc$c :initially 0))
+; 
+; (defun st$ap (x)
+;   (declare (xargs :guard t))
+;   (and (true-listp x)
+;        (equal (len x) 1)))
+; 
+; (defun misc$a (st$a)
+;   (declare (xargs :guard (st$ap st$a)))
+;   (nth 0 st$a))
+; 
+; (defun misc$c-er$inline (st$c)
+;   (declare (xargs :stobjs st$c))
+;   (prog2$ (er hard? 'misc$c-er$inline "Illegal misc access!")
+;           (misc$c st$c)))
+; 
+; (defun update-misc$a (v st$a)
+;   (declare (xargs :guard (st$ap st$a)))
+;   (update-nth 0 v st$a))
+; 
+; (defun st$corr (st$c st$a)
+;   (declare (xargs :stobjs st$c :verify-guards nil))
+;   (and (st$cp st$c)
+;        (st$ap st$a)
+;        (equal (misc$c st$c) (misc$a st$a))))
+; 
+; (defun-nx create-st$a ()
+;   (declare (xargs :guard t))
+;   (list (nth 0 (create-st$c)) ; or: initial value of misc$c, i.e., 0
+;         ))
+; 
+; (DEFTHM CREATE-ST{CORRESPONDENCE}
+;   (ST$CORR (CREATE-ST$C) (CREATE-ST$A))
+;   :RULE-CLASSES NIL)
+; 
+; (DEFTHM CREATE-ST{PRESERVED}
+;   (ST$AP (CREATE-ST$A))
+;   :RULE-CLASSES NIL)
+; 
+; (DEFTHM MISC{CORRESPONDENCE}
+;   (IMPLIES (AND (ST$CORR ST$C ST)
+;                 (ST$AP ST))
+;            (EQUAL (misc$c-er$inline ST$C)
+;                   (MISC$A ST)))
+;   :RULE-CLASSES NIL)
+; 
+; (DEFTHM UPDATE-MISC{CORRESPONDENCE}
+;   (IMPLIES (AND (ST$CORR ST$C ST)
+;                 (ST$AP ST))
+;            (ST$CORR (UPDATE-MISC$C V ST$C)
+;                     (UPDATE-MISC$A V ST)))
+;   :RULE-CLASSES NIL)
+; 
+; (DEFTHM UPDATE-MISC{PRESERVED}
+;   (IMPLIES (ST$AP ST)
+;            (ST$AP (UPDATE-MISC$A V ST)))
+;   :RULE-CLASSES NIL)
+; 
+; (defabsstobj st
+;   :foundation st$c
+;   :recognizer (stp :logic st$ap :exec st$cp)
+;   :creator (create-st :logic create-st$a :exec create-st$c
+;                       :correspondence create-st{correspondence}
+;                       :preserved create-st{preserved})
+;   :corr-fn st$corr
+;   :exports ((misc :logic misc$a
+;                   :exec misc$c-er$inline
+;                   :correspondence misc{correspondence})
+;             (update-misc :logic update-misc$a
+;                          :exec update-misc$c
+;                          :correspondence update-misc{correspondence}
+;                          :preserved update-misc{preserved})))
+
+; ---------- foo.lisp ----------
+
+; (in-package "ACL2")
+; 
+; (include-book "absstobj-simple")
+; 
+; (defun foo (st)
+;   (declare (xargs :stobjs st))
+;   (misc st))
+
+; ---------- script.lsp ----------
+
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ;;; The set-up
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; 
+; ; In a fresh session (see above for contents of absstobj-simple.lisp):
+; (certify-book "absstobj-simple")
+; 
+; ; In another fresh session (see above for contents of foo.lisp):
+; (certify-book "foo")
+; 
+; ; Note that absstobj-simple.lisp defines an abstract stobj with an
+; ; export whose :exec is an inlined function, as follows (thanks to the
+; ; "$INLINE$ suffix), which always causes an error.
+; 
+; #|
+; (defun misc$c-er$inline (st$c)
+;   (declare (xargs :stobjs st$c))
+;   (prog2$ (er hard? 'misc$c-er$inline "Illegal misc access!")
+;           (misc$c st$c)))
+; |#
+; 
+; ; This is in analogy to the errors caused by invoking an export of a
+; ; purely generic stobj (if one could even invoke that export -- not
+; ; actually possible since that stobj cannot even be created!).
+; 
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ;;; Illustration of the problem
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; 
+; ; Start a fresh ACL2 session.
+; 
+; (include-book "foo")
+; 
+; ; Error, as expected:
+; 
+; (foo st)
+; 
+; ; Now let's simulate what would happen if we were to include the
+; ; generic stobj book after providing an implementation.  So, we are
+; ; giving a different definition to the export function called by foo,
+; ; but we see below that this makes no difference since that export was
+; ; expanded away during compilation of foo.
+; 
+; (set-ld-redefinition-action '(:doit . :overwrite) state)
+; 
+; (defun misc$c-er$inline (st$c)
+;   (declare (xargs :stobjs st$c))
+;   (misc$c st$c))
+; 
+; ; Unfortunately, still an error:
+; (foo st)
+; 
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ;;; Better illustration of the problem
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; 
+; ; Start a fresh ACL2 session.
+; 
+; ; This time we simulate the problem a bit more closely, by waiting
+; ; till after redefinition before including foo.lisp.  But that doesn't
+; ; solve the problem either.
+; 
+; (include-book "absstobj-simple")
+; 
+; (set-ld-redefinition-action '(:doit . :overwrite) state)
+; 
+; (defun misc$c-er$inline (st$c)
+;   (declare (xargs :stobjs st$c))
+;   (misc$c st$c))
+; 
+; (set-ld-redefinition-action nil state)
+; 
+; (include-book "foo")
+; 
+; ; Still an error:
+; (foo st)
+; 
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ;;; Solution: Load the application book without compiled file
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; 
+; ; Note that we are not proposing that the user avoid loading a
+; ; compiled file.  The point here is just to show that if ACL2 avoids
+; ; loading pre-compiled code, that avoids the problem.
+; 
+; ; Start a fresh ACL2 session.
+; 
+; (include-book "absstobj-simple")
+; 
+; (set-ld-redefinition-action '(:doit . :overwrite) state)
+; 
+; (defun misc$c-er$inline (st$c)
+;   (declare (xargs :stobjs st$c))
+;   (misc$c st$c))
+; 
+; (set-ld-redefinition-action nil state)
+; 
+; ; Notice the change here from the previous attempt: we are not loading
+; ; the compiled file, so the application function (here, simulated by
+; ; foo) is defined (and compiled) after the implementation has been
+; ; attached to the generic stobj (here, simulated by redefinition).
+; 
+; (include-book "foo" :load-compiled-file nil)
+; 
+; ; No error -- hurray!
+; 
+; (foo st)
+; 
+; --------------------
+;
+; End of Essay on Attachable Stobjs.
+
+  `(with-output
+     :off (event summary)
+     (table attach-stobj-table ',gen ',impl)))
+
+#-acl2-loop-only
+(defmacro attach-stobj (gen impl)
+  (declare (ignore gen impl))
+  nil)
+
 (defun chk-ld-pre-eval-filter (val ctx state)
   (cond ((or (member-eq val '(:all :query :illegal-state))
              (and (symbolp val)

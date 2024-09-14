@@ -95,7 +95,10 @@
             :stmt (expr-stmt (my-simpadd0-block-item-list expr.items))
             :tycompat (make-expr-tycompat
                         :type1 (my-simpadd0-tyname expr.type1)
-                        :type2 (my-simpadd0-tyname expr.type2)))))
+                        :type2 (my-simpadd0-tyname expr.type2))
+            :offsetof (make-expr-offsetof
+                        :type (my-simpadd0-tyname expr.type)
+                        :member (my-simpadd0-member-designor expr.member)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

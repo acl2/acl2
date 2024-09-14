@@ -4894,7 +4894,7 @@
    (SET::UNION 2 :SYSTEM . "std/osets/top")
    (DEPGRAPH::TRANSDEPS-DIRECT-FOR-NODES :SYSTEM . "centaur/depgraph/transdeps")
    (OMAP::DELETE* :SYSTEM
-                  . "kestrel/utilities/omaps/core"))
+                  . "std/omaps/core"))
   ((JUSTIFICATION (X)
                   (NIL O-P . O<)
                   ((ACL2-COUNT X) IF MV-LIST RETURN-LAST))
@@ -5065,7 +5065,7 @@
      (O< (ACL2-COUNT (OMAP::TAIL OMAP::NEW))
          (ACL2-COUNT OMAP::NEW))))
    (OMAP::UPDATE* 2 :SYSTEM
-                  . "kestrel/utilities/omaps/core"))
+                  . "std/omaps/core"))
   ((JUSTIFICATION (VL2014::X)
                   (NIL O-P . O<)
                   ((ACL2-COUNT VL2014::X)

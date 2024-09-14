@@ -1533,7 +1533,14 @@
       "As a GCC extension, we include calls of
        the built-in function @('__builtin_types_compatible_p').
        This is not a regular function,
-       because its arguments are types names, not expressions."))
+       because its arguments are types names, not expressions.")
+     (xdoc::p
+      "As a GCC extension, we include calls of
+       the built-in function @('__builtin_offsetof').
+       This is not a regular function,
+       because its first argument is a type name, not an expression.
+       The second argument is a member designator,
+       which is a restricted form of expression."))
     (:ident ((unwrap ident)))
     (:const ((unwrap const)))
     (:string ((literals stringlit-list)))
@@ -1585,6 +1592,8 @@
     (:stmt ((items block-item-list)))
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
+    (:offsetof ((type tyname)
+                (member member-designor)))
     :pred exprp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1678,6 +1687,25 @@
     :true-listp t
     :elementp-of-nil nil
     :pred genassoc-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum member-designor
+    :parents (abstract-syntax exprs/decls/stmts)
+    :short "Fixtype of member designators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "These are part of calls of @('__builtin_offsetof'),
+       which is a GCC extension;
+       see @(tsee expr)."))
+    (:ident ((unwrap ident)))
+    (:dot ((member member-designor)
+           (name ident)))
+    (:sub ((member member-designor)
+           (index expr)))
+    :pred member-designorp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

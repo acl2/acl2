@@ -173,6 +173,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-member-designor
+  :short "An irrelevant member designator."
+  :type member-designorp
+  :body (member-designor-ident (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-type-spec
   :short "An irrelevant type specifier."
   :type type-specp
@@ -482,7 +489,8 @@
                     :memberp
                     :complit
                     :stmt
-                    :tycompat))
+                    :tycompat
+                    :offsetof))
        t)
   :hooks (:fix))
 
@@ -516,7 +524,8 @@
                     :sizeof-ambig
                     :alignof
                     :stmt
-                    :tycompat))
+                    :tycompat
+                    :offsetof))
        t)
   :hooks (:fix))
 
@@ -627,7 +636,8 @@
    :cast/sub-ambig (expr-priority-add)
    :cast/and-ambig (expr-priority-and)
    :stmt (expr-priority-primary)
-   :tycompat (expr-priority-primary))
+   :tycompat (expr-priority-primary)
+   :offsetof (expr-priority-primary))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

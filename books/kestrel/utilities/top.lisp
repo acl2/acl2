@@ -1,10 +1,10 @@
 ; Kestrel Utilities
 ;
-; Copyright (C) 2020-2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020-2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,7 +55,6 @@
 (include-book "minimize-ruler-extenders")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
-(include-book "omaps/with-fixing-theorems")
 (include-book "orelse")
 (include-book "oset-theorems")
 (include-book "osets")

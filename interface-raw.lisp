@@ -4780,18 +4780,19 @@
 ;      Associates each add-trip symbol with its relevant value if any, else to
 ;      *hcomp-fake-value*
 
-; So, how is a relevant value assigned to an add-trip symbol when including a
-; certified book?  If the symbol is qualified, then its value is obtained from
-; the relevant *hcomp-xxx-ht* hash table.  Otherwise add-trip proceeds without
-; the help of that hash table.  However, if the symbol is assigned a
-; reclassifying value (*hcomp-fake-value* . val) in the hash table, then even
-; though add-trip does not use that value to assign a relevant value, the
-; symbol is reassigned to val in the hash table; so if and when subsequently
-; this *1* symbol is assigned a :logic-mode value by add-trip it will be val,
-; i.e., the symbol will be treated as qualified.  That is appropriate because
-; if add-trip assigns a new value -- and assuming that redefinition is off,
-; which it is unless there is a trust tag -- then the subsequent :logic mode
-; definition will be ready for this saved value.
+; A relevant value is assigned to an add-trip symbol as follows, when including
+; a certified book -- but see the Essay on Attachable Stobjs for an exception.
+; If the symbol is qualified, then its value is obtained from the relevant
+; *hcomp-xxx-ht* hash table.  Otherwise add-trip proceeds without the help of
+; that hash table.  However, if the symbol is assigned a reclassifying value
+; (*hcomp-fake-value* . val) in the hash table, then even though add-trip does
+; not use that value to assign a relevant value, the symbol is reassigned to
+; val in the hash table; so if and when subsequently this *1* symbol is
+; assigned a :logic-mode value by add-trip it will be val, i.e., the symbol
+; will be treated as qualified.  That is appropriate because if add-trip
+; assigns a new value -- and assuming that redefinition is off, which it is
+; unless there is a trust tag -- then the subsequent :logic mode definition
+; will be ready for this saved value.
 
 ; If raw-mode is entered, then loading the compiled file can assign relevant
 ; values to symbols other than add-trip symbols.  (By the way, we are not
@@ -4842,14 +4843,12 @@
 
 ; We next consider the writing of the expansion file by certify-book.  This
 ; process has three main steps.  The first main step is storing relevant values
-; in the *hcomp-xxx-ht* hash tables both based on the certification world and
-; during the process-embedded-events call during the include-book pass of
-; certify-book.  The second main step then determines the value of each
-; *hcomp-xxx-alist* for the setq forms to be written to the expansion file.
-; The third main step actually writes forms to the expansion file.  We now
-; consider these in turn.  Note that we do not access the *hcomp-xxx-alist*
-; variables; their part in writing an expansion file is only to occur
-; syntactically in the setq forms.
+; in the *hcomp-xxx-ht* hash tables.  The second main step then determines the
+; value of each *hcomp-xxx-alist* for the setq forms to be written to the
+; expansion file.  The third main step actually writes forms to the expansion
+; file.  We now consider these in turn.  Note that we do not access the
+; *hcomp-xxx-alist* variables; their part in writing an expansion file is only
+; to occur syntactically in the setq forms.
 
 ; The first main step populates each *hcomp-xxx-ht*.  We begin by let-binding
 ; each *hcomp-xxx-ht* to its own eq hash table.  Then we populate these hash
@@ -4934,7 +4933,8 @@
 ;   let ACL2 know to accept subsequent corresponding defpkg forms.
 
 ; - Setq forms for the *hcomp-xxx-alist* variables as described above
-;   (hcomp-init)
+
+; - (hcomp-init)
 
 ; - Declaim forms (if any)
 
@@ -5855,30 +5855,93 @@
                      (defparameter (symbol-value name))
                      (otherwise    (macro-function name)))))))))
 
-(defun install-for-add-trip-include-book (type name def reclassifyingp)
+(defun install-for-add-trip-include-book (type name name0 def reclassifyingp
+                                               wrld)
 
-; Def is nil if no evaluation of a definition is desired, in which case we
-; return true when the definition exists in the appropriate hash table.
-; Otherwise def is a definition starting with defun, defconst, defmacro, or
-; defabbrev.
+; This function is called only when *inside-include-book-fn* is t, i.e., a book
+; is being included and that is not happening simply as the include-book phase
+; near the end of certify-book.
 
-  (let ((ht (hcomp-ht-from-type type 'install-for-add-trip-include-book)))
+; Name is the name of a symbol being defined.  Normally name0 is name, but
+; if name is a *1* function symbol then name0 is the corresponding function
+; symbol of the Common Lisp definition to be installed.
+
+; An attempt is made to install a definition for name from the suitable
+; hash table, but only when that is appropriate as explained below.
+
+; Wrld is nil unless we are installing on behalf of a defun(s), defstobj, or
+; defabsstobj event in which case it is non-nil.  (Remark.  In those cases,
+; wrld is needed for the values of world globals ext-gens and
+; ext-gen-barriers.  See the Essay on Attachable Stobjs.)
+
+; If def is non-nil then it is a definition starting with defun, defconst,
+; defmacro, or defabbrev.  In this case, if no definition is installed from a
+; hash table, then def is evaluated, and the return value is irrelevant.
+
+; Otherwise (when def is nil), the return value is t if a definition is
+; installed from a hash table.  Otherwise the return value is nil, with one
+; exception: if it is intended that a future definition is to be not only
+; installed but also compiled, then 'to-compile is returned.
+
+  (let ((ht (hcomp-ht-from-type type 'install-for-add-trip-include-book))
+        (return-val nil))
     (when (null ht) ; e.g., including uncertified book
       (return-from install-for-add-trip-include-book
-        (when def (eval def))))
-    (multiple-value-bind (val present-p)
-        (gethash name ht)
-      (cond
-       (present-p
-        (assert$
-         (not (eq val *hcomp-fake-value*))
-         (cond
-          ((reclassifying-value-p val)
-           (assert$
-            (eq type 'defun) ; presumably a *1* symbol
-            (let ((fixed-val (unmake-reclassifying-value val)))
-              (setf (gethash name ht) fixed-val)
-              (cond (reclassifyingp
+        (and def (eval def))))
+    (multiple-value-bind
+     (val present-p)
+     (gethash name ht)
+     (when present-p
+
+; Convert present-p to t, nil, or one of the other possible return values as
+; commented above.  Ultimately we return that value of present-p.
+
+       (setq return-val
+             (let ((ext-gens (and wrld
+                                  (global-val 'ext-gens wrld)))
+                   ext-gen-barriers)
+               (cond ((not (or (eq type 'defun)
+                               (and (eq type 'defmacro)
+
+; We are only concerned here about defmacro when it is generated for
+; defabsstobj.
+
+                                    wrld)))
+                      t)
+                     ((and ext-gens
+                           (member-eq name0 ext-gens))
+                      (cond ((and (eq type 'defun)
+                                  (compiled-function-p val))
+
+; We want to compile the function definition if its hash-table value is
+; compiled (hence, it came from loading compiled file rather than from loading
+; an expansion file) but we are not using that hash-table value because of
+; dependence on a generic stobj primitive.  (See the Essay on Attachable
+; Stobjs.)  There seems to be no way to check whether a macro's code is
+; compiled.
+
+                             'to-compile)
+                            (t nil)))
+                     ((and (setq ext-gen-barriers
+                                 (and ext-gens ; note: otherwise wrld is nil
+                                      (global-val 'ext-gen-barriers wrld)))
+                           (member-eq name0 ext-gen-barriers))
+                      (assert (eq type 'defun))
+                      (if (compiled-function-p val)
+                          'to-compile
+                        nil))
+                     (t t)))))
+     (cond
+      ((eq return-val t) ; could be replaced below
+       (assert$
+        (not (eq val *hcomp-fake-value*))
+        (cond
+         ((reclassifying-value-p val)
+          (assert$
+           (eq type 'defun) ; presumably a *1* symbol
+           (let ((fixed-val (unmake-reclassifying-value val)))
+             (setf (gethash name ht) fixed-val)
+             (cond (reclassifyingp
 
 ; We are converting the definition of some function, F, from :program mode to
 ; :logic mode.  Since reclassifying-value-p holds of val, the book (including
@@ -5896,21 +5959,27 @@
 ; it seems safest to go ahead and keep only the true value in the hash table
 ; henceforth.
 
-                     (setf (symbol-function name) fixed-val)
-                     t)
-                    (t (when def (eval def)))))))
-          (t (case type
-               (defun
-                 (setf (symbol-function name) val))
-               (defparameter
-                 (setf (symbol-value name) val))
-               (otherwise
-                (assert$ (member-eq type '(defabbrev defmacro))
-                         (setf (macro-function name) val))))
-             t))))
-       (t (when def (eval def)))))))
+                    (setf (symbol-function name) fixed-val))
+                   (t (cond (def (eval def))
+                            (t (setq return-val nil))))))))
+         (t (case type
+              (defun
+                  (setf (symbol-function name) val))
+              (defparameter
+                (setf (symbol-value name) val))
+              (otherwise
+               (assert$ (member-eq type '(defabbrev defmacro))
+                        (setf (macro-function name) val))))
+            t))))
+      (t ; Hash-table lookup either fails or is not used.
+       (when def (eval def))))
+     return-val)))
 
 (defun install-for-add-trip (def reclassifyingp evalp)
+
+; This function is called for a cltl-command property whose car is defconst,
+; defmacro, or attachment -- in particular, not defuns, defstobj, or
+; defabsstobj.
 
 ; For background on how we use hash tables to support early loading of compiled
 ; files by include-book, see the Essay on Hash Table Support for Compilation.
@@ -5920,13 +5989,19 @@
 
   (cond
    ((eq *inside-include-book-fn* t) ; in include-book-fn, not certify-book-fn
-    (install-for-add-trip-include-book (car def) (cadr def) def
-                                       reclassifyingp))
+    (install-for-add-trip-include-book (car def) (cadr def) (cadr def) def
+                                       reclassifyingp
+
+; World=nil for defconst, defmacro, and attachment cltl-command properties (see
+; comment above).
+
+                                       nil))
    ((hcomp-build-p)
     (install-for-add-trip-hcomp-build def reclassifyingp evalp))
    (t (eval def))))
 
-(defun install-defs-for-add-trip (defs reclassifying-p wrld declaim-p evalp)
+(defun install-defs-for-add-trip (defs reclassifying-p wrld declaim-p evalp
+                                   &aux (hcomp-build-p (hcomp-build-p)))
 
 ; Defs is a list of definitions, each of which is a call of defun, defabbrev,
 ; or defmacro, or else of the form (ONEIFY-CLTL-CODE defun-mode def
@@ -5943,17 +6018,16 @@
 ; include-book-fn but not during certify-book-fn, i.e., when
 ; *inside-include-book-fn* is t.
 
-; Evalp is only relevant when (hcomp-build),in which case it is passed to
-; install-for-add-trip-hcomp-build.
-
-; We start with declaiming of inline and notinline.
+; See the Essay on Attachable Stobjs for discussion relevant to the use of
+; world global 'ext-gen-barriers for declaiming functions notinline.
 
   (loop for tail on defs
         do
         (let* ((def (car tail))
                (oneify-p (eq (car def) 'oneify-cltl-code))
                (def0 (if oneify-p (caddr def) (cdr def)))
-               (name (symbol-name (car def0))))
+               (name (car def0))
+               (sname (symbol-name name)))
           (cond ((equal (caddr def0)
                         '(DECLARE (XARGS :NON-EXECUTABLE :PROGRAM)))
 
@@ -5968,79 +6042,83 @@
 
                  (let ((form (list 'notinline
                                    (if oneify-p
-                                       (*1*-symbol (car def0))
-                                     (car def0)))))
+                                       (*1*-symbol name)
+                                     name))))
                    (proclaim form)
                    (push (list 'declaim form) *declaim-list*)))
                 (oneify-p nil)
                 ((terminal-substringp *inline-suffix*
-                                      name
+                                      sname
                                       *inline-suffix-len-minus-1*
-                                      (1- (length name)))
-                 (let ((form (list 'inline (car def0))))
+                                      (1- (length sname)))
+                 (let ((form (list 'inline name)))
                    (proclaim form)
                    (push (list 'declaim form) *declaim-list*)))
                 ((terminal-substringp *notinline-suffix*
-                                      name
+                                      sname
                                       *notinline-suffix-len-minus-1*
-                                      (1- (length name)))
-                 (let ((form (list 'notinline (car def0))))
+                                      (1- (length sname)))
+                 (let ((form (list 'notinline name)))
                    (proclaim form)
                    (push (list 'declaim form) *declaim-list*))))))
   (loop for tail on defs
+        with include-book-path = (global-val 'include-book-path wrld)
+        with hcomp-build-declaim-p = (and hcomp-build-p
+                                          (not include-book-path))
+        with ext-gen-barriers = (and (or evalp
+                                         hcomp-build-declaim-p) ; optimization
+                                     (global-val 'ext-gen-barriers wrld))
         do
         (let* ((def (car tail))
                (oneify-p (eq (car def) 'oneify-cltl-code))
-               (def0 (if oneify-p (caddr def) (cdr def))))
+               (def0 (if oneify-p (caddr def) (cdr def)))
+               (name (car def0))
+               (flg nil))
           (cond ((and (eq *inside-include-book-fn* t)
                       (cond
                        (oneify-p
-                        (install-for-add-trip-include-book
-                         'defun
-                         (*1*-symbol (car def0))
-                         nil
-                         reclassifying-p))
+                        (setq flg
+                              (install-for-add-trip-include-book
+                               'defun
+                               (*1*-symbol name)
+                               name
+                               nil
+                               reclassifying-p
+                               wrld)))
                        #+sbcl
-                       ((and (not (eq *inside-include-book-fn*
-
-; We don't bother with the special treatment below if we are simply certifying
-; a book, both because we don't expect to do much in the resulting world and
-; because inlining (the issue here, as described in the comment below) seems to
-; be handled without this special treatment.  Note that by avoiding this
-; special case when *inside-include-book-fn* is 'hcomp-build, we avoid
-; duplicating the declaiming of inline for this function done in the
-; (hcomp-build-p) case below.
-
-                                      'hcomp-build))
-                             (not (member-eq (car def)
+                       ((and (not (member-eq (car def)
                                              '(defmacro defabbrev)))
-                             (let ((name (symbol-name (car def0))))
+                             (let ((sname (symbol-name name)))
                                (terminal-substringp *inline-suffix*
-                                                    name
+                                                    sname
                                                     *inline-suffix-len-minus-1*
-                                                    (1- (length name)))))
+                                                    (1- (length sname)))))
 
-; We are including a book (and not merely on behalf of certify-book, as
-; explained above).  Apparently SBCL needs the source code for a function in
-; order for it to be inlined.  (This isn't surprising, perhaps; perhaps more
-; surprising is that CCL does not seem to have this requirement.)
-; See for example community book books/system/optimize-check.lisp, where
-; the form (disassemble 'g4) fails to exhibit inlined code without the special
-; treatment we provide here.  That special treatment is to avoid obtaining the
-; definition from the hash table, instead letting SBCL fall through to the
-; (eval (car tail)) below.  If we decide to give this special treatment to
-; other host Lisps, we should consider installing the compiled definition from
-; the hash table; but SBCL always compiles its definitions, so that seems
-; unnecessary other than to save compilation time, which presumably is
-; relatively small for inlined functions, and at any rate, appears to be
-; unavoidable.
+; We are including a book (and not merely on behalf of certify-book).
+; Apparently SBCL needs the source code for a function in order for it to be
+; inlined.  (This isn't surprising, perhaps; perhaps more surprising is that
+; CCL does not seem to have this requirement.)  See for example community book
+; books/system/optimize-check.lisp, where the form (disassemble 'g4) fails to
+; exhibit inlined code without the special treatment we provide here.  This
+; special treatment avoids obtaining the definition from the hash table,
+; instead letting SBCL fall through to the (eval (car tail)) below.
+
+; Note that we aren't bothering with this special treatment for inlined
+; functions if we are simply certifying a book.  That's both because we don't
+; expect to do much in the resulting world and because inlining seems to be
+; handled without this special treatment.  Note that declaiming of inline for
+; this function is done in the (hcomp-build-p) case further below.
 
                         nil)
-                       (t (install-for-add-trip-include-book
-                           (car def)
-                           (cadr def)
-                           nil
-                           reclassifying-p))))
+                       (t (setq flg
+                                (install-for-add-trip-include-book
+                                 (car def)
+                                 (cadr def)
+                                 (cadr def)
+                                 nil
+                                 reclassifying-p
+                                 wrld))))
+                      (eq flg t))
                  (setf (car tail) nil))
                 (t (let (form)
                      (cond
@@ -6060,22 +6138,41 @@
 
 ;                        (when declaim-p
 ;                          (setq form
-;                                (make-defun-declare-form (car def0)
-;                                                         *1*-def)))
+;                                (make-defun-declare-form name *1*-def)))
                          ))
                       ((and declaim-p
                             (not (member-eq (car def)
                                             '(defmacro defabbrev))))
                        (setq form (make-defun-declare-form (cadr def) def))))
-                     (when (and form (hcomp-build-p))
+                     #-(or ccl sbcl)
+                     (when (eq flg 'to-compile)
+                       (setf (car tail)
+                             (list 'compile (car tail))))
+                     (when (and form hcomp-build-p)
                        (push form *declaim-list*))
+                     (when (and ext-gen-barriers ; optimization
+
+; We may be adding a notinline declaim form; see the Essay on Attachable
+; Stobjs.  We only do so for defun forms, hence the next test is a suitable
+; optimization.
+
+                                (or oneify-p
+                                    (eq (car def) 'defun))
+                                (member-eq name ext-gen-barriers))
+                       (let ((form0 `(declaim (notinline ,(if oneify-p
+                                                              (*1*-symbol name)
+                                                            name)))))
+                         (when evalp
+                           (eval form0))
+                         (when hcomp-build-declaim-p
+                           (push form0 *declaim-list*))))
                      (when evalp
                        (eval form)))))))
   (cond ((eq *inside-include-book-fn* t)
          (loop for tail on defs
                when (car tail)
                do (eval (car tail))))
-        ((hcomp-build-p)
+        (hcomp-build-p
          (loop for def in defs
                do
                (install-for-add-trip-hcomp-build def reclassifying-p evalp)))
@@ -6111,7 +6208,7 @@
 ; Cltl-cmds is a list of cltl-command values, each the cddr of some triple in
 ; the world.  We are certifying a book, and we have performed any rolling back
 ; of the world that will be done and installed the resulting world.  Here we
-; populate the *hcomp-xxx-ht* hash-tables and *declaim-list* based on that
+; populate the *hcomp-xxx-ht* hash tables and *declaim-list* based on that
 ; world, much as we do when processing events in the book after the rollback
 ; (if there is a rollback).
 
@@ -6262,6 +6359,9 @@
 
 ; Warning: If you change this function, consider making corresponding changes
 ; to hcomp-build-from-state-raw.
+
+; This function is evaluated only for side effect; i.e., the return value is
+; irrelevant.
 
 ; Add-trip is the function that moves a triple, (symb key .  val) from
 ; a property list world into the von Neumann space of Common Lisp.
@@ -6669,7 +6769,7 @@
                                   ((eq (car def) 'oneify-cltl-code)
                                    (car (caddr def)))
                                   (t (error "Implementation error: ~
-                                              unexpected form in add-trip, ~x0"
+                                             unexpected form in add-trip, ~x0"
                                             def)))))
 
 ; CMUCL versions 18e and 19e cannot seem to compile macros at the top level.
@@ -9987,8 +10087,8 @@ such that feature :acl2-loop-only is true."))
 (defun stack-access-defeat-hook-cert-ht ()
 
 ; This function either returns nil or, if ccl::*stack-access-winners* is bound
-; to a hash-table, a hash-table whose keys are names of currently-known
-; "winners".  Each such name is the name of a function FN that is a key of
+; to a hash table, one whose keys are names of currently-known "winners".  Each
+; such name is the name of a function FN that is a key of
 ; ccl::*stack-access-winners* such that FN is the current symbol-function of
 ; FN.
 
@@ -10013,7 +10113,7 @@ such that feature :acl2-loop-only is true."))
 (defun stack-access-defeat-hook-cert (fn)
 
 ; This function assumes that *stack-access-defeat-hook-cert-ht* is bound to a
-; hash-table of names of "winners"; see function
+; hash table of names of "winners"; see function
 ; stack-access-defeat-hook-cert-ht.
 
   (and (symbolp fn)

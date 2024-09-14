@@ -7813,6 +7813,13 @@ lognot)
 
 (add-svex-simplify-rule not-equal-to-0-for-bitp)
 
+(def-rp-rule not-equal-to-0-for-booleanp
+  (implies (booleanp x)
+           (and (equal (if (equal x nil) nil t)
+                       (equal x t))
+                (equal (if (equal x t) nil t)
+                       (equal x nil)))))
+
 (def-rp-rule 4vec-branch-of-4vec-==-when-bitp
   (implies (bitp x)
            (and (equal (sv::4vec-?* (4vec-== 1 x) then else)
@@ -8949,3 +8956,25 @@ lognot)
                               4VEC-BITAND)
                              ()))))
   (svl::add-svex-simplify-rule 4vec-bitand-of-4vec-?-with-shared-var))
+
+
+(progn
+  (rp::def-rp-rule :disabled-for-acl2 t
+    sv::4vec-wildeq-to-4vec-==
+    (implies (and (integerp x)
+                  (integerp y))
+             (equal (sv::4vec-wildeq x y)
+                    (sv::4vec-== x y)))
+    :hints (("goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::4vec-wildeq
+                              sv::4vec-==
+                              sv::3vec-==
+                              sv::4vec-bitxor
+                              sv::3vec-bitxor
+                              sv::2vec
+                              sv::3vec-bitnot
+                              sv::3vec-bitor
+                              sv::3vec-reduction-and)
+                             ()))))
+  (svl::add-svex-simplify-rule sv::4vec-wildeq-to-4vec-==))

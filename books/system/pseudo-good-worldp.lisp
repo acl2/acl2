@@ -1865,6 +1865,8 @@
                             (string-listp (strip-cdrs val))))
     (PROJECTS/APPLY/BASE-INCLUDEDP (booleanp val))
     (EVALUATOR-CHECK-INPUTS (pseudo-evaluator-check-inputs-p val))
+    (EXT-GENS (symbol-listp val)) ; inline functions and macro names
+    (EXT-GEN-barriers (pseudo-function-symbol-listp val nil))
     (otherwise nil)))
 
 ;-----------------------------------------------------------------

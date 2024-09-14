@@ -330,8 +330,12 @@
     (collect-like-terms-to-alist rest (insert-term-in-alist term (fix coeff) tca)))
    ((binary-+ (:? term) (:? rest))
     (collect-like-terms-to-alist rest (insert-term-in-alist term 1 tca)))
+   ((unary-- (binary-* (quote (:? coeff)) (:? term)))
+    (insert-term-in-alist term (- (fix coeff)) tca))
    ((unary-- (:? term))
     (insert-term-in-alist term -1 tca))
+   ((binary-* (quote (:? coeff)) (:? term))
+    (insert-term-in-alist term (fix coeff) tca))
    (& (insert-term-in-alist x 1 tca)))
   ///
 
@@ -362,7 +366,7 @@
     (like-terms-alist-term tca t))
   ///
   
-  (defthmd collect-like-terms
+  (defthmd  collect-like-terms
     (equal (collect-ev x a)
            (collect-ev (collect-like-terms-meta x) a))
     :hints (("goal" :cases ((acl2-numberp (collect-ev x a)))))

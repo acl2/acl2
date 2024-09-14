@@ -52,7 +52,7 @@
 (defvar *hcomp-macro-alist* nil)
 (defconstant *hcomp-fake-value* 'acl2_invisible::hcomp-fake-value)
 (defvar *hcomp-book-ht*
-; Note that the keys of this hash-table are full-book-names.
+; Note that the keys of this hash table are full-book-names.
   nil)
 (defvar *hcomp-const-restore-ht* nil)
 (defvar *hcomp-fn-macro-restore-ht*
@@ -1040,6 +1040,8 @@
                     (rewrite-quoted-constant-rules nil)
                     (project-dir-alist ,project-dir-alist)
                     (projects/apply/base-includedp nil)
+                    (ext-gens nil)
+                    (ext-gen-barriers nil)
                     )))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
@@ -20115,7 +20117,7 @@
                                      (t
 
 ; This case includes the case of stobj-tablep.  Note that a stobj-table's
-; underlying hash-table doesn't use stobj names as keys (see
+; underlying hash table doesn't use stobj names as keys (see
 ; current-stobj-gensym) and the keys are all symbols anyhow.  So even though k
 ; should be a symbol, there is no need to complicate the guard with that
 ; requirement.
@@ -21447,7 +21449,7 @@
 ; fields with elements of stobj type.  We arrange this in the following ways.
 ; (1) We speak of a "child" of a stobj for a given field, which is the field
 ; value itself in the scalar case but otherwise is a value in that field's
-; array or hash-table.  (2) We speak of two "isomorphic" field values in the
+; array or hash table.  (2) We speak of two "isomorphic" field values in the
 ; non-scalar case, to mean that they have the same array length in the array
 ; case, and they have the same keys in the hash-table case.  (3) We speak of
 ; "comparable" child values for two values of a given field, which are the two
@@ -21801,7 +21803,8 @@
                               foundation
                               recognizer creator corr-fn exports
                               protect-default
-                              congruent-to non-executable missing-only)
+                              congruent-to non-executable attachable
+                              missing-only)
   (declare (xargs :guard (and (symbolp name)
                               (booleanp protect-default))))
   (list 'defabsstobj-fn
@@ -21814,6 +21817,7 @@
         (list 'quote protect-default)
         (list 'quote congruent-to)
         (list 'quote non-executable)
+        (list 'quote attachable)
         (list 'quote missing-only)
         'state
         (list 'quote event-form)))
@@ -21834,7 +21838,8 @@
                                              foundation
                                              recognizer creator
                                              corr-fn exports protect-default
-                                             congruent-to non-executable)
+                                             congruent-to non-executable
+                                             attachable)
   (declare (xargs :guard (symbolp name)))
   (let ((ctx (list 'quote (msg "( DEFABSSTOBJ-MISSING-EVENTS ~x0 ...)" name))))
     (list 'defabsstobj-fn1
@@ -21847,10 +21852,12 @@
           (list 'quote protect-default)
           (list 'quote congruent-to)
           (list 'quote non-executable)
+          (list 'quote attachable)
           (list 'quote t) ; missing-only
           ctx
           'state
-          (list 'quote event-form))))
+          (list 'quote event-form)
+          nil nil nil)))
 
 (defun redundant-defabsstobjp (name event-form wrld)
   (and (getpropc name 'stobj nil wrld)
@@ -22154,7 +22161,115 @@
   (and (member-eq st$c (stobjs-out name wrld))
        (eq t (fn-stobj-updates-p st$c name wrld))))
 
-(defun translate-absstobj-field (st st$c field type protect-default
+(defun key-position-from-end-eq (key alist)
+  (declare (xargs :guard (and (symbolp key)
+                              (alistp alist))))
+  (cond ((endp alist) nil)
+        ((eq key (caar alist))
+         (length (cdr alist)))
+        (t (key-position-from-end-eq key (cdr alist)))))
+
+(defun absstobj-logical-skeleton-difference-msg (old new st-old st-new see-doc
+                                                     old-all new-all)
+
+; Old and new are lists of absstobj-info records, corresponding to abstract
+; stobjs st-old and st-new, respectively.  We check that the :absstobj-tuples
+; fields of respective members of old and new represent the same logical
+; skeleton, as defined in the the Essay on Attachable Stobjs.  If so, we return
+; nil; otherwise we return a message explaing their difference.
+
+  (cond ((endp old)
+         (cond
+          ((endp new) nil)
+          (t (msg "The proposed abstract stobj, ~x0, has additional exports ~
+                   not in the existing abstract stobj, ~x1.  ~@2"
+                  st-new st-old see-doc))))
+        ((endp new)
+         (msg "The existing abstract stobj, ~x0, has additional exports not ~
+               in the proposed abstract stobj, ~x1.  ~@2"
+              st-old st-new see-doc))
+        (t (let* ((old1 (car old))
+                  (new1 (car new))
+                  (logic-old (cadr old1))
+                  (logic-new (cadr new1))
+                  (updater-old (cdddr old1))
+                  (updater-new (cdddr new1)))
+             (cond ((and (equal logic-old logic-new)
+                         (or (and (null updater-old)
+                                  (null updater-new))
+                             (and updater-old
+                                  updater-new
+                                  (eql (key-position-from-end-eq updater-old
+                                                                 old-all)
+                                       (key-position-from-end-eq updater-new
+                                                                 new-all)))))
+                    (absstobj-logical-skeleton-difference-msg
+                     (cdr old) (cdr new) st-old st-new see-doc
+                     old-all new-all))
+                   (t
+                    (msg "The existing abstract stobj, ~x0, has an export ~
+                          with name ~x1 that should correspond to the export ~
+                          with name ~x2 of the proposed abstract stobj, ~x3.  ~
+                          However, these exports have non-corresponding ~x4 ~
+                          fields: ~x5 for ~x1 and ~x6 for ~x2.  ~@7"
+                         st-old
+                         (car old1)
+                         (car new1)
+                         st-new
+                         (if (equal logic-old logic-new)
+                             :updater
+                           :logic)
+                         (if (equal logic-old logic-new)
+                             updater-old
+                           logic-old)
+                         (if (equal logic-old logic-new)
+                             updater-new
+                           logic-new)
+                         see-doc)))))))
+
+(defun chk-absstobj-attachment (st-name impl-name new-tuples ctx wrld see-doc
+                                        state)
+  (assert$
+   impl-name
+   (pprogn
+    (observation ctx
+                 "Implementation stobj ~x0 is to be attached to proposed ~
+                  attachable stobj ~x1."
+                 impl-name st-name)
+    (let ((absstobj-info-at
+           (getpropc impl-name 'absstobj-info nil wrld)))
+      (cond
+       ((null absstobj-info-at)
+        (er soft ctx
+            "Although the event ~x0 was previously executed, the name ~x1 is ~
+             not the name of an abstract stobj.  This should only happen if ~
+             that name was redefined.  The proposed defabsstobj event for ~
+             name ~x2 cannot be admitted since it specifies, with :ATTACHABLE ~
+             T and that previous attach-stobj event, that a previous ~
+             defabsstobj event for name ~x1 should serve as an attachment."
+            `(attach-stobj ,st-name ,impl-name)
+            impl-name
+            st-name))
+       (t
+        (let* ((old-tuples
+                (access absstobj-info absstobj-info-at :absstobj-tuples))
+               (msg (absstobj-logical-skeleton-difference-msg
+                     old-tuples new-tuples impl-name st-name see-doc
+                     old-tuples new-tuples)))
+          (cond
+           (msg (er soft ctx
+                    "Illegal abstract stobj attachment for ~x0: ~x1.  ~@2"
+                    st-name impl-name msg))
+           (t (value nil))))))))))
+
+(defun attached-stobj (st wrld top)
+  (let ((st2 (cdr (assoc-eq st (table-alist 'attach-stobj-table wrld)))))
+    (cond (st2 (attached-stobj st2 wrld nil))
+          (top nil)
+          (t st))))
+
+(defun translate-absstobj-field (st st-new absstobj-tuple
+                                    st$c field type protect-default
                                     ld-skip-proofsp see-doc ctx wrld)
 
 ; Field is a member of the :exports field of a defabsstobj event if type is
@@ -22170,9 +22285,21 @@
 ; :correspondence, :preserved, and :guard formulas.  For that, see
 ; chk-defabsstobj-method.
 
+; Normally st-new and absstobj-tuple are nil.  St-new is non-nil when we are
+; completing the processing of a generic abstract stobj event that has an
+; attached implementation, in which case st-new is the name of the new stobj
+; and st is the old stobj to which st-new is to be attached.  (See the Essay on
+; Attachable Stobjs.)  In that case, absstobj-tuple (see make-absstobj-tuples)
+; corresponds to field, where field is a member of the :exports of the
+; defabsstobj event for the old stobj, st, but with :updater values adjusted to
+; be for the new stobj, st-new.  We could probably skip many of the checks here
+; when st-new is non-nil, but it seems harmless to leave them.
+
   (let* ((field0 field)
          (field (if (atom field) (list field) field))
          (name (car field))
+         (actual-name ; name of the new stobj, being introduced by defabsstobj
+          (or (car absstobj-tuple) name))
          (keyword-lst (cdr field)))
     (cond
      ((not (and (symbolp name)
@@ -22211,7 +22338,7 @@
               (cond
                ((null wrld) ; shortcut for raw Lisp definition of defabsstobj
                 (value-cmp (make absstobj-method
-                                 :NAME name
+                                 :NAME actual-name
                                  :LOGIC logic
                                  :EXEC exec
                                  :PROTECT protect)))
@@ -22263,15 +22390,17 @@
                 (er-cmp ctx
                         "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] ~
                          for defabsstobj field ~x2, appears capable of ~
-                         modifying the foundational stobj, ~x3, non-atomically; ~
-                         yet :PROTECT T was not specified for this field.  ~@4"
+                         modifying the foundational stobj, ~x3, ~
+                         non-atomically; yet :PROTECT T was not specified for ~
+                         this field.  ~@4"
                         exec
                         (if exec-p 0 1)
                         name st$c see-doc))
                (t
                 (mv-let
                   (guard-thm guard-thm-p)
-                  (let ((guard-thm (cadr (assoc-keyword :GUARD-THM keyword-lst))))
+                  (let ((guard-thm (cadr (assoc-keyword :GUARD-THM
+                                                        keyword-lst))))
                     (cond (guard-thm (mv guard-thm t))
                           (t (mv (absstobj-name name :GUARD-THM) nil))))
                   (let* ((exec-formals (formals exec wrld))
@@ -22287,14 +22416,16 @@
                          (updater-tail (assoc-keyword :UPDATER keyword-lst)))
                     (mv-let
                       (correspondence correspondence-p)
-                      (let ((corr (cadr (assoc-keyword :CORRESPONDENCE keyword-lst))))
+                      (let ((corr (cadr (assoc-keyword :CORRESPONDENCE
+                                                       keyword-lst))))
                         (cond (corr (mv corr t))
                               (t (mv (and correspondence-required
                                           (absstobj-name name :CORRESPONDENCE))
                                      nil))))
                       (mv-let
                         (preserved preserved-p)
-                        (let ((pres (cadr (assoc-keyword :PRESERVED keyword-lst))))
+                        (let ((pres (cadr (assoc-keyword :PRESERVED
+                                                         keyword-lst))))
                           (cond (pres (mv pres t))
                                 (t (mv (and preserved-required
                                             (absstobj-name name :PRESERVED))
@@ -22302,7 +22433,11 @@
                         (cond
                          ((or (and (eq type :RECOGNIZER)
                                    (or correspondence-p preserved-p guard-thm-p
-                                       updater-tail (not logic-p) (not exec-p)))
+                                       updater-tail
+
+; We expect that expand-recognizer already put in the :logic and :exec fields.
+
+                                       (not logic-p) (not exec-p)))
                               (and (eq type :CREATOR)
                                    (or updater-tail guard-thm-p)))
                           (er-cmp ctx
@@ -22354,7 +22489,8 @@
                                     (if lp :LOGIC :EXEC)
                                     field0 fn see-doc)))
                          ((and (eq type :RECOGNIZER)
-                               (not (eq exec (get-stobj-recognizer st$c wrld))))
+                               (not (eq exec
+                                        (get-stobj-recognizer st$c wrld))))
 
 ; We use the foundational recognizer in the definition of the recognizer
 ; returned by defabsstobj-raw-defs.
@@ -22375,25 +22511,31 @@
                                    :EXEC of ~x1, which does not return ~x2.  ~
                                    ~@3"
                                   preserved exec st$c see-doc))
-                         ((member-eq st exec-formals)
+                         ((member-eq (or st-new st) exec-formals)
 
-; We form the formals of name by replacing st$c by st in exec-formals.  If st
-; is already a formal parameter of exec-formals then this would create a
+; We form the formals of actual-name by replacing st$c by st in exec-formals.
+; If st is already a formal parameter of exec-formals then this would create a
 ; duplicate, provided st$c is in exec-formals, as we expect it to be in that
 ; case (since we are presumably not looking at a creator).  The ensuing defun
 ; would catch this duplication, but it seems most robust and friendly to cause
 ; a clear error here.  This check could probably be eliminated by doing
 ; suitable renaming; but that could be awkward, and it seems quite unlikely
 ; that anyone will need such an enhancement.  In the worst case one can of
-; course define a wrapper for the :EXEC function that avoids the new stobj name,
-; st.
+; course define a wrapper for the :EXEC function that avoids the new stobj
+; name, st.
 
                           (er-cmp ctx
                                   "We do not allow the use of the defabsstobj ~
                                    name, ~x0, in the formals of the :EXEC ~
                                    function of a field, in particular, the ~
-                                   :EXEC function ~x1 for field ~x2.  ~@3"
-                                  st exec field0 see-doc))
+                                   :EXEC function ~x1 for field ~x2~#3~[ from ~
+                                   the attached stobj, ~x4~/~].  ~@5"
+                                  (or st-new st)
+                                  exec
+                                  field0
+                                  (if st-new 0 1)
+                                  st-new                                  
+                                  see-doc))
                          ((and (eq type :CREATOR)
                                (not (and (null stobjs-in-logic)
                                          (null stobjs-in-exec)
@@ -22484,7 +22626,9 @@
                          (t
                           (let* ((formals (if (eq type :CREATOR)
                                               nil
-                                            (update-nth posn-exec st exec-formals)))
+                                            (update-nth posn-exec
+                                                        (or st-new st)
+                                                        exec-formals)))
                                  (guard-pre (subcor-var (formals logic wrld)
                                                         formals
                                                         (guard logic nil wrld))))
@@ -22495,17 +22639,26 @@
 ; error.  Without it, defabsstobj-axiomatic-defs can declare st$c as a stobj
 ; even though st$c is not among the formals.
 
+; This error should not occur if st-new is non-nil, i.e., when we are
+; attaching an implementation stobj to a generic stobj, since this check passed
+; when the attached implementation stobj was admitted.  But just in case this
+; check somehow does fail, the error message uses actual-name and st-new so
+; tha the message is about the proposed, (attached) generic stobj.
+
                               (er-cmp ctx
                                       "the :LOGIC function ~x0 for export ~x1 ~
                                        declares as a stobj the formal ~
                                        parameter, ~x2.  This is illegal ~
                                        because ~x2 is the foundational stobj ~
                                        for the proposed abstract stobj, ~x3."
-                                      logic name st$c st))
+                                      logic
+                                      (or actual-name name)
+                                      st$c
+                                      (or st-new st)))
                              (t
                               (value-cmp
                                (make absstobj-method
-                                     :NAME name
+                                     :NAME actual-name
                                      :FORMALS formals
                                      :GUARD-PRE guard-pre
                                      :GUARD-POST nil ; to be filled in later
@@ -22515,7 +22668,9 @@
                                      :STOBJS-IN-EXEC stobjs-in-exec
                                      :STOBJS-IN-LOGIC stobjs-in-logic
                                      :STOBJS-OUT
-                                     (substitute st st$c stobjs-out-exec)
+                                     (substitute (or st-new st)
+                                                 st$c
+                                                 stobjs-out-exec)
                                      :LOGIC logic
                                      :EXEC exec
                                      :CORRESPONDENCE correspondence
@@ -22535,7 +22690,7 @@
   (cond ((endp fields) (mv nil nil))
         (t (er-let*-cmp
             ((method (translate-absstobj-field
-                      st st$c
+                      st nil nil st$c
                       (car fields)
                       (car types)
                       protect-default
@@ -22887,7 +23042,7 @@
    (t
     (mv-let
      (erp method)
-     (translate-absstobj-field st st$c
+     (translate-absstobj-field st nil nil st$c
                                (car fields)
                                (car types)
                                protect-default
@@ -23048,25 +23203,27 @@
 (defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator
                                         corr-fn exports protect-default
                                         congruent-to non-executable
-                                        see-doc ctx wrld state event-form)
+                                        see-doc ctx wrld state)
+
+; Warning: If you change this function, change
+; defabsstobj-methods-for-attachment; see comments in that function's
+; definition.
 
 ; We return an error triple such that when there is no error, the value
-; component is either 'redundant or is a tuple of the form (missing methods
-; . wrld1).  Missing is always nil if we are including a book; otherwise,
-; missing is a list of tuples (name event . old-event), where event must be
-; proved and old-event is an existing event of the same name that
-; (unfortunately) differs from event, if such exists, and otherwise old-event
-; is nil.  Methods is a list of absstobj-method records corresponding to the
-; recognizer, creator, and exports.  Wrld1 is an extension of the given world,
-; wrld, that deals with redefinition.
+; component is a tuple of the form (missing methods . wrld1).  Missing is
+; always nil if we are including a book; otherwise, missing is a list of tuples
+; (name event . old-event), where event must be proved and old-event is an
+; existing event of the same name that (unfortunately) differs from event, if
+; such exists, and otherwise old-event is nil.  Methods is a list of
+; absstobj-method records corresponding to the recognizer, creator, and
+; exports.  Wrld1 is an extension of the given world, wrld, that deals with
+; redefinition.
 
   (cond
    ((atom exports)
     (er soft ctx
         "~x0 requires at least one export.  ~@1"
         'defabsstobj see-doc))
-   ((redundant-defabsstobjp name event-form wrld)
-    (value 'redundant))
    ((not (stobjp st$c t wrld))
     (er soft ctx
         "The symbol ~x0 is not the name of a stobj in the current ACL2 world. ~
@@ -23280,19 +23437,20 @@
    (defabsstobj-raw-defs-rec (cddr methods))))
 
 (defun expand-recognizer (st-name recognizer see-doc ctx state)
-  (cond ((null recognizer)
-         (value (list (absstobj-name st-name :RECOGNIZER)
-                      :LOGIC (absstobj-name st-name :RECOGNIZER-LOGIC)
-                      :EXEC (absstobj-name st-name :RECOGNIZER-EXEC))))
-        ((and (consp recognizer)
-              (keyword-value-listp (cdr recognizer))
-              (assoc-keyword :LOGIC (cdr recognizer))
-              (assoc-keyword :EXEC (cdr recognizer))
-              (null (cddddr (cdr recognizer))))
-         (value recognizer))
-        (t (er soft ctx
-               "Illegal :RECOGNIZER field.  ~@0"
-               see-doc))))
+  (let ((recognizer (or recognizer (absstobj-name st-name :RECOGNIZER))))
+    (cond ((symbolp recognizer)
+           (value (list recognizer
+                        :LOGIC (absstobj-name st-name :RECOGNIZER-LOGIC)
+                        :EXEC (absstobj-name st-name :RECOGNIZER-EXEC))))
+          ((and (consp recognizer)
+                (keyword-value-listp (cdr recognizer))
+                (assoc-keyword :LOGIC (cdr recognizer))
+                (assoc-keyword :EXEC (cdr recognizer))
+                (null (cddddr (cdr recognizer))))
+           (value recognizer))
+          (t (er soft ctx
+                 "Illegal :RECOGNIZER field.  ~@0"
+                 see-doc)))))
 
 (defun put-absstobjs-in-and-outs (st methods wrld)
   (cond ((endp methods) wrld)
@@ -23429,6 +23587,10 @@
               (t (value nil)))))))
 
 (defun make-absstobj-tuples (methods)
+
+; Warning: If you change this, look for places that access absstobj tuples,
+; including function absstobj-logical-skeleton-difference-msg.
+
   (cond ((endp methods) nil)
         (t (cons (list* (access absstobj-method (car methods) :name)
                         (access absstobj-method (car methods) :logic)
@@ -23453,14 +23615,6 @@
                        (putprop (access absstobj-method method :NAME)
                                 'invariant-risk invariant-risk wrld))
                       (t wrld))))))))
-
-(defun key-position-from-end-eq (key alist)
-  (declare (xargs :guard (and (symbolp key)
-                              (alistp alist))))
-  (cond ((endp alist) nil)
-        ((eq key (caar alist))
-         (length (cdr alist)))
-        (t (key-position-from-end-eq key (cdr alist)))))
 
 (defun congruent-absstobj-tuples-rec (tuples1 tuples2 all-tuples1 all-tuples2)
   (cond
@@ -23515,10 +23669,182 @@
 
   (congruent-absstobj-tuples-rec tuples1 tuples2 tuples1 tuples2))
 
+(defun defabsstobj-methods-for-attachment1 (st st-new absstobj-tuples
+                                               st$c fields
+                                               types protect-default
+                                               see-doc ctx wrld
+                                               state methods)
+
+; This variant of chk-acceptable-defabsstobj1 supports
+; defabsstobj-methods-for-attachment.  See defabsstobj-methods-for-attachment.
+
+  (cond
+   ((endp fields)
+    (value (list* nil (reverse methods) wrld)))
+   (t
+    (mv-let
+     (erp method)
+     (translate-absstobj-field st st-new (car absstobj-tuples)
+                               st$c
+                               (car fields)
+                               (car types)
+                               protect-default
+                               (ld-skip-proofsp state)
+                               see-doc ctx wrld)
+     (cond
+      (erp ; erp is ctx, method is a msg
+       (er soft erp "~@0" method))
+      (t
+       (defabsstobj-methods-for-attachment1
+        st st-new (cdr absstobj-tuples)
+        st$c
+        (cdr fields)
+        (cdr types)
+        protect-default
+        see-doc ctx wrld state
+        (cons method methods))))))))
+
+(defun defabsstobj-methods-for-attachment (name name-new absstobj-tuples
+                                                st$c recognizer
+                                                creator exports
+                                                protect-default
+                                                see-doc ctx wrld state)
+
+; Warning: If you change this function, change chk-acceptable-defabsstobj; see
+; comments below.
+
+; This is analogous to chk-acceptable-defabsstobj, but in support of the case
+; that defabsstobj-fn1 is being called recursively to attach an implementation
+; stobj to an attachable stobj.  See the Essay on Attachable Stobjs.  Name is
+; the name of the implementation stobj and name-new is the name of the
+; attachable stobj.  The remaining parameters through protect-default are from
+; the implementation stobj.  As with chk-acceptable-defabsstobj, we return an
+; error triple whose non-error value is a tuple of the form (missing methods
+; . wrld1).  In this case, however, missing is always nil and methods are
+; suitable for the attached stobj.
+
+; The code here has thus been adapted from the code for
+; chk-acceptable-defabsstobj, but with many checks omitted since the
+; implementation stobj (named name) was previously admitted successfully.
+
+  (defabsstobj-methods-for-attachment1
+    name name-new absstobj-tuples
+    st$c
+
+; Keep the recognizer and creator first and second in our call to
+; chk-acceptable-defabsstobj1.  See the comment about
+; chk-acceptable-defabsstobj1 in defabsstobj-fn1, and also note that the first
+; two methods must be for the recognizer and creator in defabsstobj-raw-defs,
+; which is called in defabsstobj-fn1, where it consumes the methods we return
+; here.
+
+    (list* recognizer creator exports)
+    (list* :RECOGNIZER :CREATOR nil)
+    protect-default see-doc ctx
+    wrld state nil))
+
+(defun defabsstobj-update-ext-gens-1 (methods ext-gens acc)
+  (cond ((endp methods) acc)
+        (t (let ((method (car methods)))
+             (defabsstobj-update-ext-gens-1
+               (cdr methods)
+               ext-gens
+               (if (member-eq (access absstobj-method method :exec)
+                              ext-gens)
+                   (cons (access absstobj-method method :name)
+                         acc)
+                 acc))))))
+
+(defun defabsstobj-update-ext-gens (ext-gens doit names methods wrld)
+
+; See the Essay on Attachable Stobjs for relevant background.  If doit is true
+; then we are to add all of the given names to the ext-gens world global.
+; Otherwise, we add all of the given names whose :logic or :exec function is in
+; ext-gens.
+
+  (cond
+   (doit (global-set 'ext-gens
+                     (append? names ext-gens)
+                     wrld))
+   ((null ext-gens) wrld) ; optimization
+   (t (global-set? 'ext-gens
+                   (defabsstobj-update-ext-gens-1 methods ext-gens ext-gens)
+                   wrld
+                   ext-gens))))
+
+(defun fix-export-updaters1 (old old-to-new)
+  (cond
+   ((endp old)
+    nil)
+   (t
+    (let* ((field-old (car old)) 
+           (updater-old (cadr (assoc-keyword :updater (cdr field-old)))))
+      (cond
+       (updater-old
+        (mv-let (pre post)
+          (split-keyword-alist :updater (cdr field-old))
+          (cons (cons (car field-old)
+                      (append pre
+                              (list* :updater
+                                     (cdr (assoc-eq (cadr post) old-to-new))
+                                     (cddr post))))
+                (fix-export-updaters1 (cdr old) old-to-new))))
+       (t
+        (cons-with-hint field-old
+                        (fix-export-updaters1 (cdr old) old-to-new)
+                        (cdr old))))))))
+
+(defun export-names (exports)
+  (cond ((endp exports) nil)
+        (t (cons (if (symbolp (car exports))
+                     (car exports)
+                   (caar exports))
+                 (export-names (cdr exports))))))
+
+(defun fix-export-updaters (old new)
+
+; Old and new are :export values for old and new defabsstobj events, say for
+; names st-old and st-new, where st-old has been checked as acceptable to
+; attach to st-new.  In particular, old and new suitably correspond; in
+; particular, they have the same length and their :updater fields suitably
+; correspond.  We return the result of modifying the :updater fields of members
+; of old according to corresponding names of new.
+
+  (let ((old-to-new (pairlis$ (export-names old) (export-names new))))
+    (fix-export-updaters1 old old-to-new)))
+
 (defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
                                 protect-default congruent-to non-executable
-                                missing-only ctx state event-form)
+                                attachable missing-only ctx state event-form
+                                discriminator
+                                raw-init-form-new
+                                absstobj-tuples-new)
+
+; When this function is called at the top level, i.e., by defabsstobj-fn1,
+; discriminator is nil.  This function calls itself tail-recursively when
+; discriminator is nil (i.e., we are at the top level) and there is an attached
+; stobj, i.e., attachable is t and the current world provides an attached stobj
+; (by way of attach-stobj-table).  In that case, the recursive call installs an
+; abstract stobj suitably based on that attachment, but with suitable
+; non-executable and other arguments based on the attached implementation
+; stobj; see the recursive call below.  For relevant background, see the Essay
+; on Attachable Stobjs.
+
+; It may be tempting to use make-event, instead of using a recursive call as
+; described above.  Thus, a defabsstobj with a non-nil :attachable keyword
+; would macroexpand to a make-event whose expansion is a defabsstobj with
+; :attachable nil that updates the given event to reflect the attachment.
+; (Alternatively, perhaps the update would be to make the attached stobj be the
+; value of :attachable, and defabsstobj-fn1 could do the work of reflecting the
+; attachment.)  NO -- DON'T USE MAKE-EVENT!  The expansion when purely generic
+; at certification time isn't suitable when later we include the book after
+; attaching an implementation, which would be unfortunate since we don't redo
+; the expansion of a make-event at include-book time.
+
   (let* ((wrld0 (w state))
+         (st-name-new (if discriminator
+                          (cadr event-form)
+                        st-name))
          (see-doc "See :DOC defabsstobj.")
          (st$c (or st$c
                    (absstobj-name st-name :C)))
@@ -23528,190 +23854,229 @@
                            (car creator)
                          creator))
          (corr-fn (or corr-fn
-                      (absstobj-name st-name :CORR-FN))))
-    (er-let* ((recognizer (expand-recognizer st-name recognizer see-doc ctx
-                                             state))
-              (st$ap (value (cadr (assoc-keyword :logic (cdr recognizer)))))
-              (missing/methods/wrld1
-               (chk-acceptable-defabsstobj
-                st-name st$c recognizer st$ap creator corr-fn exports
-                protect-default congruent-to non-executable see-doc ctx wrld0
-                state event-form)))
-      (cond
-       ((eq missing/methods/wrld1 'redundant)
-        (stop-redundant-event ctx state
-                              :name st-name))
-       ((and missing-only
-             (not congruent-to)) ; else do check before returning missing
-        (value (car missing/methods/wrld1)))
-       (t
+                      (absstobj-name st-name :CORR-FN)))
+         (ext-gens-wrld0 (global-val 'ext-gens wrld0)))
+    (cond
+     ((and (not discriminator)
+           (redundant-defabsstobjp st-name event-form wrld0))
+      (value 'redundant))
+     (t
+      (er-let* ((recognizer0
+
+; Since the call of chk-acceptable-defabsstobj requires st$ap, we need to
+; expand the recognizer here (rather than letting it getting expanded by
+; chk-acceptable-defabsstobj).  We really only need the :logic recognizer
+; (st$ap) here, not the :exec recognizer, but we might as well do the full
+; expansion of the recognizer function spec.
+
+                 (expand-recognizer st-name recognizer see-doc ctx state))
+                (recognizer
+                 (value (if discriminator ; recursive case for attachment
+                            (cons st-name-new (cdr recognizer0))
+                          recognizer0)))
+                (st$ap (value (cadr (assoc-keyword :logic (cdr recognizer)))))
+                (missing/methods/wrld1
+                 (if discriminator ; recursive case for attachment
+                     (defabsstobj-methods-for-attachment
+                      st-name st-name-new absstobj-tuples-new
+                      st$c recognizer creator exports protect-default see-doc
+                      ctx wrld0 state)
+                   (chk-acceptable-defabsstobj
+                    st-name st$c recognizer st$ap creator corr-fn exports
+                    protect-default congruent-to non-executable see-doc ctx
+                    wrld0 state))))
         (let* ((missing (car missing/methods/wrld1))
                (methods0 (cadr missing/methods/wrld1))
-               (old-absstobj-info
+               (absstobj-info-cong
 
-; Note that if old-absstobj-info is non-nil, then because of the congruent-to
+; Note that if absstobj-info-cong is non-nil, then because of the congruent-to
 ; check in chk-acceptable-defabsstobj, congruent-to is a symbol and the getprop
 ; below returns a non-nil value (which must then be an absstobj-info record).
 ; See the comment about this in chk-acceptable-defabsstobj.
 
                 (and congruent-to
                      (getpropc congruent-to 'absstobj-info nil wrld0)))
-               (absstobj-tuples (make-absstobj-tuples methods0)))
-          (cond
-           ((and congruent-to
-                 (not (equal st$c
-                             (access absstobj-info old-absstobj-info
-                                     :st$c))))
-            (er soft ctx
-                "The value provided for :congruent-to, ~x0, is illegal, ~
-                 because the foundational stobj associated with ~x0 is ~x1, ~
-                 while the foundational stobj proposed for ~x2 is ~x3.  ~@4"
-                congruent-to
-                (access absstobj-info old-absstobj-info :st$c)
-                st-name
-                st$c
-                see-doc))
-           ((and congruent-to
-                 (not (congruent-absstobj-tuples
-                       absstobj-tuples
-                       (access absstobj-info old-absstobj-info
-                               :absstobj-tuples))))
-            (er soft ctx
-                "The value provided for :congruent-to, ~x0, is illegal.  ACL2 ~
-                 requires that the :LOGIC, :EXEC, and :UPDATER functions ~
-                 match up perfectly (in the same order), for stobj primitives ~
-                 introduced by the proposed new abstract stobj, ~x1 and the ~
-                 existing stobj to which it is supposed to be congruent, ~x0. ~
-                 Here are the lists of tuples (:LOGIC :EXEC . :UPDATER) for ~
-                 each.~|~%For ~x1 (proposed):~|~Y24~%For ~x0:~|~Y34~%~|~@5"
-                congruent-to
-                st-name
-                (strip-cdrs absstobj-tuples)
-                (strip-cdrs (access absstobj-info old-absstobj-info
-                                    :absstobj-tuples))
-                nil
-                see-doc))
-           (t
-            (mv-let (msg accessors updaters)
-              (chk-defabsstobj-updaters st$c methods0 wrld0)
-              (cond
-               (msg (er soft ctx "~@0  ~@1" msg see-doc))
-               (missing-only (value missing))
-               (t
-                (er-progn
-                 (cond
-                  ((or (null missing)
-                       (member-eq (ld-skip-proofsp state)
-                                  '(include-book include-book-with-locals)))
-                   (value nil))
-                  ((ld-skip-proofsp state)
-                   (pprogn (warning$ ctx "defabsstobj"
-                                     "The following events would have to be ~
-                                      admitted, if not for proofs currently ~
-                                      being skipped (see :DOC ~
-                                      ld-skip-proofsp), before the given ~
-                                      defabsstobj event.  ~@0~|~@1"
-                                     see-doc
-                                     (defabsstobj-missing-msg missing wrld0))
-                           (value nil)))
-                  (t (er soft ctx
-                         "The following events must be admitted before the ~
-                          given defabsstobj event is admitted.  ~@0~|~@1"
-                         see-doc
-                         (defabsstobj-missing-msg missing wrld0))))
-                 (enforce-redundancy
-                  event-form ctx wrld0
-                  (let* ((methods (update-guard-post
-                                   (defabsstobj-logic-subst methods0)
-                                   methods0))
-                         (wrld1 (cddr missing/methods/wrld1))
-                         (ax-def-lst (defabsstobj-axiomatic-defs methods))
-                         (raw-def-lst
+               (absstobj-tuples (make-absstobj-tuples methods0))
+               (att-name (and (eq attachable t)
+                              (assert$
+                               (null discriminator) ; not recursive call
+                               (attached-stobj st-name wrld0 t)))))
+          (er-progn
+            (if att-name ; top-level call, not for attached stobj
+                (assert$
+                 (null discriminator)
+                 (chk-absstobj-attachment st-name att-name absstobj-tuples ctx
+                                          wrld0 see-doc state))
+              (value nil))
+
+; The first three COND clauses just below, all related to missing-only or
+; congruent-to, can be skipped in the recursive case (for an attached stobj).
+; But it seems harmless to include them for that case as well.
+
+           (cond
+            ((and missing-only
+                  (not congruent-to)) ; else do check before returning missing
+             (value (car missing/methods/wrld1)))
+            ((and congruent-to
+                  (not att-name) ; else check congruent-to in recursive call
+                  (not (equal st$c
+                              (access absstobj-info absstobj-info-cong
+                                      :st$c))))
+             (er soft ctx
+                 "The value provided for :congruent-to, ~x0, is illegal, ~
+                  because the foundational stobj associated with ~x0 is ~x1, ~
+                  while the foundational stobj proposed for ~x2 is ~x3.  ~@4"
+                 congruent-to
+                 (access absstobj-info absstobj-info-cong :st$c)
+                 st-name
+                 st$c
+                 see-doc))
+            ((and congruent-to
+                  (not att-name) ; else check congruent-to in recursive call
+                  (not (congruent-absstobj-tuples
+                        absstobj-tuples
+                        (access absstobj-info absstobj-info-cong
+                                :absstobj-tuples))))
+             (er soft ctx
+                 "The value provided for :congruent-to, ~x0, is illegal.  ~
+                  ACL2 requires that the :LOGIC, :EXEC, and :UPDATER ~
+                  functions match up perfectly (in the same order), for stobj ~
+                  primitives introduced by the proposed new abstract stobj, ~
+                  ~x1 and the existing stobj to which it is supposed to be ~
+                  congruent, ~x0. Here are the lists of tuples (:LOGIC :EXEC ~
+                  . :UPDATER) for each.~|~%For ~x1 (proposed):~|~Y24~%For ~
+                  ~x0:~|~Y34~%~|~@5"
+                 congruent-to
+                 st-name
+                 (strip-cdrs absstobj-tuples)
+                 (strip-cdrs (access absstobj-info absstobj-info-cong
+                                     :absstobj-tuples))
+                 nil
+                 see-doc))
+            (t
+             (mv-let (msg accessors updaters)
+               (chk-defabsstobj-updaters st$c methods0 wrld0)
+               (cond
+                (msg ; should be impossible in recursive case
+                 (er soft ctx "~@0  ~@1" msg see-doc))
+                (missing-only (value missing))
+                (t
+                 (er-progn
+                  (cond
+                   ((or (null missing) ; including recursive case
+                        (member-eq (ld-skip-proofsp state)
+                                   '(include-book include-book-with-locals)))
+                    (value nil))
+                   ((ld-skip-proofsp state)
+                    (pprogn (warning$ ctx "defabsstobj"
+                                      "The following events would have to be ~
+                                       admitted, if not for proofs currently ~
+                                       being skipped (see :DOC ~
+                                       ld-skip-proofsp), before the given ~
+                                       defabsstobj event.  ~@0~|~@1"
+                                      see-doc
+                                      (defabsstobj-missing-msg missing wrld0))
+                            (value nil)))
+                   (t (er soft ctx
+                          "The following events must be admitted before the ~
+                           given defabsstobj event is admitted.  ~@0~|~@1"
+                          see-doc
+                          (defabsstobj-missing-msg missing wrld0))))
+                  (enforce-redundancy
+                   event-form ctx wrld0
+                   (let* ((methods (update-guard-post
+                                    (defabsstobj-logic-subst methods0)
+                                    methods0))
+                          (wrld1 (cddr missing/methods/wrld1))
+                          (ax-def-lst (defabsstobj-axiomatic-defs methods))
+                          (raw-def-lst
 
 ; The first method in methods is for the recognizer, as is guaranteed by
 ; chk-acceptable-defabsstobj (as explained in a comment there that refers to
 ; the present function, defabsstobj-fn1).
 
-                          (defabsstobj-raw-defs st-name methods))
-                         (names (strip-cars ax-def-lst))
-                         (the-live-var (the-live-var st-name)))
-                    (er-progn
-                     (cond ((equal names (strip-cars raw-def-lst))
-                            (value nil))
-                           (t (value
-                               (er hard ctx
-                                   "Defabsstobj-axiomatic-defs and ~
-                                    defabsstobj-raw-defs are out of sync!  We ~
-                                    expect them to define the same list of ~
-                                    names.  Here are the strip-cars of the ~
-                                    axiomatic defs:  ~x0.  And here are the ~
-                                    strip-cars of the raw defs:  ~x1."
-                                   names
-                                   (strip-cars raw-def-lst)))))
-                     (revert-world-on-error
-                      (pprogn
-                       (set-w 'extension wrld1 state)
-                       (er-progn
-                        (process-embedded-events
-                         'defabsstobj
-                         (table-alist 'acl2-defaults-table wrld1)
-                         (or (ld-skip-proofsp state) t)
-                         (current-package state)
-                         (list 'defstobj st-name names) ; ee-entry
+                           (defabsstobj-raw-defs st-name methods))
+                          (names (strip-cars ax-def-lst))
+                          (the-live-var (the-live-var st-name-new)))
+                     (er-progn
+                      (cond ((equal names (strip-cars raw-def-lst))
+                             (value nil))
+                            (t (value
+                                (er hard ctx
+                                    "Defabsstobj-axiomatic-defs and ~
+                                     defabsstobj-raw-defs are out of sync!  ~
+                                     We expect them to define the same list ~
+                                     of names.  Here are the strip-cars of ~
+                                     the axiomatic defs:  ~x0.  And here are ~
+                                     the strip-cars of the raw defs:  ~x1."
+                                    names
+                                    (strip-cars raw-def-lst)))))
+                      (revert-world-on-error
+                       (pprogn
+                        (set-w 'extension wrld1 state)
+                        (er-progn
+                         (process-embedded-events
+                          'defabsstobj
+                          (table-alist 'acl2-defaults-table wrld1)
+                          (or (ld-skip-proofsp state) t)
+                          (current-package state)
+                          (list 'defstobj st-name-new names) ; ee-entry
 
 ; Warning: Don't change the following list of events without first considering
 ; whether that invalidates the translation of definitions for logic rather than
 ; execution (by use of inside-defabsstobj in translate-bodies1).
 
-                         (append
-                          (pairlis-x1 'defun ax-def-lst)
-                          `((encapsulate
-                              ()
-                              (set-inhibit-warnings "theory")
-                              (in-theory
-                               (disable
-                                (:executable-counterpart
-                                 ,creator-name))))))
-                         0
-                         t ; might as well do make-event check
-                         (f-get-global 'cert-data state)
-                         ctx state)
+                          (append
+                           (pairlis-x1 'defun ax-def-lst)
+                           `((encapsulate
+                               ()
+                               (set-inhibit-warnings "theory")
+                               (in-theory
+                                (disable
+                                 (:executable-counterpart
+                                  ,creator-name))))))
+                          0
+                          t ; might as well do make-event check
+                          (f-get-global 'cert-data state)
+                          ctx state)
 
 ; The processing above will install defun events but defers installation of raw
 ; Lisp definitions, just as for defstobj.
 
-                        (let* ((wrld2 (w state))
-                               (congruent-stobj-rep
-                                (and congruent-to
-                                     (congruent-stobj-rep congruent-to wrld2)))
-                               (non-memoizable
-                                (getpropc st$c 'non-memoizable nil wrld2))
-                               (wrld3
-                                (put-defabsstobj-invariant-risk
-                                 methods
-                                 (putprop
-                                  st-name 'congruent-stobj-rep
-                                  congruent-stobj-rep
-                                  (putprop-unless
-                                   st-name 'non-memoizable
-                                   non-memoizable nil
+                         (let* ((wrld2 (w state))
+                                (congruent-stobj-rep
+                                 (and congruent-to
+                                      (congruent-stobj-rep congruent-to
+                                                           wrld2)))
+                                (non-memoizable
+                                 (getpropc st$c 'non-memoizable nil wrld2))
+                                (wrld3
+                                 (put-defabsstobj-invariant-risk
+                                  methods
+                                  (putprop
+                                   st-name-new 'congruent-stobj-rep
+                                   congruent-stobj-rep
                                    (putprop-unless
-                                    st-name 'non-executablep non-executable nil
-                                    (putprop
-                                     st-name 'absstobj-info
-                                     (make absstobj-info
-                                           :st$c st$c
-                                           :absstobj-tuples
-                                           absstobj-tuples)
+                                    st-name-new 'non-memoizable
+                                    non-memoizable nil
+                                    (putprop-unless
+                                     st-name-new 'non-executablep
+                                     non-executable nil
                                      (putprop
-                                      st-name 'symbol-class
-                                      :common-lisp-compliant
-                                      (put-absstobjs-in-and-outs
-                                       st-name methods
-                                       (putprop
-                                        st-name 'stobj
-                                        (make stobj-property
-                                              :live-var the-live-var
+                                      st-name-new 'absstobj-info
+                                      (make absstobj-info
+                                            :st$c st$c
+                                            :absstobj-tuples
+                                            absstobj-tuples)
+                                      (putprop
+                                       st-name-new 'symbol-class
+                                       :common-lisp-compliant
+                                       (put-absstobjs-in-and-outs
+                                        st-name-new methods
+                                        (putprop
+                                         st-name-new 'stobj
+                                         (make stobj-property
+                                               :live-var the-live-var
 
 ; We know that the first two members of names are the recognizer and creator,
 ; respectively.  The remaining names need to be put into proper order for the
@@ -23720,63 +24085,116 @@
 ; absstobj-field-fn-of-stobj-type-p): each updater must immediately follow the
 ; corresponding accessor in the :names field.
 
-                                              :recognizer (car names)
-                                              :creator (cadr names)
-                                              :names
-                                              (sort-absstobj-names
-                                               (butlast (cddr names) 1)
-                                               accessors
-                                               updaters))
-                                        (putprop-x-lst1
-                                         names 'stobj-function st-name
-                                         (putprop
-                                          the-live-var 'stobj-live-var st-name
+                                               :recognizer (car names)
+                                               :creator (cadr names)
+                                               :names
+                                               (sort-absstobj-names
+                                                (cddr names)
+                                                accessors
+                                                updaters))
+                                         (putprop-x-lst1
+                                          names 'stobj-function st-name-new
                                           (putprop
-                                           the-live-var 'symbol-class
-                                           :common-lisp-compliant
-                                           wrld2))))))))))))
-                               (discriminator
-                                (cons 'defabsstobj
-                                      (make
-                                       defstobj-redundant-raw-lisp-discriminator-value
-                                       :event event-form
-                                       :recognizer (car names)
-                                       :creator creator-name
-                                       :congruent-stobj-rep
-                                       (or congruent-stobj-rep st-name)
-                                       :non-memoizable non-memoizable
-                                       :non-executable non-executable))))
-                          (pprogn
-                           (set-w 'extension wrld3 state)
-                           (er-progn
-                            (chk-defabsstobj-guards methods congruent-to ctx
-                                                    wrld3 state)
+                                           the-live-var 'stobj-live-var
+                                           st-name-new
+                                           (putprop
+                                            the-live-var 'symbol-class
+                                            :common-lisp-compliant
+                                            wrld2))))))))))))
+                                (discriminator1
+                                 (or
+                                  discriminator
+                                  (cons 'defabsstobj
+                                        (make
+                                         defstobj-redundant-raw-lisp-discriminator-value
+                                         :event event-form
+                                         :recognizer (car names)
+                                         :creator creator-name
+                                         :congruent-stobj-rep
+                                         (or congruent-stobj-rep
+                                             st-name-new)
+                                         :non-memoizable non-memoizable
+                                         :non-executable
+                                         non-executable))))
+                                (raw-init-form-new
+                                 (or raw-init-form-new
+                                     (defabsstobj-raw-init
+                                       creator-name
+                                       methods)))
+                                (wrld4 (if att-name
+
+; This special case, where att-name is non-nil, is simply an optimization.  It
+; is the case that we will be calling defabsstobj-fn1 recursively on wrld1.
+; There is no need to update ext-gens or ext-gen-barriers in the world when all
+; that is left to do, before making that recursive call, is to call
+; chk-defabsstobj-guards.
+; 
+
+                                           wrld3
+                                         (defabsstobj-update-ext-gens
+                                           ext-gens-wrld0
+
+; The stobj has an attachment if the input discriminator is non-nil (and hence
+; we are in a recursive call of defabsstobj-fn1) and is generic if attachable
+; is non-nil.  Either way, the stobj is generic so its primitives need to be
+; added to the list of extended generics.  See defabsstobj-update-ext-gens.
+
+                                           (or discriminator attachable)
+                                           names methods wrld3))))
+                           (pprogn
+                            (set-w 'extension wrld4 state)
+                            (er-progn
+                             (chk-defabsstobj-guards methods congruent-to ctx
+                                                     wrld4 state)
 
 ; The call of install-event below follows closely the corresponding call in
 ; defstobj-fn.  In particular, see the comment in defstobj-fn about a "cheat".
 
-                            (install-event st-name
-                                           event-form
-                                           'defstobj
-                                           (list* st-name
-                                                  the-live-var
-                                                  names) ; namex
-                                           nil
-                                           `(defabsstobj ,st-name
-                                              ,the-live-var
-                                              ,(defabsstobj-raw-init creator-name
-                                                 methods)
-                                              ,raw-def-lst
-                                              ,discriminator
-                                              ,ax-def-lst)
-                                           t
-                                           ctx
-                                           wrld3
-                                           state))))))))))))))))))))))
+                             (cond
+                              (att-name
+                               (pprogn
+                                (set-w 'retraction wrld1 state)
+                                (let ((kwa
+                                       (cddr (get-event att-name wrld0))))
+                                  (defabsstobj-fn1
+                                    att-name
+                                    (cadr (assoc-keyword :foundation kwa))
+                                    (cadr (assoc-keyword :recognizer kwa))
+                                    (cadr (assoc-keyword :creator kwa))
+                                    :irrelevant ; corr-fn
+                                    (fix-export-updaters
+                                     (cadr (assoc-keyword :exports kwa))
+                                     exports)
+                                    (cadr (assoc-keyword :protect-default
+                                                         kwa))
+                                    (cadr (assoc-keyword :congruent-to kwa))
+                                    non-executable ; use the generic's
+                                    nil nil
+                                    ctx state event-form discriminator1
+                                    raw-init-form-new
+                                    absstobj-tuples))))
+                              (t
+                               (install-event st-name-new
+                                              event-form
+                                              'defstobj
+                                              (list* st-name-new
+                                                     the-live-var
+                                                     names) ; namex
+                                              nil
+                                              `(defabsstobj ,st-name-new
+                                                 ,the-live-var
+                                                 ,raw-init-form-new
+                                                 ,raw-def-lst
+                                                 ,discriminator1
+                                                 ,ax-def-lst)
+                                              t
+                                              ctx
+                                              wrld4
+                                              state)))))))))))))))))))))))))
 
 (defun defabsstobj-fn (st-name st$c recognizer creator corr-fn exports
                                protect-default congruent-to non-executable
-                               missing-only state event-form)
+                               attachable missing-only state event-form)
 
 ; This definition shares a lot of code and ideas with the definition of
 ; defstobj-fn.  See the comments there for further explanation.  Note that we
@@ -23789,9 +24207,15 @@
 
   (with-ctx-summarized
    (msg "( DEFABSSTOBJ ~x0 ...)" st-name)
-   (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
-     protect-default congruent-to non-executable missing-only ctx state
-     event-form)))
+   (cond
+    ((not (booleanp attachable))
+     (er soft ctx
+         "The value of the :ATTACHABLE keyword for DEFABSSTOBJ must be ~x0 or ~
+          ~x1.  The value ~x2 is thus illegal."
+         t nil attachable))
+    (t (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
+         protect-default congruent-to non-executable attachable missing-only
+         ctx state event-form nil nil nil)))))
 
 (defun create-state ()
   (declare (xargs :guard t))
@@ -23803,10 +24227,10 @@
 ; Essay on Nested Stobjs
 
 ; After Version_6.1 we introduced a new capability: allowing fields of stobjs
-; to themselves be stobjs or arrays of stobjs.  (Hash-tables of stobjs were
-; added after Version_8.4.)  Initially we resisted this idea because of an
-; aliasing problem, which we review now, as it is fundamental to understanding
-; our implementation.
+; to themselves be stobjs or arrays of stobjs.  (Hash-table fields with stobj
+; values were added after Version_8.4.)  Initially we resisted this idea
+; because of an aliasing problem, which we review now, as it is fundamental to
+; understanding our implementation.
 
 ; Consider the following events.
 
@@ -25466,11 +25890,11 @@
                 :compile nil))
              (abort!-trace-form
               `(abort! :entry
-                       (progn (fmt-abbrev
-                               "~%Breaking on abort to top level."
-                               nil 0 *standard-co* state "~|~%")
-                              (maybe-print-call-history state)
-                              (break$))))
+                       (progn$ (fmt-abbrev
+                                "~%Breaking on abort to top level."
+                                nil 0 *standard-co* state "~|~%")
+                               (maybe-print-call-history state)
+                               (break$))))
              (throw-raw-ev-fncall-string
               "[Breaking on error (entry to ev-fncall-msg)]")
              (throw-raw-ev-fncall-trace-form
@@ -25481,17 +25905,17 @@
                 :multiplicity
                 1
                 :entry
-                (progn (fmt-abbrev
-                        "~%ACL2 Error ~@0:   ~@1"
-                        (list (cons #\0 ,throw-raw-ev-fncall-string)
-                              (cons #\1 (ev-fncall-msg
-                                         (car arglist)
-                                         (w state)
-                                         (user-stobj-alist state))))
-                        0 *standard-co* state
-                        "~|~%")
-                       (maybe-print-call-history state)
-                       (break$)))))
+                (progn$ (fmt-abbrev
+                         "~%ACL2 Error ~@0:   ~@1"
+                         (list (cons #\0 ,throw-raw-ev-fncall-string)
+                               (cons #\1 (ev-fncall-msg
+                                          (car arglist)
+                                          (w state)
+                                          (user-stobj-alist state))))
+                         0 *standard-co* state
+                         "~|~%")
+                        (maybe-print-call-history state)
+                        (break$)))))
         `(let ((on ,on))
            (er-progn
             (case on

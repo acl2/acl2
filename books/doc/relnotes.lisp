@@ -52,7 +52,7 @@
 (include-book "kestrel/java/portcullis" :dir :system)
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
-(include-book "kestrel/utilities/omaps/portcullis" :dir :system)
+(include-book "std/omaps/portcullis" :dir :system)
 (include-book "kestrel/yul/portcullis" :dir :system)
 
 ; Book release notes are sometimes disorganized.
@@ -318,6 +318,23 @@
      refactor to this new stateful variant, the old version was retained and
      moved to a new book under the name @(tsee tshell-call-unsound).")
 
+   (xdoc::p
+    "Improvements to decomposition proof methodology in VL/SVTV framework. New
+     support for reasoning about FSMs based on SVTV symbolic simulations. New
+     efficient method for equivalence checking two different evaluations of the
+     same SVEX.  Improvements to SVTV-CHASE debugging tool including mode for
+     comparing two runs.")
+
+   (xdoc::p
+    "Improved AIGNET transforms -- new BDD parametrization transform, updates to
+     allow AIG pointer arguments to transformation configs")
+
+   (xdoc::p
+    "Add exhaustive AIG simulation as a SAT checking option in FGL")
+
+   (xdoc::p
+    "Clean up and add various improvements to @(see def-bounds) tool")
+   
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Demos Library")
@@ -403,6 +420,10 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "Moved from @('[books]/kestrel/utilities/omaps/')
+     to @('[books]/std/omaps/').")
 
    (xdoc::p
     "Added some theorems.")
@@ -662,7 +683,8 @@
      "VPSUBB, VPSUBW, VPSUBD, VPSUBQ (VEX versions)"))
 
    (xdoc::p
-    "Support has been added for the following instructions:"
+    "Support has been added for the following instructions:")
+   (xdoc::ul
     (xdoc::li
      "MOVDQA")
     (xdoc::li
@@ -674,6 +696,17 @@
 
    (xdoc::p
     "Some memory accessing functions for larger sizes have been added.")
+
+   (xdoc::p
+    "A number of improvements were made to the model in support of booting a
+    slightly modified Linux kernel on it. These include various instruction
+    bug fixes, a handful of new instructions, a translation lookaside buffer
+    (TLB), and support for exception/interrupt handling, a timer peripheral,
+    and a TTY peripheral. Additionally, there is a new validation mechanism
+    that uses co-simulation with a virtual machine running in KVM to find bugs
+    in the model. All these changes, along with instructions on how to boot
+    Linux on the model are documented in the @(tsee x86isa::x86isa)
+    documentation.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -723,6 +756,12 @@
      community-book) @('books/misc/computed-hint-rewrite.lisp') has been
      tweaked to be properly in sync with that of source function
      @('simplify-clause').")
+
+   (xdoc::p
+    "For textual rendering of documentation, added blank lines between list
+     items within @('<ul>..</ul>') or @('<ol>..</ol>').  This affects both
+     @(see documentation) displays at the terminal with the @(':')@(tsee doc)
+     command as well as displays in the @(see acl2-doc) browser.")
 
    ))
 
