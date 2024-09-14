@@ -8516,7 +8516,7 @@
            ,@(and size `(:size
 
 ; The GCL implementation installed at UT CS on 9/16/2020 does not allow
-; hash-tables of size 0.
+; hash tables of size 0.
 
                          ,(if (= size 0) 1 size)))
            ,@(and rehash-size `(:rehash-size ,(float rehash-size)))
@@ -8719,7 +8719,7 @@
 
 ; We avoid some indirection by arranging that when there is a single field that
 ; is an array, hash-table, or stobj-table, the stobj is the entire structure.
-; If that changes, for example to keep indirection for hash-tables, then
+; If that changes, for example to keep indirection for hash tables, then
 ; consider changing the definition of live-stobjp.
 
              (and (= n 0)
@@ -9055,8 +9055,8 @@
              (array-etype0 (and arrayp (cadr type)))
              (array-size (and arrayp (car (caddr type))))
              (stobj-creator
-; This variable is used only for initialization.  The initial hash-table is
-; nil, so we don't need the creator for hash-tables.
+; This variable is used only for initialization.  The initial hash table is
+; nil, so we don't need the creator for hash tables.
               (and (not hashp) ; optimization (see comment above)
                    (get-stobj-creator (if arrayp array-etype0 type)
                                       nil)))

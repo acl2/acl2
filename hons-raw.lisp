@@ -915,7 +915,7 @@
   (let ((table (hl-mht :test #'eq :size (max 100 fal-ht-size)
 
 ; In early 2019, Rob Sumners told us that Centaur was hitting an apparent bug
-; in how CCL resizes :weak :key hash-tables with :lock-free nil.  He and the
+; in how CCL resizes :weak :key hash tables with :lock-free nil.  He and the
 ; Centaur folks suggested, after he did some timing tests, that we work around
 ; that issue by using :lock-free t here.  Our own stress test (see the comment
 ; in mf-mht about an experiment in directory books/centaur/esim/tutorial/)
@@ -1155,7 +1155,7 @@
 ; if key is not bound.  Note that the comparisons performed by flex-assoc are
 ; always done with EQL.
 
-; The check (listp al) seems faster in CCL than checking for a hash-table and
+; The check (listp al) seems faster in CCL than checking for a hash table and
 ; is, according to disassemble) a check that is equivalent to (typep al 'list).
 ; Compare:
 
@@ -3019,7 +3019,7 @@ To avoid the following break and get only the above warning:~%  ~s~%"
 ; We eliminate each value from table, which is useful in
 ; hl-fast-alist-clean-aux for identifying when a pair in alist is shadowed
 ; (because its key occurs earlier in alist).  In an experiment with the seven
-; supported Lisps, only CLISP reduced the size of the hash-table when using
+; supported Lisps, only CLISP reduced the size of the hash table when using
 ; clrhash.  Otherwise, clrhash is preferred, at least in CCL where maphash
 ; appears to do some consing while clrhash does not.
 

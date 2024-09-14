@@ -124,6 +124,8 @@ equivalences as follows:</p>
 
 ")
 
+(local (xdoc::set-default-parents svex-focused-equivalence-checking))
+
 
 
 (define svexlist-evals-equal ((x svexlist-p)

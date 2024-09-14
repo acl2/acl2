@@ -54,7 +54,7 @@
 
 (include-book "ihs/basic-definitions" :dir :system)
 
-(local (xdoc::set-default-parents bigmem))
+(local (xdoc::set-default-parents bigmem-asymmetric))
 
 ;; ----------------------------------------------------------------------
 

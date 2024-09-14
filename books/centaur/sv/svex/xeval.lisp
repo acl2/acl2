@@ -292,6 +292,7 @@
                         "New (slow) alist, binds the variables to their expressions'
                     values."
                         :hints(("Goal" :in-theory (enable svex-env-p))))
+       :short "Maps @(see svex-<ev>) over an @(see svex) alist."
        :Verify-guards nil
        (mbe :logic
             (if (atom x)

@@ -39,21 +39,31 @@
 ; cert_param (acl2xskip)
 ; (depends-rec "pretty")
 (make-event
- '(:or
-   (acl2::acl2x-replace (include-book
-                         "pretty" :uncertified-okp :ignore-certs)
-                        (value-triple :invisible)
-                        :outside-certification
-                        (include-book
-                         "pretty"))
-   (make-event
-    (er hard? 'pretty-program
-        "~%************************ PRETTY-PROGRAM FAILURE ************************~% ~
+ (b* ((state (f-put-global 'acl2::port-file-enabled-original-value
+                           (f-get-global 'acl2::port-file-enabled state)
+                           state))
+      (state (f-put-global 'acl2::port-file-enabled nil state)))
+   (value '(:or
+            (acl2::acl2x-replace (include-book
+                                  "pretty" :uncertified-okp :ignore-certs)
+                                 (value-triple :invisible)
+                                 :outside-certification
+                                 (include-book
+                                  "pretty"))
+            (make-event
+             (er hard? 'pretty-program
+                 "~%************************ PRETTY-PROGRAM FAILURE ************************~% ~
          Failed to include std/strings/pretty.  It may be that something has ~
          changed in this book or one of the books it includes that makes it ~
          impossible to include uncertified.  Please check this by running ~
          \"make clean\" followed by \"make std/strings/pretty-program.cert\".~%~
-         ************************************************************************"))))
+         ************************************************************************"))))))
+
+(make-event
+ (b* ((state (f-put-global 'acl2::port-file-enabled
+                           (f-get-global 'acl2::port-file-enabled-original-value state)
+                           state)))
+   (value '(value-triple :port-file-enabled-restored))))
 
 (include-book "defs-program")
 (include-book "centaur/fty/fty-sum-casemacro" :dir :system)

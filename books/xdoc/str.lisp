@@ -47,56 +47,67 @@
 ; cert_param (acl2xskip)
 
 (make-event
- '(:or
-   (progn
+ (b* ((state (f-put-global 'acl2::port-file-enabled-original-value
+                           (f-get-global 'acl2::port-file-enabled state)
+                           state))
+      (state (f-put-global 'acl2::port-file-enabled nil state)))
+   (value
+    '(:or
+      (progn
 ; (depends-rec "std/strings/cat" :dir :system)
-     (acl2::acl2x-replace (include-book
-                           "std/strings/cat" :dir :system
-                           :uncertified-okp :ignore-certs)
-                          (value-triple :invisible)
-                          :outside-certification
-                          (include-book
-                           "std/strings/cat" :dir :system
-                           :uncertified-okp :ignore-certs))
+        (acl2::acl2x-replace (include-book
+                              "std/strings/cat" :dir :system
+                              :uncertified-okp :ignore-certs)
+                             (value-triple :invisible)
+                             :outside-certification
+                             (include-book
+                              "std/strings/cat" :dir :system
+                              :uncertified-okp :ignore-certs))
 
 ; (depends-rec "std/strings/case-conversion" :dir :system)
-     (acl2::acl2x-replace (include-book
-                           "std/strings/case-conversion" :dir :system
-                           :uncertified-okp :ignore-certs)
-                          (value-triple :invisible)
-                          :outside-certification
-                          (include-book
-                           "std/strings/case-conversion" :dir :system
-                           :uncertified-okp :ignore-certs))
+        (acl2::acl2x-replace (include-book
+                              "std/strings/case-conversion" :dir :system
+                              :uncertified-okp :ignore-certs)
+                             (value-triple :invisible)
+                             :outside-certification
+                             (include-book
+                              "std/strings/case-conversion" :dir :system
+                              :uncertified-okp :ignore-certs))
 
 ; (depends-rec "std/strings/strsubst" :dir :system)
-     (acl2::acl2x-replace (include-book
-                           "std/strings/strsubst" :dir :system
-                           :uncertified-okp :ignore-certs)
-                          (value-triple :invisible)
-                          :outside-certification
-                          (include-book
-                           "std/strings/strsubst" :dir :system
-                           :uncertified-okp :ignore-certs))
+        (acl2::acl2x-replace (include-book
+                              "std/strings/strsubst" :dir :system
+                              :uncertified-okp :ignore-certs)
+                             (value-triple :invisible)
+                             :outside-certification
+                             (include-book
+                              "std/strings/strsubst" :dir :system
+                              :uncertified-okp :ignore-certs))
 
 ; (depends-rec "std/strings/decimal" :dir :system)
-     (acl2::acl2x-replace (include-book
-                           "std/strings/decimal" :dir :system
-                           :uncertified-okp :ignore-certs)
-                          (value-triple :invisible)
-                          :outside-certification
-                          (include-book
-                           "std/strings/decimal" :dir :system
-                           :uncertified-okp :ignore-certs)))
+        (acl2::acl2x-replace (include-book
+                              "std/strings/decimal" :dir :system
+                              :uncertified-okp :ignore-certs)
+                             (value-triple :invisible)
+                             :outside-certification
+                             (include-book
+                              "std/strings/decimal" :dir :system
+                              :uncertified-okp :ignore-certs)))
 
-   (make-event
-    (er hard? 'xdoc/str
-        "~%************************** XDOC/STR FAILURE **************************~%~
+      (make-event
+       (er hard? 'xdoc/str
+           "~%************************** XDOC/STR FAILURE **************************~%~
          Failed to include the required books.  It may be that something has ~
          changed in one of the books included here that makes it ~
          impossible to include uncertified.  Please check this by running ~
          \"make clean\" followed by \"make xdoc/str.cert\".~%~
-           ************************************************************************"))))
+           ************************************************************************"))))))
+
+(make-event
+ (b* ((state (f-put-global 'acl2::port-file-enabled
+                           (f-get-global 'acl2::port-file-enabled-original-value state)
+                           state)))
+   (value '(value-triple :port-file-enabled-restored))))
 
 (program)
 
