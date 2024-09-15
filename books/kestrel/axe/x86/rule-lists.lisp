@@ -2176,6 +2176,13 @@
 
             acl2::integerp-of-ash
             acl2::bvplus-of-bvmult-when-power-of-2p-tighten
+
+            bvchop-of-zf-spec
+            logext-of-zf-spec
+
+            bvchop-of-sub-zf-spec32
+            equal-of-sub-zf-spec32-and-1
+            equal-of-1-and-sub-zf-spec32
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -4585,10 +4592,6 @@
             acl2::bfix-when-bitp
             ;;stuff related to flags changes:
 
-            bvchop-of-sub-zf-spec32
-            equal-of-sub-zf-spec32-and-1
-            equal-of-1-and-sub-zf-spec32
-
             logand-of-1-becomes-getbit-arg2 ;move
             ;; acl2::ifix-when-integerp
             of-spec-of-logext-32
@@ -4614,8 +4617,6 @@
             acl2::bvchop-of-bvsx
             ;acl2::bvchop-of-bvchop
             ;acl2::bvplus-of-bvchop-arg2
-            bvchop-of-zf-spec
-            logext-of-zf-spec
             ;sbvle ; expand to sbvlt
             ;acl2::sbvlt-of-bvchop-arg2
             ;acl2::bvuminus-of-bvuminus

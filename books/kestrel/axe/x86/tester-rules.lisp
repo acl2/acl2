@@ -65,32 +65,6 @@
                (x86isa::rflagsbits->af$inline ep)))
   :hints (("Goal" :in-theory (enable myif))))
 
-(defthm of-spec-of-logext-32
-  (equal (of-spec32 (logext 32 x))
-         0)
-  :hints (("Goal" :in-theory (enable of-spec32))))
-
-(defthm bvchop-of-zf-spec
-  (implies (posp size)
-           (equal (bvchop size (zf-spec result))
-                  (zf-spec result))))
-
-(defthm logext-of-zf-spec
-  (implies (and (< 1 size)
-                (integerp size))
-           (equal (logext size (zf-spec result))
-                  (zf-spec result))))
-
-(defthm sf-spec64-of-bvchop-64
-  (equal (sf-spec64 (bvchop 64 x))
-         (sf-spec64 x))
-  :hints (("Goal" :in-theory (enable sf-spec64 acl2::logtail-of-bvchop))))
-
-(defthm of-spec64-of-logext-64
-  (equal (of-spec64 (logext 64 x))
-         0)
-  :hints (("Goal" :in-theory (enable of-spec64))))
-
 ;; ;todo!
 ;; ;or use a defun-sk to state that all states have the same cpuid
 ;; (skip-proofs
@@ -129,25 +103,7 @@
 ;;          (x86isa::feature-flag :sse2 x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
-(defthm bvchop-of-sub-zf-spec32
-  (implies (and (<= 1 size)
-                (integerp size))
-           (equal (bvchop size (x86isa::sub-zf-spec32 dst src))
-                  (x86isa::sub-zf-spec32 dst src)))
-  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32))))
 
-;; we open sub-zf-spec32 here, since it's not being passed to JXXX condition function:
-(defthm equal-of-sub-zf-spec32-and-1
-  (equal (equal (x86isa::sub-zf-spec32 dst src) 1)
-         (equal dst src))
-  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32
-                                     x86isa::zf-spec
-                                     acl2::bvchop-of-sum-cases))))
-
-; commuted, only for axe
-(defthmd equal-of-1-and-sub-zf-spec32
-  (equal (equal 1 (x86isa::sub-zf-spec32 dst src))
-         (equal dst src)))
 
 ;slow: ACL2::UNSIGNED-BYTE-P-OF-+-OF-MINUS
 
@@ -160,22 +116,22 @@
 ;;                                      x86isa::zf-spec
 ;;                                      acl2::bvchop-of-sum-cases))))
 
-;todo: gross to have both this and the rule for IF
-(defthm myif-of-sub-zf-spec32-arg2
-  (equal (myif test (x86isa::sub-zf-spec32 dst src) ep)
-         ;;(myif test (if (equal (bvchop 32 dst) (bvchop 32 src)) 1 0) ep)
-         (myif test (if (equal dst src) 1 0) ep))
-  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32
-                                     x86isa::zf-spec
-                                     acl2::bvchop-of-sum-cases))))
+;; ;todo: gross to have both this and the rule for IF
+;; (defthm myif-of-sub-zf-spec32-arg2
+;;   (equal (myif test (x86isa::sub-zf-spec32 dst src) ep)
+;;          ;;(myif test (if (equal (bvchop 32 dst) (bvchop 32 src)) 1 0) ep)
+;;          (myif test (if (equal dst src) 1 0) ep))
+;;   :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32
+;;                                      x86isa::zf-spec
+;;                                      acl2::bvchop-of-sum-cases))))
 
-(defthm myif-of-sub-zf-spec32-arg3
-  (equal (myif test tp (x86isa::sub-zf-spec32 dst src))
-         ;; (myif test tp (if (equal (bvchop 32 dst) (bvchop 32 src)) 1 0))
-         (myif test tp (if (equal dst src) 1 0)))
-  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32
-                                     x86isa::zf-spec
-                                     acl2::bvchop-of-sum-cases))))
+;; (defthm myif-of-sub-zf-spec32-arg3
+;;   (equal (myif test tp (x86isa::sub-zf-spec32 dst src))
+;;          ;; (myif test tp (if (equal (bvchop 32 dst) (bvchop 32 src)) 1 0))
+;;          (myif test tp (if (equal dst src) 1 0)))
+;;   :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32
+;;                                      x86isa::zf-spec
+;;                                      acl2::bvchop-of-sum-cases))))
 
 
 ;; (defthm feature-flag-of-if
