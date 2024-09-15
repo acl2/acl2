@@ -1,4 +1,4 @@
-; Mixed x86 supporting material
+; Rules about separateness of addresses
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
 ; Copyright (C) 2020-2024 Kestrel Institute
