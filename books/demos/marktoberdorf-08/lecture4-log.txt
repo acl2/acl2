@@ -1722,8 +1722,8 @@ Subgoal 1
 
 This simplifies, using the :compound-recognizer rule 
 ACL2::NATP-COMPOUND-RECOGNIZER, the :executable-counterparts of <,
-F, NATP and NOT, linear arithmetic and the :forward-chaining rule 
-ACL2::NATP-FC-1, to
+F, NATP and NOT, equality generation from inequalities and the :forward-
+chaining rule ACL2::NATP-FC-1, to
 
 Subgoal 1'
 (IMPLIES (AND (EQUAL (CAR (LOCALS S)) 0)
@@ -1864,6 +1864,7 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART UNARY--)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:FORWARD-CHAINING ACL2::NATP-FC-1)
         (:REWRITE CDR-CONS)
