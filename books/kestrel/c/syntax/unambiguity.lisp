@@ -629,7 +629,8 @@
     :short "Check if a label is unambiguous."
     (label-case label
                 :name t
-                :const (const-expr-unambp label.unwrap)
+                :casexpr (and (const-expr-unambp label.expr)
+                              (const-expr-option-unambp label.range?))
                 :default t)
     :measure (label-count label))
 
@@ -1322,18 +1323,19 @@
            (statassert-unambp statassert))
     :expand (decl-unambp (decl-statassert statassert)))
 
-  (defrule label-unambp-of-label-const
-    (equal (label-unambp (label-const cexpr))
-           (const-expr-unambp cexpr))
-    :expand (label-unambp (label-const cexpr)))
+  (defrule label-unambp-of-label-casexpr
+    (equal (label-unambp (label-casexpr expr range?))
+           (and (const-expr-unambp expr)
+                (const-expr-option-unambp range?)))
+    :expand (label-unambp (label-casexpr expr range?)))
 
-  (defrule label-unambp-when-not-const
+  (defrule label-unambp-when-not-casexpr
     ;; The formulations (label-unambp (label-... ...))
     ;; do not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by
     ;; the formulation we give here,
     ;; which is not ideal because the conclusion is quite generic.
-    (implies (not (label-case label :const))
+    (implies (not (label-case label :casexpr))
              (label-unambp label)))
 
   (defrule label-unambp-of-label-default
@@ -2037,10 +2039,15 @@
                   (decl-case decl :statassert))
              (statassert-unambp (decl-statassert->unwrap decl))))
 
-  (defrule const-expr-unambp-of-label-const->unwrap
+  (defrule const-expr-unambp-of-label-casexpr->expr
     (implies (and (label-unambp label)
-                  (label-case label :const))
-             (const-expr-unambp (label-const->unwrap label))))
+                  (label-case label :casexpr))
+             (const-expr-unambp (label-casexpr->expr label))))
+
+  (defrule const-expr-option-unambp-of-label-casexpr->range?
+    (implies (and (label-unambp label)
+                  (label-case label :casexpr))
+             (const-expr-option-unambp (label-casexpr->range? label))))
 
   (defrule label-unamb-of-stmt-labeled->label
     (implies (and (stmt-unambp stmt)

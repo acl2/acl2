@@ -220,9 +220,10 @@
     (:linear c$::const-expr-count-of-align-spec-alignas-expr->arg)
     (:linear c$::const-expr-count-of-const-expr-option-some->val)
     (:linear c$::const-expr-count-of-designor-sub->index)
-    (:linear c$::const-expr-count-of-label-const->unwrap)
+    (:linear c$::const-expr-count-of-label-casexpr->expr)
     (:linear c$::const-expr-count-of-statassert->test)
     (:linear c$::const-expr-option-count-of-enumer->value)
+    (:linear c$::const-expr-option-count-of-label-casexpr->range?)
     (:linear c$::const-expr-option-count-of-structdeclor->expr?)
     (:linear c$::decl-count-of-car)
     (:linear c$::decl-count-of-block-item-decl->unwrap)
@@ -1609,7 +1610,9 @@
    `(label-case
       label
       :name (label-fix label)
-      :const (label-const (,(cdr (assoc-eq 'const-expr names)) label.unwrap ,@extra-args-names))
+      :casexpr (make-label-casexpr
+                 :expr (,(cdr (assoc-eq 'const-expr names)) label.expr ,@extra-args-names)
+                 :range? (,(cdr (assoc-eq 'const-expr-option names)) label.range? ,@extra-args-names))
       :default (label-fix label))
    '(:returns (new-label labelp)
      :measure (label-count label))))

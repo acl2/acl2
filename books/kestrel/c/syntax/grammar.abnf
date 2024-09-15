@@ -1250,6 +1250,12 @@ static-assert-declaration =
 
 ; Statements [C:A.2.3]
 
+; As a GCC extension, we allow case ranges
+; (https://gcc.gnu.org/onlinedocs/gcc/Case-Ranges.html).
+; That is, instead of a single constant expression just after 'case',
+; we allow two, separated by the three-dot punctuator
+; (this punctuator also exists in standard C, for a different purpose).
+
 statement = labeled-statement
           / compound-statement
           / expression-statement
@@ -1259,7 +1265,9 @@ statement = labeled-statement
           / asm-statement ; GCC extension
 
 labeled-statement = identifier ":" statement
-                  / %s"case" constant-expression ":" statement
+                  / %s"case" constant-expression
+                    [ "..." constant-expression ] ; GCC extension
+                    ":" statement
                   / %s"default" ":" statement
 
 compound-statement = "{" [ block-item-list ] "}"

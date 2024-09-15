@@ -13017,18 +13017,44 @@
        ;; we must have a labeled statement.
        ((token-keywordp token "case") ; case
         (b* ((psize (parsize parstate))
-             ((erp cexpr & parstate) ; case constexpr
+             ((erp cexpr & parstate) ; case cexpr
               (parse-constant-expression parstate))
              ((unless (mbt (<= (parsize parstate) (1- psize))))
               (reterr :impossible))
-             ((erp & parstate)
-              (read-punctuator ":" parstate)) ; case constexpr :
-             ((erp stmt last-span parstate) ; case constexpr : stmt
-              (parse-statement parstate)))
-          (retok (make-stmt-labeled :label (label-const cexpr)
-                                    :stmt stmt)
-                 (span-join span last-span)
-                 parstate)))
+             ((erp token2 & parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is '...', and GCC extensions are supported,
+           ;; we have a range 'case' label.
+           ((and (token-punctuatorp token2 "...") ; case cexpr ...
+                 (parstate->gcc parstate))
+            (b* ((psize (parsize parstate))
+                 ((erp cexpr2 & parstate) ; case cexpr ... cexpr2
+                  (parse-constant-expression parstate))
+                 ((unless (mbt (<= (parsize parstate) (1- psize))))
+                  (reterr :impossible))
+                 ((erp & parstate)
+                  (read-punctuator ":" parstate)) ; case cexpr ... cexpr2 :
+                 ((erp stmt last-span parstate) ; case constexpr : stmt
+                  (parse-statement parstate)))
+              (retok (make-stmt-labeled :label (make-label-casexpr
+                                                :expr cexpr
+                                                :range? cexpr2)
+                                        :stmt stmt)
+                     (span-join span last-span)
+                     parstate)))
+           (t ; case cexpr other
+            (b* ((parstate ; case cexpr
+                  (if token2 (unread-token parstate) parstate))
+                 ((erp & parstate)
+                  (read-punctuator ":" parstate)) ; case cexpr :
+                 ((erp stmt last-span parstate) ; case cexpr : stmt
+                  (parse-statement parstate)))
+              (retok (make-stmt-labeled :label (make-label-casexpr
+                                                :expr cexpr
+                                                :range? nil)
+                                        :stmt stmt)
+                     (span-join span last-span)
+                     parstate))))))
        ;; If token is the default keyword,
        ;; we must have a labeled statement.
        ((token-keywordp token "default") ; default

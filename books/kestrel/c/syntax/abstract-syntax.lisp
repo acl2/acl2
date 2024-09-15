@@ -2618,15 +2618,20 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This does not directly correspond to any nonterminal in the grammar in [C],
+      "This does not directly correspond to
+       any nonterminal in the grammar in [C],
        but it captures the three initial portions of
        the grammar rule for <i>labeled-statement</i>.
        There are three possible kinds of labels:
        names (identifiers),
        constant expressions in @('case'),
-       and the @('default') label."))
+       and the @('default') label.
+       As a GCC extension,
+       we allow an optional additional constant expression in @('case'),
+       to capture ranges (see ABNF grammar)."))
     (:name ((unwrap ident)))
-    (:const ((unwrap const-expr)))
+    (:casexpr ((expr const-expr)
+               (range? const-expr-option)))
     (:default ())
     :pred labelp
     :measure (two-nats-measure (acl2-count x) 0))

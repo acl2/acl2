@@ -2965,9 +2965,14 @@
     (label-case
      label
      :name (print-ident label.unwrap pstate)
-     :const (b* ((pstate (print-astring "case " pstate))
-                 (pstate (print-const-expr label.unwrap pstate)))
-              pstate)
+     :casexpr (b* ((pstate (print-astring "case " pstate))
+                   (pstate (print-const-expr label.expr pstate)))
+                (const-expr-option-case
+                 label.range?
+                 :some (b* ((pstate (print-astring " ... " pstate))
+                            (pstate (print-const-expr label.range?.val pstate)))
+                         pstate)
+                 :none pstate))
      :default (print-astring "default" pstate))
     :measure (two-nats-measure (label-count label) 0))
 
