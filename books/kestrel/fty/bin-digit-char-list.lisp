@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist bin-digit-char-list
-  :parents (fty::fty-extensions fty::specific-types pos-listp)
+  :parents (fty::fty-extensions fty::specific-types bin-digit-char)
   :short "Fixtype of lists of binary digit characters."
   :elt-type bin-digit-char
   :true-listp t
