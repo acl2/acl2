@@ -128,3 +128,9 @@
   (equal (segment-base-and-bounds proc-mode seg-reg (set-ms ms x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
   :hints (("Goal" :in-theory (enable set-ms))))
+
+;; should not be needed? or can !rflags remain?
+(defthm xr-of-!rflags-irrel
+  (implies (not (equal fld :rflags))
+           (equal (xr fld index (!rflags v x86))
+                  (xr fld index x86))))
