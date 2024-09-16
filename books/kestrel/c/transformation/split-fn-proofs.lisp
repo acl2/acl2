@@ -45,18 +45,20 @@
        (thm-name (acl2::packn-pos (list string '-equivalence) 'c2c))
        (event
         `(defruled ,thm-name
-           (equal (c::exec-fun (c::ident ,string)
-                               nil
-                               compst
-                               (c::init-fun-env
-                                (mv-nth 1 (c$::ldm-transunit ,term-old)))
-                               1000)
-                  (c::exec-fun (c::ident ,string)
-                               nil
-                               compst
-                               (c::init-fun-env
-                                (mv-nth 1 (c$::ldm-transunit ,term-new)))
-                               1000))
+           (let ((trans-old (c$::ldm-transunit ,term-old))
+                 (trans-new (c$::ldm-transunit ,term-new)))
+             (and (not (mv-nth 0 trans-old))
+                  (not (mv-nth 0 trans-new))
+                  (equal (c::exec-fun (c::ident ,string)
+                                      nil
+                                      compst
+                                      (c::init-fun-env (mv-nth 1 trans-old))
+                                      1000)
+                         (c::exec-fun (c::ident ,string)
+                                      nil
+                                      compst
+                                      (c::init-fun-env (mv-nth 1 trans-new))
+                                      1000))))
            :enable (c::atc-all-rules
                     c::fun-env-lookup
                     omap::assoc
