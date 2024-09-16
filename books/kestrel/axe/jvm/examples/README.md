@@ -1,4 +1,4 @@
-This directory contains Axe examples involving Java/JVM code.
+Axe Examples Involving Java/JVM Code.
 
 The [crypto/](crypto) subdirectory contains Axe proofs of cryptographic algorithms in the "classic" Axe style.
 
