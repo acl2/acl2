@@ -64,7 +64,8 @@
 int w = 42;
 
 int f(int x) {
-  long y = 0, z = 5;
+  long y = 0;
+  long z = 5;
   y = bar(x);
   return x + y + z;
 }
@@ -91,5 +92,5 @@ int f(int x) {
  *transunits-split-fn2*
  (c$::ident "f")
  (c$::ident "baz")
- 1
+ 2
  :proofs t)
