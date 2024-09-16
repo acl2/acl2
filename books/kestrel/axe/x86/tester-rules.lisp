@@ -58,43 +58,12 @@
 ;;                (x86isa::rflagsbits->af$inline tp)
 ;;                (x86isa::rflagsbits->af$inline ep))))
 
-(defthm rflagsbits->af-of-myif
-  (equal (x86isa::rflagsbits->af$inline (myif test tp ep))
-         (myif test
-               (x86isa::rflagsbits->af$inline tp)
-               (x86isa::rflagsbits->af$inline ep)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-
-
-(defthm of-spec-of-logext-32
-  (equal (of-spec32 (logext 32 x))
-         0)
-  :hints (("Goal" :in-theory (enable of-spec32))))
-
-(defthm bvchop-of-zf-spec
-  (implies (posp size)
-           (equal (bvchop size (zf-spec result))
-                  (zf-spec result))))
-
-(defthm logext-of-zf-spec
-  (implies (and (< 1 size)
-                (integerp size))
-           (equal (logext size (zf-spec result))
-                  (zf-spec result))))
-
-(defthm integerp-of-zf-spec
-  (integerp (zf-spec result)))
-
-(defthm sf-spec64-of-bvchop-64
-  (equal (sf-spec64 (bvchop 64 x))
-         (sf-spec64 x))
-  :hints (("Goal" :in-theory (enable sf-spec64 acl2::logtail-of-bvchop))))
-
-(defthm of-spec64-of-logext-64
-  (equal (of-spec64 (logext 64 x))
-         0)
-  :hints (("Goal" :in-theory (enable of-spec64))))
+;; (defthm rflagsbits->af-of-myif
+;;   (equal (x86isa::rflagsbits->af$inline (myif test tp ep))
+;;          (myif test
+;;                (x86isa::rflagsbits->af$inline tp)
+;;                (x86isa::rflagsbits->af$inline ep)))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
 ;; ;todo!
 ;; ;or use a defun-sk to state that all states have the same cpuid
@@ -134,25 +103,7 @@
 ;;          (x86isa::feature-flag :sse2 x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
-(defthm bvchop-of-sub-zf-spec32
-  (implies (and (<= 1 size)
-                (integerp size))
-           (equal (bvchop size (x86isa::sub-zf-spec32 dst src))
-                  (x86isa::sub-zf-spec32 dst src)))
-  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32))))
 
-;; we open sub-zf-spec32 here, since it's not being passed to JXXX condition function:
-(defthm equal-of-sub-zf-spec32-and-1
-  (equal (equal (x86isa::sub-zf-spec32 dst src) 1)
-         (equal dst src))
-  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32
-                                     x86isa::zf-spec
-                                     acl2::bvchop-of-sum-cases))))
-
-; commuted, only for axe
-(defthmd equal-of-1-and-sub-zf-spec32
-  (equal (equal 1 (x86isa::sub-zf-spec32 dst src))
-         (equal dst src)))
 
 ;slow: ACL2::UNSIGNED-BYTE-P-OF-+-OF-MINUS
 
@@ -165,42 +116,27 @@
 ;;                                      x86isa::zf-spec
 ;;                                      acl2::bvchop-of-sum-cases))))
 
-;todo: gross to have both this and the rule for IF
-(defthm myif-of-sub-zf-spec32-arg2
-  (equal (myif test (x86isa::sub-zf-spec32 dst src) ep)
-         ;;(myif test (if (equal (bvchop 32 dst) (bvchop 32 src)) 1 0) ep)
-         (myif test (if (equal dst src) 1 0) ep))
-  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32
-                                     x86isa::zf-spec
-                                     acl2::bvchop-of-sum-cases))))
+;; ;todo: gross to have both this and the rule for IF
+;; (defthm myif-of-sub-zf-spec32-arg2
+;;   (equal (myif test (x86isa::sub-zf-spec32 dst src) ep)
+;;          ;;(myif test (if (equal (bvchop 32 dst) (bvchop 32 src)) 1 0) ep)
+;;          (myif test (if (equal dst src) 1 0) ep))
+;;   :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32
+;;                                      x86isa::zf-spec
+;;                                      acl2::bvchop-of-sum-cases))))
 
-(defthm myif-of-sub-zf-spec32-arg3
-  (equal (myif test tp (x86isa::sub-zf-spec32 dst src))
-         ;; (myif test tp (if (equal (bvchop 32 dst) (bvchop 32 src)) 1 0))
-         (myif test tp (if (equal dst src) 1 0)))
-  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32
-                                     x86isa::zf-spec
-                                     acl2::bvchop-of-sum-cases))))
+;; (defthm myif-of-sub-zf-spec32-arg3
+;;   (equal (myif test tp (x86isa::sub-zf-spec32 dst src))
+;;          ;; (myif test tp (if (equal (bvchop 32 dst) (bvchop 32 src)) 1 0))
+;;          (myif test tp (if (equal dst src) 1 0)))
+;;   :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32
+;;                                      x86isa::zf-spec
+;;                                      acl2::bvchop-of-sum-cases))))
 
 
 ;; (defthm feature-flag-of-if
 ;;   (equal (x86isa::feature-flag flag (if test x86 x86_2))
 ;;          (if test (x86isa::feature-flag flag x86) (x86isa::feature-flag flag x86_2))))
-
-;; should not be needed?
-(defthm xr-of-!rflags-irrel
-  (implies (not (equal fld :rflags))
-           (equal (xr fld index (!rflags v x86))
-                  (xr fld index x86))))
-
-(defthm !rflags-of-if-arg1
-  (equal (x86isa::!rflags (if test v1 v2) x86)
-         (if test (x86isa::!rflags v1 x86) (x86isa::!rflags v2 x86))))
-
-(defthm !rflags-of-if-arg2
-  (equal (x86isa::!rflags v (if test x86_1 x86_2))
-         (if test (x86isa::!rflags v x86_1) (x86isa::!rflags v x86_2))))
-
 
 ;; (defthm x86isa::rflagsbits->pf-of-if
 ;;   (equal (x86isa::rflagsbits->pf (if test x1 x2))
@@ -247,8 +183,6 @@
 ;;                        X86)
 ;;                  (bv-array-read 32 4 (BVCHOP '32 x) '(0 1 2 3)))))
 
-
-
 ;; ;arises in array indexing
 ;; ;perhaps more direct than other rules
 ;; not right because the values are not offsets...
@@ -264,14 +198,13 @@
 
 ;arises in array indexing
 ;perhaps more direct than other rules
+;make a bv version?
 (defthm canonical-address-p-of-+-of-bvmult-64-of-4
   (implies (and (syntaxp (quotep k))
                 (canonical-address-p k)
                 (< (* 4 (bvchop 62 index)) (- 140737488355328 k)))
            (canonical-address-p (+ k (bvmult 64 4 index))))
   :hints (("Goal" :in-theory (enable bvmult canonical-address-p signed-byte-p))))
-
-
 
 ;; (thm
 ;;  (implies (and (canonical-address-p$inline (binary-+ '211 text-offset))

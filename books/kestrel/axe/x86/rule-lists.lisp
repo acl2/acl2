@@ -851,118 +851,126 @@
 
 (defun x86-type-rules ()
   (declare (xargs :guard t))
-  '(x86isa::n01p-pf-spec64 ;targets unsigned-byte-p-of-pf-spec64
-    x86isa::n01p-of-spec64 ;targets unsigned-byte-p-of-of-spec64
-    x86isa::n01p-sf-spec64 ;targets unsigned-byte-p-of-sf-spec64
-    x86isa::n01p-sub-af-spec64 ;targets unsigned-byte-p-of-sub-af-spec64
-
-    x86isa::n01p-cf-spec32 ;targets unsigned-byte-p-1-of-cf-spec32
-    x86isa::n01p-pf-spec32 ;targets unsigned-byte-p-1-of-cp-spec32
-    x86isa::n01p-of-spec32 ;targets unsigned-byte-p-1-of-cp-spec32
-    x86isa::n01p-add-af-spec32 ;targets unsigned-byte-p-1-of-add-af-spec32
-
-    x86isa::n01p-zf-spec ; targets unsigned-byte-p-of-zf-spec (maybe this is the same for sizes 32 and 64)
-
-    ;x86isa::bitp-of-sf-spec32 ;todo: more like this
-    x86isa::unsigned-byte-p-1-of-sf-spec32 ;todo: more like this
-    x86isa::unsigned-byte-p-1-of-sub-af-spec32
-
-    ;; todo: now we turn bitp into unsigned-byte-p, so these won't fire:
+  '(x86isa::unsigned-byte-p-of-cf-spec8
+    x86isa::unsigned-byte-p-of-cf-spec16
+    x86isa::unsigned-byte-p-of-cf-spec32
+    x86isa::unsigned-byte-p-of-cf-spec64
     x86isa::bitp-of-cf-spec8
     x86isa::bitp-of-cf-spec16
     x86isa::bitp-of-cf-spec32
     x86isa::bitp-of-cf-spec64
+    integerp-of-cf-spec64 ; todo: more
+
+    x86isa::unsigned-byte-p-of-of-spec8
+    x86isa::unsigned-byte-p-of-of-spec16
+    x86isa::unsigned-byte-p-of-of-spec32
+    x86isa::unsigned-byte-p-of-of-spec64
     x86isa::bitp-of-of-spec8
     x86isa::bitp-of-of-spec16
     x86isa::bitp-of-of-spec32
     x86isa::bitp-of-of-spec64
+
+    x86isa::unsigned-byte-p-of-pf-spec8
+    x86isa::unsigned-byte-p-of-pf-spec16
+    x86isa::unsigned-byte-p-of-pf-spec32
+    x86isa::unsigned-byte-p-of-pf-spec64
     x86isa::bitp-of-pf-spec8
     x86isa::bitp-of-pf-spec16
     x86isa::bitp-of-pf-spec32
     x86isa::bitp-of-pf-spec64
+
+    x86isa::unsigned-byte-p-of-sf-spec8
+    x86isa::unsigned-byte-p-of-sf-spec16
+    x86isa::unsigned-byte-p-of-sf-spec32
+    x86isa::unsigned-byte-p-of-sf-spec64
     x86isa::bitp-of-sf-spec8
     x86isa::bitp-of-sf-spec16
     x86isa::bitp-of-sf-spec32
     x86isa::bitp-of-sf-spec64
+
+    x86isa::unsigned-byte-p-of-zf-spec ; zf-spec is not size-specific (32, 64, etc)
+    ;; todo: now we turn bitp into unsigned-byte-p, so these won't fire:
     x86isa::bitp-of-zf-spec
+    x86isa::integerp-of-zf-spec
+
+    x86isa::unsigned-byte-p-of-add-af-spec8
+    x86isa::unsigned-byte-p-of-add-af-spec16
+    x86isa::unsigned-byte-p-of-add-af-spec32
+    x86isa::unsigned-byte-p-of-add-af-spec64
     x86isa::bitp-of-add-af-spec8
     x86isa::bitp-of-add-af-spec16
     x86isa::bitp-of-add-af-spec32
     x86isa::bitp-of-add-af-spec64
-    x86isa::bitp-of-sub-cf-spec8
-    x86isa::bitp-of-sub-cf-spec16
-    x86isa::bitp-of-sub-cf-spec32
-    x86isa::bitp-of-sub-cf-spec64
-    x86isa::bitp-of-sub-of-spec8
-    x86isa::bitp-of-sub-of-spec16
-    x86isa::bitp-of-sub-of-spec32
-    x86isa::bitp-of-sub-of-spec64
-    x86isa::bitp-of-sub-pf-spec8
-    x86isa::bitp-of-sub-pf-spec16
-    x86isa::bitp-of-sub-pf-spec32
-    x86isa::bitp-of-sub-pf-spec64
-    x86isa::bitp-of-sub-sf-spec8
-    x86isa::bitp-of-sub-sf-spec16
-    x86isa::bitp-of-sub-sf-spec32
-    x86isa::bitp-of-sub-sf-spec64
-    x86isa::bitp-of-sub-zf-spec8
-    x86isa::bitp-of-sub-zf-spec16
-    x86isa::bitp-of-sub-zf-spec32
-    x86isa::bitp-of-sub-zf-spec64
+
+    x86isa::unsigned-byte-p-of-sub-af-spec8
+    x86isa::unsigned-byte-p-of-sub-af-spec16
+    x86isa::unsigned-byte-p-of-sub-af-spec32
+    x86isa::unsigned-byte-p-of-sub-af-spec64
 
     x86isa::unsigned-byte-p-of-sub-cf-spec8
     x86isa::unsigned-byte-p-of-sub-cf-spec16
     x86isa::unsigned-byte-p-of-sub-cf-spec32 ;bitp becomes unsigned-byte-p 1 ?
     x86isa::unsigned-byte-p-of-sub-cf-spec64 ;bitp becomes unsigned-byte-p 1 ?
-
-    x86isa::unsigned-byte-p-of-sub-of-spec8
-    x86isa::unsigned-byte-p-of-sub-of-spec16
-    x86isa::unsigned-byte-p-of-sub-of-spec32
-    x86isa::unsigned-byte-p-of-sub-of-spec64
-
-    x86isa::unsigned-byte-p-of-sub-pf-spec8
-    x86isa::unsigned-byte-p-of-sub-pf-spec16
-    x86isa::unsigned-byte-p-of-sub-pf-spec32
-    x86isa::unsigned-byte-p-of-sub-pf-spec64
-
-    x86isa::unsigned-byte-p-of-sub-sf-spec8
-    x86isa::unsigned-byte-p-of-sub-sf-spec16
-    x86isa::unsigned-byte-p-of-sub-sf-spec32
-    x86isa::unsigned-byte-p-of-sub-sf-spec64
-
-    x86isa::unsigned-byte-p-of-sub-zf-spec8
-    x86isa::unsigned-byte-p-of-sub-zf-spec16
-    x86isa::unsigned-byte-p-of-sub-zf-spec32
-    x86isa::unsigned-byte-p-of-sub-zf-spec64
-
+    x86isa::bitp-of-sub-cf-spec8
+    x86isa::bitp-of-sub-cf-spec16
+    x86isa::bitp-of-sub-cf-spec32
+    x86isa::bitp-of-sub-cf-spec64
     x86isa::integerp-of-sub-cf-spec8
     x86isa::integerp-of-sub-cf-spec16
     x86isa::integerp-of-sub-cf-spec32
     x86isa::integerp-of-sub-cf-spec64
 
+    x86isa::unsigned-byte-p-of-sub-of-spec8
+    x86isa::unsigned-byte-p-of-sub-of-spec16
+    x86isa::unsigned-byte-p-of-sub-of-spec32
+    x86isa::unsigned-byte-p-of-sub-of-spec64
+    x86isa::bitp-of-sub-of-spec8
+    x86isa::bitp-of-sub-of-spec16
+    x86isa::bitp-of-sub-of-spec32
+    x86isa::bitp-of-sub-of-spec64
     x86isa::integerp-of-sub-of-spec8
     x86isa::integerp-of-sub-of-spec16
     x86isa::integerp-of-sub-of-spec32
     x86isa::integerp-of-sub-of-spec64
 
+    x86isa::unsigned-byte-p-of-sub-pf-spec8
+    x86isa::unsigned-byte-p-of-sub-pf-spec16
+    x86isa::unsigned-byte-p-of-sub-pf-spec32
+    x86isa::unsigned-byte-p-of-sub-pf-spec64
+    x86isa::bitp-of-sub-pf-spec8
+    x86isa::bitp-of-sub-pf-spec16
+    x86isa::bitp-of-sub-pf-spec32
+    x86isa::bitp-of-sub-pf-spec64
     x86isa::integerp-of-sub-pf-spec8
     x86isa::integerp-of-sub-pf-spec16
     x86isa::integerp-of-sub-pf-spec32
     x86isa::integerp-of-sub-pf-spec64
 
+    x86isa::unsigned-byte-p-of-sub-sf-spec8
+    x86isa::unsigned-byte-p-of-sub-sf-spec16
+    x86isa::unsigned-byte-p-of-sub-sf-spec32
+    x86isa::unsigned-byte-p-of-sub-sf-spec64
+    x86isa::bitp-of-sub-sf-spec8
+    x86isa::bitp-of-sub-sf-spec16
+    x86isa::bitp-of-sub-sf-spec32
+    x86isa::bitp-of-sub-sf-spec64
     x86isa::integerp-of-sub-sf-spec8
     x86isa::integerp-of-sub-sf-spec16
     x86isa::integerp-of-sub-sf-spec32
     x86isa::integerp-of-sub-sf-spec64
 
+    x86isa::unsigned-byte-p-of-sub-zf-spec8
+    x86isa::unsigned-byte-p-of-sub-zf-spec16
+    x86isa::unsigned-byte-p-of-sub-zf-spec32
+    x86isa::unsigned-byte-p-of-sub-zf-spec64
+    x86isa::bitp-of-sub-zf-spec8
+    x86isa::bitp-of-sub-zf-spec16
+    x86isa::bitp-of-sub-zf-spec32
+    x86isa::bitp-of-sub-zf-spec64
     x86isa::integerp-of-sub-zf-spec8
     x86isa::integerp-of-sub-zf-spec16
     x86isa::integerp-of-sub-zf-spec32
     x86isa::integerp-of-sub-zf-spec64
-
-    x86isa::n01p-cf-spec64 ; targets unsigned-byte-p-of-cf-spec64
-
-    integerp-of-cf-spec64
 
     acl2::unsigned-byte-p-of-+ ; can work with cf-spec64-becomes-getbit
 
@@ -2168,6 +2176,13 @@
 
             acl2::integerp-of-ash
             acl2::bvplus-of-bvmult-when-power-of-2p-tighten
+
+            bvchop-of-zf-spec
+            logext-of-zf-spec
+
+            bvchop-of-sub-zf-spec32
+            equal-of-sub-zf-spec32-and-1
+            equal-of-1-and-sub-zf-spec32
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -4577,10 +4592,6 @@
             acl2::bfix-when-bitp
             ;;stuff related to flags changes:
 
-            bvchop-of-sub-zf-spec32
-            equal-of-sub-zf-spec32-and-1
-            equal-of-1-and-sub-zf-spec32
-
             logand-of-1-becomes-getbit-arg2 ;move
             ;; acl2::ifix-when-integerp
             of-spec-of-logext-32
@@ -4606,9 +4617,6 @@
             acl2::bvchop-of-bvsx
             ;acl2::bvchop-of-bvchop
             ;acl2::bvplus-of-bvchop-arg2
-            bvchop-of-zf-spec
-            logext-of-zf-spec
-            integerp-of-zf-spec
             ;sbvle ; expand to sbvlt
             ;acl2::sbvlt-of-bvchop-arg2
             ;acl2::bvuminus-of-bvuminus

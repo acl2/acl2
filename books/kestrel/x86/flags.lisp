@@ -25,6 +25,14 @@
 
 (set-compile-fns t) ; Matt K. mod for GCL to avoid exhausting storage
 
+(defthm !rflags-of-if-arg1
+  (equal (!rflags (if test v1 v2) x86)
+         (if test (!rflags v1 x86) (!rflags v2 x86))))
+
+(defthm !rflags-of-if-arg2
+  (equal (!rflags v (if test x86_1 x86_2))
+         (if test (!rflags v x86_1) (!rflags v x86_2))))
+
 (defconst *flags*
   '(:cf :pf :af :zf :sf :tf :if :df :of :iopl :nt :rf :vm :ac :vif :vip :id))
 
