@@ -179,7 +179,6 @@ argument (unless the whole form fits on the line).</li>
 
 
 
-
 (define print-base-fix ((x print-base-p))
   :returns (x-fix print-base-p)
   :inline t

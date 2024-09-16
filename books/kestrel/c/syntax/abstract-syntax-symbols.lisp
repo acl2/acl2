@@ -346,7 +346,7 @@
     label-fix
     label-count
     label-case
-    label-const
+    make-label-casexpr
 
     stmtp
     stmt-fix

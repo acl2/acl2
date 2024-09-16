@@ -6,12 +6,13 @@
 ; defined after including system book "top".
 
 (INCLUDE-BOOK "acl2s/doc" :DIR :SYSTEM)
-(INCLUDE-BOOK "acl2s/interface/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "coi/quantification/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/syntheto/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/htclient/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/crypto/aes/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/blake/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/kdf/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/crypto/sha-3/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/padding/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/sha-2/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/hmac/portcullis" :DIR :SYSTEM)
@@ -23,13 +24,16 @@
 (INCLUDE-BOOK "coi/lists/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "coi/adviser/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/jvm/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/leo/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/aleobft/dynamic/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/aleobft/static/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/poseidon/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/sat/dimacs-reader/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/sat/proof-checker-array/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/sat/proof-checker-itp13/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/farray/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/sidekick/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "projects/smtlink/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "centaur/fgl/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "tools/prettygoals/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "coi/util/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "coi/nary/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/svl/portcullis" :DIR :SYSTEM)
@@ -40,6 +44,7 @@
 (INCLUDE-BOOK "projects/sat/lrat/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/truth/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/aig/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/smtlink/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "acl2s/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "coi/symbol-fns/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "system/doc/portcullis" :DIR :SYSTEM)
@@ -47,13 +52,18 @@
 (INCLUDE-BOOK "centaur/depgraph/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/getopt/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/bridge/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/aleobft/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/c/transformation/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/c/syntax/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "acl2s/interface/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/zcash/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/pfcs/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/ethereum/semaphore/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/r1cs/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/mimc/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/isar/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "projects/pfcs/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/x86isa/portcullis/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/bigmem-asymmetric/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/execloader/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/solidity/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/simpl-imp/portcullis" :DIR :SYSTEM)
@@ -71,8 +81,9 @@
 (INCLUDE-BOOK "kestrel/crypto/ecdsa/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/ecurve/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/number-theory/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "rtl/rel11/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/prime-fields/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/numbers/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "rtl/rel11/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/java/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/bigmem/portcullis" :DIR :SYSTEM)
@@ -97,6 +108,17 @@
 ;   (KNOWN-PACKAGE-ALIST STATE)
 ; is community book "top", which is too large to include efficiently.
 
+
+; "SALSA"
+(include-book "kestrel/crypto/salsa/portcullis" :dir :system)
+; "FGL-FLAG", "FGL-FACT", "FGL-THM", "FGL-SYM", "FGL"
+(include-book "centaur/fgl/portcullis" :dir :system)
+; "YUL"
+(include-book "kestrel/yul/portcullis" :dir :system)
+; "VL"
+(include-book "centaur/vl/portcullis" :dir :system)
+; "NREV"
+(include-book "centaur/nrev/portcullis" :dir :system)
 ; "MEMOIZE"
 (include-book "centaur/memoize/portcullis" :dir :system)
 ; "MILAWA" -- omitted because of trust tag
@@ -107,10 +129,13 @@
 (include-book "hacking/hacker" :dir :system)
 ; "ABNF"
 (include-book "kestrel/abnf/portcullis" :dir :system)
-; "RTL" -- already included
+; "RTL"
+(include-book "rtl/rel11/portcullis" :dir :system)
 ; "BED"
 (include-book "centaur/bed/portcullis" :dir :system)
-; "SV" -- already included
+; "SV"
+(include-book "centaur/sv/portcullis" :dir :system)
+
 
 ; We have seen "acl2s/doc" require ttags:
 ; cert-flags: ? t :ttags :all

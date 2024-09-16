@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ transitions-receive-certificates
+(defxdoc+ transitions-receive-certificate
   :parents (transitions)
   :short "Transitions for certificate receival."
   :long

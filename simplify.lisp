@@ -8081,6 +8081,54 @@
      (t (msg "the ~n0 hypothesis"
              (cons n 'th))))))
 
+(set-table-guard equational-polyp-limit-table
+                 (and (eq key t)
+                      (natp val))
+                 :topic set-equational-polyp-limit)
+
+(table equational-polyp-limit-table t
+
+; The choice of default was made by experimenting with the regression suite.
+
+; 2 didn't work for these:
+; books/centaur/sv/mods/moddb.lisp
+; books/projects/dpss/Base/events.lisp
+; books/projects/dpss/Collins/level-5-phase-count-abstraction.lisp
+; books/projects/aleobft/dynamic/same-committees.lisp
+
+; 3 didn't work for these:
+; books/centaur/vl2014/loader/parser/functions.lisp
+
+; 4 didn't work for this (event wp-zcoef-h-multiplies):
+; books/workshops/2004/legato/support/generic-theory-tail-recursion-mult.lisp
+
+; Warning: If you change (presumably, increase) the following, make the
+; corresponding change in a comment in *fake-rune-for-linear-equalities*.
+
+       5)
+
+(defun equational-polyp-limit (wrld)
+  (cdr (assoc-eq t (table-alist 'equational-polyp-limit-table wrld))))
+
+(defun equational-polyp-ok-rec (hist n)
+  (cond ((zp n) nil)
+        ((endp hist) t)
+        ((and (eq (access history-entry (car hist) :processor)
+                  'simplify-clause)
+              (tagged-objects 'find-equational-poly
+                              (access history-entry (car hist) :ttree)))
+         (cond ((zp n) nil)
+               (t (equational-polyp-ok-rec (cdr hist) (1- n)))))
+        (t (equational-polyp-ok-rec (cdr hist) n))))
+
+(defun equational-polyp-ok (hist wrld)
+
+; It would probably be more efficient to store equational-polyp-limit in the
+; rcnst, to avoid looking it up here.  But that efficiency gain is probably
+; trivial.
+
+  (equational-polyp-ok-rec hist (equational-polyp-limit wrld)))
+
 (defun simplify-clause1 (top-clause hist rcnst wrld state step-limit)
 
 ; In Nqthm, this function was called SIMPLIFY-CLAUSE0.
@@ -8184,11 +8232,13 @@
                  (t
                   (mv-let
                    (flg new-current-clause ttree)
-                   (pstk
-                    (process-equational-polys
-                     current-clause hist local-rcnst type-alist wrld
-                     simplify-clause-pot-lst nil
-                     remove-trivial-equivalences-ttree))
+                   (if (equational-polyp-ok hist wrld)
+                       (pstk
+                        (process-equational-polys
+                         current-clause hist local-rcnst type-alist wrld
+                         simplify-clause-pot-lst nil
+                         remove-trivial-equivalences-ttree))
+                     (mv nil current-clause remove-trivial-equivalences-ttree))
                    (cond
                     (flg
 
@@ -8210,7 +8260,7 @@
                       (mv step-limit
                           'hit
                           (list newest-current-clause)
-                          (push-lemma *fake-rune-for-linear*
+                          (push-lemma *fake-rune-for-linear-equalities*
                                       ttree1))))
                     (t
 

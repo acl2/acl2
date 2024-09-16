@@ -5771,8 +5771,8 @@ Subgoal *1.12.1.1.7.1/2'
          (EQUAL (CAR R*2) X1)).
 
 This simplifies, using the :executable-counterparts of BINARY-+, EQUAL
-and NOT, linear arithmetic, primitive type reasoning and the :type-
-prescription rule HOW-MANY, to
+and NOT, equality generation from inequalities, primitive type reasoning
+and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1.12.1.1.7.1/2''
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR R*2) (CDR R*2)) 0)
@@ -6070,7 +6070,7 @@ Rules: ((:DEFINITION ENDP)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:EXECUTABLE-COUNTERPART TWINS)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION HOW-MANY)
         (:INDUCTION MEMBER-EQUAL)
@@ -6165,8 +6165,8 @@ Subgoal 1
 (IMPLIES (MEMBER-EQUAL E X)
          (< 0 (HOW-MANY E X))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal 1'
 (IMPLIES (EQUAL (HOW-MANY E X) 0)
@@ -6323,8 +6323,8 @@ Subgoal 2
 (IMPLIES (<= (HOW-MANY E (TWINS X)) 0)
          (NOT (EQUAL (HOW-MANY E X) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal 2'
 (IMPLIES (EQUAL (HOW-MANY E (TWINS X)) 0)
@@ -6438,8 +6438,8 @@ Subgoal *1/2.7
               (NOT (EQUAL E (CAR X))))
          (NOT (EQUAL (HOW-MANY E (CDR X)) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/2.7'
 (IMPLIES (AND (EQUAL (HOW-MANY E (TWINS (RM* (CAR X) (CDR X))))
@@ -6499,8 +6499,8 @@ Subgoal *1/2.6
          (EQUAL (+ 1 (HOW-MANY E (CDR X))) 2)).
 
 This simplifies, using the :executable-counterparts of <, BINARY-+
-and EQUAL, linear arithmetic and the :type-prescription rule HOW-MANY,
-to
+and EQUAL, equality generation from inequalities and the :type-prescription
+rule HOW-MANY, to
 
 Subgoal *1/2.6'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X) (CDR X)) 0)
@@ -6550,8 +6550,8 @@ Subgoal *1/2.5
               (NOT (EQUAL E (CAR X))))
          (EQUAL (HOW-MANY E (CDR X)) 2)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/2.5'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X) (CDR X)) 0)
@@ -6610,8 +6610,8 @@ Subgoal *1/2.4
               (EQUAL E (CAR X)))
          (NOT (EQUAL (+ 1 (HOW-MANY E (CDR X))) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/2.4'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -6675,8 +6675,8 @@ Subgoal *1/2.3
               (NOT (EQUAL E (CAR X))))
          (NOT (EQUAL (HOW-MANY E (CDR X)) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/2.3'
 (IMPLIES (AND (EQUAL (HOW-MANY E (TWINS (RM* (CAR X) (CDR X))))
@@ -6874,8 +6874,8 @@ Subgoal *1/1'
                ((EQUAL (HOW-MANY E X) 2) NIL)
                (T T))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/1''
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -6915,8 +6915,8 @@ Subgoal *1/1.4
               (EQUAL E (CAR X)))
          (EQUAL (+ 1 (HOW-MANY E (CDR X))) 2)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/1.4'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -6998,8 +6998,8 @@ Subgoal *1/1.3
               (NOT (EQUAL E (CAR X))))
          (NOT (EQUAL (HOW-MANY E (CDR X)) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/1.3'
 (IMPLIES (AND (EQUAL (HOW-MANY E (TWINS (RM* (CAR X) (CDR X))))
@@ -7261,8 +7261,8 @@ Subgoal *1.11/5
               (NOT (EQUAL E X1)))
          (EQUAL (HOW-MANY E X2) 2)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1.11/5'
 (IMPLIES (AND (EQUAL (HOW-MANY X1 (CDR X2)) 0)
@@ -7525,8 +7525,8 @@ Subgoal *1.11/2
               (NOT (EQUAL E X1)))
          (EQUAL (HOW-MANY E X2) 2)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1.11/2'
 (IMPLIES (AND (EQUAL (HOW-MANY X1 (CDR X2)) 0)
@@ -7622,8 +7622,8 @@ Subgoal *1.11.4/6
               (EQUAL (HOW-MANY X3 R*) 2))
          (EQUAL X3 X1)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1.11.4/6'
 (IMPLIES (AND (EQUAL (HOW-MANY X1 (CDR X4)) 0)
@@ -7793,8 +7793,8 @@ Subgoal *1.11.4/3
               (EQUAL (HOW-MANY X3 R*) 2))
          (EQUAL X3 X1)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1.11.4/3'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X4) (CDR X4)) 0)
@@ -8285,8 +8285,8 @@ Subgoal *1.11.4.2.1.1/6.3
               (EQUAL (HOW-MANY X7 (CDR R*)) 2))
          (EQUAL X7 X5)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1.11.4.2.1.1/6.3'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR R*) (CDR R*)) 0)
@@ -8482,8 +8482,8 @@ Subgoal *1.11.4.2.1.1/5
               (EQUAL (HOW-MANY X7 R*) 2))
          (EQUAL X7 X5)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1.11.4.2.1.1/5'
 (IMPLIES (AND (EQUAL (HOW-MANY X7 (TWINS (RM* (CAR R*) (CDR R*))))
@@ -8536,8 +8536,8 @@ Subgoal *1.11.4.2.1.1/3'
               (EQUAL (HOW-MANY X7 R*) 2))
          (EQUAL X7 X5)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1.11.4.2.1.1/3''
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR R*)
@@ -8743,8 +8743,8 @@ Subgoal *1.11.4.2.1.1/2'
               (EQUAL (HOW-MANY X7 R*) 2))
          (EQUAL X7 X5)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1.11.4.2.1.1/2''
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR R*)
@@ -8941,7 +8941,7 @@ Rules: ((:DEFINITION HOW-MANY)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TWINS)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION HOW-MANY)
         (:INDUCTION MEMBER-EQUAL)
@@ -9178,8 +9178,8 @@ Subgoal 2
 (IMPLIES (<= (HOW-MANY E (TWINS X)) 0)
          (NOT (EQUAL (HOW-MANY E X) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal 2'
 (IMPLIES (EQUAL (HOW-MANY E (TWINS X)) 0)
@@ -9349,8 +9349,8 @@ Subgoal *1/2.5
               (EQUAL E (CAR X)))
          (NOT (EQUAL (+ 1 (HOW-MANY E (CDR X))) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/2.5'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -9455,8 +9455,8 @@ Subgoal *1/2.3
                  (HOW-MANY E (CDR (MEMBER-EQUAL E (CDR X))))))
          (NOT (EQUAL (+ 1 (HOW-MANY E (CDR X))) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/2.3'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -9519,8 +9519,8 @@ Subgoal *1/2.1
                   0))
          (NOT (EQUAL (+ 1 (HOW-MANY E (CDR X))) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/2.1'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -9574,8 +9574,8 @@ Subgoal *1/1'
                ((EQUAL (HOW-MANY E X) 2) NIL)
                (T T))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/1''
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -9614,8 +9614,8 @@ Subgoal *1/1.5
               (EQUAL E (CAR X)))
          (EQUAL (+ 1 (HOW-MANY E (CDR X))) 2)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/1.5'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -9698,8 +9698,8 @@ Subgoal *1/1.4
                            (CONS E (TWINS (RM* (CAR X) (CDR X)))))))
          (EQUAL (+ 1 (HOW-MANY E (CDR X))) 2)).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/1.4'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -9825,8 +9825,8 @@ Subgoal *1/1.1
                   0))
          (NOT (EQUAL (+ 1 (HOW-MANY E (CDR X))) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/1.1'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -10100,7 +10100,7 @@ Rules: ((:DEFINITION ENDP)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:EXECUTABLE-COUNTERPART TWINS)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION MEMBER-EQUAL)
         (:INDUCTION RM*)
@@ -10253,8 +10253,8 @@ Subgoal *1/3'
          (EQUAL (HOW-MANY E (CDR (MEMBER-EQUAL E X)))
                 (+ -1 (HOW-MANY E X)))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/3''
 (IMPLIES (AND (EQUAL (HOW-MANY E (CDR X)) 0)
@@ -10329,7 +10329,7 @@ Rules: ((:DEFINITION ENDP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART BINARY-+)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION HOW-MANY)
         (:INDUCTION MEMBER-EQUAL)
@@ -10365,8 +10365,8 @@ Subgoal 2
 (IMPLIES (<= (HOW-MANY E (TWINS X)) 0)
          (NOT (EQUAL (HOW-MANY E X) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal 2'
 (IMPLIES (EQUAL (HOW-MANY E (TWINS X)) 0)
@@ -10622,8 +10622,8 @@ Subgoal *1/1'
                ((EQUAL (HOW-MANY E X) 2) NIL)
                (T T))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/1''
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -10724,8 +10724,8 @@ Subgoal *1/1.1
                   0))
          (NOT (EQUAL (+ 1 (HOW-MANY E (CDR X))) 2))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule HOW-MANY, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule HOW-MANY, to
 
 Subgoal *1/1.1'
 (IMPLIES (AND (EQUAL (HOW-MANY (CAR X)
@@ -10766,6 +10766,7 @@ Rules: ((:DEFINITION HOW-MANY)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION TWINS)
         (:REWRITE CAR-CONS)

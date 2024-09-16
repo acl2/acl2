@@ -683,7 +683,8 @@
      "VPSUBB, VPSUBW, VPSUBD, VPSUBQ (VEX versions)"))
 
    (xdoc::p
-    "Support has been added for the following instructions:"
+    "Support has been added for the following instructions:")
+   (xdoc::ul
     (xdoc::li
      "MOVDQA")
     (xdoc::li
@@ -695,6 +696,17 @@
 
    (xdoc::p
     "Some memory accessing functions for larger sizes have been added.")
+
+   (xdoc::p
+    "A number of improvements were made to the model in support of booting a
+    slightly modified Linux kernel on it. These include various instruction
+    bug fixes, a handful of new instructions, a translation lookaside buffer
+    (TLB), and support for exception/interrupt handling, a timer peripheral,
+    and a TTY peripheral. Additionally, there is a new validation mechanism
+    that uses co-simulation with a virtual machine running in KVM to find bugs
+    in the model. All these changes, along with instructions on how to boot
+    Linux on the model are documented in the @(tsee x86isa::x86isa)
+    documentation.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -744,6 +756,12 @@
      community-book) @('books/misc/computed-hint-rewrite.lisp') has been
      tweaked to be properly in sync with that of source function
      @('simplify-clause').")
+
+   (xdoc::p
+    "For textual rendering of documentation, added blank lines between list
+     items within @('<ul>..</ul>') or @('<ol>..</ol>').  This affects both
+     @(see documentation) displays at the terminal with the @(':')@(tsee doc)
+     command as well as displays in the @(see acl2-doc) browser.")
 
    ))
 

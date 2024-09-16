@@ -14,6 +14,7 @@
 (include-book "blocks")
 
 (local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "std/lists/append" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -476,7 +477,22 @@
                 (equal (bonded-committee-at-round-loop round blocks all-vals)
                        (genesis-committee)))
        :induct t
-       :hints ('(:use evenp-of-car-when-blocks-ordered-even-p)))))
+       :hints ('(:use evenp-of-car-when-blocks-ordered-even-p)))
+
+     (defruled bonded-committee-at-round-loop-of-append-no-change
+       (implies (and (blocks-ordered-even-p (append blocks1 blocks))
+                     (or (endp blocks1)
+                         (<= (pos-fix round)
+                             (block->round (car (last blocks1))))))
+                (equal (bonded-committee-at-round-loop round
+                                                       (append blocks1 blocks)
+                                                       all-vals)
+                       (bonded-committee-at-round-loop round blocks all-vals)))
+       :induct t
+       :enable (blocks-ordered-even-p-of-append
+                last)
+       :hints ('(:use (:instance newest-geq-oldest-when-blocks-ordered-even-p
+                                 (blocks blocks1)))))))
 
   ///
 
@@ -515,7 +531,21 @@
                   (<= (pos-fix round) 2))
              (equal (bonded-committee-at-round round blocks all-vals)
                     (genesis-committee)))
-    :enable bonded-committee-at-round-loop-of-round-leq-2))
+    :enable bonded-committee-at-round-loop-of-round-leq-2)
+
+  (defruled bonded-committee-at-round-of-append-no-change
+    (implies (and (blocks-ordered-even-p (append blocks1 blocks))
+                  (bonded-committee-at-round round blocks all-vals))
+             (equal (bonded-committee-at-round round
+                                               (append blocks1 blocks)
+                                               all-vals)
+                    (bonded-committee-at-round round blocks all-vals)))
+    :enable (blocks-last-round
+             blocks-ordered-even-p-of-append
+             bonded-committee-at-round-loop-of-append-no-change
+             bonded-committee-at-round-loop-of-round-leq-2)
+    :hints ('(:use ((:instance newest-geq-oldest-when-blocks-ordered-even-p
+                               (blocks blocks1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -656,7 +686,16 @@
              (equal (active-committee-at-round round blocks all-vals)
                     (genesis-committee)))
     :enable bonded-committee-at-round-of-round-leq-2
-    :prep-books ((include-book "arithmetic/top" :dir :system))))
+    :prep-books ((include-book "arithmetic/top" :dir :system)))
+
+  (defruled active-committee-at-round-of-append
+    (implies (and (blocks-ordered-even-p (append blocks1 blocks))
+                  (active-committee-at-round round blocks all-vals))
+             (equal (active-committee-at-round round
+                                               (append blocks1 blocks)
+                                               all-vals)
+                    (active-committee-at-round round blocks all-vals)))
+    :enable bonded-committee-at-round-of-append-no-change))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

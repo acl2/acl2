@@ -1219,8 +1219,11 @@
      label
      :name (b* (((erp ident1) (ldm-ident label.unwrap)))
              (retok (c::label-name ident1)))
-     :const (b* (((erp expr1) (ldm-expr (const-expr->unwrap label.unwrap))))
-              (retok (c::label-cas expr1)))
+     :casexpr (b* (((erp expr) (ldm-expr (const-expr->unwrap label.expr)))
+                   ((when label.range?)
+                    (reterr (msg "Unsupported case range ~x0."
+                                 (label-fix label)))))
+                (retok (c::label-cas expr)))
      :default (retok (c::label-default))))
   :hooks (:fix))
 

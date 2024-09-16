@@ -23,6 +23,7 @@
 (include-book "kestrel/bv/bvshr" :dir :system)
 (include-book "kestrel/lists-light/finalcdr" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
+(local (include-book "linear-memory"))
 (local (include-book "kestrel/bv/rules10" :dir :system)) ; todo, for floor-of-/-arg2
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; todo, for logtail-of-one-more
 (local (include-book "kestrel/bv/logand-b" :dir :system))
@@ -338,6 +339,13 @@
            (equal (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x (set-flag flag val x86)))
                   (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x x86))))
   :hints (("Goal" :in-theory (enable x86isa::las-to-pas x86isa::ia32e-la-to-pa))))
+
+;; could move some of this stuff to linear-memory.lisp:
+
+(defthm mv-nth-0-of-rb-1-of-set-flag
+  (equal (mv-nth 0 (rb-1 n addr r-x (set-flag flag val x86)))
+         (mv-nth 0 (rb-1 n addr r-x x86)))
+  :hints (("Goal" :in-theory (enable rb-1))))
 
 (defthm mv-nth-0-of-rb-1-of-set-flag
   (equal (mv-nth 0 (rb-1 n addr r-x (set-flag flag val x86)))
