@@ -42,8 +42,9 @@
 
 (include-book "centaur/defrstobj2/portcullis" :dir :system)
 
-(include-book "centaur/bigmem/portcullis" :dir :system)
-(include-book "centaur/bigmem-asymmetric/portcullis" :dir :system) ; Alternative memory model
+(include-book "centaur/bigmems/bigmem/portcullis" :dir :system)
+(include-book "centaur/bigmems/bigmem-asymmetric/portcullis" :dir :system)
+(include-book "centaur/bigmems/portcullis" :dir :system)
 
 (include-book "centaur/bitops/portcullis" :dir :system)
 (include-book "centaur/fty/portcullis" :dir :system)
