@@ -1448,6 +1448,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-attrib-name ((attrname attrib-namep) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an attribute name."
+  (attrib-name-case
+   attrname
+   :ident (print-ident attrname.unwrap pstate)
+   :keyword (b* ((chars (acl2::string=>nats attrname.unwrap))
+                 ((unless (grammar-character-listp chars))
+                  (raise "Misusage error: ~
+                          the attribute name keyword consists of ~
+                          the character codes ~x0, ~
+                          not all of which are allowed by the ABNF grammar."
+                         chars)
+                  (pristate-fix pstate)))
+              (print-astring attrname.unwrap pstate)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines print-exprs/decls/stmts
   :short "Print expressions, declarations, statements, and related entities."
 
@@ -2783,9 +2802,9 @@
        here we perform a run-time check on the expressions."))
     (attrib-case
      attr
-     :name (print-ident attr.name pstate)
+     :name (print-attrib-name attr.name pstate)
      :name-param
-     (b* ((pstate (print-ident attr.name pstate))
+     (b* ((pstate (print-attrib-name attr.name pstate))
           (pstate (print-astring "(" pstate))
           ((unless (expr-list-unambp attr.param))
            (raise "Internal error: ambiguous expressions in attribute ~x0."
