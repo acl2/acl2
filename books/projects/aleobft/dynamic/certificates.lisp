@@ -490,6 +490,23 @@
     :induct t
     :enable certificate-set->round-set-of-insert))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-certificates-with-signer ((signer addressp)
+                                      (certs certificate-setp))
+  :returns (certs-with-signer certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates whose signers include a given address."
+  (b* (((when (set::emptyp certs)) nil)
+       (cert (set::head certs)))
+    (if (set::in (address-fix signer)
+                 (certificate->signers cert))
+        (set::insert (certificate-fix cert)
+                     (get-certificates-with-signer signer
+                                                   (set::tail certs)))
+      (get-certificates-with-signer signer (set::tail certs))))
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk certificate-set-unequivocalp ((certs certificate-setp))
