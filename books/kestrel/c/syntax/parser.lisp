@@ -6773,6 +6773,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-attribute-name ((parstate parstatep))
+  :returns (mv erp
+               (attrname attrib-namep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse an attribute name."
+  (b* (((reterr) (irr-attrib-name) (irr-span) parstate)
+       ((erp token span parstate) (read-token parstate)))
+    (cond
+     ((and token (token-case token :ident)) ; ident
+      (retok (attrib-name-ident (token-ident->unwrap token))
+             span
+             parstate))
+     ((and token (token-case token :keyword)) ; keyword
+      (retok (attrib-name-keyword (token-keyword->unwrap token))
+             span
+             parstate))
+     (t
+      (reterr-msg :where (position-to-msg (span->start span))
+                  :expected "an identifier or keyword"
+                  :found (token-to-msg token)))))
+
+  ///
+
+  (defret parsize-of-parse-attribute-name-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-attribute-name-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines parse-exprs/decls/stmts
   :short "Parse expressions, declarations, statements, and related entities."
   :long
@@ -12083,21 +12120,21 @@
       "This is only used if GCC extensions are supported.
        See the ABNF grammar rule for @('attribute')."))
     (b* (((reterr) (irr-attrib) (irr-span) parstate)
-         ((erp ident ident-span parstate) (read-identifier parstate)) ; ident
+         ((erp name name-span parstate) (parse-attribute-name parstate)) ; name
          ((erp token & parstate) (read-token parstate)))
       (cond
        ;; If token is an open parenthesis, the attribute has parameters.
-       ((token-punctuatorp token "(") ; ident (
-        (b* ((parstate (unread-token parstate)) ; ident
-             ((erp exprs span parstate) ; ident ( exprs )
+       ((token-punctuatorp token "(") ; name (
+        (b* ((parstate (unread-token parstate)) ; name
+             ((erp exprs span parstate) ; name ( exprs )
               (parse-attribute-parameters parstate)))
-          (retok (make-attrib-name-param :name ident :param exprs)
-                 (span-join ident-span span)
+          (retok (make-attrib-name-param :name name :param exprs)
+                 (span-join name-span span)
                  parstate)))
        ;; If token is anything else, the attribute is just a name.
-       (t ; ident other
-        (b* ((parstate (if token (unread-token parstate) parstate))) ; ident
-          (retok (attrib-name ident) ident-span parstate)))))
+       (t ; name other
+        (b* ((parstate (if token (unread-token parstate) parstate))) ; name
+          (retok (attrib-name name) name-span parstate)))))
     :measure (two-nats-measure (parsize parstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

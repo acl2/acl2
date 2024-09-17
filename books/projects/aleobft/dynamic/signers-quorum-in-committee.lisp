@@ -23,7 +23,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ signers-qourum-in-committee
+(defxdoc+ signers-quorum-in-committee
   :parents (correctness)
   :short "Invariant that the signers of each certificate
           form a quorum in the active committee for the certificate's round."
