@@ -185,6 +185,20 @@
         (raise "~x0 must be an unambiguous translation unit ensemble.")
         '(_))
        (tunits-new (simpadd0-transunit-ensemble tunits-old))
+       ((unless (or (not proofs)
+                    (b* (((mv erp &) (c$::ldm-transunit-ensemble tunits-old)))
+                      (not erp))))
+        (raise "The old translation unit ~x0 is not within ~
+                the subset of C covered by our formal semantics."
+               tunits-old)
+        '(_))
+       ((unless (or (not proofs)
+                    (b* (((mv erp &) (c$::ldm-transunit-ensemble tunits-new)))
+                      (not erp))))
+        (raise "The new translation unit ~x0 is not within ~
+                the subset of C covered by our formal semantics."
+               tunits-new)
+        '(_))
        (thm-events (and proofs
                         (simpadd0-gen-proofs-for-transunit-ensemble
                          const-old const-new tunits-old tunits-new)))
