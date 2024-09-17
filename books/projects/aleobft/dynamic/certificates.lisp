@@ -510,7 +510,36 @@
   ///
 
   (fty::deffixequiv get-certificates-with-signer
-    :args ((signer addressp))))
+    :args ((signer addressp)))
+
+  (defruled in-of-get-certificates-with-signer
+    (implies (certificate-setp certs)
+             (equal (set::in cert (get-certificates-with-signer signer certs))
+                    (and (set::in cert certs)
+                         (set::in (address-fix signer)
+                                  (certificate->signers cert)))))
+    :induct t)
+
+  (defruled get-certificates-with-signer-when-emptyp
+    (implies (set::emptyp certs)
+             (equal (get-certificates-with-signer signer certs)
+                    nil)))
+
+  (defruled get-certificates-with-signer-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (equal (get-certificates-with-signer signer
+                                                  (set::insert cert certs))
+                    (if (set::in (address-fix signer)
+                                 (certificate->signers cert))
+                        (set::insert cert
+                                     (get-certificates-with-signer signer
+                                                                   certs))
+                      (get-certificates-with-signer signer certs))))
+    :enable (in-of-get-certificates-with-signer
+             set::double-containment-no-backchain-limit
+             set::pick-a-point-subset-strategy)
+    :disable (get-certificates-with-signer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
