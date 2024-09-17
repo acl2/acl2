@@ -209,6 +209,7 @@
     dirdeclor-ident
     dirdeclor-count
     dirdeclor-case
+    dirdeclor-kind
     dirdeclor-paren
     dirdeclor
     make-dirdeclor-array
@@ -217,6 +218,8 @@
     make-dirdeclor-array-star
     make-dirdeclor-function-params
     make-dirdeclor-function-names
+    dirdeclor-function-params->params
+    dirdeclor-function-names->names
 
     absdeclorp
     absdeclor-fix
