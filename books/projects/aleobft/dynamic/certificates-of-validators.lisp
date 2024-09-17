@@ -205,7 +205,124 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: signed-certificates
+(define signed-certificates ((val addressp) (systate system-statep))
+  :guard (set::in val (correct-addresses systate))
+  :returns (certs certificate-setp)
+  :short "Certificates signed by a validator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all the certificates in the system signed by the validator.
+     As proved in @(see same-owned-certificates),
+     validators own (in the precise sense of @(tsee owned-certificates))
+     the same set of certificates;
+     so any such set of owned certificates is
+     the set of all certificates in the system.
+     We pick the set of the signer,
+     and we select the ones whose signers include the signer.")
+   (xdoc::p
+    "We define this notion only for correct validators (signers).
+     We could also define it for faulty validators,
+     since they can be signers,
+     but we only need this notion for correct validators."))
+  (get-certificates-with-signer val (owned-certificates val systate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled signed-certificates-when-init
+  :short "Initially, validators have signed no certificates."
+  (implies (and (system-initp systate)
+                (set::in val (correct-addresses systate)))
+           (equal (signed-certificates val systate)
+                  nil))
+  :enable signed-certificates)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-certificates-of-next
+  :short "How the certificates signed by a validator
+          change (or not) for each transition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The only kind of transition that may change
+     the certificates signed by a validator
+     is @('create-certificate'),
+     because all the others do not change the set of owned certificates,
+     as proved in @(see owned-certificates-of-next),
+     which are a superset of the signed certificates.
+     Whether the set of signed certificates actually changes
+     depends on whether the validator
+     is a signer of the certificate or not;
+     so our theorem for @('create-certificate') has a conditional.
+     The theorems for the other kinds of transitions
+     assert that there is no change in the set of signed certificates."))
+
+  (defruled signed-certificates-of-create-certificate-next
+    (implies (set::in val (correct-addresses systate))
+             (equal (signed-certificates val
+                                         (create-certificate-next cert
+                                                                  systate))
+                    (if (set::in (address-fix val)
+                                 (certificate->signers cert))
+                        (set::insert (certificate-fix cert)
+                                     (signed-certificates val systate))
+                      (signed-certificates val systate))))
+    :enable (signed-certificates
+             owned-certificates-of-create-certificate-next
+             get-certificates-with-signer-of-insert))
+
+  (defruled signed-certificates-of-receive-certificate-next
+    (implies (and (set::in val (correct-addresses systate))
+                  (receive-certificate-possiblep msg systate))
+             (equal (signed-certificates val
+                                         (receive-certificate-next msg
+                                                                   systate))
+                    (signed-certificates val systate)))
+    :enable (signed-certificates
+             owned-certificates-of-receive-certificate-next))
+
+  (defruled signed-certificates-of-store-certificate-next
+    (implies (and (set::in val (correct-addresses systate))
+                  (store-certificate-possiblep val1 cert systate))
+             (equal (signed-certificates val
+                                         (store-certificate-next val1
+                                                                 cert
+                                                                 systate))
+                    (signed-certificates val systate)))
+    :enable (signed-certificates
+             owned-certificates-of-store-certificate-next))
+
+  (defruled signed-certificates-of-advance-round-next
+    (implies (and (set::in val (correct-addresses systate))
+                  (advance-round-possiblep val1 systate))
+             (equal (signed-certificates val
+                                         (advance-round-next val1
+                                                             systate))
+                    (signed-certificates val systate)))
+    :enable (signed-certificates
+             owned-certificates-of-advance-round-next))
+
+  (defruled signed-certificates-of-commit-anchors-next
+    (implies (and (set::in val (correct-addresses systate))
+                  (commit-anchors-possiblep val1 systate))
+             (equal (signed-certificates val
+                                         (commit-anchors-next val1
+                                                              systate))
+                    (signed-certificates val systate)))
+    :enable (signed-certificates
+             owned-certificates-of-commit-anchors-next))
+
+  (defruled signed-certificates-of-timer-expires-next
+    (implies (and (set::in val (correct-addresses systate))
+                  (timer-expires-possiblep val1 systate))
+             (equal (signed-certificates val
+                                         (timer-expires-next val1
+                                                             systate))
+                    (signed-certificates val systate)))
+    :enable (signed-certificates
+             owned-certificates-of-timer-expires-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
