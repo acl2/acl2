@@ -505,7 +505,12 @@
                      (get-certificates-with-signer signer
                                                    (set::tail certs)))
       (get-certificates-with-signer signer (set::tail certs))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv get-certificates-with-signer
+    :args ((signer addressp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
