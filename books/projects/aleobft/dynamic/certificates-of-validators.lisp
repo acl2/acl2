@@ -21,43 +21,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ owned-certificates
+(defxdoc+ certificates-of-validators
   :parents (correctness)
-  :short "Certificates owned by validators."
+  :short "Certificates associated to validators according to various criteria."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Validators have certificates in their DAGs and buffers.
-     But they may/will also have
-     the certificates in the network addressed to them, if/when delivered.
-     A message in the network represents a ``promise'' that
-     the recipient may/will obtain that certificate,
-     if/when the message gets eventually delivered.
-     Thus, there is a sense in which the certificates owned by a validator are
-     not only the ones in its DAG and buffer,
-     but also the ones in the network addressed to the validator
-     (even though the validator cannot access them until they are delivered).")
+    "We introduce various notions of certificates associated to validators,
+     used to formulate correctness properties of the protocol.")
    (xdoc::p
-    "We introduce an operation to calculate
-     the certificates in actual or potential possession of a validator.
-     These are:
-     the ones in the DAG;
-     the ones in the buffer;
-     and the ones in messages addressed to the validator."))
+    "One notion is that of all the certificates ``owned'' by a validator,
+     in the sense that either the validator has the certificate
+     or the certificate is in a network message addressed to the validator.
+     The latter represents a ``promise'' that
+     the validator may/will eventually obtain the certificate.")
+   (xdoc::p
+    "Another notion is that of all the certificates signed by a validator.")
+   (xdoc::p
+    "A third notion is that of all the certificates accepted by a validator,
+     i.e. received from the network, and present in the buffer or DAG.
+     These are a subset of the owned certificates
+     (the notion described above)."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define certificates-owned-by ((val addressp) (systate system-statep))
+(define owned-certificates ((val addressp) (systate system-statep))
   :guard (set::in val (correct-addresses systate))
   :returns (certs certificate-setp)
-  :short "Certificates owned by a validator,
-          including the ones in the network addresses to the validator."
+  :short "Certificates owned by a validator."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is as explained in @(see owned-certificates).")
+    "This is as explained in @(see certificates-of-validators).
+     It consists of the certificates in the DAG and buffer,
+     as well as the ones in the network addressed to the validator.")
    (xdoc::p
     "This is only defined for correct validators.
      Faulty validators have no internal state,
@@ -69,22 +68,22 @@
                  val (get-network-state systate))))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled certificates-owned-by-when-init
+(defruled owned-certificates-when-init
   :short "Initially, validators own no certificates."
   (implies (and (system-initp systate)
                 (set::in val (correct-addresses systate)))
-           (equal (certificates-owned-by val systate)
+           (equal (owned-certificates val systate)
                   nil))
-  :enable (certificates-owned-by
+  :enable (owned-certificates
            system-initp
            system-validators-initp-necc
            validator-init))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection certificates-owned-by-of-next
+(defsection owned-certificates-of-next
   :short "How the certificates owned by a validator
           change (or not) for each transition."
   :long
@@ -108,7 +107,7 @@
      although the buffer component and the network component change,
      but in a way that they compensate each other.
      If the validator is not the destination of the message,
-     then nothing changes for the validator,
+     then nothing changes for the validator;
      none of its owned certificates moves.")
    (xdoc::p
     "A @('store-certificate') is similar to a @('receive-certificate'):
@@ -121,29 +120,29 @@
      there are no changes to DAGs, buffers, and network,
      and thus the owned certificates do not change for any validator."))
 
-  (defruled certificates-owned-by-of-create-certificate-next
+  (defruled owned-certificates-of-create-certificate-next
     (implies (set::in val (correct-addresses systate))
-             (equal (certificates-owned-by val
-                                           (create-certificate-next cert
-                                                                    systate))
+             (equal (owned-certificates val
+                                        (create-certificate-next cert
+                                                                 systate))
                     (set::insert (certificate-fix cert)
-                                 (certificates-owned-by val systate))))
+                                 (owned-certificates val systate))))
     :enable
-    (certificates-owned-by
+    (owned-certificates
      validator-state->dag-of-create-certificate-next
      validator-state->buffer-of-create-certificate-next
      get-network-state-of-create-certificate-next
      message-certificates-with-destination-of-union
      message-certificates-with-destination-of-make-certificate-messages))
 
-  (defruled certificates-owned-by-of-receive-certificate-next
+  (defruled owned-certificates-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (receive-certificate-possiblep msg systate))
-             (equal (certificates-owned-by val
-                                           (receive-certificate-next msg
-                                                                     systate))
-                    (certificates-owned-by val systate)))
-    :enable (certificates-owned-by
+             (equal (owned-certificates val
+                                        (receive-certificate-next msg
+                                                                  systate))
+                    (owned-certificates val systate)))
+    :enable (owned-certificates
              validator-state->dag-of-receive-certificate-next
              validator-state->buffer-of-receive-certificate-next
              get-network-state-of-receive-certificate-next
@@ -152,15 +151,15 @@
              in-of-message-certificates-with-destination
              receive-certificate-possiblep))
 
-  (defruled certificates-owned-by-of-store-certificate-next
+  (defruled owned-certificates-of-store-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (store-certificate-possiblep val1 cert systate))
-             (equal (certificates-owned-by val
-                                           (store-certificate-next val1
-                                                                   cert
-                                                                   systate))
-                    (certificates-owned-by val systate)))
-    :enable (certificates-owned-by
+             (equal (owned-certificates val
+                                        (store-certificate-next val1
+                                                                cert
+                                                                systate))
+                    (owned-certificates val systate)))
+    :enable (owned-certificates
              validator-state->dag-of-store-certificate-next
              validator-state->buffer-of-store-certificate-next
              get-network-state-of-store-certificate-next
@@ -168,38 +167,46 @@
              in-of-message-certificates-with-destination
              store-certificate-possiblep))
 
-  (defruled certificates-owned-by-of-advance-round-next
+  (defruled owned-certificates-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-round-possiblep val1 systate))
-             (equal (certificates-owned-by val
-                                           (advance-round-next val1
-                                                               systate))
-                    (certificates-owned-by val systate)))
-    :enable (certificates-owned-by
+             (equal (owned-certificates val
+                                        (advance-round-next val1
+                                                            systate))
+                    (owned-certificates val systate)))
+    :enable (owned-certificates
              validator-state->dag-of-advance-round-next
              validator-state->buffer-of-advance-round-next
              get-network-state-of-advance-round-next))
 
-  (defruled certificates-owned-by-of-commit-anchors-next
+  (defruled owned-certificates-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
                   (commit-anchors-possiblep val1 systate))
-             (equal (certificates-owned-by val
-                                           (commit-anchors-next val1
-                                                                systate))
-                    (certificates-owned-by val systate)))
-    :enable (certificates-owned-by
+             (equal (owned-certificates val
+                                        (commit-anchors-next val1
+                                                             systate))
+                    (owned-certificates val systate)))
+    :enable (owned-certificates
              validator-state->dag-of-commit-anchors-next
              validator-state->buffer-of-commit-anchors-next
              get-network-state-of-commit-anchors-next))
 
-  (defruled certificates-owned-by-of-timer-expires-next
+  (defruled owned-certificates-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
                   (timer-expires-possiblep val1 systate))
-             (equal (certificates-owned-by val
-                                           (timer-expires-next val1
-                                                               systate))
-                    (certificates-owned-by val systate)))
-    :enable (certificates-owned-by
+             (equal (owned-certificates val
+                                        (timer-expires-next val1
+                                                            systate))
+                    (owned-certificates val systate)))
+    :enable (owned-certificates
              validator-state->dag-of-timer-expires-next
              validator-state->buffer-of-timer-expires-next
              get-network-state-of-timer-expires-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: signed-certificates
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: accepted-certificates

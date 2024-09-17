@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "owned-certificates")
+(include-book "certificates-of-validators")
 (include-book "ordered-even-blocks")
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -109,7 +109,7 @@
      just to pick a certificate @('cert') from its owned set."))
   (forall (val cert signer)
           (implies (and (set::in val (correct-addresses systate))
-                        (set::in cert (certificates-owned-by val systate))
+                        (set::in cert (owned-certificates val systate))
                         (set::in signer (certificate->signers cert))
                         (set::in signer (correct-addresses systate)))
                    (validator-signers-quorum-in-committee-p
@@ -130,7 +130,7 @@
   (implies (system-initp systate)
            (signers-quorum-in-committee-p systate))
   :enable (signers-quorum-in-committee-p
-           certificates-owned-by-when-init))
+           owned-certificates-when-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -280,7 +280,7 @@
        :enable
        (signers-quorum-in-committee-p
         signers-quorum-in-committee-p-necc
-        certificates-owned-by-of-create-certificate-next
+        owned-certificates-of-create-certificate-next
         validator-signers-quorum-in-committee-p-of-create-certificate-next-new
         validator-signers-quorum-in-committee-p-of-create-certificate-next-old))))
 
@@ -310,7 +310,7 @@
     :enable
     (signers-quorum-in-committee-p
      signers-quorum-in-committee-p-necc
-     certificates-owned-by-of-receive-certificate-next
+     owned-certificates-of-receive-certificate-next
      validator-signers-quorum-in-committee-p-of-receive-certificate-next))
 
   ;; store-certificate:
@@ -339,7 +339,7 @@
     :enable
     (signers-quorum-in-committee-p
      signers-quorum-in-committee-p-necc
-     certificates-owned-by-of-store-certificate-next
+     owned-certificates-of-store-certificate-next
      validator-signers-quorum-in-committee-p-of-store-certificate-next))
 
   ;; advance-round:
@@ -368,7 +368,7 @@
     :enable
     (signers-quorum-in-committee-p
      signers-quorum-in-committee-p-necc
-     certificates-owned-by-of-advance-round-next
+     owned-certificates-of-advance-round-next
      validator-signers-quorum-in-committee-p-of-advance-round-next))
 
   ;; commit-anchors:
@@ -412,7 +412,7 @@
     :enable
     (signers-quorum-in-committee-p
      signers-quorum-in-committee-p-necc
-     certificates-owned-by-of-commit-anchors-next
+     owned-certificates-of-commit-anchors-next
      validator-signers-quorum-in-committee-p-of-commit-anchors-next))
 
   ;; timer-expires:
@@ -441,5 +441,5 @@
     :enable
     (signers-quorum-in-committee-p
      signers-quorum-in-committee-p-necc
-     certificates-owned-by-of-timer-expires-next
+     owned-certificates-of-timer-expires-next
      validator-signers-quorum-in-committee-p-of-timer-expires-next)))

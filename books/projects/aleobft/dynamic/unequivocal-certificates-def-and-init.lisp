@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "owned-certificates")
+(include-book "certificates-of-validators")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -84,7 +84,7 @@
   (forall (val)
           (implies (set::in val (correct-addresses systate))
                    (certificate-set-unequivocalp
-                    (certificates-owned-by val systate)))))
+                    (owned-certificates val systate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,5 +94,5 @@
   (implies (system-initp systate)
            (unequivocal-certificates-p systate))
   :enable (unequivocal-certificates-p
-           certificates-owned-by-when-init
+           owned-certificates-when-init
            certificate-set-unequivocalp-when-emptyp))

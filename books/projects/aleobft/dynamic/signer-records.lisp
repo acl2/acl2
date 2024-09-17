@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "owned-certificates")
+(include-book "certificates-of-validators")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -152,7 +152,7 @@
      so we can pick any arbitrary correct validator."))
   (forall (val cert signer)
           (implies (and (set::in val (correct-addresses systate))
-                        (set::in cert (certificates-owned-by val systate))
+                        (set::in cert (owned-certificates val systate))
                         (set::in signer (certificate->signers cert))
                         (set::in signer (correct-addresses systate)))
                    (signer-record-p cert
@@ -171,7 +171,7 @@
   (implies (system-initp systate)
            (signer-records-p systate))
   :enable (signer-records-p
-           certificates-owned-by-when-init))
+           owned-certificates-when-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -243,7 +243,7 @@
   (defruled signer-records-p-of-create-certificate-next
     (implies (signer-records-p systate)
              (signer-records-p (create-certificate-next cert systate)))
-    :enable (certificates-owned-by-of-create-certificate-next
+    :enable (owned-certificates-of-create-certificate-next
              signer-record-p-of-create-certificate-next-new
              signer-record-p-of-create-certificate-next-old
              signer-records-p
@@ -268,7 +268,7 @@
     (implies (and (signer-records-p systate)
                   (receive-certificate-possiblep msg systate))
              (signer-records-p (receive-certificate-next msg systate)))
-    :enable (certificates-owned-by-of-receive-certificate-next
+    :enable (owned-certificates-of-receive-certificate-next
              signer-record-p-of-receive-certificate-next
              signer-records-p
              signer-records-p-necc))
@@ -293,7 +293,7 @@
     (implies (and (signer-records-p systate)
                   (store-certificate-possiblep val cert systate))
              (signer-records-p (store-certificate-next val cert systate)))
-    :enable (certificates-owned-by-of-store-certificate-next
+    :enable (owned-certificates-of-store-certificate-next
              signer-record-p-of-store-certificate-next
              signer-records-p
              signer-records-p-necc))
@@ -316,7 +316,7 @@
     (implies (and (signer-records-p systate)
                   (advance-round-possiblep val systate))
              (signer-records-p (advance-round-next val systate)))
-    :enable (certificates-owned-by-of-advance-round-next
+    :enable (owned-certificates-of-advance-round-next
              signer-record-p-of-advance-round-next
              signer-records-p
              signer-records-p-necc))
@@ -339,7 +339,7 @@
     (implies (and (signer-records-p systate)
                   (commit-anchors-possiblep val systate))
              (signer-records-p (commit-anchors-next val systate)))
-    :enable (certificates-owned-by-of-commit-anchors-next
+    :enable (owned-certificates-of-commit-anchors-next
              signer-record-p-of-commit-anchors-next
              signer-records-p
              signer-records-p-necc))
@@ -362,7 +362,7 @@
     (implies (and (signer-records-p systate)
                   (timer-expires-possiblep val systate))
              (signer-records-p (timer-expires-next val systate)))
-    :enable (certificates-owned-by-of-timer-expires-next
+    :enable (owned-certificates-of-timer-expires-next
              signer-record-p-of-timer-expires-next
              signer-records-p
              signer-records-p-necc))

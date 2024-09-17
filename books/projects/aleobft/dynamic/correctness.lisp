@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "owned-certificates")
+(include-book "certificates-of-validators")
 (include-book "same-owned-certificates")
 (include-book "no-self-messages")
 (include-book "no-self-buffer")
@@ -40,7 +40,7 @@
      is the non-forking of blockchains,
      which we have already proved for static committees;
      here we are generalizing it for dynamic committees."))
-  :order-subtopics (owned-certificates
+  :order-subtopics (certificates-of-validators
                     same-owned-certificates
                     no-self-messages
                     no-self-buffer
