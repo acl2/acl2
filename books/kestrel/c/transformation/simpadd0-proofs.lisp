@@ -54,9 +54,9 @@
 
 (define simpadd0-gen-proof-for-fun ((term-old "A term.")
                                     (term-new "A term.")
-                                    (fun c$::identp))
+                                    (fun identp))
   :returns (event acl2::pseudo-event-formp)
-  (b* ((string (c$::ident->unwrap fun))
+  (b* ((string (ident->unwrap fun))
        ((unless (stringp string))
         (raise "Misusage error: function name ~x0 is not a string." string)
         '(_))
@@ -93,7 +93,7 @@
   :returns (events acl2::pseudo-event-form-listp)
   (simpadd0-gen-proofs-for-transunit-loop term-old
                                           term-new
-                                          (c$::transunit->decls tunit))
+                                          (transunit->decls tunit))
 
   :prepwork
   ((define simpadd0-gen-proofs-for-transunit-loop ((term-old "A term.")
@@ -106,9 +106,9 @@
            (simpadd0-gen-proofs-for-transunit-loop term-old
                                                    term-new
                                                    (cdr extdecls)))
-          (fundef (c$::extdecl-fundef->unwrap extdecl))
-          (declor (c$::fundef->declor fundef))
-          (dirdeclor (c$::declor->decl declor))
+          (fundef (extdecl-fundef->unwrap extdecl))
+          (declor (fundef->declor fundef))
+          (dirdeclor (declor->decl declor))
           ((unless (member-eq (dirdeclor-kind dirdeclor)
                               '(:function-params :function-names)))
            (raise "Internal error: ~
@@ -124,7 +124,7 @@
                    only for functions with no parameters, ~
                    but the function definition ~x0 has parameters."
                   fundef))
-          (fun (c$::declor->ident declor))
+          (fun (declor->ident declor))
           (event (simpadd0-gen-proof-for-fun term-old
                                              term-new
                                              fun))
@@ -147,8 +147,8 @@
   (simpadd0-gen-proofs-for-transunit-ensemble-loop
    const-old
    const-new
-   (c$::transunit-ensemble->unwrap tunits-old)
-   (c$::transunit-ensemble->unwrap tunits-new))
+   (transunit-ensemble->unwrap tunits-old)
+   (transunit-ensemble->unwrap tunits-new))
 
   :prepwork
   ((define simpadd0-gen-proofs-for-transunit-ensemble-loop
@@ -164,10 +164,10 @@
           ((mv path-new &) (omap::head tunitmap-new))
           (term-old `(omap::lookup
                       ',path-old
-                      (c$::transunit-ensemble->unwrap ,const-old)))
+                      (transunit-ensemble->unwrap ,const-old)))
           (term-new `(omap::lookup
                       ',path-new
-                      (c$::transunit-ensemble->unwrap ,const-new)))
+                      (transunit-ensemble->unwrap ,const-new)))
           (events (simpadd0-gen-proofs-for-transunit term-old
                                                      term-new
                                                      tunit))
