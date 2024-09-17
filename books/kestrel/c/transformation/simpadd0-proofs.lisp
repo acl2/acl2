@@ -108,6 +108,22 @@
                                                    (cdr extdecls)))
           (fundef (c$::extdecl-fundef->unwrap extdecl))
           (declor (c$::fundef->declor fundef))
+          (dirdeclor (c$::declor->decl declor))
+          ((unless (member-eq (dirdeclor-kind dirdeclor)
+                              '(:function-params :function-names)))
+           (raise "Internal error: ~
+                   direct declarator of function definition ~x0 ~
+                   is not a function declarator."
+                  fundef))
+          ((unless (cond
+                    ((dirdeclor-case dirdeclor :function-params)
+                     (endp (dirdeclor-function-params->params dirdeclor)))
+                    ((dirdeclor-case dirdeclor :function-names)
+                     (endp (dirdeclor-function-names->names dirdeclor)))))
+           (raise "Proof generation is currently supported ~
+                   only for functions with no parameters, ~
+                   but the function definition ~x0 has parameters."
+                  fundef))
           (fun (c$::declor->ident declor))
           (event (simpadd0-gen-proof-for-fun term-old
                                              term-new
