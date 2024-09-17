@@ -160,6 +160,7 @@
                               <env-formal>)
          :measure (two-nats-measure (svexlist-count x) 0)
          :returns (val 4veclist-p)
+         :parents (svex-<ev>)
          :short "Maps @(see svex-<ev>) over an @(see svex) list."
          (if (atom x)
              nil
@@ -292,6 +293,7 @@
                         "New (slow) alist, binds the variables to their expressions'
                     values."
                         :hints(("Goal" :in-theory (enable svex-env-p))))
+       :parents (svex-<ev>)
        :short "Maps @(see svex-<ev>) over an @(see svex) alist."
        :Verify-guards nil
        (mbe :logic

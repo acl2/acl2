@@ -534,13 +534,13 @@ to the svexes.</p>"
 
 
 (defsection svex-mask-env-common-constants
-  :parents (svex-focused-equivalence-checking)
-  :short "FGL binder to find common constants (under a set of masks)
-in two symbolic SVEX environments."
   (define svex-mask-env-common-constants ((ans svex-env-p)
                                           (masks svex-mask-alist-p)
                                           (env1 svex-env-p)
                                           (env2 svex-env-p))
+    :parents (svex-focused-equivalence-checking)
+    :short "FGL binder to find common constants (under a set of masks)
+in two symbolic SVEX environments."
     :returns (const-env)
     :hooks ((:fix :omit (masks)))
     (let ((ans (svex-env-fix ans)))

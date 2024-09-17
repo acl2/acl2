@@ -647,18 +647,32 @@
 ; After (include-book "top" :dir :system), in raw Lisp, we find the
 ; packages that are present but whose book is "top":
 
-;   (value :q)
-;   (let ((doc-top-book
-;          (concatenate 'string
-;                       (project-dir-alist *the-live-state*)
-;                       "top.lisp")))
-;     (loop for x in (known-package-alist *the-live-state*)
-;           when (equal (car (package-entry-book-path x))
-;                       doc-top-book)
-;           collect (car x)))
+#|
+(set-raw-mode-on!)
+(let ((doc-top-book
+       (concatenate 'string
+                    (cdr (assoc-eq :system (project-dir-alist (w *the-live-state*))))
+                    "top.lisp")))
+  (loop for x in (known-package-alist *the-live-state*)
+        when (equal (sysfile-to-filename (car (package-entry-book-path x))
+                                         *the-live-state*)
+                    doc-top-book)
+        collect (car x)))
+|#
 
   (declare (xargs :stobjs state))
   (princ$ "
+
+; \"SALSA\"
+(include-book \"kestrel/crypto/salsa/portcullis\" :dir :system)
+; \"FGL-FLAG\", \"FGL-FACT\", \"FGL-THM\", \"FGL-SYM\", \"FGL\"
+(include-book \"centaur/fgl/portcullis\" :dir :system)
+; \"YUL\"
+(include-book \"kestrel/yul/portcullis\" :dir :system)
+; \"VL\"
+(include-book \"centaur/vl/portcullis\" :dir :system)
+; \"NREV\"
+(include-book \"centaur/nrev/portcullis\" :dir :system)
 ; \"MEMOIZE\"
 (include-book \"centaur/memoize/portcullis\" :dir :system)
 ; \"MILAWA\" -- omitted because of trust tag
@@ -669,10 +683,13 @@
 (include-book \"hacking/hacker\" :dir :system)
 ; \"ABNF\"
 (include-book \"kestrel/abnf/portcullis\" :dir :system)
-; \"RTL\" -- already included
+; \"RTL\"
+(include-book \"rtl/rel11/portcullis\" :dir :system)
 ; \"BED\"
 (include-book \"centaur/bed/portcullis\" :dir :system)
-; \"SV\" -- already included
+; \"SV\"
+(include-book \"centaur/sv/portcullis\" :dir :system)
+
 " chan state))
 
 (defconst *top-sysfile*
