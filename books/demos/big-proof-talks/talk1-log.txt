@@ -160,7 +160,7 @@ Subgoal *1/1
 
 This simplifies, using the :compound-recognizer rule 
 ACL2::ZP-COMPOUND-RECOGNIZER, the :executable-counterparts of <, INTEGERP,
-NOT and ZP and linear arithmetic, to
+NOT and ZP and equality generation from inequalities, to
 
 Subgoal *1/1'
 (IMPLIES (AND (INTEGERP I)
@@ -190,7 +190,7 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART INTEGERP)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART ZP)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION ^)
         (:REWRITE ACL2::|(* (* x y) z)|)
@@ -707,7 +707,7 @@ Subgoal *1/1
 
 This simplifies, using the :compound-recognizer rule 
 ACL2::ZP-COMPOUND-RECOGNIZER, the :executable-counterparts of <, INTEGERP,
-NOT and ZP and linear arithmetic, to
+NOT and ZP and equality generation from inequalities, to
 
 Subgoal *1/1'
 (IMPLIES (AND (INTEGERP I)
@@ -789,7 +789,7 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NTH)
         (:EXECUTABLE-COUNTERPART OP-CODE)
         (:EXECUTABLE-COUNTERPART ZP)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION CLK)
         (:INDUCTION ^)
@@ -1083,7 +1083,7 @@ Subgoal *1/1'
 
 This simplifies, using the :compound-recognizer rule 
 ACL2::ZP-COMPOUND-RECOGNIZER, the :executable-counterparts of <, INTEGERP,
-NOT and ZP and linear arithmetic, to
+NOT and ZP and equality generation from inequalities, to
 
 Subgoal *1/1''
 (IMPLIES (AND (INTEGERP I)
@@ -1157,7 +1157,7 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NTH)
         (:EXECUTABLE-COUNTERPART OP-CODE)
         (:EXECUTABLE-COUNTERPART ZP)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION CLK)
         (:REWRITE ACL2::|(* (* x y) z)|)

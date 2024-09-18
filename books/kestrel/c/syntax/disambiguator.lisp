@@ -2280,8 +2280,13 @@
       (label-case
        label
        :name (retok (label-fix label) (dimb-table-fix table))
-       :const (b* (((erp new-cexpr table) (dimb-const-expr label.unwrap table)))
-                (retok (label-const new-cexpr) table))
+       :casexpr (b* (((erp new-expr table)
+                      (dimb-const-expr label.expr table))
+                     ((erp new-range? table)
+                      (dimb-const-expr-option label.range? table)))
+                  (retok (make-label-casexpr :expr new-expr
+                                             :range? new-range?)
+                         table))
        :default (retok (label-fix label) (dimb-table-fix table))))
     :measure (label-count label))
 

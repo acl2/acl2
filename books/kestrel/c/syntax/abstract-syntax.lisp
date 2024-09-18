@@ -1242,6 +1242,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum attrib-name
+  :short "Fixtype of attribute names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Attributes are a GCC extension.
+     An attribute name is an identifier or a keyword: see the ABNF grammar.
+     We use an ACL2 string to represent a keyword."))
+  (:ident ((unwrap ident)))
+  (:keyword ((unwrap string)))
+  :pred attrib-namep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes exprs/decls/stmts
   :short "Fixtypes of expressions, declarations, statements,
           and related entities
@@ -2467,17 +2481,12 @@
        containing a list of zero or more expressions,
        which covers all three kinds of parameters.")
      (xdoc::p
-      "Although an attribute name could be an identifier or a keyword,
-       since grammatically keywords are also identifiers,
-       we just use identifiers in this definition of attributes.
-       We can always identify which identifiers are in fact keywords.")
-     (xdoc::p
       "Note the distinction between an attribute that is just a name,
        and an attributed that consists of a name and zero parameters:
        in concrete syntax, the latter would include open and closed parentheses,
        without anything in between (except white space or comments)."))
-    (:name ((name ident)))
-    (:name-param ((name ident)
+    (:name ((name attrib-name)))
+    (:name-param ((name attrib-name)
                   (param expr-list)))
     :pred attribp
     :measure (two-nats-measure (acl2-count x) 0))
@@ -2618,15 +2627,20 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This does not directly correspond to any nonterminal in the grammar in [C],
+      "This does not directly correspond to
+       any nonterminal in the grammar in [C],
        but it captures the three initial portions of
        the grammar rule for <i>labeled-statement</i>.
        There are three possible kinds of labels:
        names (identifiers),
        constant expressions in @('case'),
-       and the @('default') label."))
+       and the @('default') label.
+       As a GCC extension,
+       we allow an optional additional constant expression in @('case'),
+       to capture ranges (see ABNF grammar)."))
     (:name ((unwrap ident)))
-    (:const ((unwrap const-expr)))
+    (:casexpr ((expr const-expr)
+               (range? const-expr-option)))
     (:default ())
     :pred labelp
     :measure (two-nats-measure (acl2-count x) 0))

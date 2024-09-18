@@ -6062,11 +6062,7 @@
                    (proclaim form)
                    (push (list 'declaim form) *declaim-list*))))))
   (loop for tail on defs
-        with include-book-path = (global-val 'include-book-path wrld)
-        with hcomp-build-declaim-p = (and hcomp-build-p
-                                          (not include-book-path))
-        with ext-gen-barriers = (and (or evalp
-                                         hcomp-build-declaim-p) ; optimization
+        with ext-gen-barriers = (and evalp
                                      (global-val 'ext-gen-barriers wrld))
         do
         (let* ((def (car tail))
@@ -6150,22 +6146,17 @@
                              (list 'compile (car tail))))
                      (when (and form hcomp-build-p)
                        (push form *declaim-list*))
-                     (when (and ext-gen-barriers ; optimization
+                     (when (and ext-gen-barriers ; hence evalp
 
-; We may be adding a notinline declaim form; see the Essay on Attachable
-; Stobjs.  We only do so for defun forms, hence the next test is a suitable
-; optimization.
+; We may be proclaiming notinline; see the Essay on Attachable Stobjs.  We only
+; do so for defun forms, hence the next test is a suitable optimization.
 
                                 (or oneify-p
                                     (eq (car def) 'defun))
                                 (member-eq name ext-gen-barriers))
-                       (let ((form0 `(declaim (notinline ,(if oneify-p
-                                                              (*1*-symbol name)
-                                                            name)))))
-                         (when evalp
-                           (eval form0))
-                         (when hcomp-build-declaim-p
-                           (push form0 *declaim-list*))))
+                       (proclaim `(notinline ,(if oneify-p
+                                                  (*1*-symbol name)
+                                                name))))
                      (when evalp
                        (eval form)))))))
   (cond ((eq *inside-include-book-fn* t)

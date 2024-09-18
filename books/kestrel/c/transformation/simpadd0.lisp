@@ -776,7 +776,9 @@
     (label-case
      label
      :name (label-fix label)
-     :const (label-const (simpadd0-const-expr label.unwrap))
+     :casexpr (make-label-casexpr
+               :expr (simpadd0-const-expr label.expr)
+               :range? (simpadd0-const-expr-option label.range?))
      :default (label-fix label))
     :measure (label-count label))
 

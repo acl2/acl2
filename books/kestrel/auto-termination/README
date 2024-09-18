@@ -5,6 +5,25 @@ License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 This is the README file for books/kestrel/auto-termination/.
 See also :doc auto-termination.
 
+************************************************************
+***** NOTE *****
+
+If all you currently want to know about this directory is how to fix
+problems, here is a brief summary.
+
+First of all, normally you don't have to do anything other than
+certify books in the normal manner.
+
+But if that breaks, then rebuild as follows.
+
+./write-td-cands.sh
+
+And if that breaks, see comments in the defun for
+write-td-fn-include-books-extra in file termination-database.lisp, and
+update the string there as indicated in a comment there.
+
+************************************************************
+
 TABLE OF CONTENTS
 
 This directory contains files that implement a macro, defunt (or
@@ -13,6 +32,7 @@ searching a database for termination schemes.  By default, that
 database is produced by mining existing termination schemes from the
 ACL2 community books.
 
+--- See NOTE above if you just want a quick troubleshooting guide. ---
 I.   Introduction
 II.  Infrastructure/flow
 III. Algorithms

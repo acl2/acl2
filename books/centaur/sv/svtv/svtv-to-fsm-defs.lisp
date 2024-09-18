@@ -29,6 +29,12 @@
 (include-book "svtv-generalize-defs")
 (local (std::add-default-post-define-hook :fix))
 
+(defxdoc svtv-to-fsm-defs
+  :parents (svtv-to-fsm)
+  :short "Definitions supporting proofs of FSM properties from SVTV properties")
+
+(local (xdoc::set-default-parents svtv-to-fsm-defs))
+
 (define svar/4vec-p (x)
   :short "Recognizer for an object that is either an @(see svar) or @(see 4vec)"
   (or (svar-p x) (4vec-p x)))

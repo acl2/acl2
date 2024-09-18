@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ invariant-causal-histories
-  :parents (correct-addresses)
+  :parents (correctness)
   :short "Invariant that the causal histories of existing certificates
           do not change as states change."
   :long

@@ -22840,7 +22840,7 @@ By case analysis we reduce the conjecture to
          (ACL2-NUMBERP (MAXIMAL (CDR LST)))).
 
 This simplifies, using the :executable-counterparts of <, INTEGERP
-and NOT and linear arithmetic, to
+and NOT and equality generation from inequalities, to
 
 [1]Goal''
 (IMPLIES (AND (EQUAL 0 (CAR LST))
@@ -22887,6 +22887,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART INTEGERP)
         (:EXECUTABLE-COUNTERPART NOT)
         (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:FORWARD-CHAINING PROBLEM-112D)
         (:INDUCTION MAXIMAL)
@@ -23583,9 +23584,9 @@ Subgoal *1/1'
 
 This simplifies, using the :compound-recognizer rules 
 NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER, the :executable-
-counterparts of <, NATP, NOT and ZP, linear arithmetic, the :forward-
-chaining rules NATP-FC-1 and PROBLEM-112D and the :type-prescription
-rule LIST-OF-NATSP, to
+counterparts of <, NATP, NOT and ZP, equality generation from inequalities,
+the :forward-chaining rules NATP-FC-1 and PROBLEM-112D and the :type-
+prescription rule LIST-OF-NATSP, to
 
 Subgoal *1/1''
 (IMPLIES (AND (EQUAL (MAXIMAL LST) -1)
@@ -23617,6 +23618,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FORWARD-CHAINING NATP-FC-1)
         (:FORWARD-CHAINING PROBLEM-112D)
         (:INDUCTION INDUCTION-HINT)
@@ -23840,8 +23842,8 @@ Subgoal *1/2'
 
 This simplifies, using the :compound-recognizer rules 
 NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER, the :executable-
-counterparts of NATP, NOT and ZP, linear arithmetic and the :forward-
-chaining rule NATP-FC-1, to
+counterparts of NATP, NOT and ZP, equality generation from inequalities
+and the :forward-chaining rule NATP-FC-1, to
 
 Subgoal *1/2''
 (IMPLIES (AND (CONSP M) (< 0 (LEN M)))
@@ -23893,7 +23895,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:EXECUTABLE-COUNTERPART ZP)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:FORWARD-CHAINING NATP-FC-1)
         (:INDUCTION NTH)
@@ -24106,8 +24108,8 @@ Subgoal *1/3'
          (< (LEN-DIFF MEM (CONS PTR SEEN))
             (LEN-DIFF MEM SEEN))).
 
-This simplifies, using linear arithmetic, the :linear rule PROBLEM-113B
-and the :type-prescription rule LEN-DIFF, to
+This simplifies, using equality generation from inequalities, the :linear
+rule PROBLEM-113B and the :type-prescription rule LEN-DIFF, to
 
 Subgoal *1/3''
 (IMPLIES (AND (EQUAL (LEN-DIFF MEM (CONS PTR SEEN))
@@ -24272,6 +24274,7 @@ Rules: ((:DEFINITION LEN-DIFF)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION LEN-DIFF)
         (:LINEAR PROBLEM-113B)
@@ -29106,8 +29109,8 @@ Subgoal *1/1'
 
 But simplification reduces this to T, using the :compound-recognizer
 rules NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER, the :executable-
-counterparts of <, F5, NATP, NOT and ZP, linear arithmetic and the
-:forward-chaining rule NATP-FC-1.
+counterparts of <, F5, NATP, NOT and ZP, equality generation from inequalities
+and the :forward-chaining rule NATP-FC-1.
 
 That completes the proof of *1.
 
@@ -29128,7 +29131,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:EXECUTABLE-COUNTERPART ZP)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:FORWARD-CHAINING NATP-FC-1)
         (:INDUCTION F5)
@@ -29393,8 +29396,8 @@ Subgoal *1/2'
 
 This simplifies, using the :compound-recognizer rules 
 NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER, the :executable-
-counterparts of NATP, NOT and ZP, linear arithmetic and the :forward-
-chaining rule NATP-FC-1, to
+counterparts of NATP, NOT and ZP, equality generation from inequalities
+and the :forward-chaining rule NATP-FC-1, to
 
 Subgoal *1/2''
 (IMPLIES (AND (CONSP G)
@@ -29474,7 +29477,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:EXECUTABLE-COUNTERPART ZP)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:FORWARD-CHAINING NATP-FC-1)
         (:INDUCTION NTH)
@@ -29664,8 +29667,8 @@ Subgoal *1/2'
 
 This simplifies, using the :compound-recognizer rules 
 NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER, the :executable-
-counterparts of NATP, NOT and ZP, linear arithmetic and the :forward-
-chaining rule NATP-FC-1, to
+counterparts of NATP, NOT and ZP, equality generation from inequalities
+and the :forward-chaining rule NATP-FC-1, to
 
 Subgoal *1/2''
 (IMPLIES (AND (CONSP G)
@@ -29745,7 +29748,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:EXECUTABLE-COUNTERPART ZP)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:FORWARD-CHAINING NATP-FC-1)
         (:INDUCTION NTH)
@@ -29935,8 +29938,8 @@ Subgoal *1/2'
 
 This simplifies, using the :compound-recognizer rules 
 NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER, the :executable-
-counterparts of NATP, NOT and ZP, linear arithmetic and the :forward-
-chaining rule NATP-FC-1, to
+counterparts of NATP, NOT and ZP, equality generation from inequalities
+and the :forward-chaining rule NATP-FC-1, to
 
 Subgoal *1/2''
 (IMPLIES (AND (CONSP G)
@@ -30013,7 +30016,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:EXECUTABLE-COUNTERPART ZP)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:FORWARD-CHAINING NATP-FC-1)
         (:INDUCTION NTH)
@@ -30155,8 +30158,8 @@ Subgoal *1/2.2
          (<= (+ 1 (LEN-DIFF (CDR X) SEEN2))
              (LEN-DIFF (CDR X) SEEN1))).
 
-This simplifies, using linear arithmetic, primitive type reasoning
-and the :type-prescription rule LEN-DIFF, to
+This simplifies, using equality generation from inequalities, primitive
+type reasoning and the :type-prescription rule LEN-DIFF, to
 
 Subgoal *1/2.2'
 (IMPLIES (AND (EQUAL (LEN-DIFF (CDR X) SEEN2)
@@ -30235,7 +30238,7 @@ Rules: ((:DEFINITION LEN-DIFF)
         (:DEFINITION NOT)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION LEN-DIFF)
         (:REWRITE PROBLEM-48)
@@ -30354,8 +30357,9 @@ Subgoal *1/3'
          (< (LEN-DIFF X SEEN2)
             (LEN-DIFF X SEEN1))).
 
-This simplifies, using linear arithmetic, the :linear rule PROBLEM-129D
-and the :type-prescription rules LEN-DIFF and SUB, to
+This simplifies, using equality generation from inequalities, the :linear
+rule PROBLEM-129D and the :type-prescription rules LEN-DIFF and SUB,
+to
 
 Subgoal *1/3''
 (IMPLIES (AND (EQUAL (LEN-DIFF X SEEN2)
@@ -30554,6 +30558,7 @@ Rules: ((:DEFINITION LEN-DIFF)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION LEN-DIFF)
         (:LINEAR PROBLEM-129D)
@@ -31730,8 +31735,8 @@ Subgoal *1/2.2''
               (<= (CC (CDR X)) 0))
          (CONSP (CDDR X))).
 
-This simplifies, using the :executable-counterpart of <, linear arithmetic
-and the :type-prescription rule CC, to
+This simplifies, using the :executable-counterpart of <, equality generation
+from inequalities and the :type-prescription rule CC, to
 
 Subgoal *1/2.2'''
 (IMPLIES (AND (EQUAL (CC (CDR X)) 0)
@@ -31840,6 +31845,7 @@ Rules: ((:DEFINITION CC)
         (:EXECUTABLE-COUNTERPART CC)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION RMB)
         (:LINEAR PROBLEM-108C)

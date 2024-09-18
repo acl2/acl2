@@ -220,7 +220,12 @@
 ; disabled, give the rule this :rune and the :nume nil.
 
 ; *fake-rune-for-linear*
-; This fake rune is a signal that linear arithmetic was used.
+; This fake rune is a signal that linear arithmetic was used in obtaining a
+; contradiction.
+
+; *fake-rune-for-linear-equalities*
+; This fake rune is a signal that linear arithmetic was used for adding an
+; equality from complementary inequalities.
 
 ; *fake-rune-for-type-set*
 ; This fake rune is used by type-set to record that built-in facts about
