@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-; STATUS: IN-PROGRESS
+;; STATUS: IN-PROGRESS
 
 (include-book "system/pseudo-good-worldp" :dir :system) ;for pseudo-runep
 
