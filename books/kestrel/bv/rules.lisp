@@ -2724,9 +2724,7 @@
            (equal (bvmod size (bvmult size (expt 2 n) x) (expt 2 n))
                   0))
   :hints (("Goal" :in-theory (e/d (bvmult bvmod)
-                                  (
-                                   ;BVLT-OF-*-ARG3
-                                   ;*-OF-2-BECOMES-BVMULT
+                                  (;BVLT-OF-*-ARG3
                                    ;MOD-BECOMES-BVMOD-BETTER
                                    )))))
 

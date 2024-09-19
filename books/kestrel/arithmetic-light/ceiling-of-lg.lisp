@@ -30,6 +30,45 @@
 (defthm natp-of-ceiling-of-lg
   (natp (ceiling-of-lg x)))
 
+(defthm <-of-ceiling-of-lg-arg1-when-constant
+  (implies (and (syntaxp (quotep k))
+                (integerp k)
+                (posp x))
+           (equal (< (ceiling-of-lg x) k)
+                  (if (<= k 0)
+                      nil
+                    (<= x (expt 2 (+ -1 k)))
+                    )))
+  :hints (("Goal" :use (:instance <-of-integer-length-arg1 (x (+ -1 x)) (n k))
+           :in-theory (e/d (ceiling-of-lg) (<-of-integer-length-arg1)))))
+
+(defthm <-of-ceiling-of-lg-arg2-when-constant
+  (implies (and (syntaxp (quotep k))
+                (integerp k)
+                (posp x))
+           (equal (< k (ceiling-of-lg x))
+                  (if (< k 0)
+                      t
+                    (< (expt 2 k) x))))
+  :hints (("Goal" :use (:instance <-of-integer-length-arg2 (x (+ -1 x)) (n k))
+           :in-theory (e/d (ceiling-of-lg) (<-of-integer-length-arg2)))))
+
+(defthm equal-of-ceiling-of-lg-and-constant
+  (implies (and (syntaxp (quotep k))
+                (integerp k)
+                (posp x))
+           (equal (equal (ceiling-of-lg x) k)
+                  (if (< k 0)
+                      nil
+                    (and (< (expt 2 (+ -1 k)) x)
+                         (<= x (expt 2 k))))))
+  :hints (("Goal" :use (<-of-ceiling-of-lg-arg1-when-constant
+                        <-of-ceiling-of-lg-arg2-when-constant)
+           :in-theory (disable <-of-ceiling-of-lg-arg1-when-constant
+                               <-of-ceiling-of-lg-arg2-when-constant))))
+
+;; for non-positive constants
+;rename
 (defthm <-of-ceiling-of-lg-and-constant
   (implies (and (syntaxp (quotep k))
                 (<= k 0))
