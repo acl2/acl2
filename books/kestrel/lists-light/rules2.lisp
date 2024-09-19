@@ -1919,4 +1919,4 @@
                   (update-subrange start2 end2 vals2 (update-subrange start1 end1 vals1 lst))))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (e/d (update-subrange-rewrite-better take-of-nthcdr-becomes-subrange)
-                                  (equal-of-append)))))
+                                  (equal-of-append natp)))))
