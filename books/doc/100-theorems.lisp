@@ -1,6 +1,6 @@
 ; ACL2 versions of (some of) the Top 100 Theorems List
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,6 +37,7 @@
 (include-book "projects/numbers/triples" :dir :system)
 (include-book "projects/numbers/z2q" :dir :system)
 (include-book "projects/schroder-bernstein/schroder-bernstein" :dir :system)
+(include-book "projects/linear/reduction" :dir :system)
 (include-book "workshops/2006/cowles-gamboa-euclid/Euclid/prime-fac" :dir :system)
 ;; (include-book "workshops/2018/kwan-greenstreet/cauchy-schwarz" :dir :system) ; needs ACL2r
 ;; (include-book "workshops/2020/kwan-peng-greenstreet/abstract-cs" :dir :system) ; needs ACL2r
@@ -465,7 +466,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-     ;; "<h3 id=\"74\">74. The Principle of Mathematical Induction</h3>"
+     "<h3 id=\"74\">74. The Principle of Mathematical Induction</h3>"
+
+     "@({
+(encapsulate (((p *) => *))
+  (local (defun p (n) n))
+  (defthm p-0
+    (p 0))
+  (defthm p-recurrence
+    (implies (and (natp n) (p n))
+             (p (1+ n)))))
+
+(defun n-induction (n)
+  (if (posp n)
+      (list (n-induction (1- n)))
+    (list n)))
+
+(defthm mathematical-induction
+  (implies (natp n) (p n))
+  :hints ((\"Goal\" :induct (n-induction n))
+          (\"Subgoal *1/1\" :use ((:instance p-recurrence (n (1- n)))))))
+      })"
+
+     "<p>By David Russinoff.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -608,7 +631,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-     ;; "<h3 id=\"97\">97. Cramer's Rule</h3>"
+     "<h3 id=\"97\">97. Cramer's Rule</h3>"
+
+     "@(def dm::cramer)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/linear/reduction.lisp\">projects/linear/reduction.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"98\">98. Bertrand's Postulate</h3>"
      ;; "<h3 id=\"99\">99. Buffon Needle Problem</h3>"
      ;; "<h3 id=\"100\">100. Descartes Rule of Signs</h3>"
