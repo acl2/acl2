@@ -696,15 +696,13 @@
 (defthm len-gives-consp
   (implies (and (equal (len x) k) ;reversed order Fri Dec 24 16:50:28 2010
                 (< 0 k))
-           (equal (consp x)
-                  t)))
+           (consp x)))
 
 ;this rule is for axe proofs only, due to how acl2 treats the second hyp
 (defthm len-gives-consp-free
   (implies (and (equal k (len x)) ;acl2 will treat this hyp as a binding hyp and rewrite (len x)
                 (< 0 k))
-           (equal (consp x)
-                  t))
+           (consp x))
   :rule-classes nil)
 
 (defthmd update-nth-equal-cons-same

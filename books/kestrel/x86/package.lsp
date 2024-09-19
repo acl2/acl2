@@ -784,6 +784,7 @@
     compose-dags
     make-axe-rules
     make-axe-rules!
+    axe-quotep
     result-array-stobj
     dag-to-term
     dag-info
@@ -973,7 +974,14 @@
     x1 x2 y1 y2
     free
     freesize
-    ))
+    xsize
+    ysize
+    lowsize
+    highsize
+    lowval
+    highval
+    ;; low high ; can't include these as above we get them from the x86isa package
+    size2))
 
 (defpkg "X" (append *acl2-exports*
                     *symbols-from-acl2-package*
