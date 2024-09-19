@@ -1716,7 +1716,7 @@
 
 ;put this back (may need to repair it?)
 ;; ;instead we should probably turn the (* 2 x) into a bvmult
-;; (defthm *-of-2-becomes-bvmult
+;; (defthmd *-of-2-becomes-bvmult
 ;;   (implies (and (< x free)
 ;;                 (syntaxp (quotep free))
 ;;                 (integerp free)
@@ -1724,9 +1724,10 @@
 ;;            (equal (* 2 x)
 ;;                   (bvmult (ceiling-of-lg free) 2 x)))
 ;;   :hints (("Goal" :in-theory (e/d (bvmult)( BVMULT-OF-2-GEN)))))
+;(theory-invariant (incompatible (:definition bvmult) (:rewrite *-of-2-becomes-bvmult)))
 
 ;put this back (may need to repair it?)
-;; (defthm *-of-2-becomes-bvmult->=
+;; (defthmd *-of-2-becomes-bvmult->=
 ;;   (implies (and (equal (< free x) nil) ;;should it be (not blah) or (equal blah nil) ?
 ;;                 (syntaxp (quotep free))
 ;;                 (integerp free)

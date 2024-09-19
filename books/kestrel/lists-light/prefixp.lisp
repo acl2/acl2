@@ -99,8 +99,7 @@
 (defthm prefixp-of-cdr-rule
   (implies (and (prefixp y x)
                 (prefixp z (cdr y)))
-           (equal (prefixp z (cdr x))
-                  t))
+           (prefixp z (cdr x)))
   :hints (("Goal" :in-theory (enable prefixp true-list-fix))))
 
 (defthm prefixp-when-len-0
