@@ -276,6 +276,24 @@ occurring.
       <li>After the installation is complete, Eclipse will ask you if you
         would like to restart Eclipse. Select \"Restart
         Now\". This will close Eclipse and reopen it.</li></ol></li>
+  <li>Re-sign the Eclipse app<ul>
+      <li>After installing or updating the ACL2s Eclipse plugin or any other plugin
+        in Eclipse and rebooting your computer, you may get a popup saying \"The
+        application \"Eclipse\" can't be opened.\" the next time you open up Eclipse.
+        To avoid this issue, or to fix it if it has already occurred, you should do the following:
+      </li>
+      <li>Run the following command in Terminal:
+        @({sudo codesign --force --deep --sign - /Applications/Eclipse.app})
+        Replace @('/Applications/Eclipse.app') with the appropriate path to your
+        Eclipse installation if you happened to move it or rename it.
+      </li>
+      <li>You may need to repeat the above command in the future if you run into the
+        same issue again, regardless of whether or not you perform a plugin update.
+        For more information about why this occurs, see
+        <a href=\"https://bugs.eclipse.org/bugs/show_bug.cgi?id=494293\">this Eclipse issue</a>.
+      </li>
+    </ul>
+  </li>
   <li>Get started with Eclipse by working through the @(see acl2s-tutorial). </li>
 </ol>
 ")
@@ -466,8 +484,8 @@ reinstall Xming if you already have it installed.
     Terminal (e.g. by searching for it in Spotlight) and run @('java -version'). If
     a version number is printed, you have Java installed.
   </li>
-  <li><span class=\"question\">When I double click on the Eclipse application, an error window opens that includes the text @('Code Signature Invalid')!</span><br/>
-    This often occurs after applying a macOS update to a system that has Eclipse installed. The fix is to run the following command:
+  <li><span class=\"question\">When I double click on the Eclipse application, an error window opens that includes the text @('Code Signature Invalid') or @('The application cannot be opened')!</span><br/>
+    This often occurs after installing or updating an Eclipse plugin and then rebooting your computer. The fix is to run the following command:
     @({codesign --force --deep --sign - /Applications/Eclipse.app})
     If you have installed Eclipse in a different location or with a different name, you should replace @('/Applications/Eclipse.app') with the path to the appropriate
     @('.app') file. For more information about why this occurs, see <a href=\"https://bugs.eclipse.org/bugs/show_bug.cgi?id=494293\">this Eclipse issue</a>.
