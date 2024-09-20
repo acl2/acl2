@@ -326,4 +326,133 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: accepted-certificates
+(define accepted-certificates ((val addressp) (systate system-statep))
+  :guard (set::in val (correct-addresses systate))
+  :returns (certs certificate-setp)
+  :short "Certificates accepted by a validator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all the certificates that have been accepted by a validator,
+     i.e. the certificates that they are in the buffer or DAG.
+     When a validator authors a certificates, it adds it to the DAG,
+     so it certainly ``accepts'' it.
+     When a validator receives a certificate from the network,
+     it adds it to the buffer,
+     and then later it possibly moves it to the DAG."))
+  (b* ((vstate (get-validator-state val systate)))
+    (set::union (validator-state->dag vstate)
+                (validator-state->buffer vstate)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled accepted-certificates-when-init
+  :short "Initially, validators have accepted no certificates."
+  (implies (and (system-initp systate)
+                (set::in val (correct-addresses systate)))
+           (equal (accepted-certificates val systate)
+                  nil))
+  :enable (accepted-certificates
+           system-initp
+           system-validators-initp-necc
+           validator-init))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection accepted-certificates-of-next
+  :short "How the certificates accepted by a validator
+          change (or not) for each transition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The only kind of transitions that change
+     the certificates accepted by a validator
+     are @('create-transition'),
+     which adds a certificate to the DAG of the author,
+     and @('receive-certificates'),
+     which adds a certificate to the DAG of the receiver.")
+   (xdoc::p
+    "A @('store-certificate') just moves a certificate from buffer to DAG,
+     so there is no net change to the accepted certificates.")
+   (xdoc::p
+    "For the other three kinds of events,
+     there are no changes to DAGs and buffers,
+     and thus the accepted certificates do not change for any validator."))
+
+  (defruled accepted-certificates-of-create-certificate-next
+    (implies (set::in val (correct-addresses systate))
+             (equal (accepted-certificates val
+                                           (create-certificate-next cert
+                                                                    systate))
+                    (if (equal (address-fix val)
+                               (certificate->author cert))
+                        (set::insert (certificate-fix cert)
+                                     (accepted-certificates val systate))
+                      (accepted-certificates val systate))))
+    :enable
+    (accepted-certificates
+     validator-state->dag-of-create-certificate-next
+     validator-state->buffer-of-create-certificate-next))
+
+  (defruled accepted-certificates-of-receive-certificate-next
+    (implies (and (set::in val (correct-addresses systate))
+                  (receive-certificate-possiblep msg systate))
+             (equal (accepted-certificates val
+                                           (receive-certificate-next msg
+                                                                     systate))
+                    (if (equal (address-fix val)
+                               (message->destination msg))
+                        (set::insert (message->certificate msg)
+                                     (accepted-certificates val systate))
+                      (accepted-certificates val systate))))
+    :enable (accepted-certificates
+             validator-state->dag-of-receive-certificate-next
+             validator-state->buffer-of-receive-certificate-next))
+
+  (defruled accepted-certificates-of-store-certificate-next
+    (implies (and (set::in val (correct-addresses systate))
+                  (store-certificate-possiblep val1 cert systate))
+             (equal (accepted-certificates val
+                                           (store-certificate-next val1
+                                                                   cert
+                                                                   systate))
+                    (accepted-certificates val systate)))
+    :enable (accepted-certificates
+             validator-state->dag-of-store-certificate-next
+             validator-state->buffer-of-store-certificate-next
+             set::expensive-rules
+             store-certificate-possiblep))
+
+  (defruled accepted-certificates-of-advance-round-next
+    (implies (and (set::in val (correct-addresses systate))
+                  (advance-round-possiblep val1 systate))
+             (equal (accepted-certificates val
+                                           (advance-round-next val1
+                                                               systate))
+                    (accepted-certificates val systate)))
+    :enable (accepted-certificates
+             validator-state->dag-of-advance-round-next
+             validator-state->buffer-of-advance-round-next))
+
+  (defruled accepted-certificates-of-commit-anchors-next
+    (implies (and (set::in val (correct-addresses systate))
+                  (commit-anchors-possiblep val1 systate))
+             (equal (accepted-certificates val
+                                           (commit-anchors-next val1
+                                                                systate))
+                    (accepted-certificates val systate)))
+    :enable (accepted-certificates
+             validator-state->dag-of-commit-anchors-next
+             validator-state->buffer-of-commit-anchors-next))
+
+  (defruled accepted-certificates-of-timer-expires-next
+    (implies (and (set::in val (correct-addresses systate))
+                  (timer-expires-possiblep val1 systate))
+             (equal (accepted-certificates val
+                                           (timer-expires-next val1
+                                                               systate))
+                    (accepted-certificates val systate)))
+    :enable (accepted-certificates
+             validator-state->dag-of-timer-expires-next
+             validator-state->buffer-of-timer-expires-next)))
