@@ -211,7 +211,6 @@
 (defun type-rules ()
   (declare (xargs :guard t))
   '(integerp-of-ceiling-of-lg natp-of-ceiling-of-lg
-    <-of-ceiling-of-lg-and-constant ;move? not a type rule!
     integerp-of-bitand natp-of-bitand
     integerp-of-bitor natp-of-bitor
     integerp-of-bitxor natp-of-bitxor

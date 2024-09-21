@@ -1,7 +1,6 @@
-; Portcullis commands for tester-rules-bv.lisp
+; Cert-flags for bytes-loadedp.lisp
 ;
-; Copyright (C) 2023 Kestrel Technology, LLC
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,4 +8,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "kestrel/x86/portcullis" :dir :system)
+; cert-flags: ? T :TTAGS :ALL

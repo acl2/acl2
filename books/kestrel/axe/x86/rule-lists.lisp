@@ -1006,8 +1006,8 @@
     acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg2
     ;acl2::logxor-bvchop-bvchop        ; introduce bvxor
     ;acl2::logxor-of-bvchop-becomes-bvxor-arg1 ; introduce bvxor
-    ;;            bvplus-of-logxor-arg1                     ; introduce bvxor
-    ;;            bvxor-of-logxor-arg2                      ; introduce bvxor
+    ;;            acl2::bvplus-of-logxor-arg1                     ; introduce bvxor
+    ;;            acl2::bvxor-of-logxor-arg2                      ; introduce bvxor
 
     acl2::loghead-becomes-bvchop
     acl2::bvchop-of-lognot-becomes-bvnot
@@ -4442,16 +4442,16 @@
             bitops::ash-is-expt-*-x
             acl2::natp-of-*
             acl2::<-of-constant-and-+-of-constant ; for address calcs
-            <-of-15-and-*-of-4
-            unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
+            acl2::<-of-15-and-*-of-4
+            acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
             acl2::not-bvlt-of-max-arg2
-            <-of-*-when-constant-integers
+            acl2::<-of-*-when-constant-integers
             ;separate-when-separate-2 ; todo: drop? but that caused problems
             acl2::<-of-+-cancel-second-of-more-and-only ; more?
             acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::collect-constants-over-<-2
             acl2::commutativity-of-*-when-constant
-            <-of-*-of-constant-and-constant
+            acl2::<-of-*-of-constant-and-constant
             acl2::rationalp-when-integerp
             acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
             acl2::+-of-+-of---same
@@ -4467,36 +4467,36 @@
             ;; acl2::bvif-of-myif-arg3 ; introduces bvif
             ;; acl2::bvif-of-myif-arg4 ; introduces bvif
             ;; help to show that divisions don't overflow or underflow:
-            not-sbvlt-of-constant-and-sbvdiv-32-64
-            not-sbvlt-of-sbvdiv-and-minus-constant-32-64
-            not-bvlt-of-constant-and-bvdiv-64-128
-            not-bvlt-of-constant-and-bvdiv-32-64
+            acl2::not-sbvlt-of-constant-and-sbvdiv-32-64
+            acl2::not-sbvlt-of-sbvdiv-and-minus-constant-32-64
+            acl2::not-bvlt-of-constant-and-bvdiv-64-128
+            acl2::not-bvlt-of-constant-and-bvdiv-32-64
             acl2::slice-of-bvsx-high ; move back, but this introduces repeatbit
-            bvcat-of-repeatbit-of-getbit-of-bvsx-same
-            not-sbvlt-of-bvsx-of-constant-arg2-64-8
-            not-sbvlt-of-bvsx-of-constant-arg2-64-16
-            not-sbvlt-of-bvsx-of-constant-arg2-64-32
-            not-sbvlt-of-bvsx-of-constant-arg2-128-64
-            not-sbvlt-of-bvsx-of-constant-arg3-64-8
-            not-sbvlt-of-bvsx-of-constant-arg3-64-16
-            not-sbvlt-of-bvsx-of-constant-arg3-64-32
-            not-sbvlt-of-bvsx-of-constant-arg3-128-64
+            acl2::bvcat-of-repeatbit-of-getbit-of-bvsx-same
+            acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-8
+            acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-16
+            acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-32
+            acl2::not-sbvlt-of-bvsx-of-constant-arg2-128-64
+            acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-8
+            acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-16
+            acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-32
+            acl2::not-sbvlt-of-bvsx-of-constant-arg3-128-64
             acl2::floor-of-1-when-integerp ; simplified something that showed up in an error case?
             unicity-of-1 ; simplified something that showed up in an error case
-            bvcat-of-repeatbit-of-getbit-becomes-bvsx
-            bvcat-of-repeatbit-tighten-64-32 ;gen!
+            acl2::bvcat-of-repeatbit-of-getbit-becomes-bvsx
+            acl2::bvcat-of-repeatbit-tighten-64-32 ;gen!
             acl2::bvlt-of-bvsx-arg2
-            sbvlt-of-bvsx-32-16-constant
+            acl2::sbvlt-of-bvsx-32-16-constant
 ;            rflagsbits->af-of-if
             acl2::sbvlt-false-when-sbvlt-gen ; did nothing?
-            if-of-sbvlt-and-not-sbvlt-helper
+            acl2::if-of-sbvlt-and-not-sbvlt-helper
             if-of-set-flag-and-set-flag
             xr-of-!rflags-irrel ; todo: better normal form?
             64-bit-modep-of-!rflags
             app-view-of-!rflags
             read-of-!rflags
-            logext-of-+-of-bvplus-same-size
-            logext-of-+-of-+-of-mult-same-size
+            acl2::logext-of-+-of-bvplus-same-size
+            acl2::logext-of-+-of-+-of-mult-same-size
             acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
             acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op
             acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
@@ -4520,7 +4520,7 @@
             acl2::bvplus-of-unary-minus-arg2
             acl2::if-becomes-bvif-1-axe
             ;; acl2::boolif-of-t-and-nil-when-booleanp
-            slice-of-bvand-of-constant
+            acl2::slice-of-bvand-of-constant
             ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
             acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
             acl2::equal-of-bvplus-constant-and-constant
@@ -4546,8 +4546,8 @@
             ;;acl2::bvif-of-1-and-0-becomes-bool-to-bit ; introduces bool-to-bit?  maybe bad.
             ;; todo: just include boolean-rules?:
             ;; acl2::bvmult-tighten-when-power-of-2p-axe ; todo: uncomment
-            bvchop-of-bool-to-bit ;todo: drop
-            logext-of-bool-to-bit
+            acl2::bvchop-of-bool-to-bit ;todo: drop
+            acl2::logext-of-bool-to-bit
             acl2::<-of-if-arg1-safe
             ;; acl2::<-of-if-arg2-safe
             acl2::equal-of-bvif-safe2
@@ -4578,7 +4578,7 @@
             rtl::bias-constant-opener
             rtl::expw-constant-opener
             acl2::bvchop-of-if
-            ifix-of-if
+            acl2::ifix-of-if
 
             ;; move all of these:
             ;bvle
@@ -4592,7 +4592,7 @@
             acl2::bfix-when-bitp
             ;;stuff related to flags changes:
 
-            logand-of-1-becomes-getbit-arg2 ;move
+            acl2::logand-of-1-becomes-getbit-arg2 ;move
             ;; acl2::ifix-when-integerp
             of-spec-of-logext-32
             acl2::unsigned-byte-p-of-if
@@ -4602,9 +4602,9 @@
             ;acl2::slice-out-of-order
 
             ;acl2::bvcat-of-0-arg2
-            bvmod-tighten-64-32
-            bvdiv-tighten-64-32
-            not-bvlt-of-max-when-unsiged-byte-p
+            acl2::bvmod-tighten-64-32
+            acl2::bvdiv-tighten-64-32
+            acl2::not-bvlt-of-max-when-unsiged-byte-p
             ;x86isa::sf-spec32-rewrite ; trying without...
             ;jle-condition-rewrite-1-with-bvif ; this one works on bvif
             ;jle-condition-rewrite-1-with-bvif-and-bvchop
@@ -4649,8 +4649,8 @@
             ;acl2::bvplus-when-size-is-not-positive ; todo: more like this, make a rule-list
 
             acl2::bvcat-of-slice-of-bvsx-same
-            not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
-            not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
+            acl2::not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
+            acl2::not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
             acl2::bvplus-commutative-increasing-axe
             acl2::bvplus-commutative-2-increasing-axe
             ;;acl2::equal-same
@@ -4683,11 +4683,11 @@
             ;;acl2::unsigned-byte-p-of-0-arg1 ; move to a more fundamental rule list
             ;; acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
             acl2::boolor-becomes-boolif
-            ;; bvlt-hack-1-gen
+            ;; acl2::bvlt-hack-1-gen
             acl2::bvchop-subst-constant
             acl2::bvchop-subst-constant-alt
-            boolif-of-bvlt-strengthen-to-equal
-            bvlt-reduce-when-not-equal-one-less
+            acl2::boolif-of-bvlt-strengthen-to-equal
+            acl2::bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
             read-1-of-write-4
             ;read-1-of-write-1-both ; can make things, like failure to resolve rip, hard to debug
@@ -4715,7 +4715,7 @@
             acl2::equal-of-bvplus-move-bvminus-alt-better
             acl2::bvplus-commutative-increasing-axe
             ;acl2::bvchop-of-bvmod ; just use bvchop-identity-axe
-            bvuminus-of-bvif-constants
+            acl2::bvuminus-of-bvif-constants
             acl2::equal-of-bvif ;restrict to constant x?
             acl2::equal-of-bvif-alt ;restrict to constant x?
             ;; just include boolean-rules?
@@ -4728,11 +4728,11 @@
             acl2::signed-byte-p-when-unsigned-byte-p-one-less
             ;acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
             acl2::boolor-becomes-boolif
-            ;bvlt-hack-1-gen
+            ;acl2::bvlt-hack-1-gen
             acl2::bvchop-subst-constant
             acl2::bvchop-subst-constant-alt
-            boolif-of-bvlt-strengthen-to-equal
-            bvlt-reduce-when-not-equal-one-less
+            acl2::boolif-of-bvlt-strengthen-to-equal
+            acl2::bvlt-reduce-when-not-equal-one-less
             ;; trying opening these up if they surive to the proof stage:
             js-condition
             jns-condition

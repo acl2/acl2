@@ -144,7 +144,7 @@
                 (natp i))
            (equal (take i (subrange start end lst))
                   (subrange start (+ start i -1) lst)))
-  :hints (("Goal" :in-theory (e/d (subrange) ()))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 ;todo: combine with the regular rule
 (defthm take-of-subrange-too-big
@@ -159,7 +159,7 @@
                     (append (subrange start end lst)
                             (repeat (- i (+ 1 (- end start)))
                                     nil)))))
-  :hints (("Goal" :in-theory (e/d (subrange) ()))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 (defthm subrange-out-of-order-or-singleton
   (implies (and (<= end start)
@@ -272,7 +272,7 @@
                   (subrange 1 (+ -1 n) lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :expand (subrange 1 (+ -2 n) (cdr lst))
-           :in-theory (e/d (take subrange) ()))))
+           :in-theory (enable take subrange))))
 
 (theory-invariant (incompatible (:rewrite cdr-of-take-becomes-subrange-better) (:definition subrange)))
 
@@ -280,13 +280,13 @@
   (implies (< start 0)
            (equal (subrange start end lst)
                   (subrange 0 end lst)))
-  :hints (("Goal" :in-theory (e/d (subrange take) ()))))
+  :hints (("Goal" :in-theory (enable subrange take))))
 
 (defthm subrange-when-end-is-negative
   (implies (< end 0)
            (equal (subrange start end lst)
                   nil))
-  :hints (("Goal" :in-theory (e/d (subrange take) ()))))
+  :hints (("Goal" :in-theory (enable subrange take))))
 
 (defthm cons-nth-onto-subrange
   (implies (and (equal m (+ 1 k))
@@ -295,9 +295,8 @@
                 (natp k)
                 ;; (integerp m)
                 (natp n))
-           (equal (CONS (NTH k lst) (SUBRANGE m n lst))
-                  (SUBRANGE k n lst)))
-  :hints (("Goal" :in-theory (disable ))))
+           (equal (cons (nth k lst) (subrange m n lst))
+                  (subrange k n lst))))
 
 (defthm subrange-of-take
   (implies (and (< high n)
@@ -307,7 +306,7 @@
                 (natp n))
            (equal (SUBRANGE low high (TAKE n x))
                   (SUBRANGE low high x)))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE) ()))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 (defthmd subrange-of-cons
   (implies (and (natp low)
@@ -317,7 +316,7 @@
                   (if (zp low)
                       (cons a (subrange 0 (+ -1 high) rest))
                     (subrange (+ -1 low) (+ -1 high) rest))))
-  :hints (("Goal" :in-theory (e/d (subrange) ()))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 ;prevents case splits
 (defthm subrange-of-cons-constant-version
@@ -339,7 +338,7 @@
                 (<= START END))
            (EQUAL (SUBRANGE START END LST)
                   (NTHCDR START LST)))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE) ()))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 (defthm cons-nth-onto-subrange-alt
   (implies (and (equal m (+ 1 k))
@@ -356,8 +355,7 @@
                   (if (<= n n2)
                       (subrange n (+ -1 n2) lst)
                     nil)))
-  :hints (("Goal" :in-theory (e/d (subrange)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 (theory-invariant (incompatible (:rewrite NTHCDR-OF-TAKE-BECOMES-SUBRANGE) (:definition subrange)))
 
@@ -393,19 +391,16 @@
             (natp high))
            (equal (subrange low high (cdr lst))
                   (subrange (+ 1 (nfix low)) (+ 1 high) lst)))
-  :hints (("Goal" :in-theory (e/d (subrange)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 (defthm subrange-of-append-irrel
   (implies (and (natp low)
                 (natp high)
-                (< high (len x))
-                )
+                (< high (len x)))
            (equal (subrange low high (append x y))
                   (subrange low high x)))
-  :hints (("Goal" :in-theory (e/d (subrange TAKE-OF-NTHCDR)
-                                  (NTHCDR-OF-TAKE
-                                   )))))
+  :hints (("Goal" :in-theory (e/d (subrange take-of-nthcdr)
+                                  (nthcdr-of-take)))))
 
 (defthm subrange-of-append-lemma2
   (implies (and (< m (len x))
@@ -413,14 +408,13 @@
                 (< n (+ (len x) (len y)))
                 (<= m n)
                 (natp m)
-                (true-listp x)
-                )
+                (true-listp x))
            (equal (subrange m n (append x y))
                   (append (subrange m (min n (+ -1 (len x))) x)
                           (subrange (- m (len x))
                                     (- n (len x))
                                     y))))
-  :hints (("Goal" :in-theory (enable subrange posp NTHCDR-WHEN-NOT-POSP))))
+  :hints (("Goal" :in-theory (enable subrange posp nthcdr-when-not-posp))))
 
 ;can we avoid the case splits?
 (defthm subrange-of-append
@@ -449,8 +443,7 @@
            (equal (equal (subrange start end lst) nil)
                   (< end start)
                   ))
-  :hints (("Goal" :in-theory (e/d (subrange) (;anti-subrange
-                                              )))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 ;use iff?
 ;for axe?
