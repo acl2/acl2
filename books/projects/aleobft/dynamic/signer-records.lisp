@@ -22,7 +22,7 @@
 
 (defxdoc+ signer-records
   :parents (correctness)
-  :short "Invariant that the correct signer of a certificate
+  :short "Invariant that each correct signer of each certificate
           has a record of the certificate."
   :long
   (xdoc::topstring
@@ -33,7 +33,7 @@
      so it has a record of the certificate.
      As also defined in the transitions for @('create-certificate'),
      an endorser adds the certificate's author and round
-     to the set of endorsed pair,
+     to the set of endorsed pairs,
      which also constitutes a record of the certificate.
      Certificate creation also broadcasts the certificate to endorsers
      (as well as to other correct validators, except the author),
@@ -66,7 +66,7 @@
      (it could be just authors and rounds),
      and they only apply to the signers of the certificate.")
    (xdoc::p
-    "It is tempting to formalize the notion of
+    "It may be tempting to formalize the notion of
      `a signer having a record of a certificate'
      as the disjunction of
      (i) the certificate is in the DAG of the signer,
