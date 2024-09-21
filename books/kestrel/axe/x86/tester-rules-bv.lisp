@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "X") ; todo: change to ACL2 and get rid of tester-rules-bv.acl2
+(in-package "ACL2")
 
 ;; STATUS: IN-PROGRESS
 
@@ -55,7 +55,6 @@
 (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
 ;(local (include-book "kestrel/bv/signed-byte-p" :dir :system))
 
-
 ;gen
 (defthm not-sbvlt-of-sbvdiv-and-minus-constant-32-64
   (implies (unsigned-byte-p 31 x)
@@ -76,22 +75,6 @@
   (implies (unsigned-byte-p 32 x)
            (not (bvlt 64 4294967295 (bvdiv 64 x y))))
   :hints (("Goal" :in-theory (enable bvdiv bvlt))))
-
-(defthm <-of-*-of-constant-and-constant
-  (implies (and (syntaxp (and (quotep k1)
-                              (quotep k2)))
-                (< 0 k2) ;gen
-                (rationalp x)
-                (rationalp k1)
-                (rationalp k2)
-                )
-           (equal (< (* k2 x) k1)
-                  (and ;(acl2-numberp k1)
-                       (< (fix x) (/ k1 k2)))))
-  :hints (("Goal" :in-theory (disable inverse-of-*
-                                      associativity-of-*)
-           :use ((:instance inverse-of-* (x k2))
-                 (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))
 
 ;todo: gen
 (defthm <-of-15-and-*-of-4
@@ -119,13 +102,13 @@
            :cases ((<= x (/ K1 k2))))))
 
 ;gen
-;why is this needed? maybe because of ACL2::<-BECOMES-BVLT-AXE-BIND-FREE-ARG1-STRONG
-(defthm UNSIGNED-BYTE-P-2-of-bvchop-when-bvlt-of-4
-  (implies (BVLT '32 x '4)
-           (UNSIGNED-BYTE-P '2 (BVCHOP '32 x))))
+;why is this needed? maybe because of <-BECOMES-BVLT-AXE-BIND-FREE-ARG1-STRONG
+(defthm unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
+  (implies (bvlt '32 x '4)
+           (unsigned-byte-p '2 (bvchop '32 x))))
 
 ;; could restrict to constants
-(defthm acl2::bvsx-when-bvlt
+(defthm bvsx-when-bvlt
   (implies (and (bvlt old-size x (expt 2 (+ -1 old-size)))
                 (natp old-size)
                 (<= old-size new-size))
@@ -142,6 +125,7 @@
 
 ;loops with boolif-of-bvlt-strengthen-to-equal?
 ;rename
+;not used?
 (defthmd bvlt-hack-1-gen
   (implies (and (syntaxp (quotep k))
                 (not (bvlt 16 x (+ -1 k)))
@@ -150,9 +134,9 @@
            (equal (bvlt 16 x k)
                   (equal (bvchop 16 x) (+ -1 k))))
   :hints (("Goal" :in-theory (enable bvlt
-                                     acl2::bvchop-of-sum-cases))))
+                                     bvchop-of-sum-cases))))
 
-;; (defthm acl2::boolif-of-t-and-nil-when-booleanp
+;; (defthm boolif-of-t-and-nil-when-booleanp
 ;;   (implies (booleanp x)
 ;;            (equal (boolif x t nil)
 ;;                   x)))
@@ -166,7 +150,7 @@
                   (boolif (equal (bvchop 16 x) (+ -1 k)) then else)))
   :hints (("Goal" :in-theory (enable boolor
                                      bvlt ;todo
-                                     acl2::bvchop-of-sum-cases
+                                     bvchop-of-sum-cases
                                      BOOLIF
                                      ))))
 
@@ -179,7 +163,7 @@
                   (boolif (equal (bvchop 16 x) (+ -1 k)) t else)))
   :hints (("Goal" :in-theory (enable boolor boolif
                                      bvlt ;todo
-                                     acl2::bvchop-of-sum-cases
+                                     bvchop-of-sum-cases
                                      ))))
 
 
@@ -193,7 +177,7 @@
                   (bvlt 16 x (+ -1 k))))
   :hints (("Goal" :in-theory (enable boolor
                                      bvlt ;todo
-                                     acl2::bvchop-of-sum-cases
+                                     bvchop-of-sum-cases
                                      ))))
 
 (theory-invariant (incompatible (:rewrite bvcat-of-minus-becomes-bvshl)
@@ -241,9 +225,9 @@
 (defthm bvmod-tighten-64-32 ;gen
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
-           (equal (ACL2::BVmod 64 x y)
-                  (ACL2::BVmod 32 x y)))
-  :hints (("Goal" :in-theory (enable acl2::bvmod))))
+           (equal (BVmod 64 x y)
+                  (BVmod 32 x y)))
+  :hints (("Goal" :in-theory (enable bvmod))))
 
 (defthm not-bvlt-of-max-when-unsiged-byte-p
   (implies (unsigned-byte-p 32 x)
@@ -293,7 +277,7 @@
                 )
            (< (* i (/ j)) (- free)))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (disable acl2::<-of-*-of-/-arg1))))
+  :hints (("Goal" :in-theory (disable <-of-*-of-/-arg1))))
 
 ;gen!
 (defthm *-of-/-linear-when-i-negative-and-positive-linear
@@ -306,7 +290,7 @@
                 (<= 0 i))
            (< (- free) (* i (/ j))))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (disable acl2::<-of-*-of-/-arg1))))
+  :hints (("Goal" :in-theory (disable <-of-*-of-/-arg1))))
 
 ;(in-theory (disable X86ISA::<-WHEN-CANONICAL-ADDRESS-P-IMPOSSIBLE X86ISA::<-WHEN-CANONICAL-ADDRESS-P)) ;todo bad
 
@@ -318,11 +302,11 @@
 (defthm not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
   (not (sbvlt 64 (sbvdiv 64 (bvsx 64 32 x) 2) -2147483648))
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
-           :in-theory (e/d (sbvlt sbvdiv bvsx bvlt acl2::logext-cases bvcat logapp
-                                  acl2::truncate-becomes-floor-gen
-                                  acl2::getbit-of-+
+           :in-theory (e/d (sbvlt sbvdiv bvsx bvlt logext-cases bvcat logapp
+                                  truncate-becomes-floor-gen
+                                  getbit-of-+
                                   bvplus
-                                  acl2::bvchop-of-sum-cases)
+                                  bvchop-of-sum-cases)
                            ( ;disable
                             )))))
 
@@ -333,8 +317,8 @@
                 (natp n))
            (equal (getbit n (* 1/2 x))
                   (getbit (+ 1 n) x)))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail acl2::expt-of-+ ifix bvchop)
-                                  (acl2::bvchop-1-becomes-getbit)))))
+  :hints (("Goal" :in-theory (e/d (getbit slice logtail expt-of-+ ifix bvchop)
+                                  (bvchop-1-becomes-getbit)))))
 
 
 
@@ -343,12 +327,12 @@
 (defthm not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
   (not (sbvlt 64 2147483647 (sbvdiv 64 (bvsx 64 32 x) 2) ))
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
-           :in-theory (e/d (sbvlt sbvdiv bvsx bvlt acl2::logext-cases bvcat logapp
-                                  acl2::truncate-becomes-floor-gen
-                                  acl2::getbit-of-+
+           :in-theory (e/d (sbvlt sbvdiv bvsx bvlt logext-cases bvcat logapp
+                                  truncate-becomes-floor-gen
+                                  getbit-of-+
                                   bvplus
-                                  acl2::bvchop-of-sum-cases)
-                           (acl2::sbvlt-rewrite ;disable
+                                  bvchop-of-sum-cases)
+                           (sbvlt-rewrite ;disable
                             )))))
 
 ;; todo: recharacterize the x86 shift instruction so we don't need rules to put in the shifts
@@ -359,7 +343,7 @@
                   (bvshl 32 val amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
 
-(defthm acl2::bvchop-subst-constant-alt
+(defthm bvchop-subst-constant-alt
   (implies (and (syntaxp (not (quotep x)))
                 (equal (bvchop free x) k) ; this rule
                 (syntaxp (quotep k))
@@ -368,8 +352,8 @@
                 (integerp free))
            (equal (bvchop size x)
                   (bvchop size k)))
-  :hints (("Goal" :use (:instance acl2::bvchop-subst-constant (acl2::free free) (acl2::size size))
-           :in-theory (disable acl2::bvchop-subst-constant))))
+  :hints (("Goal" :use (:instance bvchop-subst-constant (free free) (size size))
+           :in-theory (disable bvchop-subst-constant))))
 
 ;gen
 (defthm bvcat-of-repeatbit-of-getbit-of-bvsx-same
@@ -388,32 +372,32 @@
                 (natp highsize))
            (equal (bvcat highsize (repeatbit highsize (getbit n x)) lowsize x)
                   (bvsx (+ highsize lowsize) lowsize x)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2
-                                     acl2::repeatbit-of-1-arg2))))
+  :hints (("Goal" :in-theory (enable bvsx-alt-def-2
+                                     repeatbit-of-1-arg2))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg2-64-8
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 k -128))
            (not (sbvlt 64 (bvsx 64 8 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvsx-alt-def-2 booland bvlt equal-of-slice sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg2-64-16
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 k (- (expt 2 (+ -1 16)))))
            (not (sbvlt 64 (bvsx 64 16 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvsx-alt-def-2 booland bvlt equal-of-slice sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg2-64-32
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 k (- (expt 2 (+ -1 32)))))
            (not (sbvlt 64 (bvsx 64 32 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvsx-alt-def-2 booland bvlt equal-of-slice sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg2-128-64
   (implies (and (syntaxp (quotep k))
                 (sbvle 128 k (- (expt 2 (+ -1 64)))))
            (not (sbvlt 128 (bvsx 128 64 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvsx-alt-def-2 booland bvlt equal-of-slice sbvlt-rewrite))))
 
 ;; (defthm not-sbvlt-of-bvsx-of-constant-arg2-64
 ;;   (implies (and (syntaxp (quotep k))
@@ -423,33 +407,33 @@
 ;;                 (sbvle 64 k (- (expt 2 (+ -1 size)))))
 ;;            (not (sbvlt 64 (bvsx 64 size x) k)))
 ;;   :hints (("Goal" :cases ((EQUAL (GETBIT (+ -1 SIZE) k) 1))
-;;            :in-theory (e/d (acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice)
-;;                                   (acl2::exponents-add)))))
+;;            :in-theory (e/d (bvsx-alt-def-2 booland bvlt equal-of-slice)
+;;                                   (exponents-add)))))
 
 ;gen!
 (defthm not-sbvlt-of-bvsx-of-constant-arg3-64-8
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 (+ -1 128) k))
            (not (sbvlt 64 k (bvsx 64 8 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvsx-alt-def-2 booland bvlt equal-of-slice sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg3-64-16
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 (+ -1 (expt 2 (+ -1 16))) k))
            (not (sbvlt 64 k (bvsx 64 16 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvsx-alt-def-2 booland bvlt equal-of-slice sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg3-64-32
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 (+ -1 (expt 2 (+ -1 32))) k))
            (not (sbvlt 64 k (bvsx 64 32 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvsx-alt-def-2 booland bvlt equal-of-slice sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg3-128-64
   (implies (and (syntaxp (quotep k))
                 (sbvle 128 (+ -1 (expt 2 (+ -1 64))) k))
            (not (sbvlt 128 k (bvsx 128 64 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvsx-alt-def-2 booland bvlt equal-of-slice sbvlt-rewrite))))
 
 (defthm bvcat-of-repeatbit-tighten-64-32 ;gen!
   (equal (bvcat 64 (repeatbit 32 bit) 32 lowval)
@@ -462,7 +446,7 @@
            (equal (sbvlt 32 k (bvsx 32 16 x))
                   (and (sbvlt 16 k x)
                        (not (sbvlt 16 x 0)))))
-  :hints (("Goal" :in-theory (enable bvlt ACL2::BVSX-ALT-DEF-2 acl2::sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvlt BVSX-ALT-DEF-2 sbvlt-rewrite))))
 
 ;; todo: constant opener for X86ISA::!RFLAGSBITS->AF$INLINE
 
@@ -486,7 +470,7 @@
                 (integerp index))
            (equal (logext 64 (binary-+ k (bvplus 64 text-offset index)))
                   (logext 64 (binary-+ k (+ text-offset index)))))
-  :hints (("Goal" :in-theory (enable acl2::equal-of-logext-and-logext bvplus))))
+  :hints (("Goal" :in-theory (enable equal-of-logext-and-logext bvplus))))
 
 ;slow!
 ;; arises in array indexing -- try without this
@@ -497,10 +481,10 @@
                 (integerp val))
            (equal (logext 64 (+ k (+ (bvmult 64 val index) text-offset)))
                   (logext 64 (+ k (+ (* val index) text-offset)))))
-  :hints (("Goal" :in-theory (e/d (acl2::equal-of-logext-and-logext bvmult)
+  :hints (("Goal" :in-theory (e/d (equal-of-logext-and-logext bvmult)
                                   (;X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P
                                    ;BVCHOP-TIGHTEN-WHEN-UNSIGNED-BYTE-P
-                                   ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
+                                   UNSIGNED-BYTE-P-FROM-BOUNDS
                                    )))))
 
 ;; (thm
@@ -523,8 +507,8 @@
                   (and (unsigned-byte-p size k)
                        (equal (logext size k) x))))
   :hints (("Goal" :in-theory (enable signed-byte-p)
-           :use (:instance acl2::logext-of-bvchop-same
-                           (acl2::size size)))))
+           :use (:instance logext-of-bvchop-same
+                           (size size)))))
 
 (defthmd equal-of-bvchop-when-signed-byte-p
   (implies (and ;; (syntaxp (quotep k))
@@ -533,8 +517,8 @@
                   (and (unsigned-byte-p size k)
                        (equal (logext size k) x))))
   :hints (("Goal" :in-theory (enable signed-byte-p)
-           :use (:instance acl2::logext-of-bvchop-same
-                                  (acl2::size size)))))
+           :use (:instance logext-of-bvchop-same
+                                  (size size)))))
 
 (defthm bvchop-when-signed-byte-p-and-<-of-0
   (implies (and (signed-byte-p 48 x)
@@ -587,8 +571,8 @@
                          (slice high low x) ; gets computed
                          (slice high low y))))
   :hints (("Goal" :in-theory (e/d (bvand)
-                                  (;acl2::logand-of-bvchop-becomes-bvand-alt ;loop
-                                   ;acl2::logand-of-bvchop-becomes-bvand ;loop
+                                  (;logand-of-bvchop-becomes-bvand-alt ;loop
+                                   ;logand-of-bvchop-becomes-bvand ;loop
                                    )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
