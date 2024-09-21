@@ -37,15 +37,15 @@
      which also constitutes a record of the certificate.
      Certificate creation also broadcasts the certificate to endorsers
      (as well as to other correct validators, except the author),
-     so the endorser may receive the whole certificate at some point,
+     so an endorser may receive the whole certificate at some point,
      via a @('receive-certificate') event,
      upon which it removes the author-round pair from the endorsed set,
      but it adds the whole certificate to the buffer,
-     so it is still has a record of the certificate.
+     so it still has a record of the certificate.
      A @('store-certificate') event may move the certificate
      from the buffer to the DAG,
-     but again the endorser has thus a record of that certificate.
-     Certificates are never removed from DAG by other events.")
+     but again the endorser still has a record of that certificate.
+     Certificates are never removed by other events.")
    (xdoc::p
     "Thus, both in the case of the author and in the case of an endorser,
      the signer in question always has a record of the certificate,
@@ -81,7 +81,7 @@
      i.e. @('C.author = C0.author') and @('C.round = C0.round').
      This cannot happen because of non-equivocation,
      but we have not proved that yet,
-     and in fact we need to use to use the notion of signer records
+     and in fact we need to use the notion of signer records
      to prove non-equivocation, so we cannot assume it here.
      The problem is that, upon receiving @('C'),
      if the record of @('C0') is in the set of endorsed pairs,
@@ -140,21 +140,26 @@
 (define-sk signer-records-p ((systate system-statep))
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
-          for every certificate in the system,
-          every correct signer has a record of that certificate."
+          for every certificate signed by a correct validator,
+          the validator has a record of that certificate."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The certificates in the system are
-     the certificates owned by any correct validator;
-     as proved in @(see same-owned-certificates),
-     all correct validators own the same set of certificates,
-     so we can pick any arbitrary correct validator."))
-  (forall (val cert signer)
-          (implies (and (set::in val (correct-addresses systate))
-                        (set::in cert (owned-certificates val systate))
-                        (set::in signer (certificate->signers cert))
-                        (set::in signer (correct-addresses systate)))
+    "We express this on the set of signed certificates
+     defined by @(tsee signed-certificates).
+     The invariant holds on all the certificates in the system,
+     as returned by @(tsee owned-certificates) on any correct validator
+     (where the exact validator is irrelevant
+     because of @(see same-owned-certificates)),
+     which in general are a superset,
+     because there may be a certificate whose signers are all faulty
+     (a @('create-certificate') event does not prevent that).
+     However, we only need this invariant for
+     the certificates in @(tsee signed-certificates),
+     which is slightly simpler to formulate."))
+  (forall (signer cert)
+          (implies (and (set::in signer (correct-addresses systate))
+                        (set::in cert (signed-certificates signer systate)))
                    (signer-record-p cert
                                     (get-validator-state signer systate)))))
 
@@ -166,12 +171,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Initially, there are no certificates (owned by any validator),
+    "Initially, there are no signed certificates,
      so the invariant trivially holds."))
   (implies (system-initp systate)
            (signer-records-p systate))
   :enable (signer-records-p
-           owned-certificates-when-init))
+           signed-certificates-when-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,7 +187,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A @('create-certificate') event creates a new certificate.
+    "A @('create-certificate') event adds a new certificate
+     to the set of certificates signed by each signer of the certificate.
      We prove a theorem saying that the new certificate satisfies the invariant,
      which follows from the definition of the creation of the certificate,
      which adds the certificate to the author's DAG
@@ -229,11 +235,11 @@
              get-certificate-with-author+round-of-insert-iff))
 
   (defruled signer-record-p-of-create-certificate-next-old
-    (implies (and (set::in val (correct-addresses systate))
-                  (signer-record-p cert1 (get-validator-state val systate)))
+    (implies (and (set::in signer (correct-addresses systate))
+                  (signer-record-p cert1 (get-validator-state signer systate)))
              (signer-record-p cert1
                               (get-validator-state
-                               val (create-certificate-next cert systate))))
+                               signer (create-certificate-next cert systate))))
     :enable (signer-record-p
              validator-state->dag-of-create-certificate-next
              validator-state->buffer-of-create-certificate-next
@@ -243,21 +249,21 @@
   (defruled signer-records-p-of-create-certificate-next
     (implies (signer-records-p systate)
              (signer-records-p (create-certificate-next cert systate)))
-    :enable (owned-certificates-of-create-certificate-next
+    :enable (signer-records-p
+             signer-records-p-necc
+             signed-certificates-of-create-certificate-next
              signer-record-p-of-create-certificate-next-new
-             signer-record-p-of-create-certificate-next-old
-             signer-records-p
-             signer-records-p-necc))
+             signer-record-p-of-create-certificate-next-old))
 
   ;; receive-certificate:
 
   (defruled signer-record-p-of-receive-certificate-next
-    (implies (and (set::in val (correct-addresses systate))
-                  (signer-record-p cert (get-validator-state val systate))
+    (implies (and (set::in signer (correct-addresses systate))
+                  (signer-record-p cert (get-validator-state signer systate))
                   (receive-certificate-possiblep msg systate))
              (signer-record-p cert
                               (get-validator-state
-                               val (receive-certificate-next msg systate))))
+                               signer (receive-certificate-next msg systate))))
     :enable (signer-record-p
              validator-state->dag-of-receive-certificate-next
              validator-state->buffer-of-receive-certificate-next
@@ -268,7 +274,7 @@
     (implies (and (signer-records-p systate)
                   (receive-certificate-possiblep msg systate))
              (signer-records-p (receive-certificate-next msg systate)))
-    :enable (owned-certificates-of-receive-certificate-next
+    :enable (signed-certificates-of-receive-certificate-next
              signer-record-p-of-receive-certificate-next
              signer-records-p
              signer-records-p-necc))
@@ -276,12 +282,14 @@
   ;; store-certificate:
 
   (defruled signer-record-p-of-store-certificate-next
-    (implies (and (set::in val (correct-addresses systate))
-                  (signer-record-p cert (get-validator-state val systate))
+    (implies (and (set::in signer (correct-addresses systate))
+                  (signer-record-p cert (get-validator-state signer systate))
                   (store-certificate-possiblep val1 cert1 systate))
              (signer-record-p cert
                               (get-validator-state
-                               val (store-certificate-next val1 cert1 systate))))
+                               signer (store-certificate-next val1
+                                                              cert1
+                                                              systate))))
     :enable (signer-record-p
              validator-state->dag-of-store-certificate-next
              validator-state->buffer-of-store-certificate-next
@@ -293,7 +301,7 @@
     (implies (and (signer-records-p systate)
                   (store-certificate-possiblep val cert systate))
              (signer-records-p (store-certificate-next val cert systate)))
-    :enable (owned-certificates-of-store-certificate-next
+    :enable (signed-certificates-of-store-certificate-next
              signer-record-p-of-store-certificate-next
              signer-records-p
              signer-records-p-necc))
@@ -301,12 +309,12 @@
   ;; advance-round:
 
   (defruled signer-record-p-of-advance-round-next
-    (implies (and (set::in val (correct-addresses systate))
-                  (signer-record-p cert (get-validator-state val systate))
-                  (advance-round-possiblep val1 systate))
+    (implies (and (set::in signer (correct-addresses systate))
+                  (signer-record-p cert (get-validator-state signer systate))
+                  (advance-round-possiblep val systate))
              (signer-record-p cert
                               (get-validator-state
-                               val (advance-round-next val1 systate))))
+                               signer (advance-round-next val systate))))
     :enable (signer-record-p
              validator-state->dag-of-advance-round-next
              validator-state->buffer-of-advance-round-next
@@ -316,7 +324,7 @@
     (implies (and (signer-records-p systate)
                   (advance-round-possiblep val systate))
              (signer-records-p (advance-round-next val systate)))
-    :enable (owned-certificates-of-advance-round-next
+    :enable (signed-certificates-of-advance-round-next
              signer-record-p-of-advance-round-next
              signer-records-p
              signer-records-p-necc))
@@ -324,12 +332,12 @@
   ;; commit-anchors:
 
   (defruled signer-record-p-of-commit-anchors-next
-    (implies (and (set::in val (correct-addresses systate))
-                  (signer-record-p cert (get-validator-state val systate))
-                  (commit-anchors-possiblep val1 systate))
+    (implies (and (set::in signer (correct-addresses systate))
+                  (signer-record-p cert (get-validator-state signer systate))
+                  (commit-anchors-possiblep val systate))
              (signer-record-p cert
                               (get-validator-state
-                               val (commit-anchors-next val1 systate))))
+                               signer (commit-anchors-next val systate))))
     :enable (signer-record-p
              validator-state->dag-of-commit-anchors-next
              validator-state->buffer-of-commit-anchors-next
@@ -339,7 +347,7 @@
     (implies (and (signer-records-p systate)
                   (commit-anchors-possiblep val systate))
              (signer-records-p (commit-anchors-next val systate)))
-    :enable (owned-certificates-of-commit-anchors-next
+    :enable (signed-certificates-of-commit-anchors-next
              signer-record-p-of-commit-anchors-next
              signer-records-p
              signer-records-p-necc))
@@ -347,12 +355,12 @@
   ;; timer-expires:
 
   (defruled signer-record-p-of-timer-expires-next
-    (implies (and (set::in val (correct-addresses systate))
-                  (signer-record-p cert (get-validator-state val systate))
-                  (timer-expires-possiblep val1 systate))
+    (implies (and (set::in signer (correct-addresses systate))
+                  (signer-record-p cert (get-validator-state signer systate))
+                  (timer-expires-possiblep val systate))
              (signer-record-p cert
                               (get-validator-state
-                               val (timer-expires-next val1 systate))))
+                               signer (timer-expires-next val systate))))
     :enable (signer-record-p
              validator-state->dag-of-timer-expires-next
              validator-state->buffer-of-timer-expires-next
@@ -362,7 +370,7 @@
     (implies (and (signer-records-p systate)
                   (timer-expires-possiblep val systate))
              (signer-records-p (timer-expires-next val systate)))
-    :enable (owned-certificates-of-timer-expires-next
+    :enable (signed-certificates-of-timer-expires-next
              signer-record-p-of-timer-expires-next
              signer-records-p
              signer-records-p-necc))
