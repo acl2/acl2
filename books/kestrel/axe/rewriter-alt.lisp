@@ -359,7 +359,43 @@
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
 ;print-interval embedded-dag-depth work-hard-when-instructedp
                     interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
-               ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :axe-rewrite-objective or :free-vars:
+               (if (eq :axe-binding-hyp fn) ; (:axe-binding-hyp <var> . <expr>)
+                   (b* ((var (cadr hyp))
+                        (expr (cddr hyp))
+                        ;; Add the expr to the DAG:
+                        ((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                         (merge-term-into-dag-array expr alist
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array interpreted-function-alist))
+                        ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))
+                        ((when (consp nodenum-or-quotep)) ;checks for quotep (unusual since we didn't rewrite yet)
+                         ;;this hyp counts as relieved:
+                         (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective
+                                                    (acons var nodenum-or-quotep alist) ; bind the var to the rewritten term
+                                                    rule-symbol
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                    ;;print-interval embedded-dag-depth work-hard-when-instructedp
+                                                    interpreted-function-alist rule-alist oi-rule-alist
+                                                    refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
+                        ;; Rewrite the expr:
+                        (old-try-count tries)
+                        ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
+                         (rewrite-dag-core (push-new-stack nodenum-or-quotep t nil)
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           nil nil
+                                           interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
+                        ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))
+                        (- (and old-try-count print (or (eq :verbose print) (eq :verbose! print))
+                                (let ((try-diff (- tries old-try-count)))
+                                  (and (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))))))
+                     ;; A binding hyp always counts as relieved:
+                     (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective
+                                                (acons var new-nodenum-or-quotep alist) ; bind the var to the rewritten term
+                                                rule-symbol
+                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                ;;print-interval embedded-dag-depth work-hard-when-instructedp
+                                                interpreted-function-alist rule-alist oi-rule-alist
+                                                refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
+               ;; HYP is normal:
                ;; Set the work-hard flag and strip-off the call to work-hard, if present:
                (mv-let
                  (work-hardp hyp)
@@ -486,7 +522,7 @@
                                                   (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep)
                                                   ;;fixme print the equality array?
                                                   (cw "Alist: ~x0.~%Refined assumption alist: ~x1)~%" alist refined-assumption-alist)))
-                                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))))))))))))))))))))
+                                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)))))))))))))))))))))
 
  ;; Returns (mv erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj),
  ;; where RHS-OR-NIL is either nil (no rule fired) or a quotep/nodenum from instantiating the rhs of a rule that fired

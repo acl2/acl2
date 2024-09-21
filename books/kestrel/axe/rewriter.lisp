@@ -291,7 +291,39 @@
                  ;;                                    (mv nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries))))
 
                  )
-             ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :free-vars:
+             (if (eq :axe-binding-hyp fn) ; (:axe-binding-hyp <var> . <expr>)
+                 ;; todo: anything to do for work-hard (here and in the :axe-binding-hyp case for the other rewriters/provers?)
+                 (b* ((var (cadr hyp))
+                      (expr (cddr hyp))
+                      ;; First, we substitute for all the free vars in expr:
+                      ((mv instantiated-expr &)
+                       (instantiate-hyp expr alist nil interpreted-function-alist)) ; todo: could call a instantiate-hyp-no-free-vars function here, but with which evaluator?
+                      ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums.
+                      ;; TODO: Consider adding a special case here to check whether the hyp is a constant (may be very common)?
+                      ;; Now rewrite the instantianted expr:
+                      (old-try-count tries)
+                      ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
+                       (simplify-tree-and-add-to-dag instantiated-expr
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                     rewriter-rule-alist
+                                                     nil ;nothing is yet known to be equal to instantiated-expr - todo: name this use of nil?
+                                                     refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
+                                                     memoization
+                                                     hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+                      ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))
+                      (- (and old-try-count
+                              print
+                              (let ((try-diff (- tries old-try-count)))
+                                (and (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
+                   ;; A binding hyp always counts as relieved:
+                   (relieve-rule-hyps (rest hyps)
+                                      (+ 1 hyp-num)
+                                      (acons var new-nodenum-or-quotep alist) ; bind the var to the rewritten term
+                                      rule-symbol
+                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                      print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
+                                      memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+             ;; HYP is normal:
              ;;Set the work-hard flag and strip-off work-hard if present:
              (mv-let
                (work-hardp hyp)
@@ -425,7 +457,7 @@
                                                ;; (print-array 'dag-array dag-array dag-len)
                                                ;; (cw ")")
                                                (cw ")~%")))
-                                  (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))))))))))))))
+                                  (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))))))))))))))
 
  ;;returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
  (defund try-to-apply-rules (stored-rules ;the list of rules for the fn in question

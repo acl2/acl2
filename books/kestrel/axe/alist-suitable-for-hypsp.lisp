@@ -87,6 +87,26 @@
                        bound-vars-suitable-for-hypp
                        axe-rule-hypp))))
 
+(defthm subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-binding-hyp
+  (implies (and (eq :axe-binding-hyp (ffn-symb (first hyps)))
+                (alist-suitable-for-hypsp alist hyps))
+           (subsetp-equal (free-vars-in-term (cddr (first hyps))) (strip-cars alist)))
+  :hints (("Goal" :in-theory (enable alist-suitable-for-hypsp
+                                     bound-vars-suitable-for-hypsp
+                                     bound-vars-suitable-for-hypp))))
+
+(defthm alist-suitable-for-hypsp-of-append-and-cdr-when-axe-binding-hyp
+  (implies (and (eq :axe-binding-hyp (ffn-symb (first hyps)))
+                (alist-suitable-for-hypsp alist hyps))
+           (alist-suitable-for-hypsp (acons (cadr (first hyps)) ; the var
+                                            result-of-rewriting
+                                            alist) ; can call append because the var sets are disjoint
+                                     (cdr hyps)))
+  :hints (("Goal" :in-theory (enable alist-suitable-for-hypsp
+                                     bound-vars-suitable-for-hypsp
+                                     bound-vars-suitable-for-hypp
+                                     bound-vars-after-hyp))))
+
 (defthm subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-bind-free
   (implies (and (eq :axe-bind-free (ffn-symb (first hyps)))
                 (alist-suitable-for-hypsp alist hyps)
@@ -196,6 +216,7 @@
   (implies (and (not (eq :axe-syntaxp (ffn-symb (first hyps))))
                 (not (eq :axe-bind-free (ffn-symb (first hyps))))
                 (not (eq :free-vars (ffn-symb (first hyps))))
+                (not (eq :axe-binding-hyp (ffn-symb (first hyps))))
                 (consp hyps)
                 (alist-suitable-for-hypsp alist hyps)
                 (axe-rule-hyp-listp hyps)
@@ -214,6 +235,7 @@
   (implies (and (not (eq :axe-syntaxp (ffn-symb (first hyps))))
                 (not (eq :axe-bind-free (ffn-symb (first hyps))))
                 (not (eq :free-vars (ffn-symb (first hyps))))
+                (not (eq :axe-binding-hyp (ffn-symb (first hyps))))
                 (consp hyps)
                 (alist-suitable-for-hypsp alist hyps)
                 (axe-rule-hyp-listp hyps)

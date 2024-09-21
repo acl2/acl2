@@ -164,12 +164,17 @@
                         (not (eq 'quote (ffn-symb expr))) ; can't be a quoted constant
                         (pseudo-termp expr)
                         (lambda-free-termp expr)))
-               ;; regular hyp with no free vars (checked by bound-vars-suitable-for-hypp):
-               (and (pseudo-termp hyp)
-                    (not (eq 'quote fn)) ; can't be a quoted constant
-                    ;; consider relaxing this for efficiency of rewriting:
-                    ;; (lambda-free-termp hyp)
-                    )))))))
+               (if (eq :axe-binding-hyp fn) ; (:axe-binding-hyp var . expr) indicates that the hyp binds var to the result of rewriting expr
+                   (let ((rest (cdr hyp)))
+                     (and (consp rest)
+                          (symbolp (car rest))
+                          (pseudo-termp (cdr rest))))
+                 ;; regular hyp with no free vars (checked by bound-vars-suitable-for-hypp):
+                 (and (pseudo-termp hyp)
+                      (not (eq 'quote fn)) ; can't be a quoted constant
+                      ;; consider relaxing this for efficiency of rewriting:
+                      ;; (lambda-free-termp hyp)
+                      ))))))))
 
 ;drop (see below)?
 ;; (defthm axe-rule-hypp-when-not-special
@@ -197,14 +202,22 @@
 (defthm axe-rule-hypp-when-simple
   (implies (and (not (equal :axe-syntaxp (car hyp)))
                 (not (equal :axe-bind-free (car hyp)))
-                (not (equal :free-vars (car hyp))))
+                (not (equal :free-vars (car hyp)))
+                (not (equal :axe-binding-hyp (car hyp))))
            (equal (axe-rule-hypp hyp)
                   (and (consp hyp)
                        (not (equal 'quote (car hyp)))
                        (pseudo-termp hyp)
                        ;; (lambda-free-termp hyp)
                        )))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0 0)))
+  :hints (("Goal" :in-theory (enable axe-rule-hypp))))
+
+(defthm axe-rule-hypp-when-axe-syntaxp
+  (implies (equal :axe-syntaxp (car hyp))
+           (equal (axe-rule-hypp hyp)
+                  (and (pseudo-termp (cdr hyp))
+                  (axe-syntaxp-exprp (cdr hyp)))))
+;  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
 (defthm axe-rule-hypp-when-axe-bind-free
@@ -214,7 +227,7 @@
                        (pseudo-termp (cadr hyp))
                        (axe-bind-free-function-applicationp (cadr hyp))
                        (symbol-listp (cddr hyp)))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+;  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
 (defthm axe-rule-hypp-when-free-vars
@@ -225,7 +238,16 @@
                          (not (eq 'quote (ffn-symb expr))) ; can't be a quoted constant
                          (pseudo-termp expr)
                          (lambda-free-termp expr)))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable axe-rule-hypp))))
+
+(defthm axe-rule-hypp-when-axe-binding-hyp
+  (implies (equal :axe-binding-hyp (car hyp))
+           (equal (axe-rule-hypp hyp)
+                  (let ((rest (cdr hyp)))
+                    (and (consp rest)
+                         (symbolp (car rest))
+                         (pseudo-termp (cdr rest))))))
+;  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
 ;; Shows that an axe-rule-hyp must be a cons (and so can't be a symbol):
@@ -307,6 +329,11 @@
                          (hyp-vars (free-vars-in-term expr))
                          (free-vars (set-difference-eq hyp-vars bound-vars)))
                     (if free-vars t nil)))
+      ;; A binding hyp must have its var free and all vars in its expr already bound:
+      (:axe-binding-hyp (let ((var (cadr hyp))
+                          (expr (cddr hyp)))
+                      (and (not (member-equal var bound-vars))
+                           (subsetp-equal (free-vars-in-term expr) bound-vars))))
       ;; a hyp not marked with :free-vars must have no free vars:
       (otherwise (let* ((hyp-vars (free-vars-in-term hyp)))
                    (subsetp-equal hyp-vars bound-vars))))))
@@ -331,6 +358,9 @@
                        (free-vars (set-difference-eq hyp-vars bound-vars)))
                   ;; some vars get bound:
                   (append free-vars bound-vars)))
+    ;; The var of the hyp becomes bound:
+    (:axe-binding-hyp (let ((var (cadr hyp)))
+                    (cons var bound-vars)))
     ;; no vars get bound:
     (otherwise bound-vars)))
 
@@ -410,10 +440,12 @@
                                      bound-vars-after-hyp
                                      bound-vars-suitable-for-hypsp))))
 
+;todo: rename and simplify?  or combine with the above?
 (defthm bound-vars-suitable-for-hypsp-when-normal
   (implies (and (equal :axe-syntaxp (car (car hyps)))
                 (not (equal :axe-bind-free (car (car hyps))))
-                (not (equal :free-vars (car (car hyps)))))
+                (not (equal :free-vars (car (car hyps))))
+                (not (equal :axe-binding-hyp (car (car hyps)))))
            (equal (bound-vars-suitable-for-hypsp bound-vars hyps)
                   (and (subsetp-equal (free-vars-in-term (cdr (car hyps))) bound-vars)
                        (bound-vars-suitable-for-hypsp bound-vars (cdr hyps)))))

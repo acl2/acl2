@@ -336,6 +336,37 @@
                                                                        equiv-alist rule-alist
                                                                        nodenums-to-assume-false print
                                                                        hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options (+ -1 count) state))
+               (if (eq :axe-binding-hyp fn) ; (:axe-binding-hyp <var> . <expr>)
+                 (b* ((var (cadr hyp))
+                      (expr (cddr hyp))
+                      ;; First, we substitute for all the free vars in expr:
+                      ((mv instantiated-expr &)
+                       (instantiate-hyp-basic expr alist interpreted-function-alist)) ; todo: could call a instantiate-hyp-no-free-vars function here, but with which evaluator?
+                      ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums.
+                      ;; TODO: Consider adding a special case here to check whether the hyp is a constant (may be very common)?
+                      ;; Now rewrite the instantianted expr:
+                      (old-try-count tries)
+                      ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
+                       (simplify-tree-and-add-to-dag-for-axe-prover instantiated-expr
+                                                                    'equal ; can't use iff here
+                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                    rule-alist
+                                                                    nodenums-to-assume-false equiv-alist print
+                                                                    hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
+                                                                    work-hard-when-instructedp prover-depth options (+ -1 count) state))
+                      ((when erp) (mv erp
+                                      nil ;hyps-relievedp
+                                      nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
+                      (- (and old-try-count
+                              print
+                              (let ((try-diff (- tries old-try-count)))
+                                (and (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
+                   ;; A binding hyp always counts as relieved:
+                   (relieve-rule-hyps-for-axe-prover (rest hyps) (+ 1 hyp-num)
+                                                     (acons var new-nodenum-or-quotep alist) ; bind the var to the rewritten term
+                                                     rule-symbol
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                     equiv-alist rule-alist nodenums-to-assume-false print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options (+ -1 count) state))
                ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :free-vars:
                ;;Set the work-hard flag and strip-off work-hard if present:
                (mv-let
@@ -456,7 +487,7 @@
                                         (print-dag-array-node-and-supporters-lst nodenums-to-assume-false 'dag-array dag-array)
                                         (cw "))~%") ;;(cw "Alist: ~x0.~%Assumptions (to assume false): ~x1~%DAG:~x2)~%" alist nodenums-to-assume-false dag-array)
                                         ))
-                           (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)))))))))))))))
+                           (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))))))))))))))))
 
  ;; returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
  ;; where if new-rhs-or-nil is nil, no rule applied. otherwise, new-rhs-or-nil is a tree with nodenums and quoteps at the leaves (what about free vars?  should free vars in the RHS be an error?)

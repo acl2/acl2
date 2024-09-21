@@ -706,7 +706,37 @@
                                                                      rewrite-stobj2 memoization hit-counts tries limits
                                                                      node-replacement-array node-replacement-count refined-assumption-alist
                                                                      rewrite-stobj (+ -1 count)))
-                      ;; HYP is not a call to axe-syntaxp or axe-bind-free or :free-vars:
+                      (if (eq :axe-binding-hyp fn) ; (:axe-binding-hyp <var> . <expr>)
+                          ;; todo: anything to do for work-hard (here and in the binding hyp case for the other rewriters/provers?)
+                          (b* ((var (cadr hyp))
+                               (expr (cddr hyp))
+                               ;; First, we substitute for all the free vars in expr:
+                               (instantiated-expr (,instantiate-hyp-no-free-vars2-name expr alist (get-interpreted-function-alist rewrite-stobj)))
+                               ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums.
+                               ;; TODO: Consider adding a special case here to check whether the hyp is a constant (may be very common)?
+                               ;; Now rewrite the instantianted expr:
+                               (old-try-count tries)
+                               ((mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
+                                (,simplify-tree-and-add-to-dag-name instantiated-expr ; todo: is this known to be a non-var?  if so, take advantage of that fact
+                                                                    nil ;nothing is yet known to be equal to instantiated-expr
+                                                                    rewrite-stobj2 memoization hit-counts tries limits
+                                                                    node-replacement-array node-replacement-count refined-assumption-alist
+                                                                    rewrite-stobj (+ -1 count)))
+                               ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
+                               (- (and old-try-count
+                                       print ; todo: just make a non-nil tries indicate whether to print try info?
+                                       (print-level-at-least-verbosep print)
+                                       (let ((try-diff (sub-tries tries old-try-count)))
+                                         (and (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
+                            ;; A binding hyp always counts as relieved:
+                            (,relieve-rule-hyps-name (rest hyps)
+                                                     (+ 1 hyp-num)
+                                                     (acons var new-nodenum-or-quotep alist) ; bind the var to the rewritten term
+                                                     rule-symbol
+                                                     rewrite-stobj2 memoization hit-counts tries limits
+                                                     node-replacement-array node-replacement-count refined-assumption-alist
+                                                     rewrite-stobj (+ -1 count)))
+                      ;; HYP is normal:
                       ;; First, we substitute in for all the vars in HYP (this also evaluates what it can):
                       (b* ((instantiated-hyp (,instantiate-hyp-no-free-vars2-name hyp alist (get-interpreted-function-alist rewrite-stobj))))
                         ;; instantiated-hyp is now fully instantiated.  It is an axe-tree with leaves that are quoteps and nodenums (from vars already bound):
@@ -758,7 +788,7 @@
                                   (progn$ (and old-try-count
                                                print
                                                (print-level-at-least-verbosep print)
-                                               (< *wasted-try-print-threshold* (sub-tries tries old-try-count))
+                                               (< *wasted-try-print-threshold* (sub-tries tries old-try-count)) ; todo: just call - on the tries?
                                                (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                           (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                                ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
@@ -771,7 +801,7 @@
                                   (prog2$ (and old-try-count
                                                print
                                                (print-level-at-least-verbosep print)
-                                               (< *used-try-print-threshold* (sub-tries tries old-try-count))
+                                               (< *used-try-print-threshold* (sub-tries tries old-try-count)) ; todo: don't redo the sub-tries
                                                (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                           ;;hyp rewrote to a known assumption and so counts as relieved:
                                           (,relieve-rule-hyps-name (rest hyps)
@@ -808,7 +838,7 @@
                                                          (cw "elided"))
                                                        ;; (print-array 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))
                                                        (cw "))~%"))))
-                                        (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))))))))))))
+                                        (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))))))))))))))
 
         ;; Returns (mv erp instantiated-rhs-or-nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array) where rhs-or-nil is (if not nil) an axe-tree representing the instantiated RHS.
         (defund ,try-to-apply-rules-name (stored-rules ;the list of rules for the fn in question
@@ -2917,6 +2947,8 @@
                    (:rewrite alist-suitable-for-hypsp-of-cdr-of-car-when-normal)
                    (:rewrite alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep)
                    (:rewrite alist-suitable-for-hypsp-when-axe-sytaxp-car)
+                   (:rewrite alist-suitable-for-hypsp-of-append-and-cdr-when-axe-binding-hyp)
+                   (:rewrite subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-binding-hyp)
                    (:rewrite alistp-of-cdr)
                    (:rewrite alistp-of-for-unify-trees-with-dag-nodes)
                    (:rewrite all-<-of-nil)
@@ -2926,6 +2958,7 @@
                    (:rewrite axe-rule-hyp-listp-of-stored-rule-hyps)
                    (:rewrite axe-rule-hypp-when-axe-bind-free)
                    (:rewrite axe-rule-hypp-when-free-vars)
+                   (:rewrite axe-rule-hypp-when-axe-binding-hyp)
                    (:rewrite axe-rule-hypp-when-simple)
                    (:rewrite axe-tree-listp-of-cdr)
                    (:rewrite axe-tree-listp-of-cdr-2)
@@ -3068,9 +3101,11 @@
                    (:rewrite stored-axe-rule-listp-of-cdr)
                    (:rewrite stored-axe-rule-listp-of-get-rules-for-fn-when-rule-alistp)
                    (:rewrite stored-axe-rulep-of-car)
+                   (:rewrite strip-cdrs-of-acons)
                    (:rewrite strip-cdrs-of-append)
                    (:rewrite strip-cdrs-of-pairlis$-fast-aux)
                    (:rewrite subsetp-equal-of-free-vars-in-term-of-car-and-strip-cars-when-normal)
+                   (:rewrite symbol-alistp-of-acons)
                    (:rewrite symbol-alistp-of-append)
                    (:rewrite symbol-alistp-of-unify-terms-and-dag-items-fast)
                    (:rewrite symbol-alistp-when-alistp)
