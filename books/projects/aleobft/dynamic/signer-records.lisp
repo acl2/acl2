@@ -106,32 +106,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define signer-record-p ((cert certificatep) (vstate validator-statep))
+(define signer-record-p ((author addressp)
+                         (round posp)
+                         (vstate validator-statep))
   :returns (yes/no booleanp)
-  :short "Check if (the state of) a signer has a record of a certificate."
+  :short "Check if (the state of) a signer has
+          a record of a certificate author and round."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the case if
-     the DAG has some certificate
-     with the given certificate's author and round,
-     the buffer has some certificate
-     with the given certificate's author and round,
-     or the given certificate's author and round
-     are in the set of endorsed pairs.
+     the DAG has some certificate with the given author and round,
+     the buffer has some certificate with the given author and round,
+     or the given author and round are in the set of endorsed pairs.
      We express the first two conditions by saying that
      @(tsee get-certificate-with-author+round) does not return @('nil')."))
   (b* (((validator-state vstate) vstate)
-       ((certificate cert) cert))
-    (or (and (get-certificate-with-author+round cert.author
-                                                cert.round
-                                                vstate.dag)
+       (author (address-fix author))
+       (round (pos-fix round)))
+    (or (and (get-certificate-with-author+round author round vstate.dag)
              t)
-        (and (get-certificate-with-author+round cert.author
-                                                cert.round
-                                                vstate.buffer)
+        (and (get-certificate-with-author+round author round vstate.buffer)
              t)
-        (set::in (make-address+pos :address cert.author :pos cert.round)
+        (set::in (make-address+pos :address author :pos round)
                  vstate.endorsed)))
   :hooks (:fix))
 
@@ -160,7 +157,8 @@
   (forall (signer cert)
           (implies (and (set::in signer (correct-addresses systate))
                         (set::in cert (signed-certificates signer systate)))
-                   (signer-record-p cert
+                   (signer-record-p (certificate->author cert)
+                                    (certificate->round cert)
                                     (get-validator-state signer systate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -189,7 +187,8 @@
    (xdoc::p
     "A @('create-certificate') event adds a new certificate
      to the set of certificates signed by each signer of the certificate.
-     We prove a theorem saying that the new certificate satisfies the invariant,
+     We prove a theorem saying that
+     the author and round of the  new certificate satisfy the invariant,
      which follows from the definition of the creation of the certificate,
      which adds the certificate to the author's DAG
      and the author-round pair to the endorsers' endorser sets.
@@ -224,7 +223,8 @@
   (defruled signer-record-p-of-create-certificate-next-new
     (implies (and (set::in signer (certificate->signers cert))
                   (set::in signer (correct-addresses systate)))
-             (signer-record-p cert
+             (signer-record-p (certificate->author cert)
+                              (certificate->round cert)
                               (get-validator-state
                                signer (create-certificate-next cert systate))))
     :enable (signer-record-p
@@ -236,8 +236,11 @@
 
   (defruled signer-record-p-of-create-certificate-next-old
     (implies (and (set::in signer (correct-addresses systate))
-                  (signer-record-p cert1 (get-validator-state signer systate)))
-             (signer-record-p cert1
+                  (signer-record-p (certificate->author cert1)
+                                   (certificate->round cert1)
+                                   (get-validator-state signer systate)))
+             (signer-record-p (certificate->author cert1)
+                              (certificate->round cert1)
                               (get-validator-state
                                signer (create-certificate-next cert systate))))
     :enable (signer-record-p
@@ -259,9 +262,12 @@
 
   (defruled signer-record-p-of-receive-certificate-next
     (implies (and (set::in signer (correct-addresses systate))
-                  (signer-record-p cert (get-validator-state signer systate))
+                  (signer-record-p (certificate->author cert)
+                                   (certificate->round cert)
+                                   (get-validator-state signer systate))
                   (receive-certificate-possiblep msg systate))
-             (signer-record-p cert
+             (signer-record-p (certificate->author cert)
+                              (certificate->round cert)
                               (get-validator-state
                                signer (receive-certificate-next msg systate))))
     :enable (signer-record-p
@@ -283,9 +289,12 @@
 
   (defruled signer-record-p-of-store-certificate-next
     (implies (and (set::in signer (correct-addresses systate))
-                  (signer-record-p cert (get-validator-state signer systate))
+                  (signer-record-p (certificate->author cert)
+                                   (certificate->round cert)
+                                   (get-validator-state signer systate))
                   (store-certificate-possiblep val1 cert1 systate))
-             (signer-record-p cert
+             (signer-record-p (certificate->author cert)
+                              (certificate->round cert)
                               (get-validator-state
                                signer (store-certificate-next val1
                                                               cert1
@@ -310,9 +319,12 @@
 
   (defruled signer-record-p-of-advance-round-next
     (implies (and (set::in signer (correct-addresses systate))
-                  (signer-record-p cert (get-validator-state signer systate))
+                  (signer-record-p (certificate->author cert)
+                                   (certificate->round cert)
+                                   (get-validator-state signer systate))
                   (advance-round-possiblep val systate))
-             (signer-record-p cert
+             (signer-record-p (certificate->author cert)
+                              (certificate->round cert)
                               (get-validator-state
                                signer (advance-round-next val systate))))
     :enable (signer-record-p
@@ -333,9 +345,12 @@
 
   (defruled signer-record-p-of-commit-anchors-next
     (implies (and (set::in signer (correct-addresses systate))
-                  (signer-record-p cert (get-validator-state signer systate))
+                  (signer-record-p (certificate->author cert)
+                                   (certificate->round cert)
+                                   (get-validator-state signer systate))
                   (commit-anchors-possiblep val systate))
-             (signer-record-p cert
+             (signer-record-p (certificate->author cert)
+                              (certificate->round cert)
                               (get-validator-state
                                signer (commit-anchors-next val systate))))
     :enable (signer-record-p
@@ -356,9 +371,12 @@
 
   (defruled signer-record-p-of-timer-expires-next
     (implies (and (set::in signer (correct-addresses systate))
-                  (signer-record-p cert (get-validator-state signer systate))
+                  (signer-record-p (certificate->author cert)
+                                   (certificate->round cert)
+                                   (get-validator-state signer systate))
                   (timer-expires-possiblep val systate))
-             (signer-record-p cert
+             (signer-record-p (certificate->author cert)
+                              (certificate->round cert)
                               (get-validator-state
                                signer (timer-expires-next val systate))))
     :enable (signer-record-p
