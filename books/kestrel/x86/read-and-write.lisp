@@ -1048,6 +1048,12 @@
  :hints (("Goal" :in-theory (enable read-when-bvchops-agree
                                     acl2::bvchop-of-+-becomes-bvplus))))
 
+(defthm read-of-+-of-expt ; gen the 48?
+  (implies (integerp addr)
+           (equal (read n (+ addr (expt 2 48)) x86)
+                  (read n addr x86)))
+  :hints (("Goal" :in-theory (enable read))))
+
 (defthm read-of-+-normalize
   (implies (and (syntaxp (quotep k))
                 (not (signed-byte-p 48 k))
