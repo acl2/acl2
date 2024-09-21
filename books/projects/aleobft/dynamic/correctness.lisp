@@ -23,7 +23,6 @@
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
 (include-book "accepted-certificates-quorum")
-(include-book "signers-quorum-in-committee")
 (include-book "unequivocal-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees")
@@ -53,7 +52,6 @@
                     last-blockchain-round
                     ordered-even-blocks
                     accepted-certificates-quorum
-                    signers-quorum-in-committee
                     unequivocal-certificates-def-and-init
                     nonforking-blockchains-def-and-init
                     same-committees))
