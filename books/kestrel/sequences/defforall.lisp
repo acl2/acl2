@@ -41,6 +41,7 @@
 (include-book "kestrel/utilities/make-or" :dir :system)
 (include-book "kestrel/utilities/make-doublets" :dir :system)
 (include-book "kestrel/utilities/make-and" :dir :system)
+(include-book "kestrel/utilities/add-prefix" :dir :system)
 (local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -813,15 +814,18 @@
     event))
 
 (defun defforall-simple-fn (pred name guard guard-hints true-listp verbose)
-  (declare (xargs :mode :program))
+  (declare (xargs :guard (and (symbolp pred)
+                              (symbolp name) ; may be nil
+                              (booleanp true-listp)
+                              (booleanp verbose))
+                  :mode :program))
   (defforall-fn
     (or name ;use name if supplied
-        (pack$ 'all- pred) ;;(pack-in-package-of-symbol pred 'all- fn) ;this was causing things to be put in the common lisp package, which was a problem for all-rationalp  maybe use ACL2 if the symbol is in that package?
-        )
+        (add-prefix-to-fn "ALL-" pred))
     '(x) ;fixme: would really like this to be "xs" or "vals" or something indicating that this is a list
     `(,pred x)
-    nil   ;no fixed args
-    nil   ;no declares
+    nil ;no fixed args
+    nil ;no declares
     guard
     guard-hints
     true-listp
