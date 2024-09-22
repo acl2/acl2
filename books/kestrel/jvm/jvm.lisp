@@ -906,14 +906,14 @@
 
 (defthm framep-of-top-frame
   (implies (and (not (empty-call-stackp call-stack))
-                (acl2::all-framep call-stack) ;drop when doing the all-framep-change
+                (all-framep call-stack) ;drop when doing the all-framep-change
                 (call-stackp call-stack))
            (framep (top-frame call-stack)))
   :hints (("Goal" :in-theory (enable top-frame empty-call-stackp call-stackp))))
 
 (defthm framep-of-top-frame-of-binding-of-thread-table
   (IMPLIES (AND (call-stack-non-emptyp th s)
-                (acl2::all-framep (BINDING TH (THREAD-TABLE S))) ;drop but strengthen CALL-STACKP
+                (all-framep (BINDING TH (THREAD-TABLE S))) ;drop but strengthen CALL-STACKP
                 (BOUND-IN-ALISTP TH (THREAD-TABLE S))
                 (JVM-STATEP S)
                 (THREAD-DESIGNATORP TH))
@@ -925,7 +925,7 @@
 
 (defthm framep-of-thread-top-frame
   (implies (and (not (empty-call-stackp (binding th (thread-table s))))
-                (acl2::all-framep (binding th (thread-table s))) ;drop
+                (all-framep (binding th (thread-table s))) ;drop
                 (jvm-statep s)
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))
@@ -1090,7 +1090,7 @@
                                (thread-designatorp th)
                                (bound-in-alistp th (thread-table s))
                                (class-namep objectref-class)
-                               (ACL2::ALL-FRAMEP (BINDING TH (THREAD-TABLE S))) ;drop for all-framep-change
+                               (ALL-FRAMEP (BINDING TH (THREAD-TABLE S))) ;drop for all-framep-change
                                )
             :measure (call-stack-size (call-stack th s))))
   (if (empty-call-stackp (call-stack th s))
@@ -1231,7 +1231,7 @@
                               (thread-designatorp th)
                               (bound-to-a-non-interfacep exception-class-name (class-table s))
                               (bound-in-alistp th (thread-table s))
-                              (ACL2::ALL-FRAMEP (BINDING TH (THREAD-TABLE S))) ;drop for all-framep-change
+                              (ALL-FRAMEP (BINDING TH (THREAD-TABLE S))) ;drop for all-framep-change
                               )))
   (mv-let (exception-object s)
     (obtain-an-object exception-class-name s)

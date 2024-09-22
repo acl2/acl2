@@ -1,7 +1,7 @@
 ; More material on the JVM heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -177,14 +177,14 @@
 (defthm all-heap-object-keyp-of-strip-cars-of-gen-init-bindings-for-class
   (implies (and (jvm::class-namep class-name)
                 (jvm::field-info-alistp field-info-alist))
-           (acl2::all-heap-object-keyp (strip-cars (acl2::gen-init-bindings-for-class field-info-alist class-name))))
+           (jvm::all-heap-object-keyp (strip-cars (acl2::gen-init-bindings-for-class field-info-alist class-name))))
   :hints (("Goal" :in-theory (e/d (acl2::gen-init-bindings-for-class JVM::FIELD-INFO-ALISTP) (jvm::field-idp)))))
 
 (defthm all-heap-object-keyp-of-strip-cars-of-gen-init-bindings
   (implies (and (jvm::all-class-namesp class-names)
                 (jvm::all-bound-in-class-tablep class-names class-table)
                 (jvm::class-tablep class-table))
-           (acl2::all-heap-object-keyp (strip-cars (acl2::gen-init-bindings class-names class-table))))
+           (jvm::all-heap-object-keyp (strip-cars (acl2::gen-init-bindings class-names class-table))))
   :hints (("Goal" :in-theory (enable acl2::gen-init-bindings))))
 
 (defthm not-memberp-of-class-pair-and-strip-cars-of-gen-init-bindings
@@ -334,7 +334,7 @@
 ;;   (implies (and (jvm::class-namep class-name)
 ;;                 (JVM::ALL-NAME-TYPE-PAIRSP field-ids)
 ;;                 (jvm::field-info-mapp field-info-map))
-;;            (acl2::all-heap-object-keyp (strip-cars (acl2::gen-init-bindings-for-class-aux field-ids class-name field-info-map))))
+;;            (jvm::all-heap-object-keyp (strip-cars (acl2::gen-init-bindings-for-class-aux field-ids class-name field-info-map))))
 ;;   :hints (("Goal" :in-theory (e/d (acl2::gen-init-bindings-for-class-aux JVM::ALL-NAME-TYPE-PAIRSP jvm::field-info-mapp) (JVM::FIELD-IDP)))))
 
 ;; ;fixme move
