@@ -253,7 +253,7 @@
   (defthm all-cdrs-rationalp-when-hit-count-alistp
     (implies (hit-count-alistp alist)
              (all-cdrs-rationalp alist))
-    :hints (("Goal" :in-theory (enable hit-count-alistp)))))
+    :hints (("Goal" :in-theory (enable all-cdrs-rationalp hit-count-alistp)))))
 
 (local
   (defthmd natp-of-lookup-equal-when-hit-count-alistp

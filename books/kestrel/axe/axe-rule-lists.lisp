@@ -12,24 +12,44 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "axe-rules")
 
 ;; Recognizes a true-list of axe-rules.
-;; todo: avoid using defforall
-(defforall axe-rule-listp (rules) (axe-rulep rules) :true-listp t)
-(verify-guards axe-rule-listp)
+(defund axe-rule-listp (rules)
+  (declare (xargs :guard t))
+  (if (not (consp rules))
+      (null rules)
+    (and (axe-rulep (first rules))
+         (axe-rule-listp (rest rules)))))
+
+(defthm axe-rule-listp-forward-to-true-listp
+  (implies (axe-rule-listp rules)
+           (true-listp rules))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable axe-rule-listp))))
 
 (defthm axe-rule-listp-of-reverse-list
   (implies (axe-rule-listp rules)
            (axe-rule-listp (reverse-list rules)))
   :hints (("Goal" :in-theory (enable axe-rule-listp))))
 
-;todo: defforall should do this (but maybe disable it?)
+(defthm axe-rule-listp-of-cons
+  (equal (axe-rule-listp (cons rule rules))
+         (and (axe-rulep rule)
+              (axe-rule-listp rules)))
+  :hints (("Goal" :in-theory (enable axe-rule-listp))))
+
+(defthm axe-rule-listp-of-append
+  (equal (axe-rule-listp (append x y))
+         (and (axe-rule-listp (true-list-fix x))
+              (axe-rule-listp y)))
+  :hints (("Goal" :in-theory (enable axe-rule-listp))))
+
 (defthm axe-rulep-of-car-when-axe-rule-listp
   (implies (and (axe-rule-listp rules)
                 (consp rules))
-           (axe-rulep (car rules))))
+           (axe-rulep (car rules)))
+  :hints (("Goal" :in-theory (enable axe-rule-listp))))
 
 ;; Extract the rule-symbols from the RULES.
 (defund map-rule-symbol (rules)

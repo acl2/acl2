@@ -107,7 +107,8 @@
                                                   )
   (declare (xargs :guard (and (interpreted-function-alistp alist)
                               (symbol-listp ok-fns))
-                  :guard-hints (("Goal" :in-theory (enable interpreted-function-alistp)))))
+                  :guard-hints (("Goal" :in-theory (enable interpreted-function-alistp
+                                                           all-interpreted-function-infop)))))
   (if (endp alist)
       t
     (let* ((pair (first alist))

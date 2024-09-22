@@ -223,8 +223,7 @@
                               (equality-assumption-alistp acc))
                   :guard-hints (("Goal" :in-theory (enable equality-pairsp
                                                            equality-assumption-alistp
-                                                           term-list-to-term-alistp)
-                                 :expand ((all-equality-pairp term-pairs))))))
+                                                           term-list-to-term-alistp)))))
   (if (endp term-pairs)
       (uniquify-alist-eq acc) ;is this fast?
     (let* ((term-pair (first term-pairs))

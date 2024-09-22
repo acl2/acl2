@@ -118,13 +118,19 @@
   (implies (true-listp acc)
            (true-listp (make-count-alist world acc))))
 
-(defforall all-cdrs-rationalp (x) (rationalp (cdr x)) :guard (all-consp x))
+;;(defforall all-cdrs-rationalp (x) (rationalp (cdr x)) :guard (all-consp x))
+(defund all-cdrs-rationalp (x)
+  (declare (xargs :guard (all-consp x)))
+  (if (not (consp x))
+      t
+    (and (rationalp (cdr (first x)))
+         (all-cdrs-rationalp (rest x)))))
 
 (defthm all-cdrs-rationalp-of-make-count-alist
   (implies (and (symbol-count-worldp world)
                 (all-cdrs-rationalp acc))
            (all-cdrs-rationalp (make-count-alist world acc)))
-  :hints (("Goal" :in-theory (enable SYMBOL-COUNT-WORLDP))))
+  :hints (("Goal" :in-theory (enable symbol-count-worldp all-cdrs-rationalp))))
 
 (defthm symbol-count-worldp-of-uniquify-alist-eq-aux
   (implies (and (symbol-count-worldp world)
@@ -139,14 +145,15 @@
 
 
 ;; ;fixme redo this (and other!) merge sorts to follow the fast pattern in merge-sort.lisp
-
+;todo: dup?!
 (defun merge-by-cdr-> (l1 l2 acc)
   (declare (xargs :measure (+ (len l1) (len l2))
                   :guard (and (all-consp l1)
                               (all-cdrs-rationalp l1)
                               (all-consp l2)
                               (all-cdrs-rationalp l2)
-                              (true-listp acc))))
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable all-cdrs-rationalp)))))
   (cond ((atom l1) (revappend acc l2))
         ((atom l2) (revappend acc l1))
         ((> (cdr (car l1)) (cdr (car l2)))
@@ -196,19 +203,27 @@
 
 (defthm all-cdrs-rationalp-of-evens
   (implies (all-cdrs-rationalp x)
-           (all-cdrs-rationalp (evens x))))
+           (all-cdrs-rationalp (evens x)))
+  :hints (("Goal" :expand (all-cdrs-rationalp (cdr x2))
+           :in-theory (enable all-cdrs-rationalp evens))))
 
 (defthm all-cdrs-rationalp-of-merge-by-cdr->
   (implies (and (all-cdrs-rationalp x)
                 (all-cdrs-rationalp y)
                 (all-cdrs-rationalp acc))
-           (all-cdrs-rationalp (merge-by-cdr-> x y acc))))
+           (all-cdrs-rationalp (merge-by-cdr-> x y acc)))
+  :hints (("Goal" :in-theory (enable all-cdrs-rationalp))))
 
 (defthm all-cdrs-rationalp-of-merge-sort-by-cdr->
   (implies (all-cdrs-rationalp x)
-           (all-cdrs-rationalp (merge-sort-by-cdr-> x))))
+           (all-cdrs-rationalp (merge-sort-by-cdr-> x)))
+  :hints (("Goal" :expand (all-cdrs-rationalp x)
+           :in-theory (e/d (merge-sort-by-cdr->) (evens)))))
 
-(verify-guards merge-sort-by-cdr->)
+;; todo: this whole sequence is duplicated
+(verify-guards merge-sort-by-cdr->
+  :hints (("Goal" :expand (all-cdrs-rationalp l)
+           :in-theory (e/d (merge-sort-by-cdr->) (evens)))))
 
 ;; TODO: Consider optimizing this by looping through all the rule names and
 ;; just looking up their counts, instead of calling uniquify-alist-eq.

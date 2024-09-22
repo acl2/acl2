@@ -15,7 +15,6 @@
 ;; This books contains notions related to DAGs represented as alists.  See also
 ;; dag-arrays.lisp.
 
-;(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
