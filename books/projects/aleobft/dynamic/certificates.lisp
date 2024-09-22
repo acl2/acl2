@@ -86,8 +86,7 @@
      Thus, the combination of author and round number identifies
      (at most) a unique certificate in a DAG.
      This is a critical and non-trivial property,
-     which we already proved for static committees,
-     and that we plan to prove for dynamic committes as well.")
+     which we prove as an invariant (elsewhere).")
    (xdoc::p
     "A certificate is a vertex of the DAG.
      The @('previous') component of this fixtype models
