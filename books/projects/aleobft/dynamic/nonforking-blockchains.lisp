@@ -67,3 +67,7 @@
   :enable (nonforking-blockchains-p
            system-initp
            system-validators-initp-necc))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: prove preservation
