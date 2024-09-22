@@ -40,14 +40,14 @@
 (defthm axe-treep-of-replace-fun-call-using-equality-pairs
   (implies (equality-pairsp equality-pairs)
            (axe-treep (replace-fun-call-using-equality-pairs equality-pairs fn args dag-array)))
-  :hints (("Goal" :expand ((all-equality-pairp equality-pairs))
+  :hints (("Goal"
            :in-theory (enable equality-pairsp replace-fun-call-using-equality-pairs))))
 
 ;since it is a pseudo-term, it's bounded for any bound
 (defthm bounded-axe-treep-of-replace-fun-call-using-equality-pairs
   (implies (equality-pairsp equality-pairs)
            (bounded-axe-treep (replace-fun-call-using-equality-pairs equality-pairs fn args dag-array) bound))
-  :hints (("Goal" :expand ((all-equality-pairp equality-pairs))
+  :hints (("Goal"
            :in-theory (enable equality-pairsp replace-fun-call-using-equality-pairs))))
 
 ;; looks for an equality-pair of the form (var . blah) and puts in blah for var
@@ -67,12 +67,12 @@
 (defthm axe-treep-of-replace-var-using-equality-pairs
   (implies (equality-pairsp equality-pairs)
            (axe-treep (replace-var-using-equality-pairs equality-pairs var)))
-  :hints (("Goal" :expand ((all-equality-pairp equality-pairs))
+  :hints (("Goal"
            :in-theory (enable replace-var-using-equality-pairs equality-pairsp))))
 
 ;since it is a pseudo-term, it's bounded for any bound
 (defthm bounded-axe-treep-of-replace-var-using-equality-pairs
   (implies (equality-pairsp equality-pairs)
            (bounded-axe-treep (replace-var-using-equality-pairs equality-pairs var) bound))
-  :hints (("Goal" :expand ((all-equality-pairp equality-pairs))
+  :hints (("Goal"
            :in-theory (enable replace-var-using-equality-pairs equality-pairsp))))
