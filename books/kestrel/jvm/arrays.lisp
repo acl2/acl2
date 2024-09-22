@@ -1,7 +1,7 @@
 ; Arrays in the JVM
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -103,9 +103,9 @@
             (if (equal element-type ':long)
                 (all-unsigned-byte-p 64 contents)
               (if (equal element-type ':float)
-                  (all-java-floatp contents)
+                  (jvm::all-java-floatp contents)
                 (if (equal element-type ':double)
-                    (all-java-doublep contents)
+                    (jvm::all-java-doublep contents)
                   (er hard 'primitive-array-contents-okp "Unexpeted type: ~x0" element-type))))))))))
 
 (defthm primitive-array-contents-okp-of-int
@@ -140,12 +140,12 @@
 
 (defthm primitive-array-contents-okp-of-float
   (equal (primitive-array-contents-okp contents :float)
-         (all-java-floatp contents))
+         (jvm::all-java-floatp contents))
   :hints (("Goal" :in-theory (enable primitive-array-contents-okp))))
 
 (defthm primitive-array-contents-okp-of-double
   (equal (primitive-array-contents-okp contents :double)
-         (all-java-doublep contents))
+         (jvm::all-java-doublep contents))
   :hints (("Goal" :in-theory (enable primitive-array-contents-okp))))
 
 ;; To be left enabled usually
