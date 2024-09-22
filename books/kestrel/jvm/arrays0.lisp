@@ -1,7 +1,7 @@
 ; Basic definitions about arrays.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -42,7 +42,7 @@
         (acl2::array-contents-pair)))
 
 (defthm all-heap-object-keyp-of-array-object-fields
-  (acl2::all-heap-object-keyp (acl2::array-object-fields)))
+  (jvm::all-heap-object-keyp (acl2::array-object-fields)))
 
 ;;;
 ;;; array-length

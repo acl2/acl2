@@ -1,7 +1,7 @@
 ; A model of the JVM heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -110,14 +110,14 @@
   :hints (("Goal" :in-theory (enable jvm::heap-object-keyp))))
 
 (defforall-simple jvm::heap-object-keyp)
-(verify-guards all-heap-object-keyp)
+(verify-guards jvm::all-heap-object-keyp)
 
 ;; A heap object occupied a single address in the heap and is a map from heap-object-keys to values.
 (defun jvm::heap-objectp (x)
   (declare (xargs :guard t))
   (and (mapp x)
        (let ((keys (key-list x)))
-         (all-heap-object-keyp keys)
+         (jvm::all-heap-object-keyp keys)
          ;;fixme add something about the values stored in the map? (each is either an address or a primitive?)
          )))
 
@@ -687,7 +687,7 @@
 
 (defthm heapp-of-set-fields
   (implies (and (jvm::heapp heap)
-                (acl2::all-heap-object-keyp (strip-cars bindings))
+                (jvm::all-heap-object-keyp (strip-cars bindings))
                 (addressp ad))
            (jvm::heapp (ACL2::SET-FIELDS ad bindings HEAP)))
   :hints (("Goal" :in-theory (enable ACL2::SET-FIELDS))))

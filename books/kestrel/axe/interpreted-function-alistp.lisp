@@ -1,7 +1,7 @@
 ; Alists mapping functions to definitions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/symbol-alistp" :dir :system)
 (include-book "kestrel/alists-light/acons" :dir :system)
@@ -29,8 +28,13 @@
        (symbol-listp (first info))
        (pseudo-termp (second info))))
 
-;; Defines all-interpreted-function-infop.
-(defforall-simple interpreted-function-infop :guard t)
+;rename?
+(defund all-interpreted-function-infop (infos)
+  (declare (xargs :guard t))
+  (if (not (consp infos))
+      t
+    (and (interpreted-function-infop (first infos))
+         (all-interpreted-function-infop (rest infos)))))
 
 ;;
 ;; interpreted-function-alistp
@@ -62,13 +66,14 @@
          (and (interpreted-function-alistp alist)
               (symbolp fn)
               (interpreted-function-infop info)))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp))))
+  :hints (("Goal" :in-theory (enable interpreted-function-alistp
+                                     all-interpreted-function-infop))))
 
 (defthm interpreted-function-infop-of-cdr-of-assoc-equal
   (implies (and (all-interpreted-function-infop (strip-cdrs interpreted-function-alist))
                 (assoc-equal fn interpreted-function-alist))
            (interpreted-function-infop (cdr (assoc-equal fn interpreted-function-alist))))
-  :hints (("Goal" :in-theory (disable interpreted-function-infop))))
+  :hints (("Goal" :in-theory (e/d (all-interpreted-function-infop) (interpreted-function-infop)))))
 
 (defthm interpreted-function-infop-of-lookup-equal-when-interpreted-function-alistp
   (implies (and (interpreted-function-alistp interpreted-function-alist)
@@ -123,19 +128,19 @@
   (implies (and (interpreted-function-alistp interpreted-function-alist)
                 (assoc-equal fn interpreted-function-alist))
            (consp (cdr (assoc-equal fn interpreted-function-alist))))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
+  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal all-interpreted-function-infop))))
 
 (defthmd cddr-of-assoc-equal-when-interpreted-function-alistp
   (implies (interpreted-function-alistp interpreted-function-alist)
            (iff (cddr (assoc-equal fn interpreted-function-alist))
                 (assoc-equal fn interpreted-function-alist)))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
+  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal all-interpreted-function-infop))))
 
 (defthmd consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp
   (implies (interpreted-function-alistp interpreted-function-alist)
            (iff (consp (cddr (assoc-equal fn interpreted-function-alist)))
                 (assoc-equal fn interpreted-function-alist)))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
+  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal all-interpreted-function-infop))))
 
 (defthmd consp-of-car-when-interpreted-function-alistp
   (implies (and (interpreted-function-alistp alist)

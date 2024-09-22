@@ -16,6 +16,7 @@
 ;; make-evaluator-simple.lisp.
 
 (include-book "interpreted-function-alistp")
+(include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/typed-lists-light/symbol-alist-listp" :dir :system)
 (include-book "kestrel/typed-lists-light/alist-listp" :dir :system)
