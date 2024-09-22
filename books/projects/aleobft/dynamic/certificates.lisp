@@ -288,7 +288,7 @@
      the first one found is returned,
      according to the total ordering of the set.
      However, when a certificate set is unequivocal,
-     i.e. has unique author and round combinations,
+     i.e. it has unique author-round combinations,
      the first certificate found is the only one."))
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs))
