@@ -342,6 +342,16 @@
     :induct (set::weak-insert-induction cert certs)
     :enable (get-certificate-with-author+round-when-element))
 
+  (defruled get-certificate-with-author+round-of-union-iff
+    (implies (certificate-setp certs2)
+             (iff (get-certificate-with-author+round
+                   author round (set::union certs1 certs2))
+                  (or (get-certificate-with-author+round author round certs1)
+                      (get-certificate-with-author+round author round certs2))))
+    :induct t
+    :enable (get-certificate-with-author+round-of-insert-iff
+             set::union))
+
   (defruled get-certificate-with-author+round-when-delete
     (implies (get-certificate-with-author+round author
                                                 round
