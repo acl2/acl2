@@ -12,7 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "ordered-even-blocks")
-(include-book "nonforking-blockchains-def-and-init")
+(include-book "nonforking-blockchains")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

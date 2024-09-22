@@ -22,10 +22,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ nonforking-blockchains-def-and-init
+(defxdoc+ nonforking-blockchains
   :parents (correctness)
-  :short "Invariant that blockchains do not fork:
-          definition and establishment."
+  :short "Invariant that blockchains do not fork."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -38,17 +37,7 @@
      namely that it does reach consensus on the blockchains.")
    (xdoc::p
     "Blockchains clearly do not fork in the initial state,
-     because all blockchains are empty in the iniital state.")
-   (xdoc::p
-    "The preservation of this invariant relies on another invariant,
-     namely that certificates are unequivocal.
-     This is defined in @(see unequivocal-certificates-def-and-init),
-     where it is also explained how that and this invariant
-     must be proved together in the induction.")
-   (xdoc::p
-    "Similarly to @(see unequivocal-certificates-def-and-init),
-     here we define the invariant,
-     and we also prove that it holds in the initial states."))
+     because all blockchains are empty in the iniital state."))
   :order-subtopics t
   :default-parent t)
 
