@@ -1,7 +1,7 @@
 ; More symbolic execution machinery
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,7 +23,7 @@
 ;; Strips out just the pc-designators from CALL-STACK.
 (defund get-pc-designator-stack-from-call-stack (call-stack)
   (declare (xargs :guard (and (jvm::call-stackp call-stack)
-                              (all-framep call-stack) ;drop someday
+                              (jvm::all-framep call-stack) ;drop someday
                               )
                   :measure (jvm::call-stack-size call-stack)))
   (if (jvm::empty-call-stackp call-stack)

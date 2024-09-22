@@ -1,7 +1,7 @@
 ; Call stacks
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 (defforall-simple framep)
-(verify-guards acl2::all-framep)
+(verify-guards all-framep)
 
 (defund empty-call-stack () (declare (xargs :guard t)) nil)
 
@@ -29,7 +29,7 @@
 (defund call-stackp (stack)
   (declare (xargs :guard t))
   (and (true-listp stack)
-       ;; (acl2::all-framep stack) ;;todo: put back (search for all-framep-change for other changes, but this will require real work to show that all created frames are ok; first clean up invokespecial and prove RV rules for lookup-method-for-invokespecial)
+       ;; (all-framep stack) ;;todo: put back (search for all-framep-change for other changes, but this will require real work to show that all created frames are ok; first clean up invokespecial and prove RV rules for lookup-method-for-invokespecial)
        ))
 
 (defthm call-stackp-of-empty-call-stack
@@ -60,9 +60,9 @@
   (cdr stack))
 
 (defthm all-framep-of-pop-frame
-  (implies (acl2::all-framep frames)
-           (acl2::all-framep (pop-frame frames)))
-  :hints (("Goal" :in-theory (enable acl2::all-framep pop-frame))))
+  (implies (all-framep frames)
+           (all-framep (pop-frame frames)))
+  :hints (("Goal" :in-theory (enable all-framep pop-frame))))
 
 (defthm acl2-numberp-of-call-stack-size
   (equal (acl2-numberp (call-stack-size stack))
@@ -204,11 +204,3 @@
   (equal (jvm::empty-call-stackp call-stack)
          (equal 0 (jvm::call-stack-size call-stack)))
   :hints (("Goal" :in-theory (enable jvm::empty-call-stackp jvm::call-stack-size))))
-
-;move
-(defthm acl2::all-framep-of-pop-frame
-  (implies (and (acl2::all-framep call-stack)
-                (jvm::call-stackp call-stack)
-                (not (jvm::empty-call-stackp call-stack)))
-           (acl2::all-framep (jvm::pop-frame call-stack)))
-  :hints (("Goal" :in-theory (enable jvm::pop-frame acl2::all-framep jvm::empty-call-stackp))))
