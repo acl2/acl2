@@ -25,7 +25,6 @@
 (include-book "accepted-certificates-quorum")
 (include-book "unequivocal-signed-certificates")
 (include-book "unequivocal-accepted-certificates")
-(include-book "unequivocal-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees")
 
@@ -56,7 +55,6 @@
                     accepted-certificates-quorum
                     unequivocal-signed-certificates
                     unequivocal-accepted-certificates
-                    unequivocal-certificates-def-and-init
                     nonforking-blockchains-def-and-init
                     same-committees))
 
