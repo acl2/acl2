@@ -13,7 +13,6 @@
 (in-package "ACL2")
 
 (include-book "dargp")
-;(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system) ; reduce?
 
 ;; Recognizes a list of dargs, e.g., the arguments in a DAG node that is a function call.
