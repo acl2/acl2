@@ -139,6 +139,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Note that when we talk about free vars in a hyp H, we don't mean variables
+;; that are free in H; we mean free variables in H that are not yet bound when
+;; H is reached as the hyps are relieved.
+
 ;; An axe-rule-hyp (hypothesis of an axe rule) is a special kind of structure
 ;; that represents an axe-syntaxp hyp, an axe-bind-free hyp, or a lambda-free
 ;; (currently) function call, which may or may not contain variables that will
