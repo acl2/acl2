@@ -446,8 +446,8 @@
 ;;; end variant that is true-listp
 
 ;it is an error to have no list formals - check for that?
-(defun defforall-fn (forall-fn-name all-formals term fixed declares guard guard-hints true-listp verbose)
-  (declare (xargs :guard (and (symbolp forall-fn-name)
+(defun defforall-fn (forall-fn all-formals term fixed declares guard guard-hints true-listp verbose)
+  (declare (xargs :guard (and (symbolp forall-fn)
                               (symbol-listp all-formals)
                               (pseudo-termp term)
                               (or (symbolp fixed)
@@ -459,8 +459,6 @@
          (declares (if guard-hints (cons `(xargs :guard-hints ,guard-hints) declares) declares)) ;todo: combine the xargs
          (fixed-formals (if (and (symbolp fixed) fixed) (list fixed) fixed))
          (list-formals (set-difference-eq all-formals fixed-formals))
-         (forall-fn forall-fn-name ;(or forall-fn-name (pack$ 'map- fn))
-                    )
          (atom-tests (wrap-list '(atom x) 'x list-formals))
          (null-tests (wrap-list '(null x) 'x list-formals))
          ;; true-listp variants
