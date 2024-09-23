@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "owned-certificates")
+(include-book "certificates-of-validators")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -63,8 +63,8 @@
   (forall (val1 val2)
           (implies (and (set::in val1 (correct-addresses systate))
                         (set::in val2 (correct-addresses systate)))
-                   (equal (certificates-owned-by val1 systate)
-                          (certificates-owned-by val2 systate)))))
+                   (equal (owned-certificates val1 systate)
+                          (owned-certificates val2 systate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -78,13 +78,13 @@
      are initially empty.
      The set of certificate of every validator is thus the empty set.")
    (xdoc::p
-    "Since we already proved in @(tsee certificates-owned-by-when-init)
+    "Since we already proved in @(tsee owned-certificates-when-init)
      that the set is empty in the initial state,
      that rule suffices to prove this theorem."))
   (implies (system-initp systate)
            (same-owned-certificates-p systate))
   :enable (same-owned-certificates-p
-           certificates-owned-by-when-init))
+           owned-certificates-when-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,9 +99,9 @@
      and then for a generic event.")
    (xdoc::p
     "The proofs of these theorems are easy,
-     given the proofs in @(tsee certificates-owned-by-of-next).
+     given the proofs in @(tsee owned-certificates-of-next).
      In particular, the theorem
-     @('certificates-owned-by-of-create-certificate-next')
+     @('owned-certificates-of-create-certificate-next')
      tells us that the new set of owned certificates
      is the old one plus the new certificate for every validator,
      not just the author:
@@ -112,7 +112,7 @@
     (implies (same-owned-certificates-p systate)
              (same-owned-certificates-p
               (create-certificate-next cert systate)))
-    :enable (certificates-owned-by-of-create-certificate-next
+    :enable (owned-certificates-of-create-certificate-next
              same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
@@ -129,7 +129,7 @@
                   (receive-certificate-possiblep msg systate))
              (same-owned-certificates-p
               (receive-certificate-next msg systate)))
-    :enable (certificates-owned-by-of-receive-certificate-next
+    :enable (owned-certificates-of-receive-certificate-next
              same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
@@ -146,7 +146,7 @@
                   (store-certificate-possiblep cert val systate))
              (same-owned-certificates-p
               (store-certificate-next cert val systate)))
-    :enable (certificates-owned-by-of-store-certificate-next
+    :enable (owned-certificates-of-store-certificate-next
              same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
@@ -163,7 +163,7 @@
                   (advance-round-possiblep val systate))
              (same-owned-certificates-p
               (advance-round-next val systate)))
-    :enable (certificates-owned-by-of-advance-round-next
+    :enable (owned-certificates-of-advance-round-next
              same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
@@ -180,7 +180,7 @@
                   (commit-anchors-possiblep val systate))
              (same-owned-certificates-p
               (commit-anchors-next val systate)))
-    :enable (certificates-owned-by-of-commit-anchors-next
+    :enable (owned-certificates-of-commit-anchors-next
              same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth
@@ -197,7 +197,7 @@
                   (timer-expires-possiblep val systate))
              (same-owned-certificates-p
               (timer-expires-next val systate)))
-    :enable (certificates-owned-by-of-timer-expires-next
+    :enable (owned-certificates-of-timer-expires-next
              same-owned-certificates-p)
     :use (:instance same-owned-certificates-p-necc
                     (val1 (mv-nth

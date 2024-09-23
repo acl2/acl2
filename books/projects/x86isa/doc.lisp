@@ -516,11 +516,10 @@
          git apply &lt;path to patch file&gt;
          </code>
 
-         <p>All that's left to do is build the kernel. Normally, at this point
-         you'd run @('make menuconfig') to configure the kernel, but we
-         included a @('.config') file in the patch that configures the kernel
-         to work with the @('x86isa') model, so you don't need to do that.
-         Thus, all we have left to do is build the kernel.</p>
+         <p>Normally, at this point you'd run @('make menuconfig') to configure
+         the kernel, but we included a @('.config') file in the patch that
+         configures the kernel to work with the @('x86isa') model, so you don't
+         need to do that. Thus, all we have left to do is build the kernel.</p>
 
          <p>Linux supports GCC and LLVM. I'm using @('gcc') version 13.2.0, but
          I expect other versions of GCC will work fine. LLVM has not been

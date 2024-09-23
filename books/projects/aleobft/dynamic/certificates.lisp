@@ -86,8 +86,7 @@
      Thus, the combination of author and round number identifies
      (at most) a unique certificate in a DAG.
      This is a critical and non-trivial property,
-     which we already proved for static committees,
-     and that we plan to prove for dynamic committes as well.")
+     which we prove as an invariant (elsewhere).")
    (xdoc::p
     "A certificate is a vertex of the DAG.
      The @('previous') component of this fixtype models
@@ -288,7 +287,7 @@
      the first one found is returned,
      according to the total ordering of the set.
      However, when a certificate set is unequivocal,
-     i.e. has unique author and round combinations,
+     i.e. it has unique author-round combinations,
      the first certificate found is the only one."))
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs))
@@ -341,6 +340,16 @@
              (get-certificate-with-author+round author round certs)))
     :induct (set::weak-insert-induction cert certs)
     :enable (get-certificate-with-author+round-when-element))
+
+  (defruled get-certificate-with-author+round-of-union-iff
+    (implies (certificate-setp certs2)
+             (iff (get-certificate-with-author+round
+                   author round (set::union certs1 certs2))
+                  (or (get-certificate-with-author+round author round certs1)
+                      (get-certificate-with-author+round author round certs2))))
+    :induct t
+    :enable (get-certificate-with-author+round-of-insert-iff
+             set::union))
 
   (defruled get-certificate-with-author+round-when-delete
     (implies (get-certificate-with-author+round author
@@ -490,6 +499,57 @@
     :induct t
     :enable certificate-set->round-set-of-insert))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-certificates-with-signer ((signer addressp)
+                                      (certs certificate-setp))
+  :returns (certs-with-signer certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates whose signers include a given address."
+  (b* (((when (set::emptyp certs)) nil)
+       (cert (set::head certs)))
+    (if (set::in (address-fix signer)
+                 (certificate->signers cert))
+        (set::insert (certificate-fix cert)
+                     (get-certificates-with-signer signer
+                                                   (set::tail certs)))
+      (get-certificates-with-signer signer (set::tail certs))))
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv get-certificates-with-signer
+    :args ((signer addressp)))
+
+  (defruled in-of-get-certificates-with-signer
+    (implies (certificate-setp certs)
+             (equal (set::in cert (get-certificates-with-signer signer certs))
+                    (and (set::in cert certs)
+                         (set::in (address-fix signer)
+                                  (certificate->signers cert)))))
+    :induct t)
+
+  (defruled get-certificates-with-signer-when-emptyp
+    (implies (set::emptyp certs)
+             (equal (get-certificates-with-signer signer certs)
+                    nil)))
+
+  (defruled get-certificates-with-signer-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (equal (get-certificates-with-signer signer
+                                                  (set::insert cert certs))
+                    (if (set::in (address-fix signer)
+                                 (certificate->signers cert))
+                        (set::insert cert
+                                     (get-certificates-with-signer signer
+                                                                   certs))
+                      (get-certificates-with-signer signer certs))))
+    :enable (in-of-get-certificates-with-signer
+             set::double-containment-no-backchain-limit
+             set::pick-a-point-subset-strategy)
+    :disable (get-certificates-with-signer)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk certificate-set-unequivocalp ((certs certificate-setp))
@@ -521,9 +581,67 @@
 
   ///
 
+  (defruled certificate-set-unequivocalp-when-subset
+    (implies (and (certificate-set-unequivocalp certs)
+                  (set::subset certs0 certs))
+             (certificate-set-unequivocalp certs0))
+    :use (:instance certificate-set-unequivocalp-necc
+                    (cert1
+                     (mv-nth 0 (certificate-set-unequivocalp-witness certs0)))
+                    (cert2
+                     (mv-nth 1 (certificate-set-unequivocalp-witness certs0))))
+    :enable set::expensive-rules)
+
   (defruled certificate-set-unequivocalp-when-emptyp
     (implies (set::emptyp certs)
-             (certificate-set-unequivocalp certs))))
+             (certificate-set-unequivocalp certs)))
+
+  (defruled certificate-set-unequivocalp-of-insert
+    (implies (certificate-setp certs)
+             (equal (certificate-set-unequivocalp (set::insert cert certs))
+                    (and (certificate-set-unequivocalp certs)
+                         (or (set::in cert certs)
+                             (not (get-certificate-with-author+round
+                                   (certificate->author cert)
+                                   (certificate->round cert)
+                                   certs))))))
+    :use (if-part only-if-part)
+    :enable certificate-set-unequivocalp-when-subset
+
+    :prep-lemmas
+
+    ((defruled if-part
+       (implies (and (certificate-set-unequivocalp certs)
+                     (or (set::in cert certs)
+                         (not (get-certificate-with-author+round
+                               (certificate->author cert)
+                               (certificate->round cert)
+                               certs))))
+                (certificate-set-unequivocalp (set::insert cert certs)))
+       :use (:instance certificate-set-unequivocalp-necc
+                       (cert1 (mv-nth 0 (certificate-set-unequivocalp-witness
+                                         (set::insert cert certs))))
+                       (cert2 (mv-nth 1 (certificate-set-unequivocalp-witness
+                                         (set::insert cert certs))))
+                       (certs certs))
+       :enable get-certificate-with-author+round-when-element)
+
+     (defruled only-if-part
+       (implies (and (certificate-setp certs)
+                     (certificate-set-unequivocalp (set::insert cert certs)))
+                (or (set::in cert certs)
+                    (not (get-certificate-with-author+round
+                          (certificate->author cert)
+                          (certificate->round cert)
+                          certs))))
+       :use (:instance certificate-set-unequivocalp-necc
+                       (cert1 cert)
+                       (cert2 (get-certificate-with-author+round
+                               (certificate->author cert)
+                               (certificate->round cert)
+                               certs))
+                       (certs (set::insert cert certs)))
+       :enable get-certificate-with-author+round-element))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

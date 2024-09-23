@@ -5664,24 +5664,26 @@
   (let ((active-useless-runes (active-useless-runes state)))
     (cond
      (active-useless-runes
-      (let ((ens-theory (cdr (access enabled-structure ens :theory-array)))
-            (index-of-last-enabling (access enabled-structure ens
-                                            :index-of-last-enabling)))
+      (let* ((ens-theory (cdr (access enabled-structure ens :theory-array)))
+             (index-of-last-enabling (access enabled-structure ens
+                                             :index-of-last-enabling))
+             (ext-p (< index-of-last-enabling
+                       (caar active-useless-runes))))
         (mv-let (index-of-last-enabling thy)
-          (cond ((<= (caar active-useless-runes) index-of-last-enabling)
-                 (mv index-of-last-enabling
-                     (set-difference-augmented-theories ens-theory
-                                                        active-useless-runes
-                                                        nil)))
-                (t
+          (cond (ext-p
                  (mv (caar active-useless-runes)
                      (extend-set-difference-theories ens-theory
                                                      active-useless-runes
                                                      index-of-last-enabling
-                                                     wrld))))
+                                                     wrld)))
+                (t
+                 (mv index-of-last-enabling
+                     (set-difference-augmented-theories ens-theory
+                                                        active-useless-runes
+                                                        nil))))
           (load-theory-into-enabled-structure-1
            thy
-           t ; augmented-p
+           (if ext-p 'ext-p t) ; augmented-p
            ens
            t ; incrmt-array-name-info
            index-of-last-enabling wrld))))
@@ -9010,7 +9012,7 @@
 ; We use ec-call here in case stobjs are involved, following the use of ec-call
 ; farther below.
 
-         (let ((call 
+         (let ((call
                 `(ec-call (do$ ,@(logic-code-to-runnable-code-lst (fargs term)
                                                                   wrld)))))
            (if (cdr (do$-stobjs-out (fargs term)))
@@ -11421,7 +11423,7 @@
                                    (put-ext-gen-info
                                     ext-gens ext-gen-barriers
                                     names fnnames-bodies guards wrld13))))
-                                      
+
               (let ((wrld15
                      #+:non-standard-analysis
                      (if std-p

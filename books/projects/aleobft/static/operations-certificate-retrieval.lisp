@@ -120,8 +120,7 @@
                   (or (get-certificate-with-author+round author round certs1)
                       (get-certificate-with-author+round author round certs2))))
     :induct (set::union certs1 certs2)
-    :enable (get-certificate-with-author+round
-             set::union)
+    :enable set::union
     :hints ('(:use (:instance lemma (cert (set::head certs1)))))
     :prep-lemmas
     ((defrule lemma
