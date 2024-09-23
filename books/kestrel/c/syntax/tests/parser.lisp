@@ -1600,6 +1600,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-external-declaration
+
+(test-parse
+ parse-external-declaration
+ ";"
+ :cond (extdecl-case ast :empty))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-external-declaration-list
 
 (test-parse
