@@ -396,6 +396,7 @@
     extdecl-fundef
     extdecl-fundef->unwrap
     extdecl-decl
+    extdecl-empty
 
     extdecl-listp
     extdecl-list-fix

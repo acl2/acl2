@@ -3543,7 +3543,10 @@
   (extdecl-case
    extdecl
    :fundef (print-fundef extdecl.unwrap pstate)
-   :decl (print-decl extdecl.unwrap pstate))
+   :decl (print-decl extdecl.unwrap pstate)
+   :empty (b* ((pstate (print-astring ";" pstate))
+               (pstate (print-new-line pstate)))
+            pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

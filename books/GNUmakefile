@@ -1414,6 +1414,7 @@ workshop2017: $(filter workshops/2017/%, $(OK_CERTS))
 workshop2018: $(filter workshops/2018/%, $(OK_CERTS))
 workshop2020: $(filter workshops/2020/%, $(OK_CERTS))
 workshop2022: $(filter workshops/2022/%, $(OK_CERTS))
+workshop2023: $(filter workshops/2023/%, $(OK_CERTS))
 
 # Projects targets:
 
@@ -1490,8 +1491,8 @@ dummy:
 
 # We now provide a way (adapted from the old Makefile-generic) for
 # developers to be able to check well-formedness of the ACL2 world
-# after including each book.  Note that we skip two problematic
-# directories for world-checking, hacking/ and
+# after including each book.  Note that we skip problematic
+# directories for world-checking, including hacking/ and
 # workshops/2007/dillinger-et-al/code/.  The problem seems likely to
 # be that in many of the books in these two directories, the first bad
 # triple is a GLOBAL-VALUE for either the unknown property
@@ -1509,6 +1510,8 @@ BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
 BOOKS_BKCHK_OUT := $(filter-out $(SLOW_BOOKS), $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
+# Includes hacking/ books; see comment about EXTEND-PROGN! above:
+BOOKS_BKCHK_OUT := $(filter-out workshops/2023/vonhippel-etal/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top-slow.bkchk.out, $(BOOKS_BKCHK_OUT))

@@ -51,15 +51,7 @@
 (include-book "structures" :dir :utils)
 (include-book "centaur/defrstobj2/defrstobj" :dir :system)
 
-; WAHJr. We lack a mechanism to decide what memory model we should use.  Note,
-; we could replace the slow memory in ``bignum-asymmetric'' to gain performance
-; above the linear memory limit.
-
-; The orginal three-level memory model.
-(include-book "centaur/bigmem/bigmem" :dir :system)
-
-; Asymmetric memory model; faster for "small" addresses, and otherwise slower.
-; (include-book "centaur/bigmem-asymmetric/bigmem-asymmetric" :dir :system)
+(include-book "centaur/bigmems/bigmem/bigmem" :dir :system)
 
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
@@ -104,12 +96,11 @@
 
 (defsection physical-memory-model
             :parents (x86isa-state)
-            :short "The physical memory models we support and when to use which"
-            :long "<p>We support the @(tsee bigmem::bigmem) and @(tsee
-            bigmem-asymmetric::bigmem-asymmetric) memory models for physical
-memory. Both of these are equivalent in reasoning, so for proofs it doesn't
-matter which you use. However, in execution, they have different performance
-characteristics.</p>
+            :short "How to change physical memory models"
+            :long "<p>We use the @(tsee bigmems::bigmems) library to model the
+            memory. The default model is @(tsee bigmem::bigmem). This model is
+            \"attachable,\" which allows one to replace it in execution with a
+            logically equivalent stobj. Here's why you'd want to replace it:</p>
 
 <p>@(tsee bigmem::bigmem) provides constant access time for the entire address
 space. However, accessing a byte requires walking a 3 level hierarchy.</p>
@@ -125,30 +116,13 @@ bigmem-asymmetric::bigmem-asymmetric) makes sense, otherwise use @(tsee
 bigmem::bigmem)</p>
 
 <p>By default, the model uses @(tsee bigmem::bigmem). To switch to @(tsee
-bigmem-asymmetric::bigmem-asymmetric), edit @('machine/state.lisp') and make
-the following change:</p>
+bigmem-asymmetric::bigmem-asymmetric), submit the following events to ACL2
+before including the x86 books:</p>
 
 <code>
- ; The orginal three-level memory model.
-+; (include-book \"centaur/bigmem/bigmem\" :dir :system)
--(include-book \"centaur/bigmem/bigmem\" :dir :system)
- 
- ; Asymmetric memory model; faster for \"small\" addresses, and otherwise slower.
-+(include-book \"centaur/bigmem-asymmetric/bigmem-asymmetric\" :dir :system)
--; (include-book \"centaur/bigmem-asymmetric/bigmem-asymmetric\" :dir :system)
-...
-
-     (mem   :type (array (unsigned-byte 8) (,*mem-size-in-bytes*)) ;; 2^52
-            :initially 0
-            :fix (acl2::loghead 8 (ifix x))
-+           :child-stobj bigmem-asymmetric::mem
-+           :child-accessor bigmem-asymmetric::read-mem
-+           :child-updater  bigmem-asymmetric::write-mem
--           :child-stobj bigmem::mem
--           :child-accessor bigmem::read-mem
--           :child-updater  bigmem::write-mem
-            :accessor memi
-            :updater !memi)
+(include-book \"centaur/bigmems/bigmem-asymmetric/bigmem-asymmetric\" :dir :system)
+(include-book \"centaur/bigmems/bigmem/portcullis\" :dir :system)
+(attach-stobj bigmem::mem bigmem-asymmetric::mem)
 </code>")
 
 (defsection environment-field
@@ -606,10 +580,6 @@ the following change:</p>
            :child-updater  bigmem::write-mem
            :accessor memi
            :updater !memi)
-    ;; (mem   :type bigmem::mem
-    ;;        :recognizer bigmem::memp
-    ;;        :accessor mem
-    ;;        :updater !mem)
     (:doc "</li>")
 
     (:doc "<li>@('Inhibit Interrupts One Instruction'): The Intel manual states
@@ -761,10 +731,9 @@ the following change:</p>
 
   :long "<h4>Old definition of the @('x86isa') state</h4>
 
- <p>Before @(tsee bigmem-asymmetric::bigmem-asymmetric), @(tsee bigmem::bigmem)
- and @(tsee rstobj2::defrstobj) were used to define the x86 state, the x86
- state's definition was rather tedious.  (For future reference, the following
- git revision has that old definition:
+ <p>Before @(tsee bigmems::bigmems) and @(tsee rstobj2::defrstobj) were used to
+ define the x86 state, the x86 state's definition was rather tedious.  (For
+ future reference, the following git revision has that old definition:
  @('dea40263247bd930077205526934bc596686bfb0')).</p>
 
  <p>This current file @('state.lisp') replaces the following old

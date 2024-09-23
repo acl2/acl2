@@ -1306,11 +1306,21 @@ jump-statement = %s"goto" identifier ";"
 ; We also allow an assembler name specifier
 ; just after the declarator of a function definition.
 
+; We also allow a lone semicolon as an external declaration.
+; This is definitely not grammatical according to [C],
+; and we did not find it anywhere in the GCC documentation;
+; nonetheless, we encountered it in practical code.
+; Presumably, it may make it easier to write certain macros.
+; Semantically, it amounts to nothing, i.e. it is ignored.
+; Note that this is not a null statement,
+; because we are the top level.
+
 translation-unit = external-declaration
                  / translation-unit external-declaration
 
 external-declaration = function-definition
                      / declaration
+                     / ";"
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers

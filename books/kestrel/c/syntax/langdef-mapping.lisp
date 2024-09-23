@@ -1389,6 +1389,8 @@
                   (c::fundef (c::tyspecseq-void)
                              (c::fun-declor-base (c::ident "irrelevant") nil)
                              nil)))
+       ((when (extdecl-case extdecl :empty))
+        (reterr (msg "Unsupported empty external declaration.")))
        ((when (extdecl-case extdecl :fundef))
         (b* (((erp fundef) (ldm-fundef (extdecl-fundef->unwrap extdecl))))
           (retok (c::ext-declon-fundef fundef))))

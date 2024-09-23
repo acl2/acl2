@@ -12,7 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "ordered-even-blocks")
-(include-book "nonforking-blockchains-def-and-init")
+(include-book "nonforking-blockchains")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -38,16 +38,7 @@
      and we prove that it is a consequence of
      the non-forking blockchains invariant.
      We also need the already proved invariant that
-     rounds in blockchains are even and strictly increasing.
-     The proof of the non-forking blockchains invariant
-     is not available at this point
-     where we prove this invariant about the same committees,
-     because to prove the non-forking blockchain invariant
-     we need to prove the non-equivocation of certificates,
-     for which we need to prove the same committees invariant here:
-     this is part of the mutual induction discussed
-     in @(see unequivocal-certificates-def-and-init)
-     and @(see nonforking-blockchains-def-and-init).")
+     rounds in blockchains are even and strictly increasing.")
    (xdoc::p
     "If the blockchains of two validators do not fork,
      either the two blockchains are equal

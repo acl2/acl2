@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "owned-certificates")
+(include-book "certificates-of-validators")
 (include-book "same-owned-certificates")
 (include-book "no-self-messages")
 (include-book "no-self-buffer")
@@ -22,9 +22,10 @@
 (include-book "quorum-intersection")
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
-(include-book "signers-quorum-in-committee")
-(include-book "unequivocal-certificates-def-and-init")
-(include-book "nonforking-blockchains-def-and-init")
+(include-book "accepted-certificates-quorum")
+(include-book "unequivocal-signed-certificates")
+(include-book "unequivocal-accepted-certificates")
+(include-book "nonforking-blockchains")
 (include-book "same-committees")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -40,7 +41,7 @@
      is the non-forking of blockchains,
      which we have already proved for static committees;
      here we are generalizing it for dynamic committees."))
-  :order-subtopics (owned-certificates
+  :order-subtopics (certificates-of-validators
                     same-owned-certificates
                     no-self-messages
                     no-self-buffer
@@ -51,9 +52,10 @@
                     quorum-intersection
                     last-blockchain-round
                     ordered-even-blocks
-                    signers-quorum-in-committee
-                    unequivocal-certificates-def-and-init
-                    nonforking-blockchains-def-and-init
+                    accepted-certificates-quorum
+                    unequivocal-signed-certificates
+                    unequivocal-accepted-certificates
+                    nonforking-blockchains
                     same-committees))
 
 ; TODO: continue
