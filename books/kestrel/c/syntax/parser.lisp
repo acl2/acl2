@@ -639,7 +639,7 @@
      the current length of @('tokens-read') is stored as a checkpoint,
      by @(tsee cons)ing it to the @('checkpoints') list.
      Later, the checkpoint can be simply cleared,
-     in which case it is simply removed from the check,
+     in which case it is simply removed from the list,
      by replacing @('checkpoints') with its @(tsee cdr).
      Alternatively, we can backtrack to the checkpoint,
      which involves moving tokens from @('tokens-read') to @('tokens-unread')
@@ -656,7 +656,7 @@
     "We include a boolean flag saying whether
      certain GCC extensions should be accepted or not.
      These GCC extensions are limited to the ones
-     currently captured in our abstract syntax.
+     currently captured in our grammar and abstract syntax.
      This parser state component is set at the beginning and never changes,
      but it is useful to have it as part of the parser state
      to avoid passing an additional parameter.
@@ -717,7 +717,7 @@
      So we define our own readers and writers that do both things,
      which we define in terms of the generated ones.
      The generated ones are enabled,
-     but we do not both disabling them,
+     but we do not bother disabling them,
      because we are not going to use them anywhere anyhow.
      We also prove some theorems about how readers and writers interact,
      as needed.")
@@ -733,7 +733,8 @@
      are indeed redundant.
      But we can probably use @(tsee defabsstobj) for that,
      which may be also overall a better way to
-     ``turn'' a stobj into a @(tsee fty::defprod)-like fixtype."))
+     ``turn'' a stobj into a @(tsee fty::defprod)-like fixtype;
+     we will look into that in the future."))
 
   ;; needed for DEFSTOBJ and writer proofs:
 
