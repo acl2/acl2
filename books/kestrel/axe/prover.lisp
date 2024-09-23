@@ -133,7 +133,7 @@
                                           :no-stp))))
 
 ;; Make a version of instantiate-hyp, etc that use the basic evaluator:
-(make-instantiation-code-simple basic axe-evaluator-basic)
+;; (make-instantiation-code-simple basic axe-evaluator-basic)
 
 ;todo
 (defttag invariant-risk)
@@ -324,9 +324,8 @@
                                 (cw "(Failed.  Reason: Failed to relieve axe-bind-free hyp (number ~x0): ~x1 for ~x2.)~%" hyp-num hyp rule-symbol))
                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))))
              (if (eq :free-vars fn) ;can't be a work-hard since there are free vars
-                 (b* (((mv instantiated-hyp &)
-                       (instantiate-hyp-basic (cdr hyp) ;strip the :free-vars
-                                              alist interpreted-function-alist)))
+                 (b* ((instantiated-hyp (instantiate-hyp-basic-free-vars (cdr hyp) ;strip the :free-vars
+                                                                         alist interpreted-function-alist)))
                    ;; ALIST doesn't bind all the variables in the HYP, so we'll search for free variable matches in NODENUMS-TO-ASSUME-FALSE.
                    (relieve-free-var-hyp-and-all-others-for-axe-prover nodenums-to-assume-false
                                                                        instantiated-hyp hyp-num
@@ -340,8 +339,7 @@
                  (b* ((var (cadr hyp))
                       (expr (cddr hyp))
                       ;; First, we substitute for all the free vars in expr:
-                      ((mv instantiated-expr &)
-                       (instantiate-hyp-basic expr alist interpreted-function-alist)) ; todo: could call a instantiate-hyp-no-free-vars function here, but with which evaluator?
+                      (instantiated-expr (instantiate-hyp-basic-no-free-vars2 expr alist interpreted-function-alist))
                       ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums.
                       ;; TODO: Consider adding a special case here to check whether the hyp is a constant (may be very common)?
                       ;; Now rewrite the instantianted expr:
@@ -367,22 +365,18 @@
                                                      rule-symbol
                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                      equiv-alist rule-alist nodenums-to-assume-false print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options (+ -1 count) state))
-               ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :free-vars:
-               ;;Set the work-hard flag and strip-off work-hard if present:
+               ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :axe-binding-hyp or :free-vars:
+               ;; Set the work-hard flag and strip-off work-hard if present:
                (mv-let
                  (work-hardp hyp)
                  (if (eq 'work-hard fn)
                      (mv t (farg1 hyp)) ;strip off the call of work-hard
                    (mv nil hyp))
-                 ;; First, we substitute in for all the vars in HYP that are bound in ALIST
-                 ;; fixme precompute the list of vars in the hyp?
-                 (mv-let
-                   (instantiated-hyp free-vars-flg)
-                   (instantiate-hyp-basic hyp alist interpreted-function-alist)
-                   (declare (ignore free-vars-flg))
-                   ;; INSTANTIATED-HYP is now a tree with leaves that are quoteps and nodenums (from vars already bound).
-                   ;; No more free vars remain in the hyp, so we try to relieve the fully instantiated hyp:
-                   (b* ((old-try-count tries)
+                 (b* (;; First, we substitute in for all the vars in HYP:
+                      (instantiated-hyp (instantiate-hyp-basic-no-free-vars2 hyp alist interpreted-function-alist))
+                      ;; INSTANTIATED-HYP is now a tree with leaves that are quoteps and nodenums (from vars already bound).
+                      ;; No more free vars remain in the hyp, so we try to relieve the fully instantiated hyp:
+                        (old-try-count tries)
                         ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
                          ;;try to relieve through rewriting (this tests atom hyps for symbolp even though i think that's impossible - but should be rare:
                          (simplify-tree-and-add-to-dag-for-axe-prover instantiated-hyp
@@ -487,7 +481,7 @@
                                         (print-dag-array-node-and-supporters-lst nodenums-to-assume-false 'dag-array dag-array)
                                         (cw "))~%") ;;(cw "Alist: ~x0.~%Assumptions (to assume false): ~x1~%DAG:~x2)~%" alist nodenums-to-assume-false dag-array)
                                         ))
-                           (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))))))))))))))))
+                           (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)))))))))))))))
 
  ;; returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
  ;; where if new-rhs-or-nil is nil, no rule applied. otherwise, new-rhs-or-nil is a tree with nodenums and quoteps at the leaves (what about free vars?  should free vars in the RHS be an error?)
