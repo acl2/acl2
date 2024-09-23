@@ -90,7 +90,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection no-signer-record-when-create-certificate-possiblep
-  :short "If @(tsee create-certificate-possibiep) holds,
+  :short "If @(tsee create-certificate-possiblep) holds,
           then @(tsee signer-record-p) is false for its correct signers."
   :long
   (xdoc::topstring
@@ -102,11 +102,11 @@
      for the set of certificates signed by a certificate.")
    (xdoc::p
     "This fact follows from
-     the definition of @(tsee create-certificate-possibiep),
+     the definition of @(tsee create-certificate-possiblep),
      as well as from some previously proved system invariants.")
    (xdoc::p
     "Consider the author first.
-     For the author, @(tsee create-certificate-possibiep) requires
+     For the author, @(tsee create-certificate-possiblep) requires
      that no certificates in the DAG have
      the author and round of the new certificates.
      It says nothing about buffer and endorsed pairs,
