@@ -137,8 +137,8 @@
        (addressp (cdr x)))
   :declares ((xargs :guard (alistp x))))
 
-(in-theory (disable acl2::use-all-heapref-table-entryp ; a bad rule
-                    acl2::use-all-heapref-table-entryp-for-car ; also seems bad
+(in-theory (disable jvm::use-all-heapref-table-entryp ; a bad rule
+                    jvm::use-all-heapref-table-entryp-for-car ; also seems bad
                     ))
 
 ;fixme flesh this out:
