@@ -1102,7 +1102,8 @@
   (extdecl-case
    extdecl
    :fundef (extdecl-fundef (simpadd0-fundef extdecl.unwrap))
-   :decl (extdecl-decl (simpadd0-decl extdecl.unwrap)))
+   :decl (extdecl-decl (simpadd0-decl extdecl.unwrap))
+   :empty (extdecl-empty))
   :hooks (:fix)
 
   ///

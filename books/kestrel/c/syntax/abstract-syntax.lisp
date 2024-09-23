@@ -3097,9 +3097,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>external-declaration</i> in the grammar in [C]."))
+    "This corresponds to <i>external-declaration</i> in the grammar in [C].")
+   (xdoc::p
+    "As explained in our ABNF grammar,
+     we also include an empty external declaration,
+     which syntactically consists of a semicolon."))
   (:fundef ((unwrap fundef)))
   (:decl ((unwrap decl)))
+  (:empty ())
   :pred extdeclp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -15467,12 +15467,16 @@
   (xdoc::topstring
    (xdoc::p
     "An external declaration is
-     either a function definition,
+     either an empty one (a lone semicolon),
+     or a function definition,
      which starts with a non-empty sequence of declaration specifiers,
      or a declaration,
      which also starts with a non-empty sequence of declaration specifiers,
      unless it is a static assert declaration,
      which starts with the keyword @('_Static_assert').")
+   (xdoc::p
+    "The case of an empty external declaration is easy,
+     because it starts (and ends) with a semicolon.")
    (xdoc::p
     "No declaration specifier starts with the keyword @('_Static_assert'),
      so this keyword tells us that we must have a static assert declaration.
@@ -15490,6 +15494,10 @@
   (b* (((reterr) (irr-extdecl) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate)))
     (cond
+     ;; If token is a semicolon,
+     ;; we have an empty external declaration.
+     ((token-punctuatorp token ";")
+      (retok (extdecl-empty) span parstate))
      ;; If token is the keyword '_Static_assert',
      ;; we have a static assertion declaration.
      ((token-keywordp token "_Static_assert") ; _Static_assert
