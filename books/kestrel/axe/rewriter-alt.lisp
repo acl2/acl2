@@ -384,7 +384,7 @@
                                            nil nil
                                            interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                         ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))
-                        (- (and old-try-count print (or (eq :verbose print) (eq :verbose! print))
+                        (- (and old-try-count
                                 (let ((try-diff (- tries old-try-count)))
                                   (and (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))))))
                      ;; A binding hyp always counts as relieved:
@@ -450,7 +450,7 @@
                                              (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)))
                                  ;;hyp didn't rewrite to a constant:
                                  (prog2$
-                                  (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))
+                                  (and old-try-count (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))
                                   (if (and work-hardp
                                            ;;work-hard-when-instructedp fffffixme thread this through
                                            )
@@ -884,7 +884,7 @@
                         equality-array
                         print monitored-symbols
                         (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
-                        (and print (zero-tries))
+                        (if (print-level-at-least-verbosep print) (zero-tries) nil) ; nil means not counting tries
                         normalize-xors state result-array-stobj)
       (progn$ (maybe-print-hit-counts hit-counts ;; (append (rules-from-rule-alist rule-alist)
                                       ;;   ;; do these get counted?

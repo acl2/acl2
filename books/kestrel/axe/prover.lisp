@@ -356,9 +356,8 @@
                                       nil ;hyps-relievedp
                                       nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
                       (- (and old-try-count
-                              print
                               (let ((try-diff (- tries old-try-count)))
-                                (and (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
+                                (and (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
                    ;; A binding hyp always counts as relieved:
                    (relieve-rule-hyps-for-axe-prover (rest hyps) (+ 1 hyp-num)
                                                      (acons var new-nodenum-or-quotep alist) ; bind the var to the rewritten term
@@ -393,14 +392,14 @@
                         )
                      (if (consp new-nodenum-or-quotep) ;tests for quotep
                          (if (unquote new-nodenum-or-quotep) ;hyp rewrote to a non-nil constant:
-                             (prog2$ (and old-try-count (or (eq :verbose print) (eq t print)) (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
+                             (prog2$ (and old-try-count (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
                                      (relieve-rule-hyps-for-axe-prover
                                       (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                       equiv-alist rule-alist nodenums-to-assume-false print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options (+ -1 count) state))
                            ;;hyp rewrote to *nil* :
                            (progn$
-                            (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
+                            (and old-try-count (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                             (and (member-eq rule-symbol monitored-symbols)
                                  (cw "(Failed to relieve hyp ~x3 for ~x0.~% Reason: Rewrote to nil.~%Alist: ~x1.~%Assumptions (to assume false):~%~x2~%DAG:~x4)~%"
                                      rule-symbol
@@ -412,7 +411,7 @@
                             (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)))
                        ;;hyp didn't rewrite to a constant:
                        (prog2$
-                        (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
+                        (and old-try-count (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
                         (if (and work-hardp work-hard-when-instructedp)
 
                             ;;fffixme is it no longer necessary to save the dag-array?
@@ -1994,6 +1993,8 @@
                                       interpreted-function-alist))
          ((when erp) (mv erp :failed state))
          ;; Now try the proof:
+         ;; Decide whether to count and print tries:
+         (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
          ((mv erp result & & & & & ;dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
               hit-counts tries state)
           (prove-disjunction-with-axe-prover (cons top-nodenum negated-assumption-literal-nodenums-or-quoteps) ;we prove that either the top node of the dag is true or some assumption is false
@@ -2006,7 +2007,7 @@
                                              print-max-conflicts-goalp
                                              t ;fixme work-hard
                                              (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
-                                             (and print (zero-tries))
+                                             tries
                                              0 ;prover-depth
                                              options
                                              (+ -1 (expt 2 59)) ;max fixnum?
@@ -2045,6 +2046,8 @@
        ((mv erp literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (make-terms-into-dag-array literal-terms 'dag-array 'dag-parent-array interpreted-function-alist))
        ((when erp) (mv erp nil state))
+       ;; Decide whether to count and print tries:
+       (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
        ;;fixme name clashes..
        ((mv erp result & & & & & hit-counts tries state)
         (prove-disjunction-with-axe-prover literal-nodenums-or-quoteps ;; fixme think about the options used here!
@@ -2058,7 +2061,7 @@
                                       t ;print-max-conflicts-goalp
                                       t ; work-hard-when-instructedp
                                       (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
-                                      (and print (zero-tries))
+                                      tries
                                       0 ;prover-depth
                                       options
                                       (+ -1 (expt 2 59)) ;max fixnum?
@@ -2161,6 +2164,8 @@
        ((mv erp literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (make-terms-into-dag-array clause 'dag-array 'dag-parent-array interpreted-function-alist))
        ((when erp) (mv erp nil state))
+       ;; Decide whether to count and print tries:
+       (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
        ;;fixme name clashes..
        ((mv erp result & & & & & hit-counts tries state)
         (prove-disjunction-with-axe-prover literal-nodenums-or-quoteps ;; fixme think about the options used here!
@@ -2174,7 +2179,7 @@
                                           t ;print-max-conflicts-goalp
                                           t ; work-hard-when-instructedp
                                           (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
-                                          (and print (zero-tries))
+                                          tries
                                           0 ;prover-depth
                                           options
                                           (+ -1 (expt 2 59)) ;max fixnum?

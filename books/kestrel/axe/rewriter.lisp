@@ -312,9 +312,8 @@
                                                      hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
                       ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))
                       (- (and old-try-count
-                              print
                               (let ((try-diff (- tries old-try-count)))
-                                (and (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
+                                (and (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
                    ;; A binding hyp always counts as relieved:
                    (relieve-rule-hyps (rest hyps)
                                       (+ 1 hyp-num)
@@ -353,7 +352,7 @@
                       (try-diff (and old-try-count (- tries old-try-count))))
                    (if (consp new-nodenum-or-quotep) ;tests for quotep
                        (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil:
-                           (prog2$ (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol try-diff hyp-num))
+                           (prog2$ (and old-try-count (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2 (rewrote to true).)~%" try-diff rule-symbol hyp-num))
                                    ;;hyp rewrote to a non-nil constant and so counts as relieved:
                                    (relieve-rule-hyps (rest hyps)
                                                       (+ 1 hyp-num)
@@ -363,7 +362,7 @@
                                                       print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
                                                       memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
                          ;;hyp rewrote to *nil*:
-                         (progn$ (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
+                         (progn$ (and old-try-count (< 100 try-diff) (cw "(~x0 tries wasted ~x1:~x2 (rewrote to NIL))~%" try-diff rule-symbol hyp-num))
                                  (and (member-eq rule-symbol monitored-symbols)
                                       (progn$ (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol)
                                               ;; (cw "Alist: ~x0.~%Assumptions:~%~x1~%DAG:~x2~%" ;;ffixme improve this printing
@@ -379,7 +378,7 @@
                      ;;hyp didn't rewrite to a constant (new-nodenum-or-quotep is a node number):
                      ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
                      (if (nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist dag-array)
-                         (prog2$ (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol try-diff hyp-num))
+                         (prog2$ (and old-try-count (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2 (rewrote to true).)~%" try-diff rule-symbol hyp-num))
                                  ;;hyp rewrote to a known assumption and so counts as relieved:
                                  (relieve-rule-hyps (rest hyps)
                                                     (+ 1 hyp-num)
@@ -389,7 +388,7 @@
                                                     print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
                                                     memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
                        (prog2$
-                        (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
+                        (and old-try-count (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))
                         (if (and work-hardp work-hard-when-instructedp)
                             ;;If we have been instructed to work hard:
                             (b* ((- (cw "(Rewriter is working hard on a hyp of ~x0, namely: ~x1~%" rule-symbol hyp)) ;print the instantiated-hyp and hyp num too?
@@ -1290,6 +1289,8 @@
        (work-hard-on-first-rewrite (not use-internal-contextsp) ;nil ;work-hard-when-instructedp ;Mon Sep 20 09:54:39 2010 since we are not using contexts, working hard can be a big waste.  on the other hand, we are memoizing on this rewrite (but can't on the one with contexts), so work-hards would be memoized here but not there
                                    )
        (known-booleans (known-booleans (w state)))
+       ;; Decide whether to count and print tries:
+       (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
        ;; STEP 1: Rewrite dag by simplifying its nodes and adding to dag-array:
        ((mv erp dag-array & & & & renaming-array hit-counts tries limits state) ;use the ignored values?!
         (add-simplified-dag-to-dag-array (reverse dag) ;;we'll simplify nodes from the bottom-up
@@ -1302,7 +1303,7 @@
                                          (and memoizep ;hope this is okay and not too slow:
                                               (empty-memoization)) ;fixme add some option to make this bigger?
                                          (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
-                                         (and print (zero-tries)) ;(if rewriter-rule-alist (zero-tries) nil) ;fixme think about this
+                                         tries
                                          interpreted-function-alist
                                          monitored-symbols ;; (if use-internal-contextsp nil monitored-symbols) ;; (don't monitor if this is the first of two passes) -- TODO: Note that this can cause problems if we get an unexpected error (e.g., in an axe-syntaxp function) on the first pass)
                                          nil ;internal-context-array=nil means don't use internal contexts
@@ -1314,7 +1315,7 @@
                                          state))
        ((when erp) (mv erp nil limits state))
        (- (maybe-print-hit-counts hit-counts))
-       (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
+       (- (and tries (cw "~%Total rule tries: ~x0.~%" tries))) ;print these after dropping non supps?
        (- (and print (cw ")~%"))) ; balances "(Simplifying without using contexts"
        (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
     (if (consp renamed-top-node) ; checks for quotep
@@ -1368,6 +1369,8 @@
               (mv erp :false-context limits state))
              ;; Fixup the refined-assumption-alist to refer to nodes in dag-array:
              (refined-assumption-alist (fixup-refined-assumption-alist refined-assumption-alist 'renaming-array renaming-array nil))
+             ;; Decide whether to count and print tries:
+             (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
              ;; Simplify all the nodes:
              ((mv erp dag-array & & & & renaming-array hit-counts tries limits state) ;use the ignored things ?!
               (add-simplified-dag-to-dag-array (reverse dag)
@@ -1379,15 +1382,15 @@
                                                print-interval print
                                                nil ;memoization (not sound to memoize between nodes when using internal contexts)  :TODO: Print a warning if this turns off memoization.
                                                (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
-                                               (and print (zero-tries)) ;fixme think about this (if rewriter-rule-alist (zero-tries) nil)
+                                               tries
                                                interpreted-function-alist monitored-symbols
                                                ;;fixme refine the internal contexts? handle equalities?:
                                                internal-context-array
                                                external-context known-booleans work-hard-when-instructedp tag limits state))
              ((when erp) (mv erp nil nil state))
+             (- (and tries (cw "~%Total rule tries: ~x0.~%" tries)))
              (- (and print
-                     (progn$ (cw "(~x0 tries.)~%" tries)
-                             (maybe-print-hit-counts hit-counts)
+                     (progn$ (maybe-print-hit-counts hit-counts)
                              (cw ")"))))
              (top-nodenum (top-nodenum dag))
              (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))

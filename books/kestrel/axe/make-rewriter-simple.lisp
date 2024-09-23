@@ -723,11 +723,9 @@
                                                                     node-replacement-array node-replacement-count refined-assumption-alist
                                                                     rewrite-stobj (+ -1 count)))
                                ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
-                               (- (and old-try-count
-                                       print ; todo: just make a non-nil tries indicate whether to print try info?
-                                       (print-level-at-least-verbosep print)
-                                       (let ((try-diff (sub-tries tries old-try-count)))
-                                         (and (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
+                               (- (and old-try-count (let ((try-diff (sub-tries tries old-try-count)))
+                                                       (and (< *used-try-print-threshold* try-diff)
+                                                            (cw " (~x0 tries used ~x1:~x2 (binding hyp).)~%" try-diff rule-symbol hyp-num))))))
                             ;; A binding hyp always counts as relieved:
                             (,relieve-rule-hyps-name (rest hyps)
                                                      (+ 1 hyp-num)
@@ -758,8 +756,7 @@
                                       (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
                           ;; There are no free vars, so we try to relieve the (fully-instantiated) hyp by simplifying it:
                           (b* ((old-try-count tries)
-                               ((mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits
-                                    node-replacement-array)
+                               ((mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                                 ;; TODO: This tests whether atoms in the instiantiated-hyp are vars, but that seems wasteful because the hyp is fully instantiated):
                                 ;; bozo do we really want to add stupid natp hyps, etc. to the memoization? what about ground terms (most of them will have been evaluated above)?
                                 ;; TODO: Consider not instantiating the hyp but rather simplifying it wrt an alist:
@@ -771,11 +768,9 @@
                                ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
                             (if (consp new-nodenum-or-quotep) ;tests for quotep
                                 (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil:
-                                    (prog2$ (and old-try-count
-                                                 print
-                                                 (print-level-at-least-verbosep print)
-                                                 (< *used-try-print-threshold* (sub-tries tries old-try-count))
-                                                 (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
+                                    (prog2$ (and old-try-count (let ((try-diff (sub-tries tries old-try-count)))
+                                                                 (and (< *used-try-print-threshold* try-diff)
+                                                                      (cw " (~x0 tries used ~x1:~x2 (rewrote to true).)~%" try-diff rule-symbol hyp-num))))
                                             ;;hyp rewrote to a non-nil constant and so counts as relieved:
                                             (,relieve-rule-hyps-name (rest hyps)
                                                                      (+ 1 hyp-num)
@@ -785,11 +780,9 @@
                                                                      node-replacement-array node-replacement-count refined-assumption-alist
                                                                      rewrite-stobj (+ -1 count)))
                                   ;;hyp rewrote to 'nil
-                                  (progn$ (and old-try-count
-                                               print
-                                               (print-level-at-least-verbosep print)
-                                               (< *wasted-try-print-threshold* (sub-tries tries old-try-count)) ; todo: just call - on the tries?
-                                               (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
+                                  (progn$ (and old-try-count (let ((try-diff (sub-tries tries old-try-count)))
+                                                               (and (< *wasted-try-print-threshold* try-diff) ; todo: just call - on the tries?
+                                                                    (cw "(~x0 tries wasted ~x1:~x2 (rewrote to NIL).)~%" try-diff rule-symbol hyp-num))))
                                           (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                                ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
                                                (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%" hyp rule-symbol))
@@ -798,11 +791,9 @@
                               ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
                               (if ;;(nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist (get-dag-array rewrite-stobj2)) ;todo: only do this if the hyp is not a known-boolean?
                                   (known-true-in-node-replacement-arrayp new-nodenum-or-quotep node-replacement-array node-replacement-count)
-                                  (prog2$ (and old-try-count
-                                               print
-                                               (print-level-at-least-verbosep print)
-                                               (< *used-try-print-threshold* (sub-tries tries old-try-count)) ; todo: don't redo the sub-tries
-                                               (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
+                                  (prog2$ (and old-try-count (let ((try-diff (sub-tries tries old-try-count)))
+                                                               (and (< *used-try-print-threshold* try-diff)
+                                                                    (cw " (~x0 tries used ~x1:~x2 (known true after rewriting).)~%" try-diff rule-symbol hyp-num))))
                                           ;;hyp rewrote to a known assumption and so counts as relieved:
                                           (,relieve-rule-hyps-name (rest hyps)
                                                                    (+ 1 hyp-num)
@@ -812,11 +803,9 @@
                                                                    node-replacement-array node-replacement-count refined-assumption-alist
                                                                    rewrite-stobj (+ -1 count)))
                                 ;; Failed to relieve the hyp:
-                                (progn$ (and old-try-count
-                                             print
-                                             (print-level-at-least-verbosep print)
-                                             (< *wasted-try-print-threshold* (sub-tries tries old-try-count))
-                                             (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
+                                (progn$ (and old-try-count (let ((try-diff (sub-tries tries old-try-count)))
+                                                             (and (< *wasted-try-print-threshold* try-diff)
+                                                                  (cw "(~x0 tries wasted ~x1:~x2 (non-constant result).)~%" try-diff rule-symbol hyp-num))))
                                         (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                              (let* ((relevant-nodes (nodenums-in-refined-assumption-alist refined-assumption-alist nil))
                                                     ;; (relevant-nodes (let ((expr (aref1 'dag-array (get-dag-array rewrite-stobj2) new-nodenum-or-quotep)))
@@ -874,7 +863,7 @@
                     (,try-to-apply-rules-name (rest stored-rules)
                                               args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
                    ;; Limit not reached, so we will try this rule:
-                   (tries (increment-tries tries))
+                   (tries (increment-tries tries)) ; does nothing if not counting tries
                    ;; Try to match the args-to-match with the args of the LHS of the rule:
                    (alist-or-fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))))
                 (if (eq :fail alist-or-fail)
@@ -5460,13 +5449,15 @@
                 (rewrite-stobj2 (put-dag-constant-alist dag-constant-alist rewrite-stobj2))
                 (rewrite-stobj2 (put-dag-variable-alist dag-variable-alist rewrite-stobj2))
                 (renumbering-stobj (resize-renumbering old-len renumbering-stobj))
+                ;; Decide whether to count and print tries:
+                (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
                 ((mv erp rewrite-stobj2 memoization hit-counts tries limits node-replacement-array renumbering-stobj)
                  (,simplify-dag-aux-name (reverse-list dag) ;;we'll simplify nodes from the bottom-up
                                          rewrite-stobj2
                                          maybe-internal-context-array
                                          (and memoize (empty-memoization)) ; todo: add an option to make this bigger?
                                          (if (or (not count-hits) (null print)) (no-hit-counting) (if (print-level-at-least-tp print) (empty-hit-counts) (zero-hits)))
-                                         (and print (zero-tries)) ;todo: think about this
+                                         tries
                                          limits
                                          node-replacement-array node-replacement-count refined-assumption-alist
                                          rewrite-stobj
@@ -5482,7 +5473,7 @@
            (b* (((when erp) (mv erp nil limits))
                 ;; todo: do we support both brief hit counting (just the total) and totals per-rule?:
                 (- (maybe-print-hit-counts hit-counts))
-                (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
+                (- (and tries (cw "~%Total rule tries: ~x0.~%" tries))) ;print these after dropping non supps?
                 (- (and (print-level-at-least-tp print) memoization (print-memo-stats memoization)))
                 ;; todo: print the new len?
                 )
@@ -5824,7 +5815,7 @@
                 dag-array
                 & & & & ; dag-len dag-parent-array dag-constant-alist dag-variable-alist
                 memoization hit-counts
-                & & & ; tries limits node-replacement-array
+                tries & & ; limits node-replacement-array
                 )
             (with-local-stobjs (rewrite-stobj rewrite-stobj2)
               (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits node-replacement-array rewrite-stobj rewrite-stobj2)
@@ -5842,7 +5833,9 @@
                        (rewrite-stobj2 (put-dag-len dag-len rewrite-stobj2))
                        (rewrite-stobj2 (put-dag-parent-array dag-parent-array rewrite-stobj2))
                        (rewrite-stobj2 (put-dag-constant-alist dag-constant-alist rewrite-stobj2))
-                       (rewrite-stobj2 (put-dag-variable-alist dag-variable-alist rewrite-stobj2)))
+                       (rewrite-stobj2 (put-dag-variable-alist dag-variable-alist rewrite-stobj2))
+                       ;; Decide whether to count and print tries:
+                       (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)))
                   (mv-let (erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                     ;; TODO: Consider making a version of ,simplify-tree-and-add-to-dag-name that applies only to terms, not axe-trees, and calling it here.
                     ;; TODO: Or consider handling vars separately and then dropping support for vars in ,simplify-tree-and-add-to-dag-name (and in the memoization).
@@ -5854,7 +5847,7 @@
                                                           ;; not memoizing:
                                                           nil)
                                                         (if (or (not count-hits) (null print)) (no-hit-counting) (if (print-level-at-least-tp print) (empty-hit-counts) (zero-hits)))
-                                                        0   ; tries
+                                                        tries
                                                         nil ; limits ; todo: pass in
                                                         node-replacement-array node-replacement-count refined-assumption-alist
                                                         rewrite-stobj
@@ -5867,6 +5860,7 @@
                 )))
            ((when erp) (mv erp nil))
            (- (maybe-print-hit-counts hit-counts))
+           (- (and tries (cw "~%Total rule tries: ~x0.~%" tries)))
            (- (and nil ;; change to t to print info on the memoization
                    memoization
                    (print-memo-stats memoization))))

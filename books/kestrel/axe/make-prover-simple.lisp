@@ -1259,9 +1259,8 @@
                                                nil ;hyps-relievedp
                                                nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))
                                (- (and old-try-count
-                                       print
                                        (let ((try-diff (sub-tries tries old-try-count)))
-                                         (and (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
+                                         (and (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
                             ;; A binding hyp always counts as relieved:
                             (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num)
                                                      (acons var new-nodenum-or-quotep alist) ; bind the var to the rewritten term
@@ -1291,14 +1290,14 @@
                            (try-diff (and old-try-count (sub-tries tries old-try-count))))
                         (if (consp new-nodenum-or-quotep) ;tests for quotep
                             (if (unquote new-nodenum-or-quotep) ;hyp rewrote to a non-nil constant:
-                                (prog2$ (and old-try-count (member-eq print '(t :verbose :verbose!)) (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
+                                (prog2$ (and old-try-count (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
                                         (,relieve-rule-hyps-name
                                          (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          equiv-alist rule-alist nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                               ;;hyp rewrote to *nil* :
                               (progn$
-                               (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
+                               (and old-try-count print (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                                (and (member-eq rule-symbol monitored-symbols)
                                     (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%Alist: ~x2.~%Assumptions1 (to assume false):~%~x3~%Assumptions2 (to assume false):~%~x4~%DAG:~x5)~%"
                                         hyp
@@ -1311,7 +1310,7 @@
                                (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)))
                           ;;hyp didn't rewrite to a constant:
                           (prog2$
-                           (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
+                           (and old-try-count print (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
                            ;; Give up:
                            (prog2$ ;todo: improve this printing?
                             (and (member-eq rule-symbol monitored-symbols)
@@ -5650,9 +5649,8 @@
                       (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "initial" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))))
               (count-hits (lookup-eq :count-hits options)) ; t, nil, or :brief
               (hit-counts (if (or (not count-hits) (null print)) (no-hit-counting) (if (print-level-at-least-tp print) (empty-hit-counts) (zero-hits))))
-              (tries (if (member-eq print '(nil :brief))
-                         nil ; do not count tries
-                       (zero-tries)))
+              ;; Decide whether to count and print tries:
+              (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
               ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                    hit-counts tries state)
                (,prove-or-split-case-name literal-nodenums
