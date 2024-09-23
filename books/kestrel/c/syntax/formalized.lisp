@@ -1071,7 +1071,8 @@
    :fundef (fundef-formalp edecl.unwrap)
    :decl (or (decl-obj-formalp edecl.unwrap)
              (decl-struct-formalp edecl.unwrap)
-             (decl-fun-formalp edecl.unwrap)))
+             (decl-fun-formalp edecl.unwrap))
+   :empty nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

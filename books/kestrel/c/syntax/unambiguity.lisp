@@ -2377,7 +2377,8 @@
   :short "Check if an external declaration is unambiguous."
   (extdecl-case edecl
                 :fundef (fundef-unambp edecl.unwrap)
-                :decl (decl-unambp edecl.unwrap))
+                :decl (decl-unambp edecl.unwrap)
+                :empty t)
   :hooks (:fix)
 
   ///
@@ -2389,6 +2390,15 @@
   (defrule extdecl-unambp-of-extdecl-decl
     (equal (extdecl-unambp (extdecl-decl decl))
            (decl-unambp decl)))
+
+  (defrule extdecl-unambp-when-empty
+    ;; The formulation (extdecl-unambp (extdecl-empty))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (extdecl-case edecl :empty)
+             (extdecl-unambp edecl)))
 
   (defrule fundef-unambp-of-extdecl-fundef->unwrap
     (implies (and (extdecl-unambp edecl)

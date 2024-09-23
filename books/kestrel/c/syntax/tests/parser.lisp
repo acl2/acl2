@@ -1600,6 +1600,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-external-declaration
+
+(test-parse
+ parse-external-declaration
+ ";"
+ :cond (extdecl-case ast :empty)
+ :gcc t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-external-declaration-list
 
 (test-parse
@@ -1817,4 +1827,9 @@ error (int __status, int __errnum, const char *__format, ...)
 (test-parse
  parse-external-declaration-list
  "int foo asm (\"myfoo\") = 2;"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "extern struct static_call_key __SCK__might_resched; extern typeof(__cond_resched) __SCT__might_resched;;"
  :gcc t)
