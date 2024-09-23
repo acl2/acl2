@@ -1242,7 +1242,7 @@
                           (b* ((var (cadr hyp))
                                (expr (cddr hyp))
                                ;; First, we substitute for all the free vars in expr:
-                               (instantiated-expr (,instantiate-hyp-no-free-vars-name expr alist interpreted-function-alist)) ; todo: could call a instantiate-hyp-no-free-vars function here, but with which evaluator?
+                               (instantiated-expr (,instantiate-hyp-no-free-vars-name expr alist interpreted-function-alist))
                                ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums.
                                ;; TODO: Consider adding a special case here to check whether the hyp is a constant (may be very common)?
                                ;; Now rewrite the instantianted expr:
@@ -1268,10 +1268,11 @@
                                                      rule-symbol
                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                      equiv-alist rule-alist nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
-                      ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :free-vars.
-                      ;; First, we substitute in for all the vars in HYP that are bound in ALIST
-                      ;; TODO: We could optimize by precomputing things about the hyp like which var occurences require checks in the alist vs adding new bindings to the alist.
-                      (b* ((instantiated-hyp (,instantiate-hyp-no-free-vars-name hyp alist interpreted-function-alist))
+                        ;; HYP is normal:
+                        ;; TODO: Strip a work-hard?
+                      ;; First, we substitute in for all the vars in HYP:
+                        (b* ((instantiated-hyp (,instantiate-hyp-no-free-vars-name hyp alist interpreted-function-alist))
+                             ;; todo: consider checking for quotep here
                            ;; INSTANTIATED-HYP is now a tree with leaves that are quoteps and nodenums (from vars already bound).
                            ;; No more free vars remain in the hyp, so we try to relieve the fully instantiated hyp:
                            (old-try-count tries)

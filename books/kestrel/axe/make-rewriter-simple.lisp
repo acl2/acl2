@@ -737,8 +737,8 @@
                                                      node-replacement-array node-replacement-count refined-assumption-alist
                                                      rewrite-stobj (+ -1 count)))
                       ;; HYP is normal:
-                      ;; First, we substitute in for all the vars in HYP (this also evaluates what it can):
-                      (b* ((instantiated-hyp (,instantiate-hyp-no-free-vars2-name hyp alist (get-interpreted-function-alist rewrite-stobj))))
+                        (b* (;; First, we substitute in for all the vars in HYP (this also evaluates what it can):
+                             (instantiated-hyp (,instantiate-hyp-no-free-vars2-name hyp alist (get-interpreted-function-alist rewrite-stobj))))
                         ;; instantiated-hyp is now fully instantiated.  It is an axe-tree with leaves that are quoteps and nodenums (from vars already bound):
                         (if (fquotep instantiated-hyp) ;; we know the instantiated-hyp is a cons, because hyp is
                             ;; The instantiated-hyp is a quoted constant:
@@ -795,7 +795,7 @@
                                                (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%" hyp rule-symbol))
                                           (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
                               ;;hyp didn't rewrite to a constant (new-nodenum-or-quotep is a node number):
-                              ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?  Or enable the node-replacement-array to include the special symbol :non-nil and use it here:
+                              ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
                               (if ;;(nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist (get-dag-array rewrite-stobj2)) ;todo: only do this if the hyp is not a known-boolean?
                                   (known-true-in-node-replacement-arrayp new-nodenum-or-quotep node-replacement-array node-replacement-count)
                                   (prog2$ (and old-try-count
