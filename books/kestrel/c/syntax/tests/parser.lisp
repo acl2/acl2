@@ -1605,7 +1605,8 @@
 (test-parse
  parse-external-declaration
  ";"
- :cond (extdecl-case ast :empty))
+ :cond (extdecl-case ast :empty)
+ :gcc t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

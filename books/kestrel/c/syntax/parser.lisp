@@ -15476,7 +15476,8 @@
      which starts with the keyword @('_Static_assert').")
    (xdoc::p
     "The case of an empty external declaration is easy,
-     because it starts (and ends) with a semicolon.")
+     because it starts (and ends) with a semicolon.
+     This is only allowed if GCC extensions are supported.")
    (xdoc::p
     "No declaration specifier starts with the keyword @('_Static_assert'),
      so this keyword tells us that we must have a static assert declaration.
@@ -15496,7 +15497,8 @@
     (cond
      ;; If token is a semicolon,
      ;; we have an empty external declaration.
-     ((token-punctuatorp token ";")
+     ((and (token-punctuatorp token ";") ; ;
+           (parstate->gcc parstate))
       (retok (extdecl-empty) span parstate))
      ;; If token is the keyword '_Static_assert',
      ;; we have a static assertion declaration.
