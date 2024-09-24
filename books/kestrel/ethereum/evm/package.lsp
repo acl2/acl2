@@ -1,4 +1,4 @@
-; Portcullis commands for evm.lisp
+; The EVM package
 ;
 ; Copyright (C) 2024 Kestrel Institute
 ;
@@ -8,4 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
+(defpkg "EVM" (append '(repeat strip-cadrs
+                        assert-equal)
+                      *acl2-exports*))

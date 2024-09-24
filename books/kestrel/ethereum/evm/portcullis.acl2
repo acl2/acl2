@@ -1,4 +1,4 @@
-; Portcullis commands for evm.lisp
+; Portcullis commands for portcullis.lisp
 ;
 ; Copyright (C) 2024 Kestrel Institute
 ;
@@ -8,4 +8,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
+(ld "package.lsp")

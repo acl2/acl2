@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ETHEREUM")
+(in-package "EVM")
 
 (include-book "evm")
 (include-book "kestrel/utilities/defopeners" :dir :system)
