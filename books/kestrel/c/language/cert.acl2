@@ -10,3 +10,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "../portcullis")
+
+; Matt K. mod: Several books in this directory sometimes show
+; "Exit code from ACL2 is 0"
+; near the end of their cert.out files when attempting to certify with ACL2(p)
+; using waterfall-parallelism.  So I'm turning that off here.
+#+acl2-par
+(set-waterfall-parallelism nil)
