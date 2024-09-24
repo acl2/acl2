@@ -3715,7 +3715,7 @@
              ;; jvm::acl2-numberp-of-call-stack-size ;trying
              equal-of-append
              bvmult-tighten-axe-power-of-2
-             bvplus-tighten-better
+             bvplus-tighten-axe
              bvmult-tighten-axe ;can we do better for a power of 2?? ffixme
              true-listp-of-group2
              bvmult-of-bvplus-hack-gen-constant-version

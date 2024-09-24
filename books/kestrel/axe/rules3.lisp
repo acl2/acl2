@@ -2365,7 +2365,7 @@
 ;;                                    REWRITE-<-WHEN-SIZES-DONT-MATCH2
 ;;                                    )))))
 
-;non-dag
+;non-axe rule
 (defthm slice-trim
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< (+ 1 high) xsize)
@@ -2381,7 +2381,7 @@
 ;;          (SLICE 4 2 (BVPLUS 5 x y)))
 ;;   :hints (("Goal" :in-theory (e/d (slice) (anti-slice)))))
 
-;non-dag
+;non-axe rule
 (defthm bvplus-trim-arg1
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)
@@ -2391,7 +2391,7 @@
                   (bvplus size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-;non-dag
+;non-axe rule
 (defthm bvplus-trim-arg2
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)
@@ -2663,7 +2663,8 @@
 ;;                   (bvplus 5 3 x)))
 ;;   :hints (("Goal" :in-theory (enable bvplus))))
 
-(defthm bvplus-tighten-non-dag
+;do we want this enabled?
+(defthm bvplus-tighten
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (< (+ 1 (max xsize ysize)) size)
@@ -2689,22 +2690,19 @@
   (implies (bvle 5 (bvchop 4 x) 3)
            (bvlt 5 (bvmult 4 4 x) 13))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvmult)
-                                  (
-                                   )))))
+                                  ()))))
 
 (defthm bvlt-of-bvmult-hack3
   (implies (bvle 5 (bvchop 4 x) 3)
            (bvlt 5 (bvmult 4 4 x) 15))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvmult)
-                                  (
-                                   )))))
+                                  ()))))
 
 (defthm bvlt-of-bvmult-hack4
   (implies (bvle 5 (bvchop 4 x) 3)
            (bvlt 5 (bvmult 4 4 x) 14))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvmult)
-                                  (
-                                   )))))
+                                  ()))))
 
 (defthm bvplus-of-bvuminus-hack10000b
   (implies (integerp k)
@@ -2731,9 +2729,7 @@
                            (i (min xsize ysize))
                            (j (max xsize ysize)))
            :in-theory (e/d (bvlt unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                                                   <-of-expt-and-expt-same-base
-
-                                                   )))))
+                                                   <-of-expt-and-expt-same-base)))))
 
 ;non-dag
 (defthm bvlt-trim-arg1
@@ -2743,8 +2739,7 @@
                 (posp xsize))
            (equal (bvlt size x y)
                   (bvlt size (trim size x) y)))
-  :hints (("Goal" :in-theory (e/d (bvlt trim) (
-                                               )))))
+  :hints (("Goal" :in-theory (e/d (bvlt trim) ()))))
 
 ;non-dag
 (defthm bvlt-trim-arg2
@@ -2754,8 +2749,7 @@
                 (posp xsize))
            (equal (bvlt size y x)
                   (bvlt size y (trim size x))))
-  :hints (("Goal" :in-theory (e/d (bvlt trim) (
-                                               )))))
+  :hints (("Goal" :in-theory (e/d (bvlt trim) ()))))
 
 (defthm bvlt-of-constant-tighten-when-usb-arg1
   (implies (and (syntaxp (and (quotep k)
@@ -5022,7 +5016,8 @@
                 (<= free 2))
            (< x 4)))
 
-(DEFTHM BVPLUS-TIGHTEN-NON-DAG-arg2-from-rules
+;disable?
+(DEFTHM BVPLUS-TIGHTEN-arg2-from-rules
   (IMPLIES (AND (BIND-FREE (BIND-VAR-TO-BV-TERM-SIZE 'XSIZE X) (xsize))
                 (bind-from-rules (UNSIGNED-BYTE-P (:free YSIZE) Y))
                 (< (+ 1 (MAX XSIZE YSIZE)) SIZE)
@@ -5030,8 +5025,8 @@
                 (POSP XSIZE))
            (EQUAL (BVPLUS SIZE X Y)
                   (BVPLUS (+ 1 (MAX XSIZE YSIZE)) X Y)))
-  :hints (("Goal" :use BVPLUS-TIGHTEN-NON-DAG
-           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (BVPLUS-TIGHTEN-NON-DAG)))))
+  :hints (("Goal" :use BVPLUS-TIGHTEN
+           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (BVPLUS-TIGHTEN)))))
 
 ;use to gen the mod of 4 lemmas
 (DEFTHM MOD-OF-MOD-BASES-MULTIPLE-alt

@@ -1524,7 +1524,7 @@
            (< k x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
-(defthmd bvplus-tighten-better
+(defthmd bvplus-tighten-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (< (+ 1 (max xsize ysize)) size) ;make sure we can tighten
@@ -1565,8 +1565,8 @@
 ;;            :in-theory (e/d (bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P)
 ;;                            ()))))
 
-;;    :hints (("Goal" :use (:instance bvplus-tighten-better)
-;;             :in-theory (disable bvplus-tighten-better
+;;    :hints (("Goal" :use (:instance bvplus-tighten-axe)
+;;             :in-theory (disable bvplus-tighten-axe
 ;;                                 BVPLUS-OPENER))))
 
 ;;    :hints (("Goal"
