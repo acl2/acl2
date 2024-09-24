@@ -1,7 +1,7 @@
 ; Mixed rules 1
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,7 +28,7 @@
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-read-of-bvchop-list?
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
-(include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
+;(include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system) ;todo
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these..  could make a macro to copy a theorem and wrap work-hard around a hyp..
@@ -918,27 +918,28 @@
 
 (local (in-theory (enable myif)))
 
-(defthmd bytes-to-bits-of-bv-array-write
-  (implies (and (equal len (len lst))
-                (< n len)
-                (true-listp lst)
-                (natp n)
-                )
-           (equal (bytes-to-bits (bv-array-write 8 len n val lst))
-                  (append (bytes-to-bits (take n lst))
-                          (list (getbit 7 val)
-                                (getbit 6 val)
-                                (getbit 5 val)
-                                (getbit 4 val)
-                                (getbit 3 val)
-                                (getbit 2 val)
-                                (getbit 1 val)
-                                (getbit 0 val))
-                          (bytes-to-bits (nthcdr (+ 1 n) lst))
-                          )))
-  :hints (("Goal"
-           :expand (BYTES-TO-BITS (UPDATE-NTH 0 VAL (NTHCDR N LST)))
-           :in-theory (enable bytes-to-bits byte-to-bits update-nth2 bv-array-write ceiling-of-lg equal-of-append CDR-OF-NTHCDR))))
+;; ;drop?   breaks the bv-array abstraction
+;; (defthmd bytes-to-bits-of-bv-array-write
+;;   (implies (and (equal len (len lst))
+;;                 (< n len)
+;;                 (true-listp lst)
+;;                 (natp n)
+;;                 )
+;;            (equal (bytes-to-bits (bv-array-write 8 len n val lst))
+;;                   (append (bytes-to-bits (take n lst))
+;;                           (list (getbit 7 val)
+;;                                 (getbit 6 val)
+;;                                 (getbit 5 val)
+;;                                 (getbit 4 val)
+;;                                 (getbit 3 val)
+;;                                 (getbit 2 val)
+;;                                 (getbit 1 val)
+;;                                 (getbit 0 val))
+;;                           (bytes-to-bits (nthcdr (+ 1 n) lst))
+;;                           )))
+;;   :hints (("Goal"
+;;            :expand (BYTES-TO-BITS (UPDATE-NTH 0 VAL (NTHCDR N LST)))
+;;            :in-theory (enable bytes-to-bits byte-to-bits update-nth2 bv-array-write ceiling-of-lg equal-of-append CDR-OF-NTHCDR))))
 
 ;; (defun dag-nodes-with-fn (fn dag)
 ;; ;  (declare (xargs :guard (alistp dag)))
@@ -1309,7 +1310,7 @@
            (equal (nth index vals)
                   (bv-array-read (width-of-widest-int vals) (len vals) index vals)))
   :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ ;bvnth
-                                   all-integerp-when-all-natp ceiling-of-lg)
+                                   ceiling-of-lg)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
 ;compare to nth-becomes-bv-array-read-strong

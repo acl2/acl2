@@ -2485,7 +2485,7 @@
 
 ;usb shift rule?
 
-(defthm *-of-bvuminus-hack
+(defthmd *-of-bvuminus-hack
   (equal (* 4 (BVUMINUS 2 x))
          (bvmult 4 4 (BVUMINUS 2 x)))
   :hints (("Goal" :in-theory (enable bvmult))))
@@ -2523,17 +2523,17 @@
 
 (defthm bvlt-of-bvmult-of-bvminus-hack
   (BVLT '31 (BVMULT '4 '4 (BVUMINUS '2 x)) '14)
-  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (*-OF-BVUMINUS-HACK ;looped
+  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (;*-OF-BVUMINUS-HACK ;looped
                                                                  )))))
 
 (defthm bvlt-of-bvmult-of-bvminus-hack2
   (BVLT '31 (BVMULT '4 '4 (BVUMINUS '2 x)) '15)
-  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (*-OF-BVUMINUS-HACK ;looped
+  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (;*-OF-BVUMINUS-HACK ;looped
                                                                  )))))
 
 (defthm bvlt-of-bvmult-of-bvminus-hack3
   (BVLT '31 (BVMULT '4 '4 (BVUMINUS '2 x)) '13)
-  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (*-OF-BVUMINUS-HACK ;looped
+  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (;*-OF-BVUMINUS-HACK ;looped
                                                                  )))))
 
 ;gen the 1
@@ -2731,7 +2731,7 @@
            :in-theory (e/d (bvlt unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                                                    <-of-expt-and-expt-same-base)))))
 
-;non-dag
+;non-axe
 (defthm bvlt-trim-arg1
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)
@@ -2741,7 +2741,7 @@
                   (bvlt size (trim size x) y)))
   :hints (("Goal" :in-theory (e/d (bvlt trim) ()))))
 
-;non-dag
+;non-axe
 (defthm bvlt-trim-arg2
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)
@@ -2976,7 +2976,7 @@
                                   (logapp-equal-rewrite
                                    bvcat-equal-rewrite-alt bvcat-equal-rewrite)))))
 
-;non-dag
+;non-axe
 (defthm getbit-trim
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< (+ 1 n) xsize)
@@ -4175,7 +4175,8 @@
                   (bvlt size 3 x)))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
-(defthm unsigned-byte-p-of-plus-minus-4-gen-dag
+;; axe version is faster
+(defthmd unsigned-byte-p-of-plus-minus-4-gen-axe
   (implies (and (unsigned-byte-p size x)
                 (<= 2 size)) ;gen
            (equal (unsigned-byte-p size (+ -4 x))
@@ -5350,10 +5351,11 @@
 ;;                   (bvlt 31 x y)))
 ;;   :hints (("Goal" :in-theory (enable sbvlt LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE))))
 
+;rename
 (defthmd bvlt-add-to-both-sides-constant-lemma-alt-dag
-  (implies (and (syntaxp (quotep k2))
-                (syntaxp (quotep k1))
-                (syntaxp (quotep size))
+  (implies (and (syntaxp (and (quotep k2)
+                              (quotep k1)
+                              (quotep size)))
 ;                (integerp x)
                 (integerp k2)
                 (integerp k1)
@@ -5459,19 +5461,6 @@
   (equal (bvif 1 test (bitxor 1 x) x)
          (bitxor x (bool-to-bit test)))
   :hints (("Goal" :in-theory (enable bool-to-bit))))
-
-;todo
-(defthmd bvuminus-equal-constant-alt-dag
-  (implies (and (syntaxp (quotep k))
-                (syntaxp (quotep size))
-                (natp size)
-                (integerp x))
-           (equal (equal (bvuminus size x) k)
-                  (and (unsigned-byte-p size k)
-                       (equal (bvuminus size k)
-                              (bvchop size x)))))
-  :hints (("Goal"
-           :use (:instance bvuminus-equal-constant))))
 
 ;gen
 (defthm bvdiv-of-bvplus-minus-5
@@ -12076,7 +12065,7 @@
                   ))
   :hints (("Goal" :in-theory (enable bvcat bvplus bvuminus bvminus logapp bvchop-of-sum-cases bvlt))))
 
-(in-theory (disable unsigned-byte-p-of-plus-of-minus-1 unsigned-byte-p-of-plus-minus-4-gen-dag)) ;can unify with constants? or slow for some other reason
+(in-theory (disable unsigned-byte-p-of-plus-of-minus-1)) ;can unify with constants? or slow for some other reason
 
 ;(in-theory (disable mod-sum-cases))
 
