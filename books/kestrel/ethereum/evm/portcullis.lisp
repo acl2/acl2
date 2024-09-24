@@ -1,4 +1,4 @@
-; Portcullis commands for evm.lisp
+; Portcullis book for EVM package
 ;
 ; Copyright (C) 2024 Kestrel Institute
 ;
@@ -8,4 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
+(in-package "ACL2")
+
+;; empty book that includes package.lsp in its portcullis

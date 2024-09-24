@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ETHEREUM")
+(in-package "EVM")
 
 ;; STATUS: IN-PROGRESS
 
@@ -16,6 +16,7 @@
 ;; TODO: Check existing instructions wrt the latest version of the Yellow Paper.
 ;; TODO: Add documentation.
 ;; TODO: Add tests.
+;; TODO: Some notions defined here, like wordp and transactionp, are also defined in the ETHEREUM package.
 
 (include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
