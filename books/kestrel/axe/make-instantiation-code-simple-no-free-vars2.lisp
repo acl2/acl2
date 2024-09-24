@@ -73,6 +73,8 @@
                           (enquote res)))
                     ;; Not a ground term:
                     ;; TODO: Consider cons-with-hint here:
+                    ;; No special treatment for lambdas (above, the substitution was applied to the args).  We could
+                    ;; consider substituting any lambda args here that are constant.
                     (cons fn args)))))))
 
         ;; Returns (mv all-quotep args).

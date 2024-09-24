@@ -345,6 +345,7 @@
     (:REWRITE AXE-RULE-HYPP-WHEN-AXE-BIND-FREE)
     (:REWRITE AXE-RULE-HYPP-WHEN-SIMPLE)
     (:REWRITE AXE-RULE-HYPP-WHEN-free-vars)
+    (:REWRITE AXE-RULE-HYPP-WHEN-axe-binding-hyp)
     (:REWRITE AXE-TREEP-OF-CAR)
     (:rewrite axe-treep-of-car-when-bounded-axe-tree-listp)
     (:REWRITE AXE-TREEP-OF-CONS-STRONG)
@@ -403,8 +404,10 @@
     (:REWRITE PSEUDO-TERM-LISTP-OF-STORED-RULE-LHS-ARGS)
     (:REWRITE PSEUDO-TERMP-OF-LAMBDA-BODY-WHEN-AXE-TREEP)
     (:REWRITE PSEUDO-TERMP-OF-STORED-RULE-RHS)
+    (:rewrite strip-cdrs-of-acons)
     (:REWRITE STRIP-CDRS-OF-APPEND)
     (:REWRITE STRIP-CDRS-OF-PAIRLIS$2)
+    (:REWRITE SYMBOL-ALISTP-OF-acons)
     (:REWRITE SYMBOL-ALISTP-OF-APPEND)
     (:REWRITE SYMBOL-ALISTP-OF-EVAL-AXE-BIND-FREE-FUNCTION-APPLICATION-BASIC)
     (:REWRITE SYMBOL-ALISTP-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
@@ -1235,10 +1238,40 @@
                                                                      equiv-alist rule-alist
                                                                      nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes print
                                                                      hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
-                      ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :free-vars.
-                      ;; First, we substitute in for all the vars in HYP that are bound in ALIST
-                      ;; TODO: We could optimize by precomputing things about the hyp like which var occurences require checks in the alist vs adding new bindings to the alist.
-                      (b* ((instantiated-hyp (,instantiate-hyp-no-free-vars-name hyp alist interpreted-function-alist))
+                      (if (eq :axe-binding-hyp fn) ; (:axe-binding-hyp <var> . <expr>)
+                          (b* ((var (cadr hyp))
+                               (expr (cddr hyp))
+                               ;; First, we substitute for all the free vars in expr:
+                               (instantiated-expr (,instantiate-hyp-no-free-vars-name expr alist interpreted-function-alist))
+                               ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums.
+                               ;; TODO: Consider adding a special case here to check whether the hyp is a constant (may be very common)?
+                               ;; Now rewrite the instantianted expr:
+                               (old-try-count tries)
+                               ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)
+                                (,simplify-tree-name instantiated-expr
+                                                     'equal ; can't use iff
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                     rule-alist
+                                                     nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes equiv-alist print
+                                                     hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
+                                                     prover-depth options (+ -1 count)))
+                               ((when erp) (mv erp
+                                               nil ;hyps-relievedp
+                                               nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))
+                               (- (and old-try-count
+                                       (let ((try-diff (sub-tries tries old-try-count)))
+                                         (and (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
+                            ;; A binding hyp always counts as relieved:
+                            (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num)
+                                                     (acons var new-nodenum-or-quotep alist) ; bind the var to the rewritten term
+                                                     rule-symbol
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                     equiv-alist rule-alist nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                        ;; HYP is normal:
+                        ;; TODO: Strip a work-hard?
+                      ;; First, we substitute in for all the vars in HYP:
+                        (b* ((instantiated-hyp (,instantiate-hyp-no-free-vars-name hyp alist interpreted-function-alist))
+                             ;; todo: consider checking for quotep here
                            ;; INSTANTIATED-HYP is now a tree with leaves that are quoteps and nodenums (from vars already bound).
                            ;; No more free vars remain in the hyp, so we try to relieve the fully instantiated hyp:
                            (old-try-count tries)
@@ -1257,14 +1290,14 @@
                            (try-diff (and old-try-count (sub-tries tries old-try-count))))
                         (if (consp new-nodenum-or-quotep) ;tests for quotep
                             (if (unquote new-nodenum-or-quotep) ;hyp rewrote to a non-nil constant:
-                                (prog2$ (and old-try-count (member-eq print '(t :verbose :verbose!)) (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
+                                (prog2$ (and old-try-count (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
                                         (,relieve-rule-hyps-name
                                          (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          equiv-alist rule-alist nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                               ;;hyp rewrote to *nil* :
                               (progn$
-                               (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
+                               (and old-try-count print (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                                (and (member-eq rule-symbol monitored-symbols)
                                     (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%Alist: ~x2.~%Assumptions1 (to assume false):~%~x3~%Assumptions2 (to assume false):~%~x4~%DAG:~x5)~%"
                                         hyp
@@ -1277,7 +1310,7 @@
                                (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)))
                           ;;hyp didn't rewrite to a constant:
                           (prog2$
-                           (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
+                           (and old-try-count print (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
                            ;; Give up:
                            (prog2$ ;todo: improve this printing?
                             (and (member-eq rule-symbol monitored-symbols)
@@ -1291,7 +1324,7 @@
                                          (print-dag-array-node-and-supporters-lst nodenums-to-assume-false2 'dag-array dag-array)
                                          (cw "))~%") ;;(cw "Alist: ~x0.~%Assumptions (to assume false): ~x1~%DAG:~x2)~%" alist nodenums-to-assume-false dag-array)
                                          ))
-                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))))))))))))
+                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)))))))))))))
 
         ;; returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)
         ;; where if new-rhs-or-nil is nil, no rule applied. otherwise, new-rhs-or-nil is a tree with nodenums and quoteps at the leaves (what about free vars?  should free vars in the RHS be an error?)
@@ -2505,6 +2538,8 @@
                                alist-suitable-for-hypsp-after-matching
                                alist-suitable-for-hypsp-of-cdr-of-car-when-normal
                                alist-suitable-for-hyp-tree-and-hypsp-after-instantiating
+                               subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-binding-hyp
+                               alist-suitable-for-hypsp-of-append-and-cdr-when-axe-binding-hyp
                                subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-bind-free
                                ,(pack$ 'axe-tree-vars-of- instantiate-hyp-free-vars-name))
                   ;; :in-theory (e/d (bounded-axe-treep-when-natp-strong
@@ -3036,6 +3071,8 @@
                                alist-suitable-for-hypsp-after-matching
                                alist-suitable-for-hypsp-of-cdr-of-car-when-normal
                                alist-suitable-for-hyp-tree-and-hypsp-after-instantiating
+                               subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-binding-hyp
+                               alist-suitable-for-hypsp-of-append-and-cdr-when-axe-binding-hyp
                                subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-bind-free
                                ,(pack$ 'axe-tree-vars-of- instantiate-hyp-free-vars-name)
                                )
@@ -5612,9 +5649,8 @@
                       (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "initial" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))))
               (count-hits (lookup-eq :count-hits options)) ; t, nil, or :brief
               (hit-counts (if (or (not count-hits) (null print)) (no-hit-counting) (if (print-level-at-least-tp print) (empty-hit-counts) (zero-hits))))
-              (tries (if (member-eq print '(nil :brief))
-                         nil ; do not count tries
-                       (zero-tries)))
+              ;; Decide whether to count and print tries:
+              (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
               ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                    hit-counts tries state)
                (,prove-or-split-case-name literal-nodenums

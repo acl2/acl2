@@ -18,14 +18,10 @@
 
 (include-book "evaluator-basic")
 (include-book "make-instantiation-code-simple-free-vars")
-;(include-book "make-instantiation-code-simple-no-free-vars")
 (include-book "make-instantiation-code-simple-no-free-vars2")
 
 ;; Make a version for when there are free vars:
 (make-instantiation-code-simple-free-vars basic axe-evaluator-basic)
 
-;; ;; Make a version for when there are no free vars:
-;; (make-instantiation-code-simple-no-free-vars basic axe-evaluator-basic)
-
-;; Make a version for when there are no free vars and we assume that in the guard to speed things up:
+;; Make a version for when there are no free vars:
 (make-instantiation-code-simple-no-free-vars2 basic axe-evaluator-basic)
