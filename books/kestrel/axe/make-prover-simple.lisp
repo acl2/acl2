@@ -1396,8 +1396,8 @@
                      ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)))
                   (if hyps-relievedp
                       ;; instantiate the RHS:
-                      ;; could use a faster version where we know there are no free vars:
-                      (let ((rhs (,sublis-var-and-eval-name alist (stored-rule-rhs stored-rule) interpreted-function-alist))) ;fixme what if there are free vars in the rhs?
+                      ;; todo: could use a faster version where we know there are no free vars (we know that all vars in RHS are already bound in ALIST):
+                      (let ((rhs (,sublis-var-and-eval-name alist (stored-rule-rhs stored-rule) interpreted-function-alist)))
                         (prog2$ (and (member-eq print '(:verbose! :verbose))
                                      (cw "Rewriting with ~x0. RHS: ~x1.)~%"
                                          (stored-rule-symbol stored-rule)
@@ -1406,8 +1406,7 @@
                                     rhs
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     (maybe-increment-hit-count (stored-rule-symbol stored-rule) hit-counts)
-                                    tries
-                                    )))
+                                    tries)))
                     ;;failed to relieve the hyps, so try the next rule
                     (prog2$ (and (member-eq print '(:verbose! :verbose))
                                  (cw "Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
