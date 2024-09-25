@@ -14,6 +14,7 @@
 (include-book "events")
 (include-book "elections")
 (include-book "dags")
+(include-book "anchors")
 (include-book "blockchains")
 (include-book "transitions-create-certificate")
 (include-book "transitions-receive-certificate")

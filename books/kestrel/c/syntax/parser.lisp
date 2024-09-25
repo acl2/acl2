@@ -510,13 +510,10 @@
      that fix their inputs and unconditionally return typed outputs.
      The use of a stobj is an optimization for speed:
      conceptually, the parser state could be defined as a @(tsee fty::defprod),
-     and in fact it was defined like that in previous versions of the parser.
-     The description below of the parser state treats the parser state
-     as if it were defined via @(tsee fty::defprod), not as a stobj;
-     at the end, we explain how the stobj represents that parser state.")
+     and in fact it was defined like that in previous versions of the parser.")
    (xdoc::p
-    "The primary component of a parser state
-     is the input sequence @('bytes') of bytes remaining,
+    "The first component of the parser state is
+     the input sequence @('bytes') of bytes remaining,
      which initially comes from a file (see @(see files)).
      Bytes are read and removed from this component,
      and turned into characters.")
@@ -526,97 +523,87 @@
      i.e. putting them back into the parser state.
      But since we have already turned bytes into characters,
      we do not want to put back the bytes:
-     thus, the @('chars-unread') component of the parser state
-     contains a list of characters that have been put back, in character form;
+     thus, we keep, as part of the parser state
+     (the exact representation is explained later),
+     a sequence of unread characters,
+     i.e. characters that have been and then put back (i.e. unread),
+     in character form;
      the form is natural numbers, i.e. Unicode code points.
-     The list is initially empty.
-     When non-empty, it must be thought of
+     The sequence is initially empty.
+     When non-empty, it can be thought of
      as preceding the @('bytes') byte list.
-     If the list is not empty,
+     If the sequence of unread characters is not empty,
      the next character will be read directly from that list,
      not from the byte list.")
    (xdoc::p
     "To avoid putting back the wrong character by mistake,
      i.e. a character that was not actually read,
-     we use the @('chars-read') component of the parser state
+     the parser state also includes a sequence of
+     all the characters read so far and that have not been unread
+     (the exact representation is explained later),
      to keep track of which characters have been read and could be unread.
      Thus, every time we read a character,
-     we add it to the @('chars-read') list,
-     which can be visualized, reversed, to the left of
-     the @('chars-unread') and @('bytes') lists:")
+     we add it to the sequence of read characters,
+     which can be visualized to the left of
+     the sequence of unread characters and the @('bytes') list:")
    (xdoc::codeblock
     "+----------+    read    +--------+-------+"
     "| chars    |   <-----   | chars  | bytes |"
-    "| read     |            | unread |       |"
-    "| reversed |   ----->   |        |       |"
+    "| read     |   ----->   | unread |       |"
     "+----------+   unread   +--------+-------+")
    (xdoc::p
     "The reading of a character moves the character from right to left,
-     from the @('chars-unread') list to the reversed @('chars-read') list
-     if @('chars-unread') is not empty,
-     or from the @('bytes') list to the reversed @('chars-read') list
+     from the sequence of unread characters
+     to the sequence of read characters
+     if the sequence of unread characters is not empty,
+     or from the @('bytes') list to the sequence of read characters
      where one or more bytes are UTF-8-decoded into the character.")
    (xdoc::p
     "When a character is unread, it is moved from left to right,
-     i.e. from the reversed @('chars-read') list to the @('chars-unread') list.
-     If @('chars-read') is empty, it is an internal error:
+     i.e. from the sequence of read characters
+     to the sequence of unread characters.
+     If the sequence of read characters is empty, it is an internal error:
      if the parser code is correct, this must never happen.")
    (xdoc::p
     "The reading and unreading of characters happens at the lexing level.
      A similar look-ahead happens at the proper parsing level,
-     where the elements of the read and unread lists
+     where the elements of the read and unread sequences
      are not characters but tokens.
-     The parser state has lists @('tokens-read') and @('tokens-unread')
+     The parser state includes
+     a sequence of read tokens and a sequence of unread tokens
+     (the exact representation is explained later),
      whose handling is similar to the ones for characters.
-     The lists can be visualized as follows
-     (there are two different situations, explained after the diagram):")
+     The sequence can be visualized as follows,
+     similarly to characters:")
    (xdoc::codeblock
-    "+----------+----------+    read    +--------+-------+"
-    "| tokens   | chars    |   <-----   | chars  | bytes |"
-    "| read     | read     |            | unread |       |"
-    "| reversed | reversed |   ----->   |        |       |"
-    "+----------+----------+   unread   +--------+-------+"
-    ""
-    "+----------+    read    +--------+--------+-------+"
-    "| tokens   |   <-----   | tokens | chars  | bytes |"
-    "| read     |            | unread | unread |       |"
-    "| reversed |   ----->   |        |        |       |"
-    "+----------+   unread   +--------+--------+-------+")
+    "+----------+    read    +--------+"
+    "| tokens   |   <-----   | tokens |"
+    "| read     |   ----->   | unread |"
+    "+----------+   unread   +--------+")
    (xdoc::p
-    "When a token is successfully read,
-     it is moved left to the reversed @('tokens-read') list,
-     and @('chars-read') is cleared.
-     The reason is that, once a token is read,
-     all the characters read form the token,
-     and there is no need to ever unread them:
-     they have already formed the token.
-     But after reading that token, in order to read the next token,
-     the @('chars-read') list is populated with
-     the characters that are read in order to read the next token.
-     So in general the reversed @('tokens-read') list
-     is at the left of the reversed @('chars-read') list,
-     and the latter is cleared again when another token
-     is added to @('tokens-read').
-     This is the first situation depicted in the diagram above.")
+    "When characters are read to form a token,
+     the token is added to the sequence of read tokens.
+     If the token is unread (i.e. put back),
+     it is moved right to the sequence of unread tokens.
+     When a token is read, if the sequence of unread tokens is not empty,
+     the token is moved from right to left;
+     if instead the sequence of unread tokens is empty,
+     the token is read by reading characters and forming the token.")
    (xdoc::p
-    "Characters are read only as a subroutine of reading tokens.
-     If a token is unread, it is unread just after having been read,
-     with the @('chars-read') list still cleared.
-     The unread token is moved right, added to the @('tokens-unread') list.
-     As more tokens are unread, they are also moved right.
-     As they are read again, they are moved left.
-     This is the second situation depicted in the diagram above.
-     Note that we may have some unread characters,
-     which were read and then unread in the course of reading tokens,
-     so the @('chars-unread') list is
-     between the @('token-unread') and @('bytes') lists.")
-   (xdoc::p
-    "While @('chars-read') is cleared every time a token is read,
-     @('tokens-read') is never cleared.
-     This lets us do some backtracking when needed,
+    "At the end of the parsing,
+     the sequence of read characters contains all the characters read,
+     and the sequence of read tokens contains all the tokens read.
+     That is, the sequences are never cleared.
+     For tokens, this lets us do some backtracking when needed,
      but without saving and copying the whole parser state:
      we just need to keep track of how many tokens must be put back
-     for backtracking.")
+     for backtracking.
+     For characters, in principle we could clear
+     the sequence of read characters once a token is formed,
+     but due to the representation of the sequence in the stobj,
+     it is more time-efficient to never clear the sequence,
+     at the cost of some space inefficiency,
+     but we believe the latter not to be significant.")
    (xdoc::p
     "For reporting errors, it is useful to keep track of
      where in a file the constructs being parsed occur.
@@ -627,23 +614,60 @@
      the position is just one past the last character in the file.
      For read and unread characters,
      since we have already found their position and have moved past it,
-     we store their positions in the @('chars-read') and @('chars-unread').
-     This is why they contain not just characters,
+     we store their positions in the sequences of read and unread characters;
+     so those sequences contain not just characters,
      but @(tsee char+position) pairs.
-     Similarly, for tokens, we also store their spans.")
+     Similarly, for tokens, we also store their spans in the sequences.")
+   (xdoc::p
+    "The sequences of read and unread characters
+     are represented by three stobj components.
+     The @('chars') component consists of
+     the concatenation of the two sequences,
+     read characters then unread characters
+     (as shown in the diagrams above),
+     with additional elements to the right to extend the sequences.
+     The @('chars-read') component is the numbers of characters read,
+     which are in the positions 0 (inclusive) to @('chars-read') (exclusive).
+     When @('chars-read') is 0, there are no read characters,
+     which happens at the beginning.
+     The @('chars-unread') component is the number of characters unread,
+     which are in the positions @('chars-read') (inclusive)
+     to @('chars-read + chars-unread') (exclusive).
+     When @('chars-unread') is 0, there are no unread characters,
+     which happens at the beginning,
+     and every time all the unread characters are read again.
+     This organization lets us move characters between the two sequences
+     just by changing @('char-read') and @('char-unread'),
+     but leaving all the characters stored in the stobj array.
+     The position from @('chars-read + chars-unread') (inclusive)
+     to the end of the array are not part of the sequences,
+     but they are used when extending the sequence of read characters
+     when there are no more unread characters:
+     in this situation, @('chars-unread') is 0,
+     and the next character read from the bytes
+     is stored into position @('chars-read'),
+     which is the same as @('chars-read + chars-unread')
+     since @('chars-unread') is 0.")
+   (xdoc::p
+    "The sequence of read and unread tokens
+     are represented similarly to read and unread characters,
+     via the three stobj components
+     @('tokens'), @('tokens-read'), and @('tokens-unread').")
    (xdoc::p
     "To support backtracking,
      we also keep track of zero or more checkpoints,
-     which indicate positions in the @('tokens-read') list.
+     which indicate positions in the sequence of read tokens.
      When a checkpoint is recorded,
-     the current length of @('tokens-read') is stored as a checkpoint,
+     the current length of the sequence is stored as a checkpoint,
      by @(tsee cons)ing it to the @('checkpoints') list.
      Later, the checkpoint can be simply cleared,
-     in which case it is simply removed from the check,
+     in which case it is simply removed from the list,
      by replacing @('checkpoints') with its @(tsee cdr).
      Alternatively, we can backtrack to the checkpoint,
-     which involves moving tokens from @('tokens-read') to @('tokens-unread')
-     until @('tokens-read') has the length of the checkpoint in question;
+     which involves moving tokens from the sequence of read tokens
+     to the sequence of unread tokens,
+     until the sequence of read tokens has
+     the length of the checkpoint in question;
      then the checkpoint is removed from @('checkpoints') as well.
      That is, we have the ability to backtrack to earlier tokens,
      without having to keep track of how many tokens we have read
@@ -656,7 +680,7 @@
     "We include a boolean flag saying whether
      certain GCC extensions should be accepted or not.
      These GCC extensions are limited to the ones
-     currently captured in our abstract syntax.
+     currently captured in our grammar and abstract syntax.
      This parser state component is set at the beginning and never changes,
      but it is useful to have it as part of the parser state
      to avoid passing an additional parameter.
@@ -672,24 +696,13 @@
      but that transformation currently does not quite handle
      all of the parser's functions.")
    (xdoc::p
-    "Also for speed, we cache the number of the tokens read so far.
-     The checkpointing and backtracking mechanism described above
-     calculates that length in order to record it as a checkpoint.
-     When there is a significant number of read token, that can take time,
-     as revealed by some profiling.")
-   (xdoc::p
-    "The stobj for the parser state consists of
-     the components described above,
-     but in a stobj instead of a @(tsee fty::defprod).
-     This is a ``shallow'' stobj, because several of the components
-     are still lists that are updated in a non-destructive way.
-     We plan to ``deepen'' the stobj by using arrays and indices
-     to simulate those lists in a more efficient way.")
-   (xdoc::p
     "The definition of the stobj itself is straightforward,
-     but we use a @(tsee make-event) so we can use @(tsee position-init)
-     instead of a term for its value that exposes
-     the internal representation of positions.")
+     but we use a @(tsee make-event) so we can use
+     richer terms for initial values.
+     The initial @('chars') and @('tokens') arrays have length 1,
+     which seems convenient for some fixing theorems,
+     but it is irrelevant because it is resized
+     at the very beginning of parsing.")
    (xdoc::p
     "The @(tsee defstobj) generates an enabled recognizer,
      which we disable after introducing the readers and writers.
@@ -715,9 +728,12 @@
      but they neither fix their inputs
      nor return outputs with unconditional types.
      So we define our own readers and writers that do both things,
-     which we define in terms of the generated ones.
+     which we define in terms of the generated ones
+     (actually, a few readers and writers do not fix their inputs yet,
+     because we need to tweak the definition of the fixer for that,
+     which we plan to do soon).
      The generated ones are enabled,
-     but we do not both disabling them,
+     but we do not bother disabling them,
      because we are not going to use them anywhere anyhow.
      We also prove some theorems about how readers and writers interact,
      as needed.")
@@ -725,17 +741,19 @@
     "We locally enable @(tsee length) in order for
      the proofs generated by @(tsee defstobj) to go through.
      This is also useful for proofs about our readers and writers;
-     for those, we also locally enable the fixer.")
+     for those, we also locally enable the fixer,
+     and we prove some local theorems that are used there.")
    (xdoc::p
     "By making the parser state a stobj instead of a @(tsee fty::defprod),
      we cannot use the @(':require') feature of @(tsee fty::defprod)
-     to enforce that the two redundant components described above
-     are indeed redundant.
+     to enforce invariants, such as the fact that
+     the @('size') component is derived from others.
      But we can probably use @(tsee defabsstobj) for that,
      which may be also overall a better way to
-     ``turn'' a stobj into a @(tsee fty::defprod)-like fixtype."))
+     ``turn'' a stobj into a @(tsee fty::defprod)-like fixtype;
+     we will look into that in the future."))
 
-  ;; needed for DEFSTOBJ and writer proofs:
+  ;; needed for DEFSTOBJ and reader/writer proofs:
 
   (local (in-theory (enable length)))
 
@@ -746,17 +764,23 @@
       (bytes :type (satisfies byte-listp)
              :initially nil)
       (position :type (satisfies positionp)
-                :initially ,(position-init))
-      (chars-read :type (satisfies char+position-listp)
-                  :initially nil)
-      (chars-unread :type (satisfies char+position-listp)
-                    :initially nil)
-      (tokens-read :type (satisfies token+span-listp)
-                   :initially nil)
-      (tokens-read-len :type (integer 0 *)
-                       :initially 0)
-      (tokens-unread :type (satisfies token+span-listp)
-                     :initially nil)
+                :initially ,(irr-position))
+      (chars :type (array (satisfies char+position-p) (1))
+             :initially ,(make-char+position :char 0
+                                             :position (irr-position))
+             :resizable t)
+      (chars-read :type (integer 0 *)
+                  :initially 0)
+      (chars-unread :type (integer 0 *)
+                    :initially 0)
+      (tokens :type (array (satisfies token+span-p) (1))
+              :initially ,(make-token+span :token (irr-token)
+                                           :span (irr-span))
+              :resizable t)
+      (tokens-read :type (integer 0 *)
+                   :initially 0)
+      (tokens-unread :type (integer 0 *)
+                     :initially 0)
       (checkpoints :type (satisfies nat-listp)
                    :initially nil)
       (gcc :type (satisfies booleanp)
@@ -766,10 +790,11 @@
       :renaming (;; field recognizers:
                  (bytesp raw-parstate->bytes-p)
                  (positionp raw-parstate->position-p)
+                 (charsp raw-parstate->chars-p)
                  (chars-readp raw-parstate->chars-read-p)
                  (chars-unreadp raw-parstate->chars-unread-p)
+                 (tokensp raw-parstate->tokens-p)
                  (tokens-readp raw-parstate->tokens-read-p)
-                 (tokens-read-lenp raw-parstate->tokens-read-len-p)
                  (tokens-unreadp raw-parstate->tokens-unread-p)
                  (checkpointsp raw-parstate->checkpoints-p)
                  (gccp raw-parstate->gcc-p)
@@ -777,10 +802,13 @@
                  ;; field readers:
                  (bytes raw-parstate->bytes)
                  (position raw-parstate->position)
+                 (chars-length raw-parstate->chars-length)
+                 (charsi raw-parstate->char)
                  (chars-read raw-parstate->chars-read)
                  (chars-unread raw-parstate->chars-unread)
+                 (tokens-length raw-parstate->tokens-length)
+                 (tokensi raw-parstate->token)
                  (tokens-read raw-parstate->tokens-read)
-                 (tokens-read-len raw-parstate->tokens-read-len)
                  (tokens-unread raw-parstate->tokens-unread)
                  (checkpoints raw-parstate->checkpoints)
                  (gcc raw-parstate->gcc)
@@ -788,10 +816,13 @@
                  ;; field writers:
                  (update-bytes raw-update-parstate->bytes)
                  (update-position raw-update-parstate->position)
+                 (resize-chars raw-update-parstate->chars-length)
+                 (update-charsi raw-update-parstate->char)
                  (update-chars-read raw-update-parstate->chars-read)
                  (update-chars-unread raw-update-parstate->chars-unread)
+                 (resize-tokens raw-update-parstate->tokens-length)
+                 (update-tokensi raw-update-parstate->token)
                  (update-tokens-read raw-update-parstate->tokens-read)
-                 (update-tokens-read-len raw-update-parstate->tokens-read-len)
                  (update-tokens-unread raw-update-parstate->tokens-unread)
                  (update-checkpoints raw-update-parstate->checkpoints)
                  (update-gcc raw-update-parstate->gcc)
@@ -820,9 +851,57 @@
     :define t
     :executablep nil)
 
-  ;; needed for readers and writers proofs:
+  ;; needed for reader/writer proofs:
 
   (local (in-theory (enable parstate-fix)))
+
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  (defruled raw-parstate->chars-p-of-resize-list
+    (implies (and (raw-parstate->chars-p chars)
+                  (char+position-p default))
+             (raw-parstate->chars-p (resize-list chars length default)))
+    :induct t
+    :enable (resize-list))
+
+  (defruled raw-parstate->tokens-p-of-resize-list
+    (implies (and (raw-parstate->tokens-p tokens)
+                  (token+span-p default))
+             (raw-parstate->tokens-p (resize-list tokens length default)))
+    :induct t
+    :enable (resize-list))
+
+  (defruled char+position-p-of-nth-when-raw-parstate->chars-p
+    (implies (and (raw-parstate->chars-p chars)
+                  (natp i)
+                  (< i (len chars)))
+             (char+position-p (nth i chars)))
+    :induct t
+    :enable (nth len))
+
+  (defruled token+span-p-of-nth-when-raw-parstate->tokens-p
+    (implies (and (raw-parstate->tokens-p tokens)
+                  (natp i)
+                  (< i (len tokens)))
+             (token+span-p (nth i tokens)))
+    :induct t
+    :enable (nth len))
+
+  (defruled raw-parstate->chars-p-of-update-nth
+    (implies (raw-parstate->chars-p chars)
+             (equal (raw-parstate->chars-p (update-nth i char chars))
+                    (and (char+position-p char)
+                         (<= (nfix i) (len chars)))))
+    :induct t
+    :enable (update-nth nfix zp len))
+
+  (defruled raw-parstate->tokens-p-of-update-nth
+    (implies (raw-parstate->tokens-p tokens)
+             (equal (raw-parstate->tokens-p (update-nth i token tokens))
+                    (and (token+span-p token)
+                         (<= (nfix i) (len tokens)))))
+    :induct t
+    :enable (update-nth nfix zp len))
 
   ;; readers:
 
@@ -841,47 +920,80 @@
     :returns (position positionp)
     (mbe :logic (if (parstatep parstate)
                     (raw-parstate->position parstate)
-                  (position-init))
-         :exec (raw-parstate->position parstate))
+                  (irr-position))
+         :exec (raw-parstate->position parstate)))
+
+  (define parstate->chars-length (parstate)
+    :returns (length natp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->chars-length parstate)
+                  1)
+         :exec (raw-parstate->chars-length parstate))
     :hooks (:fix))
 
+  (define parstate->char ((i natp) parstate)
+    :guard (< i (parstate->chars-length parstate))
+    :returns (char+pos char+position-p
+                       :hints
+                       (("Goal" :in-theory (enable parstate->chars-length))))
+    (mbe :logic (if (and (parstatep parstate)
+                         (< (nfix i) (parstate->chars-length parstate)))
+                    (raw-parstate->char (nfix i) parstate)
+                  (make-char+position :char 0
+                                      :position (irr-position)))
+         :exec (raw-parstate->char i parstate))
+    :guard-hints (("Goal" :in-theory (enable nfix parstate->chars-length))))
+
   (define parstate->chars-read (parstate)
-    :returns (chars-read char+position-listp)
+    :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (if (parstatep parstate)
                     (raw-parstate->chars-read parstate)
-                  nil)
+                  0)
          :exec (raw-parstate->chars-read parstate))
     :hooks (:fix))
 
   (define parstate->chars-unread (parstate)
-    :returns (chars-unread char+position-listp)
+    :returns (chars-unread natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (if (parstatep parstate)
                     (raw-parstate->chars-unread parstate)
-                  nil)
+                  0)
          :exec (raw-parstate->chars-unread parstate))
     :hooks (:fix))
 
+  (define parstate->tokens-length (parstate)
+    :returns (length natp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->tokens-length parstate)
+                  1)
+         :exec (raw-parstate->tokens-length parstate))
+    :hooks (:fix))
+
+  (define parstate->token ((i natp) parstate)
+    :guard (< i (parstate->tokens-length parstate))
+    :returns (token+span token+span-p
+                         :hints
+                         (("Goal" :in-theory (enable parstate->tokens-length))))
+    (mbe :logic (if (and (parstatep parstate)
+                         (< (nfix i) (parstate->tokens-length parstate)))
+                    (raw-parstate->token (nfix i) parstate)
+                  (make-token+span :token (irr-token)
+                                   :span (irr-position)))
+         :exec (raw-parstate->token i parstate))
+    :guard-hints (("Goal" :in-theory (enable nfix parstate->tokens-length))))
+
   (define parstate->tokens-read (parstate)
-    :returns (tokens-read token+span-listp)
+    :returns (tokens-read natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (if (parstatep parstate)
                     (raw-parstate->tokens-read parstate)
-                  nil)
+                  0)
          :exec (raw-parstate->tokens-read parstate))
     :hooks (:fix))
 
-  (define parstate->tokens-read-len (parstate)
-    :returns (tokens-read-len natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (parstatep parstate)
-                    (raw-parstate->tokens-read-len parstate)
-                  0)
-         :exec (raw-parstate->tokens-read-len parstate))
-    :hooks (:fix))
-
   (define parstate->tokens-unread (parstate)
-    :returns (tokens-unread token+span-listp)
+    :returns (tokens-unread natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (if (parstatep parstate)
                     (raw-parstate->tokens-unread parstate)
-                  nil)
+                  0)
          :exec (raw-parstate->tokens-unread parstate))
     :hooks (:fix))
 
@@ -923,43 +1035,88 @@
       (raw-update-parstate->position (position-fix position) parstate))
     :hooks (:fix))
 
-  (define update-parstate->chars-read ((chars-read char+position-listp)
-                                       parstate)
-    :returns (parstate parstatep)
+  (define update-parstate->chars-length ((length natp) parstate)
+    :returns (parstate parstatep
+                       :hints (("Goal"
+                                :in-theory (enable nfix
+                                                   parstate-fix
+                                                   length))))
     (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->chars-read (char+position-list-fix chars-read)
-                                       parstate))
+      (raw-update-parstate->chars-length (nfix length) parstate))
     :hooks (:fix))
 
-  (define update-parstate->chars-unread ((chars-unread char+position-listp)
-                                         parstate)
+  (define update-parstate->char ((i natp)
+                                 (char+pos char+position-p)
+                                 parstate)
+    :guard (< i (parstate->chars-length parstate))
+    :returns (parstate parstatep
+                       :hints
+                       (("Goal"
+                         :in-theory
+                         (enable update-nth-array
+                                 parstate->chars-length
+                                 raw-parstate->chars-p-of-update-nth))))
+    (b* ((parstate (parstate-fix parstate)))
+      (mbe :logic (if (< (nfix i) (parstate->chars-length parstate))
+                      (raw-update-parstate->char (nfix i)
+                                                 (char+position-fix char+pos)
+                                                 parstate)
+                    parstate)
+           :exec (raw-update-parstate->char i char+pos parstate)))
+    :guard-hints (("Goal" :in-theory (enable parstate->chars-length nfix))))
+
+  (define update-parstate->chars-read ((chars-read natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->chars-unread (char+position-list-fix chars-unread)
-                                         parstate))
+      (raw-update-parstate->chars-read (nfix chars-read) parstate))
     :hooks (:fix))
 
-  (define update-parstate->tokens-read ((tokens-read token+span-listp)
-                                        parstate)
+  (define update-parstate->chars-unread ((chars-unread natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->tokens-read (token+span-list-fix tokens-read)
-                                        parstate))
+      (raw-update-parstate->chars-unread (nfix chars-unread) parstate))
     :hooks (:fix))
 
-  (define update-parstate->tokens-read-len ((tokens-read-len natp) parstate)
-    :returns (parstate parstatep)
+  (define update-parstate->tokens-length ((length natp) parstate)
+    :returns (parstate parstatep
+                       :hints (("Goal"
+                                :in-theory (enable nfix
+                                                   parstate-fix
+                                                   length))))
     (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->tokens-read-len (lnfix tokens-read-len)
-                                            parstate))
+      (raw-update-parstate->tokens-length (nfix length) parstate))
     :hooks (:fix))
 
-  (define update-parstate->tokens-unread ((tokens-unread token+span-listp)
-                                          parstate)
+  (define update-parstate->token ((i natp)
+                                  (token+span token+span-p)
+                                  parstate)
+    :guard (< i (parstate->tokens-length parstate))
+    :returns (parstate parstatep
+                       :hints
+                       (("Goal"
+                         :in-theory
+                         (enable update-nth-array
+                                 parstate->tokens-length
+                                 raw-parstate->tokens-p-of-update-nth))))
+    (b* ((parstate (parstate-fix parstate)))
+      (mbe :logic (if (< (nfix i) (parstate->tokens-length parstate))
+                      (raw-update-parstate->token (nfix i)
+                                                  (token+span-fix token+span)
+                                                  parstate)
+                    parstate)
+           :exec (raw-update-parstate->token i token+span parstate)))
+    :guard-hints (("Goal" :in-theory (enable parstate->tokens-length nfix))))
+
+  (define update-parstate->tokens-read ((tokens-read natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->tokens-unread (token+span-list-fix tokens-unread)
-                                          parstate))
+      (raw-update-parstate->tokens-read (nfix tokens-read) parstate))
+    :hooks (:fix))
+
+  (define update-parstate->tokens-unread ((tokens-unread natp) parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->tokens-unread (nfix tokens-unread) parstate))
     :hooks (:fix))
 
   (define update-parstate->checkpoints ((checkpoints nat-listp) parstate)
@@ -983,21 +1140,41 @@
 
   ;; readers over writers:
 
+  (defrule parstate->size-of-update-parstate->bytes
+    (equal (parstate->size (update-parstate->bytes bytes parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->bytes
+             parstatep
+             parstate-fix
+             length))
+
+  (defrule parstate->size-of-update-parstate->position
+    (equal (parstate->size (update-parstate->position position parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->position
+             parstatep
+             parstate-fix
+             length))
+
+(defrule parstate->size-of-update-parstate->token
+  (equal (parstate->size (update-parstate->token i tokens parstate))
+         (parstate->size parstate))
+  :enable (parstate->size
+           update-parstate->token
+           parstatep
+           parstate-fix
+           length
+           update-nth-array
+           parstate->tokens-length
+           raw-parstate->tokens-p-of-update-nth))
+
   (defrule parstate->size-of-update-parstate->tokens-read
     (equal (parstate->size (update-parstate->tokens-read tokens-read parstate))
            (parstate->size parstate))
     :enable (parstate->size
              update-parstate->tokens-read
-             parstatep
-             parstate-fix
-             length))
-
-  (defrule parstate->size-of-update-parstate->tokens-read-len
-    (equal (parstate->size
-            (update-parstate->tokens-read-len tokens-read-len parstate))
-           (parstate->size parstate))
-    :enable (parstate->size
-             update-parstate->tokens-read-len
              parstatep
              parstate-fix
              length))
@@ -1038,17 +1215,26 @@
      and a flag saying whether GCC extensions should be accepted or not,
      the initial parsing state consists of
      the data to parse,
-     no unread characters or tokens,
      no read characters or tokens,
+     no unread characters or tokens,
      the initial file position,
-     and no checkpoints."))
+     and no checkpoints.
+     We also resize the arrays of characters and tokens
+     to the number of data bytes,
+     which is overkill but certainly sufficient
+     (because we will never lex more characters or tokens than bytes);
+     if this turns out to be too large,
+     we will pick a different size,
+     but then we may need to resize the array as needed
+     while lexing and parsing."))
   (b* ((parstate (update-parstate->bytes data parstate))
        (parstate (update-parstate->position (position-init) parstate))
-       (parstate (update-parstate->chars-read nil parstate))
-       (parstate (update-parstate->chars-unread nil parstate))
-       (parstate (update-parstate->tokens-read nil parstate))
-       (parstate (update-parstate->tokens-read-len 0 parstate))
-       (parstate (update-parstate->tokens-unread nil parstate))
+       (parstate (update-parstate->chars-length (len data) parstate))
+       (parstate (update-parstate->chars-read 0 parstate))
+       (parstate (update-parstate->chars-unread 0 parstate))
+       (parstate (update-parstate->tokens-length (len data) parstate))
+       (parstate (update-parstate->tokens-read 0 parstate))
+       (parstate (update-parstate->tokens-unread 0 parstate))
        (parstate (update-parstate->checkpoints nil parstate))
        (parstate (update-parstate->gcc gcc parstate))
        (parstate (update-parstate->size (len data) parstate)))
@@ -1078,33 +1264,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; fixtype version of PARSTATE stobj (useful for debugging and testing)
+; Fixtype version of PARSTATE stobj (useful for debugging and testing).
+; This is how the parser state was originally defined,
+; before using a stobj and before caching the size.
 (fty::defprod parstate$
   ((bytes byte-list)
    (position position)
    (chars-read char+position-list)
    (chars-unread char+position-list)
    (tokens-read token+span-list)
-   (tokens-read-len nat)
    (tokens-unread token+span-list)
    (checkpoints nat-list)
-   (gcc bool)
-   (size nat))
+   (gcc bool))
   :prepwork ((local (in-theory (enable nfix)))))
 
-; convert PARSTATE stobj to fixtype value (useful for debugging and testing)
+; Convert PARSTATE stobj to fixtype value (useful for debugging and testing).
+; To construct the lists of read and unread characters,
+; we need to loop through suitable ranges of the character array.
 (define to-parstate$ (parstate)
   (make-parstate$
    :bytes (parstate->bytes parstate)
    :position (parstate->position parstate)
-   :chars-read (parstate->chars-read parstate)
-   :chars-unread (parstate->chars-unread parstate)
-   :tokens-read (parstate->tokens-read parstate)
-   :tokens-read-len (parstate->tokens-read-len parstate)
-   :tokens-unread (parstate->tokens-unread parstate)
+   :chars-read (to-parstate$-chars-read (parstate->chars-read parstate)
+                                        parstate)
+   :chars-unread (to-parstate$-chars-unread (parstate->chars-unread parstate)
+                                            parstate)
+   :tokens-read (to-parstate$-tokens-read (parstate->tokens-read parstate)
+                                          parstate)
+   :tokens-unread (to-parstate$-tokens-unread (parstate->tokens-unread parstate)
+                                              parstate)
    :checkpoints (parstate->checkpoints parstate)
-   :gcc (parstate->gcc parstate)
-   :size (parstate->size parstate)))
+   :gcc (parstate->gcc parstate))
+
+  :prepwork
+
+  ((define to-parstate$-chars-read ((n natp) parstate)
+     :returns (chars char+position-listp)
+     (b* (((when (zp n)) nil)
+          (i (1- n))
+          ((unless (< i (parstate->chars-length parstate)))
+           (raise "Internal error: chars-read index ~x0 out of bound ~x1."
+                  i (parstate->chars-length parstate))))
+       (cons (parstate->char i parstate)
+             (to-parstate$-chars-read (1- n) parstate))))
+
+   (define to-parstate$-chars-unread ((n natp) parstate)
+     :returns (chars char+position-listp)
+     (b* (((when (zp n)) nil)
+          (i (+ (parstate->chars-read parstate)
+                (- (parstate->chars-unread parstate)
+                   n)))
+          ((unless (>= i 0))
+           (raise "Internal error: chars-unread index ~x0 is negative."
+                  i))
+          ((unless (< i (parstate->chars-length parstate)))
+           (raise "Internal error: chars-unread index ~x0 out of bound ~x1."
+                  i (parstate->chars-length parstate))))
+       (cons (parstate->char i parstate)
+             (to-parstate$-chars-unread (1- n) parstate)))
+     :guard-hints (("Goal" :in-theory (enable natp zp))))
+
+   (define to-parstate$-tokens-read ((n natp) parstate)
+     :returns (tokens token+span-listp)
+     (b* (((when (zp n)) nil)
+          (i (1- n))
+          ((unless (< i (parstate->tokens-length parstate)))
+           (raise "Internal error: tokens-read index ~x0 out of bound ~x1."
+                  i (parstate->tokens-length parstate))))
+       (cons (parstate->token i parstate)
+             (to-parstate$-tokens-read (1- n) parstate))))
+
+   (define to-parstate$-tokens-unread ((n natp) parstate)
+     :returns (tokens token+span-listp)
+     (b* (((when (zp n)) nil)
+          (i (+ (parstate->tokens-read parstate)
+                (- (parstate->tokens-unread parstate)
+                   n)))
+          ((unless (>= i 0))
+           (raise "Internal error: tokens-unread index ~x0 is negative."
+                  i))
+          ((unless (< i (parstate->tokens-length parstate)))
+           (raise "Internal error: tokens-unread index ~x0 out of bound ~x1."
+                  i (parstate->tokens-length parstate))))
+       (cons (parstate->token i parstate)
+             (to-parstate$-tokens-unread (1- n) parstate)))
+     :guard-hints (("Goal" :in-theory (enable natp zp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1248,18 +1492,29 @@
      the non-existent character just past the end of the file
      (i.e. the position of a character if we added it to the end of the file).")
    (xdoc::p
-    "If a character is read, it is added to the list of read characters.
-     See @(tsee parstate).")
-   (xdoc::p
-    "If some character was put back earlier,
-     we get the character directly from there,
-     removing it from the list;
+    "First we check whether the sequence of unread characters is not empty.
+     If it is not empty, we move a character from that sequence
+     to the sequence of read characters,
+     which amounts to incrementing @('chars-read')
+     and decrementing @('chars-unread'),
+     with no change to the array;
      see @(tsee parstate).
-     There is no change in position in the parser state in this case,
-     because the position is the one at the start of the byte list.
-     Otherwise, we look at the bytes.")
+     We also need to check that the @('size') stobj component is not 0,
+     which should be an invariant but it is not explicated in the stobj,
+     because we also decrement that stobj component,
+     to maintain the invariant.
+     We read the character (and its position)
+     from the array so we can return it,
+     but we need to check that the index (i.e. @('chars-read'))
+     is within the bounds of the array.
+     Maybe we could optimize this check away with suitable invariants,
+     presumably via abstract stobjs;
+     this could also let us optimize away
+     the extra check on @('size') mentioned above.")
    (xdoc::p
-    "If there are no more bytes, we have reached the end of file.
+    "If the sequence of unread characters is empty,
+     we need to read the next character from the bytes.
+     If there are no more bytes, we have reached the end of file.
      We return @('nil'), for no character,
      and we leave the parser state unchanged.")
    (xdoc::p
@@ -1365,13 +1620,19 @@
        (parstate.chars-read (parstate->chars-read parstate))
        (parstate.chars-unread (parstate->chars-unread parstate))
        (parstate.size (parstate->size parstate))
-       ((when (and (consp parstate.chars-unread)
+       ((when (and (> parstate.chars-unread 0)
                    (> parstate.size 0)))
-        (b* ((char+pos (car parstate.chars-unread))
-             (parstate (update-parstate->chars-unread
-                        (cdr parstate.chars-unread) parstate))
-             (parstate (update-parstate->chars-read
-                        (cons char+pos parstate.chars-read) parstate))
+        (b* (((unless (< parstate.chars-read
+                         (parstate->chars-length parstate)))
+              (raise "Internal error: index ~x0 out of bound ~x1."
+                     parstate.chars-read
+                     (parstate->chars-length parstate))
+              (reterr t))
+             (char+pos (parstate->char parstate.chars-read parstate))
+             (parstate (update-parstate->chars-unread (1- parstate.chars-unread)
+                                                      parstate))
+             (parstate (update-parstate->chars-read (1+ parstate.chars-read)
+                                                    parstate))
              (parstate (update-parstate->size (1- parstate.size) parstate)))
           (retok (char+position->char char+pos)
                  (char+position->position char+pos)
@@ -1389,12 +1650,19 @@
         (b* ((parstate (update-parstate->bytes bytes parstate))
              (parstate (update-parstate->position
                         (position-inc-column 1 parstate.position) parstate))
-             (parstate (update-parstate->chars-read
-                        (cons (make-char+position
-                               :char byte
-                               :position parstate.position)
-                              parstate.chars-read)
-                        parstate))
+             ((unless (< parstate.chars-read
+                         (parstate->chars-length parstate)))
+              (raise "Internal error: index ~x0 out of bound ~x1."
+                     parstate.chars-read
+                     (parstate->chars-length parstate))
+              (reterr t))
+             (parstate (update-parstate->char parstate.chars-read
+                                              (make-char+position
+                                               :char byte
+                                               :position parstate.position)
+                                              parstate))
+             (parstate (update-parstate->chars-read (1+ parstate.chars-read)
+                                                    parstate))
              (parstate (update-parstate->size (1- parstate.size) parstate)))
           (retok byte parstate.position parstate)))
        ;; line feed:
@@ -1402,12 +1670,19 @@
         (b* ((parstate (update-parstate->bytes bytes parstate))
              (parstate (update-parstate->position
                         (position-inc-line 1 parstate.position) parstate))
-             (parstate (update-parstate->chars-read
-                        (cons (make-char+position
-                               :char 10
-                               :position parstate.position)
-                              parstate.chars-read)
-                        parstate))
+             ((unless (< parstate.chars-read
+                         (parstate->chars-length parstate)))
+              (raise "Internal error: index ~x0 out of bound ~x1."
+                     parstate.chars-read
+                     (parstate->chars-length parstate))
+              (reterr t))
+             (parstate (update-parstate->char parstate.chars-read
+                                              (make-char+position
+                                               :char 10
+                                               :position parstate.position)
+                                              parstate))
+             (parstate (update-parstate->chars-read (1+ parstate.chars-read)
+                                                    parstate))
              (parstate (update-parstate->size (1- parstate.size) parstate)))
           (retok 10 parstate.position parstate)))
        ;; carriage return:
@@ -1420,12 +1695,19 @@
              (parstate (update-parstate->bytes bytes parstate))
              (parstate (update-parstate->position
                         (position-inc-line 1 parstate.position) parstate))
-             (parstate (update-parstate->chars-read
-                        (cons (make-char+position
-                               :char 10
-                               :position parstate.position)
-                              parstate.chars-read)
-                        parstate))
+             ((unless (< parstate.chars-read
+                         (parstate->chars-length parstate)))
+              (raise "Internal error: index ~x0 out of bound ~x1."
+                     parstate.chars-read
+                     (parstate->chars-length parstate))
+              (reterr t))
+             (parstate (update-parstate->char parstate.chars-read
+                                              (make-char+position
+                                               :char 10
+                                               :position parstate.position)
+                                              parstate))
+             (parstate (update-parstate->chars-read (1+ parstate.chars-read)
+                                                    parstate))
              (parstate (update-parstate->size
                         (- parstate.size count) parstate)))
           (retok 10 parstate.position parstate)))
@@ -1465,12 +1747,19 @@
              (parstate (update-parstate->bytes bytes parstate))
              (parstate (update-parstate->position
                         (position-inc-column 1 parstate.position) parstate))
-             (parstate (update-parstate->chars-read
-                        (cons (make-char+position
-                               :char code
-                               :position parstate.position)
-                              parstate.chars-read)
-                        parstate))
+             ((unless (< parstate.chars-read
+                         (parstate->chars-length parstate)))
+              (raise "Internal error: index ~x0 out of bound ~x1."
+                     parstate.chars-read
+                     (parstate->chars-length parstate))
+              (reterr t))
+             (parstate (update-parstate->char parstate.chars-read
+                                              (make-char+position
+                                               :char code
+                                               :position parstate.position)
+                                              parstate))
+             (parstate (update-parstate->chars-read (1+ parstate.chars-read)
+                                                    parstate))
              (parstate (update-parstate->size (- parstate.size 2) parstate)))
           (retok code parstate.position parstate)))
        ;; 3-byte UTF-8:
@@ -1548,12 +1837,19 @@
              (parstate (update-parstate->bytes bytes parstate))
              (parstate (update-parstate->position
                         (position-inc-column 1 parstate.position) parstate))
-             (parstate (update-parstate->chars-read
-                        (cons (make-char+position
-                               :char code
-                               :position parstate.position)
-                              parstate.chars-read)
-                        parstate))
+             ((unless (< parstate.chars-read
+                         (parstate->chars-length parstate)))
+              (raise "Internal error: index ~x0 out of bound ~x1."
+                     parstate.chars-read
+                     (parstate->chars-length parstate))
+              (reterr t))
+             (parstate (update-parstate->char parstate.chars-read
+                                              (make-char+position
+                                               :char code
+                                               :position parstate.position)
+                                              parstate))
+             (parstate (update-parstate->chars-read (1+ parstate.chars-read)
+                                                    parstate))
              (parstate (update-parstate->size (- parstate.size 3) parstate)))
           (retok code parstate.position parstate)))
        ;; 4-byte UTF-8:
@@ -1657,12 +1953,19 @@
              (parstate (update-parstate->bytes bytes parstate))
              (parstate (update-parstate->position
                         (position-inc-column 1 parstate.position) parstate))
-             (parstate (update-parstate->chars-read
-                        (cons (make-char+position
-                               :char code
-                               :position parstate.position)
-                              parstate.chars-read)
-                        parstate))
+             ((unless (< parstate.chars-read
+                         (parstate->chars-length parstate)))
+              (raise "Internal error: index ~x0 out of bound ~x1."
+                     parstate.chars-read
+                     (parstate->chars-length parstate))
+              (reterr t))
+             (parstate (update-parstate->char parstate.chars-read
+                                              (make-char+position
+                                               :char code
+                                               :position parstate.position)
+                                              parstate))
+             (parstate (update-parstate->chars-read (1+ parstate.chars-read)
+                                                    parstate))
              (parstate (update-parstate->size (- parstate.size 4) parstate)))
           (retok code parstate.position parstate))))
     (reterr-msg :where (position-to-msg parstate.position)
@@ -1705,35 +2008,32 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pop the character from the @('chars-read') stack
-     and we push it onto the @('chars-unread') stack.")
+    "We move the character from the sequence of read characters
+     to the sequence of unread characters,
+     by incrementing @('chars-unread') and decrementing @('chars-read').")
    (xdoc::p
-    "It is an internal error if the @('chars-read') stack is empty.
+    "It is an internal error if @('chars-read') is 0.
      It means that the calling code is wrong.
      In this case, after raising the hard error,
      logically we return a parser state
-     where we push an irrelevant character and position,
+     where we still increment @('chars-unread')
      so that the theorem about @(tsee parsize) holds unconditionally."))
   (b* ((parstate.chars-read (parstate->chars-read parstate))
        (parstate.chars-unread (parstate->chars-unread parstate))
        (parstate.size (parstate->size parstate))
-       ((unless (consp parstate.chars-read))
+       ((unless (> parstate.chars-read 0))
         (raise "Internal error: no character to unread.")
-        (b* ((parstate (update-parstate->chars-unread
-                        (cons (make-char+position
-                               :char 0
-                               :position (irr-position))
-                              parstate.chars-unread)
-                        parstate))
+        (b* ((parstate (update-parstate->chars-unread (1+ parstate.chars-unread)
+                                                      parstate))
              (parstate (update-parstate->size (1+ parstate.size) parstate)))
           parstate))
-       (char+pos (car parstate.chars-read))
-       (parstate (update-parstate->chars-unread
-                  (cons char+pos parstate.chars-unread) parstate))
-       (parstate (update-parstate->chars-read
-                  (cdr parstate.chars-read) parstate))
+       (parstate (update-parstate->chars-read (1- parstate.chars-read)
+                                              parstate))
+       (parstate (update-parstate->chars-unread (1+ parstate.chars-unread)
+                                                parstate))
        (parstate (update-parstate->size (1+ parstate.size) parstate)))
     parstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
 
   ///
 
@@ -4850,34 +5150,34 @@
      although this span is not that relevant
      (this span comes from @(tsee lex-lexeme)).")
    (xdoc::p
-    "First we check whether some token was unread,
-     in which case we pop the stack of unread tokens.
-     See the discussion in @(tsee parstate).")
+    "If there are unread tokens, we move a token
+     from the sequence of unread tokens to the sequence of read tokens.
+     We need to check that the index is in range,
+     which we may be able to avoid in the future
+     by adding invariants via an abstract stobj.")
    (xdoc::p
-    "The token read is pushed onto the @('tokens-read') stack.
-     The @('chars-read') stack is cleared.
-     See @(tsee parstate).")
-   (xdoc::p
-    "We call the lexer to get the next lexeme,
+    "Otherwise, we call the lexer to get the next lexeme,
      until we find a token lexeme or the end of file.
      That is, we discard white space and comments.
      (Future extensions of this parser may instead
      return certain white space and comments under some conditions.)"))
   (b* (((reterr) nil (irr-span) parstate)
        (parstate.tokens-read (parstate->tokens-read parstate))
-       (parstate.tokens-read-len (parstate->tokens-read-len parstate))
        (parstate.tokens-unread (parstate->tokens-unread parstate))
        (parstate.size (parstate->size parstate))
-       ((when (and (consp parstate.tokens-unread)
+       ((when (and (> parstate.tokens-unread 0)
                    (> parstate.size 0)))
-        (b* ((token+span (car parstate.tokens-unread))
+        (b* (((unless (< parstate.tokens-read
+                         (parstate->tokens-length parstate)))
+              (raise "Internal error: index ~x0 out of bound ~x1."
+                     parstate.tokens-read
+                     (parstate->tokens-length parstate))
+              (reterr t))
+             (token+span (parstate->token parstate.tokens-read parstate))
              (parstate (update-parstate->tokens-unread
-                        (cdr parstate.tokens-unread) parstate))
+                        (1- parstate.tokens-unread) parstate))
              (parstate (update-parstate->tokens-read
-                        (cons token+span parstate.tokens-read) parstate))
-             (parstate (update-parstate->tokens-read-len
-                        (1+ parstate.tokens-read-len) parstate))
-             (parstate (update-parstate->chars-read nil parstate))
+                        (1+ parstate.tokens-read) parstate))
              (parstate (update-parstate->size (1- parstate.size) parstate)))
           (retok (token+span->token token+span)
                  (token+span->span token+span)
@@ -4894,20 +5194,25 @@
                   (new-parstate parstatep :hyp (parstatep parstate)))
      :parents nil
      (b* (((reterr) nil (irr-span) parstate)
+          (parstate.tokens-read (parstate->tokens-read parstate))
           ((erp lexeme? span parstate) (lex-lexeme parstate))
           ((when (not lexeme?))
            (retok nil span parstate))
           ((when (lexeme-case lexeme? :token))
            (b* ((token (lexeme-token->unwrap lexeme?))
+                ((unless (< parstate.tokens-read
+                            (parstate->tokens-length parstate)))
+                 (raise "Internal error: index ~x0 out of bound ~x1."
+                        parstate.tokens-read
+                        (parstate->tokens-length parstate))
+                 (reterr t))
+                (parstate (update-parstate->token parstate.tokens-read
+                                                  (make-token+span
+                                                   :token token
+                                                   :span span)
+                                                  parstate))
                 (parstate (update-parstate->tokens-read
-                           (cons (make-token+span
-                                  :token token
-                                  :span span)
-                                 (parstate->tokens-read parstate))
-                           parstate))
-                (parstate (update-parstate->tokens-read-len
-                           (1+ (parstate->tokens-read-len parstate))
-                           parstate)))
+                           (1+ parstate.tokens-read) parstate)))
              (retok token span parstate))))
        (read-token-loop parstate))
      :measure (parsize parstate)
@@ -4965,37 +5270,27 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pop the token from the @('tokens-read') stack
-     and we push it onto the @('tokens-unread') stack.")
+    "We move the token from the sequence of read tokens
+     to the sequence of unread tokens.")
    (xdoc::p
-    "It is an internal error if the @('tokens-read') stack is empty.
+    "It is an internal error if @('tokens-read') is 0.
      It means that the calling code is wrong.
      In this case, after raising the hard error,
-     logically we return a parser state
-     where we push an irrelevant character and position,
+     logically we still increment @('tokens-read')
      so that the theorem about @(tsee parsize) holds unconditionally."))
   (b* ((parstate.tokens-read (parstate->tokens-read parstate))
-       (parstate.tokens-read-len (parstate->tokens-read-len parstate))
        (parstate.tokens-unread (parstate->tokens-unread parstate))
        (parstate.size (parstate->size parstate))
-       ((unless (and (consp parstate.tokens-read)
-                     (> parstate.tokens-read-len 0)))
+       ((unless (> parstate.tokens-read 0))
         (raise "Internal error: no token to unread.")
         (b* ((parstate (update-parstate->tokens-unread
-                        (cons (make-token+span
-                               :token (irr-token)
-                               :span (irr-span))
-                              parstate.tokens-unread)
-                        parstate))
+                        (1+ parstate.tokens-unread) parstate))
              (parstate (update-parstate->size (1+ parstate.size) parstate)))
           parstate))
-       (token+span (car parstate.tokens-read))
        (parstate (update-parstate->tokens-unread
-                  (cons token+span parstate.tokens-unread) parstate))
+                  (1+ parstate.tokens-unread) parstate))
        (parstate (update-parstate->tokens-read
-                  (cdr parstate.tokens-read) parstate))
-       (parstate (update-parstate->tokens-read-len
-                  (1- parstate.tokens-read-len) parstate))
+                  (1- parstate.tokens-read) parstate))
        (parstate (update-parstate->size (1+ parstate.size) parstate)))
     parstate)
   :guard-hints (("Goal" :in-theory (enable natp len fix)))
@@ -5186,10 +5481,10 @@
    (xdoc::p
     "As explained in @(tsee parstate),
      we add (by @(tsee cons)ing) to the list of checkpoints
-     the current length of the list of tokens read so far."))
-  (b* ((tokens-read-len (parstate->tokens-read-len parstate))
+     the current number of read tokens."))
+  (b* ((tokens-read (parstate->tokens-read parstate))
        (checkpoints (parstate->checkpoints parstate))
-       (new-checkpoints (cons tokens-read-len checkpoints))
+       (new-checkpoints (cons tokens-read checkpoints))
        (parstate (update-parstate->checkpoints new-checkpoints parstate)))
     parstate)
 
@@ -5255,16 +5550,16 @@
         (parstate-fix parstate))
        (checkpoint (car checkpoints))
        (new-chechpoints (cdr checkpoints))
-       (number-tokens-read (parstate->tokens-read-len parstate))
-       (number-tokens-to-unread (- number-tokens-read checkpoint))
-       ((unless (> number-tokens-to-unread 0))
+       (tokens-read (parstate->tokens-read parstate))
+       (tokens-to-unread (- tokens-read checkpoint))
+       ((unless (> tokens-to-unread 0))
         (raise "Internal error: ~
                 the checkpoint ~x0 is not less than ~
                 the number ~x1 of tokens read so far."
                checkpoint
-               number-tokens-read)
+               tokens-read)
         (parstate-fix parstate))
-       (parstate (unread-tokens number-tokens-to-unread parstate))
+       (parstate (unread-tokens tokens-to-unread parstate))
        (parstate (update-parstate->checkpoints new-chechpoints parstate)))
     parstate)
   :prepwork

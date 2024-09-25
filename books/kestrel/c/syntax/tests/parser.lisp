@@ -159,12 +159,12 @@
   `(assert!-stobj
     (b* ((parstate (init-parstate ,list ,gcc parstate)))
       (mv (and (equal (parstate->bytes parstate) ,list)
-               (equal (parstate->position parstate) (position-init))
-               (equal (parstate->chars-read parstate) nil)
-               (equal (parstate->chars-unread parstate) nil)
-               (equal (parstate->tokens-read parstate) nil)
-               (equal (parstate->tokens-read-len parstate) 0)
-               (equal (parstate->tokens-unread parstate) nil)
+               (equal (parstate->position parstate) (irr-position))
+               (equal (parstate->chars-length parstate) (len ,list))
+               (equal (parstate->chars-read parstate) 0)
+               (equal (parstate->chars-unread parstate) 0)
+               (equal (parstate->tokens-read parstate) 0)
+               (equal (parstate->tokens-unread parstate) 0)
                (equal (parstate->checkpoints parstate) nil)
                (equal (parstate->gcc parstate) ,gcc)
                (equal (parstate->size parstate) (len ,list)))
@@ -250,8 +250,7 @@
                     pstate0
                     :bytes (list 1 2 3)
                     :position (position 1 1)
-                    :chars-read (list (char+position 32 (position 1 0)))
-                    :size 3)))
+                    :chars-read (list (char+position 32 (position 1 0))))))
        parstate))
  parstate)
 
@@ -267,8 +266,7 @@
                     pstate0
                     :bytes (list 1 2 3)
                     :position (position 2 0)
-                    :chars-read (list (char+position 10 (position 1 0)))
-                    :size 3)))
+                    :chars-read (list (char+position 10 (position 1 0))))))
        parstate))
  parstate)
 
@@ -284,8 +282,7 @@
                     pstate0
                     :bytes (list 1 2 3)
                     :position (position 2 0)
-                    :chars-read (list (char+position 10 (position 1 0)))
-                    :size 3)))
+                    :chars-read (list (char+position 10 (position 1 0))))))
        parstate))
  parstate)
 
@@ -301,8 +298,7 @@
                     pstate0
                     :bytes (list 1 2 3)
                     :position (position 2 0)
-                    :chars-read (list (char+position 10 (position 1 0)))
-                    :size 3)))
+                    :chars-read (list (char+position 10 (position 1 0))))))
        parstate))
  parstate)
 
@@ -325,8 +321,7 @@
                     pstate0
                     :bytes nil
                     :position (position 1 1)
-                    :chars-read (list (char+position #x03a3 (position 1 0)))
-                    :size 0)))
+                    :chars-read (list (char+position #x03a3 (position 1 0))))))
        parstate))
  parstate)
 
@@ -349,8 +344,7 @@
                     pstate0
                     :bytes nil
                     :position (position 1 1)
-                    :chars-read (list (char+position #x21ba (position 1 0)))
-                    :size 0)))
+                    :chars-read (list (char+position #x21ba (position 1 0))))))
        parstate))
  parstate)
 
@@ -384,8 +378,7 @@
                     pstate0
                     :bytes nil
                     :position (position 1 1)
-                    :chars-read (list (char+position #x1d160 (position 1 0)))
-                    :size 0)))
+                    :chars-read (list (char+position #x1d160 (position 1 0))))))
        parstate))
  parstate)
 
@@ -445,29 +438,25 @@
                     pstate0
                     :bytes (list 66 67)
                     :position (position 1 1)
-                    :chars-read (list (char+position 65 (position 1 0)))
-                    :size 2))
+                    :chars-read (list (char+position 65 (position 1 0)))))
             (equal pstate2
                    (change-parstate$
                     pstate1
                     :bytes (list 67)
                     :position (position 1 2)
                     :chars-read (list (char+position 66 (position 1 1))
-                                      (char+position 65 (position 1 0)))
-                    :size 1))
+                                      (char+position 65 (position 1 0)))))
             (equal pstate3
                    (change-parstate$
                     pstate2
                     :chars-read (list (char+position 65 (position 1 0)))
-                    :chars-unread (list (char+position 66 (position 1 1)))
-                    :size 2))
+                    :chars-unread (list (char+position 66 (position 1 1)))))
             (equal pstate4
                    (change-parstate$
                     pstate3
                     :chars-read (list (char+position 66 (position 1 1))
                                       (char+position 65 (position 1 0)))
-                    :chars-unread nil
-                    :size 1))
+                    :chars-unread nil))
             (equal pstate5
                    (change-parstate$
                     pstate4
@@ -475,8 +464,7 @@
                     :position (position 1 3)
                     :chars-read (list (char+position 67 (position 1 2))
                                       (char+position 66 (position 1 1))
-                                      (char+position 65 (position 1 0)))
-                    :size 0))
+                                      (char+position 65 (position 1 0)))))
             (equal pstate6
                    pstate5))
        parstate))
@@ -529,49 +517,42 @@
                     pstate0
                     :bytes (list 10 66)
                     :position (position 1 1)
-                    :chars-read (list (char+position 65 (position 1 0)))
-                    :size 2))
+                    :chars-read (list (char+position 65 (position 1 0)))))
             (equal pstate2
                    (change-parstate$
                     pstate1
                     :bytes (list 66)
                     :position (position 2 0)
                     :chars-read (list (char+position 10 (position 1 1))
-                                      (char+position 65 (position 1 0)))
-                    :size 1))
+                                      (char+position 65 (position 1 0)))))
             (equal pstate3
                    (change-parstate$
                     pstate2
                     :chars-read nil
                     :chars-unread (list (char+position 65 (position 1 0))
-                                        (char+position 10 (position 1 1)))
-                    :size 3))
+                                        (char+position 10 (position 1 1)))))
             (equal pstate4
                    (change-parstate$
                     pstate3
                     :chars-read (list (char+position 65 (position 1 0)))
-                    :chars-unread (list (char+position 10 (position 1 1)))
-                    :size 2))
+                    :chars-unread (list (char+position 10 (position 1 1)))))
             (equal pstate5
                    (change-parstate$
                     pstate4
                     :chars-read (list (char+position 10 (position 1 1))
                                       (char+position 65 (position 1 0)))
-                    :chars-unread nil
-                    :size 1))
+                    :chars-unread nil))
             (equal pstate6
                    (change-parstate$
                     pstate5
                     :chars-read (list (char+position 65 (position 1 0)))
-                    :chars-unread (list (char+position 10 (position 1 1)))
-                    :size 2))
+                    :chars-unread (list (char+position 10 (position 1 1)))))
             (equal pstate7
                    (change-parstate$
                     pstate6
                     :chars-read (list (char+position 10 (position 1 1))
                                       (char+position 65 (position 1 0)))
-                    :chars-unread nil
-                    :size 1))
+                    :chars-unread nil))
             (equal pstate8
                    (change-parstate$
                     pstate7
@@ -579,8 +560,7 @@
                     :position (position 2 1)
                     :chars-read (list (char+position 66 (position 2 0))
                                       (char+position 10 (position 1 1))
-                                      (char+position 65 (position 1 0)))
-                    :size 0))
+                                      (char+position 65 (position 1 0)))))
             (equal pstate9
                    pstate8))
        parstate))
