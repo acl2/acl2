@@ -70,6 +70,13 @@
            (natp (ash x y)))
   :prep-books ((include-book "kestrel/arithmetic-light/ash" :dir :system)))
 
+(defruledl update-nth-of-nth
+  (implies (< (nfix i) (len l))
+           (equal (update-nth i (nth i l) l)
+                  l))
+  :induct t
+  :enable (nth update-nth nfix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parser
@@ -1158,17 +1165,36 @@
              parstate-fix
              length))
 
-(defrule parstate->size-of-update-parstate->token
-  (equal (parstate->size (update-parstate->token i tokens parstate))
-         (parstate->size parstate))
-  :enable (parstate->size
-           update-parstate->token
-           parstatep
-           parstate-fix
-           length
-           update-nth-array
-           parstate->tokens-length
-           raw-parstate->tokens-p-of-update-nth))
+  (defrule parstate->size-of-update-parstate->chars-read
+    (equal (parstate->size (update-parstate->chars-read chars-read parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->chars-read
+             parstatep
+             parstate-fix
+             length))
+
+  (defrule parstate->size-of-update-parstate->chars-unread
+    (equal (parstate->size (update-parstate->chars-unread chars-unread
+                                                          parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->chars-unread
+             parstatep
+             parstate-fix
+             length))
+
+  (defrule parstate->size-of-update-parstate->token
+    (equal (parstate->size (update-parstate->token i token parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->token
+             parstatep
+             parstate-fix
+             length
+             update-nth-array
+             parstate->tokens-length
+             raw-parstate->tokens-p-of-update-nth))
 
   (defrule parstate->size-of-update-parstate->tokens-read
     (equal (parstate->size (update-parstate->tokens-read tokens-read parstate))
@@ -1197,6 +1223,32 @@
              parstatep
              parstate-fix
              length))
+
+  ;; writers over readers:
+
+  (defrule update-parstate->chars-read-of-parstate->chars-read
+    (equal (update-parstate->chars-read
+            (parstate->chars-read parstate) parstate)
+           (parstate-fix parstate))
+    :enable (update-parstate->chars-read
+             parstate->chars-read
+             parstatep
+             parstate-fix
+             nfix
+             length
+             update-nth-of-nth))
+
+  (defrule update-parstate->chars-read-of-parstate->chars-unread
+    (equal (update-parstate->chars-unread
+            (parstate->chars-unread parstate) parstate)
+           (parstate-fix parstate))
+    :enable (update-parstate->chars-unread
+             parstate->chars-unread
+             parstatep
+             parstate-fix
+             nfix
+             length
+             update-nth-of-nth))
 
   ;; keep recognizer disabled:
 
@@ -2050,22 +2102,46 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This repeatedly calls @(tsee unread-char)
-     to unread zero or more characters.
-     The number of characters is specified by @('n').
-     This number may be 0."))
-  (b* (((when (zp n)) (parstate-fix parstate))
-       (parstate (unread-char parstate)))
-    (unread-chars (1- n) parstate))
+    "We move characters
+     from the sequence of read characters
+     to the sequence of unread characters
+     by incrementing the number of unread characters by @('n')
+     and decrementing the number of read characters by @('n').")
+   (xdoc::p
+    "It is an internal error if @('n') exceeds
+     the number of character read so far.
+     In this case, besides raising the error,
+     we increment @('chars-unread') so that
+     the theorem on the parser state size holds unconditionally."))
+  (b* ((n (nfix n))
+       (chars-read (parstate->chars-read parstate))
+       (chars-unread (parstate->chars-unread parstate))
+       (size (parstate->size parstate))
+       ((unless (<= n chars-read))
+        (raise "Internal error: ~
+                attempting to unread ~x0 characters ~
+                from ~x1 read characters."
+               n chars-read)
+        (b* ((parstate
+              (update-parstate->chars-unread (+ chars-unread n) parstate))
+             (parstate
+              (update-parstate->size (+ size n) parstate)))
+          parstate))
+       (new-chars-read (- chars-read n))
+       (new-chars-unread (+ chars-unread n))
+       (new-size (+ size n))
+       (parstate (update-parstate->chars-read new-chars-read parstate))
+       (parstate (update-parstate->chars-unread new-chars-unread parstate))
+       (parstate (update-parstate->size new-size parstate)))
+    parstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
 
   ///
 
   (defret parsize-of-unread-chars
     (equal (parsize new-parstate)
            (+ (parsize parstate) (nfix n)))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable nfix fix)))))
+    :hints (("Goal" :in-theory (enable parsize nfix fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5310,22 +5386,46 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This repeatedly calls @(tsee unread-token)
-     to unread zero or more tokens.
-     The number of tokens is specified by @('n').
-     This number may be 0."))
-  (b* (((when (zp n)) (parstate-fix parstate))
-       (parstate (unread-token parstate)))
-    (unread-tokens (1- n) parstate))
+    "We move tokens
+     from the sequence of read tokens
+     to the sequence of unread tokens
+     by incrementing the number of unread tokens by @('n')
+     and decrementing the number of read tokens by @('n').")
+   (xdoc::p
+    "It is an internal error if @('n') exceeds
+     the number of tokens read so far.
+     In this case, besides raising the error,
+     we increment @('tokens-unread') so that
+     the theorem on the parser state size holds unconditionally."))
+  (b* ((n (nfix n))
+       (tokens-read (parstate->tokens-read parstate))
+       (tokens-unread (parstate->tokens-unread parstate))
+       (size (parstate->size parstate))
+       ((unless (<= n tokens-read))
+        (raise "Internal error: ~
+                attempting to unread ~x0 tokens ~
+                from ~x1 read tokens."
+               n tokens-read)
+        (b* ((parstate
+              (update-parstate->tokens-unread (+ tokens-unread n) parstate))
+             (parstate
+              (update-parstate->size (+ size n) parstate)))
+          parstate))
+       (new-tokens-read (- tokens-read n))
+       (new-tokens-unread (+ tokens-unread n))
+       (new-size (+ size n))
+       (parstate (update-parstate->tokens-read new-tokens-read parstate))
+       (parstate (update-parstate->tokens-unread new-tokens-unread parstate))
+       (parstate (update-parstate->size new-size parstate)))
+    parstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
 
   ///
 
   (defret parsize-of-unread-tokens
     (equal (parsize new-parstate)
            (+ (parsize parstate) (nfix n)))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable nfix fix)))))
+    :hints (("Goal" :in-theory (enable parsize nfix fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
