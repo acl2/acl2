@@ -39,8 +39,7 @@
                  )
   :hints (("Goal" :in-theory (e/d (getbit slice logtail
                                           floor-when-negative-and-small)
-                                  (BVCHOP-1-BECOMES-GETBIT
-                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                                  ()))))
 
 (defthmd high-slice-when-negative
   (implies (and (< x 0)
@@ -55,8 +54,7 @@
                   (repeatbit (+ 1 high (- low)) 1)))
   :hints (("Goal" :in-theory (e/d (getbit slice logtail
                                           floor-when-negative-and-small)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  ()))))
 
 ;may need GETBIT-EQUAL-1-POLARITY -- move it!
 ;; any bit above the sign bit is the same as the sign bit

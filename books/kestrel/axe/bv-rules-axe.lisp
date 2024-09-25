@@ -1231,8 +1231,7 @@
                    (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
    :hints (("Goal" :expand ((SLICE (+ -1 SIZE) SIZE2 (+ X Y)))
             :in-theory (e/d (SLICE BVPLUS SLICE-TOO-HIGH-IS-0 SLICE-WHEN-VAL-IS-NOT-AN-INTEGER LOGTAIL-OF-BVCHOP unsigned-byte-p-forced)
-                            (LOGTAIL-OF-BVCHOP-BECOMES-SLICE BVCHOP-OF-LOGTAIL-BECOMES-SLICE SLICE-BECOMES-BVCHOP BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                                                              BVCHOP-OF-LOGTAIL)))))
+                            (LOGTAIL-OF-BVCHOP-BECOMES-SLICE SLICE-BECOMES-BVCHOP BVCHOP-OF-LOGTAIL)))))
 
 (local (in-theory (enable unsigned-byte-p-forced)))
 

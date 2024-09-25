@@ -258,7 +258,7 @@
            (bvchop n x)))
   :hints (("Goal"
            :cases ((integerp x))
-           :in-theory (e/d (logtail-of-bvchop) (LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
+           :in-theory (e/d (logtail-of-bvchop) ()))))
 
 (theory-invariant (incompatible (:rewrite logtail-of-bvchop) (:rewrite bvchop-of-logtail)))
 
@@ -279,7 +279,7 @@
                   (slice (min (+ low2 high1) high2) (+ low1 low2) x)))
   :hints (("Goal" :cases ((integerp x))
            :in-theory (e/d (slice bvchop-of-logtail)
-                           (logtail-of-bvchop-becomes-slice)))))
+                           ()))))
 
 (defthmd slice-too-high-helper
   (implies (and (< x (expt 2 low))
@@ -381,7 +381,7 @@
            (equal (slice high low x)
                   (slice high low free)))
   :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail)
-                                  (logtail-of-bvchop-becomes-slice)))))
+                                  ()))))
 
 (defthm slice-subst-in-constant
   (implies (and (syntaxp (not (quotep x)))

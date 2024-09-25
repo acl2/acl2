@@ -153,7 +153,7 @@
            (equal (+ 1 (* 2 (floor x 2)))
                   x))
   :hints (("Goal" :in-theory (e/d (bvchop mod)
-                                  (BVCHOP-1-BECOMES-GETBIT
+                                  (
                                    MOD-OF-EXPT-OF-2
                                    mod-of-expt-of-2-constant-version
                                                  ;;MOD-RECOLLAPSE-LEMMA2
@@ -168,7 +168,7 @@
                   x))
   :hints (("Goal" :in-theory (e/d (bvchop mod) (MOD-OF-EXPT-OF-2
                                                  mod-of-expt-of-2-constant-version
-                                                 BVCHOP-1-BECOMES-GETBIT
+
                                                  ;;MOD-RECOLLAPSE-LEMMA2
                                                  ;;MOD-RECOLLAPSE-LEMMA
                                                  )))))
@@ -182,7 +182,7 @@
   :hints (("Goal" :use split-when-low-bit-1
            :in-theory (e/d (getbit bvchop floor-of-when-mod-known)
                            (
-                            bvchop-1-becomes-getbit)))))
+                            )))))
 
 (defthm split-when-low-bit-0-hack
   (implies (and (INTEGERP X)
@@ -192,7 +192,7 @@
                   (* x y)))
   :hints (("Goal" :use split-when-low-bit-0
            :in-theory (e/d (floor-of-when-mod-known)
-                           (bvchop-1-becomes-getbit)))))
+                           ()))))
 
 (defthmd blast-bvmult-into-bvplus
   (implies (and (natp n)
@@ -249,7 +249,7 @@
            (equal (getbit 0 (+ x y))
                   (bitxor x y)))
   :hints (("Goal" :in-theory (e/d (getbit bitxor-split)
-                                  (bvchop-1-becomes-getbit )))))
+                                  ( )))))
 
 ;gen? go to bvplus?
 (defthm bvchop-1-of-plus
@@ -258,7 +258,7 @@
            (equal (bvchop 1 (+ X Y))
                   (bitxor x y)))
   :hints (("Goal" :in-theory (e/d (getbit bitxor-split)
-                                  (BVCHOP-1-BECOMES-GETBIT )))))
+                                  ( )))))
 
 
 (defthmd logtail-1-of-+
@@ -1193,7 +1193,7 @@
   (implies (posp size)
            (equal (EQUAL (GETBIT 0 (- (EXPT 2 SIZE))) 1)
                   nil))
-  :hints (("Goal" :in-theory (e/d (getbit) ( BVCHOP-1-BECOMES-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (getbit) ( )))))
 
 (defthm <-of-+-of-slice-and-slice-and-expt
   (implies (posp size)
@@ -1492,7 +1492,7 @@
                          1
                          0)))
   :hints (("Goal" :in-theory (e/d (bvmult bvcat GETBIT)
-                                  (BVCHOP-1-BECOMES-GETBIT )))))
+                                  ( )))))
 
 ;(EQUAL y (BITOR X y))
 
@@ -1649,7 +1649,7 @@
            :in-theory (e/d ( ;logext BVCHOP-OF-SUM-CASES getbit slice
                             ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4
                             )
-                           (BVCHOP-1-BECOMES-GETBIT
+                           (
                             anti-slice)))))
 
 (defthm cancel-from-logext-equality-helper2
@@ -1664,7 +1664,7 @@
            :use logext-of-+-of-bvchop
            :in-theory (disable
                        logext-of-+-of-bvchop
-                       BVCHOP-1-BECOMES-GETBIT
+
                        anti-slice))))
 
 (defthm cancel-from-logext-equality
@@ -1745,7 +1745,7 @@
 ;;                   (+ 1 (* 2 x))))
 ;;   :hints (("Goal" :in-theory (e/d (bvcat logtail bvplus getbit)
 ;;                                   (
-;;                                    bvchop-1-becomes-getbit
+;;
 ;;                                    bvplus-1-becomes-bitxor)))))
 
 ;; (defthm bvcat-hack22b
@@ -1755,7 +1755,7 @@
 ;;                   (* 2 x)))
 ;;   :hints (("Goal" :in-theory (e/d (bvcat logtail bvplus getbit)
 ;;                                   (
-;;                                    bvchop-1-becomes-getbit
+;;
 ;;                                    bvplus-1-becomes-bitxor)))))
 
 
@@ -2428,7 +2428,7 @@
                 (force (unsigned-byte-p newsize x))) ;use unsigned-byte-p-forced?
            (equal (slice high low x)
                   0))
-  :hints (("Goal" :in-theory (e/d (slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+  :hints (("Goal" :in-theory (e/d (slice) ()))))
 
 ;yikes this doubles the number of occurrences of y...
 

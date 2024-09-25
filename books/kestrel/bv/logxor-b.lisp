@@ -60,7 +60,7 @@
          (logxor (getbit n i)
                  (getbit n j)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 (defthm logbitp-of-logxor
   (implies (and (natp i)

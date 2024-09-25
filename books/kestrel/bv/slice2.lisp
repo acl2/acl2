@@ -37,7 +37,7 @@
   :hints (("Goal"
            :cases ((unsigned-byte-p (+ 1 high) x))
            :in-theory (e/d (slice equal-of-logtail-and-0)
-                           (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                           ()))))
 
 ;consider enabling or improving
 (defthmd usb-slice-helper

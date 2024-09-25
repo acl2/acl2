@@ -736,7 +736,7 @@
 ;;  (IMPLIES (< INDEX 0)
 ;;           (EQUAL (GETBIT 0 INDEX)
 ;;                  0))
-;;  :hints (("Goal" :in-theory (e/d (getbit) (SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT)))))
+;;  :hints (("Goal" :in-theory (e/d (getbit) ( )))))
 
 ;; ;yuck?
 ;; (defthmd myif-of-constant-lists
@@ -1104,8 +1104,8 @@
 ;;                              BVCHOP-OF-LOGTAIL
 ;;                              LOGTAIL-BECOMES-SLICE-BIND-FREE
 ;;                              LOGTAIL-OF-BVCHOP-BECOMES-SLICE
-;;                              BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-;;                              BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+;;
+;;
 ;;                              SLICE-BECOMES-BVCHOP))))))
 
 
@@ -1918,11 +1918,11 @@
 ;;           (equal (< n (logext 32 (+ 1 n)))
 ;;                  (not (equal (bvchop 32 n) 2147483647))))
 ;;  :hints (("Goal" :in-theory (e/d (logext logapp getbit slice)
-;;                                  (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT
+;;                                  (
 ;;                                                          LOGTAIL-OF-BVCHOP-BECOMES-SLICE
-;;                                                          BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+;;
 ;;                                                          SLICE-BECOMES-BVCHOP
-;;                                                          BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+;;
 ;;                                                          )))))
 
 (defthm bv-array-read-of-logext-arg3

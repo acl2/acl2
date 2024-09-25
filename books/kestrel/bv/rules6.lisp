@@ -187,7 +187,7 @@
                 )
            (equal (GETBIT size1 (BVMULT size2 x y))
                   (GETBIT size1 (BVMULT (+ 1 size1) x y))))
-  :hints (("Goal" :in-theory (e/d (getbit) ( BVCHOP-1-BECOMES-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (getbit) ()))))
 
 ;; (defthm mod-by-1
 ;;  (implies (integerp x)

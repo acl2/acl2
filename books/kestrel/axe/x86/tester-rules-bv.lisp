@@ -318,7 +318,7 @@
            (equal (getbit n (* 1/2 x))
                   (getbit (+ 1 n) x)))
   :hints (("Goal" :in-theory (e/d (getbit slice logtail expt-of-+ ifix bvchop)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 
 

@@ -250,7 +250,7 @@
            :in-theory (e/d (logext
                             getbit
                             slice)
-                           (BVCHOP-1-BECOMES-GETBIT
+                           (
                             )))))
 
 (defthm logext-of-logand
@@ -267,7 +267,7 @@
                                    bvand)
                                   (;gen LOGAND-OF-LOGAPP and drop?
                                    LOGAPP-OF-0-ARG3
-                                   BVCHOP-1-BECOMES-GETBIT
+
                                    )))))
 
 (defthm logext-of-logior
@@ -279,7 +279,7 @@
                   (logior (logext n a)
                           (logext n b))))
   :hints (("Goal" :in-theory (e/d (logext getbit slice) (;LOGAPP-0
-                                                         BVCHOP-1-BECOMES-GETBIT
+
                                                          )))))
 
 (defthm logext-of-myif
@@ -580,7 +580,7 @@
 ;;                 (integerp z))
 ;;            (equal (slice 31 5 (+ (bvchop 32 y) z))
 ;;                   (slice 31 5 (+ y z))))
-;;   :hints (("Goal" :in-theory (e/d (slice) (bvchop-of-logtail-becomes-slice
+;;   :hints (("Goal" :in-theory (e/d (slice) (
 ;;                                            LOGTAIL-EQUAL-0)))))
 
 ;; (defthmd slice-of-bvchop-hack6b
@@ -588,7 +588,7 @@
 ;;                 (integerp z))
 ;;            (equal (slice 31 5 (+ z (bvchop 32 y)))
 ;;                   (slice 31 5 (+ y z))))
-;;   :hints (("Goal" :in-theory (e/d (slice) (bvchop-of-logtail-becomes-slice
+;;   :hints (("Goal" :in-theory (e/d (slice) (
 ;;                                            LOGTAIL-EQUAL-0)))))
 
 (defthm slice-of-sum-drop-bvchop
@@ -601,7 +601,7 @@
                 (integerp z))
            (equal (slice high low (+ (bvchop size y) z))
                   (slice high low (+ y z))))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) (bvchop-of-logtail-becomes-slice)))))
+  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) ()))))
 
 (defthm slice-of-sum-drop-bvchop-alt
   (implies (and (< high size)
@@ -613,7 +613,7 @@
                 (integerp z))
            (equal (slice high low (+ z (bvchop size y)))
                   (slice high low (+ y z))))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) (bvchop-of-logtail-becomes-slice)))))
+  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) ()))))
 
 ;make a general theory of cancellation for associative and commutative functions with an inverse and identity
 ;i guess you get left and right cancellation (but not more general cancellation) for non-abelian groups.
@@ -664,7 +664,7 @@
                                    slice
                                    ;logtail-bvchop
                                    logext) (logbitp-iff-getbit ;why - need getbit of logapp
-                                            bvchop-of-logtail-becomes-slice
+
                                             logbitp)))))
 
 ;todo: consider "pick a bit" proofs?
@@ -815,8 +815,7 @@
     :in-theory (e/d (bvchop-of-logtail)
                     (LOGTAIL-SHIFT-GEN2-ALT
                      ;LOGAPP-0-NEW2
-                     BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                     LOGTAIL-OF-BVCHOP-BECOMES-SLICE
+
                      logtail-logapp)))))
 
 (DEFTHM LOGBITP-LOGTAIL-better
@@ -846,7 +845,7 @@
                                    bvchop-of-logtail)
                                   (logtail-logapp
                                    LOGBITP-LOGTAIL
-                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+
                                    LOGBITP-IFF-GETBIT)))))
 
 (theory-invariant (incompatible (:rewrite logtail-of-logext-gen) (:rewrite logext-of-logtail)))
@@ -862,8 +861,7 @@
            :in-theory (e/d (logext bvchop-of-logtail slice)
                            (;anti-slice
 ;LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
-;                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE ;bozo add to anit-slice?
-                            bvchop-of-logtail-becomes-slice)))))
+                            )))))
 
 ;use trim
 (defthm bvmult-of-bvand-tighten-2
@@ -1089,13 +1087,13 @@
    (< (logtail 8
                (BVCHOP 16 x))
       256)
-   :hints (("Goal" :in-theory (disable LOGTAIL-OF-BVCHOP-BECOMES-SLICE))))
+   :hints (("Goal" :in-theory (disable))))
 
 (defthm shift-compare-hack-24-16
    (< (logtail 16
                (BVCHOP 24 x))
       256)
-      :hints (("Goal" :in-theory (disable LOGTAIL-OF-BVCHOP-BECOMES-SLICE))))
+      :hints (("Goal" :in-theory (disable))))
 
 ;; ;deprecating in favor of power-of-2p
 ;; (defun pow2p (x)
@@ -1231,7 +1229,7 @@
            (equal (getbit 0 (logapp 1 y x))
                   (getbit 0 y)))
   :hints (("Goal" :in-theory (e/d (getbit ;logapp
-                                   ) (bvchop-1-becomes-getbit)))))
+                                   ) ()))))
 
 (defthm logand-even-of-logapp-1
   (implies (and ;(evenp k) ;drop somehow?
@@ -1408,7 +1406,7 @@
   :hints (("Goal"
            :use ((:instance bvchop-lognot-bvchop (n 1)))
            :in-theory (e/d (getbit) (
-                                     bvchop-1-becomes-getbit
+
                                      bvchop-lognot-bvchop)))))
 
 ;; (defthm bvnot-equal-0-rewrite
@@ -1466,7 +1464,7 @@
            (equal (slice highbit lowbit (bvxor size x y))
                   (slice highbit lowbit (bvxor (+ 1 highbit) x y))))
   :hints (("Goal" :cases ((<= lowbit highbit))
-          :in-theory (e/d (slice bvxor natp  bvchop-of-logtail) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE slice-becomes-bvchop)))))
+          :in-theory (e/d (slice bvxor natp  bvchop-of-logtail) ( slice-becomes-bvchop)))))
 
 ;drop in favor of trim rules?
 (defthm slice-of-bvand-tighten
@@ -1482,7 +1480,7 @@
                   (slice highbit lowbit (bvand (+ 1 highbit) x y))))
   :hints (("Goal" :cases ((<= lowbit highbit))
           :in-theory (e/d (slice bvand natp  bvchop-of-logtail) (slice-becomes-bvchop
-                                               BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                                               )))))
 
 ;drop in favor of trim rules?
 (defthm slice-of-bvmult-tighten
@@ -1497,7 +1495,7 @@
            (equal (slice highbit lowbit (bvmult size x y))
                   (slice highbit lowbit (bvmult (+ 1 highbit) x y))))
   :hints (("Goal" :cases ((<= lowbit highbit))
-           :in-theory (e/d (slice bvor natp bvmult bvchop-of-logtail) (slice-becomes-bvchop BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+           :in-theory (e/d (slice bvor natp bvmult bvchop-of-logtail) (slice-becomes-bvchop )))))
 
 ;use trim
 (defthm bvor-of-bvmult-tighten-2
@@ -1639,7 +1637,7 @@
                    (bvand lowsize (bvchop lowsize x)
                           lowval))))
   :hints (("Goal" :in-theory (e/d (bvcat bvand slice bvchop-of-logtail)
-                                  (bvchop-of-logtail-becomes-slice)))))
+                                  ()))))
 
 ;(local (in-theory (disable LOGAPP-0-NEW2)));why?
 
@@ -1689,7 +1687,7 @@
 ;;                 (INTEGERP HIGH))
 ;;            (EQUAL (SLICE HIGH LOW X)
 ;;                   0))
-;;   :HINTS (("Goal" :IN-THEORY (E/d (SLICE natp) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+;;   :HINTS (("Goal" :IN-THEORY (E/d (SLICE natp) ()))))
 
 (defthm slice-of-bvchop-low-gen-better
   (implies (and (natp high)
@@ -2134,13 +2132,13 @@
   (implies (integerp x)
            (equal (SLICE 31 7 (LOGEXT 8 X))
                   (repeatbit 25 (getbit 7 x))))
-  :hints (("Goal" :in-theory (e/d (slice LOGEXT) (BVCHOP-OF-LOGTAIL BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+  :hints (("Goal" :in-theory (e/d (slice LOGEXT) (BVCHOP-OF-LOGTAIL )))))
 
 (defthm high-slice-of-logext-31-7-8
   (implies (integerp x)
            (equal (slice 31 7 (logext 8 x))
                   (bvsx 25 1 (getbit 7 x))))
-  :hints (("Goal" :in-theory (e/d (slice LOGEXT) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
+  :hints (("Goal" :in-theory (e/d (slice LOGEXT) ( BVCHOP-OF-LOGTAIL)))))
 
 ;; ;bozo gen
 (defthm bvplus-of-logext-arg1-32-8
@@ -2496,7 +2494,7 @@
            (equal (logext size1 (logtail size2 x))
                   (logext size1 (slice (+ -1 size1 size2) size2 x))))
   :hints
-  (("Goal" :in-theory (e/d (slice logtail-of-bvchop) (slice-becomes-bvchop bvchop-of-logtail logext-of-logtail BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+  (("Goal" :in-theory (e/d (slice logtail-of-bvchop) (slice-becomes-bvchop bvchop-of-logtail logext-of-logtail )))))
 
 
 ;bozo gen to any usb1
@@ -2622,9 +2620,8 @@
   (implies (posp k)
            (equal (getbit (+ -1 (integer-length k)) k)
                   1))
-  :hints (("Goal" :in-theory (e/d (getbit slice) (bvchop-1-becomes-getbit
-                                                  logtail-of-bvchop-becomes-slice
-                                                  bvchop-of-logtail-becomes-slice)))))
+  :hints (("Goal" :in-theory (e/d (getbit slice) (
+                                                  )))))
 
 (defthm bvand-of-expt
   (implies (and (equal k (expt 2 (+ -1 (integer-length k)))) ;check for power-of-2
@@ -2730,7 +2727,7 @@
            (equal (logtail n x)
                   (slice (+ -1 newsize) n x)))
   :hints (("Goal" :in-theory (e/d (slice unsigned-byte-p-forced)
-                                  (SLICE-BECOMES-BVCHOP BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                                  (SLICE-BECOMES-BVCHOP )))))
 
 (theory-invariant (incompatible (:rewrite logtail-becomes-slice-bind-free) (:definition slice)))
 
@@ -2962,7 +2959,7 @@
            (equal (equal x y)
                   (equal (logtail 1 x) (logtail 1 y))))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 1 1 nil nil)))
-  :hints (("Goal" :in-theory (e/d (logtail getbit bvchop) (BVCHOP-1-BECOMES-GETBIT
+  :hints (("Goal" :in-theory (e/d (logtail getbit bvchop) (
                                                             ;mod-of-expt-of-2-constant-version
                                                             mod-of-expt-of-2
                                                             )))))
@@ -3868,10 +3865,7 @@
                                                                    logext)
                                   (slice-becomes-bvchop
                                    bvchop-of-logtail
-                                   bvchop-of-logtail-becomes-slice
-                                   logtail-of-bvchop-becomes-slice
-;                                   bvchop-of-logtail-becomes-slice
-                                   bvchop-1-becomes-getbit ))
+                                    ))
            :use (:instance usb-0-1 (x (slice (+ -1 size) (+ -1 size) x)))
            :cases ((integerp x)))))
 
@@ -4222,8 +4216,7 @@
            (equal (equal (slice high low x) (getbit low x))
                   (equal (slice high (+ 1 low) x) 0)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (acl2::slice-becomes-getbit
-                                   acl2::bvchop-1-becomes-getbit)))))
+                                  (acl2::slice-becomes-getbit)))))
 
 ;move
 (defthm not-equal-when-not-equal-bvchop
@@ -4281,7 +4274,7 @@
                     (getbit n x))))
   :hints (("Goal" :in-theory (e/d (getbit bvchop slice logtail bitnot mod-sum-cases)
                                   (MOD-OF-EXPT-OF-2 ;mod-of-expt-of-2-constant-version
-                                                    bvchop-1-becomes-getbit  anti-slice)))))
+                                                      anti-slice)))))
 
 (DEFTHM bvchop-when-getbit-and-bvchop-known
   (IMPLIES (and (equal (getbit m x) k1)
@@ -4721,8 +4714,8 @@
                   0))
   :hints (("Goal" :in-theory (e/d (bvlt)
                                   (;BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
-                                   BVCHOP-1-BECOMES-GETBIT
-                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+
+                                   )))))
 
 (defthm getbit-when-bvlt-of-small
   (implies (and (bvlt (+ 1 size) x free)
@@ -4749,7 +4742,7 @@
                   (if (equal 0 (GETBIT 31 x))
                       1
                     0)))
-  :hints (("Goal" :in-theory (e/d (getbit SLICE-OF-SUM-CASES) (BVCHOP-1-BECOMES-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (getbit SLICE-OF-SUM-CASES) ()))))
 
 
 ;gen
@@ -4760,7 +4753,7 @@
   :hints (("Goal" :in-theory (e/d (slice LOGTAIL bvchop
                                          expt-of-+ ;;EXPONENTS-ADD-unrestricted
                                          )
-                                  (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                                  (
                                    MOD-OF-EXPT-OF-2)))))
 
 
@@ -4886,7 +4879,7 @@
  (implies (integerp x)
           (equal (GETBIT 31 (+ 4294967296 x))
                  (GETBIT 31 x)))
- :hints (("Goal" :in-theory (e/d (getbit) (BVCHOP-1-BECOMES-GETBIT)))))
+ :hints (("Goal" :in-theory (e/d (getbit) ()))))
 
 ;drop since we have the gen version?
 ;many cases
@@ -4928,8 +4921,8 @@
                             bvcat)
                            (<-OF-*-AND-*-SAME-LINEAR ;why?
                             BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                            BVCHOP-1-BECOMES-GETBIT
-                            BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+
+
                             <-OF-LOGEXT-AND-0-ALT)))))
 
 ;move
@@ -5801,9 +5794,9 @@
                        (natp n))))
   :hints (("Goal" :in-theory (e/d (signed-byte-p getbit slice bvchop-of-logtail logtail bvchop UNSIGNED-BYTE-P)
                                   (MOD-OF-EXPT-OF-2
-                                    bvchop-1-becomes-getbit
+
                                    logtail-becomes-slice-bind-free
-                                   bvchop-of-logtail-becomes-slice)))))
+                                   )))))
 
 (defthm signed-byte-p-when-top-bit-1
   (implies (and (signed-byte-p n k)
@@ -5817,9 +5810,9 @@
            :in-theory (e/d (signed-byte-p getbit slice bvchop-of-logtail logtail bvchop UNSIGNED-BYTE-P)
                                   (MOD-EXPT-SPLIT
                                    MOD-OF-EXPT-OF-2
-                                    bvchop-1-becomes-getbit
+
                                    logtail-becomes-slice-bind-free
-                                   bvchop-of-logtail-becomes-slice)))))
+                                   )))))
 
 (defthm bvsx-too-high-syntactic
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
@@ -5991,7 +5984,7 @@
 ;;                                         getbit
 ;;                                         slice)
 ;;                                   (
-;;                                    bvchop-1-becomes-getbit)))))
+;;                                    )))))
 
 ;; since x>=y, x is usually not less than y+1
 (defthmd bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt
@@ -6023,7 +6016,7 @@
          (bitxor x y))
   :hints (("Goal" :in-theory (e/d (bitxor bvxor getbit)
                                   (BVXOR-1-BECOMES-BITXOR
-                                   BVCHOP-1-BECOMES-GETBIT)))))
+                                   )))))
 
 
 ;move
@@ -6052,8 +6045,7 @@
             :in-theory (e/d (bvlt bvcat logapp
                                   UNSIGNED-BYTE-P-OF-BVCHOP-TIGHTER
                                   slice-becomes-getbit)
-                            (BVCHOP-1-BECOMES-GETBIT
-                             REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER ; looped
+                            (REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER ; looped
                              bvchop-identity
                              logtail-equal-0 ;looped
                              )))))
