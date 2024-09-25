@@ -674,7 +674,35 @@
                                (certificate->author cert2))
                         (equal (certificate->round cert1)
                                (certificate->round cert2)))
-                   (equal cert1 cert2))))
+                   (equal cert1 cert2)))
+
+  ///
+
+  (defruled certificate-sets-unequivocalp-when-subsets
+    (implies (and (certificate-sets-unequivocalp certs1 certs2)
+                  (set::subset certs01 certs1)
+                  (set::subset certs02 certs2))
+             (certificate-sets-unequivocalp certs01 certs02))
+    :use (:instance
+          certificate-sets-unequivocalp-necc
+          (cert1
+           (mv-nth 0 (certificate-sets-unequivocalp-witness certs01 certs02)))
+          (cert2
+           (mv-nth 1 (certificate-sets-unequivocalp-witness certs01 certs02))))
+    :enable set::expensive-rules)
+
+  (defruled certificate-set-unequivocalp-when-same-sets-unequivocal
+    (implies (certificate-sets-unequivocalp certs certs)
+             (certificate-set-unequivocalp certs))
+    :enable certificate-set-unequivocalp
+    :disable certificate-sets-unequivocalp
+    :use (:instance certificate-sets-unequivocalp-necc
+                    (cert1
+                     (mv-nth 0 (certificate-set-unequivocalp-witness certs)))
+                    (cert2
+                     (mv-nth 1 (certificate-set-unequivocalp-witness certs)))
+                    (certs1 certs)
+                    (certs2 certs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
