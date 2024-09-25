@@ -678,6 +678,24 @@
 
   ///
 
+  (defruled certificate-sets-unequivocalp-commutative
+    (equal (certificate-sets-unequivocalp certs1 certs2)
+           (certificate-sets-unequivocalp certs2 certs1))
+    :use (certificate-sets-unequivocalp-commutative-lemma
+          (:instance certificate-sets-unequivocalp-commutative-lemma
+                     (certs1 certs2) (certs2 certs1)))
+    :prep-lemmas
+    ((defruled certificate-sets-unequivocalp-commutative-lemma
+       (implies (certificate-sets-unequivocalp certs1 certs2)
+                (certificate-sets-unequivocalp certs2 certs1))
+       :use
+       (:instance
+        certificate-sets-unequivocalp-necc
+        (cert1
+         (mv-nth 1 (certificate-sets-unequivocalp-witness certs2 certs1)))
+        (cert2
+         (mv-nth 0 (certificate-sets-unequivocalp-witness certs2 certs1)))))))
+
   (defruled certificate-sets-unequivocalp-when-subsets
     (implies (and (certificate-sets-unequivocalp certs1 certs2)
                   (set::subset certs01 certs1)
