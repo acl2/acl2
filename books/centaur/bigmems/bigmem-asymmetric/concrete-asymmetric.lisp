@@ -32,9 +32,9 @@
 
 ;   Original Author(s): Warren A. Hunt, Jr <warren.hunt@intel.com>
 
-; Matt K. mod to avoid array-dimension-limit error for LispWorks, which
-; is 536870911 but is exceeded by *mem-size* = 6442450944.
-; cert_param: ( non-lispworks )
+; Matt K. mod to avoid array-dimension-limit error for LispWorks and CMUCL,
+; which is 536870911 but is exceeded by *mem-size* = 6442450944.
+; cert_param: ( non-lispworks , non-cmucl )
 
 (in-package "BIGMEM-ASYMMETRIC")
 

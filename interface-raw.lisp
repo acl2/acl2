@@ -2802,7 +2802,7 @@
                ,(if stobjs-out-df
                     (remove-double-floats stobjs-out *1*body t)
                   *1*body)))))
-             
+
 
 ;          PROMPTS
 
@@ -6061,9 +6061,9 @@
                  (let ((form (list 'notinline name)))
                    (proclaim form)
                    (push (list 'declaim form) *declaim-list*))))))
-  (loop for tail on defs
-        with ext-gen-barriers = (and evalp
+  (loop with ext-gen-barriers = (and evalp
                                      (global-val 'ext-gen-barriers wrld))
+        for tail on defs
         do
         (let* ((def (car tail))
                (oneify-p (eq (car def) 'oneify-cltl-code))
