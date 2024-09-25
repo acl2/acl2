@@ -20,6 +20,7 @@
 (include-book "mmp-trees")
 (include-book "transactions")
 (include-book "addresses")
+(include-book "evm/evm-rules") ; includes evm/evm.lisp
 
 ; Merge-io-pairs call added by Matt K. at the request of Alessandro C.:
 (acl2::merge-io-pairs

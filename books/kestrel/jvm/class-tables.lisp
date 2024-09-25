@@ -108,7 +108,7 @@
 ;;   :hints (("Goal" :in-theory (enable PERM)))
 ;;   )
 
-(defthm use-all-keys-bound-to-class-infosp
+(defthm use-all-keys-bound-to-class-infosp-alt
   (implies (and (all-keys-bound-to-class-infosp keys class-table)
                 (memberp key keys))
            (class-infop (get-class-info key class-table) key))
@@ -125,10 +125,10 @@
   (implies (and (all-keys-bound-to-class-infosp keys class-table)
                 (memberp key keys))
            (class-infop0 (get-class-info key class-table)))
-  :hints (("Goal" :use (:instance use-all-keys-bound-to-class-infosp)
-           :in-theory (disable use-all-keys-bound-to-class-infosp
-                               acl2::use-all-keys-bound-to-class-infosp-2
-                               acl2::use-all-keys-bound-to-class-infosp))))
+  :hints (("Goal" :use (:instance use-all-keys-bound-to-class-infosp-alt)
+           :in-theory (disable use-all-keys-bound-to-class-infosp-alt
+                               jvm::use-all-keys-bound-to-class-infosp-2
+                               jvm::use-all-keys-bound-to-class-infosp))))
 
 ;equivalent to subsetp-equal but also prints a message
 ;todo: add a version of defforall that prints a message if any element fails to satisfy the predicate, then use that here
@@ -218,10 +218,10 @@
   (implies (and (all-superinterfaces-bound class-names class-table (set::2list (acl2::rkeys class-table)))
                 (memberp class-name class-names))
            (all-bound-in-class-tablep (class-decl-interfaces (get-class-info class-name class-table)) class-table))
-  :hints (("Goal" :use (:instance acl2::use-all-superinterfaces-bound (acl2::free-class-name class-names)
+  :hints (("Goal" :use (:instance jvm::use-all-superinterfaces-bound (acl2::free-class-name class-names)
                                   (all-class-names (set::2list (acl2::rkeys class-table)))
                                   (acl2::x class-name))
-           :in-theory (e/d (all-bound-in-class-tablep-alt) ( acl2::use-all-superinterfaces-bound)))))
+           :in-theory (e/d (all-bound-in-class-tablep-alt) (jvm::use-all-superinterfaces-bound)))))
 
 
 (defthm class-namep-of-class-decl-superclass-of-get-class-info

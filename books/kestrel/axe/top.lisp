@@ -139,7 +139,6 @@
 (include-book "make-instantiation-code-simple-free-vars")
 (include-book "make-instantiation-code-simple")
 (include-book "make-instantiation-code-simple-no-free-vars2")
-(include-book "make-instantiation-code-simple-no-free-vars")
 (include-book "make-node-replacement-alist")
 (include-book "make-prover-simple")
 (include-book "make-rewriter-simple")

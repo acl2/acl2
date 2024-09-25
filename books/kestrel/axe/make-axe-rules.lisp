@@ -472,6 +472,34 @@
                     `((:axe-bind-free ,axe-bind-free-expr . ,vars-to-bind))
                     ;; the vars become bound:
                     (append vars-to-bind bound-vars)))
+            (if (call-of 'axe-binding-hyp hyp) ; (axe-binding-hyp (equal <free-var> <expr-with-no-free-vars>))
+                ;; Special treatment for a binding hyp (see "binding hypothesis" in :doc free-variables to see how ACL2 handles these):
+                (b* (((when (not (and (true-listp (fargs hyp))
+                                      (= 1 (len (fargs hyp))))))
+                      (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-binding-hyp ~x0 in rule ~x1." hyp rule-symbol)
+                      (mv :bad-axe-binding-hyp *unrelievable-hyps* bound-vars))
+                     (hyp (farg1 hyp)) ; strip the call of axe-binding-hyp
+                     ((when (not (and (consp hyp)
+                                      (eq 'equal (ffn-symb hyp)) ; (equal <free-var> <expr-with-no-free-vars>)
+                                      (= 2 (len (fargs hyp))) ; for guards
+                                      (variablep (farg1 hyp))
+                                      (not (member-equal (farg1 hyp) bound-vars))
+                                      ;; second arg should already be known to be a pseudo-term
+                                      (subsetp-equal (free-vars-in-term (farg2 hyp)) bound-vars))))
+                      (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-binding-hyp ~x0 in rule ~x1." hyp rule-symbol)
+                      (mv :bad-axe-binding-hyp *unrelievable-hyps* bound-vars))
+                     ;; (- (cw "Note: Binding hyp detected in rule ~x0.~%" rule-symbol))
+                     (var (farg1 hyp))
+                     (expr (farg2 hyp))
+                     ;; We do not expand lambdas, but we do pre-simplify:
+                     (expr (pre-simplify-term expr nil t)) ; preserves equal, not iff
+                     ((when (not (subsetp-equal (free-vars-in-term expr) bound-vars))) ; todo: prove this can't happen (but strengthen the guard)
+                      (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Hyp, ~x0 in ~x1 has free vars after pre-simplification!" hyp rule-symbol)
+                              (mv :bad-axe-binding-hyp *unrelievable-hyps* bound-vars))))
+                  (mv (erp-nil)
+                      `((:axe-binding-hyp ,var . ,expr))
+                      (cons var bound-vars) ;; the var becomes bound
+                      ))
             ;; not a special hyp:
             (b* ((all-fns (fns-in-term hyp))
                  ;; These 2 checks catch common errors:
@@ -492,21 +520,24 @@
                  ((when (member-eq :free-vars all-fns)) ;todo: prove that this never happens?
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :free-vars which is not a legal function name." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                 ((when (member-eq :axe-binding-hyp all-fns)) ;todo: prove that this never happens?
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-binding-hyp which is not a legal function name." hyp rule-symbol)
+                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
                  ;; Check for free vars in the hyp:
                  (hyp-free-vars (set-difference-eq (free-vars-in-term hyp) bound-vars)))
               (if hyp-free-vars
-                  ;; A hyp with free vars is relieved by matching against assumptions:
+                  ;; Free vars but not a binding-hyp.  Will be relieved by matching against assumptions:
                   (b* (;; Must expand lambdas to allow for matching:
                        (expanded-hyp (expand-lambdas-in-term hyp)) ; todo: print a note here, if this does anything.
                        (expanded-hyp-free-vars (set-difference-eq (free-vars-in-term expanded-hyp) bound-vars))
                        ((when (not expanded-hyp-free-vars)) ; unusual case: such a hyp doesn't really fit this case or the normal case
                         (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 has free vars that disappear when lambdas are expanded." hyp rule-symbol)
                         (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                       ;; todo: consider cleaning up the hyp in other ways?
+                         ;; todo: consider cleaning up the hyp in other ways?
                        (hyp expanded-hyp)
-                       ;; (- (cw "NOTE: Free vars in rule ~x0.~%" rule-symbol))
-                       ;; Strip and note the work-hard, if any:
-                       ;; Previously, a work-hard with free vars was an error, but Axe generates some rules like that.
+                         ;; (- (cw "NOTE: Free vars in rule ~x0.~%" rule-symbol))
+                         ;; Strip and note the work-hard, if any:
+                         ;; Previously, a work-hard with free vars was an error, but Axe generates some rules like that.
                        ((mv hyp work-hardp)
                         (if (and (call-of 'work-hard hyp)
                                  (= 1 (len (fargs hyp))))
@@ -542,7 +573,7 @@
                       ;;turn a hyp of <var> into (not (equal 'nil <var>)) which is equivalent.  Axe relies on the fact that a hyp cannot be a variable.
                       (if (not (member-equal hyp bound-vars)) ; todo: prove this can't happen (but strengthen the guard)
                           (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Hyp, ~x0, is a free var in ~x1 after pre-simplification!" hyp rule-symbol)
-                                  (mv :nil-hyp *unrelievable-hyps* bound-vars))
+                                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
                         (mv (erp-nil) `((not (equal 'nil ,hyp))) bound-vars)))
                      ((when (fquotep hyp))
                       (if (equal *nil* hyp)
@@ -555,17 +586,19 @@
                      ((when (or (eq :axe-syntaxp (ffn-symb hyp))
                                 (eq :axe-bind-free (ffn-symb hyp))
                                 (eq :free-vars (ffn-symb hyp))
-                                (not (subsetp-equal (FREE-VARS-IN-TERM hyp) bound-vars)))) ; todo: prove that this can't happen: pre-simplify can't introduce new functions
+                                (eq :axe-binding-hyp (ffn-symb hyp))
+                                (not (subsetp-equal (free-vars-in-term hyp) bound-vars)))) ; todo: prove that this can't happen: pre-simplify can't introduce new functions
                       (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Unexpected form of hyp, ~x0, in ~x1 after pre-simplification!" hyp rule-symbol)
-                              (mv :nil-hyp *unrelievable-hyps* bound-vars))))
+                              (mv :bad-hyp *unrelievable-hyps* bound-vars))))
                   (mv (erp-nil)
                       (list hyp) ; hyp is not wrapped
-                      bound-vars))))))))))
+                      bound-vars)))))))))))
 
 (local
  (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-hyps-for-hyp
    (implies (pseudo-termp hyp)
             (axe-rule-hyp-listp (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
+   :otf-flg t
    :hints (("Goal" :in-theory (e/d (make-axe-rule-hyps-for-hyp
                                     axe-rule-hypp
                                     symbolp-when-pseudo-termp
@@ -578,6 +611,8 @@
                                     ;fns-in-term
                                     ;add-to-set-equal
                                     ;EXPAND-LAMBDAS-IN-TERM
+                                    pseudo-termp
+                                    AXE-RULE-HYPP
                                     ))))))
 
 ;; (defthm axe-rule-hypp-of-mv-nth-0-of-make-axe-rule-hyp

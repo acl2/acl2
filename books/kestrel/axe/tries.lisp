@@ -22,6 +22,8 @@
   (or (natp x)
       (null x)))
 
+(thm (triesp nil)) ;; ensures that nil satisfies TRIESP, so we can do things like (or tries ...)
+
 (defthm triesp-forward
   (implies (triesp x)
            (or (natp x)
@@ -47,6 +49,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;rename
+;; todo: consider dropping this and making a version that we only call if tries is non-nil?
 (defund-inline sub-tries (tries1 tries2)
   (declare (xargs :guard (and (triesp tries1)
                               (triesp tries2))))
