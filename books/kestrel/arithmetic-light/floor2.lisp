@@ -218,7 +218,7 @@
                             floor-bound-lemma3
                             ;;MOD-X-I*J
                             ;; MOD-RECOLLAPSE-LEMMA2 MOD-RECOLLAPSE-LEMMA
-                            FLOOR-MINUS-ERIC-BETTER ;bozo looped!
+                            ;; FLOOR-MINUS-ERIC-BETTER ;bozo looped!
                             mod-sum-cases ;for speed
                             )))))
 
@@ -247,7 +247,7 @@
                                           ;NORMALIZE-<-MINUS-/
 ;                                          MOD-X-I*J
 ;                                          MOD-RECOLLAPSE-LEMMA2 MOD-RECOLLAPSE-LEMMA
-                                          FLOOR-MINUS-ERIC-BETTER ;bozo looped!
+                                          ;; FLOOR-MINUS-ERIC-BETTER ;bozo looped!
                                           )))))
 
 (encapsulate ()
