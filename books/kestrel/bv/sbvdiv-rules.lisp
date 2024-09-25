@@ -154,8 +154,6 @@
                                    truncate-becomes-floor-gen)
                            ( floor-of-minus-and-minus
                              ;floor-minus
-                             ;PLUS-BVCAT-WITH-0
-                             ;
                              ;BVCAT-OF-+-LOW
                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                              ;<-Y-*-Y-X

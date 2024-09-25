@@ -32,7 +32,9 @@
   (implies (unsigned-byte-p 8 x)
            (< x 256)))
 
-(defthm plus-bvcat-with-0-special
+;rename
+;disable?
+(defthmd plus-bvcat-with-0-special
   (implies (and (unsigned-byte-p n x)
                 (natp m)
                 (natp n))
@@ -42,6 +44,8 @@
 
 ;the complication here is because of how we associate bvcat...
 ;restrict to when y is a bvcat?
+;rename
+;add theory invars?
 (defthmd plus-bvcat-with-0
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (bind-free (bind-var-to-bv-term-size 'newsize2 x) (newsize2))
@@ -59,6 +63,8 @@
                            (;mod-=-0
                             NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))))
 
+;rename
+;add theory invars?
 (defthmd plus-bvcat-with-0-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (bind-free (bind-var-to-bv-term-size 'newsize2 x) (newsize2))
@@ -775,8 +781,6 @@
   :HINTS
   (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG3 BVIF-OF-MYIF-ARG4)))))
 
-(in-theory (disable bvminus)) ;bozo?
-
 (defthm slice-of-if
   (equal (slice (if test high1 high2) low val)
          (if test
@@ -1059,7 +1063,8 @@
 (defthm bvplus-disjoint-ones-32-24-8 ;bbozo gen!
   (equal (BVPLUS 32 (BVCAT 24 x 8 0) (BVCHOP 8 y))
          (bvcat 24 x 8 y))
-  :hints (("Goal" :in-theory (enable BVPLUS-OPENER))))
+  :hints (("Goal" :in-theory (enable bvplus-opener
+                                     plus-bvcat-with-0-special))))
 
 
 ;drop?
@@ -1155,7 +1160,8 @@
 (defthm bvplus-of-bvcat-0-hack
   (equal (bvplus 3 (bvcat 1 x 1 y) (bvcat 1 z 2 0))
          (bvcat 1 z 2 (bvcat 1 x 1 y)))
-  :hints (("Goal" :in-theory (enable bvplus-opener))))
+  :hints (("Goal" :in-theory (enable bvplus-opener
+                                     plus-bvcat-with-0-special))))
 
 (defthm bvplus-of-bvcat-0-arg1
   (implies (and (unsigned-byte-p n x)
@@ -1164,8 +1170,7 @@
                 (natp n))
            (equal (bvplus size (bvcat size2 z n 0) x)
                   (bvcat size2 z n x)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            )))))
+  :hints (("Goal" :in-theory (e/d (bvplus plus-bvcat-with-0-special) ()))))
 
 (defthm bvplus-of-bvcat-0-arg2
   (implies (and (unsigned-byte-p n x)
@@ -1174,10 +1179,7 @@
                 (natp n))
            (equal (bvplus size x (bvcat size2 z n 0))
                   (bvcat size2 z n x)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            )))))
-
-
+  :hints (("Goal" :in-theory (e/d (bvplus plus-bvcat-with-0-special) ()))))
 
 (defthm <-of-minus-of-expt-and-expt
   (implies (integerp k)
@@ -1251,8 +1253,8 @@
                 (natp n))
            (equal (bvplus size (bvcat size2 z n 0) x)
                   (bvcat size2 z n x)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            SIZE-NON-NEGATIVE-WHEN-UNSIGNED-BYTE-P-FREE)))))
+  :hints (("Goal" :in-theory (e/d (bvplus plus-bvcat-with-0-special)
+                                  (SIZE-NON-NEGATIVE-WHEN-UNSIGNED-BYTE-P-FREE)))))
 
 ;replace other
 (defthm bvplus-of-bvcat-0-arg2-better
@@ -1264,8 +1266,8 @@
                 (natp n))
            (equal (bvplus size x (bvcat size2 z n 0))
                   (bvcat size2 z n x)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            SIZE-NON-NEGATIVE-WHEN-UNSIGNED-BYTE-P-FREE)))))
+  :hints (("Goal" :in-theory (e/d (bvplus plus-bvcat-with-0-special)
+                                  (SIZE-NON-NEGATIVE-WHEN-UNSIGNED-BYTE-P-FREE)))))
 
 ;more like this
 (defthmd slice-of-bvplus-low
@@ -1351,7 +1353,7 @@
 ;;            (equal (bitxor (bitand x y) (bitxor 1 x))
 ;;                   (bitor (bitand x y) (bitxor 1 x))))
 ;;   :hints (("Goal"
-;;            :in-theory (disable BVNOT-1-BECOMES-BITXOR-1)
+;;            :in-theory (disable)
 ;;            :cases ((and (equal 0 x) (equal 0 y))
 ;;                           (and (equal 0 x) (equal 1 y))
 ;;                           (and (equal 1 x) (equal 0 y))
@@ -1513,8 +1515,6 @@
 
 ;slice trim rule?
 
-(in-theory (disable BITNOT-BECOMES-BITXOR-WITH-1))
-
 ;bozo could go back and use something like this in the jvm model?
 (defthmd <-of-logext-when-signed-byte-p
   (implies (and (signed-byte-p 32 y))
@@ -1614,7 +1614,7 @@
 (defthm bvif-becomes-bif
   (equal (bvif 1 test x y)
          (bif (bool-to-bit test) x y))
-  :hints (("Goal" :in-theory (e/d (bvif myif bool-to-bit) ( bitnot-becomes-bitxor-with-1)))))
+  :hints (("Goal" :in-theory (e/d (bvif myif bool-to-bit) ()))))
 
 ;actually, we should go to bvif?!
 (defthmd bvplus-of-myif
@@ -1851,8 +1851,7 @@
   (implies (unsigned-byte-p 30 x)
            (equal (+ 1 x)
                   (bvplus 31 1 x)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            BVPLUS-OPENER)))))
+  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
 
 (defthm unsigned-byte-p-from-bound-<=-version
   (implies (and (equal (< free x) nil)
@@ -1864,18 +1863,12 @@
            (unsigned-byte-p n x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-
-
-(in-theory (disable BVPLUS-OPENER))
-
 (defthm bvplus-tighten-hack
   (implies (and (< x 16)
                 (natp x))
            (equal (bvplus 31 1 x)
                   (bvplus 5 1 x)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            )))))
-
+  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
 
 
 ;bozo gen the inner term

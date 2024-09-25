@@ -408,8 +408,6 @@
   :hints (("Goal" :in-theory (e/d (sbvlt logext bvplus BVCHOP-OF-SUM-CASES bvlt getbit-of-+)
                                   (TIMES-4-BECOMES-LOGAPP)))))
 
-(in-theory (disable PLUS-BVCAT-WITH-0-ALT))
-
 ;; (defthm <-of-plus-swap-minuses
 ;;   (equal (< (+ (- x) y) (- z))
 ;;          (< (+ z y) x)))
@@ -680,6 +678,7 @@
                   (- (EXPT 2 (+ -1 SIZE)))))
   :hints (("Goal" :in-theory (enable expt-of-+))))
 
+;gen
 (defthm sbvlt-0-bvuminus
   (equal (sbvlt 32 0 (bvuminus 32 x))
          (if (equal (bvchop 32 x) 2147483648)
@@ -718,8 +717,6 @@
            (not (sbvlt 32 k i)))
   :hints (("Goal" :in-theory (e/d (logapp sbvlt bvlt logext <=-OF-BVCHOP-SAME-LINEAR)
                                   (TIMES-4-BECOMES-LOGAPP)))))
-
-(in-theory (disable PLUS-BVCAT-WITH-0)) ;move up
 
 ;; (thm
 ;;  (implies (and (integerp x)
@@ -827,17 +824,20 @@
                       (bvlt 32 x (- k2 k1)))))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))
 
+;gen
 (defthm bvlt-of-bvuminus-trim
-  (implies (unsigned-byte-p 31 z)
+  (implies (unsigned-byte-p 31 z) ; drop?
            (equal (BVLT 32 (BVUMINUS 31 x) z)
                   (BVLT 31 (BVUMINUS 31 x) z)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+;gen
 (defthm bvlt-of-bvuminus-tighten-arg2
   (equal (BVLT 31 z (BVUMINUS 32 x))
          (BVLT 31 z (BVUMINUS 31 x)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+;gen
 (defthm bvlt-of-bvuminus-tighten-arg1
   (equal (BVLT 31 (BVUMINUS 32 x) z)
          (BVLT 31 (BVUMINUS 31 x) z))

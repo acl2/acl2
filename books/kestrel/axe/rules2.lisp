@@ -71,8 +71,6 @@
 
 ;(local (in-theory (disable LIST::2SET))) ;move
 
-;(local (in-theory (disable FLOOR-MINUS-ERIC-BETTER)))
-
 ;; ;what about lambdas?
 ;; ;dup?
 ;; ;move to utilities?

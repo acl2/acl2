@@ -2785,7 +2785,6 @@
                                      x86)))
 
 (local (include-book "kestrel/bv/rules3" :dir :system))
-(local (in-theory (disable ACL2::PLUS-BVCAT-WITH-0))) ;todo
 
 (defthm write-to-segment-of-bvchop-helper
   (implies (and (equal (bvchop 32 eff-addr1)
@@ -4861,5 +4860,4 @@
            (equal (bvplus 32 k (esp x86))
                   (+ (- (- (expt 2 32) k)) ;gets computed
                      (esp x86))))
-  :hints (("Goal" ; :in-theory (disable acl2::plus-bvcat-with-0-alt) ; yuck
-           :use (:instance acl2::bvplus-of-constant-when-overflow (x (esp x86))))))
+  :hints (("Goal" :use (:instance acl2::bvplus-of-constant-when-overflow (x (esp x86))))))
