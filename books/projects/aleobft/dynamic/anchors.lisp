@@ -260,7 +260,9 @@
   (defret car-of-collect-all-anchors
     (equal (car all-anchors)
            (certificate-fix last-anchor))
-    :hints (("Goal" :in-theory (enable car-of-collect-anchors)))))
+    :hints (("Goal" :in-theory (enable car-of-collect-anchors))))
+
+  (in-theory (disable car-of-collect-all-anchors)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
