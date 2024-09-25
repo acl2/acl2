@@ -13,6 +13,7 @@
 
 (include-book "elections")
 (include-book "dags")
+(include-book "validator-states")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -207,3 +208,159 @@
              :in-theory (enable last))))
 
   (in-theory (disable collect-anchors-above-last-committed-round)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define collect-all-anchors ((last-anchor certificatep)
+                             (dag certificate-setp)
+                             (blockchain block-listp)
+                             (all-vals address-setp))
+  :guard (and (set::in last-anchor dag)
+              (evenp (certificate->round last-anchor))
+              (active-committee-at-round (certificate->round last-anchor)
+                                         blockchain
+                                         all-vals))
+  :returns (all-anchors certificate-listp)
+  :short "Collect all the anchors in a DAG, starting from a given anchor."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a specialization of @(tsee collect-anchors)
+     that does not stop at the last committed rounds,
+     but instead goes all the way to the start of the DAG.")
+   (xdoc::p
+    "The input @('last-anchor') is a certificate
+     (not necessarily an anchor,
+     although normally it is when this function is called)
+     at an even round.
+     We collect that anchor, and all the ones at preceding even rounds
+     recursively reachable from this certificate;
+     see @(tsee collect-anchors) for details of the process.")
+   (xdoc::p
+    "The guard requires that the active committee can be calculated
+     for the round of @('last-anchor').
+     This is a little more than needed
+     to satisfy the guard of @(tsee collect-anchors)
+     (which just need the committee for two rounds before that one),
+     but it is slightly simpler,
+     and in fact satisfied when we call @('collect-all-anchors')."))
+  (collect-anchors last-anchor
+                   (- (certificate->round last-anchor) 2)
+                   0
+                   dag
+                   blockchain
+                   all-vals)
+  :guard-hints
+  (("Goal"
+    :in-theory (enable evenp
+                       active-committee-at-earlier-round-when-at-later-round)))
+
+  ///
+
+  (defret car-of-collect-all-anchors
+    (equal (car all-anchors)
+           (certificate-fix last-anchor))
+    :hints (("Goal" :in-theory (enable car-of-collect-anchors)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define last-anchor ((vstate validator-statep) (all-vals address-setp))
+  :returns (anchor? certificate-optionp)
+  :short "Last committed anchor in a validator state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A validator state includes
+     a component with the latest committed round number
+     (or 0 if no rounds have been committed yet).
+     We return the certificate at that round
+     authored by the leader of that round,
+     if such a certificate is in the DAG;
+     if the certificate is absent, we return @('nil').
+     If no round has been committed yet, we also return @('nil').
+     The validator must be able to calculate
+     the active committee for the last committed round,
+     in order to calculate the leader;
+     we return @('nil') if the validator cannot calculate that committee."))
+  (b* (((validator-state vstate) vstate)
+       ((when (equal vstate.last 0)) nil)
+       (commtt (active-committee-at-round vstate.last
+                                          vstate.blockchain
+                                          all-vals))
+       ((unless commtt) nil)
+       (leader (leader-at-round vstate.last commtt)))
+    (get-certificate-with-author+round leader vstate.last vstate.dag))
+
+  ///
+
+  (defruled certificate->author-of-last-anchor
+    (implies (last-anchor vstate all-vals)
+             (equal (certificate->author (last-anchor vstate all-vals))
+                    (b* ((commtt (active-committee-at-round
+                                  (validator-state->last vstate)
+                                  (validator-state->blockchain vstate)
+                                  all-vals)))
+                      (leader-at-round (validator-state->last vstate) commtt)))))
+
+  (defruled certificate->round-of-last-anchor
+    (implies (last-anchor vstate all-vals)
+             (equal (certificate->round (last-anchor vstate all-vals))
+                    (validator-state->last vstate))))
+
+  (defruled last-anchor-in-dag
+    (implies (last-anchor vstate all-vals)
+             (set::in (last-anchor vstate all-vals)
+                      (validator-state->dag vstate)))
+    :enable get-certificate-with-author+round-element)
+
+  (defruled active-committee-at-round-when-last-anchor
+    (implies (last-anchor vstate all-vals)
+             (active-committee-at-round (validator-state->last vstate)
+                                        (validator-state->blockchain vstate)
+                                        all-vals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define validator-anchors ((vstate validator-statep) (all-vals address-setp))
+  :guard (and (evenp (validator-state->last vstate))
+              (or (equal (validator-state->last vstate) 0)
+                  (last-anchor vstate all-vals)))
+  :returns (anchors certificate-listp)
+  :short "Sequence of anchors committed by a validator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the last committed round is 0 (i.e. there is no last committed round),
+     no anchors have been committed, and we return @('nil').
+     Otherwise, we obtain the last committed anchor,
+     and we use @(tsee collect-all-anchors) starting from that one.
+     Thus, this function gives us the list of all anchors committed so far,
+     in reverse chronological order
+     (i.e. the latest one is the @(tsee car) of the list)."))
+  (b* (((validator-state vstate) vstate)
+       ((when (equal vstate.last 0)) nil)
+       (last-anchor (last-anchor vstate all-vals)))
+    (collect-all-anchors last-anchor vstate.dag vstate.blockchain all-vals))
+  :guard-hints
+  (("Goal" :in-theory (enable last-anchor-in-dag
+                              active-committee-at-round-when-last-anchor
+                              certificate->round-of-last-anchor)))
+
+  ///
+
+  (defruled validator-anchors-when-last-is-0
+    (implies (equal (validator-state->last vstate) 0)
+             (equal (validator-anchors vstate vals)
+                    nil)))
+
+  (defrule consp-of-validator-anchors-when-last-not-0
+    (implies (not (equal (validator-state->last vstate) 0))
+             (consp (validator-anchors vstate vals)))
+    :rule-classes :type-prescription)
+
+  (defruled car-of-validator-anchors
+    (implies (and (not (equal (validator-state->last vstate) 0))
+                  (last-anchor vstate vals))
+             (equal (car (validator-anchors vstate vals))
+                    (last-anchor vstate vals)))
+    :enable car-of-collect-all-anchors))
