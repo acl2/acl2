@@ -5429,6 +5429,93 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define unread-to-token ((token-index natp) (parstate parstatep))
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
+  :short "Unread tokens down to a specified index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We set @('tokens-read') (and adjust @('tokens-unread') accordingly)
+     to the @('token-index') input,
+     which must be less than or equal to the current @('tokens-read')
+     (otherwise it is an internal error).
+     This is used to backtrack during parsing,
+     with @('token-index') being a previously saved @('tokens-read')."))
+  (b* ((token-index (nfix token-index))
+       (tokens-read (parstate->tokens-read parstate))
+       ((unless (<= token-index tokens-read))
+        (raise "Internal error: ~
+                attempting to unread tokens down to index ~x0 ~
+                but the currently read tokens are ~x1."
+               token-index tokens-read)
+        (parstate-fix parstate))
+       (parstate (update-parstate->tokens-read token-index parstate))
+       (tokens-diff (- tokens-read token-index))
+       (parstate (update-parstate->tokens-unread
+                  (+ (parstate->tokens-unread parstate) tokens-diff)
+                  parstate))
+       (parstate (update-parstate->size
+                  (+ (parstate->size parstate) tokens-diff)
+                  parstate)))
+    parstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define reread-to-token ((token-index natp) (parstate parstatep))
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
+  :short "Re-read tokens up to a specified index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We set @('tokens-read') (and adjust @('tokens-unread') accordingly),
+     to the @('token-index') input,
+     which must be greater than or equal to the current @('tokens-read')
+     but not exceed @('tokens-read + tokens-unread')
+     (otherwise it is an internal error).
+     This is used when parsing fails after backtracking:
+     we use this to quickly get back to the situation in which we were
+     before backtracking;
+     this of course requires us to save @('tokens-read')
+     just before backtracking.
+     No tokens are returned by this function,
+     because we only use it after we have already parsed the tokens,
+     and after backtracking."))
+  (b* ((token-index (nfix token-index))
+       (tokens-read (parstate->tokens-read parstate))
+       (tokens-unread (parstate->tokens-unread parstate))
+       ((unless (>= token-index tokens-read))
+        (raise "Internal error: ~
+                attempting to re-read tokens up to index ~x0 ~
+                but the currently read tokens are ~x1."
+               token-index tokens-read)
+        (parstate-fix parstate))
+       ((unless (<= token-index (+ tokens-read tokens-unread)))
+        (raise "Internal error: ~
+                attempting to re-read tokens up to index ~x0 ~
+                but the currently available tokens (read and unread) are ~x1."
+               token-index (+ tokens-read tokens-unread))
+        (parstate-fix parstate))
+       (parstate (update-parstate->tokens-read token-index parstate))
+       (tokens-diff (- token-index tokens-read))
+       (parstate (update-parstate->tokens-unread
+                  (- tokens-unread tokens-diff)
+                  parstate))
+       ((unless (>= (parstate->size parstate) tokens-diff))
+        (raise "Internal error: ~
+                size ~x0 is less than decrement ~x1."
+               (parstate->size parstate) tokens-diff)
+        (parstate-fix parstate))
+       (parstate (update-parstate->size
+                  (- (parstate->size parstate) tokens-diff)
+                  parstate)))
+    parstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define read-punctuator ((punct stringp) (parstate parstatep))
   :returns (mv erp
                (span spanp)
@@ -8241,7 +8328,7 @@
              ;; we need to parse a possibly ambiguous expression or type name.
              ;; We first need to puth back token2, if not NIL.
              (parstate (if token2 (unread-token parstate) parstate)) ; (
-             (parstate (record-checkpoint parstate))
+             (checkpoint (parstate->tokens-read parstate))
              (psize (parsize parstate))
              ((erp expr/tyname & parstate) ; ( expr/tyname
               (parse-expression-or-type-name parstate))
@@ -8249,17 +8336,14 @@
               (reterr :impossible)))
           (amb?-expr/tyname-case
            expr/tyname
-           ;; If we have an ambiguous type name,
+           ;; If we have an unambiguous type name,
            ;; we may be parsing a proper cast expression
            ;; or a compound literal.
-           ;; But there is no need to backtrack now,
-           ;; so we clear the checkpoint saved earlier.
            ;; We parse the closed parenthesis
            ;; and we read another token to disambiguate
            ;; between a cast expression and a compound literal.
            :tyname ; ( tyname
-           (b* ((parstate (clear-checkpoint parstate))
-                ((erp & parstate) (read-punctuator ")" parstate)) ; ( tyname )
+           (b* (((erp & parstate) (read-punctuator ")" parstate)) ; ( tyname )
                 ((erp token2 & parstate) (read-token parstate)))
              (cond
               ;; If token2 is an open curly brace,
@@ -8292,7 +8376,7 @@
            ;; we also put back the open parenthesis,
            ;; and we attempt to parse a postfix expression.
            :expr ; ( expr
-           (b* ((parstate (backtrack-checkpoint parstate)) ; (
+           (b* ((parstate (unread-to-token checkpoint parstate)) ; (
                 ((unless (<= (parsize parstate) psize))
                  (raise "Internal error: ~
                          size ~x0 after backtracking exceeds ~
@@ -8301,7 +8385,7 @@
                  ;; Here we have (> (parsize parstate) psize),
                  ;; but we need to return a parser state
                  ;; no larger than the initial one,
-                 ;; so we just return the empty parser state.
+                 ;; so we just return the initial parser state.
                  ;; This is just logical: execution stops at the RAISE above.
                  (b* ((parstate (init-parstate nil nil parstate)))
                    (reterr t)))
@@ -8328,11 +8412,8 @@
               ;; the open parenthesis may start a cast expression,
               ;; so we parse a cast expression to cover both cases,
               ;; if there are no increment and decrement operators.
-              ;; In any case, we clear the checkpoint,
-              ;; since we no longer need to backtrack.
               ((token-punctuatorp token2 "(") ; ( expr/tyname ) [ops] (
-               (b* ((parstate (clear-checkpoint parstate))
-                    (parstate (unread-token parstate))) ; ( expr/tyname ) [ops]
+               (b* ((parstate (unread-token parstate))) ; ( expr/tyname ) [ops]
                  (cond
                   ;; If there are increment and decrement operators,
                   ;; we parse a postfix expression,
@@ -8384,11 +8465,8 @@
               ;; We parse a cast expression after the star,
               ;; which is the same kind of expected expression
               ;; whether the star is unary or binary.
-              ;; We also clear the checkpoint,
-              ;; since we no longer need to backtrack.
               ((token-punctuatorp token2 "*") ; ( expr/tyname ) [ops] *
-               (b* ((parstate (clear-checkpoint parstate))
-                    ;; ( expr/tyname ) [ops] * expr
+               (b* (;; ( expr/tyname ) [ops] * expr
                     ((erp expr last-span parstate)
                      (parse-cast-expression parstate)))
                  (retok (make-expr-cast/mul-ambig
@@ -8408,12 +8486,9 @@
               ;; But in that case we can adjust the expressions accordingly,
               ;; and it should be easier to adjust them like that
               ;; than if we had parsed a smaller cast expression.
-              ;; We also clear the checkpoint,
-              ;; since we no longer need to backtrack.
               ((or (token-punctuatorp token2 "+") ; ( expr/tyname ) [ops] +
                    (token-punctuatorp token2 "-")) ; ( expr/tyname ) [ops] -
-               (b* ((parstate (clear-checkpoint parstate))
-                    ;; ( expr/tyname ) [ops] +- expr
+               (b* (;; ( expr/tyname ) [ops] +- expr
                     ((erp expr last-span parstate)
                      (parse-multiplicative-expression parstate)))
                  (retok (make-expr-cast/add-or-cast/sub-ambig
@@ -8431,11 +8506,8 @@
               ;; But in that case we can adjust the expressions accordingly,
               ;; and it should be easier to adjust them like that
               ;; than if we had parsed a smaller cast expression.
-              ;; We also clear the checkpoint,
-              ;; since we no longer need to backtrack.
               ((token-punctuatorp token2 "&") ; ( expr/tyname ) [ops] &
-               (b* ((parstate (clear-checkpoint parstate))
-                    ((erp expr last-span parstate)
+               (b* (((erp expr last-span parstate)
                      ;; ( expr/tyname ) [ops] & expr
                      (parse-equality-expression parstate)))
                  (retok (make-expr-cast/and-ambig
@@ -8458,12 +8530,9 @@
               ;; we parse a unary expression,
               ;; we apply any increment and decrement operators to it,
               ;; and we form and return the cast expression.
-              ;; We also clear the checkpoint,
-              ;; since we no longer need to backtrack.
               ((token-unary-expression-start-p
                 token2) ; ( expr/tyname ) [ops] unaryexpr...
-               (b* ((parstate (clear-checkpoint parstate))
-                    (parstate (unread-token parstate)) ; ( expr/tyname ) [ops]
+               (b* ((parstate (unread-token parstate)) ; ( expr/tyname ) [ops]
                     ((erp expr last-span parstate) ; ( expr/tyname ) [ops] expr
                      (parse-unary-expression parstate))
                     (expr
@@ -8493,7 +8562,7 @@
               ;; or a postfix expression starting with
               ;; a primary parenthesized expression.
               (t ; ( expr/tyname ) [ops] other
-               (b* ((parstate (backtrack-checkpoint parstate)) ; (
+               (b* ((parstate (unread-to-token checkpoint parstate)) ; (
                     ((unless (<= (parsize parstate) psize))
                      (raise "Internal error: ~
                              size ~x0 after backtracking exceeds ~
