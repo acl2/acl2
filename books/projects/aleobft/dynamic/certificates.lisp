@@ -710,8 +710,8 @@
     :enable set::expensive-rules)
 
   (defruled certificate-sets-unequivocalp-when-emptyp
-    (implies (and (set::emptyp certs1)
-                  (set::emptyp certs2))
+    (implies (or (set::emptyp certs1)
+                 (set::emptyp certs2))
              (certificate-sets-unequivocalp certs1 certs2)))
 
   (defruled certificate-set-unequivocalp-when-same-sets-unequivocal
