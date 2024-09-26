@@ -12126,7 +12126,9 @@
        and some expressions are prefixes of type names
        (e.g. @('a') is a prefix of @('a*')).
        But all the places where either an expression or a type name is allowed
-       are enclosed by the parentheses in the C grammar.
+       are enclosed by the parentheses in the C grammar:
+       it is the case that this parsing function is called
+       always after an open parenthesis has just been parsed.
        We exploit this fact by checking, under some conditions,
        after parsing an expression and after parsing a type name,
        that the next token is a closed parenthesis;
@@ -12139,13 +12141,13 @@
        For now we insert a run-time check without @(tsee mbt),
        but we plan to revisit this to see if we can have an @(tsee mbt)."))
     (b* (((reterr) (irr-amb?-expr/tyname) (irr-span) parstate)
-         (parstate (record-checkpoint parstate)) ; we will backtrack here
+         (checkpoint (parstate->tokens-read parstate)) ; we will backtrack here
          (psize (parsize parstate))
          ((mv erp-expr expr span-expr parstate) (parse-expression parstate)))
       (if erp-expr
           ;; If the parsing of an expression fails,
           ;; we must have a type name.
-          (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+          (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                ((unless (<= (parsize parstate) psize))
                 (raise "Internal error: ~
                         size ~x0 after backtracking exceeds ~
@@ -12175,7 +12177,7 @@
               ;; So we backtrack
               ;; (which will also put back the closed parenthesis)
               ;; and we attempt to parse a type name.
-              (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+              (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                    ((unless (<= (parsize parstate) psize))
                     (raise "Internal error: ~
                             size ~x0 after backtracking exceeds ~
@@ -12189,8 +12191,6 @@
                     ;; execution stops at the RAISE above.
                     (b* ((parstate (init-parstate nil nil parstate)))
                       (reterr t)))
-                   (parstate
-                    (record-checkpoint parstate)) ; we may backtrack again
                    ((mv erp tyname span-tyname parstate)
                     (parse-type-name parstate)))
                 (if erp
@@ -12203,7 +12203,8 @@
                     ;; we may revisit this with
                     ;; a more elaborate backtracking scheme
                     ;; that lets us backtrack from backtracking.
-                    (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+                    (b* ((parstate
+                          (unread-to-token checkpoint parstate)) ; backtrack
                          ((unless (<= (parsize parstate) psize))
                           (raise "Internal error: ~
                                   size ~x0 after backtracking exceeds ~
@@ -12251,9 +12252,7 @@
                         ;; we have reached a closed parenthesis,
                         ;; and the parser reads only balanced parentheses.
                         ;; We put back the closed parenthesis.
-                        (b* ((parstate
-                              (clear-checkpoint parstate)) ; no backtracking
-                             ((unless (equal span-expr span-tyname))
+                        (b* (((unless (equal span-expr span-tyname))
                               (raise "Internal error:
                                       span ~x0 of expression ~x1 differs from ~
                                       span ~x2 of type name ~x3."
@@ -12273,7 +12272,7 @@
                       ;; which we have already parsed,
                       ;; but again we need to re-parse it.
                       (b* ((parstate
-                            (backtrack-checkpoint parstate)) ; backtrack
+                            (unread-to-token checkpoint parstate)) ; backtrack
                            ((unless (<= (parsize parstate) psize))
                             (raise "Internal error: ~
                                     size ~x0 after backtracking exceeds ~
@@ -12316,7 +12315,7 @@
             ;; So we must have a type name instead.
             ;; We backtrack, which also puts back the token just read if any,
             ;; and we attempt to parse a type name.
-            (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+            (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                  ((unless (<= (parsize parstate) psize))
                   (raise "Internal error: ~
                           size ~x0 after backtracking exceeds ~
