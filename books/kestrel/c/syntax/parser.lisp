@@ -70,6 +70,13 @@
            (natp (ash x y)))
   :prep-books ((include-book "kestrel/arithmetic-light/ash" :dir :system)))
 
+(defruledl update-nth-of-nth
+  (implies (< (nfix i) (len l))
+           (equal (update-nth i (nth i l) l)
+                  l))
+  :induct t
+  :enable (nth update-nth nfix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parser
@@ -654,29 +661,6 @@
      via the three stobj components
      @('tokens'), @('tokens-read'), and @('tokens-unread').")
    (xdoc::p
-    "To support backtracking,
-     we also keep track of zero or more checkpoints,
-     which indicate positions in the sequence of read tokens.
-     When a checkpoint is recorded,
-     the current length of the sequence is stored as a checkpoint,
-     by @(tsee cons)ing it to the @('checkpoints') list.
-     Later, the checkpoint can be simply cleared,
-     in which case it is simply removed from the list,
-     by replacing @('checkpoints') with its @(tsee cdr).
-     Alternatively, we can backtrack to the checkpoint,
-     which involves moving tokens from the sequence of read tokens
-     to the sequence of unread tokens,
-     until the sequence of read tokens has
-     the length of the checkpoint in question;
-     then the checkpoint is removed from @('checkpoints') as well.
-     That is, we have the ability to backtrack to earlier tokens,
-     without having to keep track of how many tokens we have read
-     since the potential point of backtrack.
-     The reason why @('checkpoints') is a list of natural numbers
-     and not just an optional natural number
-     is that we may need to support ``nested'' backtracking
-     while parsing something that may also backtrack.")
-   (xdoc::p
     "We include a boolean flag saying whether
      certain GCC extensions should be accepted or not.
      These GCC extensions are limited to the ones
@@ -781,8 +765,6 @@
                    :initially 0)
       (tokens-unread :type (integer 0 *)
                      :initially 0)
-      (checkpoints :type (satisfies nat-listp)
-                   :initially nil)
       (gcc :type (satisfies booleanp)
            :initially nil)
       (size :type (integer 0 *)
@@ -796,7 +778,6 @@
                  (tokensp raw-parstate->tokens-p)
                  (tokens-readp raw-parstate->tokens-read-p)
                  (tokens-unreadp raw-parstate->tokens-unread-p)
-                 (checkpointsp raw-parstate->checkpoints-p)
                  (gccp raw-parstate->gcc-p)
                  (sizep raw-parstate->size-p)
                  ;; field readers:
@@ -810,7 +791,6 @@
                  (tokensi raw-parstate->token)
                  (tokens-read raw-parstate->tokens-read)
                  (tokens-unread raw-parstate->tokens-unread)
-                 (checkpoints raw-parstate->checkpoints)
                  (gcc raw-parstate->gcc)
                  (size raw-parstate->size)
                  ;; field writers:
@@ -824,7 +804,6 @@
                  (update-tokensi raw-update-parstate->token)
                  (update-tokens-read raw-update-parstate->tokens-read)
                  (update-tokens-unread raw-update-parstate->tokens-unread)
-                 (update-checkpoints raw-update-parstate->checkpoints)
                  (update-gcc raw-update-parstate->gcc)
                  (update-size raw-update-parstate->size))))
 
@@ -997,14 +976,6 @@
          :exec (raw-parstate->tokens-unread parstate))
     :hooks (:fix))
 
-  (define parstate->checkpoints (parstate)
-    :returns (checkpoints nat-listp)
-    (mbe :logic (if (parstatep parstate)
-                    (raw-parstate->checkpoints parstate)
-                  nil)
-         :exec (raw-parstate->checkpoints parstate))
-    :hooks (:fix))
-
   (define parstate->gcc (parstate)
     :returns (gcc booleanp)
     (mbe :logic (if (parstatep parstate)
@@ -1119,13 +1090,6 @@
       (raw-update-parstate->tokens-unread (nfix tokens-unread) parstate))
     :hooks (:fix))
 
-  (define update-parstate->checkpoints ((checkpoints nat-listp) parstate)
-    :returns (parstate parstatep)
-    (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->checkpoints (nat-list-fix checkpoints)
-                                        parstate))
-    :hooks (:fix))
-
   (define update-parstate->gcc ((gcc booleanp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
@@ -1158,33 +1122,42 @@
              parstate-fix
              length))
 
-(defrule parstate->size-of-update-parstate->token
-  (equal (parstate->size (update-parstate->token i tokens parstate))
-         (parstate->size parstate))
-  :enable (parstate->size
-           update-parstate->token
-           parstatep
-           parstate-fix
-           length
-           update-nth-array
-           parstate->tokens-length
-           raw-parstate->tokens-p-of-update-nth))
+  (defrule parstate->size-of-update-parstate->chars-read
+    (equal (parstate->size (update-parstate->chars-read chars-read parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->chars-read
+             parstatep
+             parstate-fix
+             length))
+
+  (defrule parstate->size-of-update-parstate->chars-unread
+    (equal (parstate->size (update-parstate->chars-unread chars-unread
+                                                          parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->chars-unread
+             parstatep
+             parstate-fix
+             length))
+
+  (defrule parstate->size-of-update-parstate->token
+    (equal (parstate->size (update-parstate->token i token parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->token
+             parstatep
+             parstate-fix
+             length
+             update-nth-array
+             parstate->tokens-length
+             raw-parstate->tokens-p-of-update-nth))
 
   (defrule parstate->size-of-update-parstate->tokens-read
     (equal (parstate->size (update-parstate->tokens-read tokens-read parstate))
            (parstate->size parstate))
     :enable (parstate->size
              update-parstate->tokens-read
-             parstatep
-             parstate-fix
-             length))
-
-  (defrule parstate->size-of-update-parstate->checkpoints
-    (equal (parstate->size
-            (update-parstate->checkpoints checkpoints parstate))
-           (parstate->size parstate))
-    :enable (parstate->size
-             update-parstate->checkpoints
              parstatep
              parstate-fix
              length))
@@ -1197,6 +1170,32 @@
              parstatep
              parstate-fix
              length))
+
+  ;; writers over readers:
+
+  (defrule update-parstate->chars-read-of-parstate->chars-read
+    (equal (update-parstate->chars-read
+            (parstate->chars-read parstate) parstate)
+           (parstate-fix parstate))
+    :enable (update-parstate->chars-read
+             parstate->chars-read
+             parstatep
+             parstate-fix
+             nfix
+             length
+             update-nth-of-nth))
+
+  (defrule update-parstate->chars-read-of-parstate->chars-unread
+    (equal (update-parstate->chars-unread
+            (parstate->chars-unread parstate) parstate)
+           (parstate-fix parstate))
+    :enable (update-parstate->chars-unread
+             parstate->chars-unread
+             parstatep
+             parstate-fix
+             nfix
+             length
+             update-nth-of-nth))
 
   ;; keep recognizer disabled:
 
@@ -1217,8 +1216,7 @@
      the data to parse,
      no read characters or tokens,
      no unread characters or tokens,
-     the initial file position,
-     and no checkpoints.
+     and the initial file position.
      We also resize the arrays of characters and tokens
      to the number of data bytes,
      which is overkill but certainly sufficient
@@ -1235,7 +1233,6 @@
        (parstate (update-parstate->tokens-length (len data) parstate))
        (parstate (update-parstate->tokens-read 0 parstate))
        (parstate (update-parstate->tokens-unread 0 parstate))
-       (parstate (update-parstate->checkpoints nil parstate))
        (parstate (update-parstate->gcc gcc parstate))
        (parstate (update-parstate->size (len data) parstate)))
     parstate)
@@ -1274,7 +1271,6 @@
    (chars-unread char+position-list)
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
-   (checkpoints nat-list)
    (gcc bool))
   :prepwork ((local (in-theory (enable nfix)))))
 
@@ -1293,7 +1289,6 @@
                                           parstate)
    :tokens-unread (to-parstate$-tokens-unread (parstate->tokens-unread parstate)
                                               parstate)
-   :checkpoints (parstate->checkpoints parstate)
    :gcc (parstate->gcc parstate))
 
   :prepwork
@@ -2050,22 +2045,46 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This repeatedly calls @(tsee unread-char)
-     to unread zero or more characters.
-     The number of characters is specified by @('n').
-     This number may be 0."))
-  (b* (((when (zp n)) (parstate-fix parstate))
-       (parstate (unread-char parstate)))
-    (unread-chars (1- n) parstate))
+    "We move characters
+     from the sequence of read characters
+     to the sequence of unread characters
+     by incrementing the number of unread characters by @('n')
+     and decrementing the number of read characters by @('n').")
+   (xdoc::p
+    "It is an internal error if @('n') exceeds
+     the number of character read so far.
+     In this case, besides raising the error,
+     we increment @('chars-unread') so that
+     the theorem on the parser state size holds unconditionally."))
+  (b* ((n (nfix n))
+       (chars-read (parstate->chars-read parstate))
+       (chars-unread (parstate->chars-unread parstate))
+       (size (parstate->size parstate))
+       ((unless (<= n chars-read))
+        (raise "Internal error: ~
+                attempting to unread ~x0 characters ~
+                from ~x1 read characters."
+               n chars-read)
+        (b* ((parstate
+              (update-parstate->chars-unread (+ chars-unread n) parstate))
+             (parstate
+              (update-parstate->size (+ size n) parstate)))
+          parstate))
+       (new-chars-read (- chars-read n))
+       (new-chars-unread (+ chars-unread n))
+       (new-size (+ size n))
+       (parstate (update-parstate->chars-read new-chars-read parstate))
+       (parstate (update-parstate->chars-unread new-chars-unread parstate))
+       (parstate (update-parstate->size new-size parstate)))
+    parstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
 
   ///
 
   (defret parsize-of-unread-chars
     (equal (parsize new-parstate)
            (+ (parsize parstate) (nfix n)))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable nfix fix)))))
+    :hints (("Goal" :in-theory (enable parsize nfix fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5310,24 +5329,135 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This repeatedly calls @(tsee unread-token)
-     to unread zero or more tokens.
-     The number of tokens is specified by @('n').
-     This number may be 0."))
-  (b* (((when (zp n)) (parstate-fix parstate))
-       (parstate (unread-token parstate)))
-    (unread-tokens (1- n) parstate))
+    "We move tokens
+     from the sequence of read tokens
+     to the sequence of unread tokens
+     by incrementing the number of unread tokens by @('n')
+     and decrementing the number of read tokens by @('n').")
+   (xdoc::p
+    "It is an internal error if @('n') exceeds
+     the number of tokens read so far.
+     In this case, besides raising the error,
+     we increment @('tokens-unread') so that
+     the theorem on the parser state size holds unconditionally."))
+  (b* ((n (nfix n))
+       (tokens-read (parstate->tokens-read parstate))
+       (tokens-unread (parstate->tokens-unread parstate))
+       (size (parstate->size parstate))
+       ((unless (<= n tokens-read))
+        (raise "Internal error: ~
+                attempting to unread ~x0 tokens ~
+                from ~x1 read tokens."
+               n tokens-read)
+        (b* ((parstate
+              (update-parstate->tokens-unread (+ tokens-unread n) parstate))
+             (parstate
+              (update-parstate->size (+ size n) parstate)))
+          parstate))
+       (new-tokens-read (- tokens-read n))
+       (new-tokens-unread (+ tokens-unread n))
+       (new-size (+ size n))
+       (parstate (update-parstate->tokens-read new-tokens-read parstate))
+       (parstate (update-parstate->tokens-unread new-tokens-unread parstate))
+       (parstate (update-parstate->size new-size parstate)))
+    parstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
 
   ///
 
   (defret parsize-of-unread-tokens
     (equal (parsize new-parstate)
            (+ (parsize parstate) (nfix n)))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable nfix fix)))))
+    :hints (("Goal" :in-theory (enable parsize nfix fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unread-to-token ((token-index natp) (parstate parstatep))
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
+  :short "Unread tokens down to a specified index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We set @('tokens-read') (and adjust @('tokens-unread') accordingly)
+     to the @('token-index') input,
+     which must be less than or equal to the current @('tokens-read')
+     (otherwise it is an internal error).
+     This is used to backtrack during parsing,
+     with @('token-index') being a previously saved @('tokens-read')."))
+  (b* ((token-index (nfix token-index))
+       (tokens-read (parstate->tokens-read parstate))
+       ((unless (<= token-index tokens-read))
+        (raise "Internal error: ~
+                attempting to unread tokens down to index ~x0 ~
+                but the currently read tokens are ~x1."
+               token-index tokens-read)
+        (parstate-fix parstate))
+       (parstate (update-parstate->tokens-read token-index parstate))
+       (tokens-diff (- tokens-read token-index))
+       (parstate (update-parstate->tokens-unread
+                  (+ (parstate->tokens-unread parstate) tokens-diff)
+                  parstate))
+       (parstate (update-parstate->size
+                  (+ (parstate->size parstate) tokens-diff)
+                  parstate)))
+    parstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define reread-to-token ((token-index natp) (parstate parstatep))
+  :returns (new-parstate parstatep :hyp (parstatep parstate))
+  :short "Re-read tokens up to a specified index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We set @('tokens-read') (and adjust @('tokens-unread') accordingly),
+     to the @('token-index') input,
+     which must be greater than or equal to the current @('tokens-read')
+     but not exceed @('tokens-read + tokens-unread')
+     (otherwise it is an internal error).
+     This is used when parsing fails after backtracking:
+     we use this to quickly get back to the situation in which we were
+     before backtracking;
+     this of course requires us to save @('tokens-read')
+     just before backtracking.
+     No tokens are returned by this function,
+     because we only use it after we have already parsed the tokens,
+     and after backtracking."))
+  (b* ((token-index (nfix token-index))
+       (tokens-read (parstate->tokens-read parstate))
+       (tokens-unread (parstate->tokens-unread parstate))
+       ((unless (>= token-index tokens-read))
+        (raise "Internal error: ~
+                attempting to re-read tokens up to index ~x0 ~
+                but the currently read tokens are ~x1."
+               token-index tokens-read)
+        (parstate-fix parstate))
+       ((unless (<= token-index (+ tokens-read tokens-unread)))
+        (raise "Internal error: ~
+                attempting to re-read tokens up to index ~x0 ~
+                but the currently available tokens (read and unread) are ~x1."
+               token-index (+ tokens-read tokens-unread))
+        (parstate-fix parstate))
+       (parstate (update-parstate->tokens-read token-index parstate))
+       (tokens-diff (- token-index tokens-read))
+       (parstate (update-parstate->tokens-unread
+                  (- tokens-unread tokens-diff)
+                  parstate))
+       ((unless (>= (parstate->size parstate) tokens-diff))
+        (raise "Internal error: ~
+                size ~x0 is less than decrement ~x1."
+               (parstate->size parstate) tokens-diff)
+        (parstate-fix parstate))
+       (parstate (update-parstate->size
+                  (- (parstate->size parstate) tokens-diff)
+                  parstate)))
+    parstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-punctuator ((punct stringp) (parstate parstatep))
   :returns (mv erp
@@ -5470,105 +5600,6 @@
              (<= (parsize new-parstate)
                  (1- (parsize parstate))))
     :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define record-checkpoint ((parstate parstatep))
-  :returns (new-parstate parstatep :hyp (parstatep parstate))
-  :short "Record a checkpoint for possible backtracking."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As explained in @(tsee parstate),
-     we add (by @(tsee cons)ing) to the list of checkpoints
-     the current number of read tokens."))
-  (b* ((tokens-read (parstate->tokens-read parstate))
-       (checkpoints (parstate->checkpoints parstate))
-       (new-checkpoints (cons tokens-read checkpoints))
-       (parstate (update-parstate->checkpoints new-checkpoints parstate)))
-    parstate)
-
-  ///
-
-  (defret parsize-of-record-checkpoint
-    (equal (parsize new-parstate)
-           (parsize parstate))
-    :rule-classes (:rewrite :linear)
-    :hints (("Goal" :in-theory (enable parsize)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define clear-checkpoint ((parstate parstatep))
-  :returns (new-parstate parstatep :hyp (parstatep parstate))
-  :short "Clear the latest checkpoint."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called when the parser resolves that
-     there is no longer a need to backtrack
-     to the latest checkpoint.
-     This simply removes the latest checkpoint.")
-   (xdoc::p
-    "It is an internal error if this is called
-     when the list of checkpoints is empty.
-     If this happens, there is a bug in the parser."))
-  (b* ((checkpoints (parstate->checkpoints parstate))
-       ((unless (consp checkpoints))
-        (raise "Internal error: no checkpoint to clear.")
-        (parstate-fix parstate))
-       (new-checkpoints (cdr checkpoints))
-       (parstate (update-parstate->checkpoints new-checkpoints parstate)))
-    parstate)
-
-  ///
-
-  (defret parsize-of-clear-checkpoint
-    (equal (parsize new-parstate)
-           (parsize parstate))
-    :rule-classes (:rewrite :linear)
-    :hints (("Goal" :in-theory (enable parsize)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define backtrack-checkpoint ((parstate parstatep))
-  :returns (new-parstate parstatep :hyp (parstatep parstate))
-  :short "Backtrack to the latest checkpoint."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called when the parser needs to backtrack.
-     We calculate the number of tokens to unread and we unread them.
-     We also remove the checkpoint from the list of checkpoints,
-     since it no longer serves a purpose (we have backtracked to it).")
-   (xdoc::p
-    "It is an internal error if this is called
-     when the list of checkpoints is empty.
-     If this happens, there is a bug in the parser."))
-  (b* ((checkpoints (parstate->checkpoints parstate))
-       ((unless (consp checkpoints))
-        (raise "Internal error: no checkpoints to backtrack.")
-        (parstate-fix parstate))
-       (checkpoint (car checkpoints))
-       (new-chechpoints (cdr checkpoints))
-       (tokens-read (parstate->tokens-read parstate))
-       (tokens-to-unread (- tokens-read checkpoint))
-       ((unless (> tokens-to-unread 0))
-        (raise "Internal error: ~
-                the checkpoint ~x0 is not less than ~
-                the number ~x1 of tokens read so far."
-               checkpoint
-               tokens-read)
-        (parstate-fix parstate))
-       (parstate (unread-tokens tokens-to-unread parstate))
-       (parstate (update-parstate->checkpoints new-chechpoints parstate)))
-    parstate)
-  :prepwork
-  ((defrulel verify-guards-lemma
-     (implies (and (natp x)
-                   (natp y)
-                   (< 0 (+ x (- y))))
-              (natp (+ x (- y))))
-     :enable natp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -8141,7 +8172,7 @@
              ;; we need to parse a possibly ambiguous expression or type name.
              ;; We first need to puth back token2, if not NIL.
              (parstate (if token2 (unread-token parstate) parstate)) ; (
-             (parstate (record-checkpoint parstate))
+             (checkpoint (parstate->tokens-read parstate))
              (psize (parsize parstate))
              ((erp expr/tyname & parstate) ; ( expr/tyname
               (parse-expression-or-type-name parstate))
@@ -8149,17 +8180,14 @@
               (reterr :impossible)))
           (amb?-expr/tyname-case
            expr/tyname
-           ;; If we have an ambiguous type name,
+           ;; If we have an unambiguous type name,
            ;; we may be parsing a proper cast expression
            ;; or a compound literal.
-           ;; But there is no need to backtrack now,
-           ;; so we clear the checkpoint saved earlier.
            ;; We parse the closed parenthesis
            ;; and we read another token to disambiguate
            ;; between a cast expression and a compound literal.
            :tyname ; ( tyname
-           (b* ((parstate (clear-checkpoint parstate))
-                ((erp & parstate) (read-punctuator ")" parstate)) ; ( tyname )
+           (b* (((erp & parstate) (read-punctuator ")" parstate)) ; ( tyname )
                 ((erp token2 & parstate) (read-token parstate)))
              (cond
               ;; If token2 is an open curly brace,
@@ -8192,7 +8220,7 @@
            ;; we also put back the open parenthesis,
            ;; and we attempt to parse a postfix expression.
            :expr ; ( expr
-           (b* ((parstate (backtrack-checkpoint parstate)) ; (
+           (b* ((parstate (unread-to-token checkpoint parstate)) ; (
                 ((unless (<= (parsize parstate) psize))
                  (raise "Internal error: ~
                          size ~x0 after backtracking exceeds ~
@@ -8201,7 +8229,7 @@
                  ;; Here we have (> (parsize parstate) psize),
                  ;; but we need to return a parser state
                  ;; no larger than the initial one,
-                 ;; so we just return the empty parser state.
+                 ;; so we just return the initial parser state.
                  ;; This is just logical: execution stops at the RAISE above.
                  (b* ((parstate (init-parstate nil nil parstate)))
                    (reterr t)))
@@ -8228,11 +8256,8 @@
               ;; the open parenthesis may start a cast expression,
               ;; so we parse a cast expression to cover both cases,
               ;; if there are no increment and decrement operators.
-              ;; In any case, we clear the checkpoint,
-              ;; since we no longer need to backtrack.
               ((token-punctuatorp token2 "(") ; ( expr/tyname ) [ops] (
-               (b* ((parstate (clear-checkpoint parstate))
-                    (parstate (unread-token parstate))) ; ( expr/tyname ) [ops]
+               (b* ((parstate (unread-token parstate))) ; ( expr/tyname ) [ops]
                  (cond
                   ;; If there are increment and decrement operators,
                   ;; we parse a postfix expression,
@@ -8284,11 +8309,8 @@
               ;; We parse a cast expression after the star,
               ;; which is the same kind of expected expression
               ;; whether the star is unary or binary.
-              ;; We also clear the checkpoint,
-              ;; since we no longer need to backtrack.
               ((token-punctuatorp token2 "*") ; ( expr/tyname ) [ops] *
-               (b* ((parstate (clear-checkpoint parstate))
-                    ;; ( expr/tyname ) [ops] * expr
+               (b* (;; ( expr/tyname ) [ops] * expr
                     ((erp expr last-span parstate)
                      (parse-cast-expression parstate)))
                  (retok (make-expr-cast/mul-ambig
@@ -8308,12 +8330,9 @@
               ;; But in that case we can adjust the expressions accordingly,
               ;; and it should be easier to adjust them like that
               ;; than if we had parsed a smaller cast expression.
-              ;; We also clear the checkpoint,
-              ;; since we no longer need to backtrack.
               ((or (token-punctuatorp token2 "+") ; ( expr/tyname ) [ops] +
                    (token-punctuatorp token2 "-")) ; ( expr/tyname ) [ops] -
-               (b* ((parstate (clear-checkpoint parstate))
-                    ;; ( expr/tyname ) [ops] +- expr
+               (b* (;; ( expr/tyname ) [ops] +- expr
                     ((erp expr last-span parstate)
                      (parse-multiplicative-expression parstate)))
                  (retok (make-expr-cast/add-or-cast/sub-ambig
@@ -8331,11 +8350,8 @@
               ;; But in that case we can adjust the expressions accordingly,
               ;; and it should be easier to adjust them like that
               ;; than if we had parsed a smaller cast expression.
-              ;; We also clear the checkpoint,
-              ;; since we no longer need to backtrack.
               ((token-punctuatorp token2 "&") ; ( expr/tyname ) [ops] &
-               (b* ((parstate (clear-checkpoint parstate))
-                    ((erp expr last-span parstate)
+               (b* (((erp expr last-span parstate)
                      ;; ( expr/tyname ) [ops] & expr
                      (parse-equality-expression parstate)))
                  (retok (make-expr-cast/and-ambig
@@ -8358,12 +8374,9 @@
               ;; we parse a unary expression,
               ;; we apply any increment and decrement operators to it,
               ;; and we form and return the cast expression.
-              ;; We also clear the checkpoint,
-              ;; since we no longer need to backtrack.
               ((token-unary-expression-start-p
                 token2) ; ( expr/tyname ) [ops] unaryexpr...
-               (b* ((parstate (clear-checkpoint parstate))
-                    (parstate (unread-token parstate)) ; ( expr/tyname ) [ops]
+               (b* ((parstate (unread-token parstate)) ; ( expr/tyname ) [ops]
                     ((erp expr last-span parstate) ; ( expr/tyname ) [ops] expr
                      (parse-unary-expression parstate))
                     (expr
@@ -8393,7 +8406,7 @@
               ;; or a postfix expression starting with
               ;; a primary parenthesized expression.
               (t ; ( expr/tyname ) [ops] other
-               (b* ((parstate (backtrack-checkpoint parstate)) ; (
+               (b* ((parstate (unread-to-token checkpoint parstate)) ; (
                     ((unless (<= (parsize parstate) psize))
                      (raise "Internal error: ~
                              size ~x0 after backtracking exceeds ~
@@ -11957,7 +11970,9 @@
        and some expressions are prefixes of type names
        (e.g. @('a') is a prefix of @('a*')).
        But all the places where either an expression or a type name is allowed
-       are enclosed by the parentheses in the C grammar.
+       are enclosed by the parentheses in the C grammar:
+       it is the case that this parsing function is called
+       always after an open parenthesis has just been parsed.
        We exploit this fact by checking, under some conditions,
        after parsing an expression and after parsing a type name,
        that the next token is a closed parenthesis;
@@ -11970,13 +11985,13 @@
        For now we insert a run-time check without @(tsee mbt),
        but we plan to revisit this to see if we can have an @(tsee mbt)."))
     (b* (((reterr) (irr-amb?-expr/tyname) (irr-span) parstate)
-         (parstate (record-checkpoint parstate)) ; we will backtrack here
+         (checkpoint (parstate->tokens-read parstate)) ; we will backtrack here
          (psize (parsize parstate))
          ((mv erp-expr expr span-expr parstate) (parse-expression parstate)))
       (if erp-expr
           ;; If the parsing of an expression fails,
           ;; we must have a type name.
-          (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+          (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                ((unless (<= (parsize parstate) psize))
                 (raise "Internal error: ~
                         size ~x0 after backtracking exceeds ~
@@ -12006,7 +12021,12 @@
               ;; So we backtrack
               ;; (which will also put back the closed parenthesis)
               ;; and we attempt to parse a type name.
-              (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+              ;; But first, we save the checkpoint just after parsing
+              ;; the closing parenthesis after the expression,
+              ;; so that we can quickly go back here
+              ;; if the parsing of the type name fails.
+              (b* ((checkpoint-after-expr (parstate->tokens-read parstate))
+                   (parstate (unread-to-token checkpoint parstate)) ; backtrack
                    ((unless (<= (parsize parstate) psize))
                     (raise "Internal error: ~
                             size ~x0 after backtracking exceeds ~
@@ -12020,27 +12040,37 @@
                     ;; execution stops at the RAISE above.
                     (b* ((parstate (init-parstate nil nil parstate)))
                       (reterr t)))
-                   (parstate
-                    (record-checkpoint parstate)) ; we may backtrack again
                    ((mv erp tyname span-tyname parstate)
                     (parse-type-name parstate)))
                 (if erp
                     ;; If the parsing of a type name fails,
                     ;; we have an unambiguous expression, already parsed.
-                    ;; We re-parse it (which must succeed),
-                    ;; after backtracking,
-                    ;; so that we end up in the right parser state.
-                    ;; This re-parsing is not ideal:
-                    ;; we may revisit this with
-                    ;; a more elaborate backtracking scheme
-                    ;; that lets us backtrack from backtracking.
-                    (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-                         ((unless (<= (parsize parstate) psize))
+                    ;; So we re-read the already parsed tokens to get to
+                    ;; just past the closing parenthesis after the expression,
+                    ;; and we return the expression;
+                    ;; that is, we backtrack from the backtracking.
+                    ;; We first go back to the opening parenthesis,
+                    ;; and then go forward to the closing parenthesis;
+                    ;; perhaps it would be equivalent
+                    ;; to go directly to the closing parenthesis,
+                    ;; but going back and forth does not take much longer,
+                    ;; and it would be needed if
+                    ;; attempting to parse the type name
+                    ;; goes past the closing parenthesis after the expression,
+                    ;; which probably cannot, but we need to double-check.
+                    (b* ((parstate ; backtrack
+                          (unread-to-token checkpoint parstate))
+                         (parstate ; backtrack from backtracking
+                          (reread-to-token checkpoint-after-expr parstate))
+                         ;; Compared to the opening parenthesis,
+                         ;; if we go to the closing parenthesis,
+                         ;; we must be at least two tokens ahead.
+                         ((unless (<= (parsize parstate) (- psize 2)))
                           (raise "Internal error: ~
                                   size ~x0 after backtracking exceeds ~
                                   size ~x1 before backtracking."
                                  (parsize parstate) psize)
-                          ;; Here we have (> (parsize parstate) psize),
+                          ;; Here we have (> (parsize parstate) (- psize 2)),
                           ;; but we need to return a parser state
                           ;; no larger than the initial one,
                           ;; so we just return the empty parser state.
@@ -12048,26 +12078,9 @@
                           ;; execution stops at the RAISE above.
                           (b* ((parstate (init-parstate nil nil parstate)))
                             (reterr t)))
-                         ((mv erp expr1 span-expr1 parstate)
-                          (parse-expression parstate))
-                         ((when erp)
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives the error ~x1."
-                                 expr erp)
-                          (reterr t))
-                         ((unless (equal expr1 expr))
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives a different expression ~x1."
-                                 expr expr1)
-                          (reterr t))
-                         ((unless (equal span-expr1 span-expr))
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives a different span ~x1 from ~x2."
-                                 expr span-expr1 span-expr)
-                          (reterr t)))
+                         ;; Put back the closing parenthesis,
+                         ;; which is not part of the expression.
+                         (parstate (unread-token parstate)))
                       (retok (amb?-expr/tyname-expr expr) span-expr parstate))
                   ;; If the parsing of a type name succeeds,
                   ;; we read a token to see whether
@@ -12076,20 +12089,22 @@
                     (if (token-punctuatorp token ")")
                         ;; If a closed parenthesis follows,
                         ;; we have an ambiguous expression or type name.
-                        ;; We double-check that the two spans are the same;
+                        ;; We double-check that the expression and the type name
+                        ;; have the same spans;
                         ;; this is always expected to succeed,
                         ;; because we have checked that in both cases
                         ;; we have reached a closed parenthesis,
                         ;; and the parser reads only balanced parentheses.
                         ;; We put back the closed parenthesis.
-                        (b* ((parstate
-                              (clear-checkpoint parstate)) ; no backtracking
-                             ((unless (equal span-expr span-tyname))
+                        (b* (((unless (equal span-expr span-tyname))
                               (raise "Internal error:
                                       span ~x0 of expression ~x1 differs from ~
                                       span ~x2 of type name ~x3."
                                      span-expr expr span-tyname tyname)
                               (reterr t))
+                             ;; Put back the closing parenthesis,
+                             ;; which is not part of
+                             ;; the expression or type name.
                              (parstate (unread-token parstate)))
                           (retok (amb?-expr/tyname-ambig
                                   (make-amb-expr/tyname :expr expr
@@ -12102,15 +12117,20 @@
                       ;; a prefix of an expression.
                       ;; So we must have an expression instead,
                       ;; which we have already parsed,
-                      ;; but again we need to re-parse it.
-                      (b* ((parstate
-                            (backtrack-checkpoint parstate)) ; backtrack
-                           ((unless (<= (parsize parstate) psize))
+                      ;; so we backtrack from the backtracking as before.
+                      (b* ((parstate ; backtrack
+                            (unread-to-token checkpoint parstate))
+                           (parstate ; backtrack from backtracking
+                            (reread-to-token checkpoint-after-expr parstate))
+                           ;; Compared to the opening parenthesis,
+                           ;; if we go to the closing parenthesis,
+                           ;; we must be at least two tokens ahead.
+                           ((unless (<= (parsize parstate) (- psize 2)))
                             (raise "Internal error: ~
                                     size ~x0 after backtracking exceeds ~
                                     size ~x1 before backtracking."
                                    (parsize parstate) psize)
-                            ;; Here we have (> (parsize parstate) psize),
+                            ;; Here we have (> (parsize parstate) (- psize 2)),
                             ;; but we need to return a parser state
                             ;; no larger than the initial one,
                             ;; so we just return the empty parser state.
@@ -12118,26 +12138,9 @@
                             ;; execution stops at the RAISE above.
                             (b* ((parstate (init-parstate nil nil parstate)))
                               (reterr t)))
-                           ((mv erp expr1 span-expr1 parstate)
-                            (parse-expression parstate))
-                           ((when erp)
-                            (raise "Internal error: ~
-                                    parsing the same expression ~x0 twice ~
-                                    gives the error ~x1."
-                                   expr erp)
-                            (reterr t))
-                           ((unless (equal expr1 expr))
-                            (raise "Internal error: ~
-                                    parsing the same expression ~x0 twice ~
-                                    gives a different expression ~x1."
-                                   expr expr1)
-                            (reterr t))
-                           ((unless (equal span-expr1 span-expr))
-                            (raise "Internal error: ~
-                                    parsing the same expression ~x0 twice ~
-                                    gives a different span ~x1 from ~x2."
-                                   expr span-expr1 span-expr)
-                            (reterr t)))
+                           ;; Put back the closing parenthesis,
+                           ;; which is not part of the expression.
+                           (parstate (unread-token parstate)))
                         (retok (amb?-expr/tyname-expr expr)
                                span-expr
                                parstate))))))
@@ -12145,9 +12148,9 @@
             ;; we regard the parsing of the expression to have failed,
             ;; perhaps because we have only parsed a prefix of a type name.
             ;; So we must have a type name instead.
-            ;; We backtrack, which also puts back the token just read if any,
+            ;; We backtrack, which also puts back any tokens just read,
             ;; and we attempt to parse a type name.
-            (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+            (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                  ((unless (<= (parsize parstate) psize))
                   (raise "Internal error: ~
                           size ~x0 after backtracking exceeds ~
@@ -12208,14 +12211,14 @@
        otherwise we regard the parsing of the abstract declarator
        to have failed."))
     (b* (((reterr) (irr-amb?-declor/absdeclor) (irr-span) parstate)
-         (parstate (record-checkpoint parstate)) ; we will backtrack here
+         (checkpoint (parstate->tokens-read parstate)) ; we will backtrack here
          (psize (parsize parstate))
          ((mv erp-declor declor span-declor parstate)
           (parse-declarator parstate)))
       (if erp-declor
           ;; If the parsing of a declarator fails,
           ;; we must have an abstract declarator.
-          (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+          (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                ((unless (<= (parsize parstate) psize))
                 (raise "Internal error: ~
                         size ~x0 after backtracking exceeds ~
@@ -12234,7 +12237,12 @@
         ;; If the parsing of a declarator succeeds,
         ;; we must see whether the parsing of an abstract declarator
         ;; also succeeds, after backtracking.
-        (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+        ;; So we backtrack, but first we save the checkpoint
+        ;; just after parsing the declarator,
+        ;; so that we can quickly go back here
+        ;; if the parsing of the abstract declarator fails.
+        (b* ((checkpoint-after-declor (parstate->tokens-read parstate))
+             (parstate (unread-to-token checkpoint parstate)) ; backtrack
              ((unless (<= (parsize parstate) psize))
               (raise "Internal error: ~
                       size ~x0 after backtracking exceeds ~
@@ -12248,53 +12256,44 @@
               ;; execution stops at the RAISE above.
               (b* ((parstate (init-parstate nil nil parstate)))
                 (reterr t)))
-             (parstate (record-checkpoint parstate)) ; we may backtrack again
              ((mv erp absdeclor span-absdeclor parstate)
               (parse-abstract-declarator parstate)))
           (if erp
               ;; If the parsing of an abstract declarator fails,
               ;; we have an unambiguous declarator, already parsed.
-              ;; We re-parse it (which must succeed),
-              ;; after backtracking,
-              ;; so that we end up in the right parser state.
-              ;; This re-parsing is not ideal:
-              ;; we may revisit this with
-              ;; a more elaborate backtracking scheme
-              ;; that lets us backtrack from backtracking.
-              (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-                   ((unless (<= (parsize parstate) psize))
+              ;; So we re-read the already parsed tokens to get to
+              ;; just past the declarator,
+              ;; and we return the declarator;
+              ;; that is, we backtrack from the backtracking.
+              ;; We first go back to the start of the declarator,
+              ;; and then go forward to the end;
+              ;; perhaps it would be equivalent
+              ;; to go directly to the end of the declarator,
+              ;; but going back and forth does not take much longer,
+              ;; and it would be needed if
+              ;; attempting to parse the abstract declarator
+              ;; goes past the end of the declarator,
+              ;; which probably cannot, but we need to double-check.
+              (b* ((parstate ; backtrack
+                    (unread-to-token checkpoint parstate))
+                   (parstate ; backtrack from backtracking
+                    (reread-to-token checkpoint-after-declor parstate))
+                   ;; Compared to the start of the declarator,
+                   ;; if we go to the end of the declarator,
+                   ;; we must be at least one token ahead.
+                   ((unless (<= (parsize parstate) (1- psize)))
                     (raise "Internal error: ~
                             size ~x0 after backtracking exceeds ~
                             size ~x1 before backtracking."
                            (parsize parstate) psize)
-                    ;; Here we have (> (parsize parstate) psize),
+                    ;; Here we have (> (parsize parstate) (1- psize)),
                     ;; but we need to return a parser state
                     ;; no larger than the initial one,
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
                     (b* ((parstate (init-parstate nil nil parstate)))
-                      (reterr t)))
-                   ((mv erp declor1 span-declor1 parstate)
-                    (parse-declarator parstate))
-                   ((when erp)
-                    (raise "Internal error: ~
-                            parsing the same declarator ~x0 twice ~
-                            gives the error ~x1."
-                           declor erp)
-                    (reterr t))
-                   ((unless (equal declor1 declor))
-                    (raise "Internal error: ~
-                            parsing the same declarator ~x0 twice ~
-                            gives a different declarator ~x1."
-                           declor declor1)
-                    (reterr t))
-                   ((unless (equal span-declor1 span-declor))
-                    (raise "Internal error: ~
-                            parsing the same declarator ~x0 twice ~
-                            gives a different span ~x1 from ~x2."
-                           declor span-declor1 span-declor)
-                    (reterr t)))
+                      (reterr t))))
                 (retok (amb?-declor/absdeclor-declor declor)
                        span-declor
                        parstate))
@@ -12315,8 +12314,7 @@
                   ;; but we will revisit the issue if we observe failures
                   ;; (in which case we can handle things similarly to
                   ;; our handling in PARSE-EXPRESSION-OR-TYPE-NAME).
-                  (b* ((parstate (clear-checkpoint parstate)) ; no backtracking
-                       ((unless (equal span-absdeclor span-declor))
+                  (b* (((unless (equal span-absdeclor span-declor))
                         (raise "Internal error: ~
                                 span ~x0 of declarator ~x1 differs from ~
                                 span ~x2 of abstract declarator ~x3."
@@ -12331,43 +12329,29 @@
                 ;; If a comma or closed parenthesis does not follow,
                 ;; the abstract declarator must be a prefix of a declarator,
                 ;; so it means that we have an unambiguous declarator.
-                ;; We must backtrack and re-parse it;
-                ;; note that the backtracking
-                ;; also puts back the token just read.
-                (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-                     ((unless (<= (parsize parstate) psize))
+                ;; So we must have a declarator instead,
+                ;; which we have already parsed,
+                ;; so we backtrack from the backtracking as before.
+                (b* ((parstate ; backtrack
+                      (unread-to-token checkpoint parstate))
+                     (parstate ; backtrack from backtracking
+                      (reread-to-token checkpoint-after-declor parstate))
+                     ;; Compared to the start of the declarator,
+                     ;; if we go to the end of the declarator,
+                     ;; we must be at least one token ahead.
+                     ((unless (<= (parsize parstate) (1- psize)))
                       (raise "Internal error: ~
                               size ~x0 after backtracking exceeds ~
                               size ~x1 before backtracking."
                              (parsize parstate) psize)
-                      ;; Here we have (> (parsize parstate) psize),
+                      ;; Here we have (> (parsize parstate) (1- psize)),
                       ;; but we need to return a parser state
                       ;; no larger than the initial one,
                       ;; so we just return the empty parser state.
                       ;; This is just logical:
                       ;; execution stops at the RAISE above.
                       (b* ((parstate (init-parstate nil nil parstate)))
-                        (reterr t)))
-                     ((mv erp declor1 span-declor1 parstate)
-                      (parse-declarator parstate))
-                     ((when erp)
-                      (raise "Internal error: ~
-                              parsing the same declarator ~x0 twice ~
-                              gives the error ~x1."
-                             declor erp)
-                      (reterr t))
-                     ((unless (equal declor1 declor))
-                      (raise "Internal error: ~
-                              parsing the same declarator ~x0 twice ~
-                              gives a different declarator ~x1."
-                             declor declor1)
-                      (reterr t))
-                     ((unless (equal span-declor1 span-declor))
-                      (raise "Internal error: ~
-                              parsing the same declarator ~x0 twice ~
-                              gives a different span ~x1 from ~x2."
-                             declor span-declor1 span-declor)
-                      (reterr t)))
+                        (reterr t))))
                   (retok (amb?-declor/absdeclor-declor declor)
                          span-declor
                          parstate))))))))
@@ -12843,13 +12827,13 @@
        which we return as such.
        If none succeeds, it is an error."))
     (b* (((reterr) (irr-amb?-decl/stmt) (irr-span) parstate)
-         (parstate (record-checkpoint parstate)) ; we will backtrack here
+         (checkpoint (parstate->tokens-read parstate)) ; we will backtrack here
          (psize (parsize parstate))
          ((mv erp expr span-expr parstate) (parse-expression parstate)))
       (if erp
           ;; If the parsing of an expression fails,
           ;; we must have a declaration.
-          (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+          (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                ((unless (<= (parsize parstate) psize))
                 (raise "Internal error: ~
                         size ~x0 after backtracking exceeds ~
@@ -12875,8 +12859,14 @@
               ;; If a semicolon follows,
               ;; the parsing of an expression statement has succeeded,
               ;; but we must see whether we can also parse a declaration.
-              ;; So we backtrack and we attempt to parse a declaration.
-              (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+              ;; So we backtrack (which will also put back the semicolon)
+              ;; and we attempt to parse a declaration.
+              ;; But first, we save the checkpoint just after parsing
+              ;; the semicolon after the expression,
+              ;; so that we can quickly go back here
+              ;; if the parsing of the declartion fails.
+              (b* ((checkpoint-after-expr (parstate->tokens-read parstate))
+                   (parstate (unread-to-token checkpoint parstate)) ; backtrack
                    ((unless (<= (parsize parstate) psize))
                     (raise "Internal error: ~
                             size ~x0 after backtracking exceeds ~
@@ -12890,66 +12880,44 @@
                     ;; execution stops at the RAISE above.
                     (b* ((parstate (init-parstate nil nil parstate)))
                       (reterr t)))
-                   (parstate
-                    (record-checkpoint parstate)) ; we may backtrack again
                    ((mv erp decl span-decl parstate)
                     (parse-declaration parstate)))
                 (if erp
                     ;; If the parsing of a declaration fails,
                     ;; we have an expression statement.
-                    ;; We need to backtrack and re-parse it right now,
-                    ;; but we will look into improving this inefficiency.
-                    (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-                         ((unless (<= (parsize parstate) psize))
+                    ;; So we re-read the already parsed tokens to get to
+                    ;; just past the semicolon after the expression,
+                    ;; and we return the expression;
+                    ;; that is, we backtrack from the backtracking.
+                    ;; We first go back to the start of the expression,
+                    ;; and then go forward to the semicolon;
+                    ;; perhaps it would be equivalent
+                    ;; to go directly to the semicolon,
+                    ;; but going back and forth does not take much longer,
+                    ;; and it would be needed if
+                    ;; attempting to parse the type name
+                    ;; goes past the semicolon after the expression,
+                    ;; which probably cannot, but we need to double-check.
+                    (b* ((parstate ; backtrack
+                          (unread-to-token checkpoint parstate))
+                         (parstate ; backtrack from backtracking
+                          (reread-to-token checkpoint-after-expr parstate))
+                         ;; Compared to the start of the expression,
+                         ;; if we go to the semicolon,
+                         ;; we must be at least two tokens ahead.
+                         ((unless (<= (parsize parstate) (- psize 2)))
                           (raise "Internal error: ~
                                   size ~x0 after backtracking exceeds ~
                                   size ~x1 before backtracking."
                                  (parsize parstate) psize)
-                          ;; Here we have (> (parsize parstate) psize),
+                          ;; Here we have (> (parsize parstate) (- psize 2)),
                           ;; but we need to return a parser state
                           ;; no larger than the initial one,
                           ;; so we just return the empty parser state.
                           ;; This is just logical:
                           ;; execution stops at the RAISE above.
                           (b* ((parstate (init-parstate nil nil parstate)))
-                            (reterr t)))
-                         ((mv erp expr1 span-expr1 parstate)
-                          (parse-expression parstate))
-                         ((when erp)
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives the error ~x1."
-                                 expr erp)
-                          (reterr t))
-                         ((unless (equal expr1 expr))
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives a different expression ~x1."
-                                 expr expr1)
-                          (reterr t))
-                         ((unless (equal span-expr1 span-expr))
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives a different span ~x1 from ~x2."
-                                 expr span-expr1 span-expr)
-                          (reterr t))
-                         ((mv erp span-semicolon1 parstate)
-                          (read-punctuator ";" parstate))
-                         ((when erp)
-                          (raise "Internal error: ~
-                                  parsing the semicolon twice ~
-                                  after the same expression ~x0 ~
-                                  gives the error ~x1."
-                                 expr erp)
-                          (reterr t))
-                         ((unless (equal span-semicolon1 span-semicolon))
-                          (raise "Internal error: ~
-                                  parsing the same semicolon twice ~
-                                  after the same expression ~x0 ~
-                                  gives a span ~x1 different from ~
-                                  the span ~x2 from the previous time."
-                                 expr span-semicolon1 span-semicolon)
-                          (reterr t)))
+                            (reterr t))))
                       (retok (amb?-decl/stmt-stmt expr)
                              (span-join span-expr span-semicolon)
                              parstate))
@@ -12957,8 +12925,7 @@
                   ;; we return an ambiguous declaration or statement.
                   ;; We double-check that the spans are the same,
                   ;; which is always expected to succeed.
-                  (b* ((parstate (clear-checkpoint parstate)) ; no backtracking
-                       ((unless (equal span-stmt span-decl))
+                  (b* (((unless (equal span-stmt span-decl))
                         (raise "Internal error:
                                 span ~x0 of expression statement ~x1 ~
                                 differs from ~
@@ -12973,7 +12940,7 @@
             ;; If a semicolon does not follow the expression,
             ;; we cannot have an expression statement.
             ;; Thus, we backtrack and proceed to parse a declaration.
-            (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+            (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                  ((unless (<= (parsize parstate) psize))
                   (raise "Internal error: ~
                           size ~x0 after backtracking exceeds ~

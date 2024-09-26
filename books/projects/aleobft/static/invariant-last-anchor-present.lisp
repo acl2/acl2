@@ -29,7 +29,7 @@
   (xdoc::topstring
    (xdoc::p
     "Initially the last committed round is 0, so the invariant trivially holds.
-     THe only kind of event that modifies the last committed round
+     The only kind of event that modifies the last committed round
      is @('commit-anchors'), which is conditioned under the fact that
      there is a certificate anchor for the new last committed round;
      see @(tsee commit-anchors-possiblep).
