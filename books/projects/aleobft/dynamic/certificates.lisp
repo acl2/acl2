@@ -569,7 +569,14 @@
     "This is an invariant on DAGs,
      and in fact on all the certificates in the system,
      enforced by the protocol under suitable fault tolerance conditions.
-     Here we formulate the invariant."))
+     Here we formulate the invariant.")
+   (xdoc::p
+    "The rule @('certificate-set-unequivocalp-of-insert')
+     is useful to prove the preservation of non-equivocation
+     when a set of certificates is extended.
+     Either the added certificate is already in the initial set,
+     or the initial set has no certificate with
+     the added certificate's author and round."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 certs)
                         (set::in cert2 certs)
@@ -666,7 +673,26 @@
      one set may well have multiple different certificates
      with the same author and round,
      so long as that combination of author and round
-     does not appear in the other set."))
+     does not appear in the other set.")
+   (xdoc::p
+    "The rule @('certificate-sets-unequivocalp-of-insert')
+     is useful to prove the preservation of mutual non-equivocation
+     when one of the two sets of certificates is extended.
+     This is similar to @('certificate-set-unequivocalp-of-insert')
+     in @(tsee certificate-set-unequivocalp),
+     but more complicated due to the presence of two sets.
+     Either the new certificate is already in the set being extended,
+     or it is in the set not being extended,
+     or the set not being extended has no certificate with
+     the added certificate's author and round.
+     For the second of these three cases,
+     we need the additional hypothesis that
+     the set not being extended is unequivocal.
+     Otherwise, consider the situation of an empty first,
+     a second set consisting of two equivocal certificates,
+     and the addition of one of these two certificates to the first set:
+     the resulting pair of sets is equivocal;
+     but the non-equivocation of the second set prevents that."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 certs1)
                         (set::in cert2 certs2)
@@ -674,7 +700,123 @@
                                (certificate->author cert2))
                         (equal (certificate->round cert1)
                                (certificate->round cert2)))
-                   (equal cert1 cert2))))
+                   (equal cert1 cert2)))
+
+  ///
+
+  (defruled certificate-sets-unequivocalp-commutative
+    (equal (certificate-sets-unequivocalp certs1 certs2)
+           (certificate-sets-unequivocalp certs2 certs1))
+    :use (certificate-sets-unequivocalp-commutative-lemma
+          (:instance certificate-sets-unequivocalp-commutative-lemma
+                     (certs1 certs2) (certs2 certs1)))
+    :prep-lemmas
+    ((defruled certificate-sets-unequivocalp-commutative-lemma
+       (implies (certificate-sets-unequivocalp certs1 certs2)
+                (certificate-sets-unequivocalp certs2 certs1))
+       :use
+       (:instance
+        certificate-sets-unequivocalp-necc
+        (cert1
+         (mv-nth 1 (certificate-sets-unequivocalp-witness certs2 certs1)))
+        (cert2
+         (mv-nth 0 (certificate-sets-unequivocalp-witness certs2 certs1)))))))
+
+  (defruled certificate-sets-unequivocalp-when-subsets
+    (implies (and (certificate-sets-unequivocalp certs1 certs2)
+                  (set::subset certs01 certs1)
+                  (set::subset certs02 certs2))
+             (certificate-sets-unequivocalp certs01 certs02))
+    :use (:instance
+          certificate-sets-unequivocalp-necc
+          (cert1
+           (mv-nth 0 (certificate-sets-unequivocalp-witness certs01 certs02)))
+          (cert2
+           (mv-nth 1 (certificate-sets-unequivocalp-witness certs01 certs02))))
+    :enable set::expensive-rules)
+
+  (defruled certificate-sets-unequivocalp-when-emptyp
+    (implies (or (set::emptyp certs1)
+                 (set::emptyp certs2))
+             (certificate-sets-unequivocalp certs1 certs2)))
+
+  (defruled certificate-set-unequivocalp-when-same-sets-unequivocal
+    (implies (certificate-sets-unequivocalp certs certs)
+             (certificate-set-unequivocalp certs))
+    :enable certificate-set-unequivocalp
+    :disable certificate-sets-unequivocalp
+    :use (:instance certificate-sets-unequivocalp-necc
+                    (cert1
+                     (mv-nth 0 (certificate-set-unequivocalp-witness certs)))
+                    (cert2
+                     (mv-nth 1 (certificate-set-unequivocalp-witness certs)))
+                    (certs1 certs)
+                    (certs2 certs)))
+
+  (defruled certificate-sets-unequivocalp-of-insert
+    (implies (and (certificate-setp certs2)
+                  (certificate-set-unequivocalp certs2))
+             (equal (certificate-sets-unequivocalp (set::insert cert certs1)
+                                                   certs2)
+                    (and (certificate-sets-unequivocalp certs1 certs2)
+                         (or (set::in cert certs1)
+                             (set::in cert certs2)
+                             (not (get-certificate-with-author+round
+                                   (certificate->author cert)
+                                   (certificate->round cert)
+                                   certs2))))))
+    :use (if-part only-if-part)
+    :enable certificate-sets-unequivocalp-when-subsets
+
+    :prep-lemmas
+
+    ((defruled if-part
+       (implies (and (certificate-sets-unequivocalp certs1 certs2)
+                     (certificate-set-unequivocalp certs2)
+                     (or (set::in cert certs1)
+                         (set::in cert certs2)
+                         (not (get-certificate-with-author+round
+                               (certificate->author cert)
+                               (certificate->round cert)
+                               certs2))))
+                (certificate-sets-unequivocalp
+                 (set::insert cert certs1) certs2))
+       :use
+       ((:instance
+         certificate-sets-unequivocalp-necc
+         (cert1 (mv-nth 0 (certificate-sets-unequivocalp-witness
+                           (insert cert certs1)
+                           certs2)))
+         (cert2 (mv-nth 1 (certificate-sets-unequivocalp-witness
+                           (insert cert certs1)
+                           certs2))))
+        (:instance
+         certificate-set-unequivocalp-necc
+         (cert1 cert)
+         (cert2 (mv-nth 1 (certificate-sets-unequivocalp-witness
+                           (insert cert certs1)
+                           certs2)))
+         (certs certs2)))
+       :enable get-certificate-with-author+round-when-element)
+
+     (defruled only-if-part
+       (implies (and (certificate-setp certs2)
+                     (certificate-sets-unequivocalp
+                      (set::insert cert certs1) certs2))
+                (or (set::in cert certs1)
+                    (set::in cert certs2)
+                    (not (get-certificate-with-author+round
+                          (certificate->author cert)
+                          (certificate->round cert)
+                          certs2))))
+       :use (:instance certificate-sets-unequivocalp-necc
+                       (cert1 cert)
+                       (cert2 (get-certificate-with-author+round
+                               (certificate->author cert)
+                               (certificate->round cert)
+                               certs2))
+                       (certs1 (set::insert cert certs1)))
+       :enable get-certificate-with-author+round-element))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

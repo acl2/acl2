@@ -207,3 +207,58 @@
              :in-theory (enable last))))
 
   (in-theory (disable collect-anchors-above-last-committed-round)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define collect-all-anchors ((last-anchor certificatep)
+                             (dag certificate-setp)
+                             (blockchain block-listp)
+                             (all-vals address-setp))
+  :guard (and (set::in last-anchor dag)
+              (evenp (certificate->round last-anchor))
+              (active-committee-at-round (certificate->round last-anchor)
+                                         blockchain
+                                         all-vals))
+  :returns (all-anchors certificate-listp)
+  :short "Collect all the anchors in a DAG, starting from a given anchor."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a specialization of @(tsee collect-anchors)
+     that does not stop at the last committed rounds,
+     but instead goes all the way to the start of the DAG.")
+   (xdoc::p
+    "The input @('last-anchor') is a certificate
+     (not necessarily an anchor,
+     although normally it is when this function is called)
+     at an even round.
+     We collect that anchor, and all the ones at preceding even rounds
+     recursively reachable from this certificate;
+     see @(tsee collect-anchors) for details of the process.")
+   (xdoc::p
+    "The guard requires that the active committee can be calculated
+     for the round of @('last-anchor').
+     This is a little more than needed
+     to satisfy the guard of @(tsee collect-anchors)
+     (which just need the committee for two rounds before that one),
+     but it is slightly simpler,
+     and in fact satisfied when we call @('collect-all-anchors')."))
+  (collect-anchors last-anchor
+                   (- (certificate->round last-anchor) 2)
+                   0
+                   dag
+                   blockchain
+                   all-vals)
+  :guard-hints
+  (("Goal"
+    :in-theory (enable evenp
+                       active-committee-at-earlier-round-when-at-later-round)))
+
+  ///
+
+  (defret car-of-collect-all-anchors
+    (equal (car all-anchors)
+           (certificate-fix last-anchor))
+    :hints (("Goal" :in-theory (enable car-of-collect-anchors))))
+
+  (in-theory (disable car-of-collect-all-anchors)))
