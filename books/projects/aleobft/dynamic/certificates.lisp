@@ -569,7 +569,14 @@
     "This is an invariant on DAGs,
      and in fact on all the certificates in the system,
      enforced by the protocol under suitable fault tolerance conditions.
-     Here we formulate the invariant."))
+     Here we formulate the invariant.")
+   (xdoc::p
+    "The rule @('certificate-set-unequivocalp-of-insert')
+     is useful to prove the preservation of non-equivocation
+     when a set of certificates is extended.
+     Either the added certificate is already in the initial set,
+     or the initial set has no certificate with
+     the added certificate's author and round."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 certs)
                         (set::in cert2 certs)
@@ -666,7 +673,26 @@
      one set may well have multiple different certificates
      with the same author and round,
      so long as that combination of author and round
-     does not appear in the other set."))
+     does not appear in the other set.")
+   (xdoc::p
+    "The rule @('certificate-sets-unequivocalp-of-insert')
+     is useful to prove the preservation of mutual non-equivocation
+     when one of the two sets of certificates is extended.
+     This is similar to @('certificate-set-unequivocalp-of-insert')
+     in @(tsee certificate-set-unequivocalp),
+     but more complicated due to the presence of two sets.
+     Either the new certificate is already in the set being extended,
+     or it is in the set not being extended,
+     or the set not being extended has no certificate with
+     the added certificate's author and round.
+     For the second of these three cases,
+     we need the additional hypothesis that
+     the set not being extended is unequivocal.
+     Otherwise, consider the situation of an empty first,
+     a second set consisting of two equivocal certificates,
+     and the addition of one of these two certificates to the first set:
+     the resulting pair of sets is equivocal;
+     but the non-equivocation of the second set prevents that."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 certs1)
                         (set::in cert2 certs2)
