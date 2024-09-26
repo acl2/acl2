@@ -12983,13 +12983,13 @@
        which we return as such.
        If none succeeds, it is an error."))
     (b* (((reterr) (irr-amb?-decl/stmt) (irr-span) parstate)
-         (parstate (record-checkpoint parstate)) ; we will backtrack here
+         (checkpoint (parstate->tokens-read parstate)) ; we will backtrack here
          (psize (parsize parstate))
          ((mv erp expr span-expr parstate) (parse-expression parstate)))
       (if erp
           ;; If the parsing of an expression fails,
           ;; we must have a declaration.
-          (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+          (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                ((unless (<= (parsize parstate) psize))
                 (raise "Internal error: ~
                         size ~x0 after backtracking exceeds ~
@@ -13015,8 +13015,14 @@
               ;; If a semicolon follows,
               ;; the parsing of an expression statement has succeeded,
               ;; but we must see whether we can also parse a declaration.
-              ;; So we backtrack and we attempt to parse a declaration.
-              (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+              ;; So we backtrack (which will also put back the semicolon)
+              ;; and we attempt to parse a declaration.
+              ;; But first, we save the checkpoint just after parsing
+              ;; the semicolon after the expression,
+              ;; so that we can quickly go back here
+              ;; if the parsing of the declartion fails.
+              (b* ((checkpoint-after-expr (parstate->tokens-read parstate))
+                   (parstate (unread-to-token checkpoint parstate)) ; backtrack
                    ((unless (<= (parsize parstate) psize))
                     (raise "Internal error: ~
                             size ~x0 after backtracking exceeds ~
@@ -13030,66 +13036,44 @@
                     ;; execution stops at the RAISE above.
                     (b* ((parstate (init-parstate nil nil parstate)))
                       (reterr t)))
-                   (parstate
-                    (record-checkpoint parstate)) ; we may backtrack again
                    ((mv erp decl span-decl parstate)
                     (parse-declaration parstate)))
                 (if erp
                     ;; If the parsing of a declaration fails,
                     ;; we have an expression statement.
-                    ;; We need to backtrack and re-parse it right now,
-                    ;; but we will look into improving this inefficiency.
-                    (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-                         ((unless (<= (parsize parstate) psize))
+                    ;; So we re-read the already parsed tokens to get to
+                    ;; just past the semicolon after the expression,
+                    ;; and we return the expression;
+                    ;; that is, we backtrack from the backtracking.
+                    ;; We first go back to the start of the expression,
+                    ;; and then go forward to the semicolon;
+                    ;; perhaps it would be equivalent
+                    ;; to go directly to the semicolon,
+                    ;; but going back and forth does not take much longer,
+                    ;; and it would be needed if
+                    ;; attempting to parse the type name
+                    ;; goes past the semicolon after the expression,
+                    ;; which probably cannot, but we need to double-check.
+                    (b* ((parstate ; backtrack
+                          (unread-to-token checkpoint parstate))
+                         (parstate ; backtrack from backtracking
+                          (reread-to-token checkpoint-after-expr parstate))
+                         ;; Compared to the start of the expression,
+                         ;; if we go to the semicolon,
+                         ;; we must be at least two tokens ahead.
+                         ((unless (<= (parsize parstate) (- psize 2)))
                           (raise "Internal error: ~
                                   size ~x0 after backtracking exceeds ~
                                   size ~x1 before backtracking."
                                  (parsize parstate) psize)
-                          ;; Here we have (> (parsize parstate) psize),
+                          ;; Here we have (> (parsize parstate) (- psize 2)),
                           ;; but we need to return a parser state
                           ;; no larger than the initial one,
                           ;; so we just return the empty parser state.
                           ;; This is just logical:
                           ;; execution stops at the RAISE above.
                           (b* ((parstate (init-parstate nil nil parstate)))
-                            (reterr t)))
-                         ((mv erp expr1 span-expr1 parstate)
-                          (parse-expression parstate))
-                         ((when erp)
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives the error ~x1."
-                                 expr erp)
-                          (reterr t))
-                         ((unless (equal expr1 expr))
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives a different expression ~x1."
-                                 expr expr1)
-                          (reterr t))
-                         ((unless (equal span-expr1 span-expr))
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives a different span ~x1 from ~x2."
-                                 expr span-expr1 span-expr)
-                          (reterr t))
-                         ((mv erp span-semicolon1 parstate)
-                          (read-punctuator ";" parstate))
-                         ((when erp)
-                          (raise "Internal error: ~
-                                  parsing the semicolon twice ~
-                                  after the same expression ~x0 ~
-                                  gives the error ~x1."
-                                 expr erp)
-                          (reterr t))
-                         ((unless (equal span-semicolon1 span-semicolon))
-                          (raise "Internal error: ~
-                                  parsing the same semicolon twice ~
-                                  after the same expression ~x0 ~
-                                  gives a span ~x1 different from ~
-                                  the span ~x2 from the previous time."
-                                 expr span-semicolon1 span-semicolon)
-                          (reterr t)))
+                            (reterr t))))
                       (retok (amb?-decl/stmt-stmt expr)
                              (span-join span-expr span-semicolon)
                              parstate))
@@ -13097,8 +13081,7 @@
                   ;; we return an ambiguous declaration or statement.
                   ;; We double-check that the spans are the same,
                   ;; which is always expected to succeed.
-                  (b* ((parstate (clear-checkpoint parstate)) ; no backtracking
-                       ((unless (equal span-stmt span-decl))
+                  (b* (((unless (equal span-stmt span-decl))
                         (raise "Internal error:
                                 span ~x0 of expression statement ~x1 ~
                                 differs from ~
@@ -13113,7 +13096,7 @@
             ;; If a semicolon does not follow the expression,
             ;; we cannot have an expression statement.
             ;; Thus, we backtrack and proceed to parse a declaration.
-            (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+            (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                  ((unless (<= (parsize parstate) psize))
                   (raise "Internal error: ~
                           size ~x0 after backtracking exceeds ~
