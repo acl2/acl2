@@ -661,29 +661,6 @@
      via the three stobj components
      @('tokens'), @('tokens-read'), and @('tokens-unread').")
    (xdoc::p
-    "To support backtracking,
-     we also keep track of zero or more checkpoints,
-     which indicate positions in the sequence of read tokens.
-     When a checkpoint is recorded,
-     the current length of the sequence is stored as a checkpoint,
-     by @(tsee cons)ing it to the @('checkpoints') list.
-     Later, the checkpoint can be simply cleared,
-     in which case it is simply removed from the list,
-     by replacing @('checkpoints') with its @(tsee cdr).
-     Alternatively, we can backtrack to the checkpoint,
-     which involves moving tokens from the sequence of read tokens
-     to the sequence of unread tokens,
-     until the sequence of read tokens has
-     the length of the checkpoint in question;
-     then the checkpoint is removed from @('checkpoints') as well.
-     That is, we have the ability to backtrack to earlier tokens,
-     without having to keep track of how many tokens we have read
-     since the potential point of backtrack.
-     The reason why @('checkpoints') is a list of natural numbers
-     and not just an optional natural number
-     is that we may need to support ``nested'' backtracking
-     while parsing something that may also backtrack.")
-   (xdoc::p
     "We include a boolean flag saying whether
      certain GCC extensions should be accepted or not.
      These GCC extensions are limited to the ones
@@ -788,8 +765,6 @@
                    :initially 0)
       (tokens-unread :type (integer 0 *)
                      :initially 0)
-      (checkpoints :type (satisfies nat-listp)
-                   :initially nil)
       (gcc :type (satisfies booleanp)
            :initially nil)
       (size :type (integer 0 *)
@@ -803,7 +778,6 @@
                  (tokensp raw-parstate->tokens-p)
                  (tokens-readp raw-parstate->tokens-read-p)
                  (tokens-unreadp raw-parstate->tokens-unread-p)
-                 (checkpointsp raw-parstate->checkpoints-p)
                  (gccp raw-parstate->gcc-p)
                  (sizep raw-parstate->size-p)
                  ;; field readers:
@@ -817,7 +791,6 @@
                  (tokensi raw-parstate->token)
                  (tokens-read raw-parstate->tokens-read)
                  (tokens-unread raw-parstate->tokens-unread)
-                 (checkpoints raw-parstate->checkpoints)
                  (gcc raw-parstate->gcc)
                  (size raw-parstate->size)
                  ;; field writers:
@@ -831,7 +804,6 @@
                  (update-tokensi raw-update-parstate->token)
                  (update-tokens-read raw-update-parstate->tokens-read)
                  (update-tokens-unread raw-update-parstate->tokens-unread)
-                 (update-checkpoints raw-update-parstate->checkpoints)
                  (update-gcc raw-update-parstate->gcc)
                  (update-size raw-update-parstate->size))))
 
@@ -1004,14 +976,6 @@
          :exec (raw-parstate->tokens-unread parstate))
     :hooks (:fix))
 
-  (define parstate->checkpoints (parstate)
-    :returns (checkpoints nat-listp)
-    (mbe :logic (if (parstatep parstate)
-                    (raw-parstate->checkpoints parstate)
-                  nil)
-         :exec (raw-parstate->checkpoints parstate))
-    :hooks (:fix))
-
   (define parstate->gcc (parstate)
     :returns (gcc booleanp)
     (mbe :logic (if (parstatep parstate)
@@ -1126,13 +1090,6 @@
       (raw-update-parstate->tokens-unread (nfix tokens-unread) parstate))
     :hooks (:fix))
 
-  (define update-parstate->checkpoints ((checkpoints nat-listp) parstate)
-    :returns (parstate parstatep)
-    (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->checkpoints (nat-list-fix checkpoints)
-                                        parstate))
-    :hooks (:fix))
-
   (define update-parstate->gcc ((gcc booleanp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
@@ -1205,16 +1162,6 @@
              parstate-fix
              length))
 
-  (defrule parstate->size-of-update-parstate->checkpoints
-    (equal (parstate->size
-            (update-parstate->checkpoints checkpoints parstate))
-           (parstate->size parstate))
-    :enable (parstate->size
-             update-parstate->checkpoints
-             parstatep
-             parstate-fix
-             length))
-
   (defrule parstate->size-of-update-parstate->size
     (equal (parstate->size (update-parstate->size size parstate))
            (lnfix size))
@@ -1269,8 +1216,7 @@
      the data to parse,
      no read characters or tokens,
      no unread characters or tokens,
-     the initial file position,
-     and no checkpoints.
+     and the initial file position.
      We also resize the arrays of characters and tokens
      to the number of data bytes,
      which is overkill but certainly sufficient
@@ -1287,7 +1233,6 @@
        (parstate (update-parstate->tokens-length (len data) parstate))
        (parstate (update-parstate->tokens-read 0 parstate))
        (parstate (update-parstate->tokens-unread 0 parstate))
-       (parstate (update-parstate->checkpoints nil parstate))
        (parstate (update-parstate->gcc gcc parstate))
        (parstate (update-parstate->size (len data) parstate)))
     parstate)
@@ -1326,7 +1271,6 @@
    (chars-unread char+position-list)
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
-   (checkpoints nat-list)
    (gcc bool))
   :prepwork ((local (in-theory (enable nfix)))))
 
@@ -1345,7 +1289,6 @@
                                           parstate)
    :tokens-unread (to-parstate$-tokens-unread (parstate->tokens-unread parstate)
                                               parstate)
-   :checkpoints (parstate->checkpoints parstate)
    :gcc (parstate->gcc parstate))
 
   :prepwork
