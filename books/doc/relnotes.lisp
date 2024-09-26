@@ -727,7 +727,7 @@
    (xdoc::p
     "Support for &lsquo;@('make')&rsquo; variable @('ACL2_COMP') has been
      removed.  This variable was used for automating the creation of compiled
-     files for @(see book)s, for host Lisps other than the one that was used
+     files for @(see books), for host Lisps other than the one that was used
      when certifying the books.  The @(tsee include-book) keyword value
      @(':load-compiled-file :comp') may still be used with an individual book
      for this purpose.")
