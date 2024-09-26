@@ -12177,7 +12177,12 @@
               ;; So we backtrack
               ;; (which will also put back the closed parenthesis)
               ;; and we attempt to parse a type name.
-              (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
+              ;; But first, we save the checkpoint just after parsing
+              ;; the closing parenthesis after the expression,
+              ;; so that we can quickly go back here
+              ;; if the parsing of the type name fails.
+              (b* ((checkpoint-after-expr (parstate->tokens-read parstate))
+                   (parstate (unread-to-token checkpoint parstate)) ; backtrack
                    ((unless (<= (parsize parstate) psize))
                     (raise "Internal error: ~
                             size ~x0 after backtracking exceeds ~
@@ -12196,16 +12201,27 @@
                 (if erp
                     ;; If the parsing of a type name fails,
                     ;; we have an unambiguous expression, already parsed.
-                    ;; We re-parse it (which must succeed),
-                    ;; after backtracking,
-                    ;; so that we end up in the right parser state.
-                    ;; This re-parsing is not ideal:
-                    ;; we may revisit this with
-                    ;; a more elaborate backtracking scheme
-                    ;; that lets us backtrack from backtracking.
-                    (b* ((parstate
-                          (unread-to-token checkpoint parstate)) ; backtrack
-                         ((unless (<= (parsize parstate) psize))
+                    ;; So we re-read the already parsed tokens to get to
+                    ;; just past the closing parenthesis after the expression,
+                    ;; and we return the expression;
+                    ;; that is, we backtrack from the backtracking.
+                    ;; We first go back to the opening parenthesis,
+                    ;; and then go forward to the closing parenthesis;
+                    ;; perhaps it would be equivalent
+                    ;; to go directly to the closing parenthesis,
+                    ;; but going back and forth does not take much longer,
+                    ;; and it would be needed if
+                    ;; attempting to parse the type name
+                    ;; goes past the closing parenthesis after the expression,
+                    ;; which probably cannot, but we need to double-check.
+                    (b* ((parstate ; backtrack
+                          (unread-to-token checkpoint parstate))
+                         (parstate ; backtrack from backtracking
+                          (reread-to-token checkpoint-after-expr parstate))
+                         ;; Compared to the opening parenthesis,
+                         ;; if we go to the closing parenthesis,
+                         ;; we must be at least two tokens ahead.
+                         ((unless (<= (parsize parstate) (- psize 2)))
                           (raise "Internal error: ~
                                   size ~x0 after backtracking exceeds ~
                                   size ~x1 before backtracking."
@@ -12218,26 +12234,9 @@
                           ;; execution stops at the RAISE above.
                           (b* ((parstate (init-parstate nil nil parstate)))
                             (reterr t)))
-                         ((mv erp expr1 span-expr1 parstate)
-                          (parse-expression parstate))
-                         ((when erp)
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives the error ~x1."
-                                 expr erp)
-                          (reterr t))
-                         ((unless (equal expr1 expr))
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives a different expression ~x1."
-                                 expr expr1)
-                          (reterr t))
-                         ((unless (equal span-expr1 span-expr))
-                          (raise "Internal error: ~
-                                  parsing the same expression ~x0 twice ~
-                                  gives a different span ~x1 from ~x2."
-                                 expr span-expr1 span-expr)
-                          (reterr t)))
+                         ;; Put back the closing parenthesis,
+                         ;; which is not part of the expression.
+                         (parstate (unread-token parstate)))
                       (retok (amb?-expr/tyname-expr expr) span-expr parstate))
                   ;; If the parsing of a type name succeeds,
                   ;; we read a token to see whether
@@ -12246,7 +12245,8 @@
                     (if (token-punctuatorp token ")")
                         ;; If a closed parenthesis follows,
                         ;; we have an ambiguous expression or type name.
-                        ;; We double-check that the two spans are the same;
+                        ;; We double-check that the expression and the type name
+                        ;; have the same spans;
                         ;; this is always expected to succeed,
                         ;; because we have checked that in both cases
                         ;; we have reached a closed parenthesis,
@@ -12258,6 +12258,9 @@
                                       span ~x2 of type name ~x3."
                                      span-expr expr span-tyname tyname)
                               (reterr t))
+                             ;; Put back the closing parenthesis,
+                             ;; which is not part of
+                             ;; the expression or type name.
                              (parstate (unread-token parstate)))
                           (retok (amb?-expr/tyname-ambig
                                   (make-amb-expr/tyname :expr expr
@@ -12270,10 +12273,15 @@
                       ;; a prefix of an expression.
                       ;; So we must have an expression instead,
                       ;; which we have already parsed,
-                      ;; but again we need to re-parse it.
-                      (b* ((parstate
-                            (unread-to-token checkpoint parstate)) ; backtrack
-                           ((unless (<= (parsize parstate) psize))
+                      ;; so we backtrack from the backtracking as before.
+                      (b* ((parstate ; backtrack
+                            (unread-to-token checkpoint parstate))
+                           (parstate ; backtrack from backtracking
+                            (reread-to-token checkpoint-after-expr parstate))
+                           ;; Compared to the opening parenthesis,
+                           ;; if we go to the closing parenthesis,
+                           ;; we must be at least two tokens ahead.
+                           ((unless (<= (parsize parstate) (- psize 2)))
                             (raise "Internal error: ~
                                     size ~x0 after backtracking exceeds ~
                                     size ~x1 before backtracking."
@@ -12286,26 +12294,9 @@
                             ;; execution stops at the RAISE above.
                             (b* ((parstate (init-parstate nil nil parstate)))
                               (reterr t)))
-                           ((mv erp expr1 span-expr1 parstate)
-                            (parse-expression parstate))
-                           ((when erp)
-                            (raise "Internal error: ~
-                                    parsing the same expression ~x0 twice ~
-                                    gives the error ~x1."
-                                   expr erp)
-                            (reterr t))
-                           ((unless (equal expr1 expr))
-                            (raise "Internal error: ~
-                                    parsing the same expression ~x0 twice ~
-                                    gives a different expression ~x1."
-                                   expr expr1)
-                            (reterr t))
-                           ((unless (equal span-expr1 span-expr))
-                            (raise "Internal error: ~
-                                    parsing the same expression ~x0 twice ~
-                                    gives a different span ~x1 from ~x2."
-                                   expr span-expr1 span-expr)
-                            (reterr t)))
+                           ;; Put back the closing parenthesis,
+                           ;; which is not part of the expression.
+                           (parstate (unread-token parstate)))
                         (retok (amb?-expr/tyname-expr expr)
                                span-expr
                                parstate))))))
@@ -12313,7 +12304,7 @@
             ;; we regard the parsing of the expression to have failed,
             ;; perhaps because we have only parsed a prefix of a type name.
             ;; So we must have a type name instead.
-            ;; We backtrack, which also puts back the token just read if any,
+            ;; We backtrack, which also puts back any tokens just read,
             ;; and we attempt to parse a type name.
             (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                  ((unless (<= (parsize parstate) psize))
