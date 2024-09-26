@@ -12226,7 +12226,7 @@
                                   size ~x0 after backtracking exceeds ~
                                   size ~x1 before backtracking."
                                  (parsize parstate) psize)
-                          ;; Here we have (> (parsize parstate) psize),
+                          ;; Here we have (> (parsize parstate) (- psize 2)),
                           ;; but we need to return a parser state
                           ;; no larger than the initial one,
                           ;; so we just return the empty parser state.
@@ -12286,7 +12286,7 @@
                                     size ~x0 after backtracking exceeds ~
                                     size ~x1 before backtracking."
                                    (parsize parstate) psize)
-                            ;; Here we have (> (parsize parstate) psize),
+                            ;; Here we have (> (parsize parstate) (- psize 2)),
                             ;; but we need to return a parser state
                             ;; no larger than the initial one,
                             ;; so we just return the empty parser state.
@@ -12367,14 +12367,14 @@
        otherwise we regard the parsing of the abstract declarator
        to have failed."))
     (b* (((reterr) (irr-amb?-declor/absdeclor) (irr-span) parstate)
-         (parstate (record-checkpoint parstate)) ; we will backtrack here
+         (checkpoint (parstate->tokens-read parstate)) ; we will backtrack here
          (psize (parsize parstate))
          ((mv erp-declor declor span-declor parstate)
           (parse-declarator parstate)))
       (if erp-declor
           ;; If the parsing of a declarator fails,
           ;; we must have an abstract declarator.
-          (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+          (b* ((parstate (unread-to-token checkpoint parstate)) ; backtrack
                ((unless (<= (parsize parstate) psize))
                 (raise "Internal error: ~
                         size ~x0 after backtracking exceeds ~
@@ -12393,7 +12393,12 @@
         ;; If the parsing of a declarator succeeds,
         ;; we must see whether the parsing of an abstract declarator
         ;; also succeeds, after backtracking.
-        (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
+        ;; So we backtrack, but first we save the checkpoint
+        ;; just after parsing the declarator,
+        ;; so that we can quickly go back here
+        ;; if the parsing of the abstract declarator fails.
+        (b* ((checkpoint-after-declor (parstate->tokens-read parstate))
+             (parstate (unread-to-token checkpoint parstate)) ; backtrack
              ((unless (<= (parsize parstate) psize))
               (raise "Internal error: ~
                       size ~x0 after backtracking exceeds ~
@@ -12407,53 +12412,44 @@
               ;; execution stops at the RAISE above.
               (b* ((parstate (init-parstate nil nil parstate)))
                 (reterr t)))
-             (parstate (record-checkpoint parstate)) ; we may backtrack again
              ((mv erp absdeclor span-absdeclor parstate)
               (parse-abstract-declarator parstate)))
           (if erp
               ;; If the parsing of an abstract declarator fails,
               ;; we have an unambiguous declarator, already parsed.
-              ;; We re-parse it (which must succeed),
-              ;; after backtracking,
-              ;; so that we end up in the right parser state.
-              ;; This re-parsing is not ideal:
-              ;; we may revisit this with
-              ;; a more elaborate backtracking scheme
-              ;; that lets us backtrack from backtracking.
-              (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-                   ((unless (<= (parsize parstate) psize))
+              ;; So we re-read the already parsed tokens to get to
+              ;; just past the declarator,
+              ;; and we return the declarator;
+              ;; that is, we backtrack from the backtracking.
+              ;; We first go back to the start of the declarator,
+              ;; and then go forward to the end;
+              ;; perhaps it would be equivalent
+              ;; to go directly to the end of the declarator,
+              ;; but going back and forth does not take much longer,
+              ;; and it would be needed if
+              ;; attempting to parse the abstract declarator
+              ;; goes past the end of the declarator,
+              ;; which probably cannot, but we need to double-check.
+              (b* ((parstate ; backtrack
+                    (unread-to-token checkpoint parstate))
+                   (parstate ; backtrack from backtracking
+                    (reread-to-token checkpoint-after-declor parstate))
+                   ;; Compared to the start of the declarator,
+                   ;; if we go to the end of the declarator,
+                   ;; we must be at least one token ahead.
+                   ((unless (<= (parsize parstate) (1- psize)))
                     (raise "Internal error: ~
                             size ~x0 after backtracking exceeds ~
                             size ~x1 before backtracking."
                            (parsize parstate) psize)
-                    ;; Here we have (> (parsize parstate) psize),
+                    ;; Here we have (> (parsize parstate) (1- psize)),
                     ;; but we need to return a parser state
                     ;; no larger than the initial one,
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
                     (b* ((parstate (init-parstate nil nil parstate)))
-                      (reterr t)))
-                   ((mv erp declor1 span-declor1 parstate)
-                    (parse-declarator parstate))
-                   ((when erp)
-                    (raise "Internal error: ~
-                            parsing the same declarator ~x0 twice ~
-                            gives the error ~x1."
-                           declor erp)
-                    (reterr t))
-                   ((unless (equal declor1 declor))
-                    (raise "Internal error: ~
-                            parsing the same declarator ~x0 twice ~
-                            gives a different declarator ~x1."
-                           declor declor1)
-                    (reterr t))
-                   ((unless (equal span-declor1 span-declor))
-                    (raise "Internal error: ~
-                            parsing the same declarator ~x0 twice ~
-                            gives a different span ~x1 from ~x2."
-                           declor span-declor1 span-declor)
-                    (reterr t)))
+                      (reterr t))))
                 (retok (amb?-declor/absdeclor-declor declor)
                        span-declor
                        parstate))
@@ -12474,8 +12470,7 @@
                   ;; but we will revisit the issue if we observe failures
                   ;; (in which case we can handle things similarly to
                   ;; our handling in PARSE-EXPRESSION-OR-TYPE-NAME).
-                  (b* ((parstate (clear-checkpoint parstate)) ; no backtracking
-                       ((unless (equal span-absdeclor span-declor))
+                  (b* (((unless (equal span-absdeclor span-declor))
                         (raise "Internal error: ~
                                 span ~x0 of declarator ~x1 differs from ~
                                 span ~x2 of abstract declarator ~x3."
@@ -12490,43 +12485,29 @@
                 ;; If a comma or closed parenthesis does not follow,
                 ;; the abstract declarator must be a prefix of a declarator,
                 ;; so it means that we have an unambiguous declarator.
-                ;; We must backtrack and re-parse it;
-                ;; note that the backtracking
-                ;; also puts back the token just read.
-                (b* ((parstate (backtrack-checkpoint parstate)) ; backtrack
-                     ((unless (<= (parsize parstate) psize))
+                ;; So we must have a declarator instead,
+                ;; which we have already parsed,
+                ;; so we backtrack from the backtracking as before.
+                (b* ((parstate ; backtrack
+                      (unread-to-token checkpoint parstate))
+                     (parstate ; backtrack from backtracking
+                      (reread-to-token checkpoint-after-declor parstate))
+                     ;; Compared to the start of the declarator,
+                     ;; if we go to the end of the declarator,
+                     ;; we must be at least one token ahead.
+                     ((unless (<= (parsize parstate) (1- psize)))
                       (raise "Internal error: ~
                               size ~x0 after backtracking exceeds ~
                               size ~x1 before backtracking."
                              (parsize parstate) psize)
-                      ;; Here we have (> (parsize parstate) psize),
+                      ;; Here we have (> (parsize parstate) (1- psize)),
                       ;; but we need to return a parser state
                       ;; no larger than the initial one,
                       ;; so we just return the empty parser state.
                       ;; This is just logical:
                       ;; execution stops at the RAISE above.
                       (b* ((parstate (init-parstate nil nil parstate)))
-                        (reterr t)))
-                     ((mv erp declor1 span-declor1 parstate)
-                      (parse-declarator parstate))
-                     ((when erp)
-                      (raise "Internal error: ~
-                              parsing the same declarator ~x0 twice ~
-                              gives the error ~x1."
-                             declor erp)
-                      (reterr t))
-                     ((unless (equal declor1 declor))
-                      (raise "Internal error: ~
-                              parsing the same declarator ~x0 twice ~
-                              gives a different declarator ~x1."
-                             declor declor1)
-                      (reterr t))
-                     ((unless (equal span-declor1 span-declor))
-                      (raise "Internal error: ~
-                              parsing the same declarator ~x0 twice ~
-                              gives a different span ~x1 from ~x2."
-                             declor span-declor1 span-declor)
-                      (reterr t)))
+                        (reterr t))))
                   (retok (amb?-declor/absdeclor-declor declor)
                          span-declor
                          parstate))))))))
