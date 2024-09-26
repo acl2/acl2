@@ -725,7 +725,72 @@
                     (cert2
                      (mv-nth 1 (certificate-set-unequivocalp-witness certs)))
                     (certs1 certs)
-                    (certs2 certs))))
+                    (certs2 certs)))
+
+  (defruled certificate-sets-unequivocalp-of-insert
+    (implies (and (certificate-setp certs2)
+                  (certificate-set-unequivocalp certs2))
+             (equal (certificate-sets-unequivocalp (set::insert cert certs1)
+                                                   certs2)
+                    (and (certificate-sets-unequivocalp certs1 certs2)
+                         (or (set::in cert certs1)
+                             (set::in cert certs2)
+                             (not (get-certificate-with-author+round
+                                   (certificate->author cert)
+                                   (certificate->round cert)
+                                   certs2))))))
+    :use (if-part only-if-part)
+    :enable certificate-sets-unequivocalp-when-subsets
+
+    :prep-lemmas
+
+    ((defruled if-part
+       (implies (and (certificate-sets-unequivocalp certs1 certs2)
+                     (certificate-set-unequivocalp certs2)
+                     (or (set::in cert certs1)
+                         (set::in cert certs2)
+                         (not (get-certificate-with-author+round
+                               (certificate->author cert)
+                               (certificate->round cert)
+                               certs2))))
+                (certificate-sets-unequivocalp
+                 (set::insert cert certs1) certs2))
+       :use
+       ((:instance
+         certificate-sets-unequivocalp-necc
+         (cert1 (mv-nth 0 (certificate-sets-unequivocalp-witness
+                           (insert cert certs1)
+                           certs2)))
+         (cert2 (mv-nth 1 (certificate-sets-unequivocalp-witness
+                           (insert cert certs1)
+                           certs2))))
+        (:instance
+         certificate-set-unequivocalp-necc
+         (cert1 cert)
+         (cert2 (mv-nth 1 (certificate-sets-unequivocalp-witness
+                           (insert cert certs1)
+                           certs2)))
+         (certs certs2)))
+       :enable get-certificate-with-author+round-when-element)
+
+     (defruled only-if-part
+       (implies (and (certificate-setp certs2)
+                     (certificate-sets-unequivocalp
+                      (set::insert cert certs1) certs2))
+                (or (set::in cert certs1)
+                    (set::in cert certs2)
+                    (not (get-certificate-with-author+round
+                          (certificate->author cert)
+                          (certificate->round cert)
+                          certs2))))
+       :use (:instance certificate-sets-unequivocalp-necc
+                       (cert1 cert)
+                       (cert2 (get-certificate-with-author+round
+                               (certificate->author cert)
+                               (certificate->round cert)
+                               certs2))
+                       (certs1 (set::insert cert certs1)))
+       :enable get-certificate-with-author+round-element))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
