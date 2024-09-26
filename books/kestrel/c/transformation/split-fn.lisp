@@ -442,7 +442,7 @@
    (new-fn-name identp)
    (tunits transunit-ensemblep)
    (split-point natp))
-  :short "Transform a translation unit ensumble."
+  :short "Transform a translation unit ensemble."
   :returns (mv er
                (new-tunits transunit-ensemblep))
   (b* (((transunit-ensemble tunits) tunits)
