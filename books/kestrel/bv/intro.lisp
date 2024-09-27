@@ -55,8 +55,7 @@
                                    getbit
                                    SLICE-OF-SUM-CASES
                                    ifix)
-                                  (bvchop-1-becomes-getbit
-                                   ;BITXOR-OF-SLICE-ARG2
+                                  (;BITXOR-OF-SLICE-ARG2
                                    )))))
 
 (defthm slice-of-lognot

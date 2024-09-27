@@ -1,7 +1,7 @@
 ; Taking the or of two bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -91,7 +91,7 @@
   :hints (("Goal" :in-theory (e/d (bvor bitor
                                         slice ;getbit ;bozo
                                         ) (bvor-1-becomes-bitor
-                                           BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                                           )))))
 
 ;drop once we commute
 (defthm bitor-of-0-arg2
@@ -111,10 +111,7 @@
 (defthm unsigned-byte-p-of-bitor
   (implies (posp size)
            (unsigned-byte-p size (bitor x y)))
-  :hints
-  (("Goal" :in-theory
-    (e/d (bitor)
-         (bvchop-1-becomes-getbit)))))
+  :hints (("Goal" :in-theory (enable bitor))))
 
 (defthmd bitor-combine-constants
   (implies (and (syntaxp (quotep y)) ;put this hyp first to fail faster
