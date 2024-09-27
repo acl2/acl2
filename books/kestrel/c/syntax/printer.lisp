@@ -1293,61 +1293,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-type-qual-list ((tyquals type-qual-listp) (pstate pristatep))
-  :guard (consp tyquals)
-  :returns (new-pstate pristatep)
-  :short "Print a list of one or more type qualifiers, separated by spaces."
-  (b* (((unless (mbt (consp tyquals))) (pristate-fix pstate))
-       (pstate (print-type-qual (car tyquals) pstate))
-       ((when (endp (cdr tyquals))) pstate)
-       (pstate (print-astring " " pstate)))
-    (print-type-qual-list (cdr tyquals) pstate))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-type-qual-list-list ((tyqualss type-qual-list-listp)
-                                   (pstate pristatep))
-  :guard (consp tyqualss)
-  :returns (new-pstate pristatep)
-  :short "Print a list or one or more lists of type qualifiers,
-          corresponding to a `pointer' in the grammar."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Our abstract syntax uses lists of lists of type qualifiers
-     to model what the grammar calls `pointer',
-     which is a sequence of one or more stars,
-     each star followed by zero or more type qualifiers;
-     see @(tsee declor) and @(tsee absdeclor).
-     Here we print such a `pointer',
-     from its representation as a list of lists of type qualifiers.")
-   (xdoc::p
-    "The outer list must not be empty, as required in the guard.
-     We go through each inner list, printing a star for each;
-     if the inner list under consideration is empty,
-     the star is all we print;
-     if the inner list is not empty,
-     we also print a space,
-     the type qualifiers (separated by spaces),
-     and a space.
-     That is, we provide separation when there are type qualifiers.
-     But there are no extra separations for stars,
-     e.g. we print @('**') for the list of lists @('(list nil nil)').
-     Note that the last inner list is printed as just star."))
-  (b* (((unless (mbt (consp tyqualss))) (pristate-fix pstate))
-       (pstate (print-astring "*" pstate))
-       (tyquals (car tyqualss))
-       (pstate (if (consp tyquals)
-                   (b* ((pstate (print-astring " " pstate))
-                        (pstate (print-type-qual-list tyquals pstate))
-                        (pstate (print-astring " " pstate)))
-                     pstate)
-                 pstate))
-       ((when (endp (cdr tyqualss))) pstate))
-    (print-type-qual-list-list (cdr tyqualss) pstate))
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-fun-spec ((funspec fun-specp) (pstate pristatep))
@@ -2106,6 +2051,90 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define print-typequal/attribspec ((tyqualattrib typequal/attribspec-p)
+                                     (pstate pristatep))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a type qualifier or attribute specifier."
+    (typequal/attribspec-case
+     tyqualattrib
+     :tyqual (print-type-qual tyqualattrib.unwrap pstate)
+     :attrib (print-attrib-spec tyqualattrib.unwrap pstate))
+    :measure (two-nats-measure (typequal/attribspec-count tyqualattrib) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-typequal/attribspec-list
+    ((tyqualattribs typequal/attribspec-listp)
+     (pstate pristatep))
+    :guard (consp tyqualattribs)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a list of one or more
+            type qualifiers and attribute specifiers,
+            separated by spaces."
+    (b* (((unless (mbt (consp tyqualattribs))) (pristate-fix pstate))
+         (pstate (print-typequal/attribspec (car tyqualattribs) pstate))
+         ((when (endp (cdr tyqualattribs))) pstate)
+         (pstate (print-astring " " pstate)))
+      (print-typequal/attribspec-list (cdr tyqualattribs) pstate))
+    :measure (two-nats-measure (typequal/attribspec-list-count tyqualattribs) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-typequal/attribspec-list-list
+    ((tyqualattribss typequal/attribspec-list-listp)
+     (pstate pristatep))
+    :guard (consp tyqualattribss)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a list or one or more lists of
+            type qualifiers and attribute specifiers
+            corresponding to a `pointer' in the grammar."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Our abstract syntax uses lists of lists of
+       type qualifiers and attribute specifiers
+       to model what the grammar calls `pointer',
+       which is a sequence of one or more stars,
+       each star followed by zero or more
+       type qualifiers and attribute specifiers;
+       see @(tsee declor) and @(tsee absdeclor).
+       Here we print such a `pointer',
+       from its representation as a list of lists of
+       type qualifiers and attribute specifiers.")
+     (xdoc::p
+      "The outer list must not be empty, as required in the guard.
+       We go through each inner list, printing a star for each;
+       if the inner list under consideration is empty,
+       the star is all we print;
+       if the inner list is not empty,
+       we also print a space,
+       the type qualifiers and attribute specifiers (separated by spaces),
+       and a space.
+       That is, we provide separation when there are
+       type qualifiers or attribute specifiers.
+       But there are no extra separations for stars,
+       e.g. we print @('**') for the list of lists @('(list nil nil)').
+       Note that the last inner list is printed as just star."))
+    (b* (((unless (mbt (consp tyqualattribss))) (pristate-fix pstate))
+         (pstate (print-astring "*" pstate))
+         (tyqualattribs (car tyqualattribss))
+         (pstate (if (consp tyqualattribs)
+                     (b* ((pstate (print-astring " " pstate))
+                          (pstate (print-typequal/attribspec-list tyqualattribs
+                                                                  pstate))
+                          (pstate (print-astring " " pstate)))
+                       pstate)
+                   pstate))
+         ((when (endp (cdr tyqualattribss))) pstate))
+      (print-typequal/attribspec-list-list (cdr tyqualattribss) pstate))
+    :measure (two-nats-measure
+              (typequal/attribspec-list-list-count tyqualattribss) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define print-initer ((initer initerp) (pstate pristatep))
     :guard (initer-unambp initer)
     :returns (new-pstate pristatep)
@@ -2214,7 +2243,8 @@
     :short "Print a declarator."
     (b* (((declor declor) declor)
          (pstate (if (consp declor.pointers)
-                     (print-type-qual-list-list declor.pointers pstate)
+                     (print-typequal/attribspec-list-list declor.pointers
+                                                          pstate)
                    pstate))
          (pstate (print-dirdeclor declor.decl pstate)))
       pstate)
@@ -2248,7 +2278,7 @@
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirdeclor.tyquals
-                      (print-type-qual-list dirdeclor.tyquals pstate)
+                      (print-typequal/attribspec-list dirdeclor.tyquals pstate)
                     pstate))
           (pstate (if (and dirdeclor.tyquals
                            dirdeclor.expr?)
@@ -2265,8 +2295,9 @@
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
           (pstate (print-astring "static " pstate))
           (pstate (if dirdeclor.tyquals
-                      (b* ((pstate (print-type-qual-list dirdeclor.tyquals
-                                                         pstate))
+                      (b* ((pstate (print-typequal/attribspec-list
+                                    dirdeclor.tyquals
+                                    pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
@@ -2279,7 +2310,7 @@
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            pstate)
-          (pstate (print-type-qual-list dirdeclor.tyquals pstate))
+          (pstate (print-typequal/attribspec-list dirdeclor.tyquals pstate))
           (pstate (print-astring " static " pstate))
           (pstate (print-expr dirdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
@@ -2288,8 +2319,9 @@
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirdeclor.tyquals
-                      (b* ((pstate (print-type-qual-list dirdeclor.tyquals
-                                                         pstate))
+                      (b* ((pstate (print-typequal/attribspec-list
+                                    dirdeclor.tyquals
+                                    pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
@@ -2343,7 +2375,8 @@
                   empty abstract declarator.")
           (pristate-fix pstate))
          (pstate (if absdeclor.pointers
-                     (print-type-qual-list-list absdeclor.pointers pstate)
+                     (print-typequal/attribspec-list-list absdeclor.pointers
+                                                          pstate)
                    pstate))
          (pstate (if (dirabsdeclor-option-case absdeclor.decl? :some)
                      (print-dirabsdeclor (dirabsdeclor-option-some->val
@@ -2379,7 +2412,8 @@
                     pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirabsdeclor.tyquals
-                      (print-type-qual-list dirabsdeclor.tyquals pstate)
+                      (print-typequal/attribspec-list dirabsdeclor.tyquals
+                                                      pstate)
                     pstate))
           (pstate (if (and dirabsdeclor.tyquals
                            dirabsdeclor.expr?)
@@ -2400,8 +2434,9 @@
                     pstate))
           (pstate (print-astring "static " pstate))
           (pstate (if dirabsdeclor.tyquals
-                      (b* ((pstate (print-type-qual-list dirabsdeclor.tyquals
-                                                         pstate))
+                      (b* ((pstate (print-typequal/attribspec-list
+                                    dirabsdeclor.tyquals
+                                    pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
@@ -2418,7 +2453,7 @@
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            (pristate-fix pstate))
-          (pstate (print-type-qual-list dirabsdeclor.tyquals pstate))
+          (pstate (print-typequal/attribspec-list dirabsdeclor.tyquals pstate))
           (pstate (print-astring " static " pstate))
           (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
