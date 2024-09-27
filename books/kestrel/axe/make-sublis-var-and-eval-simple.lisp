@@ -1,4 +1,4 @@
-; A tool to generate substution code that calls a given evaluator
+; A tool to generate substitution code that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2024 Kestrel Institute
@@ -15,11 +15,13 @@
 ;; This book provides a tool that, given the name of an evaluator, makes a
 ;; version of sublis-var-and-eval that uses it.
 
+;; See also make-subcor-var-and-eval-simple.lisp.
+
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "bounded-darg-listp")
 (include-book "axe-trees")
 
-(defun make-substitution-code-simple-fn (suffix evaluator-base-name)
+(defun make-sublis-var-and-eval-simple-fn (suffix evaluator-base-name)
   (declare (xargs :guard (and (symbolp suffix)
                               (symbolp evaluator-base-name))))
   (let ((sublis-var-and-eval-name (pack$ 'sublis-var-and-eval- suffix))
@@ -217,6 +219,6 @@
 ;; Makes "substitute and eval" functions for the evaluator with the given
 ;; evaluator-base-name.  Uses SUFFIX when creating the names of the new
 ;; functions.
-(defmacro make-substitution-code-simple (suffix evaluator-base-name)
-  (make-substitution-code-simple-fn suffix
+(defmacro make-sublis-var-and-eval-simple (suffix evaluator-base-name)
+  (make-sublis-var-and-eval-simple-fn suffix
                                     evaluator-base-name))
