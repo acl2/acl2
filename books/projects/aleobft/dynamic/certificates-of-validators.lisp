@@ -66,7 +66,15 @@
                             (validator-state->buffer vstate))
                 (message-certificates-with-destination
                  val (get-network-state systate))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled message-certificate-in-owned-certificates
+    (implies (set::in (message-fix msg) (get-network-state systate))
+             (set::in (message->certificate msg)
+                      (owned-certificates (message->destination msg) systate)))
+    :enable in-of-message-certificates-with-destination))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
