@@ -38,7 +38,7 @@
        some constant.")
     (xdoc::p
       "For a concrete example, consider the following C code:")
-    (xdoc::code
+    (xdoc::codeblock
       "int foo(int y, int z) {"
       "  int x = 5;"
       "  return x + y - z;"
@@ -46,21 +46,25 @@
     (xdoc::p
       "Specializing parameter @('y') with the constant @('1') yields the
        following:")
-    (xdoc::code
+    (xdoc::codeblock
       "int foo(int z) {"
       "  int y = 1;"
       "  int x = 5;"
       "  return x + y - z;"
       "}")
     (xdoc::p
+      "Clearly a call of @('foo(z)'), where @('z') is arbitrary and @('foo') is
+       the specialized function, is equal to @('foo(1, z)') for the old
+       function @('foo').")
+    (xdoc::p
       "Note that this modifies the target function; it does not make a copy of
        the function. If you want to specialize a copy of a function, first
        employ the @(see copy-fn) transformation.")
     (xdoc::p
       "It is often desirable to propagate constants and eliminate dead code
-       after specializing. The @(see specialize) transformation does implement
-       such behavior. Eventually, we will want to implement separate constant
-       propagation and dead code elimination transformations."))
+       after specializing. The @(see specialize) transformation does not
+       implement such behavior. Eventually, we will want to implement separate
+       constant propagation and dead code elimination transformations."))
   :order-subtopics t
   :default-parent t)
 
