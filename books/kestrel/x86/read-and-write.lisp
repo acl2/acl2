@@ -1790,23 +1790,21 @@
            :expand ((:free (addr val x86) (WRITE 1 ADDR VAL X86))
                     (:free (addr val x86) (WRITE n ADDR VAL X86))))))
 
-
-
 ;; write-of-write:
 
-;for proving other rules
-(defthmd write-becomes-mv-nth-1-of-wb-1
-  (implies (and (app-view x86)
-                (x86p x86)
-                (canonical-address-p addr)
-                (implies (posp n) (canonical-address-p (+ -1 n addr)))
-                )
-           (equal (write n addr val x86)
-                  (mv-nth 1 (wb-1 n addr w val x86))))
-  :hints (("Goal" :in-theory (enable write))))
+;; ;for proving other rules
+;; (defthmd write-becomes-mv-nth-1-of-wb-1
+;;   (implies (and (app-view x86)
+;;                 (x86p x86)
+;;                 (canonical-address-p addr)
+;;                 (implies (posp n) (canonical-address-p (+ -1 n addr)))
+;;                 )
+;;            (equal (write n addr val x86)
+;;                   (mv-nth 1 (wb-1 n addr :w val x86))))
+;;   :hints (("Goal" :in-theory (enable write))))
 
-(theory-invariant (incompatible (:rewrite write-becomes-mv-nth-1-of-wb-1)
-                                (:rewrite mv-nth-1-of-wb-1-becomes-write)))
+;; (theory-invariant (incompatible (:rewrite write-becomes-mv-nth-1-of-wb-1)
+;;                                 (:rewrite mv-nth-1-of-wb-1-becomes-write)))
 
 (local
   (defun double-write-induct (n addr val val2 x86)
