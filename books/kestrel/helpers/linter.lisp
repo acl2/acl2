@@ -1058,6 +1058,50 @@
         (drop-calls-of fn (rest terms))
       (cons (first terms) (drop-calls-of fn (rest terms))))))
 
+(defun vars-bound-after-hyps (hyps acc)
+  (if (endp hyps)
+      acc
+    (let ((hyp (first hyps)))
+      (if (and (call-of 'equal hyp) ; special case for binding hyp: (equal <free-var> <term-with-only-bound-vars>)
+               (symbolp (farg1 hyp))
+               (not (member-eq (farg1 hyp) acc))
+               (subsetp-equal (free-vars-in-term (farg2 hyp)) acc))
+          ;; the var becomes bound:
+          (vars-bound-after-hyps (rest hyps) (cons (farg1 hyp) acc))
+        (if (call-of 'synp hyp) ; represents a syntaxp or bind-free hyp
+            (if (equal *nil* (farg1 hyp)) ; checks for a syntaxp call (binds no vars)
+                (vars-bound-after-hyps (rest hyps) acc)
+              (if (equal *t* (farg1 hyp))
+                  :unknown ; we don't know what the bind-free hyp binds
+                (if (and (quotep (farg1 hyp))
+                         (symbol-listp (unquote (farg1 hyp))))
+                    :unknown ;; we don't know exactly which vars get bound (todo: in some cases we can assume they all do, so this function would return an upper bound
+                  (er hard? 'vars-bound-after-hyps "Bad synp hyp: ~x0." hyp))))
+          ;; todo: handle axe-bind-free and axe-syntaxp
+          (let ((hyp-vars (free-vars-in-term hyp)))
+            ;; either all vars are bound, or free variable matching wil bind them:
+            (vars-bound-after-hyps (rest hyps) (union-eq hyp-vars acc))))))))
+
+(defun lint-conclusion (conclusion name hyps suppress)
+  (if (not (call-of 'equal conclusion)) ; todo: support iff, etc.?
+      nil
+    (let* ((lhs (farg1 conclusion))
+           (rhs (farg2 conclusion))
+           (lhs-vars (free-vars-in-term lhs))
+           (vars-bound-after-hyps (vars-bound-after-hyps hyps lhs-vars)))
+      (if (eq :unknown vars-bound-after-hyps)
+          nil
+        (and (not (subsetp-equal (free-vars-in-term rhs) vars-bound-after-hyps))
+             (not (member-eq :free-vars-in-rhs suppress)) ; todo: currently impossible
+             (cw "~%   ~s1 ~x2 has free vars ~x3." name "rhs" rhs (set-difference-eq (free-vars-in-term rhs) vars-bound-after-hyps)))))))
+
+(defun lint-conclusions (conclusions name hyps suppress)
+  (declare (xargs :mode :program))
+  (if (endp conclusions)
+      nil
+  (prog2$ (lint-conclusion (first conclusions) name hyps suppress)
+          (lint-conclusions (rest conclusions) name hyps suppress))))
+
 ;; Returns state.
 (defun lint-defthm (name
                     body  ; translated
@@ -1116,7 +1160,8 @@
        (state (check-for-droppable-hyps name non-synp-hyps non-synp-hyps conclusion hints step-limit state))
        ;; Check for possible generalizations:
        (state (check-for-theorem-generalizations name body step-limit state))
-       )
+       ;; todo: suppress this for :meta rules!:  maybe only do it for rewrite rules!
+       (- (lint-conclusions (get-conjuncts conclusion) name hyps suppress)))
     state))
 
 ;move
