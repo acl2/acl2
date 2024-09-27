@@ -6506,7 +6506,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define token-struct-declaration-start-p ((token? token-optionp))
+(define token-struct-declaration-start-p ((token? token-optionp)
+                                          (gcc booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start a structure declaration."
   :long
@@ -6521,16 +6522,21 @@
      so this predicate will fail
      if GCC extensions are not supported
      and the token is @('__extension__'),
-     which must be an identifier if GCC extensions are not supported."))
+     which must be an identifier if GCC extensions are not supported.")
+   (xdoc::p
+    "If GCC extensions are supported,
+     which is indicated by the boolean flag passed as input,
+     we also include semicolons, for empty structure declarations."))
   (or (token-specifier/qualifier-start-p token?)
       (token-keywordp token? "_Static_assert")
-      (token-keywordp token? "__extension__"))
+      (token-keywordp token? "__extension__")
+      (and gcc (token-punctuatorp token? ";")))
   ///
 
   (defrule non-nil-when-token-strut-declaration-start-p
-    (implies (token-struct-declaration-start-p token?)
+    (implies (token-struct-declaration-start-p token? gcc)
              token?)
-    :rule-classes :compound-recognizer))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11738,6 +11744,10 @@
           (retok (structdecl-statassert statassert)
                  span
                  parstate)))
+       ;; If token is a semicolon, and GCC extensions are enabled,
+       ;; we have an empty structure declaration.
+       ((token-punctuatorp token ";") ; ;
+        (retok (structdecl-empty) span parstate))
        ;; Otherwise, we must have a specifier and qualifier list,
        ;; optionally preceded by the '__extension__' keyword
        ;; if GCC extensions are supported.
@@ -11845,7 +11855,8 @@
       (cond
        ;; If token may start another structure declaration,
        ;; recursively call this function.
-       ((token-struct-declaration-start-p token) ; structdecl structdecl...
+       ((token-struct-declaration-start-p
+         token (parstate->gcc parstate)) ; structdecl structdecl...
         (b* ((parstate (unread-token parstate))
              ((erp structdecls last-span parstate) ; structdecl structdecls
               (parse-struct-declaration-list parstate)))

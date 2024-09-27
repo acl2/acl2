@@ -2027,7 +2027,8 @@
        (b* (((erp new-statassert table)
              (dimb-statassert structdecl.unwrap table)))
          (retok (structdecl-statassert new-statassert)
-                table))))
+                table))
+       :empty (retok (structdecl-empty) (dimb-table-fix table))))
     :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

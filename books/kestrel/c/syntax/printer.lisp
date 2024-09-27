@@ -2654,7 +2654,8 @@
                     pstate))
           (pstate (print-astring ";" pstate)))
        pstate)
-     :statassert (print-statassert structdecl.unwrap pstate))
+     :statassert (print-statassert structdecl.unwrap pstate)
+     :empty (print-astring ";" pstate))
     :measure (two-nats-measure (structdecl-count structdecl) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
