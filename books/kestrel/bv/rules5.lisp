@@ -81,8 +81,6 @@
                                    <-of-0-and-logext-alt
                                    *-of-expt-of-one-less)
                                   (bvminus-becomes-bvplus-of-bvuminus
-                                   ;;plus-bvcat-with-0-alt ;looped!
-                                   ;;plus-bvcat-with-0 ;looped!
                                    ;; disables for speed:
                                    bvchop-identity
                                    expt-type-even-exponent-1

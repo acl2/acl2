@@ -1,7 +1,7 @@
 ; More theorems about repeatbit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -54,6 +54,4 @@
                              ;bvplus bvchop logtail
                                        )
                             (;anti-slice
-                             BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                             BVCHOP-OF-MASK-OTHER
-                             )))))
+                             bvchop-of-mask-other)))))

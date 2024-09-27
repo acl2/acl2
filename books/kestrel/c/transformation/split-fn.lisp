@@ -186,7 +186,7 @@
 (define abstract-fn
   ((new-fn-name identp)
    (spec declspec-listp)
-   (pointers type-qual-list-listp)
+   (pointers typequal/attribspec-list-listp)
    (items block-item-listp)
    (decls ident-paramdecl-mapp))
   :short "Create a new function from the block items following the @(tsee
@@ -254,7 +254,7 @@
   ((new-fn-name identp)
    (items block-item-listp)
    (spec declspec-listp)
-   (pointers type-qual-list-listp)
+   (pointers typequal/attribspec-list-listp)
    (decls ident-paramdecl-mapp)
    (split-point natp))
   :short "Transform a list of block items."
@@ -442,7 +442,7 @@
    (new-fn-name identp)
    (tunits transunit-ensemblep)
    (split-point natp))
-  :short "Transform a translation unit ensumble."
+  :short "Transform a translation unit ensemble."
   :returns (mv er
                (new-tunits transunit-ensemblep))
   (b* (((transunit-ensemble tunits) tunits)

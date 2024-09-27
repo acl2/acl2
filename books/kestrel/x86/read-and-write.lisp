@@ -2647,8 +2647,8 @@
 ;; ;move
 ;; (local (in-theory (disable ACL2::INEQ-HACK2
 ;;                            ACL2::INEQ-HACK
-;;                            ACL2::PLUS-BVCAT-WITH-0
-;;                            ACL2::PLUS-BVCAT-WITH-0-ALT)))
+;;
+;;                            )))
 
 
 

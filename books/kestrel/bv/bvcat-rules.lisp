@@ -452,9 +452,7 @@
            (equal (bvmult n 2 x)
                   (bvcat (+ -1 n) x 1 0)))
   :hints (("Goal" :in-theory (e/d (bvmult slice getbit bvcat)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice
-                                   logtail-of-bvchop-becomes-slice)))))
+                                  ()))))
 
 
 ;; TODO: organize this stuff:
@@ -524,7 +522,7 @@
   :hints (("Goal" :cases ((and (integerp z) (integerp y))
                           (and (integerp z) (not (integerp y)))
                           (and (not (integerp z)) (integerp y)))
-           :in-theory (e/d (bvcat) (logtail-of-bvchop-becomes-slice)))))
+           :in-theory (e/d (bvcat) ()))))
 
 ;move
 (DEFTHM BVCAT-SLICE-SLICE-SAME-2

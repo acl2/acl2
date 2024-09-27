@@ -6250,6 +6250,7 @@
   (or (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
       (token-keywordp token? "_Alignas")
+      (token-keywordp token? "__attribute")
       (token-keywordp token? "__attribute__"))
   ///
 
@@ -6364,11 +6365,29 @@
       (token-type-qualifier-p token?)
       (token-function-specifier-p token?)
       (token-keywordp token? "_Alignas")
+      (token-keywordp token? "__attribute")
       (token-keywordp token? "__attribute__"))
   ///
 
   (defrule non-nil-when-token-declaration-specifier-start-p
     (implies (token-declaration-specifier-start-p token?)
+             token?)
+    :rule-classes :compound-recognizer))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define token-type-qualifier-or-attribute-specifier-start-p
+  ((token? token-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional token may start
+          a type qualifier or an attribute specifier."
+  (or (token-type-qualifier-p token?)
+      (token-keywordp token? "__attribute")
+      (token-keywordp token? "__attribute__"))
+  ///
+
+  (defrule non-nil-when-token-type-qualifier-or-attribute-specifier-start-p
+    (implies (token-type-qualifier-or-attribute-specifier-start-p token?)
              token?)
     :rule-classes :compound-recognizer))
 
@@ -6627,143 +6646,6 @@
   (defret parsize-of-parse-*-stringlit-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-type-qualifier-list ((parstate parstatep))
-  :returns (mv erp
-               (tyquals type-qual-listp)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a list of one or more type qualifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We parse the first one, which must exist.
-     Then we check the next token to see if there is be another one,
-     in which case we put it back and recursively parse a type qualifier list,
-     otherwise we put back it back and return."))
-  (b* (((reterr) nil (irr-span) parstate)
-       ((erp token span parstate) (read-token parstate)))
-    (cond
-     ((token-type-qualifier-p token) ; tyqual
-      (b* ((tyqual (token-to-type-qualifier token))
-           ((erp token & parstate) (read-token parstate)))
-        (cond
-         ((token-type-qualifier-p token) ; tyqual tyqual
-          (b* ((parstate (unread-token parstate)) ; tyqual
-               ((erp tyquals last-span parstate) ; tyqual tyquals
-                (parse-type-qualifier-list parstate)))
-            (retok (cons tyqual tyquals)
-                   (span-join span last-span)
-                   parstate)))
-         (t ; tyqual other
-          (b* ((parstate (if token (unread-token parstate) parstate)))
-            (retok (list tyqual) span parstate))))))
-     (t ; other
-      (reterr-msg :where (position-to-msg (span->start span))
-                  :expected "a keyword in {~
-                             const, ~
-                             restrict, ~
-                             volatile, ~
-                             _Atomic~
-                             }"
-                  :found (token-to-msg token)))))
-  :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns
-
-  ///
-
-  (defret parsize-of-parse-type-qualifier-list-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret parsize-of-parse-type-qualifier-list-cond
-    (implies (and (not erp)
-                  token?)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-pointer ((parstate parstatep))
-  :returns (mv erp
-               (tyqualss type-qual-list-listp)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a pointer."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the grammar, a `pointer' is a sequence of one or more stars,
-     each followed by zero or more type qualifiers.
-     In our abstract syntax, we model this notion as
-     a list of lists of type qualifiers,
-     one inner list for each star (implicit in our abstract syntax),
-     with the outer list corresponding to the sequence of stars.")
-   (xdoc::p
-    "We read a star, which must be present:
-     this function is called when we expect a pointer.
-     If the next token is a type qualifier,
-     we put it back and read a list of one or more type qualifiers;
-     then we check the next token if there is another star,
-     in which case we recursively call this function.
-     If instead the initial star is followed by another star,
-     we also call this function recursively.
-     We stop when there is not a star."))
-  (b* (((reterr) nil (irr-span) parstate)
-       ((erp span parstate) (read-punctuator "*" parstate)) ; *
-       ((erp token & parstate) (read-token parstate)))
-    (cond
-     ((token-type-qualifier-p token) ; * tyqual
-      (b* ((parstate (unread-token parstate)) ; *
-           ((erp tyquals span2 parstate) ; * tyquals
-            (parse-type-qualifier-list parstate))
-           ((erp token & parstate) (read-token parstate)))
-        (cond
-         ((token-punctuatorp token "*") ; * tyquals *
-          (b* ((parstate (unread-token parstate)) ; * tyquals
-               ((erp tyqualss last-span parstate) ; * tyquals * tyquals ...
-                (parse-pointer parstate)))
-            (retok (cons tyquals tyqualss)
-                   (span-join span last-span)
-                   parstate)))
-         (t ; * tyquals other
-          (b* ((parstate
-                (if token (unread-token parstate) parstate))) ; * tyquals
-            (retok (list tyquals) (span-join span span2) parstate))))))
-     ((token-punctuatorp token "*") ; * *
-      (b* ((parstate (unread-token parstate)) ; *
-           ((erp tyqualss last-span parstate) ; * * [tyquals] ...
-            (parse-pointer parstate)))
-        (retok (cons nil tyqualss) (span-join span last-span) parstate)))
-     (t ; * other
-      (b* ((parstate (if token (unread-token parstate) parstate)))
-        (retok (list nil) span parstate)))))
-  :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns
-
-  ///
-
-  (defret parsize-of-parse-pointer-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret parsize-of-parse-pointer-cond
-    (implies (and (not erp)
-                  token?)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
@@ -10468,6 +10350,149 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define parse-type-qualifier-or-attribute-specifier ((parstate parstatep))
+    :returns (mv erp
+                 (tyqual/attrib typequal/attribspec-p)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a type qualifier or attribute specifier."
+    (b* (((reterr) (irr-typequal/attribspec) (irr-span) parstate)
+         ((erp token span parstate) (read-token parstate)))
+      (cond
+       ((token-type-qualifier-p token) ; tyqual
+        (retok (typequal/attribspec-tyqual (token-to-type-qualifier token))
+               span
+               parstate))
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((uscores (token-keywordp token "__attribute__"))
+             ((erp attrspec last-span parstate) ; attrspec
+              (parse-attribute-specifier uscores span parstate)))
+          (retok (typequal/attribspec-attrib attrspec)
+                 (span-join span last-span)
+                 parstate)))
+       (t ; other
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a keyword in {~
+                               _Atomic, ~
+                               const, ~
+                               restrict, ~
+                               volatile~
+                               }"
+                    :found (token-to-msg token)))))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-type-qualifier-and-attribute-specifier-list
+    ((parstate parstatep))
+    :returns (mv erp
+                 (tyqualattribs typequal/attribspec-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a list of one or more
+            type qualifiers and attribute specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We parse the first one, which must exist.
+       Then we check the next token to see if there is be another one,
+       in which case we put it back and recursively parse
+       a list of type qualifiers and attribute specifiers,
+       otherwise we put back it back and return."))
+    (b* (((reterr) nil (irr-span) parstate)
+         (psize (parsize parstate))
+         ((erp tyqualattrib span parstate) ; tyqual/attrib
+          (parse-type-qualifier-or-attribute-specifier parstate))
+         ((unless (mbt (<= (parsize parstate) (1- psize))))
+          (reterr :impossible))
+         ((erp token & parstate) (read-token parstate)))
+      (cond
+       ((token-type-qualifier-or-attribute-specifier-start-p
+         token) ; tyqualattrib...
+        (b* ((parstate (unread-token parstate))
+             ((erp tyqualattribs last-span parstate)
+              ;; tyqual/attib tyqual/attribs
+              (parse-type-qualifier-and-attribute-specifier-list parstate)))
+          (retok (cons tyqualattrib tyqualattribs)
+                 (span-join span last-span)
+                 parstate)))
+       (t ; tyqual other
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok (list tyqualattrib) span parstate)))))
+    :measure (two-nats-measure (parsize parstate) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-pointer ((parstate parstatep))
+    :returns (mv erp
+                 (tyqualattribss typequal/attribspec-list-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a pointer."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "In the grammar, a `pointer' is a sequence of one or more stars,
+       each followed by zero or more type qualifiers and attribute specifiers.
+       In our abstract syntax, we model this notion as
+       a list of lists of type qualifiers and attribute specifiers,
+       one inner list for each star (implicit in our abstract syntax),
+       with the outer list corresponding to the sequence of stars.")
+     (xdoc::p
+      "We read a star, which must be present:
+       this function is called when we expect a pointer.
+       If the next token is a type qualifier or starts an attribute specifier,
+       we put it back and read a list of
+       one or more type qualifiers and attribute specifier;
+       then we check the next token if there is another star,
+       in which case we recursively call this function.
+       If instead the initial star is followed by another star,
+       we also call this function recursively.
+       We stop when there is not a star."))
+    (b* (((reterr) nil (irr-span) parstate)
+         ((erp span parstate) (read-punctuator "*" parstate)) ; *
+         ((erp token & parstate) (read-token parstate)))
+      (cond
+       ((token-type-qualifier-or-attribute-specifier-start-p
+         token) ; * tyqual/attrib...
+        (b* ((parstate (unread-token parstate)) ; *
+             (psize (parsize parstate))
+             ((erp tyqualattribs span2 parstate) ; * tyqual/attribs
+              (parse-type-qualifier-and-attribute-specifier-list parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp token & parstate) (read-token parstate)))
+          (cond
+           ((token-punctuatorp token "*") ; * tyqual/attribs *
+            (b* ((parstate (unread-token parstate)) ; * tyqual/attribs
+                 ((erp tyqualattribss last-span parstate)
+                  ;; * tyqual/attribs * [tyqual/attribs] ...
+                  (parse-pointer parstate)))
+              (retok (cons tyqualattribs tyqualattribss)
+                     (span-join span last-span)
+                     parstate)))
+           (t ; * tyqual/attribs other
+            (b* ((parstate ; * tyqual/attribs
+                  (if token (unread-token parstate) parstate)))
+              (retok (list tyqualattribs) (span-join span span2) parstate))))))
+       ((token-punctuatorp token "*") ; * *
+        (b* ((parstate (unread-token parstate)) ; *
+             ((erp tyqualattribss last-span parstate) ; * * [tyqual/attribs] ...
+              (parse-pointer parstate)))
+          (retok (cons nil tyqualattribss)
+                 (span-join span last-span)
+                 parstate)))
+       (t ; * other
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok (list nil) span parstate)))))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define parse-struct-or-union-specifier ((parstate parstatep))
     :returns (mv erp
                  (strunispec strunispecp)
@@ -10729,11 +10754,15 @@
                ;; and then we parse the assignment expression.
                ((token-type-qualifier-p token3) ; [ static tyqual
                 (b* ((parstate (unread-token parstate)) ; [ static
-                     ((erp tyquals & parstate) ; [ static tyquals
-                      (parse-type-qualifier-list parstate))
-                     ((erp expr & parstate) ; [ static tyquals expr
+                     (psize (parsize parstate))
+                     ((erp tyquals & parstate) ; [ static tyqualattribs
+                      (parse-type-qualifier-and-attribute-specifier-list
+                       parstate))
+                     ((unless (mbt (<= (parsize parstate) (1- psize))))
+                      (reterr :impossible))
+                     ((erp expr & parstate) ; [ static tyqualattribs expr
                       (parse-assignment-expression parstate))
-                     ((erp last-span parstate) ; [ static tyquals expr ]
+                     ((erp last-span parstate) ; [ static tyqualattribs expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array-static1
                           :decl? nil
@@ -10760,10 +10789,13 @@
            ;; we must have a list of type qualifiers,
            ;; possibly followed by the keyword 'static',
            ;; and necessarily followed by an assignment expression.
-           ((token-type-qualifier-p token2) ; [ tyqual
+           ((token-type-qualifier-p token2) ; [ tyqualattrib...
             (b* ((parstate (unread-token parstate)) ; [
-                 ((erp tyquals & parstate) ; [ tyquals
-                  (parse-type-qualifier-list parstate))
+                 (psize (parsize parstate))
+                 ((erp tyquals & parstate) ; [ tyqualattribs
+                  (parse-type-qualifier-and-attribute-specifier-list parstate))
+                 ((unless (mbt (<= (parsize parstate) (1- psize))))
+                  (reterr :impossible))
                  ((erp token3 span3 parstate) (read-token parstate)))
               (cond
                ;; If token3 is the keyword 'static',
@@ -11143,10 +11175,13 @@
            ;; we put it back and read a list of type qualifiers,
            ;; but the array variant is still not determined,
            ;; so we read another token after that.
-           ((token-type-qualifier-p token2) ; [ tyqual
+           ((token-type-qualifier-p token2) ; [ tyqualattrib...
             (b* ((parstate (unread-token parstate)) ; [
-                 ((erp tyquals & parstate) ; [ tyquals
-                  (parse-type-qualifier-list parstate))
+                 (psize (parsize parstate))
+                 ((erp tyquals & parstate) ; [ tyqualattribs
+                  (parse-type-qualifier-and-attribute-specifier-list parstate))
+                 ((unless (mbt (<= (parsize parstate) (1- psize))))
+                  (reterr :impossible))
                  ((erp token3 span3 parstate) (read-token parstate)))
               (cond
                ;; If token3 is a star, it may start an expression,
@@ -11276,13 +11311,17 @@
                ;; If token3 is a type qualifier,
                ;; we put it back and parse a list of type qualifiers,
                ;; and then we parse an expression.
-               ((token-type-qualifier-p token3) ; [ static tyqual
+               ((token-type-qualifier-p token3) ; [ static tyqualattrib...
                 (b* ((parstate (unread-token parstate)) ; [ static
-                     ((erp tyquals & parstate) ; [ static tyquals
-                      (parse-type-qualifier-list parstate))
-                     ((erp expr & parstate) ; [ static tyquals expr
+                     (psize (parsize parstate))
+                     ((erp tyquals & parstate) ; [ static tyqualattribs
+                      (parse-type-qualifier-and-attribute-specifier-list
+                       parstate))
+                     ((unless (mbt (<= (parsize parstate) (1- psize))))
+                      (reterr :impossible))
+                     ((erp expr & parstate) ; [ static tyqualattribs expr
                       (parse-assignment-expression parstate))
-                     ((erp last-span parstate) ; [ static tyquals expr ]
+                     ((erp last-span parstate) ; [ static tyqualattribs expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array-static1 :decl prev-dirdeclor
                                                        :tyquals tyquals
@@ -11484,7 +11523,10 @@
        ;; so we parse it, and then we parse a direct declarator.
        ((token-punctuatorp token "*") ; *
         (b* ((parstate (unread-token parstate)) ;
+             (psize (parsize parstate))
              ((erp tyqualss & parstate) (parse-pointer parstate)) ; pointer
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
              ((erp dirdeclor last-span parstate) ; pointer dirdeclor
               (parse-direct-declarator parstate)))
           (retok (make-declor :pointers tyqualss
@@ -14504,6 +14546,21 @@
           (parsize parstate))
       :rule-classes :linear
       :fn parse-declaration-specifiers)
+    (defret parsize-of-parse-type-qualifier-or-attribute-specifier-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-type-qualifier-or-attribute-specifier)
+    (defret parsize-of-parse-type-qualifier-and-attribute-specifier-list-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-type-qualifier-and-attribute-specifier-list)
+    (defret parsize-of-parse-pointer-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-pointer)
     (defret parsize-of-parse-struct-or-union-specifier-uncond
       (<= (parsize new-parstate)
           (parsize parstate))
@@ -15262,6 +15319,24 @@
                    (1- (parsize parstate))))
       :rule-classes :linear
       :fn parse-declaration-specifiers)
+    (defret parsize-of-parse-type-qualifier-or-attribute-specifier-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-type-qualifier-or-attribute-specifier)
+    (defret parsize-of-parse-type-qualifier-and-attribute-specifier-list-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-type-qualifier-and-attribute-specifier-list)
+    (defret parsize-of-parse-pointer-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-pointer)
     (defret parsize-of-parse-struct-or-union-specifier-cond
       (implies (not erp)
                (<= (parsize new-parstate)

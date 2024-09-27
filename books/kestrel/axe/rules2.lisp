@@ -1,7 +1,7 @@
 ; Mixed rules 2
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -70,8 +70,6 @@
 ;(local (in-theory (enable BAG::UNIQUE-OF-CONS)))
 
 ;(local (in-theory (disable LIST::2SET))) ;move
-
-;(local (in-theory (disable FLOOR-MINUS-ERIC-BETTER)))
 
 ;; ;what about lambdas?
 ;; ;dup?
@@ -1586,7 +1584,7 @@
 ;;                 (< n 32))
 ;;            (equal (bvchop n (sshr 32 x shiftamt))
 ;;                   (slice (+ shiftamt n -1) shiftamt x)))
-;;   :hints (("Goal" :in-theory (e/d ( sshr slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+;;   :hints (("Goal" :in-theory (e/d ( sshr slice) (
 ;;                                                            LOGEXT-OF-LOGTAIL ;looped
 ;;                                                            LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE ;looped
 ;;                                                            )))))
@@ -1603,7 +1601,7 @@
 ;;                   (logext (+ n shiftamt (unary-- shiftamt))
 ;;                           (slice (binary-+ '-1 (binary-+ n shiftamt))
 ;;                                  shiftamt x))))
-;;   :hints (("Goal" :in-theory (e/d ( sshr slice) (bvchop-of-logtail bvchop-of-logtail-becomes-slice
+;;   :hints (("Goal" :in-theory (e/d ( sshr slice) (bvchop-of-logtail
 ;;                                                                               LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
 ;; ;use to prove the other one?
@@ -1615,7 +1613,7 @@
 ;;                 (< n 32))
 ;;            (equal (bvchop n (sshr 32 x shiftamt))
 ;;                   (slice (+ shiftamt n -1) shiftamt x)))
-;;   :hints (("Goal" :in-theory (e/d ( sshr slice) (bvchop-of-logtail-becomes-slice
+;;   :hints (("Goal" :in-theory (e/d ( sshr slice) (
 ;;                                                            LOGEXT-OF-LOGTAIL ;looped
 ;;                                                            LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE ;looped
 ;;                                                            )))))
@@ -1632,7 +1630,7 @@
 ;;                                  SHIFTAMT X))
 ;;                   ;;(sslice (+ -1 n shiftamt) shiftamt x)
 ;;                   ))
-;;   :hints (("Goal" :in-theory (e/d (slice  sshr) (BVCHOP-OF-LOGTAIL bvchop-of-logtail-becomes-slice
+;;   :hints (("Goal" :in-theory (e/d (slice  sshr) (BVCHOP-OF-LOGTAIL
 ;;                                                                               ;loops:
 ;;                                                                               LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
@@ -1650,8 +1648,6 @@
 ;;            (integerp (ARRAY-ELEM-2D2 row col ref heap)))
 ;;   :hints (("Goal" :in-theory (e/d (ARRAY-ELEM-2D2 ARRAY-ELEM-2D)
 ;;                                   (ARRAY-ELEM-2D2-RECOLLAPSE ARRAY-ELEM-2D-recollapse NTH-OF-ARRAY-ROW)))))
-
-;(local (in-theory (disable BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))
 
 ;; (encapsulate (((bytepstub *) => *))
 ;;              (local (defun bytepstub (x) (declare (ignore x)) 0))
@@ -1816,7 +1812,7 @@
 ;;   :hints (("Goal" :in-theory (e/d (getbit ;s-bit
 ;;                                    slice) (SLICE-BECOMES-BVCHOP
 ;;                                    BVCHOP-1-BECOMES-GETBIT
-;;                                    slice-becomes-getbit)))))
+;;                                    )))))
 
 ;; (in-theory (disable BVCHOP-OF-LOGAPP-BIGGER ;BVCHOP-LOGAPP
 ;;                     ))
