@@ -1042,7 +1042,7 @@
                          ;; note that we don't look up lambdas in the assumptions (this is consistent with simplifying first)
                          (let* ((formals (second fn))
                                 (body (third fn))
-                                ;; TODO: We could avoid the consing in make-alist-fast by making a variant of sublis-var-and-eval that takes 2 lists:
+                                ;; TODO: Use a subcor-var-and-eval function here, like we do elsewhere:
                                 (new-expr (sublis-var-and-eval (pairlis$-fast formals args) body interpreted-function-alist)))
                            ;;simplify the result of beta-reducing:
                            (simplify-tree-and-add-to-dag new-expr

@@ -1,4 +1,4 @@
-; A tool to generate substution code that calls a given evaluator
+; A tool to generate substitution code that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2024 Kestrel Institute
