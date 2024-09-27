@@ -17,7 +17,7 @@
 ;; of an alist you have the list of vars and the list of values as separate
 ;; lists.
 
-;; See also make-substitution-code-simple.lisp.
+;; See also make-sublis-var-and-eval-simple.lisp.
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "bounded-darg-listp")
