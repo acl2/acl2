@@ -343,7 +343,14 @@
   (b* ((vstate (get-validator-state val systate)))
     (set::union (validator-state->dag vstate)
                 (validator-state->buffer vstate)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled in-owned-certificates-when-in-accepted-certificates
+    (implies (set::in cert (accepted-certificates val systate))
+             (set::in cert (owned-certificates val systate)))
+    :enable owned-certificates))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
