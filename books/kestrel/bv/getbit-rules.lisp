@@ -26,7 +26,7 @@
                     (bitnot (getbit n x)))))
   :hints (("Goal" ;; :cases ((integerp x))
            :in-theory (e/d (getbit bitnot)
-                                  (BVCHOP-1-BECOMES-GETBIT
+                                  (
 
                                    ;BITNOT-OF-SLICE ;bozo
                                    ;BITXOR-OF-SLICE-ARG2 ;loops with defn getbit
@@ -63,5 +63,5 @@
            (equal (getbit n (floor x y))
                   0))
   :hints (("Goal" :in-theory (e/d (getbit slice logtail-when-equal-of-logtail-and-0-and->=)
-                                  (BVCHOP-1-BECOMES-GETBIT
+                                  (
                                    )))))

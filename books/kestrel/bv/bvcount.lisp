@@ -1,7 +1,7 @@
 ; Counting the number of 1 bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -71,8 +71,7 @@
 ;;            (equal (evenp (bvchop size x))
 ;;                   (equal 0 (getbit 0 x))))
 ;;   :hints (("Goal" :in-theory (e/d (bvchop EVENP-BECOMES-EQUAL-OF-0-AND-MOD getbit)
-;;                                   (
-;;                                     BVCHOP-1-BECOMES-GETBIT)))))
+;;                                   ()))))
 
 (defthm bvcount-bound
   (implies (natp size)
@@ -136,7 +135,7 @@
 ;;   :hints (("Goal" ;:expand ((LOGCOUNT (BVCHOP SIZE X)))
 ;;            :in-theory (e/d (slice bvplus BVCHOP-OF-LOGTAIL floor-by-2
 ;;                                   bvcount)
-;;                            (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+;;                            ()))))
 
 ;; (defthmd bvcount-unroll2
 ;;   (implies (posp size)

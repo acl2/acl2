@@ -1,6 +1,6 @@
 ; Formalization of one's complement arithmetic
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -341,8 +341,8 @@
  ;;                                  UNSIGNED-BYTE-P
  ;;                                  bvchop
  ;;                                  expt-of-+)
- ;;                                 (BVCHOP-1-BECOMES-GETBIT
- ;;                                  BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+ ;;                                 (
+ ;;                                  )))))
 
 (defthm bvplus1c-of-0-arg2
   (equal (bvplus1c size 0 y)
