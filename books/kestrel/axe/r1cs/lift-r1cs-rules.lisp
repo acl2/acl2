@@ -1,6 +1,6 @@
 ; Rules for lifting R1CSes into logic (with Axe)
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -261,8 +261,7 @@
   :hints (("Goal" :in-theory (e/d (acl2::slice-of-sum-cases
                                    acl2::evenp-becomes-equal-of-0-and-mod
                                    acl2::bvchop)
-                                  (acl2::slice-becomes-getbit
-                                   acl2::bvchop-1-becomes-getbit)))))
+                                  (acl2::slice-becomes-getbit)))))
 
 
 ;; (thm

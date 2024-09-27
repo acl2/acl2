@@ -89,7 +89,7 @@
   (equal (bvchop n (lognot (bvchop n x)))
          (bvchop n (lognot x)))
   :hints (("Goal" :in-theory (e/d (lognot)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 (defthm bvnot-of-bvnot
   (equal (bvnot size (bvnot size x))
@@ -122,7 +122,7 @@
            :in-theory (e/d (bvnot getbit slice)
                            (BVCHOP-LOGNOT-BVCHOP
                              ;LOGTAIL-BVCHOP
-                            bvchop-1-becomes-getbit BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                             BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 ;rename and gen
 (defthm getbit-1-of-bvnot-1
@@ -172,13 +172,14 @@
                                   bvchop-of-logtail
                                   lognot-of-logtail
                                   bvchop-of-mask-gen
-                                  ) (bvchop-of-logtail-becomes-slice
+                                  )
+                           (bvchop-of-logtail-becomes-slice
                                   bvchop-of-minus
                                   logtail-of-lognot
                                   ;LOGNOT-OF-LOGTAIL
                                   bvchop-lognot-bvchop
 ;bvchop-of-logtail
-                                  logtail-of-bvchop-becomes-slice)))))
+                                  )))))
 
 (defthm bvnot-of-all-ones
   (implies (natp width)

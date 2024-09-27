@@ -381,13 +381,11 @@
            :cases ((equal 0 (getbit 0 x)))
            :use ((:instance BVCHOP-LOGNOT-BVCHOP (n 1)))
            :in-theory (e/d (bvxor bvnot bitxor ;LOGXOR*
-    ;                                          bvchop
-    ;lognot getbit
+                                  ;; bvchop
+                                  ;;lognot getbit
                                   getbit)
-                           (
-                            GETBIT-WHEN-NOT-0
+                           (GETBIT-WHEN-NOT-0
                             BVCHOP-LOGNOT-BVCHOP
-    ;BVCHOP-1-BECOMES-GETBIT
                             BVXOR-1-BECOMES-BITXOR)))))
 
 ;we should either prefer xors to nots, or vice versa (weird 4 rule loop if we are not careful)
@@ -488,7 +486,7 @@
                                   bvxor
                                   bitnot
                                   )
-                           (bvchop-1-becomes-getbit
+                           (
 
                             bvxor-1-becomes-bitxor)))))
 
@@ -622,7 +620,7 @@
                 (natp size2))
            (equal (bvxor size (bvor size2 x y) z)
                   (bvxor size (bvor size x y) z)))
- :hints (("Goal" :in-theory (e/d (bvxor) (BVCHOP-1-BECOMES-GETBIT)))))
+ :hints (("Goal" :in-theory (e/d (bvxor) ()))))
 
 ;bozo more like this (all combinations!)
 ;how about a macro to prove all combinations of a given theorem.  you put in a placeholder a bunch of substitutions
@@ -634,7 +632,7 @@
                 (natp size2))
            (equal (bvxor size z (bvor size2 x y))
                   (bvxor size z (bvor size x y))))
- :hints (("Goal" :in-theory (e/d (bvxor) (BVCHOP-1-BECOMES-GETBIT)))))
+ :hints (("Goal" :in-theory (e/d (bvxor) ()))))
 
 ;here we tighten the call to size...
 (defthm slice-of-bvxor-tighten2
@@ -648,7 +646,7 @@
   :hints (("Goal" :in-theory (e/d (slice) (slice-becomes-bvchop
 
                                            logtail-of-bvchop-becomes-slice
-                                           bvchop-of-logtail-becomes-slice)))))
+                                           )))))
 
 ;gen the bvand to any op?
 (defthm slice-of-bvand-tighten-high-index
@@ -671,9 +669,7 @@
     :in-theory
     (e/d
      (getbit bvand bvchop-of-logtail slice)
-     ( bvchop-1-becomes-getbit
-                           bvchop-of-logtail-becomes-slice
-                           LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
+     (LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
 
 ;drop in favor of a general trim rule?
 (defthm bvand-of-bvnot-trim
@@ -697,8 +693,7 @@
                            (slice highbit lowbit y))))
   :hints (("Goal" :cases ((natp (+ 1 highbit (- lowbit))))
            :in-theory (e/d (slice bvand natp logtail-of-bvchop)
-                           (slice-becomes-bvchop
-                            bvchop-of-logtail-becomes-slice)))))
+                           (slice-becomes-bvchop)))))
 
 ;; helps simplify bvand with a mask like FF000000
 ;; looks for a mask whose low byte is 0

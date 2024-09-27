@@ -58,9 +58,9 @@
 ;;                   (getbit n (bvcat (+ 1 n (- C)) i c 0))))
 ;;   :hints (("Goal" :in-theory (e/d (ash GETBIT BVCAT logapp SLICE
 ;;                                        BVCHOP-OF-LOGTAIL)
-;;                                   (BVCHOP-1-BECOMES-GETBIT
+;;                                   (
 ;;
-;;                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+;;                                    )))))
 
 ;(in-theory (enable logext-of-sum-trim-constant))
 
@@ -99,7 +99,7 @@
                                    bvchop
                                    ifix)
                                   (
-                                   bvchop-1-becomes-getbit
+
                                    MOD-OF-EXPT-OF-2)))))
 
 
@@ -124,7 +124,7 @@
            :use (:instance UNSIGNED-BYTE-P-shift-lemma (n (- n)))
            :in-theory (e/d (ash SLICE LOGTAIL ;floor
                                 )
-                           (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                           ()))))
 
 (defthmd bvand-of-+-arg2
   (implies (and (natp width)
@@ -183,7 +183,7 @@
                   0))
   :hints (("Goal" :in-theory (e/d (slice)
                                   (repeatbit
-                                   bvchop-of-logtail-becomes-slice
+
                                    logtail-of-plus)))))
 
 (defthm ash-becomes-bvcat
@@ -237,7 +237,7 @@
            (equal (bvchop size (ash x n))
                   (bvcat (- size n) x n 0)))
   :hints (("Goal" :in-theory (e/d (ash slice logtail)
-                                  (bvchop-of-logtail-becomes-slice)))))
+                                  ()))))
 
 ;used by axe
 (defthmd natp-of-+
@@ -412,9 +412,7 @@
   (equal (mod (bvchop 63 x) 2)
          (getbit 0 x))
   :hints (("Goal" :in-theory (e/d (bvchop getbit)
-                                  (mod-of-expt-of-2
-                                   bvchop-1-becomes-getbit
-                                   )))))
+                                  (mod-of-expt-of-2)))))
 
 ;move to an arith library
 (defthm <-of-constant-when-<-of-constant-integer

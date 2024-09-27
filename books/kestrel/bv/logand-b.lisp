@@ -74,8 +74,7 @@
          (logand (getbit n i)
                  (getbit n j)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit
-                                   )))))
+                                  ()))))
 
 (defthm logbitp-of-logand
   (implies (and (natp i)
@@ -89,4 +88,4 @@
   (equal (logand 1 x)
          (getbit 0 x))
   :hints (("Goal" :in-theory (e/d (logand getbit bvchop)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))

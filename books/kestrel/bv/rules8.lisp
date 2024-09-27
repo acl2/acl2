@@ -1,7 +1,7 @@
 ; Mixed rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -82,7 +82,7 @@
                     (bvplus 30 -1 (slice 31 2 x)))))
   :hints
   (("Goal" :in-theory (e/d (slice logtail-of-bvchop bvplus)
-                           (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                           (
                             ;;anti-slice
                             bvchop-of-logtail
                                        ;BVLT-OF-BVCHOP-ARG2
