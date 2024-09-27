@@ -1048,6 +1048,11 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; these can be easily distinguished from other declaration specifiers
 ; by the starting '__attribute__' or '__attribute' GCC keyword.
 
+; As a GCC extension, allow a list of type qualifiers
+; to also contains attribute specifiers.
+; Thus we use type-qualifier-and-attribute-specifier-list
+; instead of just type-qualifier-list.
+
 ; As a GCC extension,
 ; we allow one or more attribute specifiers
 ; to occur just before the ending semicolon of
@@ -1183,20 +1188,28 @@ direct-declarator =
       identifier
     / "(" declarator ")"
     / direct-declarator
-      "[" [ type-qualifier-list ] [ assignment-expression ] "]"
+      "[" [ type-qualifier-and-attribute-specifier-list ]
+          [ assignment-expression ] "]"
     / direct-declarator
-      "[" %s"static" [ type-qualifier-list ] assignment-expression "]"
+      "[" %s"static" [ type-qualifier-and-attribute-specifier-list ]
+          assignment-expression "]"
     / direct-declarator
-      "[" type-qualifier-list %s"static" assignment-expression "]"
-    / direct-declarator "[" [ type-qualifier-list ] "*" "]"
+      "[" type-qualifier-and-attribute-specifier-list %s"static"
+          assignment-expression "]"
+    / direct-declarator
+      "[" [ type-qualifier-and-attribute-specifier-list ] "*" "]"
     / direct-declarator "(" parameter-type-list ")"
     / direct-declarator "(" [ identifier-list ] ")"
 
-pointer = "*" [ type-qualifier-list ]
-        / "*" [ type-qualifier-list ] pointer
+pointer = "*" [ type-qualifier-and-attribute-specifier-list ]
+        / "*" [ type-qualifier-and-attribute-specifier-list ] pointer
 
-type-qualifier-list = type-qualifier
-                    / type-qualifier-list type-qualifier
+type-qualifier-or-attribute-specifier = type-qualifier / attribute-specifier
+
+type-qualifier-and-attribute-specifier-list =
+      type-qualifier-or-attribute-specifier
+    / type-qualifier-and-attribute-specifier-list
+      type-qualifier-or-attribute-specifier
 
 parameter-type-list = parameter-list
                     / parameter-list "," "..."
@@ -1218,11 +1231,14 @@ abstract-declarator = pointer
 direct-abstract-declarator =
       "(" abstract-declarator ")"
     / [ direct-abstract-declarator ]
-      "[" [ type-qualifier-list ] [ assignment-expression ] "]"
+      "[" [ type-qualifier-and-attribute-specifier-list ]
+          [ assignment-expression ] "]"
     / [ direct-abstract-declarator ]
-      "[" %s"static" [ type-qualifier-list ] assignment-expression "]"
+      "[" %s"static" [ type-qualifier-and-attribute-specifier-list ]
+          assignment-expression "]"
     / [ direct-abstract-declarator ]
-      "[" type-qualifier-list %s"static" assignment-expression "]"
+      "[" type-qualifier-and-attribute-specifier-list %s"static"
+          assignment-expression "]"
     / [ direct-abstract-declarator ] "[" "*" "]"
     / [ direct-abstract-declarator ] "(" [ parameter-type-list ] ")"
 

@@ -899,7 +899,7 @@
                          ;; note that we don't look up lambdas in the nodenums-to-assume-false (this is consistent with simplifying first)
                          (let* ((formals (second fn))
                                 (body (third fn))
-                                ;;BOZO could optimize this pattern: (sublis-var-and-eval (my pairlis$ formals args) body)
+                                ;; TODO: Use a subcor-var-and-eval function here, like we do elsewhere:
                                 (new-expr (sublis-var-and-eval (pairlis$ formals args) body interpreted-function-alist)))
                            (simplify-tree-and-add-to-dag-for-axe-prover new-expr
                                                                         equiv ; was: 'equal

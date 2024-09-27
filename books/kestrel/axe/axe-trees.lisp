@@ -1,7 +1,7 @@
 ; Axe trees
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -415,6 +415,11 @@
 (defthm axe-treep-of-car-when-bounded-axe-tree-listp
   (implies (bounded-axe-tree-listp trees bound)
            (axe-treep (car trees))))
+
+(defthmd bounded-axe-treep-when-symbolp
+  (implies (symbolp tree)
+           (bounded-axe-treep tree bound))
+  :hints (("Goal" :in-theory (enable bounded-axe-treep))))
 
 (defthmd bounded-axe-treep-when-natp
   (implies (and (natp tree)

@@ -37,33 +37,146 @@
       another.")
     (xdoc::p
       "For instance, consider the following C code:")
-    (xdoc::code
-      "int foo(int y, int z) {"
-      "  int x = 5;"
-      "  return x + y - z;"
+    (xdoc::codeblock
+      "int fibonacci(int x) {"
+      "  if (x <= 1) {"
+      "    return x;"
+      "  }"
+      "  return fibonacci(x - 1) + fibonacci(x - 2);"
       "}")
     (xdoc::p
-      "Copying @('foo') and creating a new function @('bar') yields the
+      "Copying @('fibonacci') and creating a new function @('fib') yields the
        following:")
-    (xdoc::code
-      "int foo(int y, int z) {"
-      "  int x = 5;"
-      "  return x + y - z;"
+    (xdoc::codeblock
+      "int fibonacci(int x) {"
+      "  if (x <= 1) {"
+      "    return x;"
+      "  }"
+      "  return fibonacci(x - 1) + fibonacci(x - 2);"
       "}"
-      "int bar(int y, int z) {"
-      "  int x = 5;"
-      "  return x + y - z;"
+      "int fib(int x) {"
+      "  if (x <= 1) {"
+      "    return x;"
+      "  }"
+      "  return fib(x - 1) + fib(x - 2);"
       "}")
     (xdoc::p
       "This transformation is not likely to be useful in isolation. Most often
        it is an initial step before applying different transformations to the
-       two duplicates.")
-    (xdoc::p
-      "Currently, this transformation does <i>not</i> rename recursive function
-       calls in the body to match the new function name. This is planned to
-       change soon."))
+       two duplicates."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines rename-fn-funcall-fun
+  (define rename-fn-funcall-fun
+    ((expr exprp)
+     (old-fn identp)
+     (new-fn identp))
+    :short "Rename a function within a @('funcall') function expression."
+    :returns (new-expr exprp)
+    (expr-case
+     expr
+     :ident (if (equal expr.unwrap old-fn)
+                (expr-ident new-fn)
+              (expr-fix expr))
+     :paren (expr-paren (rename-fn-funcall-fun expr.unwrap old-fn new-fn))
+     :gensel
+     (make-expr-gensel
+       :control expr.control
+       :assocs (rename-fn-funcall-fun-genassoc-list expr.assocs old-fn new-fn))
+     :cast (make-expr-cast :type expr.type
+                           :arg (rename-fn-funcall-fun expr.arg old-fn new-fn))
+     :otherwise (expr-fix expr))
+    :measure (expr-count expr))
+
+  (define rename-fn-funcall-fun-genassoc
+    ((genassoc genassocp)
+     (old-fn identp)
+     (new-fn identp))
+    :returns (new-genassoc genassocp)
+    (genassoc-case
+     genassoc
+     :type (make-genassoc-type :type genassoc.type
+                               :expr (rename-fn-funcall-fun genassoc.expr old-fn new-fn))
+     :default (genassoc-default (rename-fn-funcall-fun genassoc.expr old-fn new-fn)))
+    :measure (genassoc-count genassoc))
+
+  (define rename-fn-funcall-fun-genassoc-list
+    ((genassocs genassoc-listp)
+     (old-fn identp)
+     (new-fn identp))
+    :returns (new-genassocs genassoc-listp)
+    (if (endp genassocs)
+        nil
+      (cons (rename-fn-funcall-fun-genassoc (first genassocs) old-fn new-fn)
+            (rename-fn-funcall-fun-genassoc-list (rest genassocs) old-fn new-fn)))
+    :measure (genassoc-list-count genassocs))
+
+  :hints (("Goal" :in-theory '(deftrans-measure-theory)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftrans rename-fn
+  :extra-args ((old-fn identp) (new-fn identp))
+  :expr
+  (lambda (expr old-fn new-fn)
+    (expr-case
+      expr
+      :paren (expr-paren (rename-fn-expr expr.unwrap old-fn new-fn))
+      :gensel
+      (make-expr-gensel :control (rename-fn-expr expr.control old-fn new-fn)
+                        :assocs (rename-fn-genassoc-list expr.assocs old-fn new-fn))
+      :arrsub (make-expr-arrsub :arg1 (rename-fn-expr expr.arg1 old-fn new-fn)
+                                :arg2 (rename-fn-expr expr.arg2 old-fn new-fn))
+      ;; This is the interesting case
+      :funcall (make-expr-funcall :fun (rename-fn-funcall-fun expr.fun old-fn new-fn)
+                                  :args (rename-fn-expr-list expr.args old-fn new-fn))
+      :member (make-expr-member :arg (rename-fn-expr expr.arg old-fn new-fn)
+                                :name expr.name)
+      :memberp (make-expr-memberp :arg (rename-fn-expr expr.arg old-fn new-fn)
+                                  :name expr.name)
+      :complit
+      (make-expr-complit :type expr.type
+                         :elems (rename-fn-desiniter-list expr.elems old-fn new-fn)
+                         :final-comma expr.final-comma)
+      :unary (make-expr-unary :op expr.op
+                              :arg (rename-fn-expr expr.arg old-fn new-fn))
+      :sizeof (expr-sizeof (rename-fn-tyname expr.type old-fn new-fn))
+      :alignof (make-expr-alignof :type (rename-fn-tyname expr.type old-fn new-fn)
+                                  :uscores expr.uscores)
+      :cast (make-expr-cast :type (rename-fn-tyname expr.type old-fn new-fn)
+                            :arg (rename-fn-expr expr.arg old-fn new-fn))
+      :binary (make-expr-binary :op expr.op
+                                :arg1 (rename-fn-expr expr.arg1 old-fn new-fn)
+                                :arg2 (rename-fn-expr expr.arg2 old-fn new-fn))
+      :cond (make-expr-cond :test (rename-fn-expr expr.test old-fn new-fn)
+                            :then (rename-fn-expr expr.then old-fn new-fn)
+                            :else (rename-fn-expr expr.else old-fn new-fn))
+      :comma (make-expr-comma :first (rename-fn-expr expr.first old-fn new-fn)
+                              :next (rename-fn-expr expr.next old-fn new-fn))
+      :stmt (expr-stmt (rename-fn-block-item-list expr.items old-fn new-fn))
+      :tycompat (make-expr-tycompat :type1 (rename-fn-tyname expr.type1 old-fn new-fn)
+                                    :type2 (rename-fn-tyname expr.type2 old-fn new-fn))
+      :offsetof
+      (make-expr-offsetof :type (rename-fn-tyname expr.type old-fn new-fn)
+                          :member (rename-fn-member-designor expr.member old-fn
+                                                             new-fn))
+      :sizeof-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
+                            (expr-fix expr))
+      :cast/call-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
+                               (expr-fix expr))
+      :cast/mul-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
+                              (expr-fix expr))
+      :cast/add-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
+                              (expr-fix expr))
+      :cast/sub-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
+                              (expr-fix expr))
+      :cast/and-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
+                              (expr-fix expr))
+      :otherwise (expr-fix expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,10 +204,7 @@
                               :params fundef.declor.decl.params
                               :ellipsis fundef.declor.decl.ellipsis))
             :decls fundef.decls
-            ;; TODO: need to replace the recursive function calls with the new
-            ;;   function name.
-            ;; :body (TODO-RENAME-RECUR target-fn new-fn fundef.body))
-            :body fundef.body)
+            :body (rename-fn-stmt fundef.body target-fn new-fn))
         nil)
       :otherwise nil)))
 
