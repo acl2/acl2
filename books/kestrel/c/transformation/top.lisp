@@ -10,9 +10,11 @@
 
 (in-package "C2C")
 
+(include-book "copy-fn")
 (include-book "deftrans")
 (include-book "rename")
 (include-book "simpadd0-proofs")
+(include-book "specialize")
 (include-book "split-fn-proofs")
 (include-book "utilities/top")
 
