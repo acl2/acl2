@@ -129,9 +129,9 @@
                                    (all-addresses systate)))
        (leader (leader-at-round commit-round commit-round-commtt))
        (anchor?
-        (get-certificate-with-author+round leader commit-round vstate.dag))
+        (certificate-with-author+round leader commit-round vstate.dag))
        ((unless anchor?) nil)
-       (voters (get-certificates-with-round vstate.round vstate.dag))
+       (voters (certificates-with-round vstate.round vstate.dag))
        ((mv yes-votes &) (tally-leader-votes leader voters))
        ((unless (>= yes-votes
                     (1+ (committee-max-faulty vstate.round-commtt))))
@@ -181,7 +181,7 @@
                                           (all-addresses systate)))
        (leader (leader-at-round commit-round commtt))
        (anchor
-        (get-certificate-with-author+round leader commit-round vstate.dag))
+        (certificate-with-author+round leader commit-round vstate.dag))
        (anchors (collect-anchors anchor
                                  (- commit-round 2)
                                  vstate.last
@@ -288,7 +288,7 @@
                              vstate.blockchain
                              (all-addresses systate)))
                     (leader (leader-at-round commit-round commtt))
-                    (anchor (get-certificate-with-author+round
+                    (anchor (certificate-with-author+round
                              leader commit-round vstate.dag))
                     (anchors (collect-anchors anchor
                                               (- commit-round 2)

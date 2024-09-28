@@ -127,9 +127,9 @@
           (and (equal author (certificate->author cert))
                (certificate-fix cert)))
          (prev-certs
-          (get-certificates-with-authors+round (certificate->previous cert)
-                                               (1- (certificate->round cert))
-                                               dag)))
+          (certificates-with-authors+round (certificate->previous cert)
+                                           (1- (certificate->round cert))
+                                           dag)))
       (path-to-author+round-set prev-certs author round dag))
     :measure (acl2::nat-list-measure (list (certificate->round cert)
                                            0
@@ -163,7 +163,7 @@
                      (set1 (certificate-set->round-set (set::tail certs)))
                      (set2 (certificate-set->round-set certs)))
           (:instance
-           certificate-set->round-set-of-get-certificates-with-authors+round
+           certificate-set->round-set-of-certificates-with-authors+round
            (authors (certificate->previous cert))
            (round (1- (certificate->round cert)))
            (certs dag)))))
@@ -178,7 +178,7 @@
                        emptyp-of-certificate-set->round-set
                        certificate->round-in-certificate-set->round-set)
     :use (:instance
-          certificate-set->round-set-of-get-certificates-with-authors+round
+          certificate-set->round-set-of-certificates-with-authors+round
           (authors (certificate->previous cert))
           (round (1- (certificate->round cert)))
           (certs dag))))
@@ -261,9 +261,9 @@
     :returns (hist certificate-setp)
     (b* (((certificate cert) cert)
          ((when (= cert.round 1)) (set::insert (certificate-fix cert) nil))
-         (prev-certs (get-certificates-with-authors+round cert.previous
-                                                          (1- cert.round)
-                                                          dag))
+         (prev-certs (certificates-with-authors+round cert.previous
+                                                      (1- cert.round)
+                                                      dag))
          (prev-hist (certificate-set-causal-history prev-certs dag)))
       (set::insert (certificate-fix cert) prev-hist))
     :measure (acl2::nat-list-measure (list (certificate->round cert)
@@ -295,7 +295,7 @@
                      (set1 (certificate-set->round-set (set::tail certs)))
                      (set2 (certificate-set->round-set certs)))
           (:instance
-           certificate-set->round-set-of-get-certificates-with-authors+round
+           certificate-set->round-set-of-certificates-with-authors+round
            (authors (certificate->previous cert))
            (round (1- (certificate->round cert)))
            (certs dag)))))
@@ -331,7 +331,7 @@
     "We obtain all the certificates from the successive round,
      and then we filter the ones that have an edge to @('cert'),
      i.e. that have the author of @('cert') in the @('previous') component."))
-  (successors-loop (get-certificates-with-round
+  (successors-loop (certificates-with-round
                     (1+ (certificate->round cert)) dag)
                    (certificate->author cert))
   :prepwork
@@ -373,9 +373,9 @@
      All the returned certificates are in the round just before @('cert')."))
   (if (equal (certificate->round cert) 1)
       nil
-    (get-certificates-with-authors+round (certificate->previous cert)
-                                         (1- (certificate->round cert))
-                                         dag))
+    (certificates-with-authors+round (certificate->previous cert)
+                                     (1- (certificate->round cert))
+                                     dag))
   :guard-hints (("Goal" :in-theory (enable posp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -403,7 +403,7 @@
     (or (equal cert.round 1)
         (set::subset cert.previous
                      (certificate-set->author-set
-                      (get-certificates-with-round (1- cert.round) dag)))))
+                      (certificates-with-round (1- cert.round) dag)))))
   :guard-hints (("Goal" :in-theory (enable posp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
