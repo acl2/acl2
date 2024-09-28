@@ -241,7 +241,7 @@
            (set::subset
             (set::union (incoming cert dag)
                         (outgoing cert1 dag))
-            (get-certificates-with-round (1+ (certificate->round cert)) dag)))
+            (certificates-with-round (1+ (certificate->round cert)) dag)))
   :enable set::expensive-rules
   :use ((:instance incoming-subset-of-next-round)
         (:instance outgoing-subset-of-previous-round (cert cert1)))

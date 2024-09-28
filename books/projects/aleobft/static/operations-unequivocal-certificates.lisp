@@ -113,17 +113,17 @@
                   (<= (set::cardinality (certificate-set->round-set certs)) 1))
              (not (set::in (certificate->author (set::head certs))
                            (certificate-set->author-set (set::tail certs)))))
-    :use ((:instance emptyp-of-get-certificates-with-author-if-no-author
+    :use ((:instance emptyp-of-certificates-with-author-if-no-author
                      (author (certificate->author (set::head certs)))
                      (certs (set::tail certs)))
           (:instance
            same-certificate-when-unequivocal-same-authors-and-round-card-leq-1
            (cert1 (set::head certs))
-           (cert2 (set::head (get-certificates-with-author
+           (cert2 (set::head (certificates-with-author
                               (certificate->author (set::head certs))
                               (set::tail certs)))))
           (:instance set::in-head
-                     (x (get-certificates-with-author
+                     (x (certificates-with-author
                          (certificate->author (head certs))
                          (tail certs)))))
     :enable set::expensive-rules)

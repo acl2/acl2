@@ -131,7 +131,7 @@
           (and (equal author (certificate->author cert))
                (certificate-fix cert)))
          (prev-certs
-          (get-certificates-with-authors+round (certificate->previous cert)
+          (certificates-with-authors+round (certificate->previous cert)
                                                (1- (certificate->round cert))
                                                dag)))
       (path-to-author+round-set prev-certs author round dag))
@@ -164,7 +164,7 @@
                      (set1 (certificate-set->round-set (set::tail certs)))
                      (set2 (certificate-set->round-set certs)))
           (:instance
-           certificate-set->round-set-of-get-certificates-with-authors+round
+           certificate-set->round-set-of-certificates-with-authors+round
            (authors (certificate->previous cert))
            (round (1- (certificate->round cert)))
            (certs dag)))))
@@ -176,7 +176,7 @@
                        acl2::pos-set->=-pos-element
                        acl2::pos-set->=-pos-subset)
     :use (:instance
-          certificate-set->round-set-of-get-certificates-with-authors+round
+          certificate-set->round-set-of-certificates-with-authors+round
           (authors (certificate->previous cert))
           (round (1- (certificate->round cert)))
           (certs dag))))
@@ -316,7 +316,7 @@
     :returns (hist certificate-setp)
     (b* (((certificate cert) cert)
          ((when (= cert.round 1)) (set::insert (certificate-fix cert) nil))
-         (prev-certs (get-certificates-with-authors+round cert.previous
+         (prev-certs (certificates-with-authors+round cert.previous
                                                           (1- cert.round)
                                                           dag))
          (prev-hist (certificate-set-causal-history prev-certs dag)))
@@ -347,7 +347,7 @@
                      (set1 (certificate-set->round-set (set::tail certs)))
                      (set2 (certificate-set->round-set certs)))
           (:instance
-           certificate-set->round-set-of-get-certificates-with-authors+round
+           certificate-set->round-set-of-certificates-with-authors+round
            (authors (certificate->previous cert))
            (round (1- (certificate->round cert)))
            (certs dag)))))

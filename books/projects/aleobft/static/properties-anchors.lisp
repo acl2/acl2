@@ -214,7 +214,7 @@
   (xdoc::topstring
    (xdoc::p
     "This follows mainly from the theorem
-     @(tsee get-certificate-with-author+round-of-unequivocal-sets)."))
+     @(tsee certificate-with-author+round-of-unequivocal-sets)."))
   (implies (and (certificate-sets-unequivocalp (validator-state->dag vstate1)
                                                (validator-state->dag vstate2))
                 (or (equal (validator-state->last vstate1) 0)
@@ -226,7 +226,7 @@
            (equal (last-anchor vstate1 vals)
                   (last-anchor vstate2 vals)))
   :enable last-anchor
-  :use ((:instance get-certificate-with-author+round-of-unequivocal-sets
+  :use ((:instance certificate-with-author+round-of-unequivocal-sets
                    (certs1 (validator-state->dag vstate1))
                    (certs2 (validator-state->dag vstate2))
                    (author (leader-at-round

@@ -327,7 +327,7 @@
              system-paths-to-last-anchor-p-when-other-invariants
              certificate-list-pathp-of-collect-anchors
              new-committed-certs-of-extend-blockchain
-             get-certificate-with-author+round-element-when-not-nil
+             certificate-with-author+round-element-when-not-nil
              system-paths-to-last-anchor-p-when-other-invariants
              set::expensive-rules
              evenp)
@@ -336,7 +336,7 @@
            (cert (last-anchor (get-validator-state val systate)
                               (all-addresses systate)))
            (dag (validator-state->dag (get-validator-state val systate)))
-           (cert1 (get-certificate-with-author+round
+           (cert1 (certificate-with-author+round
                    (leader-at-round
                     (+ -1
                        (validator-state->round (get-validator-state val systate)))
@@ -349,7 +349,7 @@
           system-last-is-even-p-necc
           (:instance
            certificate-causal-history-subset-when-path
-           (cert (get-certificate-with-author+round
+           (cert (certificate-with-author+round
                   (leader-at-round
                    (+ -1
                       (validator-state->round (get-validator-state val systate)))

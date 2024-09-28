@@ -70,9 +70,9 @@
        (vals (all-addresses systate))
        (leader (leader-at-round commit-round vals))
        (dag (validator-state->dag vstate))
-       (anchor? (get-certificate-with-author+round leader commit-round dag))
+       (anchor? (certificate-with-author+round leader commit-round dag))
        ((unless anchor?) nil)
-       (voters (get-certificates-with-round current-round dag))
+       (voters (certificates-with-round current-round dag))
        ((mv yes-votes &) (tally-leader-votes leader voters))
        ((unless (>= yes-votes (1+ (max-faulty systate)))) nil))
     t)
@@ -121,7 +121,7 @@
                  (b* ((round (validator-state->round vstate)))
                    (and (oddp round)
                         (not (equal round 1))
-                        (get-certificate-with-author+round
+                        (certificate-with-author+round
                          (leader-at-round (1- round) vals)
                          (1- round)
                          (validator-state->dag vstate)))))
@@ -131,7 +131,7 @@
           (commit-round (1- current-round))
           (leader (leader-at-round commit-round vals))
           (dag (validator-state->dag vstate))
-          (anchor (get-certificate-with-author+round leader commit-round dag))
+          (anchor (certificate-with-author+round leader commit-round dag))
           (last-committed-round (validator-state->last vstate))
           (anchors (collect-anchors anchor
                                     (- commit-round 2)
@@ -207,7 +207,7 @@
                      (commit-round (1- vstate.round))
                      (leader (leader-at-round commit-round
                                               (all-addresses systate)))
-                     (anchor (get-certificate-with-author+round leader
+                     (anchor (certificate-with-author+round leader
                                                                 commit-round
                                                                 vstate.dag))
                      (anchors (collect-anchors anchor

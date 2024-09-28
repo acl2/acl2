@@ -68,7 +68,7 @@
     "If the validator is faulty, the check passes:
      the requirement of the invariant only applies to correct validators.
      For a correct validator, we check that
-     @(tsee get-certificate-with-author+round) is not @('nil')
+     @(tsee certificate-with-author+round) is not @('nil')
      on the DAG or buffer
      (i.e. that a certificate with that author and round is there),
      or the pair is in the set of endorsed pairs."))
@@ -76,8 +76,8 @@
        ((when (not vstate)) t)
        ((validator-state vstate) vstate))
     (or
-     (and (get-certificate-with-author+round author round vstate.dag) t)
-     (and (get-certificate-with-author+round author round vstate.buffer) t)
+     (and (certificate-with-author+round author round vstate.dag) t)
+     (and (certificate-with-author+round author round vstate.buffer) t)
      (set::in (make-address+pos :address author :pos round)
               vstate.endorsed)))
 
@@ -267,13 +267,13 @@
              signer-has-author+round-p)
     :prep-lemmas
     ((defrule lemma
-       (implies (and (get-certificate-with-author+round author round certs)
-                     (not (get-certificate-with-author+round
+       (implies (and (certificate-with-author+round author round certs)
+                     (not (certificate-with-author+round
                            author round (set::delete cert certs))))
                 (and (equal (certificate->author cert) author)
                      (equal (certificate->round cert) round)))
        :induct t
-       :enable (get-certificate-with-author+round
+       :enable (certificate-with-author+round
                 set::delete))))
 
   (defrule system-signers-have-author+round-p-of-store-certificate-next
