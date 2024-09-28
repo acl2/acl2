@@ -13,6 +13,8 @@
 ;; Support files:
 (include-book "rule-lists")
 (include-book "support-axe")
+(include-book "tester-rules")
+(include-book "tester-rules-bv")
 (include-book "evaluator-x86")
 (include-book "syntaxp-evaluator-x86")
 (include-book "bind-free-evaluator-x86")
