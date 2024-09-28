@@ -79,7 +79,7 @@
                (get-validator-state val systate))))
     :enable certificate-sets-unequivocalp-of-same-set-converse))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled unequivocal-dags-p-when-unequivocal-accepted-certificates-p
   :short "Proof of the specialized invariant from the general invariant."
