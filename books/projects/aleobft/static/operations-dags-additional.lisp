@@ -78,6 +78,7 @@
 
   ((define incoming-loop ((certs certificate-setp) (prev addressp))
      :returns (incoming-certs certificate-setp)
+     :parents nil
      (b* (((when (set::emptyp certs)) nil)
           (cert (set::head certs)))
        (if (set::in prev (certificate->previous cert))
