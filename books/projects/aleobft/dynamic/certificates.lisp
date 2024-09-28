@@ -740,18 +740,42 @@
                  (set::emptyp certs2))
              (certificate-sets-unequivocalp certs1 certs2)))
 
-  (defruled certificate-set-unequivocalp-when-same-sets-unequivocal
-    (implies (certificate-sets-unequivocalp certs certs)
-             (certificate-set-unequivocalp certs))
-    :enable certificate-set-unequivocalp
-    :disable certificate-sets-unequivocalp
-    :use (:instance certificate-sets-unequivocalp-necc
-                    (cert1
-                     (mv-nth 0 (certificate-set-unequivocalp-witness certs)))
-                    (cert2
-                     (mv-nth 1 (certificate-set-unequivocalp-witness certs)))
-                    (certs1 certs)
-                    (certs2 certs)))
+  (defruled certificate-sets-unequivocalp-of-same-set
+    (equal (certificate-sets-unequivocalp certs certs)
+           (certificate-set-unequivocalp certs))
+    :use (only-if-part if-part)
+    :prep-lemmas
+    ((defruled only-if-part
+       (implies (certificate-sets-unequivocalp certs certs)
+                (certificate-set-unequivocalp certs))
+       :enable certificate-set-unequivocalp
+       :disable certificate-sets-unequivocalp
+       :use (:instance certificate-sets-unequivocalp-necc
+                       (cert1
+                        (mv-nth 0 (certificate-set-unequivocalp-witness certs)))
+                       (cert2
+                        (mv-nth 1 (certificate-set-unequivocalp-witness certs)))
+                       (certs1 certs)
+                       (certs2 certs)))
+     (defruled if-part
+       (implies (certificate-set-unequivocalp certs)
+                (certificate-sets-unequivocalp certs certs))
+       :use
+       (:instance
+        certificate-set-unequivocalp-necc
+        (cert1
+         (mv-nth 0 (certificate-sets-unequivocalp-witness certs certs)))
+        (cert2
+         (mv-nth 1 (certificate-sets-unequivocalp-witness certs certs)))))))
+
+  (defruled certificate-sets-unequivocalp-of-same-set-converse
+    (equal (certificate-set-unequivocalp certs)
+           (certificate-sets-unequivocalp certs certs))
+    :enable certificate-sets-unequivocalp-of-same-set)
+
+  (theory-invariant
+   (incompatible (:rewrite certificate-sets-unequivocalp-of-same-set)
+                 (:rewrite certificate-sets-unequivocalp-of-same-set-converse)))
 
   (defruled certificate-sets-unequivocalp-of-insert
     (implies (and (certificate-setp certs2)
@@ -767,9 +791,7 @@
                                    certs2))))))
     :use (if-part only-if-part)
     :enable certificate-sets-unequivocalp-when-subsets
-
     :prep-lemmas
-
     ((defruled if-part
        (implies (and (certificate-sets-unequivocalp certs1 certs2)
                      (certificate-set-unequivocalp certs2)
@@ -798,7 +820,6 @@
                            certs2)))
          (certs certs2)))
        :enable get-certificate-with-author+round-when-element)
-
      (defruled only-if-part
        (implies (and (certificate-setp certs2)
                      (certificate-sets-unequivocalp

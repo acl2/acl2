@@ -24,10 +24,12 @@
 (include-book "ordered-even-blocks")
 (include-book "accepted-certificates-quorum")
 (include-book "unequivocal-signed-certificates")
-(include-book "unequivocal-accepted-certificates")
-(include-book "anchors-of-validators")
-(include-book "nonforking-blockchains")
+(include-book "unequivocal-accepted-certificates-def-and-init")
+(include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees")
+(include-book "unequivocal-accepted-certificates-next")
+(include-book "unequivocal-dags")
+(include-book "anchors-of-validators")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,9 +57,11 @@
                     ordered-even-blocks
                     accepted-certificates-quorum
                     unequivocal-signed-certificates
-                    unequivocal-accepted-certificates
-                    anchors-of-validators
-                    nonforking-blockchains
-                    same-committees))
+                    unequivocal-accepted-certificates-def-and-init
+                    nonforking-blockchains-def-and-init
+                    same-committees
+                    unequivocal-accepted-certificates-next
+                    unequivocal-dags
+                    anchors-of-validators))
 
 ; TODO: continue

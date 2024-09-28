@@ -735,6 +735,8 @@
   (b* (((reterr) (c::struct-declon (c::tyspecseq-void)
                                    (c::obj-declor-ident
                                     (c::ident "irrelevant"))))
+       ((when (structdecl-case structdecl :empty))
+        (reterr (msg "Unsupported empty structure declaration.")))
        ((when (structdecl-case structdecl :statassert))
         (reterr (msg "Unsupported structure declaration ~x0."
                      (structdecl-fix structdecl))))

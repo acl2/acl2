@@ -288,6 +288,7 @@
     structdecl-case
     make-structdecl-member
     structdecl-statassert
+    structdecl-empty
 
     structdecl-listp
     structdecl-list-fix

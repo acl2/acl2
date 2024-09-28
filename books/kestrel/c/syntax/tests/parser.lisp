@@ -1812,3 +1812,9 @@ error (int __status, int __errnum, const char *__format, ...)
  parse-external-declaration-list
  "extern struct static_call_key __SCK__might_resched; extern typeof(__cond_resched) __SCT__might_resched;;"
  :gcc t)
+
+(test-parse
+ parse-expression
+ "({x = 0;})(x)"
+ :cond (expr-case ast :funcall)
+ :gcc t)
