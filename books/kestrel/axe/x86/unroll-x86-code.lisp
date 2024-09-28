@@ -46,7 +46,7 @@
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
-(include-book "../rewriter") ; for the :legacy rewriter option ; todo: brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-repeatedly)
+(include-book "../rewriter") ; for the simplify-terms-repeatedly ; todo: brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs simplify-terms-repeatedly)
 ;(include-book "../basic-rules")
 (include-book "../step-increments")
 (include-book "../dag-size")
@@ -368,7 +368,7 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
-(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter total-steps state)
+(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
@@ -383,8 +383,7 @@
                               (member print-base '(10 16))
                               (booleanp untranslatep)
                               (booleanp memoizep)
-                              (natp total-steps)
-                              (member-eq rewriter '(:x86 :legacy)))
+                              (natp total-steps))
                   :mode :program
                   :stobjs (state)))
   (if (zp steps-left)
@@ -400,20 +399,20 @@
          (limits nil) ; todo: call this empty-rule-limits?
          (limits (acl2::add-limit-for-rules (step-opener-rules) steps-for-this-iteration limits)) ; don't recompute for each small run?
          ((mv erp dag-or-quote state)
-          (if (eq :legacy rewriter)
-              (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
-                              :exhaustivep t
-                              :rule-alist rule-alist
-                              :assumptions assumptions
-                              :monitor rules-to-monitor
-                              ;; :fns-to-elide '(program-at) ; not supported
-                              :use-internal-contextsp use-internal-contextsp
-                              ;; pass print, so we can cause rule hits to be printed:
-                              :print print ; :brief ;nil
-                              ;; :print-interval 10000 ;todo: pass in
-                              :limits limits
-                              :memoizep memoizep
-                              :check-inputs nil)
+          ;; (if (eq :legacy rewriter)
+          ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+          ;;                     :exhaustivep t
+          ;;                     :rule-alist rule-alist
+          ;;                     :assumptions assumptions
+          ;;                     :monitor rules-to-monitor
+          ;;                     ;; :fns-to-elide '(program-at) ; not supported
+          ;;                     :use-internal-contextsp use-internal-contextsp
+          ;;                     ;; pass print, so we can cause rule hits to be printed:
+          ;;                     :print print ; :brief ;nil
+          ;;                     ;; :print-interval 10000 ;todo: pass in
+          ;;                     :limits limits
+          ;;                     :memoizep memoizep
+          ;;                     :check-inputs nil)
             (mv-let (erp result)
               (acl2::simplify-dag-x86 dag
                                         assumptions
@@ -427,7 +426,9 @@
                                         '(program-at) ; fns-to-elide
                                         t ; normalize-xors
                                         memoizep)
-              (mv erp result state))))
+              (mv erp result state))
+            ;)
+            )
          ((when erp) (mv erp nil state))
          ((mv elapsed state) (acl2::real-time-since start-real-time state))
          (- (cw " This limited run took ")
@@ -489,19 +490,19 @@
           ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
           (b* ((- (cw "(Doing final simplification:~%"))
                ((mv erp dag-or-quote state)
-                (if (eq :legacy rewriter)
-                    (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
-                                    :exhaustivep t
-                                    :rule-alist rule-alist
-                                    :assumptions assumptions
-                                    :monitor rules-to-monitor
-                                    :use-internal-contextsp use-internal-contextsp
-                                    ;; pass print, so we can cause rule hits to be printed:
-                                    :print print ; :brief ;nil
-                                    ;; :print-interval 10000 ;todo: pass in
-                                    :limits limits
-                                    :memoizep memoizep
-                                    :check-inputs nil)
+                ;; (if (eq :legacy rewriter)
+                ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+                ;;                     :exhaustivep t
+                ;;                     :rule-alist rule-alist
+                ;;                     :assumptions assumptions
+                ;;                     :monitor rules-to-monitor
+                ;;                     :use-internal-contextsp use-internal-contextsp
+                ;;                     ;; pass print, so we can cause rule hits to be printed:
+                ;;                     :print print ; :brief ;nil
+                ;;                     ;; :print-interval 10000 ;todo: pass in
+                ;;                     :limits limits
+                ;;                     :memoizep memoizep
+                ;;                     :check-inputs nil)
                   (mv-let (erp result)
                     (acl2::simplify-dag-x86 dag
                                             assumptions
@@ -515,7 +516,9 @@
                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                             t ; normalize-xors
                                             memoizep)
-                    (mv erp result state))))
+                    (mv erp result state))
+                  ;)
+                  )
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
                ((when erp) (mv erp nil state)))
             (mv (erp-nil) dag-or-quote state))
@@ -548,7 +551,7 @@
                    state)))
           (repeatedly-run (- steps-left steps-for-this-iteration)
                           step-increment
-                          dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter
+                          dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep
                           total-steps
                           state))))))
 
@@ -574,7 +577,6 @@
                              print
                              print-base
                              untranslatep
-                             rewriter
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable
@@ -598,8 +600,7 @@
                                   (eq :debug monitor))
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
-                              (booleanp untranslatep)
-                              (member-eq rewriter '(:x86 :legacy)))
+                              (booleanp untranslatep))
                   :stobjs (state)
                   :mode :program))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
@@ -770,7 +771,7 @@
        ((when erp) (mv erp nil nil nil nil state))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep 0 state))
        ((when erp) (mv erp nil nil nil nil state))
        (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
@@ -807,7 +808,6 @@
                         print
                         print-base
                         untranslatep
-                        rewriter
                         produce-function
                         non-executable
                         produce-theorem
@@ -839,7 +839,6 @@
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp untranslatep)
-                              (member-eq rewriter '(:x86 :legacy))
                               (booleanp produce-function)
                               (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
@@ -876,7 +875,7 @@
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions stack-slots position-independentp
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
-          step-limit step-increment memoizep monitor print print-base untranslatep rewriter state))
+          step-limit step-increment memoizep monitor print print-base untranslatep state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -1027,7 +1026,6 @@
                                   (print ':brief)             ;how much to print
                                   (print-base '10)
                                   (untranslatep 't)
-                                  (rewriter ':x86)
                                   (produce-function 't)
                                   (non-executable ':auto)
                                   (produce-theorem 'nil)
@@ -1057,7 +1055,6 @@
       ',print
       ',print-base
       ',untranslatep
-      ',rewriter
       ',produce-function
       ',non-executable
       ',produce-theorem
@@ -1090,7 +1087,6 @@
          (print "Verbosity level.") ; todo: values
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
          (untranslatep "Whether to untranslate term when printing.")
-         (rewriter "Which rewriter to use, either :x86 (preferred) or :legacy.")
          (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
          (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
          (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
