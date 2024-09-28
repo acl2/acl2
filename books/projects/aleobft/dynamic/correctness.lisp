@@ -28,6 +28,7 @@
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees")
 (include-book "unequivocal-accepted-certificates-next")
+(include-book "unequivocal-dags")
 (include-book "anchors-of-validators")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -60,6 +61,7 @@
                     nonforking-blockchains-def-and-init
                     same-committees
                     unequivocal-accepted-certificates-next
+                    unequivocal-dags
                     anchors-of-validators))
 
 ; TODO: continue
