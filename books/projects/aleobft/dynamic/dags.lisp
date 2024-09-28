@@ -308,3 +308,72 @@
 
   (verify-guards certificate-causal-history
     :hints (("Goal" :in-theory (enable posp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define successors ((cert certificatep) (dag certificate-setp))
+  :guard (set::in cert dag)
+  :returns (certs certificate-setp)
+  :short "Set of the certificates in a DAG that
+          are successors of a certificate in a DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the source certificates of the edges in the DAG
+     that have the certificate @('cert') as destination.
+     These edges are the incoming edges of @('cert').")
+   (xdoc::p
+    "Here `successor' refers to the fact that
+     the returned certificates are
+     in the (immediately) successive round of @('cert'),
+     even though the directed edges point backwards.")
+   (xdoc::p
+    "We obtain all the certificates from the successive round,
+     and then we filter the ones that have an edge to @('cert'),
+     i.e. that have the author of @('cert') in the @('previous') component."))
+  (successors-loop (get-certificates-with-round
+                    (1+ (certificate->round cert)) dag)
+                   (certificate->author cert))
+  :prepwork
+  ((define successors-loop ((certs certificate-setp) (prev addressp))
+     :returns (successors-certs certificate-setp)
+     :parents nil
+     (b* (((when (set::emptyp certs)) nil)
+          (cert (set::head certs)))
+       (if (set::in prev (certificate->previous cert))
+           (set::insert (certificate-fix cert)
+                        (successors-loop (set::tail certs) prev))
+         (successors-loop (set::tail certs) prev)))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predecessors ((cert certificatep) (dag certificate-setp))
+  :guard (set::in cert dag)
+  :returns (certs certificate-setp)
+  :short "Set of the certificates in a DAG that
+          are precedessors of a certificate in a DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the destination certificates of the edges in the DAG
+     that have the certificate @('cert') as source.
+     These edges are outgoing edges of @('cert').")
+   (xdoc::p
+    "Here `precedessor' refers to the fact that
+     the return certificates are
+     in the (immediately) preceding round of @('cert')
+     (unless @('cert') is in round 1,
+     in which case this function returns the empty set),
+     even though the directed edges point backwards.")
+   (xdoc::p
+    "If the certificate is at round 1, we return the empty set.
+     Otherwise, we return the certificates at the previous round
+     that are authored by the previous authors in the certificate.
+     All the returned certificates are in the round just before @('cert')."))
+  (if (equal (certificate->round cert) 1)
+      nil
+    (get-certificates-with-authors+round (certificate->previous cert)
+                                         (1- (certificate->round cert))
+                                         dag))
+  :guard-hints (("Goal" :in-theory (enable posp))))
