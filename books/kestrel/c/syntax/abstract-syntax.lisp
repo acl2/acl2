@@ -2329,15 +2329,19 @@
      (xdoc::p
       "As a GCC extension, we include
        a possibly empty list of attribute specifiers,
-       which come after the declarator (cf. the grammar)"))
+       which come after the declarator (cf. the grammar).")
+     (xdoc::p
+      "As explained in our ABNF grammar,
+       we also include an empty external declaration,
+       which syntactically consists of a semicolon."))
     (:member ((extension bool) ; GCC extension
               (specqual spec/qual-list)
               (declor structdeclor-list)
               (attrib attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
+    (:empty ()) ; GCC extension
     :pred structdeclp
-    :base-case-override :statassert
-    :measure (two-nats-measure (acl2-count x) 3))
+    :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -3123,7 +3127,7 @@
      which syntactically consists of a semicolon."))
   (:fundef ((unwrap fundef)))
   (:decl ((unwrap decl)))
-  (:empty ())
+  (:empty ()) ; GCC extension
   :pred extdeclp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

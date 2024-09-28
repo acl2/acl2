@@ -12,7 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "ordered-even-blocks")
-(include-book "nonforking-blockchains")
+(include-book "nonforking-blockchains-def-and-init")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -32,7 +32,7 @@
      using its own copy of the blockchain.
      If blockchains do not fork, then any two correct validators
      that can both calculate an active committee at a round,
-     will in fact compute the same acrive committee at that round.")
+     will in fact compute the same active committee at that round.")
    (xdoc::p
     "Here we formulate this invariant,
      and we prove that it is a consequence of

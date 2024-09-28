@@ -815,7 +815,8 @@
                 (endp (cdr structdecl.declor))
                 (structdeclor-formalp (car structdecl.declor))
                 (endp structdecl.attrib))
-   :statassert nil)
+   :statassert nil
+   :empty nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

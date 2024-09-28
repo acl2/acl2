@@ -1387,7 +1387,8 @@
                 :declor (,(cdr (assoc-eq 'structdeclor-list names)) structdecl.declor ,@extra-args-names)
                 :attrib structdecl.attrib)
       :statassert (structdecl-statassert
-                    (,(cdr (assoc-eq 'statassert names)) structdecl.unwrap ,@extra-args-names)))
+                    (,(cdr (assoc-eq 'statassert names)) structdecl.unwrap ,@extra-args-names))
+      :empty (structdecl-empty))
    '(:returns (new-structdecl structdeclp)
      :measure (structdecl-count structdecl))))
 

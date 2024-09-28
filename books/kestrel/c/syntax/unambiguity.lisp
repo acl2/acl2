@@ -504,7 +504,8 @@
     (structdecl-case structdecl
                      :member (and (spec/qual-list-unambp structdecl.specqual)
                                   (structdeclor-list-unambp structdecl.declor))
-                     :statassert (statassert-unambp structdecl.unwrap))
+                     :statassert (statassert-unambp structdecl.unwrap)
+                     :empty t)
     :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1289,6 +1290,15 @@
     (equal (structdecl-unambp (structdecl-statassert statassert))
            (statassert-unambp statassert))
     :expand (structdecl-unambp (structdecl-statassert statassert)))
+
+  (defrule structdecl-unambp-when-empty
+    ;; The formulation (structdecl-unambp (structdecl-empty))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (structdecl-case sdecl :empty)
+             (structdecl-unambp sdecl)))
 
   (defrule structdeclor-unambp-of-structdeclor
     (equal (structdeclor-unambp (structdeclor declor? expr?))

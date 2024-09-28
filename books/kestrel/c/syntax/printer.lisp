@@ -1293,8 +1293,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define print-fun-spec ((funspec fun-specp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a function specifier."
@@ -2656,7 +2654,8 @@
                     pstate))
           (pstate (print-astring ";" pstate)))
        pstate)
-     :statassert (print-statassert structdecl.unwrap pstate))
+     :statassert (print-statassert structdecl.unwrap pstate)
+     :empty (print-astring ";" pstate))
     :measure (two-nats-measure (structdecl-count structdecl) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

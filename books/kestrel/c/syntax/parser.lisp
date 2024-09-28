@@ -6506,7 +6506,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define token-struct-declaration-start-p ((token? token-optionp))
+(define token-struct-declaration-start-p ((token? token-optionp)
+                                          (gcc booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start a structure declaration."
   :long
@@ -6521,16 +6522,21 @@
      so this predicate will fail
      if GCC extensions are not supported
      and the token is @('__extension__'),
-     which must be an identifier if GCC extensions are not supported."))
+     which must be an identifier if GCC extensions are not supported.")
+   (xdoc::p
+    "If GCC extensions are supported,
+     which is indicated by the boolean flag passed as input,
+     we also include semicolons, for empty structure declarations."))
   (or (token-specifier/qualifier-start-p token?)
       (token-keywordp token? "_Static_assert")
-      (token-keywordp token? "__extension__"))
+      (token-keywordp token? "__extension__")
+      (and gcc (token-punctuatorp token? ";")))
   ///
 
   (defrule non-nil-when-token-strut-declaration-start-p
-    (implies (token-struct-declaration-start-p token?)
+    (implies (token-struct-declaration-start-p token? gcc)
              token?)
-    :rule-classes :compound-recognizer))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -8019,6 +8025,9 @@
        ;; If GCC extensions are supported,
        ;; we also need to check whether there is an open curly brace,
        ;; in which case we have a statement expressions.
+       ;; In the latter case,
+       ;; the cast expression is in fact a postfix expression,
+       ;; and so we must parse the rest of it, if any.
        ((token-punctuatorp token "(") ; (
         (b* (;; We read the next token to see if it is an open curly brace,
              ;; but we also need to check that GCC extensions are supported.
@@ -8031,24 +8040,31 @@
                  ;; we have an empty block.
                  ((token-punctuatorp token3 "}") ; ( { }
                   (b* (((erp last-span parstate) ; ( { } )
-                        (read-punctuator ")" parstate)))
-                    (retok (expr-stmt nil)
-                           (span-join span last-span)
-                           parstate)))
+                        (read-punctuator ")" parstate))
+                       (prev-expr (expr-stmt nil))
+                       (prev-span (span-join span last-span)))
+                    (parse-postfix-expression-rest prev-expr
+                                                   prev-span
+                                                   parstate)))
                  ;; If token 3 is not a closed curly brace,
                  ;; we must have a non-empty block.
                  (t ; ( { other
                   (b* ((parstate ; ( {
                         (if token3 (unread-token parstate) parstate))
+                       (psize (parsize parstate))
                        ((erp items & parstate) ; ( { items
                         (parse-block-item-list parstate))
+                       ((unless (mbt (<= (parsize parstate) (1- psize))))
+                        (reterr :impossible))
                        ((erp & parstate) ; ( { items }
                         (read-punctuator "}" parstate))
                        ((erp last-span parstate) ; ( { items } )
-                        (read-punctuator ")" parstate)))
-                    (retok (expr-stmt items)
-                           (span-join span last-span)
-                           parstate))))))
+                        (read-punctuator ")" parstate))
+                       (prev-expr (expr-stmt items))
+                       (prev-span (span-join span last-span)))
+                    (parse-postfix-expression-rest prev-expr
+                                                   prev-span
+                                                   parstate))))))
              ;; If we do not have an open curly brace,
              ;; or if GCC extensions are not supported,
              ;; we need to parse a possibly ambiguous expression or type name.
@@ -8586,67 +8602,117 @@
       (cond
        ;; If token is an open parenthesis,
        ;; it may start a compound literal
-       ;; or a (parenthesized) primary expresssion.
-       ;; So we start by parsing a possibly ambiguous type name or expression
-       ;; and we decide what to do next based on that result
-       ;; (we also parse past the closed parenthesis).
+       ;; or a (parenthesized) primary expresssion
+       ;; or a statement expression (if GCC extensions are enabled).
+       ;; We read another token to handle the case of a statement expression
+       ;; separately from the other cases.
        ((token-punctuatorp token "(") ; (
-        (b* ((psize (parsize parstate))
-             ((erp expr/tyname & parstate) ; ( expr/tyname
-              (parse-expression-or-type-name parstate))
-             ((unless (mbt (<= (parsize parstate) (1- psize))))
-              (reterr :impossible))
-             ((erp close-paren-span parstate) ; ( expr/tyname )
-              (read-punctuator ")" parstate)))
-          (amb?-expr/tyname-case
-           expr/tyname
-           ;; If we just parsed a parenthesized type name,
-           ;; the only possibility is to have a compound literal.
-           :tyname
-           (parse-compound-literal expr/tyname.unwrap
-                                   (span-join span close-paren-span)
-                                   parstate)
-           ;; If we just parsed a parenthesized expression,
-           ;; we cannot have a compound literal,
-           ;; and instead we have just parsed the primary expression
-           ;; that always starts a non-compound-literal postfix expression.
-           ;; So we proceed to parse the rest of the postfix expression
-           :expr
-           (b* ((prev-expr (expr-paren expr/tyname.unwrap))
-                (prev-span (span-join span close-paren-span)))
-             (parse-postfix-expression-rest prev-expr prev-span parstate))
-           ;; If we just parsed an ambiguous type name or expression,
-           ;; we can actually disambiguate it by looking at what comes next.
-           :ambig
-           (b* (((erp token2 & parstate) (read-token parstate)))
-             (cond
-              ;; If token2 is an open curly brace,
-              ;; we must have a compound literal,
-              ;; and the ambiguous expression or type name must be a type name.
-              ((token-punctuatorp token2 "{") ; ( expr/tyname ) {
-               (b* ((parstate (unread-token parstate)) ; ( expr/tyname )
-                    (tyname (amb-expr/tyname->tyname expr/tyname.unwrap)))
-                 (parse-compound-literal tyname
-                                         (span-join span close-paren-span)
-                                         parstate)))
-              ;; If token2 is not an open curly brace,
-              ;; we cannot have a compound literal,
-              ;; and thus we must have just parsed a parenthesized expression,
-              ;; which is the primary expression that starts
-              ;; this postfix expression.
-              (t ; ( expr/tyname ) other
-               (b* ((parstate ; ( expr/tyname )
-                     (if token2 (unread-token parstate) parstate))
-                    (expr (amb-expr/tyname->expr expr/tyname.unwrap))
-                    (prev-expr (expr-paren expr))
+        (b* (((erp token2 & parstate) (read-token parstate)))
+          (cond
+           ;; If token2 is an open curly brace, and GCC extensions are enabled,
+           ;; we must have a statement expression, which we parse,
+           ;; and then we parse the rest of the postfix expression if any.
+           ((and (token-punctuatorp token2 "{") ; ( {
+                 (parstate->gcc parstate))
+            (b* (((erp token3 & parstate) (read-token parstate)))
+              (cond
+               ;; If token3 is a closed curly brace,
+               ;; we must have a statement expression with an empty block,
+               ;; which seems odd but not syntactically wrong.
+               ((token-punctuatorp token3 "}") ; ( { }
+                (b* (((erp last-span parstate) ; ( { } )
+                      (read-punctuator ")" parstate))
+                     (prev-expr (expr-stmt nil))
+                     (prev-span (span-join span last-span)))
+                  (parse-postfix-expression-rest prev-expr prev-span parstate)))
+               ;; If token3 is not a closed curly brace,
+               ;; we must have a statement expression with a non-empty block.
+               ;; We put back token3 and we parse one or more block items.
+               (t ; ( { other
+                (b* ((parstate ; ( {
+                      (if token3 (unread-token parstate) parstate))
+                     (psize (parsize parstate))
+                     ((erp items & parstate) ; ( { items
+                      (parse-block-item-list parstate))
+                     ((unless (mbt (<= (parsize parstate) (1- psize))))
+                      (reterr :impossible))
+                     ((erp & parstate) ; ( { items }
+                      (read-punctuator "}" parstate))
+                     ((erp last-span parstate) ; ( { items } )
+                      (read-punctuator ")" parstate))
+                     (prev-expr (expr-stmt items))
+                     (prev-span (span-join span last-span)))
+                  (parse-postfix-expression-rest prev-expr
+                                                 prev-span
+                                                 parstate))))))
+           ;; If token2 is not an open curly brace,
+           ;; or if GCC extensions are not supported,
+           ;; the opening parenthesis may start
+           ;; a compound literal or a (parenthesized) primary expression.
+           ;; So we put back the token (if any),
+           ;; and we parse a possibly ambiguous type name or expression
+           ;; and we decide what to do next based on that result
+           ;; (we also parse past the closed parenthesis).
+           (t ; ( other
+            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; (
+                 (psize (parsize parstate))
+                 ((erp expr/tyname & parstate) ; ( expr/tyname
+                  (parse-expression-or-type-name parstate))
+                 ((unless (mbt (<= (parsize parstate) (1- psize))))
+                  (reterr :impossible))
+                 ((erp close-paren-span parstate) ; ( expr/tyname )
+                  (read-punctuator ")" parstate)))
+              (amb?-expr/tyname-case
+               expr/tyname
+               ;; If we just parsed a parenthesized type name,
+               ;; the only possibility is to have a compound literal.
+               :tyname
+               (parse-compound-literal expr/tyname.unwrap
+                                       (span-join span close-paren-span)
+                                       parstate)
+               ;; If we just parsed a parenthesized expression,
+               ;; we cannot have a compound literal,
+               ;; and instead we have just parsed the primary expression
+               ;; that always starts a non-compound-literal postfix expression.
+               ;; So we proceed to parse the rest of the postfix expression
+               :expr
+               (b* ((prev-expr (expr-paren expr/tyname.unwrap))
                     (prev-span (span-join span close-paren-span)))
-                 (parse-postfix-expression-rest prev-expr
-                                                prev-span
-                                                parstate))))))))
+                 (parse-postfix-expression-rest prev-expr prev-span parstate))
+               ;; If we just parsed an ambiguous type name or expression,
+               ;; we can actually disambiguate it by looking at what comes next.
+               :ambig
+               (b* (((erp token2 & parstate) (read-token parstate)))
+                 (cond
+                  ;; If token2 is an open curly brace,
+                  ;; we must have a compound literal,
+                  ;; and the ambiguous expression or type name
+                  ;; must be a type name.
+                  ((token-punctuatorp token2 "{") ; ( expr/tyname ) {
+                   (b* ((parstate (unread-token parstate)) ; ( expr/tyname )
+                        (tyname (amb-expr/tyname->tyname expr/tyname.unwrap)))
+                     (parse-compound-literal tyname
+                                             (span-join span close-paren-span)
+                                             parstate)))
+                  ;; If token2 is not an open curly brace,
+                  ;; we cannot have a compound literal,
+                  ;; and thus we must have just parsed a parenthesized expression,
+                  ;; which is the primary expression that starts
+                  ;; this postfix expression.
+                  (t ; ( expr/tyname ) other
+                   (b* ((parstate ; ( expr/tyname )
+                         (if token2 (unread-token parstate) parstate))
+                        (expr (amb-expr/tyname->expr expr/tyname.unwrap))
+                        (prev-expr (expr-paren expr))
+                        (prev-span (span-join span close-paren-span)))
+                     (parse-postfix-expression-rest prev-expr
+                                                    prev-span
+                                                    parstate)))))))))))
        ;; If token is not an open parenthesis,
        ;; we cannot have a compound literal,
        ;; and thus we parse the primary expression
-       ;; that starts the postfix expression.
+       ;; that starts the postfix expression,
+       ;; followed by the rest of the postfix expression if any.
        (t ; other
         (b* ((parstate (if token (unread-token parstate) parstate)) ;
              (psize (parsize parstate))
@@ -8923,7 +8989,6 @@
                          (span-join span last-span)
                          parstate)))
                ;; If token3 is not a closed curly brace,
-               ;; or GCC extensions are not supported,
                ;; we must have a statement expression with a non-empty block.
                ;; We put back token3 and we parse one or more block items.
                (t ; ( { other
@@ -11679,6 +11744,10 @@
           (retok (structdecl-statassert statassert)
                  span
                  parstate)))
+       ;; If token is a semicolon, and GCC extensions are enabled,
+       ;; we have an empty structure declaration.
+       ((token-punctuatorp token ";") ; ;
+        (retok (structdecl-empty) span parstate))
        ;; Otherwise, we must have a specifier and qualifier list,
        ;; optionally preceded by the '__extension__' keyword
        ;; if GCC extensions are supported.
@@ -11786,7 +11855,8 @@
       (cond
        ;; If token may start another structure declaration,
        ;; recursively call this function.
-       ((token-struct-declaration-start-p token) ; structdecl structdecl...
+       ((token-struct-declaration-start-p
+         token (parstate->gcc parstate)) ; structdecl structdecl...
         (b* ((parstate (unread-token parstate))
              ((erp structdecls last-span parstate) ; structdecl structdecls
               (parse-struct-declaration-list parstate)))
