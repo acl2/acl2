@@ -19,7 +19,7 @@
 ;; Similar to instantiate-hyp-basic.
 
 (include-book "evaluator-basic")
-(include-book "make-substitution-code-simple")
+(include-book "make-sublis-var-and-eval-simple")
 
 ;; Make a version of sublis-var-and-eval, etc that use the basic evaluator:
-(make-substitution-code-simple basic axe-evaluator-basic)
+(make-sublis-var-and-eval-simple basic axe-evaluator-basic)

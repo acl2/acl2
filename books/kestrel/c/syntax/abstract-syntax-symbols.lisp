@@ -49,7 +49,7 @@
     const-case
     const-int->unwrap
 
-    type-qual-list-listp
+    typequal/attribspec-list-listp
 
     exprp
     expr-fix

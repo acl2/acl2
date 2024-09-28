@@ -64,6 +64,7 @@
 
 (define modelcall-printk (x86)
   :returns (x86 x86p :hyp (x86p x86))
+  :guard-hints (("Goal" :in-theory (disable reverse)))
   :prepwork
   ((local (defthm character-listp-reverse-of-character-listp
                   (implies (character-listp x)
@@ -71,7 +72,7 @@
   (b* ((addr (rgfi *rbx* x86))
        ((unless (canonical-address-p addr)) x86)
        ((mv str x86) (read-cstr-from-memory addr x86))
-       (- (cw str)))
+       (- (cw "~S0" str)))
       x86))
 
 (defxdoc modelcalls

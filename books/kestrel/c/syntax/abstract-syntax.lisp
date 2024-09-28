@@ -1098,32 +1098,6 @@
   (:atomic ())
   :pred type-qualp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist type-qual-list
-  :short "Fixtype of lists of type qualifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Type qualifiers are defined in @(tsee type-qual)."))
-  :elt-type type-qual
-  :true-listp t
-  :elementp-of-nil nil
-  :pred type-qual-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist type-qual-list-list
-  :short "Fixtype of lists of lists of type qualifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Type qualifiers are defined in @(tsee type-qual)."))
-  :elt-type type-qual-list
-  :true-listp t
-  :elementp-of-nil t
-  :pred type-qual-list-listp)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fun-spec
@@ -1911,6 +1885,49 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (fty::deftagsum typequal/attribspec
+    :parents (abstract-syntax exprs/decls/stmts)
+    :short "Fixtype of type qualifiers and attribute specifiers."
+    (:tyqual ((unwrap type-qual)))
+    (:attrib ((unwrap attrib-spec)))
+    :pred typequal/attribspec-p
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist typequal/attribspec-list
+    :parents (abstract-syntax exprs/decls/stmts)
+    :short "Fixtype of lists of type qualifiers and attribute specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Type qualifiers and attribute specifiers are defined in
+       @(tsee typequal/attribspec)."))
+    :elt-type typequal/attribspec
+    :true-listp t
+    :elementp-of-nil nil
+    :pred typequal/attribspec-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist typequal/attribspec-list-list
+    :parents (abstract-syntax exprs/decls/stmts)
+    :short "Fixtype of lists of lists of
+            type qualifiers and attribute specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Lists of type qualifiers and attribute specifiers are defined in
+       @(tsee typequal/attribspec-list)."))
+    :elt-type typequal/attribspec-list
+    :true-listp t
+    :elementp-of-nil t
+    :pred typequal/attribspec-list-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (fty::deftagsum initer
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of initializers [C:6.7.9] [C:A.2.2]."
@@ -2021,12 +2038,14 @@
       "This corresponds to <i>declarator</i> in the grammar in [C].
        The optional <i>pointer</i> that precedes the <i>direct-declarator</i>
        is a sequence of stars each optionally followed by
-       an optional sequence of type qualifiers.
-       We model this as a list of lists of type qualifiers:
+       an optional sequence of type qualifiers and attribute specifiers.
+       We model this as
+       a list of lists of type qualifiers and attribute specifiers:
        the outer list corresponds to each star,
-       and each inner list corresponds to the type qualifiers
+       and each inner list corresponds to
+       the type qualifiers and attribute specifiers
        that immediately follow the star."))
-    ((pointers type-qual-list-list)
+    ((pointers typequal/attribspec-list-list)
      (decl dirdeclor))
     :pred declorp
     :measure (two-nats-measure (acl2-count x) 1))
@@ -2084,16 +2103,16 @@
     (:ident ((unwrap ident)))
     (:paren ((unwrap declor)))
     (:array ((decl dirdeclor)
-             (tyquals type-qual-list)
+             (tyquals typequal/attribspec-list)
              (expr? expr-option)))
     (:array-static1 ((decl dirdeclor)
-                     (tyquals type-qual-list)
+                     (tyquals typequal/attribspec-list)
                      (expr expr)))
     (:array-static2 ((decl dirdeclor)
-                     (tyquals type-qual-list)
+                     (tyquals typequal/attribspec-list)
                      (expr expr)))
     (:array-star ((decl dirdeclor)
-                  (tyquals type-qual-list)))
+                  (tyquals typequal/attribspec-list)))
     (:function-params ((decl dirdeclor)
                        (params paramdecl-list)
                        (ellipsis bool)))
@@ -2120,7 +2139,7 @@
        both an empty list of pointers
        and an absent direct abstract declarator.
        This constraint is currently not enforced in this fixtype."))
-    ((pointers type-qual-list-list)
+    ((pointers typequal/attribspec-list-list)
      (decl? dirabsdeclor-option))
     :pred absdeclorp
     :measure (two-nats-measure (acl2-count x) 2))
@@ -2158,13 +2177,13 @@
     (:dummy-base ())
     (:paren ((unwrap absdeclor)))
     (:array ((decl? dirabsdeclor-option)
-             (tyquals type-qual-list)
+             (tyquals typequal/attribspec-list)
              (expr? expr-option)))
     (:array-static1 ((decl? dirabsdeclor-option)
-                     (tyquals type-qual-list)
+                     (tyquals typequal/attribspec-list)
                      (expr expr)))
     (:array-static2 ((decl? dirabsdeclor-option)
-                     (tyquals type-qual-list)
+                     (tyquals typequal/attribspec-list)
                      (expr expr)))
     (:array-star ((decl? dirabsdeclor-option)))
     (:function ((decl? dirabsdeclor-option)
