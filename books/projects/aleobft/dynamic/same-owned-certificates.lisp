@@ -215,3 +215,21 @@
              (same-owned-certificates-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled in-signed-certificates-when-in-owned-and-signer
+  :short "If all validators own the same certificates,
+          then any certificate owned by any validator
+          is among the certificates signed by each signer of the certificate."
+  (implies (and (same-owned-certificates-p systate)
+                (set::in val (correct-addresses systate))
+                (set::in cert (owned-certificates val systate))
+                (set::in signer (certificate->signers cert))
+                (set::in signer (correct-addresses systate)))
+           (set::in cert (signed-certificates signer systate)))
+  :enable (signed-certificates
+           in-of-get-certificates-with-signer)
+  :use (:instance same-owned-certificates-p-necc
+                  (val1 val)
+                  (val2 signer)))
