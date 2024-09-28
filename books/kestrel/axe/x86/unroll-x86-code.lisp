@@ -18,7 +18,7 @@
 ;; state assumptions (since they can mention X and Y).  We use the
 ;; second approach here for now.
 
-(include-book "support-axe")
+(include-book "x86-rules")
 (include-book "../bitops-rules")
 (include-book "../logops-rules-axe")
 (include-book "kestrel/x86/if-lowering" :dir :system)

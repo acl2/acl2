@@ -45,7 +45,7 @@
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
-(include-book "support-axe")
+(include-book "x86-rules")
 (include-book "../bitops-rules")
 (include-book "../logops-rules-axe")
 ;(include-book "kestrel/x86/if-lowering" :dir :system)

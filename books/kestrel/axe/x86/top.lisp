@@ -12,7 +12,7 @@
 
 ;; Support files:
 (include-book "rule-lists")
-(include-book "support-axe")
+(include-book "x86-rules")
 (include-book "tester-rules")
 (include-book "tester-rules-bv")
 (include-book "evaluator-x86")
