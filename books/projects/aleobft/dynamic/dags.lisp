@@ -377,3 +377,45 @@
                                          (1- (certificate->round cert))
                                          dag))
   :guard-hints (("Goal" :in-theory (enable posp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define certificate-previous-in-dag-p ((cert certificatep)
+                                       (dag certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if all the previous certificates
+          referenced by a given certificate
+          are in a given DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The check succeeds immediately if the certificate's round number is 1.
+     In that case, it is an invariant (proved elsewhere)
+     that certificates in round 1 reference no previous certificates;
+     therefore, the requirement is trivially satisfied.")
+   (xdoc::p
+    "For the more common case in which the certificate's round number is not 1,
+     we retrieve all the certificates from the DAG at the previous round,
+     we obtain their set of authors,
+     and we check that those are a superset of
+     the set of previous certificate authors in the certificate."))
+  (b* (((certificate cert) cert))
+    (or (equal cert.round 1)
+        (set::subset cert.previous
+                     (certificate-set->author-set
+                      (get-certificates-with-round (1- cert.round) dag)))))
+  :guard-hints (("Goal" :in-theory (enable posp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dag-closedp ((dag certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if a DAG is backward-closed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the previous certificates of each certificate in the DAG
+     are all in the DAG."))
+  (forall (cert)
+          (implies (set::in cert dag)
+                   (certificate-previous-in-dag-p cert dag))))
