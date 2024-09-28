@@ -148,7 +148,7 @@
      This is an impossibility.
      With that lemma in hand,
      the theorem about @('create-certificate') follows.
-     We use rules to rewrite calls of @(tsee certificate-set-unequivocalp')
+     We use rules to rewrite calls of @(tsee certificate-set-unequivocalp)
      and @(tsee certificate-sets-unequivocalp) applied to @(tsee set::insert)
      in terms of @(tsee get-certificate-with-author+round),
      so that the lemma described above applies.
