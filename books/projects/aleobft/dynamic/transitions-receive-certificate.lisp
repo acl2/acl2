@@ -57,6 +57,18 @@
      Instead, by having the receiving validator check the signers,
      we avoid that, as proved elsewhere.")
    (xdoc::p
+    "Also importantly, and for a similar reason,
+     a validator accepts the certificate from the network
+     only if the referenced previous certificates
+     form a quorum in the active committee
+     of the round just before the certificate,
+     unless the certificate's round is 1,
+     in which case the certificate
+     must have no references to previous certificates.
+     If the certificate's round is not 1,
+     in order to make the quorum check,
+     the validator must be able to calculate that active committee.")
+   (xdoc::p
     "A message may be received by any validator in the system,
      not only validators in the current committee.
      The rationale for this modeling approach
@@ -113,16 +125,19 @@
    (xdoc::p
     "The validator must be able to calculate
      the active committee for the certificate's round,
-     and the signers of the certificate must form a quorum "))
+     and the signers of the certificate must form a quorum.")
+   (xdoc::p
+    "If the certificate's round is 1,
+     the certificate must have no references to previous certificates."))
   (b* (((unless (set::in (message-fix msg)
                          (get-network-state systate)))
         nil)
        (dest (message->destination msg))
-       (cert (message->certificate msg))
+       ((certificate cert) (message->certificate msg))
        ((unless (set::in dest (correct-addresses systate)))
         nil)
        (vstate (get-validator-state dest systate))
-       (commtt (active-committee-at-round (certificate->round cert)
+       (commtt (active-committee-at-round cert.round
                                           (validator-state->blockchain vstate)
                                           (all-addresses systate)))
        ((unless commtt) nil)
@@ -132,7 +147,18 @@
        ((unless (= (set::cardinality signers)
                    (committee-quorum commtt)))
         nil))
-    t)
+    (if (= cert.round 1)
+        (= (set::cardinality cert.previous)
+           0)
+      (b* ((prev-commtt (active-committee-at-round
+                         (1- cert.round)
+                         (validator-state->blockchain vstate)
+                         (all-addresses systate))))
+        (and prev-commtt
+             (set::subset cert.previous (committee-members prev-commtt))
+             (= (set::cardinality cert.previous)
+                (committee-quorum prev-commtt))))))
+  :guard-hints (("Goal" :in-theory (enable posp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
