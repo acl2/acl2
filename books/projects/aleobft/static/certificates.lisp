@@ -148,7 +148,7 @@
     :enable (certificate-set->author-set-of-insert
              set::union))
 
-  (defrule emptyp-of-certificate-set->author-set
+  (defruled emptyp-of-certificate-set->author-set
     (equal (set::emptyp (certificate-set->author-set certs))
            (set::emptyp certs))
     :induct t)
