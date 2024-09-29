@@ -125,7 +125,7 @@
   :verify-guards :after-returns
   ///
 
-  (defrule certificate->author-in-certificate-set->author-set
+  (defruled certificate->author-in-certificate-set->author-set
     (implies (set::in cert certs)
              (set::in (certificate->author cert)
                       (certificate-set->author-set certs)))
@@ -136,7 +136,8 @@
            (set::insert (certificate->author cert)
                         (certificate-set->author-set certs)))
     :induct t
-    :enable set::in)
+    :enable (set::in
+             certificate->author-in-certificate-set->author-set))
 
   (defruled certificate-set->author-set-of-union
     (implies (certificate-setp certs2)
@@ -157,7 +158,8 @@
              (set::subset (certificate-set->author-set certs1)
                           (certificate-set->author-set certs2)))
     :induct t
-    :enable set::subset)
+    :enable (set::subset
+             certificate->author-in-certificate-set->author-set))
 
   (defruled same-certificate-author-when-cardinality-leq-1
     (implies (and (<= (set::cardinality (certificate-set->author-set certs)) 1)
@@ -165,6 +167,7 @@
                   (set::in cert2 certs))
              (equal (certificate->author cert1)
                     (certificate->author cert2)))
+    :enable certificate->author-in-certificate-set->author-set
     :use (:instance set::same-element-when-cardinality-leq-1
                     (elem1 (certificate->author cert1))
                     (elem2 (certificate->author cert2))
