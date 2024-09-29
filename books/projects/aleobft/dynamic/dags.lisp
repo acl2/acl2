@@ -398,13 +398,30 @@
      we retrieve all the certificates from the DAG at the previous round,
      we obtain their set of authors,
      and we check that those are a superset of
-     the set of previous certificate authors in the certificate."))
+     the set of previous certificate authors in the certificate.")
+   (xdoc::p
+    "For a given certificate,
+     this predicate is preserved by extending the DAG,
+     because extending the DAG cannot remove
+     any referenced predecessor certificates."))
   (b* (((certificate cert) cert))
     (or (= cert.round 1)
         (set::subset cert.previous
                      (certificate-set->author-set
                       (certificates-with-round (1- cert.round) dag)))))
-  :guard-hints (("Goal" :in-theory (enable posp))))
+  :guard-hints (("Goal" :in-theory (enable posp)))
+
+  ///
+
+  (defruled certificate-previous-in-dag-p-when-subset
+    (implies (and (certificate-previous-in-dag-p cert dag)
+                  (set::subset dag dag1)
+                  (certificate-setp dag)
+                  (certificate-setp dag1))
+             (certificate-previous-in-dag-p cert dag1))
+    :enable (certificates-with-round-monotone
+             certificate-set->author-set-monotone
+             set::subset-transitive)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -415,7 +432,19 @@
   (xdoc::topstring
    (xdoc::p
     "That is, check if the previous certificates of each certificate in the DAG
-     are all in the DAG."))
+     are all in the DAG.")
+   (xdoc::p
+    "Adding a certificate whose previous certificates are in the DAG
+     preserves the closure of the DAG.
+     It might be tempting to try and prove something like")
+   (xdoc::codeblock
+    "(equal (dag-closedp (set::insert cert dag))"
+    "       (and (dag-closedp dag)"
+    "            (certificate-previous-in-dag-p cert dag)))")
+   (xdoc::p
+    "but that does not hold, because @('cert') could be
+     a predecessor certificate of some certificate in @('dag').
+     So instead we prove the (right-to-left) implication."))
   (forall (cert)
           (implies (set::in cert dag)
                    (certificate-previous-in-dag-p cert dag)))
@@ -424,4 +453,14 @@
 
   (defruled dag-closedp-when-emptyp
     (implies (set::emptyp dag)
-             (dag-closedp dag))))
+             (dag-closedp dag)))
+
+  (defruled dag-previous-in-dag-p-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp dag)
+                  (dag-closedp dag)
+                  (certificate-previous-in-dag-p cert dag))
+             (dag-closedp (set::insert cert dag)))
+    :enable certificate-previous-in-dag-p-when-subset
+    :use (:instance dag-closedp-necc
+                    (cert (dag-closedp-witness (set::insert cert dag))))))

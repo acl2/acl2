@@ -464,7 +464,25 @@
   ///
 
   (fty::deffixequiv certificates-with-round
-    :args ((round posp))))
+    :args ((round posp)))
+
+  (defruled in-of-certificates-with-round
+    (implies (certificate-setp certs)
+             (equal (set::in cert (certificates-with-round round certs))
+                    (and (set::in cert certs)
+                         (equal (certificate->round cert)
+                                (pos-fix round)))))
+    :induct t)
+
+  (defruled certificates-with-round-monotone
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2)
+                  (set::subset certs1 certs2))
+             (set::subset (certificates-with-round round certs1)
+                          (certificates-with-round round certs2)))
+    :enable (in-of-certificates-with-round
+             set::expensive-rules)
+    :disable certificates-with-round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
