@@ -418,4 +418,10 @@
      are all in the DAG."))
   (forall (cert)
           (implies (set::in cert dag)
-                   (certificate-previous-in-dag-p cert dag))))
+                   (certificate-previous-in-dag-p cert dag)))
+
+  ///
+
+  (defruled dag-closedp-when-emptyp
+    (implies (set::emptyp dag)
+             (dag-closedp dag))))
