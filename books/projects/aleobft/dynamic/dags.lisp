@@ -153,7 +153,7 @@
   (("Goal"
     :in-theory (enable set::cardinality
                        pos-fix
-                       certificate-set->round-set-subset
+                       certificate-set->round-set-monotone
                        emptyp-of-certificate-set->round-set
                        certificate->round-in-certificate-set->round-set)
     :use ((:instance acl2::pos-set-max->=-element
@@ -174,7 +174,7 @@
                        pos-fix
                        acl2::pos-set->=-pos-element
                        acl2::pos-set->=-pos-subset
-                       certificate-set->round-set-subset
+                       certificate-set->round-set-monotone
                        emptyp-of-certificate-set->round-set
                        certificate->round-in-certificate-set->round-set)
     :use (:instance
@@ -286,7 +286,7 @@
   (("Goal"
     :in-theory (enable pos-fix
                        set::cardinality
-                       certificate-set->round-set-subset
+                       certificate-set->round-set-monotone
                        certificate->round-in-certificate-set->round-set)
     :use ((:instance acl2::pos-set-max->=-element
                      (elem (certificate->round (set::head certs)))
