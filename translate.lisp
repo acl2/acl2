@@ -17900,28 +17900,52 @@
             (erp (mv erp expansion))
             (t (macroexpand1*-cmp expansion ctx wrld state-vars)))))))
 
+(defun find-stobj-out-and-call-1 (uterm known-stobjs ctx wrld state-vars)
+
+; See find-stobj-out-and-call.  In short, given the untranslated term uterm, we
+; attempt heuristically to return a stobj returned by uterm if any, else nil.
+
+  (cond
+   ((atom uterm)
+    (and (stobjp uterm known-stobjs wrld)
+         uterm))
+   ((consp (car uterm))
+    (case-match uterm
+      ((('lambda & body) . &)
+       (find-stobj-out-and-call-1 body known-stobjs ctx wrld state-vars))
+      (& nil)))
+   ((member-eq (car uterm)
+               '(let let*)) ; !! others?
+    (find-stobj-out-and-call-1 (car (last uterm)) known-stobjs ctx wrld
+                               state-vars))
+   ((getpropc (car uterm) 'macro-body nil wrld)
+    (mv-let (erp val)
+      (macroexpand1-cmp uterm ctx wrld state-vars)
+      (and (not erp)
+           (find-stobj-out-and-call-1 val known-stobjs ctx wrld state-vars))))
+   ((member-eq (car uterm) *stobjs-out-invalid*)
+    nil)
+   (t (let ((stobjs-out (stobjs-out (car uterm) wrld)))
+        (and (consp stobjs-out)
+             (null (cdr stobjs-out))
+             (stobjp (car stobjs-out) known-stobjs wrld)
+             (car stobjs-out))))))
+
 (defun find-stobj-out-and-call (lst known-stobjs ctx wrld state-vars)
 
 ; Lst is a list of possibly UNTRANSLATED terms!  This function is used only
 ; heuristically.  It returns either nil or a pair (s . call), where s is a
-; stobj with respect to known-stobjs and call is a member of lst that returns
-; s.  Note that it could return nil even when such a pair exists, though that
-; is presumably rare.
+; stobj with respect to known-stobjs and call is a non-atom member of lst that
+; returns s.  Note that it could return nil even when such a pair exists,
+; though that is presumably rare.
 
   (cond
    ((endp lst) nil)
    (t
-    (or (mv-let (erp val)
-          (macroexpand1*-cmp (car lst) ctx wrld state-vars)
-          (and (not erp)
-               (consp val)
-               (symbolp (car val))
-               (not (member-eq (car val) *stobjs-out-invalid*))
-               (let ((stobjs-out (stobjs-out (car val) wrld)))
-                 (and (consp stobjs-out)
-                      (null (cdr stobjs-out))
-                      (stobjp (car stobjs-out) known-stobjs wrld)
-                      (cons (car stobjs-out) (car lst))))))
+    (or (and (not (symbolp (car lst)))
+             (let ((s (find-stobj-out-and-call-1 (car lst) known-stobjs
+                                                 ctx wrld state-vars)))
+               (and s (cons s (car lst)))))
         (find-stobj-out-and-call (cdr lst) known-stobjs ctx wrld
                                  state-vars)))))
 
@@ -21013,7 +21037,7 @@
      ((member-eq (caar bindings) df-vars)
       (bindings-known-dfs (cdr bindings) known-stobjs known-dfs wrld df-vars))
      (t
-      (let ((x (returns-df? (cdar bindings) known-stobjs known-dfs wrld)))
+      (let ((x (returns-df? (cadar bindings) known-stobjs known-dfs wrld)))
         (cond
          ((eq x :unknown) :unknown)
          (t
@@ -22465,21 +22489,23 @@
                                          stobjs-out-for-form
                                          bound-vars))))
              (t
-              (mv ctx
-                  (msg "The bound variable list ~x0 from an MV-LET expression ~
-                        has been found not to be compatible with the ~
-                        ``types'' (each a stobj name or an indicator of a ~
-                        non-stobj object) computed for them, ~x1.~@2"
-                       bound-vars
-                       stobjs-out-for-form
-                       (if (or (member-eq :df bound-known-dfs)
-                               (member-eq :df stobjs-out-for-form))
-                           "~|If dfs are involved (see :DOC df), then proper ~
-                            double-float type declarations may help."
-                         ""))
-                  bindings ; irrelevant
-                  nil      ; irrelevant
-                  )))))
+              (mv-let (erp val bindings)
+                (trans-er+ cform
+                           ctx
+                           "The bound variable list ~x0 from an MV-LET ~
+                            expression has been found not to be compatible ~
+                            with the ``types'' (each a stobj name or an ~
+                            indicator of a non-stobj object) computed for ~
+                            them, ~x1.~@2"
+                           bound-vars
+                           stobjs-out-for-form
+                           (if (or (member-eq :df bound-known-dfs)
+                                   (member-eq :df stobjs-out-for-form))
+                               "~|If dfs are involved (see :DOC df), then ~
+                                proper double-float type declarations may ~
+                                help."
+                             ""))
+                (mv erp val bindings nil))))))
          (t
 
 ; This is the case one might reasonably desire, where the computed
@@ -22615,7 +22641,7 @@
                bound-stobjs-out bound-known-dfs bindings producer-known-stobjs
                known-dfs flet-alist x ctx wrld state-vars bound-vars)))
             (cond
-             (erp (trans-er+ x erp "~@0" tcall))
+             (erp (mv ctx tcall bindings)) ; tcall is a msgp
              (t
               (trans-er-let*
                ((tdcls (translate11-lst (translate-dcl-lst edcls wrld)
@@ -25200,15 +25226,16 @@
                                                           state-vars)))
                     (cond
                      (st/call
-                      (trans-er+ cform ctx
+                      (trans-er+ x ctx
                                  "The form ~x0 is being used as an argument ~
                                   to a call of ~x1.  This form evaluates to a ~
                                   single-threaded object, ~x2; but for an ~
                                   argument of ~x1, the stobj variable itself ~
                                   (here, ~x2) is required, not merely a term ~
                                   that returns such a single-threaded object. ~
-                                  ~ So you may need to bind ~x2 with LET; see ~
-                                  :DOC stobj."
+                                  ~ A suitable LET-binding of ~x2 outside the ~
+                                  call of ~x1 may avoid this error; see :DOC ~
+                                  stobj."
                                  (cdr st/call)
                                  'mv
                                  (car st/call)))
