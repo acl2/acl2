@@ -261,7 +261,8 @@
                              (outgoing cert1 dag))))
                1))
   :rule-classes :linear
-  :enable cardinality-of-subset-of-round-set-of-round
+  :enable (cardinality-of-subset-of-round-set-of-round
+           certificate-set->author-set-subset)
   :use incoming+outgoing-subset-same-round
   :disable (incoming+outgoing-subset-same-round
             certificate-set->round-set-of-union))
@@ -284,6 +285,7 @@
   :enable (incoming+outgoing-same-round
            cardinality-bound-when-same-round-and-unequiv
            certificate-set-unequivocalp-when-subset
+           certificate-set->author-set-subset
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
             certificate-set->round-set-of-union))

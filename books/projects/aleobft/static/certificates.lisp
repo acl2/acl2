@@ -153,7 +153,7 @@
            (set::emptyp certs))
     :induct t)
 
-  (defrule certificate-set->author-set-subset
+  (defruled certificate-set->author-set-subset
     (implies (set::subset certs1 certs2)
              (set::subset (certificate-set->author-set certs1)
                           (certificate-set->author-set certs2)))
