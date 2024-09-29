@@ -184,7 +184,7 @@
   :verify-guards :after-returns
   ///
 
-  (defrule certificate->round-in-certificate-set->round-set
+  (defruled certificate->round-in-certificate-set->round-set
     (implies (set::in cert certs)
              (set::in (certificate->round cert)
                       (certificate-set->round-set certs)))
@@ -195,7 +195,8 @@
            (set::insert (certificate->round cert)
                         (certificate-set->round-set certs)))
     :induct t
-    :enable set::in)
+    :enable (set::in
+             certificate->round-in-certificate-set->round-set))
 
   (defruled certificate-set->round-set-of-union
     (implies (certificate-setp certs2)
@@ -216,7 +217,8 @@
              (set::subset (certificate-set->round-set certs1)
                           (certificate-set->round-set certs2)))
     :induct t
-    :enable set::subset)
+    :enable (set::subset
+             certificate->round-in-certificate-set->round-set))
 
   (defruled same-certificate-round-when-cardinality-leq-1
     (implies (and (<= (set::cardinality (certificate-set->round-set certs)) 1)
@@ -224,6 +226,7 @@
                   (set::in cert2 certs))
              (equal (certificate->round cert1)
                     (certificate->round cert2)))
+    :enable certificate->round-in-certificate-set->round-set
     :use (:instance set::same-element-when-cardinality-leq-1
                     (elem1 (certificate->round cert1))
                     (elem2 (certificate->round cert2))

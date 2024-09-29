@@ -156,7 +156,8 @@
   :hints
   (("Goal"
     :in-theory (enable set::cardinality
-                       pos-fix)
+                       pos-fix
+                       certificate->round-in-certificate-set->round-set)
     :use ((:instance acl2::pos-set-max->=-element
                      (elem (certificate->round (set::head certs)))
                      (set (certificate-set->round-set certs)))
@@ -174,7 +175,8 @@
     :in-theory (enable posp
                        pos-fix
                        acl2::pos-set->=-pos-element
-                       acl2::pos-set->=-pos-subset)
+                       acl2::pos-set->=-pos-subset
+                       certificate->round-in-certificate-set->round-set)
     :use (:instance
           certificate-set->round-set-of-certificates-with-authors+round
           (authors (certificate->previous cert))
@@ -233,15 +235,18 @@
       (implies previous-cert?
                (<= round (pos-set-max (certificate-set->round-set certs))))
       :fn path-to-author+round-set)
-    :hints (("Goal" :in-theory (enable* path-to-author+round
-                                        path-to-author+round-set
-                                        set::expensive-rules))
-            '(:use ((:instance acl2::pos-set-max->=-element
-                               (set (certificate-set->round-set certs))
-                               (elem (certificate->round (set::head certs))))
-                    (:instance acl2::pos-set-max->=-subset
-                               (set1 (certificate-set->round-set (tail certs)))
-                               (set2 (certificate-set->round-set certs)))))))
+    :hints
+    (("Goal"
+      :in-theory (enable* path-to-author+round
+                          path-to-author+round-set
+                          set::expensive-rules
+                          certificate->round-in-certificate-set->round-set))
+     '(:use ((:instance acl2::pos-set-max->=-element
+                        (set (certificate-set->round-set certs))
+                        (elem (certificate->round (set::head certs))))
+             (:instance acl2::pos-set-max->=-subset
+                        (set1 (certificate-set->round-set (tail certs)))
+                        (set2 (certificate-set->round-set certs)))))))
 
   (in-theory (disable round-leq-when-path-to-author+round
                       round-leq-when-path-to-author+round-set))
@@ -339,7 +344,9 @@
 
   :hints ; termination
   (("Goal"
-    :in-theory (enable pos-fix set::cardinality)
+    :in-theory (enable pos-fix
+                       set::cardinality
+                       certificate->round-in-certificate-set->round-set)
     :use ((:instance acl2::pos-set-max->=-element
                      (elem (certificate->round (set::head certs)))
                      (set (certificate-set->round-set certs)))
