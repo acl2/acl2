@@ -25,7 +25,7 @@
 
 (defxdoc+ accepted-certificates-quorum
   :parents (correctness)
-  :short "Invariant that each certificate accepted by the validator
+  :short "Invariant that each certificate accepted by a validator
           has signers that form a quorum in the committee."
   :long
   (xdoc::topstring
