@@ -18,15 +18,18 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
 
+;; A simple test that uses STP to prove that bvplus is commutative (on 32-bit values).
 (deftest
   (defthm-stp test1 (equal (bvplus 32 x y) (bvplus 32 y x))))
+
+;; A simple test that is not true:
+(must-fail (defthm-stp test3 (equal (bvplus 32 x y) (bvplus 32 x z))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; test of :rule-classes nil
 (deftest
   (defthm-stp test2 (equal (bvplus 32 x y) (bvplus 32 x y)) :rule-classes nil))
-
-;; this one is not true:
-(must-fail (defthm-stp test3 (equal (bvplus 32 x y) (bvplus 32 x z))))
 
 ;; test :counterexample
 (must-fail (defthm-stp test3 (equal (bvplus 32 x y) (bvplus 32 x z)) :counterexample t))
@@ -35,7 +38,29 @@
 ; "Note: No disjuncts. Not calling STP."
 (must-fail (defthm-stp test3 x :counterexample t))
 
-;; Test whether the arg to BVSX gets chopped right:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Some tests with BVSX:
 (deftest
-  (defthm-stp foo (implies (unsigned-byte-p 64 x) (equal (bvsx 32 16 x) (bvsx 32 16 x))) :rule-classes nil))
-(must-fail (defthm-stp foo (implies (unsigned-byte-p 64 x) (equal (bvsx 32 16 x) (bvsx 32 16 y))) :rule-classes nil))
+  (defthm-stp bvsx-32-16-def
+    (implies (unsigned-byte-p 64 x)
+             (equal (bvsx 32 16 x)
+                    (bvif 32 (equal 1 (getbit 15 x))
+                          (bvcat 16 65535 16 (bvsx 32 16 x))
+                          (bvsx 32 16 x))))
+    :rule-classes nil))
+
+(must-fail
+  (defthm-stp bvsx-32-16-def-bad
+    (implies (unsigned-byte-p 64 x)
+             (equal (bvsx 32 16 x)
+                    (bvif 32 (equal 1 (getbit 15 x))
+                          (bvcat 16 65534 ; note this: should be 65535
+                                 16 (bvsx 32 16 x))
+                          (bvsx 32 16 x))))
+    :rule-classes nil))
+
+(must-fail (defthm-stp bvsx-bad
+             (implies (unsigned-byte-p 64 x)
+                      (equal (bvsx 32 16 x) (bvsx 32 16 y)))
+             :rule-classes nil))
