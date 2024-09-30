@@ -180,7 +180,7 @@
 
   ;; create-certificate:
 
-  (defruled accepted-certificates-quorum-p-of-create-certificate-next-old
+  (defruled validator-certificates-quorum-p-of-create-certificate-next-old
     (implies (and (set::in val (correct-addresses systate))
                   (validator-certificate-quorum-p
                    cert1
@@ -194,7 +194,7 @@
     :enable (validator-certificate-quorum-p
              validator-state->blockchain-of-create-certificate-next))
 
-  (defruled accepted-certificates-quorum-p-of-create-certificate-next-new
+  (defruled validator-certificates-quorum-p-of-create-certificate-next-new
     (implies (and (create-certificate-possiblep cert systate)
                   (set::in (certificate->author cert)
                            (correct-addresses systate)))
@@ -224,15 +224,16 @@
                      (create-certificate-possiblep cert systate))
                 (accepted-certificates-quorum-p
                  (create-certificate-next cert systate)))
-       :enable (accepted-certificates-quorum-p
-                accepted-certificates-quorum-p-necc
-                accepted-certificates-of-create-certificate-next
-                accepted-certificates-quorum-p-of-create-certificate-next-old
-                accepted-certificates-quorum-p-of-create-certificate-next-new))))
+       :enable
+       (accepted-certificates-quorum-p
+        accepted-certificates-quorum-p-necc
+        accepted-certificates-of-create-certificate-next
+        validator-certificates-quorum-p-of-create-certificate-next-old
+        validator-certificates-quorum-p-of-create-certificate-next-new))))
 
   ;; receive-certificate:
 
-  (defruled accepted-certificates-quorum-p-of-receive-certificate-next-old
+  (defruled validator-certificates-quorum-p-of-receive-certificate-next-old
     (implies (and (set::in val (correct-addresses systate))
                   (validator-certificate-quorum-p
                    cert
@@ -247,7 +248,7 @@
     :enable (validator-certificate-quorum-p
              validator-state->blockchain-of-receive-certificate-next))
 
-  (defruled accepted-certificates-quorum-p-of-receive-certificate-next-new
+  (defruled validator-certificates-quorum-p-of-receive-certificate-next-new
     (implies (receive-certificate-possiblep msg systate)
              (validator-certificate-quorum-p
               (message->certificate msg)
@@ -266,8 +267,8 @@
     :enable (accepted-certificates-quorum-p
              accepted-certificates-quorum-p-necc
              accepted-certificates-of-receive-certificate-next
-             accepted-certificates-quorum-p-of-receive-certificate-next-old
-             accepted-certificates-quorum-p-of-receive-certificate-next-new))
+             validator-certificates-quorum-p-of-receive-certificate-next-old
+             validator-certificates-quorum-p-of-receive-certificate-next-new))
 
   ;; store-certificate:
 
