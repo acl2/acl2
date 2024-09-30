@@ -14,3 +14,8 @@ The [r1cs/](r1cs) directory contains Axe lifters for Rank-1 Constraint Systems.
 For more information, see the [Axe Webpage][Axe].
 
 [Axe]: https://kestrel.edu/research/axe/
+
+# Setup: Installing the STP solver.
+
+The STP SMT solver is needed for most uses of Axe.  See :doc STP for
+information about installing it.
