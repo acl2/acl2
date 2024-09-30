@@ -855,7 +855,7 @@
          (prove-implication-name (pack$ 'prove-implication-with- suffix '-prover)) ;a macro
          (prove-implication-fn-name (pack$ 'prove-implication-with- suffix '-prover-fn))
          (prove-dag-implication-name (pack$ 'prove-dag-implication-with- suffix '-prover))
-         (clause-processor-name (pack$ suffix '-prover-clause-processor))
+         (clause-processor-name (pack$ 'prover- suffix '-clause-processor))
 
          ;; Keep these in sync with the formals of each function:
 
