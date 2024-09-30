@@ -65,7 +65,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-previous-number-p-when-system-state-initp
+(defrule system-previous-are-quorum-p-when-system-state-initp
   :short "Establishment of the invariant:
           the invariant holds on any initial system state."
   :long

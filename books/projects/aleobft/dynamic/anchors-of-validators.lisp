@@ -59,7 +59,7 @@
                                           all-vals))
        ((unless commtt) nil)
        (leader (leader-at-round vstate.last commtt)))
-    (get-certificate-with-author+round leader vstate.last vstate.dag))
+    (certificate-with-author+round leader vstate.last vstate.dag))
 
   ///
 
@@ -81,7 +81,7 @@
     (implies (last-anchor vstate all-vals)
              (set::in (last-anchor vstate all-vals)
                       (validator-state->dag vstate)))
-    :enable get-certificate-with-author+round-element)
+    :enable certificate-with-author+round-element)
 
   (defruled active-committee-at-round-when-last-anchor
     (implies (last-anchor vstate all-vals)

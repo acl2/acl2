@@ -1,7 +1,7 @@
 ; A simple variant of defthm-axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -39,7 +39,7 @@
              nil
            `(:rule-classes ,rule-classes)))))
 
-;; Prove a theorem with the Axe Prover, throwing an error if it fails.
+;; Attempts to prove a theorem with the basic Axe prover, throwing an error if it fails.
 (defmacro defthm-axe-basic (name term
                            &key
                            (rules 'nil)

@@ -143,23 +143,23 @@
        ((when (= vstate.round 1)) t))
     (if (evenp vstate.round)
         (b* ((leader (leader-at-round vstate.round commtt))
-             (anchor? (get-certificate-with-author+round leader
-                                                         vstate.round
-                                                         vstate.dag)))
+             (anchor? (certificate-with-author+round leader
+                                                     vstate.round
+                                                     vstate.dag)))
           (or (and anchor? t)
               (and (timer-case vstate.timer :expired)
                    (>= (set::cardinality
-                        (get-certificates-with-round vstate.round vstate.dag))
+                        (certificates-with-round vstate.round vstate.dag))
                        (committee-quorum commtt)))))
       (b* ((prev-commtt
             (active-committee-at-round (1- vstate.round)
                                        vstate.blockchain
                                        (all-addresses systate)))
            (leader (leader-at-round (1- vstate.round) prev-commtt))
-           (anchor? (get-certificate-with-author+round leader
-                                                       (1- vstate.round)
-                                                       vstate.dag))
-           (voters (get-certificates-with-round vstate.round vstate.dag))
+           (anchor? (certificate-with-author+round leader
+                                                   (1- vstate.round)
+                                                   vstate.dag))
+           (voters (certificates-with-round vstate.round vstate.dag))
            ((mv yes-votes no-votes) (tally-leader-votes leader voters)))
         (or (not anchor?)
             (>= yes-votes

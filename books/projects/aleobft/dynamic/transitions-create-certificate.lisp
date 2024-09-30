@@ -181,14 +181,14 @@
        ((unless (= (set::cardinality cert.endorsers)
                    (1- (committee-quorum commtt))))
         nil)
-       ((when (get-certificate-with-author+round
+       ((when (certificate-with-author+round
                cert.author cert.round vstate.dag))
         nil)
        ((unless (or (= cert.round 1)
                     (set::subset cert.previous
                                  (certificate-set->author-set
-                                  (get-certificates-with-round (1- cert.round)
-                                                               vstate.dag)))))
+                                  (certificates-with-round (1- cert.round)
+                                                           vstate.dag)))))
         nil)
        ((unless (= (set::cardinality cert.previous)
                    (if (= cert.round 1)
@@ -320,7 +320,7 @@
        ((validator-state vstate) vstate)
        ((unless (create-certificate-signer-possiblep cert vstate all-vals))
         nil)
-       ((when (get-certificate-with-author+round
+       ((when (certificate-with-author+round
                cert.author cert.round vstate.buffer))
         nil)
        ((when (set::in (make-address+pos :address cert.author :pos cert.round)

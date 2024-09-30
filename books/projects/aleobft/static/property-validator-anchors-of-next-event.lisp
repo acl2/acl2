@@ -204,7 +204,7 @@
                    (commit-round (1- vstate.round))
                    (leader (leader-at-round commit-round
                                             (all-addresses systate)))
-                   (anchor (get-certificate-with-author+round leader
+                   (anchor (certificate-with-author+round leader
                                                               commit-round
                                                               vstate.dag))
                    (anchors (collect-anchors anchor
@@ -225,11 +225,11 @@
            system-last-is-even-p-necc
            system-paths-to-last-anchor-p-necc
            anchorp
-           get-certificate-with-author+round-element-when-not-nil)
+           certificate-with-author+round-element-when-not-nil)
   :use (:instance collect-all-anchors-to-append-of-collect-anchors
                   (anchor (last-anchor (get-validator-state val systate)
                                        (all-addresses systate)))
-                  (anchor1 (get-certificate-with-author+round
+                  (anchor1 (certificate-with-author+round
                             (leader-at-round
                              (+ -1
                                 (validator-state->round
