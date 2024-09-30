@@ -105,7 +105,7 @@
 
 (defruled signer-quorum-p-when-init
   :short "Establishment of the invariant:
-          the invariant holds on any initial system state."
+          the invariant holds in any initial system state."
   :long
   (xdoc::topstring
    (xdoc::p
