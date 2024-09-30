@@ -68,7 +68,7 @@
      are at least one more than the maximum number of faulty validators."))
   (b* (((validator-state vstate) vstate)
        ((when (equal vstate.last 0)) t)
-       (voters (get-certificates-with-round (1+ vstate.last) vstate.dag))
+       (voters (certificates-with-round (1+ vstate.last) vstate.dag))
        ((mv yes &)
         (tally-leader-votes (leader-at-round vstate.last vals) voters)))
     (>= yes (1+ max-faulty))))

@@ -233,7 +233,7 @@
      We could also define it for faulty validators,
      since they can be signers,
      but we only need this notion for correct validators."))
-  (get-certificates-with-signer val (owned-certificates val systate))
+  (certificates-with-signer val (owned-certificates val systate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -279,7 +279,7 @@
                       (signed-certificates val systate))))
     :enable (signed-certificates
              owned-certificates-of-create-certificate-next
-             get-certificates-with-signer-of-insert))
+             certificates-with-signer-of-insert))
 
   (defruled signed-certificates-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))

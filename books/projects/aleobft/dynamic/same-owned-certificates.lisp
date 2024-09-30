@@ -229,7 +229,7 @@
                 (set::in signer (correct-addresses systate)))
            (set::in cert (signed-certificates signer systate)))
   :enable (signed-certificates
-           in-of-get-certificates-with-signer)
+           in-of-certificates-with-signer)
   :use (:instance same-owned-certificates-p-necc
                   (val1 val)
                   (val2 signer)))

@@ -89,7 +89,7 @@
        ((unless (set::in (certificate-fix cert) vstate.buffer)) nil)
        ((when (equal cert.round 1)) t)
        (all-previous-round-certs
-        (get-certificates-with-round (1- cert.round) vstate.dag))
+        (certificates-with-round (1- cert.round) vstate.dag))
        (all-previous-round-authors
         (certificate-set->author-set all-previous-round-certs))
        ((unless (set::subset cert.previous all-previous-round-authors)) nil))

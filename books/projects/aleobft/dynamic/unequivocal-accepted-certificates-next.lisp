@@ -17,7 +17,7 @@
 (include-book "unequivocal-signed-certificates")
 (include-book "committees-in-system")
 (include-book "quorum-intersection")
-(include-book "accepted-certificates-quorum")
+(include-book "signer-quorum")
 (include-book "same-owned-certificates")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -110,7 +110,7 @@
      then the accepted certificates of any correct validator
      do not have any certificate with the same author and round
      as the newly created certificate.
-     This fact is expressed via @(tsee get-certificate-with-author+round)
+     This fact is expressed via @(tsee certificate-with-author+round)
      applied to @(tsee accepted-certificates).
      This fact is proved essentially as follows,
      where it is easier to think of the proof being by contradiction,
@@ -119,7 +119,7 @@
      and deriving a contradiction, meaning that in fact
      such a certificate cannot be obtained.
      This hypothetical certificate is of course
-     @('(get-certificate-with-author+round ...)') in the theorem.
+     @('(certificate-with-author+round ...)') in the theorem.
      We use a quorum intersection argument on
      the signers of that certificate
      and the signers of the new certificate @('cert').
@@ -136,21 +136,21 @@
      We also need several invariants to satisfy the hypotheses
      of the quorum intersection theorem.
      We then use @(tsee no-signer-record-when-create-certificate-possiblep)
-     and @(tsee accepted-certificates-quorum-p) to derive the contradiction:
+     and @(tsee signer-quorum-p) to derive the contradiction:
      according to the first one, if @('create-certificate') is possible,
      the correct signer in the quorum intersection
      has no record of the author and round of @('cert');
      according to the second one,
      the correct signer in the quorum intersection
      has a record of the author and round of
-     @('(get-certificate-with-author+round ...)'),
+     @('(certificate-with-author+round ...)'),
      which has the same author and round as @('cert').
      This is an impossibility.
      With that lemma in hand,
      the theorem about @('create-certificate') follows.
      We use rules to rewrite calls of @(tsee certificate-set-unequivocalp)
      and @(tsee certificate-sets-unequivocalp) applied to @(tsee set::insert)
-     in terms of @(tsee get-certificate-with-author+round),
+     in terms of @(tsee certificate-with-author+round),
      so that the lemma described above applies.
      The proof takes care of the different cases.")
    (xdoc::p
@@ -158,13 +158,13 @@
      but there are some differences.
      Here the certificates in question are
      the one received from the network by the destination validator,
-     and a generic @('(get-certificate-with-author+round ...)')
+     and a generic @('(certificate-with-author+round ...)')
      with the same author and round accepted by some validator.
      We first prove a lemma similar to the one for @('create-certificate'),
-     where we say that @('(get-certificate-with-author+round ...)')
+     where we say that @('(certificate-with-author+round ...)')
      returns @('nil'), i.e. no such certificate can be retrieved.
      Again, it is easier to think of the proof by contradiction,
-     i.e. assuming that @('(get-certificate-with-author+round ...)') exists,
+     i.e. assuming that @('(certificate-with-author+round ...)') exists,
      and deriving a contradiction.
      We use a quorum intersection argument,
      with the (common) committee calculated by
@@ -194,7 +194,7 @@
     (implies (and (signer-records-p systate)
                   (committees-in-system-p systate)
                   (system-fault-tolerant-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (no-self-buffer-p systate)
                   (no-self-endorsed-p systate)
@@ -207,14 +207,14 @@
                   (not (in (certificate-fix cert)
                            (accepted-certificates
                             (certificate->author cert) systate))))
-             (not (get-certificate-with-author+round
+             (not (certificate-with-author+round
                    (certificate->author cert)
                    (certificate->round cert)
                    (accepted-certificates val systate))))
     :enable (committees-in-system-p-necc
              validator-committees-in-system-p-necc
              validator-certificate-quorum-p
-             get-certificate-with-author+round-element
+             certificate-with-author+round-element
              author-quorum-when-create-certificate-possiblep
              system-fault-tolerant-p-necc
              validator-fault-tolerant-p-necc
@@ -229,12 +229,12 @@
                        (all-addresses systate)))
                      (vals1 (certificate->signers cert))
                      (vals2 (certificate->signers
-                             (get-certificate-with-author+round
+                             (certificate-with-author+round
                               (certificate->author cert)
                               (certificate->round cert)
                               (accepted-certificates val systate)))))
-          (:instance accepted-certificates-quorum-p-necc
-                     (cert (get-certificate-with-author+round
+          (:instance signer-quorum-p-necc
+                     (cert (certificate-with-author+round
                             (certificate->author cert)
                             (certificate->round cert)
                             (accepted-certificates val systate))))
@@ -247,7 +247,7 @@
                       (pick-common-correct-validator
                        (certificate->signers cert)
                        (certificate->signers
-                        (get-certificate-with-author+round
+                        (certificate-with-author+round
                          (certificate->author cert)
                          (certificate->round cert)
                          (accepted-certificates val systate)))
@@ -257,12 +257,12 @@
                       (pick-common-correct-validator
                        (certificate->signers cert)
                        (certificate->signers
-                        (get-certificate-with-author+round
+                        (certificate-with-author+round
                          (certificate->author cert)
                          (certificate->round cert)
                          (accepted-certificates val systate)))
                        systate))
-                     (cert (get-certificate-with-author+round
+                     (cert (certificate-with-author+round
                             (certificate->author cert)
                             (certificate->round cert)
                             (accepted-certificates val systate))))))
@@ -272,7 +272,7 @@
                   (signer-records-p systate)
                   (committees-in-system-p systate)
                   (system-fault-tolerant-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (no-self-buffer-p systate)
                   (no-self-endorsed-p systate)
@@ -297,7 +297,7 @@
                   (same-owned-certificates-p systate)
                   (committees-in-system-p systate)
                   (system-fault-tolerant-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (receive-certificate-possiblep msg systate)
                   (set::in (message->destination msg)
@@ -308,7 +308,7 @@
                   (not (set::in (message->certificate msg)
                                 (accepted-certificates
                                  (message->destination msg) systate))))
-             (not (get-certificate-with-author+round
+             (not (certificate-with-author+round
                    (certificate->author (message->certificate msg))
                    (certificate->round (message->certificate msg))
                    (accepted-certificates val systate))))
@@ -332,12 +332,12 @@
                      (vals1 (certificate->signers
                              (message->certificate msg)))
                      (vals2 (certificate->signers
-                             (get-certificate-with-author+round
+                             (certificate-with-author+round
                               (certificate->author (message->certificate msg))
                               (certificate->round (message->certificate msg))
                               (accepted-certificates val systate)))))
-          (:instance accepted-certificates-quorum-p-necc
-                     (cert (get-certificate-with-author+round
+          (:instance signer-quorum-p-necc
+                     (cert (certificate-with-author+round
                             (certificate->author (message->certificate msg))
                             (certificate->round (message->certificate msg))
                             (accepted-certificates val systate))))
@@ -347,7 +347,7 @@
                      (round (certificate->round (message->certificate msg))))
           (:instance certificate-set-unequivocalp-necc
                      (cert1 (message->certificate msg))
-                     (cert2 (get-certificate-with-author+round
+                     (cert2 (certificate-with-author+round
                              (certificate->author (message->certificate msg))
                              (certificate->round (message->certificate msg))
                              (accepted-certificates val systate)))
@@ -355,13 +355,13 @@
                              (pick-common-correct-validator
                               (certificate->signers (message->certificate msg))
                               (certificate->signers
-                               (get-certificate-with-author+round
+                               (certificate-with-author+round
                                 (certificate->author (message->certificate msg))
                                 (certificate->round (message->certificate msg))
                                 (accepted-certificates val systate)))
                               systate)
                              systate)))
-          (:instance get-certificate-with-author+round-element
+          (:instance certificate-with-author+round-element
                      (author (certificate->author (message->certificate msg)))
                      (round (certificate->round (message->certificate msg)))
                      (certs (accepted-certificates val systate)))))
@@ -372,7 +372,7 @@
                   (same-owned-certificates-p systate)
                   (committees-in-system-p systate)
                   (system-fault-tolerant-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (receive-certificate-possiblep msg systate))
              (unequivocal-accepted-certificates-p
@@ -439,7 +439,7 @@
                   (same-owned-certificates-p systate)
                   (committees-in-system-p systate)
                   (system-fault-tolerant-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (no-self-buffer-p systate)
                   (no-self-endorsed-p systate)
