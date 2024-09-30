@@ -59,9 +59,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define validator-certificate-quorum-p ((cert certificatep)
-                                        (vstate validator-statep)
-                                        (all-vals address-setp))
+(define validator-signer-quorum-p ((cert certificatep)
+                                   (vstate validator-statep)
+                                   (all-vals address-setp))
   :returns (yes/no booleanp)
   :short "Check if
           (i) a validator (represented by its state)
@@ -96,7 +96,7 @@
   (forall (val cert)
           (implies (and (set::in val (correct-addresses systate))
                         (set::in cert (accepted-certificates val systate)))
-                   (validator-certificate-quorum-p
+                   (validator-signer-quorum-p
                     cert
                     (get-validator-state val systate)
                     (all-addresses systate)))))
@@ -162,7 +162,7 @@
      for the other four kinds of events,
      so the proofs for them always rely on the preservaton of the properties.
      For each kind of event,
-     we prove a lemma about @(tsee validator-certificate-quorum-p)
+     we prove a lemma about @(tsee validator-signer-quorum-p)
      and then a theorem about @(tsee signer-quorum-p).
      For @('store-certificate'), @('advance-round'), and @('timer-expires')
      there is no change to the blockchain, so the proof is fairly easy.
@@ -182,28 +182,28 @@
 
   (defruled validator-certificates-quorum-p-of-create-certificate-next-old
     (implies (and (set::in val (correct-addresses systate))
-                  (validator-certificate-quorum-p
+                  (validator-signer-quorum-p
                    cert1
                    (get-validator-state val systate)
                    (all-addresses systate)))
-             (validator-certificate-quorum-p
+             (validator-signer-quorum-p
               cert1
               (get-validator-state
                val (create-certificate-next cert systate))
               (all-addresses systate)))
-    :enable (validator-certificate-quorum-p
+    :enable (validator-signer-quorum-p
              validator-state->blockchain-of-create-certificate-next))
 
   (defruled validator-certificates-quorum-p-of-create-certificate-next-new
     (implies (and (create-certificate-possiblep cert systate)
                   (set::in (certificate->author cert)
                            (correct-addresses systate)))
-             (validator-certificate-quorum-p
+             (validator-signer-quorum-p
               cert
               (get-validator-state (certificate->author cert)
                                    (create-certificate-next cert systate))
               (all-addresses systate)))
-    :enable (validator-certificate-quorum-p
+    :enable (validator-signer-quorum-p
              create-certificate-possiblep
              create-certificate-author-possiblep
              create-certificate-signer-possiblep
@@ -235,27 +235,27 @@
 
   (defruled validator-certificates-quorum-p-of-receive-certificate-next-old
     (implies (and (set::in val (correct-addresses systate))
-                  (validator-certificate-quorum-p
+                  (validator-signer-quorum-p
                    cert
                    (get-validator-state val systate)
                    (all-addresses systate))
                   (receive-certificate-possiblep msg systate))
-             (validator-certificate-quorum-p
+             (validator-signer-quorum-p
               cert
               (get-validator-state
                val (receive-certificate-next msg systate))
               (all-addresses systate)))
-    :enable (validator-certificate-quorum-p
+    :enable (validator-signer-quorum-p
              validator-state->blockchain-of-receive-certificate-next))
 
   (defruled validator-certificates-quorum-p-of-receive-certificate-next-new
     (implies (receive-certificate-possiblep msg systate)
-             (validator-certificate-quorum-p
+             (validator-signer-quorum-p
               (message->certificate msg)
               (get-validator-state (message->destination msg)
                                    (receive-certificate-next msg systate))
               (all-addresses systate)))
-    :enable (validator-certificate-quorum-p
+    :enable (validator-signer-quorum-p
              receive-certificate-possiblep
              validator-state->blockchain-of-receive-certificate-next))
 
@@ -272,19 +272,19 @@
 
   ;; store-certificate:
 
-  (defruled validator-certificate-quorum-p-of-store-certificate-next
+  (defruled validator-signer-quorum-p-of-store-certificate-next
     (implies (and (set::in val1 (correct-addresses systate))
-                  (validator-certificate-quorum-p
+                  (validator-signer-quorum-p
                    cert1
                    (get-validator-state val1 systate)
                    (all-addresses systate))
                   (store-certificate-possiblep val cert systate))
-             (validator-certificate-quorum-p
+             (validator-signer-quorum-p
               cert1
               (get-validator-state
                val1 (store-certificate-next val cert systate))
               (all-addresses systate)))
-    :enable (validator-certificate-quorum-p
+    :enable (validator-signer-quorum-p
              validator-state->blockchain-of-store-certificate-next))
 
   (defruled signer-quorum-p-of-store-certificate-next
@@ -295,23 +295,23 @@
     :enable (signer-quorum-p
              signer-quorum-p-necc
              accepted-certificates-of-store-certificate-next
-             validator-certificate-quorum-p-of-store-certificate-next))
+             validator-signer-quorum-p-of-store-certificate-next))
 
   ;; advance-round:
 
-  (defruled validator-certificate-quorum-p-of-advance-round-next
+  (defruled validator-signer-quorum-p-of-advance-round-next
     (implies (and (set::in val1 (correct-addresses systate))
-                  (validator-certificate-quorum-p
+                  (validator-signer-quorum-p
                    cert
                    (get-validator-state val1 systate)
                    (all-addresses systate))
                   (advance-round-possiblep val systate))
-             (validator-certificate-quorum-p
+             (validator-signer-quorum-p
               cert
               (get-validator-state
                val1 (advance-round-next val systate))
               (all-addresses systate)))
-    :enable (validator-certificate-quorum-p
+    :enable (validator-signer-quorum-p
              validator-state->blockchain-of-advance-round-next))
 
   (defruled signer-quorum-p-of-advance-round-next
@@ -322,25 +322,25 @@
     :enable (signer-quorum-p
              signer-quorum-p-necc
              accepted-certificates-of-advance-round-next
-             validator-certificate-quorum-p-of-advance-round-next))
+             validator-signer-quorum-p-of-advance-round-next))
 
   ;; commit-anchors:
 
-  (defruled validator-certificate-quorum-p-of-commit-anchors-next
+  (defruled validator-signer-quorum-p-of-commit-anchors-next
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
                   (set::in val1 (correct-addresses systate))
-                  (validator-certificate-quorum-p
+                  (validator-signer-quorum-p
                    cert
                    (get-validator-state val1 systate)
                    (all-addresses systate))
                   (commit-anchors-possiblep val systate))
-             (validator-certificate-quorum-p
+             (validator-signer-quorum-p
               cert
               (get-validator-state
                val1 (commit-anchors-next val systate))
               (all-addresses systate)))
-    :enable (validator-certificate-quorum-p
+    :enable (validator-signer-quorum-p
              validator-state->blockchain-of-commit-anchors-next
              active-committee-at-round-of-extend-blockchain-no-change
              blocks-ordered-even-p-of-extend-blockchain
@@ -364,23 +364,23 @@
     :enable (signer-quorum-p
              signer-quorum-p-necc
              accepted-certificates-of-commit-anchors-next
-             validator-certificate-quorum-p-of-commit-anchors-next))
+             validator-signer-quorum-p-of-commit-anchors-next))
 
   ;; timer-expires:
 
-  (defruled validator-certificate-quorum-p-of-timer-expires-next
+  (defruled validator-signer-quorum-p-of-timer-expires-next
     (implies (and (set::in val1 (correct-addresses systate))
-                  (validator-certificate-quorum-p
+                  (validator-signer-quorum-p
                    cert
                    (get-validator-state val1 systate)
                    (all-addresses systate))
                   (timer-expires-possiblep val systate))
-             (validator-certificate-quorum-p
+             (validator-signer-quorum-p
               cert
               (get-validator-state
                val1 (timer-expires-next val systate))
               (all-addresses systate)))
-    :enable (validator-certificate-quorum-p
+    :enable (validator-signer-quorum-p
              validator-state->blockchain-of-timer-expires-next))
 
   (defruled signer-quorum-p-of-timer-expires-next
@@ -391,7 +391,7 @@
     :enable (signer-quorum-p
              signer-quorum-p-necc
              accepted-certificates-of-timer-expires-next
-             validator-certificate-quorum-p-of-timer-expires-next))
+             validator-signer-quorum-p-of-timer-expires-next))
 
   ;; all events:
 
