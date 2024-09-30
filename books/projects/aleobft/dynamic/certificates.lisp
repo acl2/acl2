@@ -389,6 +389,16 @@
   (fty::deffixequiv certificates-with-author
     :args ((author addressp)))
 
+  (defret certificates-with-author-subset
+    (implies (certificate-setp certs)
+             (set::subset certs-with-author certs))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* set::subset
+                                 set::expensive-rules))))
+
+  (in-theory (disable certificates-with-author-subset))
+
   (defruled in-of-certificates-with-author
     (implies (certificate-setp certs)
              (equal (set::in cert (certificates-with-author author certs))
@@ -396,6 +406,14 @@
                          (equal (certificate->author cert)
                                 (address-fix author)))))
     :induct t)
+
+  (defruled in-certificate-set->author-set-iff-certificates-with-author
+    (implies (and (certificate-setp certs)
+                  (addressp author))
+             (iff (set::in author (certificate-set->author-set certs))
+                  (not (set::emptyp (certificates-with-author author certs)))))
+    :induct t
+    :enable certificate-set->author-set)
 
   (defruled certificates-with-author-when-emptyp
     (implies (set::emptyp certs)
@@ -465,6 +483,16 @@
 
   (fty::deffixequiv certificates-with-round
     :args ((round posp)))
+
+  (defret certificates-with-round-subset
+    (implies (certificate-setp certs)
+             (set::subset certs-with-round certs))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* set::subset
+                                 set::expensive-rules))))
+
+  (in-theory (disable certificates-with-round-subset))
 
   (defruled in-of-certificates-with-round
     (implies (certificate-setp certs)
