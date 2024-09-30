@@ -98,7 +98,7 @@
                                    (size2 highsize)
                                    (x x))
                    :in-theory (e/d (bvcat slice equal-of-logtail-and-0)
-                                   (bvchop-of-logtail-becomes-slice
+                                   (
                                     <-of-logtail-arg1 LOGTAIL-LESSP
                                     unsigned-byte-p-of-+-when-<-of-logtail-and-expt))))))
 
@@ -112,7 +112,7 @@
                                         (bvchop highsize highval)))
                             (EQUAL (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL) x)))
           :hints (("Goal" :in-theory (e/d (bvcat slice)
-                                          (BVCHOP-OF-LOGTAIL-BECOMES-SLICE))))))
+                                          ())))))
 
  (defthm bvcat-equal-rewrite
    (implies (and (natp lowsize)
@@ -165,7 +165,7 @@
                           (and (not (integerp lowval)) (not (integerp highval))))
            :in-theory (e/d (bvcat slice bvchop-when-i-is-not-an-integer
                                   logtail-logapp)
-                           (bvchop-of-logtail-becomes-slice)))))
+                           ()))))
 
 ;fixme rename?
 ;causes case split (due to the IF and the MIN).
@@ -228,7 +228,7 @@
   :hints (("Goal"   :do-not '(preprocess)
            :in-theory (e/d (;getbit bvcat slice
                             )
-                           (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                           ()))))
 
 (defthm bvcat-of-bvchop-low
   (implies (and (<= lowsize n)
@@ -244,12 +244,12 @@
 (defthm bvcat-of-getbit-arg4
    (equal (bvcat n x 1 (getbit 0 y))
           (bvcat n x 1 y))
-   :hints (("Goal" :in-theory (e/d (getbit bvcat) (BVCHOP-1-BECOMES-GETBIT )))))
+   :hints (("Goal" :in-theory (e/d (getbit bvcat) ( )))))
 
 (defthm bvcat-of-getbit-arg2
   (equal (bvcat 1 (getbit 0 x) n y)
          (bvcat 1 x n y))
-   :hints (("Goal" :in-theory (e/d (getbit bvcat) (BVCHOP-1-BECOMES-GETBIT )))))
+   :hints (("Goal" :in-theory (e/d (getbit bvcat) ( )))))
 
 (encapsulate ()
 
@@ -452,9 +452,9 @@
                    (getbit k lowval)))
    :hints
    (("Goal" :in-theory (e/d (bvcat getbit slice logtail-logapp)
-                            (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                            (
 
-                             bvchop-1-becomes-getbit))))))
+                             ))))))
 
 (defthm getbit-of-bvcat-low-better
   (implies (and (< k lowsize)
@@ -497,9 +497,8 @@
            :do-not '(preprocess)
            :in-theory (e/d (bvcat getbit slice logtail-of-bvchop logtail-logapp)
                            (bvchop-of-logtail
-                                               bvchop-1-becomes-getbit bvchop-of-logtail
-                                               bvchop-of-logtail-becomes-slice
-                                               logtail-of-bvchop-becomes-slice)))))
+                             bvchop-of-logtail
+                            )))))
 
 ;keeping this disabled, since it causes case splits
 (defthmd getbit-of-bvcat-low-better-all-cases
@@ -570,7 +569,7 @@
                                     ;;bvchop
                                     logtail
                                     bvcat-recombine)
-                                   (bvchop-of-logtail-becomes-slice
+                                   (
                                     bvchop-of-logtail)))))
 
 (defthm bvchop-of-logapp-both
@@ -608,7 +607,7 @@
                                   )
                            (                     ;associativity-of-logapp
                             slice-becomes-bvchop ;bvchop-logapp
-                            bvchop-of-logtail-becomes-slice
+
                             bvchop-of-logapp-bigger)))))
 
 (defthm bvcat-associative
@@ -672,7 +671,7 @@
                                           logtail
                                           )
                                   (slice-of-bvchop-low-gen
-                                   bvchop-of-logtail-becomes-slice
+
                                    bvchop-of-logtail)))))
 
 (defthm slice-of-bvcat-low
@@ -692,8 +691,7 @@
                                   ;;bvchop-logapp
                                   )
                            (logtail-shift-gen2-alt
-                            logtail-of-bvchop-becomes-slice ;todo
-                            bvchop-of-logtail-becomes-slice
+
                             slice-becomes-bvchop)))))
 
 ;todo analogues for other functions
@@ -758,7 +756,7 @@
                                   bvchop-of-logapp-bigger
                                   bvchop-of-logtail)
                            (slice-becomes-bvchop
-                            bvchop-of-logtail-becomes-slice
+
                             logapp-of-bvchop)))))
 
 (defthmd slice-tighten-top-2
@@ -772,7 +770,7 @@
                   (slice (+ -1 n) low x)))
   :hints (("Goal" :cases ((equal 0 low)
                           (<= low n))
-           :in-theory (e/d (slice) (bvchop-of-logtail-becomes-slice)))))
+           :in-theory (e/d (slice) ()))))
 
 (defthm slice-of-bvcat-hack-2
   (implies (and (< lowbit lowsize)
@@ -1021,7 +1019,7 @@
                 (natp n))
            (equal (logtail n (bvcat highsize x lowsize y))
                   (bvcat highsize x (- lowsize n) (slice (+ -1 lowsize) n y))))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) (bvchop-of-logtail-becomes-slice))
+  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) ())
            :cases ((natp highsize)))))
 
 (defthm logtail-logapp-better
@@ -1040,7 +1038,7 @@
            :in-theory (e/d (slice bvchop-of-logtail ;enable this?
                                   )
                            (logtail-logapp
-                            bvchop-of-logtail-becomes-slice)))))
+                            )))))
 
 ;todo handle other cases
 (defthm logtail-of-bvcat-when-extends-into-upper
@@ -1230,7 +1228,7 @@
            (equal x (bvcat 1 (getbit (+ -1 size) x) (+ -1 size) (bvchop (+ -1 size) x))))
   :hints (("Goal" :use (:instance split-bv (x x) (n size) (m (+ -1 size)))
            :cases ((equal size 1))
-           :in-theory (e/d ( getbit) (bvchop-1-becomes-getbit))))
+           :in-theory (e/d ( getbit) ())))
   :rule-classes nil)
 
 ;; this one opens up the bvcat to expose the underlying addition
@@ -1242,7 +1240,7 @@
                      (bvchop (+ -1 size) x))))
   :hints (("Goal" :use split-bv-top
            :cases ((equal size 1))
-           :in-theory (e/d (bvcat logapp getbit) (bvchop-1-becomes-getbit))))
+           :in-theory (e/d (bvcat logapp getbit) ())))
   :rule-classes nil)
 
 (defthmd equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop
@@ -1264,8 +1262,7 @@
            (equal (equal (bvchop size1 x) (bvchop size2 x))
                   (equal 0 (slice (+ -1 (max size1 size2)) (min size1 size2) x))))
   :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop)
-                                  (bvchop-of-logtail-becomes-slice
-                                   equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop))
+                                  (equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop))
            :use ((:instance equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop)
                  (:instance equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop (size1 size2) (size2 size1))))))
 
@@ -1295,7 +1292,7 @@
            (equal (bvcat 1 x n y)
                   (+ (expt 2 n) (bvchop n y))))
   :hints (("Goal" :in-theory (e/d (getbit bvcat logapp bvchop)
-                                  (bvchop-1-becomes-getbit )))))
+                                  ( )))))
 
 (defthm bvcat-when-equal-of-getbit-0-low
   (implies (and (equal (getbit 0 lowval) free)
@@ -1330,7 +1327,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil)))
   :hints (("Goal"
            :in-theory (e/d (bvcat logapp posp bvchop getbit)
-                           (BVCHOP-1-BECOMES-GETBIT))
+                           ())
            :use ((:instance split-with-bvcat (x x) (hs 1) (ls (+ -1 size)))))))
 
 ;move?

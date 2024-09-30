@@ -208,6 +208,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-typequal/attribspec
+  :short "An irrelevant type qualifier or attribute specifier."
+  :type typequal/attribspec-p
+  :body (typequal/attribspec-tyqual (irr-type-qual)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-initer
   :short "An irrelevant initializer."
   :type initerp
@@ -288,10 +295,7 @@
 (defirrelevant irr-structdecl
   :short "An irrelevant structure declaration."
   :type structdeclp
-  :body (make-structdecl-member :extension nil
-                                :specqual nil
-                                :declor nil
-                                :attrib nil))
+  :body (make-structdecl-empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

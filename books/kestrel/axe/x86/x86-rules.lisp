@@ -108,6 +108,10 @@
 (def-constant-opener nonnegative-integer-quotient)
 (def-constant-opener evenp)
 
+(def-constant-opener acl2::bool->bit$inline)
+(def-constant-opener acl2::rotate-left)
+(def-constant-opener acl2::rotate-right)
+
 ;; Flag-related functions (these seem safe to execute without that requiring
 ;; more rules; for example, we expect jle-condition to always be called on flag
 ;; functions with the same arguments (dst and src), so either all the args to
@@ -298,16 +302,36 @@
 
 (def-constant-opener x86isa::vex-vvvv-reg-index)
 
-(def-constant-opener acl2::bool->bit$inline)
-
 (def-constant-opener canonical-address-p$inline)
 
 ;(defopeners byte-ify :hyps ((syntaxp (and (quotep n) (quotep val)))))
 
 (def-constant-opener byte-listp)
 
-(def-constant-opener acl2::rotate-left)
-(def-constant-opener acl2::rotate-right)
+(def-constant-opener x86isa::mxcsrbits-fix)
+
+;; these expose part-select
+(def-constant-opener x86isa::mxcsrbits->ie$inline)
+(def-constant-opener x86isa::mxcsrbits->de$inline)
+(def-constant-opener x86isa::mxcsrbits->ze$inline)
+(def-constant-opener x86isa::mxcsrbits->oe$inline)
+(def-constant-opener x86isa::mxcsrbits->ue$inline)
+(def-constant-opener x86isa::mxcsrbits->pe$inline)
+(def-constant-opener x86isa::mxcsrbits->daz$inline)
+(def-constant-opener x86isa::mxcsrbits->im$inline)
+(def-constant-opener x86isa::mxcsrbits->dm$inline)
+(def-constant-opener x86isa::mxcsrbits->zm$inline)
+(def-constant-opener x86isa::mxcsrbits->om$inline)
+(def-constant-opener x86isa::mxcsrbits->um$inline)
+(def-constant-opener x86isa::mxcsrbits->pm$inline)
+(def-constant-opener x86isa::mxcsrbits->rc$inline)
+(def-constant-opener x86isa::mxcsrbits->ftz$inline)
+(def-constant-opener x86isa::mxcsrbits->reserved$inline)
+
+(def-constant-opener x86isa::convert-arith-operation-to-rtl-op$inline)
+;(def-constant-opener x86isa::feature-flag) ; keep feature-flag disabled, for clarity
+;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
+(def-constant-opener rtl::set-flag) ; drop?
 
 (defopeners acl2::get-symbol-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)
@@ -566,30 +590,6 @@
 
 
 
-(def-constant-opener x86isa::mxcsrbits-fix)
-
-;; these expose part-select
-(def-constant-opener x86isa::mxcsrbits->ie$inline)
-(def-constant-opener x86isa::mxcsrbits->de$inline)
-(def-constant-opener x86isa::mxcsrbits->ze$inline)
-(def-constant-opener x86isa::mxcsrbits->oe$inline)
-(def-constant-opener x86isa::mxcsrbits->ue$inline)
-(def-constant-opener x86isa::mxcsrbits->pe$inline)
-(def-constant-opener x86isa::mxcsrbits->daz$inline)
-(def-constant-opener x86isa::mxcsrbits->im$inline)
-(def-constant-opener x86isa::mxcsrbits->dm$inline)
-(def-constant-opener x86isa::mxcsrbits->zm$inline)
-(def-constant-opener x86isa::mxcsrbits->om$inline)
-(def-constant-opener x86isa::mxcsrbits->um$inline)
-(def-constant-opener x86isa::mxcsrbits->pm$inline)
-(def-constant-opener x86isa::mxcsrbits->rc$inline)
-(def-constant-opener x86isa::mxcsrbits->ftz$inline)
-(def-constant-opener x86isa::mxcsrbits->reserved$inline)
-
-(def-constant-opener x86isa::convert-arith-operation-to-rtl-op$inline)
-;(def-constant-opener x86isa::feature-flag) ; keep feature-flag disabled, for clarity
-;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
-(def-constant-opener rtl::set-flag) ; drop?
 
 (defthmd booleanp-of-canonical-address-p (booleanp (canonical-address-p lin-addr)))
 

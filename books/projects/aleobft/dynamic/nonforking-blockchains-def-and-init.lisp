@@ -22,9 +22,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ nonforking-blockchains
+(defxdoc+ nonforking-blockchains-def-and-init
   :parents (correctness)
-  :short "Invariant that blockchains do not fork."
+  :short "Invariant that blockchains do not fork:
+          definition and establishment."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -37,7 +38,17 @@
      namely that it does reach consensus on the blockchains.")
    (xdoc::p
     "Blockchains clearly do not fork in the initial state,
-     because all blockchains are empty in the iniital state."))
+     because all blockchains are empty in the iniital state.")
+   (xdoc::p
+    "The preservation of this invariant relies on another invariant,
+     namely that certificates are unequivocal across validators.
+     This is defined in @(see unequivocal-accepted-certificates-def-and-init),
+     where it is also explained how that and this invariant
+     must be proved together in the induction.")
+   (xdoc::p
+    "Similarly to @(see unequivocal-accepted-certificates-def-and-init),
+     here we define the invariant,
+     and we also prove that it holds in the initial states."))
   :order-subtopics t
   :default-parent t)
 
@@ -62,12 +73,16 @@
 (defruled nonforking-blockchains-p-when-init
   :short "Establishment of the invariant:
           the invariant holds in any initial state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Initially the blockchains are the same (both empty),
+     so they clearly do not fork.
+     The proof does not even depend on their emptiness,
+     just their equality, since both validators' states
+     is @(tsee validator-init)."))
   (implies (system-initp systate)
            (nonforking-blockchains-p systate))
   :enable (nonforking-blockchains-p
            system-initp
            system-validators-initp-necc))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; TODO: prove preservation

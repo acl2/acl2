@@ -127,9 +127,9 @@
           (and (equal author (certificate->author cert))
                (certificate-fix cert)))
          (prev-certs
-          (get-certificates-with-authors+round (certificate->previous cert)
-                                               (1- (certificate->round cert))
-                                               dag)))
+          (certificates-with-authors+round (certificate->previous cert)
+                                           (1- (certificate->round cert))
+                                           dag)))
       (path-to-author+round-set prev-certs author round dag))
     :measure (acl2::nat-list-measure (list (certificate->round cert)
                                            0
@@ -153,7 +153,7 @@
   (("Goal"
     :in-theory (enable set::cardinality
                        pos-fix
-                       certificate-set->round-set-subset
+                       certificate-set->round-set-monotone
                        emptyp-of-certificate-set->round-set
                        certificate->round-in-certificate-set->round-set)
     :use ((:instance acl2::pos-set-max->=-element
@@ -163,7 +163,7 @@
                      (set1 (certificate-set->round-set (set::tail certs)))
                      (set2 (certificate-set->round-set certs)))
           (:instance
-           certificate-set->round-set-of-get-certificates-with-authors+round
+           certificate-set->round-set-of-certificates-with-authors+round
            (authors (certificate->previous cert))
            (round (1- (certificate->round cert)))
            (certs dag)))))
@@ -174,11 +174,11 @@
                        pos-fix
                        acl2::pos-set->=-pos-element
                        acl2::pos-set->=-pos-subset
-                       certificate-set->round-set-subset
+                       certificate-set->round-set-monotone
                        emptyp-of-certificate-set->round-set
                        certificate->round-in-certificate-set->round-set)
     :use (:instance
-          certificate-set->round-set-of-get-certificates-with-authors+round
+          certificate-set->round-set-of-certificates-with-authors+round
           (authors (certificate->previous cert))
           (round (1- (certificate->round cert)))
           (certs dag))))
@@ -261,9 +261,9 @@
     :returns (hist certificate-setp)
     (b* (((certificate cert) cert)
          ((when (= cert.round 1)) (set::insert (certificate-fix cert) nil))
-         (prev-certs (get-certificates-with-authors+round cert.previous
-                                                          (1- cert.round)
-                                                          dag))
+         (prev-certs (certificates-with-authors+round cert.previous
+                                                      (1- cert.round)
+                                                      dag))
          (prev-hist (certificate-set-causal-history prev-certs dag)))
       (set::insert (certificate-fix cert) prev-hist))
     :measure (acl2::nat-list-measure (list (certificate->round cert)
@@ -286,7 +286,7 @@
   (("Goal"
     :in-theory (enable pos-fix
                        set::cardinality
-                       certificate-set->round-set-subset
+                       certificate-set->round-set-monotone
                        certificate->round-in-certificate-set->round-set)
     :use ((:instance acl2::pos-set-max->=-element
                      (elem (certificate->round (set::head certs)))
@@ -295,7 +295,7 @@
                      (set1 (certificate-set->round-set (set::tail certs)))
                      (set2 (certificate-set->round-set certs)))
           (:instance
-           certificate-set->round-set-of-get-certificates-with-authors+round
+           certificate-set->round-set-of-certificates-with-authors+round
            (authors (certificate->previous cert))
            (round (1- (certificate->round cert)))
            (certs dag)))))
@@ -308,3 +308,159 @@
 
   (verify-guards certificate-causal-history
     :hints (("Goal" :in-theory (enable posp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define successors ((cert certificatep) (dag certificate-setp))
+  :guard (set::in cert dag)
+  :returns (certs certificate-setp)
+  :short "Set of the certificates in a DAG that
+          are successors of a certificate in a DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the source certificates of the edges in the DAG
+     that have the certificate @('cert') as destination.
+     These edges are the incoming edges of @('cert').")
+   (xdoc::p
+    "Here `successor' refers to the fact that
+     the returned certificates are
+     in the (immediately) successive round of @('cert'),
+     even though the directed edges point backwards.")
+   (xdoc::p
+    "We obtain all the certificates from the successive round,
+     and then we filter the ones that have an edge to @('cert'),
+     i.e. that have the author of @('cert') in the @('previous') component."))
+  (successors-loop (certificates-with-round
+                    (1+ (certificate->round cert)) dag)
+                   (certificate->author cert))
+  :prepwork
+  ((define successors-loop ((certs certificate-setp) (prev addressp))
+     :returns (successors-certs certificate-setp)
+     :parents nil
+     (b* (((when (set::emptyp certs)) nil)
+          (cert (set::head certs)))
+       (if (set::in prev (certificate->previous cert))
+           (set::insert (certificate-fix cert)
+                        (successors-loop (set::tail certs) prev))
+         (successors-loop (set::tail certs) prev)))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predecessors ((cert certificatep) (dag certificate-setp))
+  :guard (set::in cert dag)
+  :returns (certs certificate-setp)
+  :short "Set of the certificates in a DAG that
+          are precedessors of a certificate in a DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the destination certificates of the edges in the DAG
+     that have the certificate @('cert') as source.
+     These edges are outgoing edges of @('cert').")
+   (xdoc::p
+    "Here `precedessor' refers to the fact that
+     the return certificates are
+     in the (immediately) preceding round of @('cert')
+     (unless @('cert') is in round 1,
+     in which case this function returns the empty set),
+     even though the directed edges point backwards.")
+   (xdoc::p
+    "If the certificate is at round 1, we return the empty set.
+     Otherwise, we return the certificates at the previous round
+     that are authored by the previous authors in the certificate.
+     All the returned certificates are in the round just before @('cert')."))
+  (if (equal (certificate->round cert) 1)
+      nil
+    (certificates-with-authors+round (certificate->previous cert)
+                                     (1- (certificate->round cert))
+                                     dag))
+  :guard-hints (("Goal" :in-theory (enable posp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define certificate-previous-in-dag-p ((cert certificatep)
+                                       (dag certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if all the previous certificates
+          referenced by a given certificate
+          are in a given DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The check succeeds immediately if the certificate's round number is 1.
+     In that case, it is an invariant (proved elsewhere)
+     that certificates in round 1 reference no previous certificates;
+     therefore, the requirement is trivially satisfied.")
+   (xdoc::p
+    "For the more common case in which the certificate's round number is not 1,
+     we retrieve all the certificates from the DAG at the previous round,
+     we obtain their set of authors,
+     and we check that those are a superset of
+     the set of previous certificate authors in the certificate.")
+   (xdoc::p
+    "For a given certificate,
+     this predicate is preserved by extending the DAG,
+     because extending the DAG cannot remove
+     any referenced predecessor certificates."))
+  (b* (((certificate cert) cert))
+    (or (= cert.round 1)
+        (set::subset cert.previous
+                     (certificate-set->author-set
+                      (certificates-with-round (1- cert.round) dag)))))
+  :guard-hints (("Goal" :in-theory (enable posp)))
+
+  ///
+
+  (defruled certificate-previous-in-dag-p-when-subset
+    (implies (and (certificate-previous-in-dag-p cert dag)
+                  (set::subset dag dag1)
+                  (certificate-setp dag)
+                  (certificate-setp dag1))
+             (certificate-previous-in-dag-p cert dag1))
+    :enable (certificates-with-round-monotone
+             certificate-set->author-set-monotone
+             set::subset-transitive)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dag-closedp ((dag certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if a DAG is backward-closed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the previous certificates of each certificate in the DAG
+     are all in the DAG.")
+   (xdoc::p
+    "Adding a certificate whose previous certificates are in the DAG
+     preserves the closure of the DAG.
+     It might be tempting to try and prove something like")
+   (xdoc::codeblock
+    "(equal (dag-closedp (set::insert cert dag))"
+    "       (and (dag-closedp dag)"
+    "            (certificate-previous-in-dag-p cert dag)))")
+   (xdoc::p
+    "but that does not hold, because @('cert') could be
+     a predecessor certificate of some certificate in @('dag').
+     So instead we prove the (right-to-left) implication."))
+  (forall (cert)
+          (implies (set::in cert dag)
+                   (certificate-previous-in-dag-p cert dag)))
+
+  ///
+
+  (defruled dag-closedp-when-emptyp
+    (implies (set::emptyp dag)
+             (dag-closedp dag)))
+
+  (defruled dag-previous-in-dag-p-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp dag)
+                  (dag-closedp dag)
+                  (certificate-previous-in-dag-p cert dag))
+             (dag-closedp (set::insert cert dag)))
+    :enable certificate-previous-in-dag-p-when-subset
+    :use (:instance dag-closedp-necc
+                    (cert (dag-closedp-witness (set::insert cert dag))))))

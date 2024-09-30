@@ -22,11 +22,16 @@
 (include-book "quorum-intersection")
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
-(include-book "accepted-certificates-quorum")
+(include-book "signer-quorum")
+(include-book "predecessor-quorum")
+(include-book "backward-closure")
 (include-book "unequivocal-signed-certificates")
-(include-book "unequivocal-accepted-certificates")
-(include-book "nonforking-blockchains")
+(include-book "unequivocal-accepted-certificates-def-and-init")
+(include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees")
+(include-book "unequivocal-accepted-certificates-next")
+(include-book "unequivocal-dags")
+(include-book "anchors-of-validators")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,10 +57,15 @@
                     quorum-intersection
                     last-blockchain-round
                     ordered-even-blocks
-                    accepted-certificates-quorum
+                    signer-quorum
+                    predecessor-quorum
+                    backward-closure
                     unequivocal-signed-certificates
-                    unequivocal-accepted-certificates
-                    nonforking-blockchains
-                    same-committees))
+                    unequivocal-accepted-certificates-def-and-init
+                    nonforking-blockchains-def-and-init
+                    same-committees
+                    unequivocal-accepted-certificates-next
+                    unequivocal-dags
+                    anchors-of-validators))
 
 ; TODO: continue

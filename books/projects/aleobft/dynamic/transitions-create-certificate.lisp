@@ -181,14 +181,14 @@
        ((unless (= (set::cardinality cert.endorsers)
                    (1- (committee-quorum commtt))))
         nil)
-       ((when (get-certificate-with-author+round
+       ((when (certificate-with-author+round
                cert.author cert.round vstate.dag))
         nil)
        ((unless (or (= cert.round 1)
                     (set::subset cert.previous
                                  (certificate-set->author-set
-                                  (get-certificates-with-round (1- cert.round)
-                                                               vstate.dag)))))
+                                  (certificates-with-round (1- cert.round)
+                                                           vstate.dag)))))
         nil)
        ((unless (= (set::cardinality cert.previous)
                    (if (= cert.round 1)
@@ -320,7 +320,7 @@
        ((validator-state vstate) vstate)
        ((unless (create-certificate-signer-possiblep cert vstate all-vals))
         nil)
-       ((when (get-certificate-with-author+round
+       ((when (certificate-with-author+round
                cert.author cert.round vstate.buffer))
         nil)
        ((when (set::in (make-address+pos :address cert.author :pos cert.round)
@@ -440,7 +440,15 @@
      of @(tsee create-certificate-author-possiblep)
      with the set of all the addresses of all validators in the system;
      that is indeed the rols of @('all-vals'),
-     as explained in @(tsee update-committee-with-transaction)."))
+     as explained in @(tsee update-committee-with-transaction).")
+   (xdoc::p
+    "If the author of the certificate is correct,
+     then it can calculate the active committees at the certificate's round,
+     and the certificate's signers form a quorum in that committee.
+     This derives from the definition,
+     but provides a way to obtain this fact in proofs
+     without having to open @('create-certificate-possiblep')
+     and some of the functions it calls."))
   (b* (((certificate cert) cert)
        ((unless (set::in cert.author (all-addresses systate))) nil)
        ((unless (set::subset cert.endorsers (all-addresses systate))) nil)
@@ -453,7 +461,29 @@
        ((unless (create-certificate-endorsers-possiblep cert systate))
         nil))
     t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled author-quorum-when-create-certificate-possiblep
+    (implies (and (set::in (certificate->author cert)
+                           (correct-addresses systate))
+                  (create-certificate-possiblep cert systate))
+             (b* ((commtt (active-committee-at-round
+                           (certificate->round cert)
+                           (validator-state->blockchain
+                            (get-validator-state (certificate->author cert)
+                                                 systate))
+                           (all-addresses systate))))
+               (and commtt
+                    (set::subset (certificate->signers cert)
+                                 (committee-members commtt))
+                    (equal (set::cardinality (certificate->signers cert))
+                           (committee-quorum commtt)))))
+    :enable (create-certificate-author-possiblep
+             create-certificate-signer-possiblep
+             certificate->signers
+             set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

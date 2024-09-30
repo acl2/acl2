@@ -165,7 +165,6 @@
                (equal (parstate->chars-unread parstate) 0)
                (equal (parstate->tokens-read parstate) 0)
                (equal (parstate->tokens-unread parstate) 0)
-               (equal (parstate->checkpoints parstate) nil)
                (equal (parstate->gcc parstate) ,gcc)
                (equal (parstate->size parstate) (len ,list)))
           parstate))
@@ -1812,4 +1811,10 @@ error (int __status, int __errnum, const char *__format, ...)
 (test-parse
  parse-external-declaration-list
  "extern struct static_call_key __SCK__might_resched; extern typeof(__cond_resched) __SCT__might_resched;;"
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "({x = 0;})(x)"
+ :cond (expr-case ast :funcall)
  :gcc t)

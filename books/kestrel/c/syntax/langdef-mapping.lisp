@@ -389,6 +389,7 @@
              ((erp declor1) (ldm-dirdeclor-obj dirdeclor.decl))
              ((when dirdeclor.tyquals)
               (reterr (msg "Unsupported type qualifiers ~
+                            or attribute specifiers ~
                             in direct declarator ~x0 for object."
                            (dirdeclor-fix dirdeclor))))
              ((when (not dirdeclor.expr?))
@@ -432,15 +433,17 @@
 
   :prepwork
   ((define ldm-declor-obj-loop ((declor1 c::obj-declorp)
-                                (pointers type-qual-list-listp))
+                                (pointers typequal/attribspec-list-listp))
      :returns (mv erp (declor2 c::obj-declorp))
      :parents nil
      (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
           ((when (endp pointers)) (retok (c::obj-declor-fix declor1)))
-          (tyquals (car pointers))
-          ((unless (endp tyquals))
-           (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (type-qual-list-fix tyquals))))
+          (tyqualattribs (car pointers))
+          ((unless (endp tyqualattribs))
+           (reterr (msg "Unsupported type qualifiers ~
+                         or attribute specifiers ~
+                         ~x0 in pointer."
+                        (typequal/attribspec-list-fix tyqualattribs))))
           ((erp declor2) (ldm-declor-obj-loop declor1 (cdr pointers))))
        (retok (c::obj-declor-pointer declor2)))
      :hooks (:fix))))
@@ -470,6 +473,7 @@
        ((dirabsdeclor-array dirabsdeclor) dirabsdeclor)
        ((when dirabsdeclor.tyquals)
         (reterr (msg "Unsupported type qualifiers ~
+                      or attribute specifiers ~
                       in direct abstract declarator ~x0 for object."
                      (dirabsdeclor-fix dirabsdeclor))))
        ((erp iconst?)
@@ -522,15 +526,17 @@
 
   :prepwork
   ((define ldm-absdeclor-obj-loop ((adeclor1 c::obj-adeclorp)
-                                   (pointers type-qual-list-listp))
+                                   (pointers typequal/attribspec-list-listp))
      :returns (mv erp (adeclor2 c::obj-adeclorp))
      :parents nil
      (b* (((reterr) (c::obj-adeclor-none))
           ((when (endp pointers)) (retok (c::obj-adeclor-fix adeclor1)))
           (tyquals (car pointers))
           ((unless (endp tyquals))
-           (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (type-qual-list-fix tyquals))))
+           (reterr (msg "Unsupported type qualifiers ~
+                         or attribute specifiers ~
+                         ~x0 in pointer."
+                        (typequal/attribspec-list-fix tyquals))))
           ((erp adeclor2) (ldm-absdeclor-obj-loop adeclor1 (cdr pointers))))
        (retok (c::obj-adeclor-pointer adeclor2)))
      :hooks (:fix))))
@@ -729,6 +735,8 @@
   (b* (((reterr) (c::struct-declon (c::tyspecseq-void)
                                    (c::obj-declor-ident
                                     (c::ident "irrelevant"))))
+       ((when (structdecl-case structdecl :empty))
+        (reterr (msg "Unsupported empty structure declaration.")))
        ((when (structdecl-case structdecl :statassert))
         (reterr (msg "Unsupported structure declaration ~x0."
                      (structdecl-fix structdecl))))
@@ -1017,7 +1025,7 @@
 
   :prepwork
   ((define ldm-declor-fun-loop ((declor1 c::fun-declorp)
-                                (pointers type-qual-list-listp))
+                                (pointers typequal/attribspec-list-listp))
      :returns (mv erp (declor2 c::fun-declorp))
      :parents nil
      (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
@@ -1025,7 +1033,7 @@
           (tyquals (car pointers))
           ((unless (endp tyquals))
            (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (type-qual-list-fix tyquals))))
+                        (typequal/attribspec-list-fix tyquals))))
           ((erp declor2) (ldm-declor-fun-loop declor1 (cdr pointers))))
        (retok (c::fun-declor-pointer declor2)))
      :hooks (:fix))))

@@ -41,13 +41,13 @@
 (defthm getbit-0-of-getbit
   (equal (getbit 0 (getbit n x))
          (getbit n x))
-  :hints (("Goal" :in-theory (e/d (getbit slice) (bvchop-of-logtail-becomes-slice)))))
+  :hints (("Goal" :in-theory (e/d (getbit slice) ()))))
 
 ;gen the 1?
 (defthm bvchop-1-of-getbit
   (equal (bvchop 1 (getbit n x))
          (getbit n x))
-  :hints (("Goal" :in-theory (e/d (getbit slice) (bvchop-of-logtail-becomes-slice)))))
+  :hints (("Goal" :in-theory (e/d (getbit slice) ()))))
 
 (defthm getbit-when-val-is-not-an-integer
   (implies (not (integerp val))
@@ -62,7 +62,7 @@
          (getbit 0 x))
   :hints (("Goal" :cases ((integerp x))
            :in-theory (e/d (getbit slice)
-                           (bvchop-of-logtail-becomes-slice)))))
+                           ()))))
 
 (theory-invariant (incompatible (:rewrite bvchop-1-becomes-getbit) (:definition getbit)))
 
@@ -70,7 +70,7 @@
 (defthmd slice-becomes-getbit
   (equal (slice n n x)
          (getbit n x))
-  :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit)))))
+  :hints (("Goal" :in-theory (e/d (getbit) ()))))
 
 (theory-invariant (incompatible (:rewrite slice-becomes-getbit) (:definition getbit)))
 
@@ -90,8 +90,7 @@
 (defthmd unsigned-byte-p-1-of-getbit
   (unsigned-byte-p 1 (getbit n x))
   :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  ()))))
 
 (defthm unsigned-byte-p-of-getbit
   (implies (posp size)
@@ -120,8 +119,8 @@
            (equal (getbit m (bvchop n x))
                   (getbit m x)))
   :hints (("Goal" :cases ((natp m))
-           :in-theory (e/d (getbit slice) (bvchop-of-logtail-becomes-slice
-                                           bvchop-1-becomes-getbit
+           :in-theory (e/d (getbit slice) (
+
                                            logtail-of-bvchop)))))
 
 (defthmd getbit-too-high
@@ -129,8 +128,8 @@
            (equal (getbit n x)
                   0))
   :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  (
+                                   )))))
 
 (defthm getbit-too-high-cheap-2
   (implies (unsigned-byte-p n x)
@@ -176,8 +175,8 @@
            (equal (getbit m (getbit n x))
                   0))
   :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  (
+                                   )))))
 
 (defthm slice-of-getbit-too-high
   (implies (and (<= 1 low)
@@ -185,8 +184,8 @@
            (equal (slice high low (getbit n x))
                   0))
   :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  (
+                                   )))))
 
 ;todo gen
 (defthm getbit-of-slice
@@ -202,18 +201,17 @@
                   ))
   :hints (("Goal" :cases ((integerp x))
            :in-theory (e/d (getbit slice)
-                           (logtail-of-bvchop-becomes-slice
-                            logtail-of-bvchop
-                            bvchop-of-logtail-becomes-slice
-                            bvchop-1-becomes-getbit)))))
+                           (logtail-of-bvchop
+
+                            )))))
 
 (defthm getbit-when-not-integerp-arg1
   (implies (not (integerp n))
            (equal (getbit n x)
                   (getbit 0 x)))
   :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  (
+                                   )))))
 
 (defthm bvchop-of-getbit
   (equal (bvchop size (getbit n x))
@@ -228,11 +226,10 @@
            :in-theory (e/d (logtail bvchop logbitp getbit slice oddp evenp
                                      equal-of-0-and-mod)
                            (;mod-cancel
-                            bvchop-1-becomes-getbit
+
                             slice-becomes-bvchop
-                            ;;bvchop-of-logtail-becomes-slice
-                            bvchop-of-logtail-becomes-slice
-                            logtail-of-bvchop-becomes-slice)))))
+                            ;;
+                            )))))
 
 (defthmd getbit-when-equal-of-constant-and-bvchop
   (implies (and (equal free (bvchop size x))
@@ -263,8 +260,8 @@
            (equal (getbit size2 (expt 2 size))
                   0))
   :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  (
+                                   )))))
 
 ;can be useful when getbit-too-high is disabled..
 (defthm getbit-of-slice-too-high
@@ -283,17 +280,17 @@
            (equal (getbit n x)
                   (getbit 0 x)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-of-logtail-becomes-slice
-                                   bvchop-1-becomes-getbit)))))
+                                  (
+                                   )))))
 
 ;todo: open less to prove this?
 (defthm getbit-of-expt-2-n
   (implies (natp n)
            (equal (getbit n (expt 2 n)) 1))
   :hints (("Goal" :in-theory (e/d (getbit slice logtail)
-                                  (bvchop-1-becomes-getbit
+                                  (
                                    slice-becomes-bvchop
-                                   bvchop-of-logtail-becomes-slice)))))
+                                   )))))
 
 (defthm getbit-of-logtail
   (implies (and (natp n)
@@ -301,7 +298,7 @@
            (equal (getbit n (logtail m x))
                   (getbit (+ m n) x)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 (defthm getbit-of-mod-of-expt
   (implies (and (< n j) ;todo: other case
@@ -310,9 +307,9 @@
            (equal (getbit n (mod i (expt 2 j)))
                   (getbit n i)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit
+                                  (
                                    slice-becomes-bvchop
-                                   bvchop-of-logtail-becomes-slice)))))
+                                   )))))
 
 
 ;todo: rename?
@@ -336,8 +333,8 @@
              1
            0))
   :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-of-logtail-becomes-slice
-                                   bvchop-1-becomes-getbit)))))
+                                  (
+                                   )))))
 
 ;; Only needed by Axe?
 (defthmd bitp-of-getbit
@@ -379,8 +376,8 @@
            (<= (expt 2 n) x))
   :rule-classes ((:forward-chaining))
   :hints (("Goal" :in-theory (e/d (getbit slice logtail expt)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  (
+                                   )))))
 
 (local
  (defthm unsigned-byte-p-of-bvchop-one-more-helper
@@ -393,7 +390,7 @@
             :in-theory (e/d (getbit slice logtail bvchop unsigned-byte-p
                                     mod-of-floor-equal-rewrite
                                     EXPT-HACK)
-                            (bvchop-1-becomes-getbit))))))
+                            ())))))
 
 (defthmd unsigned-byte-p-of-bvchop-one-more
   (implies (equal size-1 (+ -1 size))
@@ -414,7 +411,7 @@
                       0
                     (getbit (+ -1 n) x))))
   :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 (defthm getbit-of-*-of-2-arg2+
   (implies (and (natp n)
@@ -461,7 +458,7 @@
 ;;    (implies (and (integerp x) (integerp y))
 ;;             (equal (getbit 0 (* x y))
 ;;                    (getbit 0 (* (getbit 0 x) (getbit 0 y)))))
-;;    :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit )))))
+;;    :hints (("Goal" :in-theory (e/d (getbit) ( )))))
 
 ;rename
 (defthm getbit-0-of-times-constant
@@ -474,7 +471,7 @@
   :hints (("Goal" :use (:instance bvchop-of-*-of-bvchop (size 1))
            :in-theory
            (e/d (getbit)
-                (bvchop-1-becomes-getbit bvchop-of-*-of-bvchop)))))
+                ( bvchop-of-*-of-bvchop)))))
 
 (defthm getbit-when-slice-is-known-constant
   (implies (and (equal free (slice high low x)) ;reversed the equality
@@ -509,14 +506,14 @@
                    0)))
  :hints (("Goal" :in-theory
           (e/d (getbit slice bvchop) ; todo: disable less
-               (bvchop-1-becomes-getbit bvchop-of-*-of-bvchop)))))
+               ( bvchop-of-*-of-bvchop)))))
 
 (defthm getbit-of-0-and-+-of-1-and-*-of-2
   (implies (integerp x)
            (equal (getbit 0 (+ 1 (* 2 x)))
                   1))
   :hints (("Goal" :in-theory (e/d (getbit bvchop)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 (defthmd getbit-when-slice-is-known-to-be-all-ones
   (implies (and (equal free (+ 1 (slice high low x))) ; tries to match the normal form
@@ -562,13 +559,13 @@
                                    slice
                                    LOGTAIL$INLINE
                                    mod-of-*-of-2-and-expt)
-                           (bvchop-1-becomes-getbit)))))
+                           ()))))
 
 (defthm getbit-0-of--
   (equal (getbit 0 (- x))
          (getbit 0 x))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 (defthm getbit-of-+-of-expt-gen
   (implies (and (< n i)
@@ -578,14 +575,14 @@
            (equal (getbit n (+ x (expt 2 i)))
                   (getbit n x)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 (defthm getbit-of--1
   (implies (natp n)
            (equal (getbit n -1)
                   1))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 (defthm equal-of-getbit-same
   (equal (equal (getbit 0 x) x)
@@ -597,7 +594,7 @@
            (equal (mod x 2)
                   (getbit 0 x)))
   :hints (("Goal" :in-theory (e/d (getbit bvchop)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 (defthm getbit-of-expt-gen
   (implies (and (natp m)
@@ -607,8 +604,7 @@
                       1
                     0)))
   :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  ()))))
 
 (defthm getbit-of-if-two-constants
   (implies (and (syntaxp (and (quotep n)
@@ -627,7 +623,7 @@
            (equal (getbit n x)
                   1))
   :hints (("Goal" :in-theory (e/d (getbit slice logtail)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))
 
 (defthm getbit-of-ash
   (implies (and (natp c) ; left shift
@@ -637,4 +633,4 @@
                       (getbit (- n c) i)
                     0)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit)))))
+                                  ()))))

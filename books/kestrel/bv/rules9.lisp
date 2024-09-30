@@ -704,8 +704,8 @@
            (equal (getbit n (+ (expt 2 n) x))
                   (bitnot (getbit n x))))
   :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  (
+                                   )))))
 
 (defthm getbit-of-+-of-expt-same-arg2
   (implies (and (natp n)
@@ -713,8 +713,8 @@
            (equal (getbit n (+ x (expt 2 n)))
                   (bitnot (getbit n x))))
   :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  (
+                                   )))))
 
 (defthm getbit-of-+-of-expt-same-when-constant
   (implies (and (syntaxp (and (quotep k)
@@ -789,8 +789,8 @@
                   (bitxor bit (getbit n x))))
   :hints (("Goal" :cases ((equal bit 0))
            :in-theory (e/d (getbit slice bitnot BVCHOP-OF-SUM-CASES)
-                           (bvchop-1-becomes-getbit
-                            bvchop-of-logtail-becomes-slice)))))
+                           (
+                            )))))
 
 (defthm getbit-of-+-of-*-of-expt-when-bitp-arg2-arg2
   (implies (and (bitp bit)
@@ -810,5 +810,5 @@
            (equal (getbit n (+ x (* k bit)))
                   (bitxor bit (getbit n x))))
   :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  (
+                                   )))))

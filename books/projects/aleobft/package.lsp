@@ -12,13 +12,6 @@
 (in-package "ACL2")
 
 (include-book "centaur/fty/portcullis" :dir :system)
-(include-book "projects/abnf/portcullis" :dir :system)
-(include-book "kestrel/apt/portcullis" :dir :system)
-(include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
-(include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
-(include-book "projects/numbers/portcullis" :dir :system)
-(include-book "projects/pfcs/portcullis" :dir :system)
-(include-book "rtl/rel11/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,50 +138,6 @@
                             ubyte64p
                             ubyte128p
                             unsigned-byte-listp
-                            abnf::patbind-tree-result-err
-                            abnf::patbind-tree-result-ok
-                            abnf::patbind-tree-option-result-err
-                            abnf::patbind-tree-option-result-ok
-                            abnf::patbind-tree-option-none
-                            abnf::patbind-tree-option-some
-                            abnf::patbind-tree-list-result-err
-                            abnf::patbind-tree-list-result-ok
-                            abnf::patbind-tree-list-list-result-err
-                            abnf::patbind-tree-list-list-result-ok
-                            abnf::patbind-tree-list-tuple2
-                            abnf::patbind-tree-list-tuple2-result
-                            abnf::patbind-tree-list-tuple2-result-err
-                            abnf::patbind-tree-list-tuple2-result-ok
-                            abnf::patbind-tree-list-tuple3
-                            abnf::patbind-tree-list-tuple3-result
-                            abnf::patbind-tree-list-tuple3-result-err
-                            abnf::patbind-tree-list-tuple3-result-ok
-                            abnf::patbind-tree-list-tuple4
-                            abnf::patbind-tree-list-tuple4-result
-                            abnf::patbind-tree-list-tuple4-result-err
-                            abnf::patbind-tree-list-tuple4-result-ok
-                            abnf::patbind-tree-list-tuple5
-                            abnf::patbind-tree-list-tuple5-result
-                            abnf::patbind-tree-list-tuple5-result-err
-                            abnf::patbind-tree-list-tuple5-result-ok
-                            abnf::patbind-tree-list-tuple6
-                            abnf::patbind-tree-list-tuple6-result
-                            abnf::patbind-tree-list-tuple6-result-err
-                            abnf::patbind-tree-list-tuple6-result-ok
-                            abnf::patbind-tree-list-tuple7
-                            abnf::patbind-tree-list-tuple7-result
-                            abnf::patbind-tree-list-tuple7-result-err
-                            abnf::patbind-tree-list-tuple7-result-ok
-                            abnf::patbind-tree-list-tuple8
-                            abnf::patbind-tree-list-tuple8-result
-                            abnf::patbind-tree-list-tuple8-result-err
-                            abnf::patbind-tree-list-tuple8-result-ok
-                            abnf::patbind-tree-list-tuple9
-                            abnf::patbind-tree-list-tuple9-result
-                            abnf::patbind-tree-list-tuple9-result-err
-                            abnf::patbind-tree-list-tuple9-result-ok
-                            ecurve::point
-                            ecurve::pointp
                             fty::info
                             fty::okf
                             fty::reserr
@@ -198,18 +147,6 @@
                             fty::reserr-option
                             fty::reserr-optionp
                             fty::stack
-                            dm::prime
-                            dm::primep
                             str::string-list
                             std::deffixer
-                            std::defret-mutual
-                            pfcs::iname
-                            pfcs::iname-list
-                            pfcs::pf+
-                            pfcs::pf*
-                            pfcs::pf=
-                            pfcs::pfcall
-                            pfcs::pfconst
-                            pfcs::pfdef
-                            pfcs::pfmon
-                            pfcs::pfvar)))
+                            std::defret-mutual)))

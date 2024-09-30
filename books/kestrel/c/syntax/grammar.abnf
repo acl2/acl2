@@ -1048,6 +1048,11 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; these can be easily distinguished from other declaration specifiers
 ; by the starting '__attribute__' or '__attribute' GCC keyword.
 
+; As a GCC extension, allow a list of type qualifiers
+; to also contains attribute specifiers.
+; Thus we use type-qualifier-and-attribute-specifier-list
+; instead of just type-qualifier-list.
+
 ; As a GCC extension,
 ; we allow one or more attribute specifiers
 ; to occur just before the ending semicolon of
@@ -1074,6 +1079,13 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; along with its '__typeof' and '__typeof__' variants.
 ; This is documented at https://gcc.gnu.org/onlinedocs/gcc/Typeof.html.
 ; This must fit into the grammar as a type specifier.
+
+; We also allow a lone semicolon as a structure declaration.
+; This is definitely not grammatical according to [C],
+; and we did not find it anywhere in the GCC documentation;
+; nonetheless, we encountered it in practical code.
+; Presumably, it may make it easier to write certain macros.
+; Semantically, it amounts to nothing, i.e. it is ignored.
 
 declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
@@ -1141,6 +1153,7 @@ struct-declaration = [ %s"__extension__" ] ; GCC extension
                      *attribute-specifier ; GCC extension
                      ";"
                    / static-assert-declaration
+                   / ";"
 
 specifier-qualifier-list = type-specifier [ specifier-qualifier-list ]
                          / type-qualifier [ specifier-qualifier-list ]
@@ -1183,20 +1196,28 @@ direct-declarator =
       identifier
     / "(" declarator ")"
     / direct-declarator
-      "[" [ type-qualifier-list ] [ assignment-expression ] "]"
+      "[" [ type-qualifier-and-attribute-specifier-list ]
+          [ assignment-expression ] "]"
     / direct-declarator
-      "[" %s"static" [ type-qualifier-list ] assignment-expression "]"
+      "[" %s"static" [ type-qualifier-and-attribute-specifier-list ]
+          assignment-expression "]"
     / direct-declarator
-      "[" type-qualifier-list %s"static" assignment-expression "]"
-    / direct-declarator "[" [ type-qualifier-list ] "*" "]"
+      "[" type-qualifier-and-attribute-specifier-list %s"static"
+          assignment-expression "]"
+    / direct-declarator
+      "[" [ type-qualifier-and-attribute-specifier-list ] "*" "]"
     / direct-declarator "(" parameter-type-list ")"
     / direct-declarator "(" [ identifier-list ] ")"
 
-pointer = "*" [ type-qualifier-list ]
-        / "*" [ type-qualifier-list ] pointer
+pointer = "*" [ type-qualifier-and-attribute-specifier-list ]
+        / "*" [ type-qualifier-and-attribute-specifier-list ] pointer
 
-type-qualifier-list = type-qualifier
-                    / type-qualifier-list type-qualifier
+type-qualifier-or-attribute-specifier = type-qualifier / attribute-specifier
+
+type-qualifier-and-attribute-specifier-list =
+      type-qualifier-or-attribute-specifier
+    / type-qualifier-and-attribute-specifier-list
+      type-qualifier-or-attribute-specifier
 
 parameter-type-list = parameter-list
                     / parameter-list "," "..."
@@ -1218,11 +1239,14 @@ abstract-declarator = pointer
 direct-abstract-declarator =
       "(" abstract-declarator ")"
     / [ direct-abstract-declarator ]
-      "[" [ type-qualifier-list ] [ assignment-expression ] "]"
+      "[" [ type-qualifier-and-attribute-specifier-list ]
+          [ assignment-expression ] "]"
     / [ direct-abstract-declarator ]
-      "[" %s"static" [ type-qualifier-list ] assignment-expression "]"
+      "[" %s"static" [ type-qualifier-and-attribute-specifier-list ]
+          assignment-expression "]"
     / [ direct-abstract-declarator ]
-      "[" type-qualifier-list %s"static" assignment-expression "]"
+      "[" type-qualifier-and-attribute-specifier-list %s"static"
+          assignment-expression "]"
     / [ direct-abstract-declarator ] "[" "*" "]"
     / [ direct-abstract-declarator ] "(" [ parameter-type-list ] ")"
 

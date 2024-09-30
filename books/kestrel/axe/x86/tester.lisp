@@ -266,7 +266,6 @@
                            max-conflicts  ;a number of conflicts, or nil for no max
                            stack-slots
                            position-independentp
-                           rewriter
                            state)
   (declare (xargs :guard (and (stringp function-name-string)
                               (symbol-listp extra-rules)
@@ -287,8 +286,7 @@
                                   (natp max-conflicts))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
-                              (booleanp position-independentp)
-                              (member-eq rewriter '(:x86 :legacy)))
+                              (booleanp position-independentp))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
   (b* ((- (acl2::ensure-x86 parsed-executable))
@@ -384,7 +382,6 @@
           print
           10 ; print-base (todo: consider 16)
           t ; untranslatep (todo: make this an option)
-          rewriter
           state))
        ((when erp) (mv erp nil nil state))
        ((when (quotep result-dag-or-quotep))
@@ -493,7 +490,6 @@
                          prune tactics
                          max-conflicts stack-slots
                          position-independent
-                         rewriter
                          expected-result
                          state)
   (declare (xargs :guard (and (stringp function-name-string)
@@ -516,8 +512,7 @@
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (member-eq expected-result '(:pass :fail :any))
-                              (member-eq rewriter '(:x86 :legacy)))
+                              (member-eq expected-result '(:pass :fail :any)))
                   :mode :program
                   :stobjs state))
   (b* (((mv erp parsed-executable state)
@@ -543,7 +538,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-lift-rules remove-proof-rules
-                            print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp rewriter state))
+                            print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -581,8 +576,7 @@
                          (expected-result ':pass)
                          (stack-slots ':auto)
                          (position-independent ':auto)
-                         (max-conflicts '1000000)
-                         (rewriter ':x86))
+                         (max-conflicts '1000000))
   `(acl2::make-event-quiet (test-function-fn ',function-name-string
                                              ,executable   ; gets evaluated
                                              ,param-names  ; gets evaluated
@@ -595,7 +589,7 @@
                                              ,remove-proof-rules ; gets evaluated
                                              ',print
                                              ,monitor ; gets evaluated
-                                             ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',stack-slots ',position-independent ',rewriter ',expected-result state)))
+                                             ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',stack-slots ',position-independent ',expected-result state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -609,7 +603,6 @@
                               tactics max-conflicts
                               stack-slots
                               position-independentp
-                              rewriter
                               expected-failures
                               result-alist
                               state)
@@ -637,8 +630,7 @@
                                   (eq :auto stack-slots))
                               (booleanp position-independentp)
                               (string-listp expected-failures)
-                              (alistp result-alist)
-                              (member-eq rewriter '(:x86 :legacy)))
+                              (alistp result-alist))
                   :mode :program
                   :stobjs state))
   (if (endp function-name-strings)
@@ -650,7 +642,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-lift-rules remove-proof-rules
-                              print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp rewriter state))
+                              print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -662,7 +654,7 @@
                              extra-rules extra-lift-rules extra-proof-rules
                              remove-rules remove-lift-rules remove-proof-rules
                              print monitor step-limit step-increment prune
-                             tactics max-conflicts stack-slots position-independentp rewriter
+                             tactics max-conflicts stack-slots position-independentp
                              expected-failures
                              (acons function-name (list result expected-result elapsed) result-alist)
                              state))))
@@ -676,7 +668,7 @@
                           extra-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-lift-rules remove-proof-rules
                           print monitor step-limit step-increment prune
-                          tactics max-conflicts stack-slots position-independent rewriter
+                          tactics max-conflicts stack-slots position-independent
                           expected-failures
                           state)
   (declare (xargs :guard (and (stringp executable)
@@ -704,8 +696,7 @@
                               (eq :auto stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
-                              (string-listp expected-failures))
-                          (member-eq rewriter '(:x86 :legacy)))
+                              (string-listp expected-failures)))
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))
@@ -776,7 +767,7 @@
                                extra-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-lift-rules remove-proof-rules
                                print monitor step-limit step-increment prune
-                               tactics max-conflicts stack-slots position-independentp rewriter
+                               tactics max-conflicts stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
                                state))
@@ -815,7 +806,6 @@
                           (position-independent ':auto)
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                          (rewriter ':x86)
                           )
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',function-name-strings
@@ -830,7 +820,7 @@
                                               ',print
                                               ,monitor ; gets evaluated
                                               ',step-limit ',step-increment ',prune
-                                              ',tactics ',max-conflicts ',stack-slots ',position-independent ',rewriter
+                                              ',tactics ',max-conflicts ',stack-slots ',position-independent
                                               ',expected-failures
                                               state)))
 
@@ -860,7 +850,6 @@
                      (position-independent ':auto)
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                     (rewriter ':x86)
                      )
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',include ; todo: evaluate?
@@ -875,6 +864,6 @@
                                               ',print
                                               ,monitor ; gets evaluated
                                               ',step-limit ',step-increment ',prune
-                                              ',tactics ',max-conflicts ',stack-slots ',position-independent ',rewriter
+                                              ',tactics ',max-conflicts ',stack-slots ',position-independent
                                               ',expected-failures
                                               state)))

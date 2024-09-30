@@ -479,9 +479,7 @@
                                   SIGNED-BYTE-P
                                   ;bvchop
                                   ACL2::ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4)
-                           (;ACL2::PLUS-BVCAT-WITH-0
-                            ;ACL2::PLUS-BVCAT-WITH-0-ALT
-                            acl2::slice-becomes-getbit
+                           (acl2::slice-becomes-getbit
                             acl2::bvchop-1-becomes-getbit
                             acl2::bvchop-of-logtail-becomes-slice
                             ACL2::MOD-OF-EXPT-OF-2
@@ -545,8 +543,8 @@
 ;;                             )
 ;;                            ( ;
 ;;                             acl2::bvminus-becomes-bvplus-of-bvuminus
-;; ;acl2::plus-bvcat-with-0 ;looped
-;; ;acl2::plus-bvcat-with-0-alt ;looped
+;;
+;;
 ;;                             )))))
 
 (defthmd jnl-condition-rewrite-1-32-helper
@@ -592,8 +590,6 @@
                             ;;getbit
                             )
                            (acl2::bvminus-becomes-bvplus-of-bvuminus
-                            ;;acl2::plus-bvcat-with-0 ;looped
-                            ;;acl2::plus-bvcat-with-0-alt ;looped
                             acl2::signed-byte-p-forward ; for speed
                             acl2::unsigned-byte-p-of-bvchop-bigger
                             )))))
@@ -641,8 +637,6 @@
 ;;                             )
 ;;                            ( ;
 ;;                             acl2::bvminus-becomes-bvplus-of-bvuminus
-;;                             ;;acl2::plus-bvcat-with-0 ;looped
-;;                             ;;acl2::plus-bvcat-with-0-alt ;looped
 ;;                             )))))
 
 ;; (defthm jnl-condition-rewrite-1-32
@@ -716,8 +710,6 @@
                                                    logapp
                                                    logext)
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::plus-bvcat-with-0 ;looped
-                                                    acl2::plus-bvcat-with-0-alt ;looped
                                                     acl2::sbvlt-rewrite
                                                     )))))
 
@@ -758,8 +750,6 @@
                                                    logapp
                                                    logext)
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                             acl2::plus-bvcat-with-0 ;looped
-                             acl2::plus-bvcat-with-0-alt ;looped
                              acl2::sbvlt-rewrite
                              acl2::bvchop-identity ; for speed
                              )))))
@@ -792,10 +782,7 @@
      (
 ;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
-
       ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-      ACL2::PLUS-BVCAT-WITH-0
-      ACL2::PLUS-BVCAT-WITH-0-ALT
       acl2::sbvlt-rewrite)))))
 
 (defthm jnle-condition-rewrite-3-32
@@ -822,10 +809,7 @@
      (
 ;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
-
       ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-      ACL2::PLUS-BVCAT-WITH-0
-      ACL2::PLUS-BVCAT-WITH-0-ALT
       ;ACL2::EQUAL-OF-BVCHOPS-WHEN-EQUAL-OF-GETBITS ;looped
       )))))
 

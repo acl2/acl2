@@ -55,7 +55,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled get-certificate-with-author+round-of-element-when-unequivocal
+(defruled certificate-with-author+round-of-element-when-unequivocal
   :short "If a certificate is in an unequivocal sets,
           retrieving a certificate with the certificate's author and round
           will return the certificate itself."
@@ -68,22 +68,22 @@
   (implies (and (certificate-setp certs)
                 (certificate-set-unequivocalp certs)
                 (set::in cert certs))
-           (equal (get-certificate-with-author+round (certificate->author cert)
+           (equal (certificate-with-author+round (certificate->author cert)
                                                      (certificate->round cert)
                                                      certs)
                   cert))
-  :enable (get-certificate-with-author+round-element-when-not-nil
-           get-certificate-with-author+round-when-element)
+  :enable (certificate-with-author+round-element-when-not-nil
+           certificate-with-author+round-when-element)
   :use (:instance certificate-set-unequivocalp-necc
                   (cert1 cert)
-                  (cert2 (get-certificate-with-author+round
+                  (cert2 (certificate-with-author+round
                           (certificate->author cert)
                           (certificate->round cert)
                           certs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-set-unequivocalp-of-get-certificates-with-authors
+(defrule certificate-set-unequivocalp-of-certificates-with-authors
   :short "The certificates with given authors of an unequivocal DAG
           is also an unequivocal set of certificates."
   :long
@@ -95,12 +95,12 @@
   (implies (and (certificate-setp certs)
                 (certificate-set-unequivocalp certs))
            (certificate-set-unequivocalp
-            (get-certificates-with-authors authors certs)))
+            (certificates-with-authors authors certs)))
   :enable certificate-set-unequivocalp-when-subset)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-set-unequivocalp-of-get-certificates-with-round
+(defrule certificate-set-unequivocalp-of-certificates-with-round
   :short "The certificates with a given round of an unequivocal DAG
           is also an unequivocal set of certificates."
   :long
@@ -112,12 +112,12 @@
   (implies (and (certificate-setp certs)
                 (certificate-set-unequivocalp certs))
            (certificate-set-unequivocalp
-            (get-certificates-with-round round certs)))
+            (certificates-with-round round certs)))
   :enable certificate-set-unequivocalp-when-subset)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled get-certificate-with-author+round-of-unequivocal-superset
+(defruled certificate-with-author+round-of-unequivocal-superset
   :short "If a certificate with a certain author and round
           is retrieves from a subset of an unequivocal set of certificates,
           the same certificate is retrieved from the superset."
@@ -127,28 +127,28 @@
     "The significance is that, as the DAG of a validator grows,
      a certain author and round always denotes the same certificate.")
    (xdoc::p
-    "See @(tsee get-certificate-with-author+round-of-unequivocal-sets)
+    "See @(tsee certificate-with-author+round-of-unequivocal-sets)
      for an analogous theorem involving two mutually unequivocal sets."))
   (implies (and (certificate-setp certs1)
                 (certificate-setp certs2)
                 (set::subset certs1 certs2)
                 (certificate-set-unequivocalp certs2)
-                (get-certificate-with-author+round author round certs1))
-           (equal (get-certificate-with-author+round author round certs2)
-                  (get-certificate-with-author+round author round certs1)))
+                (certificate-with-author+round author round certs1))
+           (equal (certificate-with-author+round author round certs2)
+                  (certificate-with-author+round author round certs1)))
   :use (:instance certificate-set-unequivocalp-necc
                   (certs certs2)
                   (cert1
-                   (get-certificate-with-author+round author round certs1))
+                   (certificate-with-author+round author round certs1))
                   (cert2
-                   (get-certificate-with-author+round author round certs2)))
-  :enable (get-certificate-with-author+round-when-subset
-           get-certificate-with-author+round-element-when-not-nil
+                   (certificate-with-author+round author round certs2)))
+  :enable (certificate-with-author+round-when-subset
+           certificate-with-author+round-element-when-not-nil
            set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled get-certificate-with-author+round-of-unequivocal-sets
+(defruled certificate-with-author+round-of-unequivocal-sets
   :short "If a certificate with a certain author and round
           is retrieved from both of two mutually unequivocal certificate sets,
           it is the same certificate from both sets."
@@ -156,7 +156,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to
-     @(tsee get-certificate-with-author+round-of-unequivocal-superset),
+     @(tsee certificate-with-author+round-of-unequivocal-superset),
      but for two mutually unequivocal certificate sets.")
    (xdoc::p
     "The significance is that a certain author and round
@@ -165,19 +165,19 @@
   (implies (and (certificate-setp certs1)
                 (certificate-setp certs2)
                 (certificate-sets-unequivocalp certs1 certs2)
-                (get-certificate-with-author+round author round certs1)
-                (get-certificate-with-author+round author round certs2))
-           (equal (get-certificate-with-author+round author round certs1)
-                  (get-certificate-with-author+round author round certs2)))
-  :enable get-certificate-with-author+round-element-when-not-nil
+                (certificate-with-author+round author round certs1)
+                (certificate-with-author+round author round certs2))
+           (equal (certificate-with-author+round author round certs1)
+                  (certificate-with-author+round author round certs2)))
+  :enable certificate-with-author+round-element-when-not-nil
   :use (:instance
         certificate-sets-unequivocalp-necc
-        (cert1 (get-certificate-with-author+round author round certs1))
-        (cert2 (get-certificate-with-author+round author round certs2))))
+        (cert1 (certificate-with-author+round author round certs1))
+        (cert2 (certificate-with-author+round author round certs2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled get-certificates-with-authors+round-of-unequivocal-superset
+(defruled certificates-with-authors+round-of-unequivocal-superset
   :short "If certificates with certain authors and a certain round
           are retrieved from a subset of an unequivocal set of certificates,
           the same certificates are retrieved from the superset."
@@ -210,7 +210,7 @@
      but this theorem does not talk about newly added certificates:
      the hypothesis is that those predecessor certificates are in the subset.")
    (xdoc::p
-    "See @(tsee get-certificates-with-authors+round-of-unequivocal-sets)
+    "See @(tsee certificates-with-authors+round-of-unequivocal-sets)
      for an analogous theorem involving two mutually unequivocal sets."))
   (implies (and (certificate-setp certs1)
                 (certificate-setp certs2)
@@ -218,12 +218,12 @@
                 (certificate-set-unequivocalp certs2)
                 (set::subset authors
                              (certificate-set->author-set
-                              (get-certificates-with-round round certs1))))
-           (equal (get-certificates-with-authors+round authors round certs2)
-                  (get-certificates-with-authors+round authors round certs1)))
+                              (certificates-with-round round certs1))))
+           (equal (certificates-with-authors+round authors round certs2)
+                  (certificates-with-authors+round authors round certs1)))
   :enable (set::expensive-rules
            set::double-containment-no-backchain-limit
-           get-certificate-with-author+round-when-author-in-certificates)
+           certificate-with-author+round-when-author-in-certificates)
 
   :prep-lemmas
   ((defrule lemma
@@ -232,24 +232,24 @@
                    (set::subset certs1 certs2)
                    (certificate-set-unequivocalp certs2)
                    (set::in cert certs2)
-                   (get-certificate-with-author+round (certificate->author cert)
+                   (certificate-with-author+round (certificate->author cert)
                                                       (certificate->round cert)
                                                       certs1))
               (set::in cert certs1))
      :use (:instance certificate-set-unequivocalp-necc
                      (certs certs2)
                      (cert1 cert)
-                     (cert2 (get-certificate-with-author+round
+                     (cert2 (certificate-with-author+round
                              (certificate->author cert)
                              (certificate->round cert)
                              certs1)))
      :enable (set::expensive-rules
-              get-certificate-with-author+round-element-when-not-nil
-              get-certificate-with-author+round-of-unequivocal-superset))))
+              certificate-with-author+round-element-when-not-nil
+              certificate-with-author+round-of-unequivocal-superset))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled get-certificates-with-authors+round-of-unequivocal-sets
+(defruled certificates-with-authors+round-of-unequivocal-sets
   :short "If certificates with certain authors and a certain round
           are retrieved from both of two mutually unequivocal certificate sets,
           the same certificates are retrieved from both sets."
@@ -257,7 +257,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to
-     @(tsee get-certificates-with-authors+round-of-unequivocal-superset),
+     @(tsee certificates-with-authors+round-of-unequivocal-superset),
      but for two mutually unequivocal certificate sets.
      As for that theorem, the purpose of this theorem is for
      the predecessor certificates of a given certificate.")
@@ -270,12 +270,12 @@
                 (certificate-sets-unequivocalp certs1 certs2)
                 (set::subset authors
                              (certificate-set->author-set
-                              (get-certificates-with-round round certs1)))
+                              (certificates-with-round round certs1)))
                 (set::subset authors
                              (certificate-set->author-set
-                              (get-certificates-with-round round certs2))))
-           (equal (get-certificates-with-authors+round authors round certs1)
-                  (get-certificates-with-authors+round authors round certs2)))
+                              (certificates-with-round round certs2))))
+           (equal (certificates-with-authors+round authors round certs1)
+                  (certificates-with-authors+round authors round certs2)))
   :enable (set::expensive-rules
            set::double-containment-no-backchain-limit)
 
@@ -293,7 +293,7 @@
      (implies (and
                (set::subset authors ; bind authors
                             (certificate-set->author-set
-                             (get-certificates-with-round
+                             (certificates-with-round
                               (certificate->round cert) certs1))) ; bind certs1
                (certificate-setp certs1)
                (certificate-setp certs2)
@@ -302,27 +302,27 @@
                (set::in (certificate->author cert) authors)
                (set::subset authors
                             (certificate-set->author-set
-                             (get-certificates-with-round
+                             (certificates-with-round
                               (certificate->round cert) certs2))))
               (set::in cert certs2))
-     :use ((:instance get-certificate-with-author+round-element-when-not-nil
+     :use ((:instance certificate-with-author+round-element-when-not-nil
                       (certs certs2)
                       (author (certificate->author cert))
                       (round (certificate->round cert)))
            (:instance certificate-sets-unequivocalp-necc
                       (cert1 cert)
-                      (cert2 (get-certificate-with-author+round
+                      (cert2 (certificate-with-author+round
                               (certificate->author cert)
                               (certificate->round cert)
                               certs2))))
      :enable (set::expensive-rules
-              get-certificate-with-author+round-when-author-in-certificates))
+              certificate-with-author+round-when-author-in-certificates))
 
    (defrule lemma2
      (implies (and
                (set::subset authors ; bind authors
                             (certificate-set->author-set
-                             (get-certificates-with-round
+                             (certificates-with-round
                               (certificate->round cert) certs2))) ; bind certs2
                (certificate-setp certs1)
                (certificate-setp certs2)
@@ -331,25 +331,25 @@
                (set::in (certificate->author cert) authors)
                (set::subset authors
                             (certificate-set->author-set
-                             (get-certificates-with-round
+                             (certificates-with-round
                               (certificate->round cert) certs1))))
               (set::in cert certs1))
-     :use ((:instance get-certificate-with-author+round-element-when-not-nil
+     :use ((:instance certificate-with-author+round-element-when-not-nil
                       (certs certs1)
                       (author (certificate->author cert))
                       (round (certificate->round cert)))
            (:instance certificate-sets-unequivocalp-necc
-                      (cert1 (get-certificate-with-author+round
+                      (cert1 (certificate-with-author+round
                               (certificate->author cert)
                               (certificate->round cert)
                               certs1))
                       (cert2 cert)))
      :enable (set::expensive-rules
-              get-certificate-with-author+round-when-author-in-certificates))))
+              certificate-with-author+round-when-author-in-certificates))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled cardinality-of-get-certificates-with-authors+round-when-subset
+(defruled cardinality-of-certificates-with-authors+round-when-subset
   :short "The number of certificates in a round with given authors,
           in an unequivocal DAG,
           is equal to the number of authors,
@@ -359,17 +359,17 @@
                 (address-setp authors)
                 (set::subset authors
                              (certificate-set->author-set
-                              (get-certificates-with-round round certs))))
+                              (certificates-with-round round certs))))
            (equal (set::cardinality
-                   (get-certificates-with-authors+round authors round certs))
+                   (certificates-with-authors+round authors round certs))
                   (set::cardinality authors)))
   :use ((:instance cardinality-of-authors-when-same-round-and-unequiv
                    (certs
-                    (get-certificates-with-authors+round authors round certs)))
+                    (certificates-with-authors+round authors round certs)))
         (:instance cardinality-of-subset-of-round-set-of-round
-                   (certs0 (get-certificates-with-authors
+                   (certs0 (certificates-with-authors
                             authors
-                            (get-certificates-with-round round certs)))))
+                            (certificates-with-round round certs)))))
   :disable (cardinality-of-authors-when-same-round-and-unequiv)
-  :enable (get-certificates-with-authors+round-to-authors-of-round
-           author-set-of-get-certificates-with-authors))
+  :enable (certificates-with-authors+round-to-authors-of-round
+           author-set-of-certificates-with-authors))

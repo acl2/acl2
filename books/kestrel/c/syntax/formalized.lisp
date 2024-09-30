@@ -479,7 +479,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pointers-formalp ((pointers type-qual-list-listp))
+(define pointers-formalp ((pointers typequal/attribspec-list-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of pointers has formal dynamic semantics."
   :long
@@ -490,7 +490,8 @@
      or a direct abstract declarator to form an abstract declarator.
      Currently only (non-abstract) declarators are supported,
      so for now we are only interested in the pointers in them.
-     We support any number of pointers, but without type qualifiers.
+     We support any number of pointers,
+     but without type qualifiers or attribute specifiers.
      So we just check that each inner list is empty.
      Refer @(tsee declor) for an explanation of how pointers are modeled."))
   (or (endp pointers)
@@ -814,7 +815,8 @@
                 (endp (cdr structdecl.declor))
                 (structdeclor-formalp (car structdecl.declor))
                 (endp structdecl.attrib))
-   :statassert nil)
+   :statassert nil
+   :empty nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

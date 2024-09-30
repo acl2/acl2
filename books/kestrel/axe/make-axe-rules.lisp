@@ -492,7 +492,7 @@
                      (var (farg1 hyp))
                      (expr (farg2 hyp))
                      ;; We do not expand lambdas, but we do pre-simplify:
-                     (expr (pre-simplify-term expr nil t)) ; preserves equal, not iff
+                     (expr (pre-simplify-term expr nil nil)) ; preserves equal, not iff
                      ((when (not (subsetp-equal (free-vars-in-term expr) bound-vars))) ; todo: prove this can't happen (but strengthen the guard)
                       (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Hyp, ~x0 in ~x1 has free vars after pre-simplification!" hyp rule-symbol)
                               (mv :bad-axe-binding-hyp *unrelievable-hyps* bound-vars))))
@@ -568,7 +568,7 @@
                 ;; Normal hyp with no free vars:
                 ;; Here we use hyp, not expanded-hyp, to make it cheaper to rewrite a hyp that contains lambdas:
                 ;; Previously, we did use the expanded-hyp.
-                (b* ((hyp (pre-simplify-term hyp t t)) ; cleans up lambdas, improves translated ORs, etc.
+                (b* ((hyp (pre-simplify-term hyp t nil)) ; cleans up lambdas, improves translated ORs, etc. only preserves IFF (not EQUAL)
                      ((when (atom hyp)) ;; can only be a variable
                       ;;turn a hyp of <var> into (not (equal 'nil <var>)) which is equivalent.  Axe relies on the fact that a hyp cannot be a variable.
                       (if (not (member-equal hyp bound-vars)) ; todo: prove this can't happen (but strengthen the guard)

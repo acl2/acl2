@@ -618,7 +618,8 @@
               :declor (simpadd0-structdeclor-list structdecl.declor)
               :attrib structdecl.attrib)
      :statassert (structdecl-statassert
-                  (simpadd0-statassert structdecl.unwrap)))
+                  (simpadd0-statassert structdecl.unwrap))
+     :empty (structdecl-empty))
     :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -40,11 +40,40 @@
 
 (defparameter *console-stream* nil)
 
+;; Initially, I just made the *input-buffer* a list and had a separate global
+;; for the lock. The issue is that handling it that way makes it so that adding
+;; a new item when the list is empty creates a new object. This is bad because
+;; while threads share an address space, the binding context is different, so
+;; updating the binding of *input-buffer* doesn't update it on all threads.
+(defclass input-buffer ()
+  ((lock :initform (ccl::make-lock)
+         :accessor input-buffer-lock)
+   (buffer :initform 'nil
+           :accessor input-buffer-buffer)))
+
+;; Perhaps doing this in a more object oriented way, with methods, would be
+;; better, but I don't know nearly enough about CLOS to do that
+
+(defparameter *input-buffer* (make-instance 'input-buffer))
+
 (let* ((socket (ccl::make-socket :connect :passive ;; Listen
                                  :local-host "localhost"
                                  :local-port 6444))
-       (stream (ccl::accept-connection socket)))
-  (setf *console-stream* stream))
+       (stream (ccl::accept-connection socket))
+       (tty-read-proc (ccl::make-process "tty-read")))
+  (setf *console-stream* stream)
+  (ccl::process-preset
+    tty-read-proc
+    (lambda ()
+      (loop
+        (let* ((c (read-char *console-stream*))
+               (byt (char-code c)))
+          (ccl::with-lock-grabbed
+            ((input-buffer-lock *input-buffer*))
+            (setf (input-buffer-buffer *input-buffer*)
+                  (nconc (input-buffer-buffer *input-buffer*)
+                         (list byt))))))))
+  (ccl::process-enable tty-read-proc))
 
 (defun write-tty (c x86)
   (write-char (code-char c) *console-stream*)
@@ -52,8 +81,11 @@
   x86)
 
 (defun read-tty (x86)
-  (b* ((c (read-char-no-hang *console-stream*)))
-      (mv (if (null c)
-            nil
-            (char-code c))
-          x86)))
+  (ccl::with-lock-grabbed
+    ((input-buffer-lock *input-buffer*))
+    (b* ((buffer (input-buffer-buffer *input-buffer*))
+         ((when (null buffer)) (mv nil x86))
+         ((list* byt rst) buffer))
+        (progn
+          (setf (input-buffer-buffer *input-buffer*) rst)
+          (mv byt x86)))))

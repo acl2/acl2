@@ -66,7 +66,15 @@
                             (validator-state->buffer vstate))
                 (message-certificates-with-destination
                  val (get-network-state systate))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled message-certificate-in-owned-certificates
+    (implies (set::in (message-fix msg) (get-network-state systate))
+             (set::in (message->certificate msg)
+                      (owned-certificates (message->destination msg) systate)))
+    :enable in-of-message-certificates-with-destination))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -225,7 +233,7 @@
      We could also define it for faulty validators,
      since they can be signers,
      but we only need this notion for correct validators."))
-  (get-certificates-with-signer val (owned-certificates val systate))
+  (certificates-with-signer val (owned-certificates val systate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -271,7 +279,7 @@
                       (signed-certificates val systate))))
     :enable (signed-certificates
              owned-certificates-of-create-certificate-next
-             get-certificates-with-signer-of-insert))
+             certificates-with-signer-of-insert))
 
   (defruled signed-certificates-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
@@ -343,7 +351,14 @@
   (b* ((vstate (get-validator-state val systate)))
     (set::union (validator-state->dag vstate)
                 (validator-state->buffer vstate)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled in-owned-certificates-when-in-accepted-certificates
+    (implies (set::in cert (accepted-certificates val systate))
+             (set::in cert (owned-certificates val systate)))
+    :enable owned-certificates))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -285,7 +285,7 @@
                   (slice highbit lowbit (bvor (+ 1 highbit) x y))))
   :hints (("Goal" :cases ((<= lowbit highbit))
            :in-theory (e/d (slice bvor natp bvchop-of-logtail)
-                           (slice-becomes-bvchop bvchop-of-logtail-becomes-slice)))))
+                           (slice-becomes-bvchop )))))
 
 (defthm slice-of-bvor-too-high
   (implies (and (<= n low)
@@ -307,7 +307,7 @@
                    (and (integerp x) (not (integerp y)))
                    (and (not (integerp x)) (integerp y)))
     :in-theory (e/d (getbit)
-                    (bvchop-1-becomes-getbit )))))
+                    ()))))
 
 ;this one does not push the getbit through
 (defthm getbit-0-of-bvor

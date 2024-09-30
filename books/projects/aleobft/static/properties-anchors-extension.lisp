@@ -97,9 +97,9 @@
                            vals)
   :enable (collect-anchors
            anchorp
-           get-certificate-with-author+round-of-element-when-unequivocal
-           get-certificate-with-author+round-element-when-not-nil
-           get-certificate-with-author+round-when-path-to-author+round
+           certificate-with-author+round-of-element-when-unequivocal
+           certificate-with-author+round-element-when-not-nil
+           certificate-with-author+round-when-path-to-author+round
            append
            natp)
   :hints ('(:use (:instance dag-all-path-to-p-necc
