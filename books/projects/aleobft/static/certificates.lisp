@@ -207,7 +207,7 @@
     :enable (set::union
              certificate-set->round-set-of-insert))
 
-  (defrule emptyp-of-certificate-set->round-set
+  (defruled emptyp-of-certificate-set->round-set
     (equal (set::emptyp (certificate-set->round-set certs))
            (set::emptyp certs))
     :induct t)
