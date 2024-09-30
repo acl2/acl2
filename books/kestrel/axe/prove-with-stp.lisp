@@ -2796,7 +2796,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-;TODO: Deprecate in favor of defthm-stp?
+;TODO: Deprecate in favor of defthm-stp?  We could make a thm-stp too.
 ;TODO: Allow a name to be passed in
 (defmacro prove-with-stp (term
                           &key
