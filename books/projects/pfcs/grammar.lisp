@@ -11,9 +11,9 @@
 
 (in-package "PFCS")
 
-(include-book "kestrel/abnf/grammar-definer/defgrammar" :dir :system)
-(include-book "kestrel/abnf/grammar-definer/deftreeops" :dir :system)
-(include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
+(include-book "projects/abnf/grammar-definer/defgrammar" :dir :system)
+(include-book "projects/abnf/grammar-definer/deftreeops" :dir :system)
+(include-book "projects/abnf/operations/in-terminal-set" :dir :system)
 
 ; These may speed things up.
 (local (include-book "kestrel/built-ins/disable" :dir :system))

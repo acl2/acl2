@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "centaur/fty/portcullis" :dir :system)
-(include-book "kestrel/abnf/portcullis" :dir :system)
+(include-book "projects/abnf/portcullis" :dir :system)
 (include-book "kestrel/apt/portcullis" :dir :system)
 (include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
 (include-book "kestrel/crypto/r1cs/portcullis" :dir :system)

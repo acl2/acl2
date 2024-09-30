@@ -682,7 +682,7 @@
 ; \"ACL2-HACKER\"
 (include-book \"hacking/hacker\" :dir :system)
 ; \"ABNF\"
-(include-book \"kestrel/abnf/portcullis\" :dir :system)
+(include-book \"projects/abnf/portcullis\" :dir :system)
 ; \"RTL\"
 (include-book \"rtl/rel11/portcullis\" :dir :system)
 ; \"BED\"
