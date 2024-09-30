@@ -24,27 +24,39 @@
                   :stobjs state))
   (b* (;; Get and check options:
        (hint-keys (strip-cars hint))
-       (allowed-hint-keys '(:must-prove :counterexample))
+       (allowed-hint-keys '(:counterexample :max-conflicts :must-prove :print))
        ((when (not (subsetp-equal hint-keys allowed-hint-keys)))
         (er hard? 'stp-clause-processor "Unsupported keys in hint: ~x0." (set-difference-equal hint-keys allowed-hint-keys))
         (mv :bad-hint (list clause) state))
+       ;; Handle :counterexample :
+       (counterexample (lookup-eq :counterexample hint)) ; we use nil if not present in the hint
+       ((when (not (booleanp counterexample)))
+        (er hard? 'stp-clause-processor "Bad :counterexample option, ~x0, in hint ~x1." counterexample hint)
+        (mv :bad-hint (list clause) state))
+       ;; Handle :max-conflicts :
+       (max-conflicts-pair (assoc-eq :max-conflicts hint)) ; we use nil if not present in the hint
+       ((when (and max-conflicts-pair
+                   (not (natp (cdr max-conflicts-pair)))))
+        (er hard? 'stp-clause-processor "Bad :max-conflicts option, ~x0, in hint ~x1." (cdr max-conflicts-pair) hint)
+        (mv :bad-hint (list clause) state))
+       (max-conflicts (if max-conflicts-pair (cdr max-conflicts-pair) *default-stp-max-conflicts*))
        ;; Handle :must-prove :
-       (must-prove (lookup-eq :must-prove hint))
+       (must-prove (lookup-eq :must-prove hint)) ; we use nil if not present in the hint
        ((when (not (booleanp must-prove)))
         (er hard? 'stp-clause-processor "Bad :must-prove option, ~x0, in hint ~x1." must-prove hint)
         (mv :bad-hint (list clause) state))
-       ;; Handle :counterexample :
-       (counterexample (lookup-eq :counterexample hint))
-       ((when (not (booleanp counterexample)))
-        (er hard? 'stp-clause-processor "Bad :counterexample option, ~x0, in hint ~x1." counterexample hint)
+       ;; Handle :print :
+       (print (lookup-eq :print hint)) ; we use nil if not present in the hint
+       ((when (not (print-levelp print)))
+        (er hard? 'stp-clause-processor "Bad :print option, ~x0, in hint ~x1." print hint)
         (mv :bad-hint (list clause) state))
        ;; Call STP:
        ((mv result state)
         (prove-clause-with-stp clause
                                counterexample
                                nil ; print-cex-as-signedp
-                               *default-stp-max-conflicts* ;todo: get from the hint?
-                               nil                   ;todo: get from the hint?
+                               max-conflicts
+                               print
                                "STP-CLAUSE-PROC" ;todo: do better?  can we access the name of the theorem?
                                state)))
     (if (eq *error* result)
@@ -63,7 +75,10 @@
   nil ;supporters ; todo: Think about this (I don't understand what :doc define-trusted-clause-processor says about "supporters")
   :ttag translate-dag-to-stp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;Check whether STP alone can prove a theorem
+;; TODO: Pass in the rest of the options (and the rest of the things that defthm takes)
 (defmacro defthm-with-stp-clause-processor (name term)
   `(defthm ,name ,term
      :hints (("Goal" :clause-processor (stp-clause-processor clause '((:must-prove . t)) state)))))
