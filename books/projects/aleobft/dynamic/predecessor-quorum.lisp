@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "accepted-certificates-quorum")
+(include-book "signer-quorum")
 (include-book "ordered-even-blocks")
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -133,8 +133,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The proof is somewhat analogous to
-     @(see accepted-certificates-quorum-p-of-next):
+    "The proof is somewhat analogous to @(see signer-quorum-p-of-next):
      see that documentation.
      But there is an additional complication for @('create-certificate').
      For the new certificate, @(tsee create-certificate-possiblep)
@@ -144,7 +143,7 @@
      the active committee at that preceding round.
      However, because of the previously proved invariant
      that certificate signers form a quorum
-     (see @(see accepted-certificates-quorum)),
+     (see @(see signer-quorum)),
      we know that the certificates at that preceding round,
      which are in the DAG and therefore among the accepted certificates,
      have signers, and in particular authors,
@@ -180,8 +179,8 @@
     :enable (validator-certificate-quorum-p
              set::expensive-rules))
 
-  (defruled signer-in-committee-when-accepted-certificates-quorum-p
-    (implies (and (accepted-certificates-quorum-p systate)
+  (defruled signer-in-committee-when-signer-quorum-p
+    (implies (and (signer-quorum-p systate)
                   (set::in val (correct-addresses systate))
                   (set::in cert (accepted-certificates val systate))
                   (set::in signer (certificate->signers cert)))
@@ -192,10 +191,10 @@
                            (all-addresses systate))))
                (set::in signer (committee-members commtt))))
     :enable (signer-in-committee-when-validator-certificate-quorum-p
-             accepted-certificates-quorum-p-necc))
+             signer-quorum-p-necc))
 
-  (defruled signer-in-committee-at-round-when-accepted-certificates-quorum-p
-    (implies (and (accepted-certificates-quorum-p systate)
+  (defruled signer-in-committee-at-round-when-signer-quorum-p
+    (implies (and (signer-quorum-p systate)
                   (set::in val (correct-addresses systate))
                   (set::in cert (certificates-with-round
                                  round
@@ -208,12 +207,12 @@
                             (get-validator-state val systate))
                            (all-addresses systate))))
                (set::in signer (committee-members commtt))))
-    :use (:instance signer-in-committee-when-accepted-certificates-quorum-p)
+    :use (:instance signer-in-committee-when-signer-quorum-p)
     :enable (accepted-certificates
              in-of-certificates-with-round))
 
-  (defruled author-in-committee-at-round-when-accepted-certificates-quorum-p
-    (implies (and (accepted-certificates-quorum-p systate)
+  (defruled author-in-committee-at-round-when-signer-quorum-p
+    (implies (and (signer-quorum-p systate)
                   (set::in val (correct-addresses systate))
                   (set::in cert (certificates-with-round
                                  round
@@ -227,12 +226,12 @@
                (set::in (certificate->author cert)
                         (committee-members commtt))))
     :use (:instance
-          signer-in-committee-at-round-when-accepted-certificates-quorum-p
+          signer-in-committee-at-round-when-signer-quorum-p
           (signer (certificate->author cert)))
     :enable certificate->signers)
 
-  (defruled authors-in-committee-at-round-when-accepted-certificates-quorum-p
-    (implies (and (accepted-certificates-quorum-p systate)
+  (defruled authors-in-committee-at-round-when-signer-quorum-p
+    (implies (and (signer-quorum-p systate)
                   (set::in val (correct-addresses systate)))
              (b* ((commtt (active-committee-at-round
                            round
@@ -248,7 +247,7 @@
     :enable set::expensive-rules
     :prep-lemmas
     ((defrule lemma
-       (implies (and (accepted-certificates-quorum-p systate)
+       (implies (and (signer-quorum-p systate)
                      (set::in val (correct-addresses systate))
                      (addressp author))
                 (b* ((commtt (active-committee-at-round
@@ -271,7 +270,7 @@
                       round
                       (validator-state->dag (get-validator-state val systate)))))
              (:instance
-              author-in-committee-at-round-when-accepted-certificates-quorum-p
+              author-in-committee-at-round-when-signer-quorum-p
               (cert (set::head (certificates-with-author
                                 author
                                 (certificates-with-round
@@ -288,7 +287,7 @@
        :disable set::in-head)))
 
   (defruled validator-predecessor-quorum-p-of-create-certificate-next-new
-    (implies (and (accepted-certificates-quorum-p systate)
+    (implies (and (signer-quorum-p systate)
                   (create-certificate-possiblep cert systate)
                   (set::in (certificate->author cert)
                            (correct-addresses systate)))
@@ -304,12 +303,12 @@
              validator-state->blockchain-of-create-certificate-next
              active-committee-at-earlier-round-when-at-later-round
              posp
-             authors-in-committee-at-round-when-accepted-certificates-quorum-p
+             authors-in-committee-at-round-when-signer-quorum-p
              set::expensive-rules))
 
   (defruled predecessor-quorum-p-of-create-certificate-next
     (implies (and (predecessor-quorum-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (create-certificate-possiblep cert systate))
              (predecessor-quorum-p
               (create-certificate-next cert systate)))
@@ -318,15 +317,16 @@
     ((defruled lemma
        (implies (and (certificatep cert)
                      (predecessor-quorum-p systate)
-                     (accepted-certificates-quorum-p systate)
+                     (signer-quorum-p systate)
                      (create-certificate-possiblep cert systate))
                 (predecessor-quorum-p
                  (create-certificate-next cert systate)))
-       :enable (predecessor-quorum-p
-                predecessor-quorum-p-necc
-                accepted-certificates-of-create-certificate-next
-                validator-predecessor-quorum-p-of-create-certificate-next-old
-                validator-predecessor-quorum-p-of-create-certificate-next-new))))
+       :enable
+       (predecessor-quorum-p
+        predecessor-quorum-p-necc
+        accepted-certificates-of-create-certificate-next
+        validator-predecessor-quorum-p-of-create-certificate-next-old
+        validator-predecessor-quorum-p-of-create-certificate-next-new))))
 
   ;; receive-certificate:
 
@@ -493,7 +493,7 @@
   ;; all events:
 
   (defruled predecessor-quorum-p-of-event-next
-    (implies (and (accepted-certificates-quorum-p systate)
+    (implies (and (signer-quorum-p systate)
                   (ordered-even-p systate)
                   (last-blockchain-round-p systate)
                   (predecessor-quorum-p systate)

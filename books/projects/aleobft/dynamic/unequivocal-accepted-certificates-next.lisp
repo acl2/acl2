@@ -17,7 +17,7 @@
 (include-book "unequivocal-signed-certificates")
 (include-book "committees-in-system")
 (include-book "quorum-intersection")
-(include-book "accepted-certificates-quorum")
+(include-book "signer-quorum")
 (include-book "same-owned-certificates")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -136,7 +136,7 @@
      We also need several invariants to satisfy the hypotheses
      of the quorum intersection theorem.
      We then use @(tsee no-signer-record-when-create-certificate-possiblep)
-     and @(tsee accepted-certificates-quorum-p) to derive the contradiction:
+     and @(tsee signer-quorum-p) to derive the contradiction:
      according to the first one, if @('create-certificate') is possible,
      the correct signer in the quorum intersection
      has no record of the author and round of @('cert');
@@ -194,7 +194,7 @@
     (implies (and (signer-records-p systate)
                   (committees-in-system-p systate)
                   (system-fault-tolerant-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (no-self-buffer-p systate)
                   (no-self-endorsed-p systate)
@@ -233,7 +233,7 @@
                               (certificate->author cert)
                               (certificate->round cert)
                               (accepted-certificates val systate)))))
-          (:instance accepted-certificates-quorum-p-necc
+          (:instance signer-quorum-p-necc
                      (cert (certificate-with-author+round
                             (certificate->author cert)
                             (certificate->round cert)
@@ -272,7 +272,7 @@
                   (signer-records-p systate)
                   (committees-in-system-p systate)
                   (system-fault-tolerant-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (no-self-buffer-p systate)
                   (no-self-endorsed-p systate)
@@ -297,7 +297,7 @@
                   (same-owned-certificates-p systate)
                   (committees-in-system-p systate)
                   (system-fault-tolerant-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (receive-certificate-possiblep msg systate)
                   (set::in (message->destination msg)
@@ -336,7 +336,7 @@
                               (certificate->author (message->certificate msg))
                               (certificate->round (message->certificate msg))
                               (accepted-certificates val systate)))))
-          (:instance accepted-certificates-quorum-p-necc
+          (:instance signer-quorum-p-necc
                      (cert (certificate-with-author+round
                             (certificate->author (message->certificate msg))
                             (certificate->round (message->certificate msg))
@@ -372,7 +372,7 @@
                   (same-owned-certificates-p systate)
                   (committees-in-system-p systate)
                   (system-fault-tolerant-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (receive-certificate-possiblep msg systate))
              (unequivocal-accepted-certificates-p
@@ -439,7 +439,7 @@
                   (same-owned-certificates-p systate)
                   (committees-in-system-p systate)
                   (system-fault-tolerant-p systate)
-                  (accepted-certificates-quorum-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (no-self-buffer-p systate)
                   (no-self-endorsed-p systate)
