@@ -12,18 +12,29 @@
 
 (in-package "ACL2")
 
-;; This tool generates custom Axe Provers.  Each can be seen as a variant of
-;; prover.lisp that does not use STP, does not support work-hard, doesn't
-;; handle embedded dags, uses the a given evaluator and/or the basic evaluator
-;; instead of the legacy evaluator, and does not depend on any skip-proofs.
+;; This tool generates custom Axe Provers.  Each generated prover can use a
+;; different evaluator, syntaxp-evaluator, and bind-free-evaluator and can have
+;; its own set of default-global-rules.
 
-;todo: implement backchain limits, polarities, improve handling of equivs
-;fixme axe prover requires some rules (like boolor of t, etc.) to be always enabled (without that one, we can get an error in get-disjuncts).  Improve get-disjuncts?
-;fixme use faster tests than equal in some places below?
+;; Currently, these provers do not use STP, do not support work-hard, do not
+;; handle DAGs embedded inside terms.
 
-;; TODO: Consider making splitting just another tactic.
+;; See also the legacy prover in prover.lisp.  Unlike this book, that one
+;; depends on skip-proofs!
 
-;; TODO: Consider having this use stobjs (rewrite-stobj, rewrite-stobj2) like make-rewriter-simple.lisp.
+;; TODO: implement backchain limits, polarities, improve handling of equivs
+
+;; TODO: use faster tests than equal in some places below?
+
+;; TODO: Consider making splitting just another tactic (but then a tactic must be able to produce a list of problems).
+
+;; TODO: Add a :cases tactic
+
+;; TODO: Add a :stp tactic
+
+;; TODO: Add a :sweep-and-merge tactic
+
+;; TODO: Consider having this, or at least the rewriter part, use stobjs (rewrite-stobj, rewrite-stobj2) like make-rewriter-simple.lisp.
 
 ;; Consider doing (set-evisc-tuple t :iprint nil :sites :gag-mode) when working
 ;; with calls to make-prover-simple, to prevent printing of enormous induction
@@ -1010,7 +1021,7 @@
        ;;(in-theory (disable car-becomes-nth-of-0)) ;move to arrays-axe
 
        ;;
-       ;; The main mutual recursion for the Axe Prover:
+       ;; The main mutual recursion for the rewriting tactics:
        ;;
 
        ;; The PROVER-DEPTH argument ensures that multiple simultaneous result arrays
