@@ -20,13 +20,11 @@ See ../README.md and follow the Setup instructions to install the Java libraries
 
 # Setup: Obtaining the Bouncycastle Crypto Code
 
-FIXME: THESE INSTRUCTIONS NEED TO BE UPDATED:
+The specific version of the Bouncycastle code that we have verified
+seems to no longer be availabe from bouncycastle.org.  So, download it
+from:
 
-To obtain the Bouncycastle .jar, do:
-
-wget https://www.bouncycastle.org/download/jce-jdk13-134.jar
-
-I retrieved this on 4/20/23.
+https://www.kestrel.edu/download/jce-jdk13-134.jar
 
 The sha1sum and md5sum of jce-jdk13-134.jar are as follows:
 - 50ba188b3f7e0339a8d3d6fb42169ebc918776cd  jce-jdk13-134.jar
