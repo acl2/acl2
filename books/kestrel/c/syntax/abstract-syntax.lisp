@@ -1741,6 +1741,9 @@
        and we indeed verified that it is accepted as a type
        in at least an implementation of GCC in macOS.")
      (xdoc::p
+      "As a GCC extension, we allow a structure type specifier with no members,
+       which has a name; see the ABNF grammar.")
+     (xdoc::p
       "As a GCC extension, we include @('typeof'),
        along with its variants @('__typeof') and @('__typeof__').
        The argument may be an expression or a type name,
@@ -1765,6 +1768,7 @@
     (:int128 ())
     (:float128 ())
     (:builtin-va-list ())
+    (:struct-empty ((name ident)))
     (:typeof-expr ((expr expr)
                    (uscores keyword-uscores-p)))
     (:typeof-type ((type tyname)
@@ -2297,8 +2301,12 @@
       "This fixtype is a little broader than the grammar,
        because it allows an absent name and no members.
        But this definition is simpler,
-       and the disallowed case can be rules out
-       via predicates over the abstract syntax."))
+       and the disallowed case can be ruled out
+       via predicates over the abstract syntax.")
+     (xdoc::p
+      "This fixtype does not cover structure types with no members,
+       which is a GCC extension;
+       this is covered as a separate case in @(tsee type-spec)."))
     ((name ident-option)
      (members structdecl-list))
     :pred strunispecp

@@ -248,6 +248,7 @@
      :int128 (type-spec-fix tyspec)
      :float128 (type-spec-fix tyspec)
      :builtin-va-list (type-spec-fix tyspec)
+     :struct-empty (type-spec-fix tyspec)
      :typeof-expr (make-type-spec-typeof-expr
                    :expr (simpadd0-expr tyspec.expr)
                    :uscores tyspec.uscores)

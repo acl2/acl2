@@ -9892,17 +9892,17 @@
        ;; If token is the keyword struct,
        ;; we must have a structure type specifier.
        ((token-keywordp token "struct") ; struct
-        (b* (((erp strunispec last-span parstate) ; struct strunispec
-              (parse-struct-or-union-specifier parstate)))
-          (retok (spec/qual-tyspec (type-spec-struct strunispec))
+        (b* (((erp tyspec last-span parstate) ; struct strunispec
+              (parse-struct-or-union-specifier t span parstate)))
+          (retok (spec/qual-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword union
        ;; we must have a union type specifier.
        ((token-keywordp token "union") ; union
-        (b* (((erp strunispec last-span parstate) ; union strunispec
-              (parse-struct-or-union-specifier parstate)))
-          (retok (spec/qual-tyspec (type-spec-union strunispec))
+        (b* (((erp tyspec last-span parstate) ; union strunispec
+              (parse-struct-or-union-specifier nil span parstate)))
+          (retok (spec/qual-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword enum,
@@ -10185,17 +10185,17 @@
        ;; If token is the keyword struct,
        ;; we must have a structure type specifier.
        ((token-keywordp token "struct") ; struct
-        (b* (((erp strunispec last-span parstate) ; struct strunispec
-              (parse-struct-or-union-specifier parstate)))
-          (retok (declspec-tyspec (type-spec-struct strunispec))
+        (b* (((erp tyspec last-span parstate) ; struct strunispec
+              (parse-struct-or-union-specifier t span parstate)))
+          (retok (declspec-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword union
        ;; we must have a union type specifier.
        ((token-keywordp token "union") ; union
-        (b* (((erp strunispec last-span parstate) ; union strunispec
-              (parse-struct-or-union-specifier parstate)))
-          (retok (declspec-tyspec (type-spec-union strunispec))
+        (b* (((erp tyspec last-span parstate) ; union strunispec
+              (parse-struct-or-union-specifier nil span parstate)))
+          (retok (declspec-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword enum,
@@ -10558,9 +10558,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-struct-or-union-specifier ((parstate parstatep))
+  (define parse-struct-or-union-specifier ((structp booleanp)
+                                           (struct/union-span spanp)
+                                           (parstate parstatep))
     :returns (mv erp
-                 (strunispec strunispecp)
+                 (tyspec type-specp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -10569,59 +10571,116 @@
     (xdoc::topstring
      (xdoc::p
       "This is called after parsing
-       the initial @('struct') or @('union') keyword.
-       The returned @(tsee strunispec) value captures
-       the structure or union specifier without the indication of
-       whether it is a structure or a union,
-       which is done in @(tsee type-spec) instead;
-       this is how we have factored our abstract syntax."))
-    (b* (((reterr) (irr-strunispec) (irr-span) parstate)
-         ;; There must be at least one token (identifier of open curly brace),
-         ;; so we read one.
+       the initial @('struct') or @('union') keyword:
+       we pass a boolean saying whether it was a @('struct') or not.")
+     (xdoc::p
+      "We return a type specifier that combines
+       the parsed structure or union specifier
+       with the information from the boolean input.
+       The reason why we do that,
+       instead of just returning a @(tsee strunispec)
+       and letting the callers build the @(tsee type-spec),
+       is that we also accommodate the GCC extension of
+       a structure specifier without members;
+       this is a separate kind in @(tsee type-spec).")
+     (xdoc::p
+      "We also pass the span of the @('struct') or @('union') keyword,
+       so that we can return a span for the whole type specifier."))
+    (b* (((reterr) (irr-type-spec) (irr-span) parstate)
+         ;; There must be at least one token (identifier or open curly brace),
+         ;; so we read a token.
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is an identifier,
        ;; it may be the whole structure or union specifier,
-       ;; or there may be more, so we read another token.
-       ((and token (token-case token :ident)) ; ident
+       ;; or there may be more to it, so we read another token.
+       ((and token (token-case token :ident)) ; struct/union ident
         (b* ((ident (token-ident->unwrap token))
              ((erp token2 & parstate) (read-token parstate)))
           (cond
-           ;; If token2 is an open curly brace,
-           ;; we must have a list of structure declarations
-           ;; enclosed in curly braces.
-           ;; So we parse those.
-           ((token-punctuatorp token2 "{") ; ident {
-            (b* (((erp structdecls & parstate) ; ident { structdecls
-                  (parse-struct-declaration-list parstate))
-                 ((erp last-span parstate) ; ident { structdecls }
-                  (read-punctuator "}" parstate)))
-              (retok (make-strunispec :name ident
-                                      :members structdecls)
-                     (span-join span last-span)
-                     parstate)))
+           ;; If token2 is an open curly brace, there are two cases.
+           ((token-punctuatorp token2 "{") ; struct ident {
+            (if (and structp
+                     (parstate->gcc parstate))
+                ;; If we are parsing a structure type specifier
+                ;; and GCC extensions are enabled,
+                ;; we read another token to see whether
+                ;; we have a structure type with no members or not.
+                (b* (((erp token3 span3 parstate) (read-token parstate)))
+                  (cond
+                   ;; If token3 is a closed curly brace,
+                   ;; we have a structure type specifier with no members.
+                   ((token-punctuatorp token3 "}") ; struct ident { }
+                    (retok (type-spec-struct-empty ident)
+                           (span-join struct/union-span span3)
+                           parstate))
+                   ;; If token3 is not a closed curly brace,
+                   ;; we put back token3
+                   ;; and parse one or more structure declarations,
+                   ;; followed by a closed curly brace.
+                   ;; In this case we return a (non-empty)
+                   ;; structure type specifier.
+                   (t ; struct ident { other
+                    (b* ((parstate ; struct ident {
+                          (if token3 (unread-token parstate) parstate))
+                         ((erp structdecls & parstate)
+                          ;; struct ident { structdecls
+                          (parse-struct-declaration-list parstate))
+                         ((erp last-span parstate)
+                          ;; struct ident { structdecls }
+                          (read-punctuator "}" parstate)))
+                      (retok (type-spec-struct
+                              (make-strunispec :name ident
+                                               :members structdecls))
+                             (span-join struct/union-span last-span)
+                             parstate)))))
+              ;; if we are parsing a union type specifier
+              ;; or GCC extensions are not enabled,
+              ;; we need to parse one of more structure declarations,
+              ;; followed by a closed curly brace.
+              (b* (((erp structdecls & parstate)
+                    ;; struct/union ident { structdecls
+                    (parse-struct-declaration-list parstate))
+                   ((erp last-span parstate)
+                    ;; struct/union ident { structdecls }
+                    (read-punctuator "}" parstate)))
+                (retok (type-spec-struct
+                        (make-strunispec :name ident
+                                         :members structdecls))
+                       (span-join struct/union-span last-span)
+                       parstate))))
            ;; If token2 is not an open curly brace,
            ;; the identifier was the whole structure or union specifier,
-           ;; so we put back token2 and return the specifier.
-           (t ; ident other
-            (b* ((parstate
-                  (if token2 (unread-token parstate) parstate))) ; ident
-              (retok (make-strunispec :name ident
-                                      :members nil)
-                     span
+           ;; so we put back token2 and return the type specifier.
+           (t ; struct/union ident other
+            (b* ((parstate ; struct/union ident
+                  (if token2 (unread-token parstate) parstate)))
+              (retok (if structp
+                         (type-spec-struct
+                          (make-strunispec :name ident
+                                           :members nil))
+                       (type-spec-union
+                        (make-strunispec :name ident
+                                         :members nil)))
+                     (span-join struct/union-span span)
                      parstate))))))
        ;; If token is an open curly brace,
        ;; we must have a structure or union specifier without identifier
        ;; but with a list of structure declarations between curly braces.
        ;; So we parse those.
-       ((token-punctuatorp token "{") ; {
-        (b* (((erp structdecls & parstate) ; { structdecls
+       ((token-punctuatorp token "{") ; struct/union {
+        (b* (((erp structdecls & parstate) ; struct/union { structdecls
               (parse-struct-declaration-list parstate))
-             ((erp last-span parstate) ; { structdecls }
+             ((erp last-span parstate) ; struct/union { structdecls }
               (read-punctuator "}" parstate)))
-          (retok (make-strunispec :name nil
-                                  :members structdecls)
-                 (span-join span last-span)
+          (retok (if structp
+                     (type-spec-struct
+                      (make-strunispec :name nil
+                                       :members structdecls))
+                   (type-spec-union
+                    (make-strunispec :name nil
+                                     :members structdecls)))
+                 (span-join struct/union-span last-span)
                  parstate)))
        ;; If token is neither an identifier nor an open curly brace,
        ;; we cannot have a structure or union specifier here.
@@ -14269,9 +14328,11 @@
                       span
                       parstate)))))))
        ;; If token may start a declaration specifier,
-       ;; since we have already considered the case of an identifier above,
-       ;; we must have a declaration.
-       ((token-declaration-specifier-start-p token) ; declspec...
+       ;; or token is the '_Static_assert' keyword,
+       ;; we must have a declaration,
+       ;; because we have already considered the case of an identifier above.
+       ((or (token-declaration-specifier-start-p token) ; declspec...
+            (token-keywordp token "_Static_assert")) ; _Static_assert
         (b* ((parstate (unread-token parstate)) ;
              ((erp decl span parstate) ; decl
               (parse-declaration parstate)))
@@ -14971,7 +15032,9 @@
                   (parse-declaration-specifiers nil parstate))))
       ((acl2::occur-lst '(acl2::flag-is 'parse-struct-or-union-specifier)
                         clause)
-       '(:expand (parse-struct-or-union-specifier parstate)))
+       '(:expand (parse-struct-or-union-specifier structp
+                                                  struct/union-span
+                                                  parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-enum-specifier)
                         clause)
        '(:expand (parse-enum-specifier first-span parstate)))
@@ -15720,7 +15783,9 @@
                   (parse-declaration-specifiers nil parstate))))
       ((acl2::occur-lst '(acl2::flag-is 'parse-struct-or-union-specifier)
                         clause)
-       '(:expand (parse-struct-or-union-specifier parstate)))
+       '(:expand (parse-struct-or-union-specifier structp
+                                                  struct/union-span
+                                                  parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
                         clause)
        '(:expand (parse-attribute-specifier uscores first-span parstate)))

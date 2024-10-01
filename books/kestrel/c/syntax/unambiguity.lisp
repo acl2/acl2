@@ -210,6 +210,7 @@
                     :int128 t
                     :float128 t
                     :builtin-va-list t
+                    :struct-empty t
                     :typeof-expr (expr-unambp tyspec.expr)
                     :typeof-type (tyname-unambp tyspec.type)
                     :typeof-ambig nil)
@@ -1034,7 +1035,7 @@
                 (expr-unambp index)))
     :expand (member-designor-unambp (member-designor-sub member index)))
 
-  (defrule type-spec-unambp-when-not-atomic/struct/union/enum
+  (defrule type-spec-unambp-when-not-atomic/struct/union/enum/typeof
     ;; The formulation (type-spec-unambp (type-spec-... ...))
     ;; does not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by

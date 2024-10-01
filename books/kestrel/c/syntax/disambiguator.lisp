@@ -1260,6 +1260,8 @@
        :float128 (retok (type-spec-float128) (dimb-table-fix table))
        :builtin-va-list (retok (type-spec-builtin-va-list)
                                (dimb-table-fix table))
+       :struct-empty (retok (type-spec-fix tyspec)
+                            (dimb-table-fix table))
        :typeof-expr
        (b* (((erp new-expr table) (dimb-expr tyspec.expr table)))
          (retok (make-type-spec-typeof-expr :expr new-expr
