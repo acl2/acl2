@@ -19,7 +19,6 @@
 
 (local
  (progn
-   (include-book "abnf/top")
    (include-book "acl2pl/top")
    (include-book "apt/doc")
    (include-book "axe/doc")

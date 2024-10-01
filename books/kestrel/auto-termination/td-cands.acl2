@@ -71,7 +71,7 @@
 (INCLUDE-BOOK "kestrel/json/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/c/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/acl2pl/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "kestrel/abnf/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/abnf/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/keccak/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/hdwallet/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/irv/portcullis" :DIR :SYSTEM)
@@ -129,7 +129,7 @@
 ; "ACL2-HACKER"
 (include-book "hacking/hacker" :dir :system)
 ; "ABNF"
-(include-book "kestrel/abnf/portcullis" :dir :system)
+(include-book "projects/abnf/portcullis" :dir :system)
 ; "RTL"
 (include-book "rtl/rel11/portcullis" :dir :system)
 ; "BED"

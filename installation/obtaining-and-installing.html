@@ -68,10 +68,6 @@ First, create a directory under which to store ACL2 Version 8.5.  We will
 call this directory <I>dir</I>.  For example, <I>dir</I> might be
 <CODE>/home/jones/acl2/</CODE>.
 
-<H3>NOTE: If you intend to obtain an incremental release (e.g. 2.9.4 as opposed
-to 2.9), please see the <a href="../new.html">ACL2 News</a> for instructions.
-Otherwise, continue reading here.</H3>
-
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Shortcuts">Pre-built Binary Distributions</A></H2>
 
@@ -111,12 +107,12 @@ have been some problems with long file names when using at least one other tar
 program.  You may want to use the -i option, "<code>tar xpvfi
 8.5.tar</code>", if you have problems with other than Gnu tar.  You
 can see if you have Gnu tar by running "<code>tar -v</code>".)  The
-resulting tarball and its extracted directory may consist of close to
-230 MB and 960 MB, respectively.  Additional space is
-required to build an executable image, for example, perhaps about
-160 MB if you use CCL and 210 MB if you use SBCL; and considerably more
-will be required to <A HREF="using.html#Certifying">certify books</A>.
-
+resulting tarball and its extracted directory may consist of
+230M+ bytes and 1100M+ bytes, respectively.  Additional space is
+required to build an executable image, for example,
+170M+ bytes if you use CCL and 230M bytes if you use SBCL; and
+considerably more will be required
+to <A HREF="using.html#Certifying">certify books</A>.
 
 <BR><BR>
 <CODE>cd <I>dir</I></CODE><BR>
@@ -566,6 +562,14 @@ which in turn contains the ACL2 source files as well as the following
 Also available are the following.
 
 <ul>
+
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-5/distrib/acl2-sources/acl2-customization-files/">ACL2
+      customization files</a>:
+      These <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____ACL2-CUSTOMIZATION">ACL2
+      customization</a> files can be useful
+      for <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____CERTIFY-BOOK">certifying
+      books</a>, for example
+      with <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PARALLELISM">ACL2(p)</a>.</li>
 
 <li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-5/distrib/images/">images/</a></code>:
 Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-5/distrib/images/Readme.html">images/Readme.html</a></code></li>

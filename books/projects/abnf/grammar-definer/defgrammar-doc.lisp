@@ -112,7 +112,7 @@
        and saving the file.
        If the file is under a version control system like @('git'),
        it should be forced to be treated as a text file with CRLF end-of-line
-       (e.g. see @('[books]/kestrel/abnf/notation/.gitattributes')),
+       (e.g. see @('[books]/projects/abnf/notation/.gitattributes')),
        to avoid turning carriage returns and line feeds into just line feeds
        across Windows and Unix platforms.")
      (xdoc::p

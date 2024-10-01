@@ -15,7 +15,7 @@
 
 (in-package "PFCS")
 
-(include-book "kestrel/abnf/notation/semantics" :dir :system)
+(include-book "projects/abnf/notation/semantics" :dir :system)
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
 (include-book "kestrel/fty/maybe-string-result" :dir :system)

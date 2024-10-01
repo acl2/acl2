@@ -10,7 +10,7 @@
 
 (in-package "PFCS")
 
-(include-book "kestrel/abnf/parsing-tools/defdefparse" :dir :system)
+(include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
