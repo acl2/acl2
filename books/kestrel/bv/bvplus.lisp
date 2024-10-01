@@ -494,3 +494,10 @@
   (equal (equal (bvplus size x y) (bvchop size x))
          (equal 0 (bvchop size y)))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))
+
+(defthm equal-of-bvchop-and-bvplus-same-arg2
+  (implies (natp size)
+           (equal (equal (bvchop size x) (bvplus size y x))
+                  (equal (bvchop size y) 0)))
+  :hints (("Goal"
+           :in-theory (enable bvplus bvchop-of-sum-cases))))
