@@ -8116,7 +8116,7 @@
                       (ABNF::PARSE-IN-EITHER-RANGE ABNF::MIN1 ABNF::MAX1
                                                    ABNF::MIN2 ABNF::MAX2 ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*-IN-EITHER-RANGE 5 :SYSTEM . "kestrel/abnf/parser"))
+   (ABNF::PARSE-*-IN-EITHER-RANGE 5 :SYSTEM . "projects/abnf/parser"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -8126,7 +8126,7 @@
      (O< (LEN (MV-NTH '2
                       (ABNF::PARSE-BIT ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*BIT 1 :SYSTEM . "kestrel/abnf/parser"))
+   (ABNF::PARSE-*BIT 1 :SYSTEM . "projects/abnf/parser"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -8136,7 +8136,7 @@
      (O< (LEN (MV-NTH '2
                       (ABNF::PARSE-DIGIT ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*DIGIT 1 :SYSTEM . "kestrel/abnf/parser"))
+   (ABNF::PARSE-*DIGIT 1 :SYSTEM . "projects/abnf/parser"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -8146,7 +8146,7 @@
      (O< (LEN (MV-NTH '2
                       (ABNF::PARSE-HEXDIG ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*HEXDIG 1 :SYSTEM . "kestrel/abnf/parser"))
+   (ABNF::PARSE-*HEXDIG 1 :SYSTEM . "projects/abnf/parser"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -8156,7 +8156,7 @@
      (O< (LEN (MV-NTH '2
                       (ABNF::PARSE-DOT-1*BIT ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*-DOT-1*BIT 1 :SYSTEM . "kestrel/abnf/parser"))
+   (ABNF::PARSE-*-DOT-1*BIT 1 :SYSTEM . "projects/abnf/parser"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -8166,7 +8166,7 @@
      (O< (LEN (MV-NTH '2
                       (ABNF::PARSE-DOT-1*DIGIT ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*-DOT-1*DIGIT 1 :SYSTEM . "kestrel/abnf/parser"))
+   (ABNF::PARSE-*-DOT-1*DIGIT 1 :SYSTEM . "projects/abnf/parser"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -8176,7 +8176,7 @@
      (O< (LEN (MV-NTH '2
                       (ABNF::PARSE-DOT-1*HEXDIG ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*-DOT-1*HEXDIG 1 :SYSTEM . "kestrel/abnf/parser"))
+   (ABNF::PARSE-*-DOT-1*HEXDIG 1 :SYSTEM . "projects/abnf/parser"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -8186,7 +8186,7 @@
      (O< (LEN (MV-NTH '2
                       (ABNF::PARSE-WSP/VCHAR ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*WSP/VCHAR 1 :SYSTEM . "kestrel/abnf/parser"))
+   (ABNF::PARSE-*WSP/VCHAR 1 :SYSTEM . "projects/abnf/parser"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -8196,7 +8196,7 @@
      (O< (LEN (MV-NTH '2
                       (ABNF::PARSE-CWSP ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*CWSP 1 :SYSTEM . "kestrel/abnf/parser"))
+   (ABNF::PARSE-*CWSP 1 :SYSTEM . "projects/abnf/parser"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -8206,7 +8206,7 @@
      (O< (LEN (MV-NTH '2
                       (ABNF::PARSE-ALPHA/DIGIT/DASH ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*-ALPHA/DIGIT/DASH 1 :SYSTEM . "kestrel/abnf/parser"))
+   (ABNF::PARSE-*-ALPHA/DIGIT/DASH 1 :SYSTEM . "projects/abnf/parser"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -8216,7 +8216,7 @@
      (O< (LEN (MV-NTH '2
                       (ABNF::PARSE-RULE-/-*CWSP-CNL ABNF::INPUT)))
          (LEN ABNF::INPUT))))
-   (ABNF::PARSE-*-RULE-/-*CWSP-CNL 1 :SYSTEM . "kestrel/abnf/parser")))
+   (ABNF::PARSE-*-RULE-/-*CWSP-CNL 1 :SYSTEM . "projects/abnf/parser")))
  ((JUSTIFICATION (SMT::FN-LST)
                  (NIL O-P . O<)
                  ((LEN (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST))

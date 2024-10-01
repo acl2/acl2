@@ -4967,12 +4967,12 @@
     (defund ,simplify-dag-aux-name (rev-dag ; the old dag, low nodes come first
                                     rewrite-stobj2 ; the new DAG
                                     maybe-internal-context-array
-                                    memoization ; this is over the NEW nodenums (the ones in dag-array)
+                                    memoization ; this is over the NEW nodenums (the ones in the dag-array field of rewrite-stobj2)
                                     hit-counts tries limits
                                     node-replacement-array node-replacement-count ; this is over nodes in the NEW dag
-                                    refined-assumption-alist ; these are over node in the NEW dag
+                                    refined-assumption-alist ; these are over nodes in the NEW dag
                                     rewrite-stobj
-                                    renumbering-stobj ; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
+                                    renumbering-stobj ; maps nodenums in the old DAG (rev-dag) to the dargs (nodenums or quoteps) they rewrote to the new DAG
                                     )
       (declare (xargs :guard (and (weak-dagp-aux rev-dag)
                                   (cars-increasing-by-1 rev-dag)
@@ -5246,7 +5246,6 @@
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
                :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
 
-
     ;; A simple consequence of the return type theorem
     (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary2)
       (implies (and (weak-dagp-aux rev-dag)
@@ -5421,7 +5420,12 @@
            ((when erp) (mv erp nil limits)))
         (with-local-stobjs
          (renumbering-stobj rewrite-stobj rewrite-stobj2)
-         (mv-let (erp new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits node-replacement-array renumbering-stobj rewrite-stobj rewrite-stobj2)
+         (mv-let (erp new-top-nodenum-or-quotep dag-array
+                      ;; dag-len
+                      ;; dag-parent-array dag-constant-alist dag-variable-alist
+                      memoization hit-counts tries limits
+                      ;; node-replacement-array
+                      renumbering-stobj rewrite-stobj rewrite-stobj2)
            (b* (;; Initialize rewrite-stobj:
                 (rewrite-stobj (put-monitored-symbols monitored-symbols rewrite-stobj))
                 (rewrite-stobj (put-fns-to-elide fns-to-elide rewrite-stobj))
@@ -5439,7 +5443,9 @@
                 (renumbering-stobj (resize-renumbering old-len renumbering-stobj))
                 ;; Decide whether to count and print tries:
                 (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
-                ((mv erp rewrite-stobj2 memoization hit-counts tries limits node-replacement-array renumbering-stobj)
+                ((mv erp rewrite-stobj2 memoization hit-counts tries limits
+                     & ; node-replacement-array
+                     renumbering-stobj)
                  (,simplify-dag-aux-name (reverse-list dag) ;;we'll simplify nodes from the bottom-up
                                          rewrite-stobj2
                                          maybe-internal-context-array
@@ -5450,14 +5456,19 @@
                                          node-replacement-array node-replacement-count refined-assumption-alist
                                          rewrite-stobj
                                          renumbering-stobj))
-                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits node-replacement-array renumbering-stobj rewrite-stobj rewrite-stobj2))
+                ((when erp) (mv erp nil dag-array ;; dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                memoization hit-counts tries limits
+                                ;;node-replacement-array
+                                renumbering-stobj rewrite-stobj rewrite-stobj2))
                 ;; See what the top node of the old dag became (after this point, we won't have access to renumbering-stobj anymore, due to with-local-stobj):
                 (new-top-nodenum-or-quotep (renumberingi old-top-nodenum renumbering-stobj)))
              (mv (erp-nil) new-top-nodenum-or-quotep
-                 (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2)
-                 memoization hit-counts tries limits node-replacement-array renumbering-stobj rewrite-stobj rewrite-stobj2))
-           ;; Cannot refer to the stobjs:
-           (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist node-replacement-array)) ; print some stats from these?
+                 (get-dag-array rewrite-stobj2) ;; (get-dag-len rewrite-stobj2) (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2)
+                 memoization hit-counts tries limits
+                 ;; node-replacement-array
+                 renumbering-stobj rewrite-stobj rewrite-stobj2))
+           ;; Cannot refer to the stobjs after this point:
+           ;; (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist node-replacement-array)) ; print some stats from these?
            (b* (((when erp) (mv erp nil limits))
                 ;; todo: do we support both brief hit counting (just the total) and totals per-rule?:
                 (- (maybe-print-hit-counts hit-counts))

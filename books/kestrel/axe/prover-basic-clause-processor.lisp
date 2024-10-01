@@ -16,4 +16,4 @@
 (include-book "make-clause-processor-simple")
 
 ;; Make a clause-processor that uses the basic prover:
-(make-clause-processor-simple basic)
+(make-clause-processor-simple basic) ; ttag

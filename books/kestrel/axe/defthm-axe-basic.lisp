@@ -30,7 +30,7 @@
        (rule-lists (remove-from-all rule-lists remove-rules)))
     `(defthm ,name
        ,term
-       :hints (("Goal" :clause-processor (basic-prover-clause-processor clause
+       :hints (("Goal" :clause-processor (prover-basic-clause-processor clause
                                                                       '((:must-prove . t)
                                                                         (:rule-lists . ,rule-lists)
                                                                         (:print . ,print))
