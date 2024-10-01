@@ -78,6 +78,8 @@
               (all-consp x)))
   :hints (("Goal" :in-theory (enable cons-if-not-equal-car))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep
   (implies (and (stored-axe-rulep stored-rule)
                 (not (equal :fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match dag-array dag-len))))
