@@ -951,7 +951,7 @@
                 table))
        :cond
        (b* (((erp new-test table) (dimb-expr expr.test table))
-            ((erp new-then table) (dimb-expr expr.then table))
+            ((erp new-then table) (dimb-expr-option expr.then table))
             ((erp new-else table) (dimb-expr expr.else table)))
          (retok (make-expr-cond :test new-test
                                 :then new-then

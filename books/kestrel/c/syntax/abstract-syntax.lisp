@@ -1514,6 +1514,10 @@
        Also see how @(see parser) handles
        possibly ambiguous cast expressions.")
      (xdoc::p
+      "As a GCC extension, we allow the omission of
+       the `then' sub-expression of a conditional expression.
+       See the ABNF grammar.")
+     (xdoc::p
       "As a GCC extension, we include statement expressions,
        i.e. expressions consisting of compound statements.
        The @(':stmt') case of this fixtype includes
@@ -1559,7 +1563,7 @@
               (arg1 expr)
               (arg2 expr)))
     (:cond ((test expr)
-            (then expr)
+            (then expr-option)
             (else expr)))
     (:comma ((first expr)
              (next expr)))

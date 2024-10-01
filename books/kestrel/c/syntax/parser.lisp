@@ -7229,7 +7229,11 @@
        which we parse first,
        and then we check whether there is a @('?'):
        if there is, it must be a conditional expression proper;
-       if there is not, it must be a logical disjunction expression."))
+       if there is not, it must be a logical disjunction expression.")
+     (xdoc::p
+      "If GCC extensions are enabled,
+       we also allow the omission of the `then' sub-expression;
+       see the ABNF grammar."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp expr span parstate)
@@ -7241,16 +7245,33 @@
           (b* ((parstate (if token (unread-token parstate) parstate))) ; expr
             (retok expr span parstate)))
          ;; expr ?
-         (psize (parsize parstate))
-         ((erp expr2 & parstate) (parse-expression parstate)) ; expr ? expr2
-         ((unless (mbt (<= (parsize parstate) (1- psize))))
-          (reterr :impossible))
-         ((erp & parstate) (read-punctuator ":" parstate)) ; expr ? expr2 :
-         ((erp expr3 span3 parstate) ; expr ? expr2 : expr3
-          (parse-conditional-expression parstate)))
-      (retok (make-expr-cond :test expr :then expr2 :else expr3)
-             (span-join span span3)
-             parstate))
+
+         ((erp token2 & parstate) (read-token parstate)))
+      (cond
+       ;; If token2 is a colon and GCC extensions are enabled,
+       ;; we have a conditional with omitted operand.
+       ((and (token-punctuatorp token2 ":") ; expr ? :
+             (parstate->gcc parstate))
+        (b* (((erp expr3 span3 parstate) ; expr ? : expr3
+              (parse-conditional-expression parstate)))
+          (retok (make-expr-cond :test expr :then nil :else expr3)
+                 (span-join span span3)
+                 parstate)))
+       ;; If token2 is not a colon or GCC extensions are not enabled,
+       ;; we put back token2 and parse the two remaining expressions,
+       ;; separated by a colon.
+       (t ; expr ? other
+        (b* ((parstate (if token2 (unread-token parstate) parstate))
+             (psize (parsize parstate))
+             ((erp expr2 & parstate) (parse-expression parstate)) ; expr ? expr2
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate) (read-punctuator ":" parstate)) ; expr ? expr2 :
+             ((erp expr3 span3 parstate) ; expr ? expr2 : expr3
+              (parse-conditional-expression parstate)))
+          (retok (make-expr-cond :test expr :then expr2 :else expr3)
+                 (span-join span span3)
+                 parstate)))))
     :measure (two-nats-measure (parsize parstate) 14))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

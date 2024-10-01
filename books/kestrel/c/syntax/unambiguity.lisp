@@ -89,7 +89,7 @@
                :binary (and (expr-unambp expr.arg1)
                             (expr-unambp expr.arg2))
                :cond (and (expr-unambp expr.test)
-                          (expr-unambp expr.then)
+                          (expr-option-unambp expr.then)
                           (expr-unambp expr.else))
                :comma (and (expr-unambp expr.first)
                            (expr-unambp expr.next))
@@ -972,7 +972,7 @@
   (defrule expr-unambp-of-expr-cond
     (equal (expr-unambp (expr-cond test then else))
            (and (expr-unambp test)
-                (expr-unambp then)
+                (expr-option-unambp then)
                 (expr-unambp else)))
     :expand (expr-unambp (expr-cond test then else)))
 
@@ -1580,7 +1580,7 @@
   (defrule expr-unambp-of-expr-cond->then
     (implies (and (expr-unambp expr)
                   (expr-case expr :cond))
-             (expr-unambp (expr-cond->then expr)))
+             (expr-option-unambp (expr-cond->then expr)))
     :expand (expr-unambp expr))
 
   (defrule expr-unambp-of-expr-cond->else

@@ -801,6 +801,9 @@ lexeme = token
 ; which does not actually mention empty compound literals,
 ; but we have encountered them in practical code.
 
+; As a GCC extensions, we allow conditional with omitted operands,
+; documented at https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
@@ -902,6 +905,7 @@ logical-or-expression = logical-and-expression
 conditional-expression =
       logical-or-expression
     / logical-or-expression "?" expression ":" conditional-expression
+    / logical-or-expression "?" ":" conditional-expression ; GCC extension
 
 assignment-expression =
       conditional-expression

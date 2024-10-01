@@ -153,7 +153,7 @@
                                 :arg1 (rename-fn-expr expr.arg1 old-fn new-fn)
                                 :arg2 (rename-fn-expr expr.arg2 old-fn new-fn))
       :cond (make-expr-cond :test (rename-fn-expr expr.test old-fn new-fn)
-                            :then (rename-fn-expr expr.then old-fn new-fn)
+                            :then (rename-fn-expr-option expr.then old-fn new-fn)
                             :else (rename-fn-expr expr.else old-fn new-fn))
       :comma (make-expr-comma :first (rename-fn-expr expr.first old-fn new-fn)
                               :next (rename-fn-expr expr.next old-fn new-fn))

@@ -165,7 +165,7 @@
      :cond (call-graph-expr
              expr.else
              fn-name
-             (call-graph-expr
+             (call-graph-expr-option
                expr.then
                fn-name
                (call-graph-expr
@@ -182,6 +182,17 @@
      ;; TODO: error on ambiguous constructs
      :otherwise (ident-ident-option-set-map-fix acc))
     :measure (expr-count expr))
+
+  (define call-graph-expr-option
+    ((expr? expr-optionp)
+     (fn-name identp)
+     (acc ident-ident-option-set-mapp))
+    :returns (call-graph ident-ident-option-set-mapp)
+    (expr-option-case
+     expr?
+     :some (call-graph-expr expr?.val fn-name acc)
+     :none (ident-ident-option-set-map-fix acc))
+    :measure (expr-option-count expr?))
 
   (define call-graph-initer
     ((initer initerp)
@@ -237,16 +248,6 @@
   :returns (call-graph ident-ident-option-set-mapp)
   (b* (((const-expr const-expr) const-expr))
     (call-graph-expr const-expr.unwrap fn-name acc)))
-
-(define call-graph-expr-option
-  ((expr? expr-optionp)
-   (fn-name identp)
-   (acc ident-ident-option-set-mapp))
-  :returns (call-graph ident-ident-option-set-mapp)
-  (expr-option-case
-   expr?
-   :some (call-graph-expr expr?.val fn-name acc)
-   :none (ident-ident-option-set-map-fix acc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

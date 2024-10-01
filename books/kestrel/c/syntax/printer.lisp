@@ -1749,12 +1749,18 @@
                  (priopt->paren-nested-conds (pristate->options pstate)))
                 (pstate (print-expr expr.test (expr-priority-logor) pstate))
                 (pstate (print-astring " ? " pstate))
-                (pstate (print-expr expr.then
-                                    (if raise-prio
-                                        (expr-priority-logor)
-                                      (expr-priority-expr))
-                                    pstate))
-                (pstate (print-astring " : " pstate))
+                (pstate (expr-option-case
+                         expr.then
+                         :some (b* ((pstate
+                                     (print-expr expr.then.val
+                                                 (if raise-prio
+                                                     (expr-priority-logor)
+                                                   (expr-priority-expr))
+                                                 pstate))
+                                    (pstate (print-astring " " pstate)))
+                                 pstate)
+                         :none pstate))
+                (pstate (print-astring ": " pstate))
                 (pstate (print-expr expr.else
                                     (if raise-prio
                                         (expr-priority-logor)

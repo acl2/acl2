@@ -95,7 +95,7 @@
      :binary (union (free-vars-expr expr.arg1 bound-vars)
                     (free-vars-expr expr.arg2 bound-vars))
      :cond (union (free-vars-expr expr.test bound-vars)
-                  (union (free-vars-expr expr.then bound-vars)
+                  (union (free-vars-expr-option expr.then bound-vars)
                          (free-vars-expr expr.else bound-vars)))
      :comma (union (free-vars-expr expr.first bound-vars)
                    (free-vars-expr expr.next bound-vars))

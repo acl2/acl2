@@ -346,7 +346,9 @@
                 (expr-pure-formalp expr.arg1)
                 (expr-pure-formalp expr.arg2))
    :cond (and (expr-pure-formalp expr.test)
-              (expr-pure-formalp expr.then)
+              (expr-option-case expr.then
+                                :some (expr-pure-formalp expr.then.val)
+                                :none t)
               (expr-pure-formalp expr.else))
    :comma nil
    :cast/call-ambig (impossible)
