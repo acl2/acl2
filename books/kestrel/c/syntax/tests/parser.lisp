@@ -1088,9 +1088,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key more-inputs cond gcc)
+(defmacro test-parse (fn input &key pos more-inputs cond gcc)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
+  ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
   ;; Optional COND may be over variables AST, SPAN, PARSTATE
   ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST.
@@ -1100,7 +1101,9 @@
          (,(if (eq fn 'parse-external-declaration-list)
                '(mv erp ?ast ?span ?eofpos parstate)
              '(mv erp ?ast ?span parstate))
-          (,fn ,@more-inputs parstate)))
+          (,fn ,@more-inputs parstate))
+         ,@(and pos
+                `((parstate (update-parstate->position ,pos parstate)))))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             ,(or cond t)) ; assertion passes if COND is absent or else holds
