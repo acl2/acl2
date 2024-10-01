@@ -168,15 +168,15 @@
     :enable (validator-predecessor-quorum-p
              validator-state->blockchain-of-create-certificate-next))
 
-  (defruled signer-in-committee-when-validator-certificate-quorum-p
-    (implies (and (validator-certificate-quorum-p cert vstate all-vals)
+  (defruled signer-in-committee-when-validator-signer-quorum-p
+    (implies (and (validator-signer-quorum-p cert vstate all-vals)
                   (set::in signer (certificate->signers cert)))
              (b* ((commtt (active-committee-at-round
                            (certificate->round cert)
                            (validator-state->blockchain vstate)
                            all-vals)))
                (set::in signer (committee-members commtt))))
-    :enable (validator-certificate-quorum-p
+    :enable (validator-signer-quorum-p
              set::expensive-rules))
 
   (defruled signer-in-committee-when-signer-quorum-p
@@ -190,7 +190,7 @@
                             (get-validator-state val systate))
                            (all-addresses systate))))
                (set::in signer (committee-members commtt))))
-    :enable (signer-in-committee-when-validator-certificate-quorum-p
+    :enable (signer-in-committee-when-validator-signer-quorum-p
              signer-quorum-p-necc))
 
   (defruled signer-in-committee-at-round-when-signer-quorum-p

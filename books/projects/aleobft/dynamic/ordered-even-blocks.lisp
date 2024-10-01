@@ -63,7 +63,7 @@
 
 (defruled ordered-even-p-when-init
   :short "Establishment of the invariant:
-          the invariant holds on any initial system state."
+          the invariant holds in any initial system state."
   (implies (system-initp systate)
            (ordered-even-p systate))
   :enable (ordered-even-p

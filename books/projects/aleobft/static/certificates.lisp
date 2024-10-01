@@ -212,7 +212,7 @@
            (set::emptyp certs))
     :induct t)
 
-  (defrule certificate-set->round-set-subset
+  (defruled certificate-set->round-set-subset
     (implies (set::subset certs1 certs2)
              (set::subset (certificate-set->round-set certs1)
                           (certificate-set->round-set certs2)))

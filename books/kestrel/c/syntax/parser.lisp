@@ -9892,17 +9892,17 @@
        ;; If token is the keyword struct,
        ;; we must have a structure type specifier.
        ((token-keywordp token "struct") ; struct
-        (b* (((erp strunispec last-span parstate) ; struct strunispec
-              (parse-struct-or-union-specifier parstate)))
-          (retok (spec/qual-tyspec (type-spec-struct strunispec))
+        (b* (((erp tyspec last-span parstate) ; struct strunispec
+              (parse-struct-or-union-specifier t span parstate)))
+          (retok (spec/qual-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword union
        ;; we must have a union type specifier.
        ((token-keywordp token "union") ; union
-        (b* (((erp strunispec last-span parstate) ; union strunispec
-              (parse-struct-or-union-specifier parstate)))
-          (retok (spec/qual-tyspec (type-spec-union strunispec))
+        (b* (((erp tyspec last-span parstate) ; union strunispec
+              (parse-struct-or-union-specifier nil span parstate)))
+          (retok (spec/qual-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword enum,
@@ -10185,17 +10185,17 @@
        ;; If token is the keyword struct,
        ;; we must have a structure type specifier.
        ((token-keywordp token "struct") ; struct
-        (b* (((erp strunispec last-span parstate) ; struct strunispec
-              (parse-struct-or-union-specifier parstate)))
-          (retok (declspec-tyspec (type-spec-struct strunispec))
+        (b* (((erp tyspec last-span parstate) ; struct strunispec
+              (parse-struct-or-union-specifier t span parstate)))
+          (retok (declspec-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword union
        ;; we must have a union type specifier.
        ((token-keywordp token "union") ; union
-        (b* (((erp strunispec last-span parstate) ; union strunispec
-              (parse-struct-or-union-specifier parstate)))
-          (retok (declspec-tyspec (type-spec-union strunispec))
+        (b* (((erp tyspec last-span parstate) ; union strunispec
+              (parse-struct-or-union-specifier nil span parstate)))
+          (retok (declspec-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword enum,
@@ -10558,9 +10558,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-struct-or-union-specifier ((parstate parstatep))
+  (define parse-struct-or-union-specifier ((structp booleanp)
+                                           (struct/union-span spanp)
+                                           (parstate parstatep))
     :returns (mv erp
-                 (strunispec strunispecp)
+                 (tyspec type-specp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -10569,59 +10571,116 @@
     (xdoc::topstring
      (xdoc::p
       "This is called after parsing
-       the initial @('struct') or @('union') keyword.
-       The returned @(tsee strunispec) value captures
-       the structure or union specifier without the indication of
-       whether it is a structure or a union,
-       which is done in @(tsee type-spec) instead;
-       this is how we have factored our abstract syntax."))
-    (b* (((reterr) (irr-strunispec) (irr-span) parstate)
-         ;; There must be at least one token (identifier of open curly brace),
-         ;; so we read one.
+       the initial @('struct') or @('union') keyword:
+       we pass a boolean saying whether it was a @('struct') or not.")
+     (xdoc::p
+      "We return a type specifier that combines
+       the parsed structure or union specifier
+       with the information from the boolean input.
+       The reason why we do that,
+       instead of just returning a @(tsee strunispec)
+       and letting the callers build the @(tsee type-spec),
+       is that we also accommodate the GCC extension of
+       a structure specifier without members;
+       this is a separate kind in @(tsee type-spec).")
+     (xdoc::p
+      "We also pass the span of the @('struct') or @('union') keyword,
+       so that we can return a span for the whole type specifier."))
+    (b* (((reterr) (irr-type-spec) (irr-span) parstate)
+         ;; There must be at least one token (identifier or open curly brace),
+         ;; so we read a token.
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is an identifier,
        ;; it may be the whole structure or union specifier,
-       ;; or there may be more, so we read another token.
-       ((and token (token-case token :ident)) ; ident
+       ;; or there may be more to it, so we read another token.
+       ((and token (token-case token :ident)) ; struct/union ident
         (b* ((ident (token-ident->unwrap token))
              ((erp token2 & parstate) (read-token parstate)))
           (cond
-           ;; If token2 is an open curly brace,
-           ;; we must have a list of structure declarations
-           ;; enclosed in curly braces.
-           ;; So we parse those.
-           ((token-punctuatorp token2 "{") ; ident {
-            (b* (((erp structdecls & parstate) ; ident { structdecls
-                  (parse-struct-declaration-list parstate))
-                 ((erp last-span parstate) ; ident { structdecls }
-                  (read-punctuator "}" parstate)))
-              (retok (make-strunispec :name ident
-                                      :members structdecls)
-                     (span-join span last-span)
-                     parstate)))
+           ;; If token2 is an open curly brace, there are two cases.
+           ((token-punctuatorp token2 "{") ; struct ident {
+            (if (and structp
+                     (parstate->gcc parstate))
+                ;; If we are parsing a structure type specifier
+                ;; and GCC extensions are enabled,
+                ;; we read another token to see whether
+                ;; we have a structure type with no members or not.
+                (b* (((erp token3 span3 parstate) (read-token parstate)))
+                  (cond
+                   ;; If token3 is a closed curly brace,
+                   ;; we have a structure type specifier with no members.
+                   ((token-punctuatorp token3 "}") ; struct ident { }
+                    (retok (type-spec-struct-empty ident)
+                           (span-join struct/union-span span3)
+                           parstate))
+                   ;; If token3 is not a closed curly brace,
+                   ;; we put back token3
+                   ;; and parse one or more structure declarations,
+                   ;; followed by a closed curly brace.
+                   ;; In this case we return a (non-empty)
+                   ;; structure type specifier.
+                   (t ; struct ident { other
+                    (b* ((parstate ; struct ident {
+                          (if token3 (unread-token parstate) parstate))
+                         ((erp structdecls & parstate)
+                          ;; struct ident { structdecls
+                          (parse-struct-declaration-list parstate))
+                         ((erp last-span parstate)
+                          ;; struct ident { structdecls }
+                          (read-punctuator "}" parstate)))
+                      (retok (type-spec-struct
+                              (make-strunispec :name ident
+                                               :members structdecls))
+                             (span-join struct/union-span last-span)
+                             parstate)))))
+              ;; if we are parsing a union type specifier
+              ;; or GCC extensions are not enabled,
+              ;; we need to parse one of more structure declarations,
+              ;; followed by a closed curly brace.
+              (b* (((erp structdecls & parstate)
+                    ;; struct/union ident { structdecls
+                    (parse-struct-declaration-list parstate))
+                   ((erp last-span parstate)
+                    ;; struct/union ident { structdecls }
+                    (read-punctuator "}" parstate)))
+                (retok (type-spec-struct
+                        (make-strunispec :name ident
+                                         :members structdecls))
+                       (span-join struct/union-span last-span)
+                       parstate))))
            ;; If token2 is not an open curly brace,
            ;; the identifier was the whole structure or union specifier,
-           ;; so we put back token2 and return the specifier.
-           (t ; ident other
-            (b* ((parstate
-                  (if token2 (unread-token parstate) parstate))) ; ident
-              (retok (make-strunispec :name ident
-                                      :members nil)
-                     span
+           ;; so we put back token2 and return the type specifier.
+           (t ; struct/union ident other
+            (b* ((parstate ; struct/union ident
+                  (if token2 (unread-token parstate) parstate)))
+              (retok (if structp
+                         (type-spec-struct
+                          (make-strunispec :name ident
+                                           :members nil))
+                       (type-spec-union
+                        (make-strunispec :name ident
+                                         :members nil)))
+                     (span-join struct/union-span span)
                      parstate))))))
        ;; If token is an open curly brace,
        ;; we must have a structure or union specifier without identifier
        ;; but with a list of structure declarations between curly braces.
        ;; So we parse those.
-       ((token-punctuatorp token "{") ; {
-        (b* (((erp structdecls & parstate) ; { structdecls
+       ((token-punctuatorp token "{") ; struct/union {
+        (b* (((erp structdecls & parstate) ; struct/union { structdecls
               (parse-struct-declaration-list parstate))
-             ((erp last-span parstate) ; { structdecls }
+             ((erp last-span parstate) ; struct/union { structdecls }
               (read-punctuator "}" parstate)))
-          (retok (make-strunispec :name nil
-                                  :members structdecls)
-                 (span-join span last-span)
+          (retok (if structp
+                     (type-spec-struct
+                      (make-strunispec :name nil
+                                       :members structdecls))
+                   (type-spec-union
+                    (make-strunispec :name nil
+                                     :members structdecls)))
+                 (span-join struct/union-span last-span)
                  parstate)))
        ;; If token is neither an identifier nor an open curly brace,
        ;; we cannot have a structure or union specifier here.
@@ -12674,6 +12733,11 @@
           (reterr :impossible))
          ((erp asmspec? asmspec?-span parstate) ; declor [asmspec]
           (parse-?-asm-name-specifier parstate))
+         (psize (parsize parstate))
+         ((erp attrspecs attrspecs-span parstate) ; declor [asmspec] [attrspecs]
+          (parse-*-attribute-specifier parstate))
+         ((unless (mbt (<= (parsize parstate) psize)))
+          (reterr :impossible))
          ((erp token & parstate) (read-token parstate)))
       (cond
        ;; If token is an equal sign, there must be an initializer.
@@ -12682,19 +12746,21 @@
               (parse-initializer parstate)))
           (retok (make-initdeclor :declor declor
                                   :asm? asmspec?
+                                  :attribs attrspecs
                                   :init? initer)
                  (span-join span last-span)
                  parstate)))
        ;; Otherwise, there is no initializer.
-       (t ; declor [asnspec] other
+       (t ; declor [asmspec] other
         (b* ((parstate (if token (unread-token parstate) parstate)))
           ;; declor [asmspec]
           (retok (make-initdeclor :declor declor
                                   :asm? asmspec?
+                                  :attribs attrspecs
                                   :init? nil)
-                 (if asmspec?
-                     (span-join span asmspec?-span)
-                   span)
+                 (cond (attrspecs (span-join span attrspecs-span))
+                       (asmspec? (span-join span asmspec?-span))
+                       (t span))
                  parstate)))))
     :measure (two-nats-measure (parsize parstate) 2))
 
@@ -12754,12 +12820,8 @@
        optionally followed by a list of one or more initializer declarators
        and mandatorily followed by a semicolon.")
      (xdoc::p
-      "If GCC extensions are supported, we must also allow for
-       an optional assembler name specifier,
-       as well as for zero or more attribute specifiers,
-       ending a declaration, just before the semicolon;
-       and we must also allow for an @('__extension__') keyword
-       just before the declaration.
+      "If GCC extensions are supported,
+       we must allow for an @('__extension__') keyword at the beginning.
        See the ABNF grammar rule for @('declaration')."))
     (b* (((reterr) (irr-decl) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
@@ -12787,57 +12849,24 @@
               (reterr :impossible))
              ((erp token2 span2 parstate) (read-token parstate)))
           (cond
-           ;; If token2 is the keyword '__attribute__',
-           ;; and if GCC extensions are supported,
-           ;; we have no initializer declarators;
-           ;; we parse the attribute specifiers,
-           ;; and the ending semicolon.
-           ;; Note that we have no assembler name specifier in this case.
-           ((and (token-keywordp token2 "__attribute__")
-                 (parstate->gcc parstate))
-            ;; [__extension__] declspecs __attribute__
-            (b* ((parstate (unread-token parstate))
-                 ((erp attrspecs & parstate)
-                  ;; [__extension__] declspecs attrspecs
-                  (parse-*-attribute-specifier parstate))
-                 ((erp last-span parstate)
-                  ;; [__extension__] declspecs attrspecs ;
-                  (read-punctuator ";" parstate)))
-              (retok (make-decl-decl :extension extension
-                                     :specs declspecs
-                                     :init nil
-                                     :attrib attrspecs)
-                     (span-join span last-span)
-                     parstate)))
            ;; If token2 may start a declarator,
            ;; which is equivalent to saying that
            ;; it may start an initializer declarator,
            ;; we parse the list of one or more initializer declarators,
-           ;; then an optional assembler name specifier,
-           ;; then a list of zero or more attribute specifiers,
            ;; and then the final semicolon.
            ((token-declarator-start-p token2)
             ;; [__extension__] declspecs declor...
             (b* ((parstate (unread-token parstate))
                  ;; [__extension__] declspecs
-                 (psize (parsize parstate))
                  ((erp initdeclors & parstate)
                   ;; [__extension__] declspecs initdeclors
                   (parse-init-declarator-list parstate))
-                 ((unless (mbt (<= (parsize parstate) (1- psize))))
-                  (reterr :impossible))
-                 ((erp attrspecs & parstate)
-                  ;; [__extension__] declspecs initdeclors [attrspecs]
-                  (if (parstate->gcc parstate)
-                      (parse-*-attribute-specifier parstate)
-                    (retok nil (irr-span) parstate)))
                  ((erp last-span parstate)
-                  ;; [__extension__] declspecs initdeclors [attrspecs] ;
+                  ;; [__extension__] declspecs initdeclors ;
                   (read-punctuator ";" parstate)))
               (retok (make-decl-decl :extension extension
                                      :specs declspecs
-                                     :init initdeclors
-                                     :attrib attrspecs)
+                                     :init initdeclors)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is a semicolon,
@@ -12847,8 +12876,7 @@
            ((token-punctuatorp token2 ";") ; [__extension__] declspecs ;
             (retok (make-decl-decl :extension extension
                                    :specs declspecs
-                                   :init nil
-                                   :attrib nil)
+                                   :init nil)
                    (span-join span span2)
                    parstate))
            ;; If token2 is anything else, it is an error.
@@ -14300,9 +14328,11 @@
                       span
                       parstate)))))))
        ;; If token may start a declaration specifier,
-       ;; since we have already considered the case of an identifier above,
-       ;; we must have a declaration.
-       ((token-declaration-specifier-start-p token) ; declspec...
+       ;; or token is the '_Static_assert' keyword,
+       ;; we must have a declaration,
+       ;; because we have already considered the case of an identifier above.
+       ((or (token-declaration-specifier-start-p token) ; declspec...
+            (token-keywordp token "_Static_assert")) ; _Static_assert
         (b* ((parstate (unread-token parstate)) ;
              ((erp decl span parstate) ; decl
               (parse-declaration parstate)))
@@ -15002,7 +15032,9 @@
                   (parse-declaration-specifiers nil parstate))))
       ((acl2::occur-lst '(acl2::flag-is 'parse-struct-or-union-specifier)
                         clause)
-       '(:expand (parse-struct-or-union-specifier parstate)))
+       '(:expand (parse-struct-or-union-specifier structp
+                                                  struct/union-span
+                                                  parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-enum-specifier)
                         clause)
        '(:expand (parse-enum-specifier first-span parstate)))
@@ -15751,7 +15783,9 @@
                   (parse-declaration-specifiers nil parstate))))
       ((acl2::occur-lst '(acl2::flag-is 'parse-struct-or-union-specifier)
                         clause)
-       '(:expand (parse-struct-or-union-specifier parstate)))
+       '(:expand (parse-struct-or-union-specifier structp
+                                                  struct/union-span
+                                                  parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
                         clause)
        '(:expand (parse-attribute-specifier uscores first-span parstate)))
@@ -15896,7 +15930,7 @@
      but based on what follows it,
      we can decide whether we have a declarator or a function definition.")
    (xdoc::p
-    "If GCC extensions are supported, we must also taken into account
+    "If GCC extensions are supported, we must also take into account
      the possible presence of attributes and assembler name specifiers,
      as well as of an @('__external__') keyword."))
   (b* (((reterr) (irr-extdecl) (irr-span) parstate)
@@ -15932,254 +15966,196 @@
          ((token-punctuatorp token2 ";") ; [__extension__] declspecs ;
           (retok (extdecl-decl (make-decl-decl :extension extension
                                                :specs declspecs
-                                               :init nil
-                                               :attrib nil))
+                                               :init nil))
                  (span-join span span2)
                  parstate))
-         ;; If token2 is the '__attribute' or '__attribute__' keyword,
-         ;; we parse one or more attribute specifiers,
-         ;; and this external declaration must be a declaration
-         ;; (we do not support attributes of function definitions).
-         ((or (token-keywordp token2 "__attribute")
-              (token-keywordp token2 "__attribute__"))
-          ;; [__extension__] declspecs __attribute__
-          (b* ((parstate (unread-token parstate)) ; [__extension__] declspecs
-               ((erp attrspecs & parstate) ; [__extension__] declspecs attrspecs
-                (parse-*-attribute-specifier parstate))
-               ((erp last-span parstate) ; [__extension__] declspecs attrspecs ;
-                (read-punctuator ";" parstate)))
-            (retok (extdecl-decl (make-decl-decl :extension extension
-                                                 :specs declspecs
-                                                 :init nil
-                                                 :attrib attrspecs))
-                   (span-join span last-span)
-                   parstate)))
-         ;; If token2 is not a semicolon and is not '__attribute__',
-         ;; we must have at least one declarator, which we parse.
-         ;; We also parse an optional assembler name specifier.
+         ;; If token2 is anything else,
+         ;; we put it back and parse a declarator, which must be there.
+         ;; We also parse, if present, an assembler name specifier
+         ;; and a sequence of zero or more attribute specifiers.
          (t ; [__extension__] declspecs other
-          (b* ((parstate (if token2 (unread-token parstate) parstate))
-               ;; [__extension__] declspecs
+          (b* ((parstate ; [__extension__] declspecs
+                (if token2 (unread-token parstate) parstate))
                ((erp declor & parstate) ; [__extension__] declspecs declor
                 (parse-declarator parstate))
                ((erp asmspec? & parstate)
                 ;; [__extension__] declspecs declor [asmspec]
                 (parse-?-asm-name-specifier parstate))
+               ((erp attrspecs & parstate)
+                ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                (parse-*-attribute-specifier parstate))
                ((erp token3 span3 parstate) (read-token parstate)))
             (cond
+             ;; If token3 is a semicolon,
+             ;; we have a declaration with one declarator without initializer.
+             ((token-punctuatorp token3 ";")
+              ;; [__extension__] declspecs declor [asmspec] [attrspecs] ;
+              (retok (extdecl-decl (make-decl-decl
+                                    :extension extension
+                                    :specs declspecs
+                                    :init (list (make-initdeclor
+                                                 :declor declor
+                                                 :asm? asmspec?
+                                                 :attribs attrspecs
+                                                 :init? nil))))
+                     (span-join span span3)
+                     parstate))
              ;; If token3 is an equal sign,
-             ;; we must be parsing an intialization declarator,
-             ;; and therefore the external declaration must be a declaration.
-             ;; We parse the rest of the initialization declarator,
-             ;; then possibly more initialization declarators.
+             ;; we have a declaration with at least one initializer declarator.
+             ;; We parse the initializer for the initializer declarator.
              ((token-punctuatorp token3 "=")
-              ;; [__extension__] declspecs declor [asmspec] =
+              ;; [__extension__] declspecs declor [asmspec] [attrspecs] =
               (b* (((erp initer & parstate)
-                    ;; [__extension__] declspecs declor [asmspec] = initer
+                    ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                    ;;   = initer
                     (parse-initializer parstate))
+                   (initdeclor (make-initdeclor :declor declor
+                                                :asm? asmspec?
+                                                :attribs attrspecs
+                                                :init? initer))
                    ((erp token4 span4 parstate) (read-token parstate)))
                 (cond
                  ;; If token4 is a semicolon,
-                 ;; we have reached the end of the declarator.
+                 ;; we have reached the end of the declaration.
                  ((token-punctuatorp token4 ";")
-                  ;; [__extension__] declspecs declor [asmspec] = initer ;
-                  (retok (extdecl-decl
-                          (make-decl-decl
-                           :extension extension
-                           :specs declspecs
-                           :init (list (make-initdeclor
-                                        :declor declor
-                                        :asm? asmspec?
-                                        :init? initer))
-                           :attrib nil))
+                  ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                  ;;   = initer ;
+                  (retok (extdecl-decl (make-decl-decl
+                                        :extension extension
+                                        :specs declspecs
+                                        :init (list initdeclor)))
                          (span-join span span4)
                          parstate))
                  ;; If token4 is a comma,
-                 ;; we must have more initialization declarators.
+                 ;; we must have additiona initializer declarators.
                  ((token-punctuatorp token4 ",")
-                  ;; [__extension__] declspecs declor [asmspec] = initer ,
+                  ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                  ;;   = initer ,
                   (b* (((erp initdeclors & parstate)
-                        ;; [__extension__] declspecs
-                        ;;     declor [asmspec] = initer , initdeclors
+                        ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                        ;;   = initer , initdeclors
                         (parse-init-declarator-list parstate))
-                       ((erp attrspecs & parstate)
-                        ;; [__extension__] declspecs
-                        ;;   declor [asmspec] = initer, initdeclors [attrspecs]
-                        (if (parstate->gcc parstate)
-                            (parse-*-attribute-specifier parstate)
-                          (retok nil (irr-span) parstate)))
                        ((erp last-span parstate)
-                        ;; [__extension__] declspecs
-                        ;;   declor [asmspec] = initer , initdeclors
-                        ;;       [attrspecs] ;
+                        ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                        ;;   = initer , initdeclors ;
                         (read-punctuator ";" parstate)))
-                    (retok (extdecl-decl
-                            (make-decl-decl
-                             :extension extension
-                             :specs declspecs
-                             :init (cons (make-initdeclor
-                                          :declor declor
-                                          :asm? asmspec?
-                                          :init? initer)
-                                         initdeclors)
-                             :attrib attrspecs))
-                           (span-join span last-span)
-                           parstate)))
-                 ;; If token4 is the keyword '__attribute__'
-                 ;; and GCC extensions are supported,
-                 ;; we have just one declarator with the initializer,
-                 ;; followed by attribute specifiers, which we parse.
-                 ((or (token-keywordp token4 "__attribute")
-                      (token-keywordp token4 "__attribute__"))
-                  ;; [__extension__] declspecs
-                  ;;     declor [asmspec] = initer __attribute__
-                  (b* ((parstate (unread-token parstate))
-                       ;; [__extension__] declspecs declor [asmspec] = initer
-                       ((erp attrspecs & parstate)
-                        (parse-*-attribute-specifier parstate))
-                       ;; [__extension__] declspecs
-                       ;;     declor [asmspec] = initer attrspecs
-                       ((erp last-span parstate)
-                        ;; [__extension__] declspecs
-                        ;;     declor [asmspec] = initer attrspecs ;
-                        (read-punctuator ";" parstate)))
-                    (retok (extdecl-decl
-                            (make-decl-decl
-                             :extension extension
-                             :specs declspecs
-                             :init (list (make-initdeclor
-                                          :declor declor
-                                          :asm? asmspec?
-                                          :init? initer))
-                             :attrib attrspecs))
+                    (retok (extdecl-decl (make-decl-decl
+                                          :extension extension
+                                          :specs declspecs
+                                          :init (cons initdeclor initdeclors)))
                            (span-join span last-span)
                            parstate)))
                  ;; If token4 is anything else, it is an error.
-                 (t ; [__extension__] declspecs declor [asmspec] = initer other
+                 (t
+                  ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                  ;;   = initer other
                   (reterr-msg :where (position-to-msg (span->start span4))
                               :expected "a semicolon or a comma"
                               :found (token-to-msg token4))))))
-             ;; If token3 is a semicolon,
-             ;; we must be parsing an intialization declarator,
-             ;; without initializer,
-             ;; and the external declaration must be a declaration,
-             ;; which the semicolon concludes.
-             ((token-punctuatorp token3 ";")
-              ;; [__extension__] declspecs declor [asmspec] ;
-              (retok (extdecl-decl
-                      (make-decl-decl
-                       :extension extension
-                       :specs declspecs
-                       :init (list (make-initdeclor
-                                    :declor declor
-                                    :asm? asmspec?
-                                    :init? nil))
-                       :attrib nil))
-                     (span-join span span3)
-                     parstate))
              ;; If token3 is a comma,
-             ;; we must be parsing
-             ;; an external declaration that is a declaration.
-             ;; There must be more initialization declarations,
-             ;; which we parse.
+             ;; we must have a declaration
+             ;; with two or more initializer declarators.
              ((token-punctuatorp token3 ",")
-              ;; [__extension__] declspecs declor [asmspec] ,
-              (b* (((erp initdeclors & parstate)
-                    ;; [__extension__] declspecs declor [asmspec] , initdeclors
+              ;; [__extension__] declspecs declor [asmspec] [attrspecs] ,
+              (b* ((initdeclor (make-initdeclor :declor declor
+                                                :asm? asmspec?
+                                                :attribs attrspecs
+                                                :init? nil))
+                   ((erp initdeclors & parstate)
+                    ;; [__extension__] declspecs declor [asmspec] [attrspecs] ,
+                    ;;   initdeclors
                     (parse-init-declarator-list parstate))
-                   ((erp attrspecs & parstate)
-                    ;; [__extension__] declspecs declor [asmspec] , initdeclors
-                    ;;     [attrspecs]
-                    (if (parstate->gcc parstate)
-                        (parse-*-attribute-specifier parstate)
-                      (retok nil (irr-span) parstate)))
                    ((erp last-span parstate)
-                    ;; [__extension__] declspecs declor [asmspec] , initdeclors
-                    ;;     [attrspecs] ;
+                    ;; [__extension__] declspecs declor [asmspec] [attrspecs] ,
+                    ;;   initdeclors ;
                     (read-punctuator ";" parstate)))
-                (retok (extdecl-decl
-                        (make-decl-decl
-                         :extension extension
-                         :specs declspecs
-                         :init (cons (make-initdeclor
-                                      :declor declor
-                                      :asm? asmspec?
-                                      :init? nil)
-                                     initdeclors)
-                         :attrib attrspecs))
-                       (span-join span last-span)
-                       parstate)))
-             ;; If token3 is the '__attribute' or '__attribute__' keyword,
-             ;; this external declaration must be a declaration,
-             ;; and we parse one or more attribute specifiers.
-             ((or (token-keywordp token3 "__attribute")
-                  (token-keywordp token3 "__attribute__"))
-              ;; [__extension__] declspecs declor [asmspec] __attribute__
-              (b* ((parstate (unread-token parstate))
-                   ;; [__extension__] declspecs declor [asmspec]
-                   ((erp attrspecs & parstate)
-                    ;; [__extension__] declspecs declor [asmspec] attrspecs
-                    (parse-*-attribute-specifier parstate))
-                   ((erp last-span parstate)
-                    ;; [__extension__] declspecs declor [asmspec] attrspecs ;
-                    (read-punctuator ";" parstate)))
-                (retok (extdecl-decl
-                        (make-decl-decl
-                         :extension extension
-                         :specs declspecs
-                         :init (list (make-initdeclor
-                                      :declor declor
-                                      :asm? asmspec?
-                                      :init? nil))
-                         :attrib attrspecs))
+                (retok (extdecl-decl (make-decl-decl
+                                      :extension extension
+                                      :specs declspecs
+                                      :init (cons initdeclor initdeclors)))
                        (span-join span last-span)
                        parstate)))
              ;; If token3 is an open curly brace,
-             ;; the external declaration must be a function definition.
-             ;; We parse the function body.
+             ;; we must have a function definition,
+             ;; where the curly brace starts the body, which we parse.
              ((token-punctuatorp token3 "{")
-              ;; [__extension__] declspecs declor [asmspec] {
-              (b* ((parstate (unread-token parstate))
-                   ;; [__extension__] declspecs declor
-                   ((erp stmt last-span parstate)
-                    ;; [__extension__] declspecs declor [asmspec] stmt
-                    (parse-statement parstate)))
-                (retok (extdecl-fundef
-                        (make-fundef :extension extension
-                                     :spec declspecs
-                                     :declor declor
-                                     :asm? asmspec?
-                                     :decls nil
-                                     :body stmt))
-                       (span-join span last-span)
-                       parstate)))
-             ;; If token is not an open curly brace,
+              ;; [__extension__] declspecs declor [asmspec] [attrspecs] {
+              (b* (((erp token4 span4 parstate) (read-token parstate)))
+                (cond
+                 ;; If token4 is a closed curly brace,
+                 ;; we have an empty compound statement as the body.
+                 ((token-punctuatorp token4 "}")
+                  ;; [__extension__] declspecs declor [asmspec] [attrspecs] { }
+                  (retok (extdecl-fundef
+                          (make-fundef :extension extension
+                                       :spec declspecs
+                                       :declor declor
+                                       :asm? asmspec?
+                                       :attribs attrspecs
+                                       :decls nil
+                                       :body (stmt-compound nil)))
+                         (span-join span span4)
+                         parstate))
+                 ;; If token4 is anything else,
+                 ;; we put it back (if any) and we parse block items,
+                 ;; followed by a closed curly brace.
+                 (t
+                  ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                  ;;   { other
+                  (b* ((parstate (if token4 (unread-token parstate) parstate))
+                       ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                       ;;   {
+                       ((erp items & parstate)
+                        ;; [__extension__] declspecs declor
+                        ;;   [asmspec] [attrspecs]
+                        ;;   { items
+                        (parse-block-item-list parstate))
+                       ((erp last-span parstate)
+                        ;; [__extension__] declspecs declor
+                        ;;   [asmspec] [attrspecs]
+                        ;;   { items }
+                        (read-punctuator "}" parstate)))
+                    (retok (extdecl-fundef
+                            (make-fundef :extension extension
+                                         :spec declspecs
+                                         :declor declor
+                                         :asm? asmspec?
+                                         :attribs attrspecs
+                                         :decls nil
+                                         :body (stmt-compound items)))
+                           (span-join span last-span)
+                           parstate))))))
+             ;; If token3 is anything else,
              ;; we must have one or more declarations, which we parse.
              ;; Then we parse the compound statement.
-             (t ; [__extension__] declspecs declor [asmspec] other
-              (b* ((parstate ; [__extension__] declspecs declor [asmspec]
+             (t ; [__extension__] declspecs declor [asmspec] [attrspecs] other
+              (b* ((parstate
+                    ;; [__extension__] declspecs declor [asmspec] [attrspecs]
                     (if token3 (unread-token parstate) parstate))
                    ((erp decls & parstate)
-                    ;; [__extension__] declspecs declor [asmspec] decls
+                    ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                    ;;   decls
                     (parse-declaration-list parstate))
-                   ((erp token4 span4 parstate) (read-token parstate))
-                   ((unless (token-punctuatorp token4 "{"))
-                    (reterr-msg :where (position-to-msg (span->start span4))
-                                :expected "an open curly brace"
-                                :found (token-to-msg token4)))
-                   ;; [__extension__] declspecs declor [asmspec] decls {
-                   (parstate (unread-token parstate))
-                   ;; [__extension__] declspecs declor [asmspec] decls
-                   ((erp stmt last-span parstate)
-                    ;; [__extension__] declspecs declor [asmspec] decls stmt
-                    (parse-statement parstate)))
+                   ((erp & parstate)
+                    ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                    ;;   decls {
+                    (read-punctuator "{" parstate))
+                   ((erp items & parstate)
+                    ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                    ;;   decls { items
+                    (parse-block-item-list parstate))
+                   ((erp last-span parstate)
+                    ;; [__extension__] declspecs declor [asmspec] [attrspecs]
+                    ;;   decls { items }
+                    (read-punctuator "}" parstate)))
                 (retok (extdecl-fundef
                         (make-fundef :extension extension
                                      :spec declspecs
                                      :declor declor
                                      :asm? asmspec?
+                                     :attribs attrspecs
                                      :decls decls
-                                     :body stmt))
+                                     :body (stmt-compound items)))
                        (span-join span last-span)
                        parstate)))))))))))
 

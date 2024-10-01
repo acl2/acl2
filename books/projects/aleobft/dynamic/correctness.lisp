@@ -32,6 +32,7 @@
 (include-book "unequivocal-accepted-certificates-next")
 (include-book "unequivocal-dags")
 (include-book "anchors-of-validators")
+(include-book "last-anchor-present")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -66,6 +67,7 @@
                     same-committees
                     unequivocal-accepted-certificates-next
                     unequivocal-dags
-                    anchors-of-validators))
+                    anchors-of-validators
+                    last-anchor-present))
 
 ; TODO: continue

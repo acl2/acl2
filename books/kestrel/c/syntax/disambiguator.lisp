@@ -1260,6 +1260,8 @@
        :float128 (retok (type-spec-float128) (dimb-table-fix table))
        :builtin-va-list (retok (type-spec-builtin-va-list)
                                (dimb-table-fix table))
+       :struct-empty (retok (type-spec-fix tyspec)
+                            (dimb-table-fix table))
        :typeof-expr
        (b* (((erp new-expr table) (dimb-expr tyspec.expr table)))
          (retok (make-type-spec-typeof-expr :expr new-expr
@@ -2188,6 +2190,7 @@
          (table (dimb-add-ident ident kind table)))
       (retok (make-initdeclor :declor new-declor
                               :asm? ideclor.asm?
+                              :attribs ideclor.attribs
                               :init? new-init?)
              table))
     :measure (initdeclor-count ideclor))
@@ -2241,8 +2244,7 @@
              (dimb-initdeclor-list decl.init kind table)))
          (retok (make-decl-decl :extension decl.extension
                                 :specs new-specs
-                                :init new-init
-                                :attrib decl.attrib)
+                                :init new-init)
                 table))
        :statassert
        (b* (((erp new-statassert table) (dimb-statassert decl.unwrap table)))

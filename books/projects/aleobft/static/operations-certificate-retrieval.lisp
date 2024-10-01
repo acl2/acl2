@@ -333,7 +333,8 @@
                   (certificate-set->round-set certs0))
                  1))
     :rule-classes :linear
-    :enable cardinality-of-round-set-of-certificates-with-round
+    :enable (cardinality-of-round-set-of-certificates-with-round
+             certificate-set->round-set-subset)
     :use ((:instance set::subset-cardinality
                      (x (certificate-set->round-set certs0))
                      (y (certificate-set->round-set

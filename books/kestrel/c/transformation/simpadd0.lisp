@@ -248,6 +248,7 @@
      :int128 (type-spec-fix tyspec)
      :float128 (type-spec-fix tyspec)
      :builtin-va-list (type-spec-fix tyspec)
+     :struct-empty (type-spec-fix tyspec)
      :typeof-expr (make-type-spec-typeof-expr
                    :expr (simpadd0-expr tyspec.expr)
                    :uscores tyspec.uscores)
@@ -722,6 +723,7 @@
       (make-initdeclor
        :declor (simpadd0-declor initdeclor.declor)
        :asm? initdeclor.asm?
+       :attribs initdeclor.attribs
        :init? (simpadd0-initer-option initdeclor.init?)))
     :measure (initdeclor-count initdeclor))
 
@@ -749,8 +751,7 @@
      :decl (make-decl-decl
             :extension decl.extension
             :specs (simpadd0-declspec-list decl.specs)
-            :init (simpadd0-initdeclor-list decl.init)
-            :attrib decl.attrib)
+            :init (simpadd0-initdeclor-list decl.init))
      :statassert (decl-statassert
                   (simpadd0-statassert decl.unwrap)))
     :measure (decl-count decl))
@@ -1085,6 +1086,7 @@
      :spec (simpadd0-declspec-list fundef.spec)
      :declor (simpadd0-declor fundef.declor)
      :asm? fundef.asm?
+     :attribs fundef.attribs
      :decls (simpadd0-decl-list fundef.decls)
      :body (simpadd0-stmt fundef.body)))
   :hooks (:fix)

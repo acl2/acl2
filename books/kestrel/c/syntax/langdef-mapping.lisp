@@ -844,15 +844,10 @@
        (extension (decl-decl->extension decl))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
-       (attrib (decl-decl->attrib decl))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
-       ((when attrib)
-        (reterr (msg "Unsupported GCC attributes ~x0 ~
-                      for tag (i.e. structure/union/enumeration) declaration."
-                     attrib)))
        ((when initdeclors)
         (reterr (msg "Unsupported initialization declarators ~x0 ~
                       for tag (i.e. structure/union/enumeration) declaration."
@@ -1065,15 +1060,10 @@
        (extension (decl-decl->extension decl))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
-       (attrib (decl-decl->attrib decl))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
-       ((when attrib)
-        (reterr (msg "Unsupported GCC attributes ~x0 ~
-                      for tag (i.e. structure/union/enumeration) declaration."
-                     attrib)))
        ((mv okp tyspecs) (check-declspec-list-all-tyspec declspecs))
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifier list ~
@@ -1094,6 +1084,10 @@
         (reterr (msg "Unsupported assembler name specifier ~x0 ~
                       for function declaration."
                      initdeclor.asm?)))
+       ((unless (endp initdeclor.attribs))
+        (reterr (msg "Unsupported attribute specifiers ~x0 ~
+                      for function declaration."
+                     initdeclor.attribs)))
        ((erp fundeclor) (ldm-declor-fun initdeclor.declor)))
     (retok (c::make-fun-declon :tyspec tyspecseq :declor fundeclor)))
   :hooks (:fix))
@@ -1176,15 +1170,10 @@
        (extension (decl-decl->extension decl))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
-       (attrib (decl-decl->attrib decl))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
-       ((when attrib)
-        (reterr (msg "Unsupported GCC attributes ~x0 ~
-                      for tag (i.e. structure/union/enumeration) declaration."
-                     attrib)))
        ((mv okp tyspecs stor-specs)
         (check-declspec-list-all-tyspec/storspec declspecs))
        ((unless okp)
@@ -1204,6 +1193,10 @@
         (reterr (msg "Unsupported assembler name specifier ~x0 ~
                       for object declaration."
                      initdeclor.asm?)))
+       ((unless (endp initdeclor.attribs))
+        (reterr (msg "Unsupported attribute specifiers ~x0 ~
+                      for function declaration."
+                     initdeclor.attribs)))
        ((when (not initdeclor.init?))
         (retok (c::make-obj-declon :scspec scspecseq
                                    :tyspec tyspecseq
@@ -1361,6 +1354,10 @@
        ((erp fundeclor) (ldm-declor-fun fundef.declor))
        ((when fundef.asm?)
         (reterr (msg "Unsupported assembler name specifier ~
+                      in function definition ~x0."
+                     (fundef-fix fundef))))
+       ((when fundef.attribs)
+        (reterr (msg "Unsupported attribute specifiers ~
                       in function definition ~x0."
                      (fundef-fix fundef))))
        ((when fundef.decls)

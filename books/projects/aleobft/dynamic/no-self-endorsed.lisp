@@ -68,7 +68,7 @@
 
 (defruled no-self-endorsed-p-when-system-initp
   :short "Establishment of the invariant:
-          the invariant holds on any initial system state."
+          the invariant holds in any initial system state."
   :long
   (xdoc::topstring
    (xdoc::p
