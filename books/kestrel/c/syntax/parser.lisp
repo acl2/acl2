@@ -9106,18 +9106,40 @@
       "This is called after parsing the parenthesized type name.
        So we start by parsing an open curly brace,
        a list of initializers,
-       and a closed curly brace."))
+       and a closed curly brace.")
+     (xdoc::p
+      "If GCC extensions are enabled,
+       we also allow an empty list of initializers;
+       see the ABNF grammar."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp & parstate) (read-punctuator "{" parstate)) ; {
-         ((erp desiniters final-comma & parstate) ; { inits [,]
-          (parse-initializer-list parstate))
-         ((erp last-span parstate)
-          (read-punctuator "}" parstate))) ; { inits [,] }
-      (retok (make-expr-complit :type tyname
-                                :elems desiniters
-                                :final-comma final-comma)
-             (span-join first-span last-span)
-             parstate))
+         ((erp token span parstate) (read-token parstate)))
+      (cond
+       ;; If token is a closed curly brace and GCC extensions are enabled,
+       ;; we have an empty compound literal.
+       ((and (token-punctuatorp token "}") ; { }
+             (parstate->gcc parstate))
+        (retok (make-expr-complit :type tyname
+                                  :elems nil
+                                  :final-comma nil)
+               (span-join first-span span)
+               parstate))
+       ;; If token is not a closed curly brace
+       ;; or GCC extensions are not enabled,
+       ;; we put back token (if any),
+       ;; and we parse one or more initializers,
+       ;; followed by a closed curly braces.
+       (t ; { other
+        (b* ((parstate (if token (unread-token parstate) parstate)) ; {
+             ((erp desiniters final-comma & parstate) ; { inits [,]
+              (parse-initializer-list parstate))
+             ((erp last-span parstate)
+              (read-punctuator "}" parstate))) ; { inits [,] }
+          (retok (make-expr-complit :type tyname
+                                    :elems desiniters
+                                    :final-comma final-comma)
+                 (span-join first-span last-span)
+                 parstate)))))
     :measure (two-nats-measure (parsize parstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

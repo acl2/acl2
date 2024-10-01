@@ -795,6 +795,12 @@ lexeme = token
 ; We render that as an extension of our ABNF grammar;
 ; note that the second argument is a restricted form of expressions.
 
+; As a GCC extension, we allow empty compound literals.
+; GCC extensions for compound literals are described in
+; https://gcc.gnu.org/onlinedocs/gcc/Compound-Literals.html,
+; which does not actually mention empty compound literals,
+; but we have encountered them in practical code.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
@@ -832,6 +838,7 @@ postfix-expression = primary-expression
                    / postfix-expression "--"
                    / "(" type-name ")" "{" initializer-list "}"
                    / "(" type-name ")" "{" initializer-list "," "}"
+                   / "(" type-name ")" "{" "}" ; GCC extension
 
 argument-expression-list = assignment-expression
                          / argument-expression-list "," assignment-expression

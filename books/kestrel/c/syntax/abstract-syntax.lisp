@@ -1365,7 +1365,8 @@
        the presence of absence of the final comma
        just after the <i>initializer-list</i>.
        We formalize <i>initializer-list</i> [C:6.7.9] [C:A.2.2]
-       as a list (which should be non-empty) of pairs each consisting of
+       as a list (which should be non-empty, unless GCC extensions are enabled)
+       of pairs each consisting of
        some designators and an initializer (see @(tsee desiniter).")
      (xdoc::p
       "The comma sequentialization operator is modeled

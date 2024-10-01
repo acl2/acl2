@@ -1663,14 +1663,14 @@
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ") {" pstate))
-                ((unless expr.elems)
-                 (raise "Misusage error: ~
-                         empty initializer list.")
-                 (pristate-fix pstate))
-                (pstate (print-desiniter-list expr.elems pstate))
-                (pstate (if expr.final-comma
-                            (print-astring ", }" pstate)
-                          (print-astring "}" pstate))))
+                (pstate
+                 (if (consp expr.elems)
+                     (b* ((pstate (print-desiniter-list expr.elems pstate))
+                          (pstate (if expr.final-comma
+                                      (print-astring ", }" pstate)
+                                    (print-astring "}" pstate))))
+                       pstate)
+                   (print-astring " }" pstate))))
              pstate)
            :unary
            (if (or (unop-case expr.op :postinc)
