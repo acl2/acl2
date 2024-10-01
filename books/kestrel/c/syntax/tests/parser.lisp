@@ -1088,17 +1088,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key cond gcc)
-  ;; Input is an ACL2 term with the text to parse,
-  ;; where the term evaluates to a string or a list of bytes.
+(defmacro test-parse (fn input &key more-inputs cond gcc)
+  ;; INPUT is an ACL2 term with the text to parse,
+  ;; where the term evaluates to a string.
+  ;; Optional MORE-INPUTS go just before parser state input.
   ;; Optional COND may be over variables AST, SPAN, PARSTATE
   ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST.
+  ;; GCC flag says whether GCC extensions are enabled.
   `(assert!-stobj
     (b* ((parstate (init-parstate (acl2::string=>nats ,input) ,gcc parstate))
          (,(if (eq fn 'parse-external-declaration-list)
                '(mv erp ?ast ?span ?eofpos parstate)
              '(mv erp ?ast ?span parstate))
-          (,fn parstate)))
+          (,fn ,@more-inputs parstate)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             ,(or cond t)) ; assertion passes if COND is absent or else holds
