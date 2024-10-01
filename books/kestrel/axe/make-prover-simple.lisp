@@ -3115,7 +3115,7 @@
        ;; it seems possible for a node to get pushed onto the worklist more than once, but i guess a node cannot be pushed more times than it has parents (so not exponentially many times)?
        ;; todo: watch out for equality assumptions ordered the wrong way! - will they get rewritten the wrong way?
        ;; todo: special handling for if/myif/boolif/bvif/boolor/booland?
-       ;; todo: Consider whether we can track the equiv used for each node (note that a note may appear in multiple contexts with different equivs).  We currently handle this when we process the parent, and that may be good enough?
+       ;; todo: Consider whether we can track the equiv used for each node (note that a node may appear in multiple contexts with different equivs).  We currently handle this when we process the parent, and that may be good enough?
        ;; todo: track polarities?
        ;; todo: use a more modern worklist algorithm where we keep the worklist sorted?
        (defund ,rewrite-nodes-name (worklist ;could track the equivs and polarities?
@@ -3988,7 +3988,8 @@
        ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries).
        (defund ,rewrite-clause-name (literal-nodenums
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                     rule-alist rule-set-number
+                                     rule-alist
+                                     rule-set-number
                                      interpreted-function-alist monitored-symbols
                                      case-designator print ;move print arg?
                                      hit-counts tries prover-depth known-booleans options top-node-onlyp)
@@ -3997,6 +3998,7 @@
                                      (consp literal-nodenums)
                                      (all-< literal-nodenums dag-len)
                                      (rule-alistp rule-alist)
+                                     (natp rule-set-number)
                                      (interpreted-function-alistp interpreted-function-alist)
                                      (hit-countsp hit-counts)
                                      (triesp tries)
@@ -4198,6 +4200,7 @@
                                       (nat-listp literal-nodenums)
                                       (all-< literal-nodenums dag-len)
                                       (rule-alistp rule-alist)
+                                      (natp rule-set-number)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (hit-countsp hit-counts)
                                       (triesp tries)
@@ -4302,6 +4305,7 @@
                                       (nat-listp literal-nodenums)
                                       (all-< literal-nodenums dag-len)
                                       (rule-alistp rule-alist)
+                                      (natp rule-set-number)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (hit-countsp hit-counts)
                                       (triesp tries)
@@ -4372,6 +4376,7 @@
                                       (nat-listp literal-nodenums)
                                       (all-< literal-nodenums dag-len)
                                       (rule-alistp rule-alist)
+                                      (natp rule-set-number)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (hit-countsp hit-counts)
                                       (triesp tries)
