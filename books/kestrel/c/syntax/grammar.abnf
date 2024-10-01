@@ -1053,11 +1053,6 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; Thus we use type-qualifier-and-attribute-specifier-list
 ; instead of just type-qualifier-list.
 
-; As a GCC extension,
-; we allow one or more attribute specifiers
-; to occur just before the ending semicolon of
-; a declaration and a structure declaration.
-
 ; The above may not the only places where attribute specifiers may occur,
 ; in the full GCC extensions, but they are places that have been observed.
 ; Our purpose in supporting the GCC extensions, for now,
@@ -1080,6 +1075,15 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; This is documented at https://gcc.gnu.org/onlinedocs/gcc/Typeof.html.
 ; This must fit into the grammar as a type specifier.
 
+; As a GCC extension, we allow attribute specifiers
+; at the end of a top-level declarator in an initialization declarator,
+; just after the assembler name specifier if any.
+; This extension,
+; including the fact that it follows the assembler name specifier if any,
+; is documented in https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html,
+; under 'All other attributes', 5th paragraph
+; (this reference might change as the GCC manual gets updated).
+
 ; We also allow a lone semicolon as a structure declaration.
 ; This is definitely not grammatical according to [C],
 ; and we did not find it anywhere in the GCC documentation;
@@ -1090,7 +1094,6 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
               [ init-declarator-list ]
-              *attribute-specifier ; GCC extension
               ";"
             / static-assert-declaration
 
@@ -1105,8 +1108,9 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
 init-declarator-list = init-declarator
                      / init-declarator-list "," init-declarator
 
-init-declarator = declarator [ asm-name-specifier ]
-                / declarator [ asm-name-specifier ] "=" initializer
+init-declarator =
+      declarator [ asm-name-specifier ] *attribute-specifier
+    / declarator [ asm-name-specifier ] *attribute-specifier "=" initializer
 
 storage-class-specifier = %s"typedef"
                         / %s"extern"
@@ -1328,7 +1332,9 @@ jump-statement = %s"goto" identifier ";"
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a function definition.
 ; We also allow an assembler name specifier
-; just after the declarator of a function definition.
+; just after the declarator of a function definition,
+; possibly followed by zero or more attribute specifiers;
+; this is similar to initializer declarators.
 
 ; We also allow a lone semicolon as an external declaration.
 ; This is definitely not grammatical according to [C],
@@ -1348,7 +1354,9 @@ external-declaration = function-definition
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers
-                      declarator [asm-name-specifier]
+                      declarator
+                      [asm-name-specifier] ; GCC extension
+                      *attribute-specifier ; GCC extension
                       [ declaration-list ]
                       compound-statement
 

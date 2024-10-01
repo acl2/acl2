@@ -544,10 +544,12 @@
    (xdoc::p
     "In @(tsee c::exec-block-item),
      the initializer must be present and supported.
-     The declarator must be supported too."))
+     The declarator must be supported too.
+     There must be no assembler name specifier and no attribute specifiers."))
   (b* (((initdeclor initdeclor) initdeclor))
     (and (declor-block-formalp initdeclor.declor)
          (not initdeclor.asm?)
+         (endp initdeclor.attribs)
          initdeclor.init?
          (initer-formalp initdeclor.init?)))
   :hooks (:fix))
@@ -579,8 +581,7 @@
                      (type-spec-list-formalp tyspecs)))
               (consp decl.init)
               (endp (cdr decl.init))
-              (initdeclor-block-formalp (car decl.init))
-              (endp decl.attrib))
+              (initdeclor-block-formalp (car decl.init)))
    :statassert nil)
   :hooks (:fix))
 
@@ -731,10 +732,12 @@
    (xdoc::p
     "This complements @(tsee declor-obj-formalp);
      see the documentation of that function.
-     The initializer is optional, but if present it must be supported."))
+     The initializer is optional, but if present it must be supported.
+     There must be no assembler name specifier and no attribute specifiers."))
   (b* (((initdeclor initdeclor) initdeclor))
     (and (declor-obj-formalp initdeclor.declor)
          (not initdeclor.asm?)
+         (endp initdeclor.attribs)
          (or (not initdeclor.init?)
              (initer-formalp initdeclor.init?))))
   :hooks (:fix))
@@ -768,8 +771,7 @@
                      (stor-spec-list-formalp storspecs)))
               (consp decl.init)
               (endp (cdr decl.init))
-              (initdeclor-obj-formalp (car decl.init))
-              (not decl.attrib))
+              (initdeclor-obj-formalp (car decl.init)))
    :statassert nil)
   :hooks (:fix))
 
@@ -873,8 +875,7 @@
                               :struct)
               (strunispec-formalp (type-spec-struct->unwrap
                                    (declspec-tyspec->unwrap (car decl.specs))))
-              (endp decl.init)
-              (endp decl.attrib))
+              (endp decl.init))
    :statassert nil)
   :hooks (:fix))
 
@@ -978,10 +979,12 @@
   (xdoc::topstring
    (xdoc::p
     "There must be no initializer,
-     and the declarator must be supported."))
+     and the declarator must be supported.
+     There must be no assembler name specifier and no attribute specifiers."))
   (b* (((initdeclor initdeclor) initdeclor))
     (and (declor-fun-formalp initdeclor.declor)
          (not initdeclor.asm?)
+         (endp initdeclor.attribs)
          (not initdeclor.init?)))
   :hooks (:fix))
 
@@ -1008,8 +1011,7 @@
                      (type-spec-list-formalp tyspecs)))
               (consp decl.init)
               (endp (cdr decl.init))
-              (initdeclor-fun-formalp (car decl.init))
-              (endp decl.attrib))
+              (initdeclor-fun-formalp (car decl.init)))
    :statassert nil)
   :hooks (:fix))
 
@@ -1026,6 +1028,7 @@
      The declaration specifiers must be all type specifiers,
      and they must form a supported type specifier sequence.
      The declarator must be one supported for a function.
+     There must be no assembler name specifier or attribute specifiers.
      There must be no declarations between the declarators and the body.
      The body must be a compound statement (see @(tsee ldm-fundef)),
      whose block items are all supported."))
@@ -1036,6 +1039,7 @@
                 (type-spec-list-formalp tyspecs)))
          (declor-fun-formalp fundef.declor)
          (not fundef.asm?)
+         (endp fundef.attribs)
          (endp fundef.decls)
          (stmt-case fundef.body :compound)
          (block-item-list-formalp (stmt-compound->items fundef.body))))

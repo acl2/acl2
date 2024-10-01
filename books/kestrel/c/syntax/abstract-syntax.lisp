@@ -2572,8 +2572,16 @@
   (fty::defprod initdeclor
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of initializer declarators [C:6.7] [C:A.2.2]."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "As GCC extensions, we allow
+       an optional assembler name specifier
+       and a possibly empty of attribute specifiers.
+       See the ABNF grammar."))
     ((declor declor)
      (asm? asm-name-spec-option)
+     (attribs attrib-spec-list)
      (init? initer-option))
     :pred initdeclorp
     :measure (two-nats-measure (acl2-count x) 3))
@@ -2604,21 +2612,13 @@
     (xdoc::topstring
      (xdoc::p
       "As a GCC extension,
-       we also include a list of zero or more attribute specifiers
-       as part of a declaration, meant to come after all the declarators.
-       This is not fully general, but it covers a set of cases of interest.
-       The list is empty if there are no attribute specifiers,
-       e.g. when sticking to standard C without GCC extensions.")
-     (xdoc::p
-      "As a GCC extension,
        we include the possibility that
        the declaration starts with the @('__extension__') GCC keyword.
        We model this as a boolean saying whether
        the keyword is present or absent."))
     (:decl ((extension bool)
             (specs declspec-list)
-            (init initdeclor-list)
-            (attrib attrib-spec-list)))
+            (init initdeclor-list)))
     (:statassert ((unwrap statassert)))
     :pred declp
     :base-case-override :statassert
@@ -3093,11 +3093,17 @@
      we include the possibility that
      the function definition starts with the @('__extension__') GCC keyword.
      We model this as a boolean saying whether
-     the keyword is present or absent."))
+     the keyword is present or absent.")
+   (xdoc::p
+    "We also allow an optional assembler name specifier
+     and zero or more attribute specifiers,
+     as GCC extensions;
+     see the ABNF grammar."))
   ((extension bool) ; GCC extension
    (spec declspec-list)
    (declor declor)
-   (asm? asm-name-spec-option)
+   (asm? asm-name-spec-option) ; GCC extension
+   (attribs attrib-spec-list) ; GCC extension
    (decls decl-list)
    (body stmt))
   :pred fundefp)

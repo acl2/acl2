@@ -2188,6 +2188,7 @@
          (table (dimb-add-ident ident kind table)))
       (retok (make-initdeclor :declor new-declor
                               :asm? ideclor.asm?
+                              :attribs ideclor.attribs
                               :init? new-init?)
              table))
     :measure (initdeclor-count ideclor))
@@ -2241,8 +2242,7 @@
              (dimb-initdeclor-list decl.init kind table)))
          (retok (make-decl-decl :extension decl.extension
                                 :specs new-specs
-                                :init new-init
-                                :attrib decl.attrib)
+                                :init new-init)
                 table))
        :statassert
        (b* (((erp new-statassert table) (dimb-statassert decl.unwrap table)))

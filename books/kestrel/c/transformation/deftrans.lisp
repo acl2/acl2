@@ -1534,6 +1534,7 @@
       (make-initdeclor
         :declor (,(cdr (assoc-eq 'declor names)) initdeclor.declor ,@extra-args-names)
         :asm? initdeclor.asm?
+        :attribs initdeclor.attribs
         :init? (,(cdr (assoc-eq 'initer-option names)) initdeclor.init? ,@extra-args-names)))
    '(:returns (new-initdeclor initdeclorp)
      :measure (initdeclor-count initdeclor))))
@@ -1572,8 +1573,7 @@
       :decl (make-decl-decl
               :extension decl.extension
               :specs (,(cdr (assoc-eq 'declspec-list names)) decl.specs ,@extra-args-names)
-              :init (,(cdr (assoc-eq 'initdeclor-list names)) decl.init ,@extra-args-names)
-              :attrib decl.attrib)
+              :init (,(cdr (assoc-eq 'initdeclor-list names)) decl.init ,@extra-args-names))
       :statassert (decl-statassert
                     (,(cdr (assoc-eq 'statassert names)) decl.unwrap ,@extra-args-names)))
    '(:returns (new-decl declp)
@@ -1729,6 +1729,7 @@
         :spec (,(cdr (assoc-eq 'declspec-list names)) fundef.spec ,@extra-args-names)
         :declor (,(cdr (assoc-eq 'declor names)) fundef.declor ,@extra-args-names)
         :asm? fundef.asm?
+        :attribs fundef.attribs
         :decls (,(cdr (assoc-eq 'decl-list names)) fundef.decls ,@extra-args-names)
         :body (,(cdr (assoc-eq 'stmt names)) fundef.body ,@extra-args-names)))
    '(:returns (new-fundef fundefp))))

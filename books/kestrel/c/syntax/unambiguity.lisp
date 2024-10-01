@@ -1318,15 +1318,15 @@
            (const-expr-unambp test)))
 
   (defrule initdeclor-unambp-of-initdeclor
-    (equal (initdeclor-unambp (initdeclor declor asm? init?))
+    (equal (initdeclor-unambp (initdeclor declor asm? attribs init?))
            (and (declor-unambp declor)
                 (initer-option-unambp init?))))
 
   (defrule decl-unambp-of-decl-decl
-    (equal (decl-unambp (decl-decl extension specs init attrib))
+    (equal (decl-unambp (decl-decl extension specs init))
            (and (declspec-list-unambp specs)
                 (initdeclor-list-unambp init)))
-    :expand (decl-unambp (decl-decl extension specs init attrib)))
+    :expand (decl-unambp (decl-decl extension specs init)))
 
   (defrule decl-unambp-of-decl-statassert
     (equal (decl-unambp (decl-statassert statassert))
@@ -2358,7 +2358,8 @@
   ///
 
   (defrule fundef-unambp-of-fundef
-    (equal (fundef-unambp (fundef extension spec declor asm? decls body))
+    (equal (fundef-unambp
+            (fundef extension spec declor asm? attribs decls body))
            (and (declspec-list-unambp spec)
                 (declor-unambp declor)
                 (decl-list-unambp decls)
