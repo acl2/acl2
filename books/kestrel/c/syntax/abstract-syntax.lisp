@@ -1742,7 +1742,7 @@
        in at least an implementation of GCC in macOS.")
      (xdoc::p
       "As a GCC extension, we allow a structure type specifier with no members,
-       which has a name; see the ABNF grammar.")
+       and with an optional name; see the ABNF grammar.")
      (xdoc::p
       "As a GCC extension, we include @('typeof'),
        along with its variants @('__typeof') and @('__typeof__').
@@ -1768,7 +1768,7 @@
     (:int128 ())
     (:float128 ())
     (:builtin-va-list ())
-    (:struct-empty ((name ident)))
+    (:struct-empty ((name? ident-option)))
     (:typeof-expr ((expr expr)
                    (uscores keyword-uscores-p)))
     (:typeof-type ((type tyname)

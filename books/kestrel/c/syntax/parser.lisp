@@ -10581,7 +10581,7 @@
        instead of just returning a @(tsee strunispec)
        and letting the callers build the @(tsee type-spec),
        is that we also accommodate the GCC extension of
-       a structure specifier without members;
+       a structure specifier without members (and with optional name);
        this is a separate kind in @(tsee type-spec).")
      (xdoc::p
       "We also pass the span of the @('struct') or @('union') keyword,
@@ -10599,8 +10599,8 @@
              ((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open curly brace, there are two cases.
-           ((token-punctuatorp token2 "{") ; struct ident {
-            (if (and structp
+           ((token-punctuatorp token2 "{") ; struct/union ident {
+            (if (and structp ; struct ident {
                      (parstate->gcc parstate))
                 ;; If we are parsing a structure type specifier
                 ;; and GCC extensions are enabled,
@@ -10665,23 +10665,58 @@
                      (span-join struct/union-span span)
                      parstate))))))
        ;; If token is an open curly brace,
-       ;; we must have a structure or union specifier without identifier
-       ;; but with a list of structure declarations between curly braces.
-       ;; So we parse those.
+       ;; we must have a structure or union specifier without name.
        ((token-punctuatorp token "{") ; struct/union {
-        (b* (((erp structdecls & parstate) ; struct/union { structdecls
-              (parse-struct-declaration-list parstate))
-             ((erp last-span parstate) ; struct/union { structdecls }
-              (read-punctuator "}" parstate)))
-          (retok (if structp
-                     (type-spec-struct
+        (if (and structp ; struct {
+                 (parstate->gcc parstate))
+            ;; If we are parsing a structure type specifier
+            ;; and GCC extensions are enabled,
+            ;; we read another token to see whether
+            ;; we have a structure type with no members or not.
+            (b* (((erp token3 span3 parstate) (read-token parstate)))
+              (cond
+               ;; If token3 is a closed curly brace,
+               ;; we have a structure type specifier with no members.
+               ((token-punctuatorp token3 "}") ; struct { }
+                (retok (type-spec-struct-empty nil)
+                       (span-join struct/union-span span3)
+                       parstate))
+               ;; If token3 is not a closed curly brace,
+               ;; we put back token3
+               ;; and parse one or more structure declarations,
+               ;; followed by a closed curly brace.
+               ;; In this case we return a (non-empty)
+               ;; structure type specifier.
+               (t ; struct { other
+                (b* ((parstate ; struct {
+                      (if token3 (unread-token parstate) parstate))
+                     ((erp structdecls & parstate)
+                      ;; struct { structdecls
+                      (parse-struct-declaration-list parstate))
+                     ((erp last-span parstate)
+                      ;; struct { structdecls }
+                      (read-punctuator "}" parstate)))
+                  (retok (type-spec-struct
+                          (make-strunispec :name nil
+                                           :members structdecls))
+                         (span-join struct/union-span last-span)
+                         parstate)))))
+          ;; If we are parsing a union type specifier
+          ;; or GCC extensions are not enabled,
+          ;; we must have one or more structure declarations.
+          (b* (((erp structdecls & parstate) ; struct/union { structdecls
+                (parse-struct-declaration-list parstate))
+               ((erp last-span parstate) ; struct/union { structdecls }
+                (read-punctuator "}" parstate)))
+            (retok (if structp
+                       (type-spec-struct
+                        (make-strunispec :name nil
+                                         :members structdecls))
+                     (type-spec-union
                       (make-strunispec :name nil
-                                       :members structdecls))
-                   (type-spec-union
-                    (make-strunispec :name nil
-                                     :members structdecls)))
-                 (span-join struct/union-span last-span)
-                 parstate)))
+                                       :members structdecls)))
+                   (span-join struct/union-span last-span)
+                   parstate))))
        ;; If token is neither an identifier nor an open curly brace,
        ;; we cannot have a structure or union specifier here.
        (t

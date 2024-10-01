@@ -1147,7 +1147,7 @@ type-specifier = %s"void"
 struct-or-union-specifier =
       struct-or-union [ identifier ] "{" struct-declaration-list "}"
     / struct-or-union identifier
-    / %s"struct" identifier "{" "}" ; GCC extension
+    / %s"struct" [ identifier ] "{" "}" ; GCC extension
 
 struct-or-union = %s"struct"
                 / %s"union"

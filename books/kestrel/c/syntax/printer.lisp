@@ -1944,8 +1944,13 @@
      :int128 (print-astring "__int128" pstate)
      :float128 (print-astring "_Float128" pstate)
      :builtin-va-list (print-astring "__builtin_va_list" pstate)
-     :struct-empty (b* ((pstate (print-astring "struct " pstate))
-                        (pstate (print-ident tyspec.name pstate))
+     :struct-empty (b* ((pstate (print-astring "struct" pstate))
+                        (pstate (if tyspec.name?
+                                    (b* ((pstate (print-astring " " pstate))
+                                         (pstate (print-ident tyspec.name?
+                                                              pstate)))
+                                      pstate)
+                                  pstate))
                         (pstate (print-astring " { }" pstate)))
                      pstate)
      :typeof-expr
