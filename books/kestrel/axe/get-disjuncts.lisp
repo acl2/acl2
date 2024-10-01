@@ -17,14 +17,11 @@
 (include-book "dag-array-builders")
 (include-book "def-dag-builder-theorems")
 (include-book "merge-sort-less-than-and-remove-dups")
-(include-book "kestrel/utilities/forms" :dir :system) ; for call-of
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 ;(local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 ;(local (include-book "merge-sort-less-than-rules"))
-
-;;; End of library material
 
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; When NEGATED-FLG is nil, EXTENDED-ACC is ACC extended with the disjuncts of ITEM, except that if a true disjunct is found, we signal it by returning T for PROVEDP.

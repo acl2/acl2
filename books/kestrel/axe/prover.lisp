@@ -23,8 +23,8 @@
 ;todo: move all utility functions out to a book that does not use the trust tag
 ;todo: remove any mentions of sha1, md5, rc4, etc. in the file and other files in this dir.
 ;todo: implement backchain limits, polarities, improve handling of equivs
-;fixme axe prover requires some rules (like boolor of t, etc.) to be always enabled (without that one, we can get an error in get-darg-disjuncts).  Improve get-darg-disjuncts?
-;fixme use faster tests than equal in some places below?
+
+;; TODO: use faster tests than equal in some places below?
 
 (include-book "prover-common")
 (include-book "elim")
