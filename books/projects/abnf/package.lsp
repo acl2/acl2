@@ -11,6 +11,9 @@
 (in-package "ACL2")
 
 (include-book "centaur/fty/portcullis" :dir :system)
+(include-book "kestrel/c/portcullis" :dir :system)
+(include-book "kestrel/java/portcullis" :dir :system)
+(include-book "kestrel/yul/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

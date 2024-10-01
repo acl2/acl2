@@ -17,13 +17,13 @@
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
-; (depends-on "../../../abnf/notation/core-rules.abnf")
-; (depends-on "../../../abnf/notation/concrete-syntax-rules.abnf")
-; (depends-on "../../../abnf/examples/uri.abnf")
-; (depends-on "../../../abnf/examples/http.abnf")
-; (depends-on "../../../abnf/examples/imf.abnf")
-; (depends-on "../../../abnf/examples/smtp.abnf")
-; (depends-on "../../../abnf/examples/imap.abnf")
+; (depends-on "../../../../projects/abnf/notation/core-rules.abnf")
+; (depends-on "../../../../projects/abnf/notation/concrete-syntax-rules.abnf")
+; (depends-on "../../../../projects/abnf/examples/uri.abnf")
+; (depends-on "../../../../projects/abnf/examples/http.abnf")
+; (depends-on "../../../../projects/abnf/examples/imf.abnf")
+; (depends-on "../../../../projects/abnf/examples/smtp.abnf")
+; (depends-on "../../../../projects/abnf/examples/imap.abnf")
 ; (depends-on "../../../c/language/grammar.abnf")
 ; (depends-on "../../../java/language/lexical-grammar.abnf")
 ; (depends-on "../../../java/language/syntactic-grammar.abnf")
@@ -287,31 +287,31 @@
 (progn
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/notation/core-rules.abnf" state)
+     (get-input-from-file "../../../../projects/abnf/notation/core-rules.abnf" state)
      (value `(defconst *abnf-core* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/notation/concrete-syntax-rules.abnf" state)
+     (get-input-from-file "../../../../projects/abnf/notation/concrete-syntax-rules.abnf" state)
      (value `(defconst *abnf-syntax* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/examples/uri.abnf" state)
+     (get-input-from-file "../../../../projects/abnf/examples/uri.abnf" state)
      (value `(defconst *uri* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/examples/http.abnf" state)
+     (get-input-from-file "../../../../projects/abnf/examples/http.abnf" state)
      (value `(defconst *http* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/examples/imf.abnf" state)
+     (get-input-from-file "../../../../projects/abnf/examples/imf.abnf" state)
      (value `(defconst *imf* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/examples/smtp.abnf" state)
+     (get-input-from-file "../../../../projects/abnf/examples/smtp.abnf" state)
      (value `(defconst *smtp* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/examples/imap.abnf" state)
+     (get-input-from-file "../../../../projects/abnf/examples/imap.abnf" state)
      (value `(defconst *imap* ',nats))))
   (make-event
    (mv-let (nats state)

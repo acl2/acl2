@@ -36,6 +36,7 @@
      (include-book "poseidon/top")
      (include-book "aleobft/top")
      (include-book "leo/top")
+     (include-book "abnf/top")
 
      (defxdoc projects
        :parents (top)

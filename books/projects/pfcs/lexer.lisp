@@ -14,7 +14,7 @@
 
 (include-book "grammar")
 
-(include-book "kestrel/abnf/parsing-tools/defdefparse" :dir :system)
+(include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
 (include-book "unicode/read-utf8" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

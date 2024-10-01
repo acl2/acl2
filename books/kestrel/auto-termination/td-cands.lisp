@@ -3921,7 +3921,7 @@
      (O< (LEN (CDR X)) (LEN X))))
    (GL::SHRINK-CONSTRAINT-ALIST 1 :SYSTEM . "centaur/gl/hyp-fix")
    (ABNF::LOOKUP-RULENAME :SYSTEM
-                          . "kestrel/abnf/notation/semantics")
+                          . "projects/abnf/notation/semantics")
    (<-INSERTSORT :SYSTEM . "projects/irv/irv")
    (VL2014::VL-PARAMVALUELIST-ELIM-USELESS-PARAMS :SYSTEM
                                                   .
@@ -6596,7 +6596,7 @@
                                   . "projects/pfcs/semantics-shallow")
    (ABNF::DEFTREEOPS-GEN-NUMRANGE-INFO-ALIST-AUX :SYSTEM
                                                  .
-                                                 "kestrel/abnf/grammar-definer/deftreeops")
+                                                 "projects/abnf/grammar-definer/deftreeops")
    (DEPGRAPH::TRANSDEPS-DIRECT-FOR-NODES :SYSTEM . "centaur/depgraph/transdeps")
    (OMAP::DELETE* :SYSTEM . "std/omaps/core"))
   ((JUSTIFICATION (X)
@@ -9489,7 +9489,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*-IN-EITHER-RANGE 5 :SYSTEM
                                   .
-                                  "kestrel/abnf/grammar-parser/executable"))
+                                  "projects/abnf/grammar-parser/executable"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -9501,7 +9501,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*BIT 1 :SYSTEM
                      .
-                     "kestrel/abnf/grammar-parser/executable"))
+                     "projects/abnf/grammar-parser/executable"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -9513,7 +9513,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*DIGIT 1 :SYSTEM
                        .
-                       "kestrel/abnf/grammar-parser/executable"))
+                       "projects/abnf/grammar-parser/executable"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -9525,7 +9525,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*HEXDIG 1 :SYSTEM
                         .
-                        "kestrel/abnf/grammar-parser/executable"))
+                        "projects/abnf/grammar-parser/executable"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -9537,7 +9537,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*-DOT-1*BIT 1 :SYSTEM
                             .
-                            "kestrel/abnf/grammar-parser/executable"))
+                            "projects/abnf/grammar-parser/executable"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -9549,7 +9549,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*-DOT-1*DIGIT 1 :SYSTEM
                               .
-                              "kestrel/abnf/grammar-parser/executable"))
+                              "projects/abnf/grammar-parser/executable"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -9561,7 +9561,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*-DOT-1*HEXDIG 1 :SYSTEM
                                .
-                               "kestrel/abnf/grammar-parser/executable"))
+                               "projects/abnf/grammar-parser/executable"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -9573,7 +9573,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*WSP/VCHAR 1 :SYSTEM
                            .
-                           "kestrel/abnf/grammar-parser/executable"))
+                           "projects/abnf/grammar-parser/executable"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -9585,7 +9585,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*CWSP 1 :SYSTEM
                       .
-                      "kestrel/abnf/grammar-parser/executable"))
+                      "projects/abnf/grammar-parser/executable"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -9597,7 +9597,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*-ALPHA/DIGIT/DASH 1 :SYSTEM
                                    .
-                                   "kestrel/abnf/grammar-parser/executable"))
+                                   "projects/abnf/grammar-parser/executable"))
   ((JUSTIFICATION (ABNF::INPUT)
                   (NIL O-P . O<)
                   ((LEN ABNF::INPUT) . :ALL))
@@ -9609,7 +9609,7 @@
          (LEN ABNF::INPUT))))
    (ABNF::PARSE-*-RULE-/-*CWSP-CNL 1 :SYSTEM
                                    .
-                                   "kestrel/abnf/grammar-parser/executable")))
+                                   "projects/abnf/grammar-parser/executable")))
  ((JUSTIFICATION (IRV::XS)
                  (NIL O-P . O<)
                  ((IRV::NUMBER-OF-CANDIDATES IRV::XS)
