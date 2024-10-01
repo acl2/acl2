@@ -1,7 +1,7 @@
 ; A tool for proving an ACL2 theorem using STP.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,9 @@
 
 ;; Warning: This uses skip-proofs to introduce the theorem if STP says it is
 ;; true.
+
+;; TODO: Consider using the clause processor instead of introducing a
+;; skip-proofs.
 
 ;; See tests in defthm-stp-tests.lisp
 
