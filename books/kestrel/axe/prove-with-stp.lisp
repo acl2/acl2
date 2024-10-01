@@ -2576,8 +2576,143 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Attempt to use STP to prove the disjunction of the terms in CLAUSE.
+;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+;todo: pass in other options?
+;todo: this could create a theorem
+;todo: have this print balanced parens
+;todo: exploit boolean structure in the hyps (and conc?)
+;todo: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
+(defun prove-clause-with-stp (clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
+  (declare (xargs :guard (and (pseudo-term-listp clause)
+                              (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (print-levelp print)
+                              (stringp base-filename))
+                  :stobjs state
+                  :guard-hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp-when-nat-listp)))))
+  (b* ( ;; Check for bad input (todo: drop this check?):
+       ;; ((when (not (pseudo-term-listp clause)))
+       ;;  (er hard 'prove-clause-with-stp "Some disjunct in the clause is not a pseudo-term: ~x0." clause)
+       ;;  (mv *error* state))
+       ((when (not clause)) ;; check for empty clause
+        (cw "(Note: Cannot prove the empty clause.)~%")
+        (mv *invalid* state))
+       ;; Merge all the disjuncts in the clause into a single DAG:
+       ((mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array & &)
+        (make-terms-into-dag-array-basic clause 'dag-array 'dag-parent-array nil))
+       ((when erp) (mv *error* state)) ;todo: consider passing back the erp in the standard way
+       ;; TODO: Apply the pre-stp-rules here, using the basic clause rewriter
+       ;; Handle any disjuncts that are constants:
+       ((mv provedp nodenums)
+        (handle-constant-disjuncts nodenums-or-quoteps nil)))
+    (if provedp
+        (prog2$ (cw "(Note: Proved the clause because of a constant disjunct.)~%")
+                (mv *valid* state))
+      (if (not nodenums)
+          (prog2$ (cw "(FAILED: Failed to prove the clause because all disjuncts are nil constants.)~%")
+                  (mv *invalid* state))
+        (prove-node-disjunction-with-stp nodenums
+                                         dag-array ;must be named 'dag-array
+                                         dag-len
+                                         dag-parent-array ;must be named 'dag-parent-array
+                                         base-filename
+                                         print
+                                         max-conflicts
+                                         counterexamplep
+                                         print-cex-as-signedp
+                                         state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Attempts to use STP to prove CONC assuming HYPS.
+;; ;Returns (mv result state) where RESULT is :error, :valid, :invalid,
+;; :timedout, (:counterexample <counterexample>), or (:possible-counterexample
+;; <counterexample>).
+(defund prove-implication-with-stp (conc hyps counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
+  (declare (xargs :guard (and (pseudo-termp conc)
+                              (pseudo-term-listp hyps)
+                              (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (print-levelp print)
+                              (stringp base-filename))
+                  :stobjs state))
+  (b* ((negated-hyps (wrap-all 'not hyps)) ;inefficient - TODO: remove double negation?
+       (clause (cons conc negated-hyps)))
+    (prove-clause-with-stp clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Splits TERM into hyps and a conclusion when possible.
+;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+(defun prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (print-levelp print)
+                              (stringp base-filename))
+                  :stobjs state))
+  (b* (((mv hyps conc) (term-hyps-and-conc term))) ;split term into hyps and conclusion
+    (prove-implication-with-stp conc hyps counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This version avoids imposing invariant-risk on callers, because it has a guard that is just a stobj recognizer.
+;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+(defun prove-term-with-stp-unguarded (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
+  (declare (xargs :stobjs state))
+  (if (and (pseudo-termp term)
+           (booleanp counterexamplep)
+           (booleanp print-cex-as-signedp)
+           (or (null max-conflicts)
+               (natp max-conflicts))
+           (print-levelp print)
+           (stringp base-filename))
+      (prove-term-with-stp term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
+    (prog2$ (er hard? 'prove-term-with-stp-unguarded "Bad input.")
+            (mv :error state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+(defun translate-and-prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
+  (declare (xargs :guard (and (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (stringp base-filename))
+                  :mode :program ;because of translate-term
+                  :stobjs state))
+  (prove-term-with-stp-unguarded (translate-term term 'translate-and-prove-term-with-stp (w state))
+                                 counterexamplep print-cex-as-signedp max-conflicts print base-filename state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+;TODO: Deprecate in favor of defthm-stp?  We could make a thm-stp too.
+;TODO: Allow a name to be passed in
+(defmacro prove-with-stp (term
+                          &key
+                          (counterexample 't)
+                          (print-cex-as-signedp 'nil)
+                          (max-conflicts '*default-stp-max-conflicts*)
+                          (print 'nil))
+  `(translate-and-prove-term-with-stp ,term ',counterexample ',print-cex-as-signedp ,max-conflicts ',print
+                                      "USER-QUERY"
+                                      state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Tries to prove that the HYPS imply the CONC.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+;; Used in pruning
 (defund prove-node-implication-with-stp (hyps ; possibly-negated-nodenums
                                          conc ; a possibly-negated-nodenum
                                          dag-array ;must be named 'dag-array (todo: generalize?)
@@ -2658,152 +2793,3 @@
        ((when (eq :error false-result)) (mv :error-proving-implication :unknown state))
        ((when (eq :valid false-result)) (mv (erp-nil) :false state)))
     (mv (erp-nil) :unknown state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Attempt to use STP to prove the disjunction of the terms in CLAUSE.
-;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-;todo: pass in other options?
-;todo: this could create a theorem
-;todo: have this print balanced parens
-;todo: exploit boolean structure in the hyps (and conc?)
-;todo: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
-(defun prove-clause-with-stp (clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
-  (declare (xargs :guard (and (pseudo-term-listp clause)
-                              (booleanp counterexamplep)
-                              (booleanp print-cex-as-signedp)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (print-levelp print)
-                              (stringp base-filename))
-                  :stobjs state
-                  :guard-hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp-when-nat-listp)))))
-  (b* ( ;; Check for bad input (todo: drop this check?):
-       ;; ((when (not (pseudo-term-listp clause)))
-       ;;  (er hard 'prove-clause-with-stp "Some disjunct in the clause is not a pseudo-term: ~x0." clause)
-       ;;  (mv *error* state))
-       ((when (not clause)) ;; check for empty clause
-        (cw "(Note: Cannot prove the empty clause.)~%")
-        (mv *invalid* state))
-       ;; Merge all the disjuncts in the clause into a single DAG:
-       ((mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array & &)
-        (make-terms-into-dag-array-basic clause 'dag-array 'dag-parent-array nil))
-       ((when erp) (mv *error* state)) ;todo: consider passing back the erp in the standard way
-       ;; Handle any disjuncts that are constants:
-       ((mv provedp nodenums)
-        (handle-constant-disjuncts nodenums-or-quoteps nil)))
-    (if provedp
-        (prog2$ (cw "(Note: Proved the clause because of a constant disjunct.)~%")
-                (mv *valid* state))
-      (if (not nodenums)
-          (prog2$ (cw "(FAILED: Failed to prove the clause because all disjuncts are nil constants.)~%")
-                  (mv *invalid* state))
-        (prove-node-disjunction-with-stp nodenums
-                                         dag-array ;must be named 'dag-array
-                                         dag-len
-                                         dag-parent-array ;must be named 'dag-parent-array
-                                         base-filename
-                                         print
-                                         max-conflicts
-                                         counterexamplep
-                                         print-cex-as-signedp
-                                         state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Attempt to use STP to prove CONC assuming HYPS.  This version requires CONC
-;; and HYPS to be already translated.  ;Returns (mv result state) where RESULT
-;; is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>)..
-(defund prove-implication-with-stp (conc hyps counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
-  (declare (xargs :guard (and (pseudo-termp conc)
-                              (pseudo-term-listp hyps)
-                              (booleanp counterexamplep)
-                              (booleanp print-cex-as-signedp)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (print-levelp print)
-                              (stringp base-filename))
-                  :stobjs state))
-  (b* ((negated-hyps (wrap-all 'not hyps)) ;inefficient - TODO: remove double negation?
-       (clause (cons conc negated-hyps)))
-    (prove-clause-with-stp clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
-
-;; Attempt to use STP to prove CONC assuming HYPS.
-;returns (mv erp proved-or-failed state)
-;fixme pass in other options?
-;fixme: this could optionally create a theorem
-;fixme: have this print (using balanced parens)
-;todo: allow a name to be passed in for the proof/theorem
-;todo: exploit boolean structure in the hyps (and conc?)
-;todo: also add a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?).  then perhaps deprecate this.
-;; (defun prove-implication-with-stp (conc hyps counterexamplep max-conflicts print base-filename state)
-;;   (declare (xargs :stobjs state
-;;                   :mode :program ;because this calls translate-term
-;;                   :guard (and (booleanp counterexamplep)
-;;                               (or (null max-conflicts)
-;;                                   (natp max-conflicts)))))
-;;   (b* ((w (w state))
-;;        (conc (translate-term conc 'prove-with-stp w))
-;;        (hyps (translate-terms hyps 'prove-with-stp w)))
-;;     (prove-translated-implication-with-stp conc hyps counterexamplep max-conflicts print base-filename state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-(defun prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
-  (declare (xargs :guard (and (pseudo-termp term)
-                              (booleanp counterexamplep)
-                              (booleanp print-cex-as-signedp)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (print-levelp print)
-                              (stringp base-filename))
-                  :stobjs state))
-  (b* (((mv hyps conc) (term-hyps-and-conc term))) ;split term into hyps and conclusion
-    (prove-implication-with-stp conc hyps counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; This version avoids imposing invariant-risk on callers, because it has a guard that is just a stobj recognizer.
-;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-(defun prove-term-with-stp-unguarded (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
-  (declare (xargs :stobjs state))
-  (if (and (pseudo-termp term)
-           (booleanp counterexamplep)
-           (booleanp print-cex-as-signedp)
-           (or (null max-conflicts)
-               (natp max-conflicts))
-           (print-levelp print)
-           (stringp base-filename))
-      (prove-term-with-stp term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
-    (prog2$ (er hard? 'prove-term-with-stp-unguarded "Bad input.")
-            (mv :error state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-(defun translate-and-prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
-  (declare (xargs :guard (and (booleanp counterexamplep)
-                              (booleanp print-cex-as-signedp)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (stringp base-filename))
-                  :mode :program ;because of translate-term
-                  :stobjs state))
-  (prove-term-with-stp-unguarded (translate-term term 'translate-and-prove-term-with-stp (w state))
-                                 counterexamplep print-cex-as-signedp max-conflicts print base-filename state))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-;TODO: Deprecate in favor of defthm-stp?  We could make a thm-stp too.
-;TODO: Allow a name to be passed in
-(defmacro prove-with-stp (term
-                          &key
-                          (counterexample 't)
-                          (print-cex-as-signedp 'nil)
-                          (max-conflicts '*default-stp-max-conflicts*)
-                          (print 'nil))
-  `(translate-and-prove-term-with-stp ,term ',counterexample ',print-cex-as-signedp ,max-conflicts ',print
-                                      "USER-QUERY"
-                                      state))
