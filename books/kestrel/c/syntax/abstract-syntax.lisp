@@ -1741,6 +1741,9 @@
        and we indeed verified that it is accepted as a type
        in at least an implementation of GCC in macOS.")
      (xdoc::p
+      "As a GCC extension, we allow a structure type specifier with no members,
+       which has a name; see the ABNF grammar.")
+     (xdoc::p
       "As a GCC extension, we include @('typeof'),
        along with its variants @('__typeof') and @('__typeof__').
        The argument may be an expression or a type name,
@@ -1765,6 +1768,7 @@
     (:int128 ())
     (:float128 ())
     (:builtin-va-list ())
+    (:struct-empty ((name ident)))
     (:typeof-expr ((expr expr)
                    (uscores keyword-uscores-p)))
     (:typeof-type ((type tyname)
@@ -2297,8 +2301,12 @@
       "This fixtype is a little broader than the grammar,
        because it allows an absent name and no members.
        But this definition is simpler,
-       and the disallowed case can be rules out
-       via predicates over the abstract syntax."))
+       and the disallowed case can be ruled out
+       via predicates over the abstract syntax.")
+     (xdoc::p
+      "This fixtype does not cover structure types with no members,
+       which is a GCC extension;
+       this is covered as a separate case in @(tsee type-spec)."))
     ((name ident-option)
      (members structdecl-list))
     :pred strunispecp
@@ -2572,8 +2580,16 @@
   (fty::defprod initdeclor
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of initializer declarators [C:6.7] [C:A.2.2]."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "As GCC extensions, we allow
+       an optional assembler name specifier
+       and a possibly empty of attribute specifiers.
+       See the ABNF grammar."))
     ((declor declor)
      (asm? asm-name-spec-option)
+     (attribs attrib-spec-list)
      (init? initer-option))
     :pred initdeclorp
     :measure (two-nats-measure (acl2-count x) 3))
@@ -2604,21 +2620,13 @@
     (xdoc::topstring
      (xdoc::p
       "As a GCC extension,
-       we also include a list of zero or more attribute specifiers
-       as part of a declaration, meant to come after all the declarators.
-       This is not fully general, but it covers a set of cases of interest.
-       The list is empty if there are no attribute specifiers,
-       e.g. when sticking to standard C without GCC extensions.")
-     (xdoc::p
-      "As a GCC extension,
        we include the possibility that
        the declaration starts with the @('__extension__') GCC keyword.
        We model this as a boolean saying whether
        the keyword is present or absent."))
     (:decl ((extension bool)
             (specs declspec-list)
-            (init initdeclor-list)
-            (attrib attrib-spec-list)))
+            (init initdeclor-list)))
     (:statassert ((unwrap statassert)))
     :pred declp
     :base-case-override :statassert
@@ -3093,11 +3101,17 @@
      we include the possibility that
      the function definition starts with the @('__extension__') GCC keyword.
      We model this as a boolean saying whether
-     the keyword is present or absent."))
+     the keyword is present or absent.")
+   (xdoc::p
+    "We also allow an optional assembler name specifier
+     and zero or more attribute specifiers,
+     as GCC extensions;
+     see the ABNF grammar."))
   ((extension bool) ; GCC extension
    (spec declspec-list)
    (declor declor)
-   (asm? asm-name-spec-option)
+   (asm? asm-name-spec-option) ; GCC extension
+   (attribs attrib-spec-list) ; GCC extension
    (decls decl-list)
    (body stmt))
   :pred fundefp)
