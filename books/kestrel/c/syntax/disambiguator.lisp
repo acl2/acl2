@@ -2967,6 +2967,9 @@
     "Then we add the declared function to the disambiguation table,
      so that it can be referenced from the body, in a recursive call.")
    (xdoc::p
+    "We extend the disambiguation table with the identifier @('__func__')
+     [C:6.4.2.2].")
+   (xdoc::p
     "After all of that, we disambiguate the body of the function definition,
      which is a block (i.e. compound statement) in valid code.
      But we do not push a new scope for the block,
@@ -2982,7 +2985,8 @@
         (dimb-declspec-list fundef.spec (dimb-kind-objfun) table))
        ((erp new-declor ident table) (dimb-declor fundef.declor t table))
        ((erp new-decls table) (dimb-decl-list fundef.decls table))
-       (table (dimb-add-ident ident (dimb-kind-objfun) table))
+       (table (dimb-add-ident-objfun ident table))
+       (table (dimb-add-ident-objfun (ident "__func__") table))
        ((unless (stmt-case fundef.body :compound))
         (reterr (msg "The body of the function definition ~x0 ~
                       is not a compound statement; ~
