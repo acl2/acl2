@@ -413,7 +413,8 @@
    extdecl
    :fundef (call-graph-fundef extdecl.unwrap acc)
    :decl (ident-ident-option-set-map-fix acc)
-   :empty (ident-ident-option-set-map-fix acc)))
+   :empty (ident-ident-option-set-map-fix acc)
+   :asm (ident-ident-option-set-map-fix acc)))
 
 (define call-graph-extdecl-list
   ((extdecls extdecl-listp)

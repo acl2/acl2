@@ -3157,10 +3157,14 @@
    (xdoc::p
     "As explained in our ABNF grammar,
      we also include an empty external declaration,
-     which syntactically consists of a semicolon."))
+     which syntactically consists of a semicolon.")
+   (xdoc::p
+    "As a GCC extension, we also allow an assembler statement.
+     See the ABNF grammar."))
   (:fundef ((unwrap fundef)))
   (:decl ((unwrap decl)))
   (:empty ()) ; GCC extension
+  (:asm ((unwrap asm-stmt))) ; GCC extension
   :pred extdeclp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

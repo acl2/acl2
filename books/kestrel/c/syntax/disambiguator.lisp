@@ -3000,6 +3000,8 @@
      (b* (((erp new-decl table) (dimb-decl extdecl.unwrap table)))
        (retok (extdecl-decl new-decl) table))
      :empty
+     (retok (extdecl-fix extdecl) (dimb-table-fix table))
+     :asm
      (retok (extdecl-fix extdecl) (dimb-table-fix table))))
   :hooks (:fix)
 

@@ -1360,12 +1360,19 @@ jump-statement = %s"goto" identifier ";"
 ; Note that this is not a null statement,
 ; because we are the top level.
 
+; As a GCC extension, we allow assembler statements at the top level,
+; i.e. as external declarations.
+; We could not find a place in the GCC documentation saying that
+; assembler statements can occur at the top level,
+; but we encountered that in practical code.
+
 translation-unit = external-declaration
                  / translation-unit external-declaration
 
 external-declaration = function-definition
                      / declaration
-                     / ";"
+                     / ";" ; GCC extension
+                     / asm-statement ; GCC extension
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers

@@ -375,7 +375,8 @@
                                        (extdecl-fundef fundef2.val)))
                   :none (retok nil (list (extdecl-fundef fundef1)))))
       :decl (retok nil (list (extdecl-fix extdecl)))
-      :empty (retok nil (list (extdecl-fix extdecl))))))
+      :empty (retok nil (list (extdecl-fix extdecl)))
+      :asm (retok nil (list (extdecl-fix extdecl))))))
 
 (define split-fn-extdecl-list
   ((target-fn identp)

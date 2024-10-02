@@ -1750,7 +1750,8 @@
       extdecl
       :fundef (extdecl-fundef (,(cdr (assoc-eq 'fundef names)) extdecl.unwrap ,@extra-args-names))
       :decl (extdecl-decl (,(cdr (assoc-eq 'decl names)) extdecl.unwrap ,@extra-args-names))
-      :empty (extdecl-empty))
+      :empty (extdecl-empty)
+      :asm (extdecl-fix extdecl))
    '(:returns (new-extdecl extdeclp))))
 
 (define deftrans-defn-extdecl-list

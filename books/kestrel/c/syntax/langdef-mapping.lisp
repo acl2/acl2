@@ -1401,6 +1401,8 @@
                              nil)))
        ((when (extdecl-case extdecl :empty))
         (reterr (msg "Unsupported empty external declaration.")))
+       ((when (extdecl-case extdecl :asm))
+        (reterr (msg "Unsupported assembler statement at the top level.")))
        ((when (extdecl-case extdecl :fundef))
         (b* (((erp fundef) (ldm-fundef (extdecl-fundef->unwrap extdecl))))
           (retok (c::ext-declon-fundef fundef))))

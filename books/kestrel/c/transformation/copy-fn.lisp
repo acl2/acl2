@@ -228,7 +228,8 @@
                  (mv t (list (extdecl-fix extdecl) (extdecl-fundef fundef?)))
                (mv nil (list (extdecl-fix extdecl)))))
    :decl (mv nil (list (extdecl-fix extdecl)))
-   :empty (mv nil (list (extdecl-fix extdecl)))))
+   :empty (mv nil (list (extdecl-fix extdecl)))
+   :asm (mv nil (list (extdecl-fix extdecl)))))
 
 (define copy-fn-extdecl-list
   ((extdecls extdecl-listp)

@@ -3611,7 +3611,8 @@
    :decl (print-decl extdecl.unwrap pstate)
    :empty (b* ((pstate (print-astring ";" pstate))
                (pstate (print-new-line pstate)))
-            pstate))
+            pstate)
+   :asm (print-asm-stmt extdecl.unwrap pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -16045,7 +16045,10 @@
    (xdoc::p
     "If GCC extensions are supported, we must also take into account
      the possible presence of attributes and assembler name specifiers,
-     as well as of an @('__external__') keyword."))
+     as well as of an @('__external__') keyword.")
+   (xdoc::p
+    "We also handle the GCC extension of allowing assembler statements
+     as external declarations, which are easy to recognize."))
   (b* (((reterr) (irr-extdecl) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate)))
     (cond
@@ -16060,6 +16063,19 @@
       (b* (((erp statassert span parstate) ; statassert
             (parse-static-assert-declaration span parstate)))
         (retok (extdecl-decl (decl-statassert statassert)) span parstate)))
+     ;; If token is the 'asm' or variant keyword
+     ;; (which can only happen if GCC extensions are enabled),
+     ;; we have an assembler statement.
+     ((or (token-keywordp token "asm") ; asm
+          (token-keywordp token "__asm") ; __asm
+          (token-keywordp token "__asm__")) ; __asm__
+      (b* ((uscores
+            (cond ((token-keywordp token "asm") (keyword-uscores-none))
+                  ((token-keywordp token "__asm") (keyword-uscores-start))
+                  ((token-keywordp token "__asm__") (keyword-uscores-both))))
+           ((erp asm span parstate)
+            (parse-asm-statement span uscores parstate)))
+        (retok (extdecl-asm asm) span parstate)))
      ;; Otherwise, we must have a list of one or more declaration specifiers,
      ;; possibly preceded by an '__extension__' keyword
      ;; if GCC extensions are supported.
