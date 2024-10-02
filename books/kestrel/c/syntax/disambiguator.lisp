@@ -337,6 +337,27 @@
   :guard-hints (("Goal" :in-theory (enable acons)))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-add-ident-objfun ((ident identp) (table dimb-tablep))
+  :returns (new-table dimb-tablep)
+  :short "Add an identifier to the disambiguation table,
+          with object or function kind."
+  (dimb-add-ident ident (dimb-kind-objfun) table)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-add-idents-objfun ((idents ident-listp) (table dimb-tablep))
+  :returns (new-table dimb-tablep)
+  :short "Add all the identifiers in a list to the disambiguation table,
+          with object or function kind."
+  (cond ((endp idents) (dimb-table-fix table))
+        (t (dimb-add-idents-objfun (cdr idents)
+                                   (dimb-add-ident-objfun (car idents)
+                                                          table))))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-cast/call-to-cast ((tyname tynamep)
@@ -3055,16 +3076,23 @@
        (table (dimb-init-table))
        (table
          (if gcc
-             (b* ((table (dimb-add-ident (ident "__builtin_bswap16")
-                                         (dimb-kind-objfun)
-                                         table))
-                  (table (dimb-add-ident (ident "__builtin_bswap32")
-                                         (dimb-kind-objfun)
-                                         table))
-                  (table (dimb-add-ident (ident "__builtin_bswap64")
-                                         (dimb-kind-objfun)
-                                         table)))
-               table)
+             (dimb-add-idents-objfun
+              (list (ident "__atomic_signal_fence")
+                    (ident "__builtin_bswap16")
+                    (ident "__builtin_bswap32")
+                    (ident "__builtin_bswap64")
+                    (ident "__builtin_choose_expr")
+                    (ident "__builtin_clz")
+                    (ident "__builtin_clzl")
+                    (ident "__builtin_clzll")
+                    (ident "__builtin_constant_p")
+                    (ident "__builtin_ctzl")
+                    (ident "__builtin_expect")
+                    (ident "__builtin_add_overflow")
+                    (ident "__builtin_dynamic_object_size")
+                    (ident "__builtin_mul_overflow")
+                    (ident "__builtin_sub_overflow"))
+              table)
            table))
        ((erp new-edecls &) (dimb-extdecl-list edecls table)))
     (retok (transunit new-edecls)))
