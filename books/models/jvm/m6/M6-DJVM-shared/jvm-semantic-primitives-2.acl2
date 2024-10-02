@@ -1,0 +1,5 @@
+(ld "../M6-DJVM-shared/jvm.pkg")
+; Matt K. mod: Use cert-flags
+; (certify-book "jvm-semantic-primitives-2" 4 t :skip-proofs-okp t)
+
+; cert-flags: ? t :skip-proofs-okp t

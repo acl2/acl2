@@ -1,0 +1,38 @@
+This directory is based on the dissertation work completed by Hanbing
+Liu at the University of Texas at Austin.  It is based on the src/
+subdirectory created by executing the following command:
+
+git clone https://github.com/haliu/M6
+
+Specifically, Matt Kaufmann executed that command on 10/1/2024, which
+came with the following log.
+
+~/temp/hbl/M6$ git log
+commit bc8eb609089abcee054704530c8f84fde70aae8e (HEAD -> master, origin/master, origin/HEAD)
+Author: haliu <hanbing.liu@gmail.com>
+Date:   Sat Oct 10 13:28:53 2015 -0500
+
+    Initial import Hanbing's dissertation work under git
+~/temp/hbl/M6$ 
+
+Files *.lisp.html were then deleted here.
+
+The README file from that distribution is file README-M6 in the
+directory of this README (except for the first line of README-M6,
+which was added by Matt).
+
+Hanbing points out the following.
+
+- The "small" subdirectory contains a self-contained proof that a byte
+  verified program will never overflow the operand stack in a "small"
+  JVM like machine.
+
+- Then "main" directory contains an incomplete proof (i.e. with
+  skip-proofs) that bytecode verified program when executed on a JVM
+  will match the execution on a "defensive JVM".
+
+Matt made a number of tweaks in order to get the books to certify with
+the current ACL2.  Other than deleting stray right parentheses, these
+are all labeled with "Matt K.".
+
+See file LICENSE for copyright and license information.

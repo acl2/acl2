@@ -1,0 +1,10 @@
+(ld "m6.pkg.lisp")
+(defpkg "M6" (set-difference-equal  
+               (union-eq *acl2-exports* (union-eq *no-dup-set-facts-basic-functions* 
+                                                  (union-eq *jvm-symbols* 
+				                     (union-eq *primitives*
+							 (union-eq 
+                           	                              JVM::*m6-djvm-shared-symbols*
+								(union-eq *base-bind-free*
+	                                                              *common-lisp-symbols-from-main-lisp-package*))))))
+               '(pop pc top push monitor make-method make-array)))

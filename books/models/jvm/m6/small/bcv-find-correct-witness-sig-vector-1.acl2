@@ -1,0 +1,1 @@
+(certify-book "bcv-find-correct-witness-sig-vector-1"  0 t :skip-proofs-okp nil)

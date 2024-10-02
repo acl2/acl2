@@ -1,0 +1,14 @@
+(ld "djvm.pkg.lisp")
+(ld "../M6-DJVM-shared/jvm.pkg")
+(ld "../BCV/bcv.pkg")
+(defpkg "DJVM"
+  (remove-duplicates ; Matt K. mod: replacement for remove-duplicates-eql
+       (set-difference-equal  	
+	               (union-eq *acl2-exports* (union-eq *no-dup-set-facts-basic-functions* 		
+                                                  (union-eq *jvm-symbols* 
+                                                            (union-eq 
+                                                             JVM::*m6-djvm-shared-symbols*
+                                                             (union-eq *primitives*
+	                                                        (union-eq *base-bind-free*
+	                                                              *common-lisp-symbols-from-main-lisp-package*))))))
+               '(top pop push pc monitor make-method make-array))))

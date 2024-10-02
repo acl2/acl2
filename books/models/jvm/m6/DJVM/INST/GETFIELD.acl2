@@ -1,0 +1,5 @@
+(ld "../../DJVM/djvm.pkg")
+(ld "../../M6/m6.pkg")
+; (certify-book "GETFIELD" 7 t :skip-proofs-okp t)
+; Matt K. mod: Use cert-flags
+; cert-flags: ? t :skip-proofs-okp t

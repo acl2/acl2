@@ -1,0 +1,1 @@
+(certify-book "djvm-check-succeed-implies-jvm-equiv-state" 0 t :skip-proofs-okp nil)
