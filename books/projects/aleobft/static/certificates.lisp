@@ -153,7 +153,7 @@
            (set::emptyp certs))
     :induct t)
 
-  (defruled certificate-set->author-set-subset
+  (defruled certificate-set->author-set-monotone
     (implies (set::subset certs1 certs2)
              (set::subset (certificate-set->author-set certs1)
                           (certificate-set->author-set certs2)))
@@ -212,7 +212,7 @@
            (set::emptyp certs))
     :induct t)
 
-  (defruled certificate-set->round-set-subset
+  (defruled certificate-set->round-set-monotone
     (implies (set::subset certs1 certs2)
              (set::subset (certificate-set->round-set certs1)
                           (certificate-set->round-set certs2)))

@@ -24,7 +24,7 @@ We give an implementation with nodes as nats.
 (include-book "kestrel/lists-light/member-equal" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
 
-(local (include-book "kestrel/utilities/lists/add-to-set-theorems" :dir :system))
+(local (include-book "std/lists/add-to-set" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))

@@ -127,7 +127,7 @@
            incoming+outgoing-same-round
            certificate-set-unequivocalp-when-subset
            certificate-set->author-set-of-union
-           certificate-set->author-set-subset
+           certificate-set->author-set-monotone
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
             certificate-set->round-set-of-union))
@@ -488,11 +488,11 @@
            certificate-set-unequivocalp-when-subset)
   :use ((:instance cardinality-of-authors-when-same-round-and-unequiv
                    (certs (incoming anchor dag)))
-        (:instance certificate-set->author-set-subset
+        (:instance certificate-set->author-set-monotone
                    (certs1 (incoming anchor dag))
                    (certs2 dag)))
   :disable (cardinality-of-authors-when-same-round-and-unequiv
-            certificate-set->author-set-subset))
+            certificate-set->author-set-monotone))
 
 ; This is almost the same as the homonymous theorem in the single-DAG proof,
 ; but with the weaker hypothesis that ANCHOR is not NIL,
