@@ -31,7 +31,6 @@
 (include-book "keep-nodenum-dargs")
 ;(include-book "darg-listp")
 ;(include-book "tools/flag" :dir :system)
-(local (include-book "std/lists/add-to-set" :dir :system))
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
