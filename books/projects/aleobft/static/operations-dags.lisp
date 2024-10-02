@@ -158,7 +158,7 @@
     :in-theory (enable set::cardinality
                        pos-fix
                        certificate->round-in-certificate-set->round-set
-                       certificate-set->round-set-subset)
+                       certificate-set->round-set-monotone)
     :use ((:instance acl2::pos-set-max->=-element
                      (elem (certificate->round (set::head certs)))
                      (set (certificate-set->round-set certs)))
@@ -178,7 +178,7 @@
                        acl2::pos-set->=-pos-element
                        acl2::pos-set->=-pos-subset
                        certificate->round-in-certificate-set->round-set
-                       certificate-set->round-set-subset)
+                       certificate-set->round-set-monotone)
     :use (:instance
           certificate-set->round-set-of-certificates-with-authors+round
           (authors (certificate->previous cert))
@@ -243,7 +243,7 @@
                           path-to-author+round-set
                           set::expensive-rules
                           certificate->round-in-certificate-set->round-set
-                          certificate-set->round-set-subset))
+                          certificate-set->round-set-monotone))
      '(:use ((:instance acl2::pos-set-max->=-element
                         (set (certificate-set->round-set certs))
                         (elem (certificate->round (set::head certs))))
@@ -350,7 +350,7 @@
     :in-theory (enable pos-fix
                        set::cardinality
                        certificate->round-in-certificate-set->round-set
-                       certificate-set->round-set-subset)
+                       certificate-set->round-set-monotone)
     :use ((:instance acl2::pos-set-max->=-element
                      (elem (certificate->round (set::head certs)))
                      (set (certificate-set->round-set certs)))

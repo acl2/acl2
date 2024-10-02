@@ -276,7 +276,7 @@
                   (certificate-setp dag1))
              (certificate-previous-in-dag-p cert dag1))
     :enable (certificates-with-round-monotone
-             certificate-set->author-set-subset
+             certificate-set->author-set-monotone
              set::subset-transitive)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
