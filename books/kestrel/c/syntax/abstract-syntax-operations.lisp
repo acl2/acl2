@@ -389,6 +389,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-asm-stmt
+  :short "An irrelevant assembler statement."
+  :type asm-stmtp
+  :body (make-asm-stmt :uscores (keyword-uscores-none)
+                       :quals nil
+                       :template nil
+                       :num-colons 0
+                       :outputs nil
+                       :inputs nil
+                       :clobbers nil
+                       :labels nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-stmt
   :short "An irrelevant statement."
   :type stmtp

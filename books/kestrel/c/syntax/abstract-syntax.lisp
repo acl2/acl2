@@ -2743,6 +2743,44 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (fty::defprod asm-stmt
+    :parents (abstract-syntax exprs/decls/stmts)
+    :short "Fixtype of assembler statements."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is a GCC extension.
+       Our abstract syntax of assembler statements
+       is based on their definition in the ABNF grammar,
+       which is in turn derived from the GCC documentation.
+       As in the grammar,
+       we unify the representation of basic and extended assembler statements.
+       The grammar contains four nested optional parts (output operands etc.);
+       the nesting is such that any prefix of the sequence of four parts,
+       ranging from no parts to all four parts, may be present.
+       In the abstract syntax, we include a component
+       that counts the number of parts, or equivalently the number of colons,
+       since each part starts with a colon.
+       Then each part consists of a list of things, four lists, one per part.
+       If @('num-colons') is less than 4,
+       the fourth list must be empty;
+       if @('num-colons') is less than 3,
+       the fourth and third lists must be empty;
+       and so on, but we do not explicitly capture
+       these constraints in the fixtype."))
+    ((uscores keyword-uscores)
+     (quals asm-qual-list)
+     (template stringlit-list)
+     (num-colons nat)
+     (outputs asm-output-list)
+     (inputs asm-input-list)
+     (clobbers asm-clobber-list)
+     (labels ident-list))
+    :pred asm-stmtp
+    :measure (two-nats-measure (acl2-count x) 2))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (fty::deftagsum stmt
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of statements [C:6.8] [C:A.2.3]."
@@ -2774,24 +2812,7 @@
        the initialization part of a @('for') looks like,
        when it is an expression.")
      (xdoc::p
-      "As a GCC extension, we also include assembler statements.
-       These are based on their definition in the ABNF grammar,
-       which is in turn derived from the GCC documentation.
-       As is in the grammar,
-       we unify the representation of basic and extended assembler statements.
-       The grammar contains four nested optional parts (output operands etc.);
-       the nesting is such that any prefix of the sequence of four parts,
-       ranging from no parts to all four parts, may be present.
-       In the abstract syntax, we include a component
-       that counts the number of parts, or equivalently the number of colons,
-       since each part starts with a colon.
-       Then each part consists of a list of things, four lists, one per part.
-       If @('num-colons') is less than 4,
-       the fourth list must be empty;
-       if @('num-colons') is less than 3,
-       the fourth and third lists must be empty;
-       and so on, but we do not explicitly capture
-       these constraints in the fixtype."))
+      "As a GCC extension, we include assembler statements."))
     (:labeled ((label label)
                (stmt stmt)))
     (:compound ((items block-item-list)))
@@ -2823,14 +2844,7 @@
     (:continue ())
     (:break ())
     (:return ((expr? expr-option)))
-    (:asm ((uscores keyword-uscores)
-           (quals asm-qual-list)
-           (template stringlit-list)
-           (num-colons nat)
-           (outputs asm-output-list)
-           (inputs asm-input-list)
-           (clobbers asm-clobber-list)
-           (labels ident-list)))
+    (:asm ((unwrap asm-stmt)))
     :pred stmtp
     :measure (two-nats-measure (acl2-count x) 0))
 

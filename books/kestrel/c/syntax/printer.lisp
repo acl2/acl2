@@ -3139,6 +3139,100 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define print-asm-stmt ((asm asm-stmtp) (pstate pristatep))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print an assembler statement."
+    (b* (((asm-stmt stmt) asm)
+         (pstate (print-indent pstate))
+         (pstate (keyword-uscores-case
+                  stmt.uscores
+                  :none (print-astring "asm" pstate)
+                  :start (print-astring "__asm" pstate)
+                  :both (print-astring "__asm__" pstate)))
+         (pstate (if (consp stmt.quals)
+                     (b* ((pstate (print-astring " " pstate))
+                          (pstate (print-asm-qual-list stmt.quals pstate)))
+                       pstate)
+                   pstate))
+         (pstate (print-astring " (" pstate))
+         ((unless (consp stmt.template))
+          (raise "Misusage error: no string literals in assembler template.")
+          pstate)
+         (pstate (print-stringlit-list stmt.template pstate))
+         ((unless (case stmt.num-colons
+                    (0 (and (endp stmt.outputs)
+                            (endp stmt.inputs)
+                            (endp stmt.clobbers)
+                            (endp stmt.labels)))
+                    (1 (and (endp stmt.inputs)
+                            (endp stmt.clobbers)
+                            (endp stmt.labels)))
+                    (2 (and (endp stmt.clobbers)
+                            (endp stmt.labels)))
+                    (3 (endp stmt.labels))
+                    (4 t)
+                    (otherwise nil)))
+          (raise "Misusage error: ~
+                  non-empty outputs, inputs, clobbers, or labels ~
+                  with insufficient number of colons ~
+                  in assembler statement ~x0."
+                 (asm-stmt-fix stmt))
+          pstate)
+         (pstate
+          (if (>= stmt.num-colons 1)
+              (b* ((pstate (print-astring " :" pstate))
+                   (pstate
+                    (if (consp stmt.outputs)
+                        (b* ((pstate (print-astring " " pstate))
+                             (pstate (print-asm-output-list stmt.outputs
+                                                            pstate)))
+                          pstate)
+                      pstate)))
+                pstate)
+            pstate))
+         (pstate
+          (if (>= stmt.num-colons 2)
+              (b* ((pstate (print-astring " :" pstate))
+                   (pstate
+                    (if (consp stmt.inputs)
+                        (b* ((pstate (print-astring " " pstate))
+                             (pstate (print-asm-input-list stmt.inputs
+                                                           pstate)))
+                          pstate)
+                      pstate)))
+                pstate)
+            pstate))
+         (pstate
+          (if (>= stmt.num-colons 3)
+              (b* ((pstate (print-astring " :" pstate))
+                   (pstate
+                    (if (consp stmt.clobbers)
+                        (b* ((pstate (print-astring " " pstate))
+                             (pstate (print-asm-clobber-list stmt.clobbers
+                                                             pstate)))
+                          pstate)
+                      pstate)))
+                pstate)
+            pstate))
+         (pstate
+          (if (>= stmt.num-colons 4)
+              (b* ((pstate (print-astring " :" pstate))
+                   (pstate
+                    (if (consp stmt.labels)
+                        (b* ((pstate (print-astring " " pstate))
+                             (pstate (print-ident-list stmt.labels pstate)))
+                          pstate)
+                      pstate)))
+                pstate)
+            pstate))
+         (pstate (print-astring " );" pstate))
+         (pstate (print-new-line pstate)))
+      pstate)
+    :measure (two-nats-measure (asm-stmt-count asm) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define print-stmt ((stmt stmtp) (pstate pristatep))
     :guard (stmt-unambp stmt)
     :returns (new-pstate pristatep)
@@ -3368,91 +3462,7 @@
           (pstate (print-new-line pstate)))
        pstate)
      :asm
-     (b* ((pstate (print-indent pstate))
-          (pstate (keyword-uscores-case
-                   stmt.uscores
-                   :none (print-astring "asm" pstate)
-                   :start (print-astring "__asm" pstate)
-                   :both (print-astring "__asm__" pstate)))
-          (pstate (if (consp stmt.quals)
-                      (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-asm-qual-list stmt.quals pstate)))
-                        pstate)
-                    pstate))
-          (pstate (print-astring " (" pstate))
-          ((unless (consp stmt.template))
-           (raise "Misusage error: no string literals in assembler template.")
-           pstate)
-          (pstate (print-stringlit-list stmt.template pstate))
-          ((unless (case stmt.num-colons
-                     (0 (and (endp stmt.outputs)
-                             (endp stmt.inputs)
-                             (endp stmt.clobbers)
-                             (endp stmt.labels)))
-                     (1 (and (endp stmt.inputs)
-                             (endp stmt.clobbers)
-                             (endp stmt.labels)))
-                     (2 (and (endp stmt.clobbers)
-                             (endp stmt.labels)))
-                     (3 (endp stmt.labels))
-                     (4 t)
-                     (otherwise nil)))
-           (raise "Misusage error: ~
-                   non-empty outputs, inputs, clobbers, or labels ~
-                   with insufficient number of colons ~
-                   in assembler statement ~x0."
-                  (stmt-fix stmt))
-           pstate)
-          (pstate
-           (if (>= stmt.num-colons 1)
-               (b* ((pstate (print-astring " :" pstate))
-                    (pstate
-                     (if (consp stmt.outputs)
-                         (b* ((pstate (print-astring " " pstate))
-                              (pstate (print-asm-output-list stmt.outputs
-                                                             pstate)))
-                           pstate)
-                       pstate)))
-                 pstate)
-             pstate))
-          (pstate
-           (if (>= stmt.num-colons 2)
-               (b* ((pstate (print-astring " :" pstate))
-                    (pstate
-                     (if (consp stmt.inputs)
-                         (b* ((pstate (print-astring " " pstate))
-                              (pstate (print-asm-input-list stmt.inputs
-                                                            pstate)))
-                           pstate)
-                       pstate)))
-                 pstate)
-             pstate))
-          (pstate
-           (if (>= stmt.num-colons 3)
-               (b* ((pstate (print-astring " :" pstate))
-                    (pstate
-                     (if (consp stmt.clobbers)
-                         (b* ((pstate (print-astring " " pstate))
-                              (pstate (print-asm-clobber-list stmt.clobbers
-                                                              pstate)))
-                           pstate)
-                       pstate)))
-                 pstate)
-             pstate))
-          (pstate
-           (if (>= stmt.num-colons 4)
-               (b* ((pstate (print-astring " :" pstate))
-                    (pstate
-                     (if (consp stmt.labels)
-                         (b* ((pstate (print-astring " " pstate))
-                              (pstate (print-ident-list stmt.labels pstate)))
-                           pstate)
-                       pstate)))
-                 pstate)
-             pstate))
-          (pstate (print-astring " );" pstate))
-          (pstate (print-new-line pstate)))
-       pstate))
+     (print-asm-stmt stmt.unwrap pstate))
     :measure (two-nats-measure (stmt-count stmt) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
