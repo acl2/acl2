@@ -89,7 +89,7 @@
                :binary (and (expr-unambp expr.arg1)
                             (expr-unambp expr.arg2))
                :cond (and (expr-unambp expr.test)
-                          (expr-unambp expr.then)
+                          (expr-option-unambp expr.then)
                           (expr-unambp expr.else))
                :comma (and (expr-unambp expr.first)
                            (expr-unambp expr.next))
@@ -972,7 +972,7 @@
   (defrule expr-unambp-of-expr-cond
     (equal (expr-unambp (expr-cond test then else))
            (and (expr-unambp test)
-                (expr-unambp then)
+                (expr-option-unambp then)
                 (expr-unambp else)))
     :expand (expr-unambp (expr-cond test then else)))
 
@@ -1580,7 +1580,7 @@
   (defrule expr-unambp-of-expr-cond->then
     (implies (and (expr-unambp expr)
                   (expr-case expr :cond))
-             (expr-unambp (expr-cond->then expr)))
+             (expr-option-unambp (expr-cond->then expr)))
     :expand (expr-unambp expr))
 
   (defrule expr-unambp-of-expr-cond->else
@@ -2390,7 +2390,8 @@
   (extdecl-case edecl
                 :fundef (fundef-unambp edecl.unwrap)
                 :decl (decl-unambp edecl.unwrap)
-                :empty t)
+                :empty t
+                :asm t)
   :hooks (:fix)
 
   ///
@@ -2403,13 +2404,13 @@
     (equal (extdecl-unambp (extdecl-decl decl))
            (decl-unambp decl)))
 
-  (defrule extdecl-unambp-when-empty
+  (defrule extdecl-unambp-when-not-fundef/decl
     ;; The formulation (extdecl-unambp (extdecl-empty))
     ;; does not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by
     ;; the formulation we give here,
     ;; which is not ideal because the conclusion is quite generic.
-    (implies (extdecl-case edecl :empty)
+    (implies (not (member-eq (extdecl-kind edecl) '(:fundef :decl)))
              (extdecl-unambp edecl)))
 
   (defrule fundef-unambp-of-extdecl-fundef->unwrap

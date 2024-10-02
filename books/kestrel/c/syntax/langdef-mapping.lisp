@@ -670,6 +670,11 @@
                     (op (ldm-binop expr.op)))
                  (retok (c::make-expr-binary :op op :arg1 arg1 :arg2 arg2)))
        :cond (b* (((erp test) (ldm-expr expr.test))
+                  ((when (expr-option-case expr.then :none))
+                   (reterr (msg "Unsupported conditional expression ~
+                                 with omitted operand ~x0."
+                                (expr-fix expr))))
+                  (expr.then (expr-option-some->val expr.then))
                   ((erp then) (ldm-expr expr.then))
                   ((erp else) (ldm-expr expr.else)))
                (retok (c::make-expr-cond :test test :then then :else else)))
@@ -1396,6 +1401,8 @@
                              nil)))
        ((when (extdecl-case extdecl :empty))
         (reterr (msg "Unsupported empty external declaration.")))
+       ((when (extdecl-case extdecl :asm))
+        (reterr (msg "Unsupported assembler statement at the top level.")))
        ((when (extdecl-case extdecl :fundef))
         (b* (((erp fundef) (ldm-fundef (extdecl-fundef->unwrap extdecl))))
           (retok (c::ext-declon-fundef fundef))))

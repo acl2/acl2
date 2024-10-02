@@ -72,7 +72,7 @@
                           :arg2 arg2)))
             :cond (make-expr-cond
                     :test (my-simpadd0-expr expr.test)
-                    :then (my-simpadd0-expr expr.then)
+                    :then (my-simpadd0-expr-option expr.then)
                     :else (my-simpadd0-expr expr.else))
             :comma (make-expr-comma
                      :first (my-simpadd0-expr expr.first)

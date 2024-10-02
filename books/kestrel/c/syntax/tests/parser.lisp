@@ -1088,9 +1088,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key cond gcc)
-  ;; Input is an ACL2 term with the text to parse,
-  ;; where the term evaluates to a string or a list of bytes.
+(defmacro test-parse (fn input &key pos more-inputs gcc cond)
+  ;; INPUT is an ACL2 term with the text to parse,
+  ;; where the term evaluates to a string.
+  ;; Optional POS is the initial position for the parser state.
+  ;; Optional MORE-INPUTS go just before parser state input.
+  ;; GCC flag says whether GCC extensions are enabled.
   ;; Optional COND may be over variables AST, SPAN, PARSTATE
   ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST.
   `(assert!-stobj
@@ -1098,7 +1101,9 @@
          (,(if (eq fn 'parse-external-declaration-list)
                '(mv erp ?ast ?span ?eofpos parstate)
              '(mv erp ?ast ?span parstate))
-          (,fn parstate)))
+          (,fn ,@more-inputs parstate))
+         ,@(and pos
+                `((parstate (update-parstate->position ,pos parstate)))))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             ,(or cond t)) ; assertion passes if COND is absent or else holds
@@ -1229,6 +1234,26 @@
  parse-expression
  "__builtin_offsetof(struct pt_regs, ss)"
  :gcc t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-struct-or-union-specifier
+
+(test-parse
+ parse-struct-or-union-specifier
+ "empty {}"
+ :pos (position 1 7)
+ :more-inputs (t (span (position 1 0) (position 1 6)))
+ :gcc t
+ :cond (type-spec-case ast :struct-empty))
+
+(test-parse
+ parse-struct-or-union-specifier
+ "{}"
+ :pos (position 1 7)
+ :more-inputs (t (span (position 1 0) (position 1 6)))
+ :gcc t
+ :cond (type-spec-case ast :struct-empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

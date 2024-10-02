@@ -795,6 +795,15 @@ lexeme = token
 ; We render that as an extension of our ABNF grammar;
 ; note that the second argument is a restricted form of expressions.
 
+; As a GCC extension, we allow empty compound literals.
+; GCC extensions for compound literals are described in
+; https://gcc.gnu.org/onlinedocs/gcc/Compound-Literals.html,
+; which does not actually mention empty compound literals,
+; but we have encountered them in practical code.
+
+; As a GCC extensions, we allow conditional with omitted operands,
+; documented at https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
@@ -832,6 +841,7 @@ postfix-expression = primary-expression
                    / postfix-expression "--"
                    / "(" type-name ")" "{" initializer-list "}"
                    / "(" type-name ")" "{" initializer-list "," "}"
+                   / "(" type-name ")" "{" "}" ; GCC extension
 
 argument-expression-list = assignment-expression
                          / argument-expression-list "," assignment-expression
@@ -895,6 +905,7 @@ logical-or-expression = logical-and-expression
 conditional-expression =
       logical-or-expression
     / logical-or-expression "?" expression ":" conditional-expression
+    / logical-or-expression "?" ":" conditional-expression ; GCC extension
 
 assignment-expression =
       conditional-expression
@@ -1147,7 +1158,7 @@ type-specifier = %s"void"
 struct-or-union-specifier =
       struct-or-union [ identifier ] "{" struct-declaration-list "}"
     / struct-or-union identifier
-    / %s"struct" identifier "{" "}" ; GCC extension
+    / %s"struct" [ identifier ] "{" "}" ; GCC extension
 
 struct-or-union = %s"struct"
                 / %s"union"
@@ -1349,12 +1360,19 @@ jump-statement = %s"goto" identifier ";"
 ; Note that this is not a null statement,
 ; because we are the top level.
 
+; As a GCC extension, we allow assembler statements at the top level,
+; i.e. as external declarations.
+; We could not find a place in the GCC documentation saying that
+; assembler statements can occur at the top level,
+; but we encountered that in practical code.
+
 translation-unit = external-declaration
                  / translation-unit external-declaration
 
 external-declaration = function-definition
                      / declaration
-                     / ";"
+                     / ";" ; GCC extension
+                     / asm-statement ; GCC extension
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers
