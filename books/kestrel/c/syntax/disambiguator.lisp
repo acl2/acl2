@@ -1303,7 +1303,8 @@
                        table)
           :tyname (retok (make-type-spec-typeof-type :type expr/tyname.unwrap
                                                      :uscores tyspec.uscores)
-                         table)))))
+                         table)))
+       :auto-type (retok (type-spec-auto-type) (dimb-table-fix table))))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

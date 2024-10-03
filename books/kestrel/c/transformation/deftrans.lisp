@@ -895,7 +895,8 @@
                     :uscores tyspec.uscores)
       :typeof-ambig (prog2$
                      (raise "Misusage error: ~x0." (type-spec-fix tyspec))
-                     (type-spec-fix tyspec)))
+                     (type-spec-fix tyspec))
+      :auto-type (type-spec-fix tyspec))
    '(:returns (new-tyspec type-specp)
      :measure (type-spec-count tyspec))))
 
