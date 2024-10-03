@@ -12,6 +12,9 @@
 
 (in-package "ACL2")
 
+;; TODO: Consider simplifying first with the pre-stp rules (but that would make
+;; this depend on a whole rewriter).
+
 (include-book "axe-clause-utilities") ; for handle-constant-disjuncts and expressions-for-this-case
 (include-book "translate-dag-to-stp") ; has ttags
 ;(include-book "conjunctions-and-disjunctions") ; for get-axe-disjunction-from-dag-items
@@ -103,13 +106,13 @@
                           nth-of-cdr
                           car-when-alistp-iff)))
 
-;the nth-1 is to unquote
-(defthm bv-typep-of-maybe-get-type-of-val-of-nth-1
-  (implies (and (bv-arg-okp arg)
-                (consp arg) ;it's a quotep
-                )
-           (bv-typep (maybe-get-type-of-val (nth 1 arg))))
-  :hints (("Goal" :in-theory (enable maybe-get-type-of-val bv-arg-okp))))
+;; ;the nth-1 is to unquote
+;; (defthmd bv-typep-of-maybe-get-type-of-val-of-nth-1
+;;   (implies (and (bv-arg-okp arg)
+;;                 (consp arg) ;it's a quotep
+;;                 )
+;;            (bv-typep (maybe-get-type-of-val (nth 1 arg))))
+;;   :hints (("Goal" :in-theory (enable maybe-get-type-of-val bv-arg-okp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -472,9 +475,7 @@
                                                   ;CONSP-of-CDR
                                                   ;;consp-to-len-bound
                                                   ;LIST::LEN-OF-CDR-BETTER
-                                                  posp
-                                                  ;;NODENUM-OF-AN-UNKNOWN-TYPE-THINGP
-                                                  )
+                                                  posp)
                                                  (myquotep len))))))
   (let ((expr (aref1 'dag-array dag-array nodenum)))
     (if (atom expr) ;expr is a variable
@@ -1494,15 +1495,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund any-node-is-given-empty-typep (known-nodenum-type-alist)
+;; Returns either nil (no node is given an empty type) or the nodenum of a node given an empty type.
+(defund node-given-empty-type (known-nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp known-nodenum-type-alist)))
   (if (endp known-nodenum-type-alist)
       nil
     (let* ((entry (first known-nodenum-type-alist))
            (type (cdr entry)))
       (if (empty-typep type)
-          t
-        (any-node-is-given-empty-typep (cdr known-nodenum-type-alist))))))
+          (car entry)
+        (node-given-empty-type (rest known-nodenum-type-alist))))))
+
+(local
+  (defthm node-given-empty-type-type
+    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
+                  (node-given-empty-type known-nodenum-type-alist))
+             (and (integerp (node-given-empty-type known-nodenum-type-alist))
+                  (<= 0 (node-given-empty-type known-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
+
+(local
+  (defthm <-of-node-given-empty-type
+    (implies (and (all-< (strip-cars known-nodenum-type-alist) n)
+                  (nodenum-type-alistp known-nodenum-type-alist)
+                  (node-given-empty-type known-nodenum-type-alist))
+             (< (node-given-empty-type known-nodenum-type-alist) n))
+    :hints (("Goal" :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2059,7 +2077,8 @@
                                                      (bv-array-typep rhs-type)
                                                      (<= 2 (bv-array-type-len lhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
                                                      (<= 2 (bv-array-type-len rhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
-                                                     ;;TODO: check for incompatible types?
+                                                     ;; todo: think about when this is not true (see defthm-stp-tests):
+                                                     (equal (bv-array-type-len lhs-type) (bv-array-type-len rhs-type)) ; else we can't translate it (todo: or we could translate it to false!)
                                                      ))))))
                                ;; Special case for UNSIGNED-BYTE-P (todo: can we get rid of this?):
                                ((eq 'unsigned-byte-p fn) ; (unsigned-byte-p <size> <x>)
@@ -2456,6 +2475,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local
+  (defthmd equal-of-cons (equal (equal x (cons y z)) (and (consp x) (equal (car x) y) (equal (cdr x) z)))))
+
+(defthm equal-of-car-of-get-axe-disjunction-from-dag-items-and-quote
+  (implies (and (bounded-possibly-negated-nodenumsp items dag-len)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len))
+           (equal (equal (car (get-axe-disjunction-from-dag-items items dag-array-name dag-array dag-len)) 'quote)
+                  (or (equal (get-axe-disjunction-from-dag-items items dag-array-name dag-array dag-len) *t*)
+                      (equal (get-axe-disjunction-from-dag-items items dag-array-name dag-array dag-len) *nil*))))
+  :hints (("Goal" :use (axe-disjunctionp-of-get-axe-disjunction-from-dag-items)
+           :in-theory (e/d (axe-disjunctionp possibly-negated-nodenumsp booleanp equal-of-cons) (axe-disjunctionp-of-get-axe-disjunction-from-dag-items)))))
+
 ;; TODO: move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
@@ -2512,8 +2543,11 @@
         (build-known-nodenum-type-alist disjuncts dag-array dag-len))
        (- (and (eq :verbose print)
                (cw "known-nodenum-type-alist: ~x0.~%" known-nodenum-type-alist)))
-       ((when (any-node-is-given-empty-typep known-nodenum-type-alist)) ;move this test up before we print?
-        (cw "(WARNING: Goal is true due to type mismatch (contradictory assumptions).)~%")
+       (maybe-node-given-empty-type (node-given-empty-type known-nodenum-type-alist))
+       ((when maybe-node-given-empty-type) ;move this test up before we print?
+        (cw "(WARNING: Goal is true due to type mismatch on:~%")
+        (print-dag-array-node-and-supporters 'dag-array dag-array maybe-node-given-empty-type)
+        (cw ")~%")
         (mv *valid* state))
        (- (and (print-level-at-least-tp print) (cw "(Calling STP (perhaps at several depths) on ~s0.~%" base-filename)))
        (- (and (eq :verbose print) ;fixme improve printing
