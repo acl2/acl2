@@ -3138,6 +3138,8 @@
                     (ident "__builtin_memcpy")
                     (ident "__builtin_memset")
                     (ident "__builtin_mul_overflow")
+                    (ident "__builtin_object_size")
+                    (ident "__builtin_return_address")
                     (ident "__builtin_strcpy")
                     (ident "__builtin_strlen")
                     (ident "__builtin_strncat")
