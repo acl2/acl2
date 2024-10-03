@@ -100,3 +100,22 @@
            (bv-array-write 9 100 4 val2 (bv-array-write 9 100 7 val1 data)))
     :print t
     ))
+
+;; ;; The arrays can't be equal because they have different lengths.  However, this seems to fail
+;; ;; because the types are wrong.
+;; (must-fail
+;;   (defthm-stp array3
+;;     (not (equal (bv-array-write 8 16 index1 val1 array1)
+;;                 (bv-array-write 8 17 index2 val2 array2)))
+;;     :print t))
+
+;; ;; TODO: Sould this pass?  The array equality gets cut out, but in fact we know it is false.
+;; ;; This depends on knowing that the arrays can't be equal because they have different lengths.
+;; (must-fail
+;;   (defthm-stp array4
+;;     (equal (bvif 8 (equal (bv-array-write 8 16 index1 val1 array1)
+;;                           (bv-array-write 8 17 index2 val2 array2))
+;;                  2
+;;                  3)
+;;            3)
+;;     :print t))
