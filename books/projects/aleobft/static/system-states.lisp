@@ -205,7 +205,7 @@
 
   ///
 
-  (defrule correct-addresses-subset-all-addresses
+  (defruled correct-addresses-subset-all-addresses
     (set::subset (correct-addresses systate)
                  (all-addresses systate))
     :enable (all-addresses
@@ -217,14 +217,14 @@
     (set::subset (correct-addresses systate)
                  (omap::keys (system-state->validators systate)))
     :use correct-addresses-subset-all-addresses
-    :disable correct-addresses-subset-all-addresses
     :enable all-addresses)
 
   (defrule in-all-addresses-when-in-correct-addresses
     (implies (set::in val (correct-addresses systate))
              (set::in val (all-addresses systate)))
     :disable correct-addresses
-    :enable set::expensive-rules)
+    :enable (set::expensive-rules
+             correct-addresses-subset-all-addresses))
 
   (defrule lookup-nonnil-of-correct-addresses
     (implies (set::in addr (correct-addresses systate))
@@ -302,7 +302,10 @@
   (defret number-correct-upper-bound
     (<= number (number-validators systate))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (acl2::enable number-validators)))))
+    :hints
+    (("Goal"
+      :in-theory (acl2::enable number-validators
+                               correct-addresses-subset-all-addresses)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -328,6 +331,7 @@
     :enable (number-validators
              number-correct
              faulty-addresses
+             correct-addresses-subset-all-addresses
              set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

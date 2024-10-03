@@ -94,9 +94,11 @@
                 (>= no-votes
                     (quorum systate))
                 timeout)))))
-  :guard-hints (("Goal" :in-theory (enable evenp
-                                           posp
-                                           set::not-emptyp-when-in-of-subset)))
+  :guard-hints
+  (("Goal" :in-theory (enable evenp
+                              posp
+                              correct-addresses-subset-all-addresses
+                              set::not-emptyp-when-in-of-subset)))
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
 
   ///

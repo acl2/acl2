@@ -76,9 +76,11 @@
        ((mv yes-votes &) (tally-leader-votes leader voters))
        ((unless (>= yes-votes (1+ (max-faulty systate)))) nil))
     t)
-  :guard-hints (("Goal" :in-theory (enable evenp
-                                           posp
-                                           set::not-emptyp-when-in-of-subset)))
+  :guard-hints
+  (("Goal" :in-theory (enable evenp
+                              posp
+                              set::not-emptyp-when-in-of-subset
+                              correct-addresses-subset-all-addresses)))
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
 
   ///
@@ -111,8 +113,10 @@
        (vals (all-addresses systate))
        (new-vstate (commit-anchors-next-val vals vstate)))
     (update-validator-state val new-vstate systate))
-  :guard-hints (("Goal" :in-theory (enable commit-anchors-possiblep
-                                           set::not-emptyp-when-in-of-subset)))
+  :guard-hints
+  (("Goal" :in-theory (enable commit-anchors-possiblep
+                              correct-addresses-subset-all-addresses
+                              set::not-emptyp-when-in-of-subset)))
 
   :prepwork
   ((define commit-anchors-next-val ((vals address-setp)
@@ -147,7 +151,10 @@
         :blockchain new-blockchain
         :last commit-round
         :committed new-committed-certs))
-     :guard-hints (("Goal" :in-theory (enable posp natp evenp oddp)))
+     :guard-hints (("Goal" :in-theory (enable posp
+                                              natp
+                                              evenp
+                                              oddp)))
      :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))))
 
   ///
