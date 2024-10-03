@@ -37,11 +37,16 @@
      that event's preconditions require that the certificate includes
      a quorum of references to certificates in the previous round,
      unless the certificate round is 1,
-     in which case there must be no references.
-     This applies to all the certificates accepted by validators,
-     i.e. the certificates in their DAGs and buffers,
-     because
-     ")
+     in which case there must be no references.")
+   (xdoc::p
+    "When a certificate is received via a @('receive-certificate') event,
+     that event's preconditions impose a similar requirements.")
+   (xdoc::p
+    "Thus, all the certificates accepted by a validator
+     satisfy that requirement.
+     Recall that a @('store-certificate') event
+     does not change the set of accepted certificates;
+     it just moves a certificate between buffer and DAG.")
    (xdoc::p
     "The names for this invariant,
      i.e. this XDOC topic as well as the function and theorem names,
