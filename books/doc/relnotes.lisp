@@ -657,10 +657,10 @@
      @(see step-limit) error printing.")
 
    (xdoc::p
-    "The @(see time-tracker) capability is now turned off by the @(tsee
-     run-script) tool, to avoid output that differs from what is expected (say,
-     due to running on a slow machine, or with many threads when few are
-     available).")
+    "The @(see time-tracker) capability and &lsquo;@('Hons-Note')&rsquo;
+     printing are now turned off by the @(tsee run-script) tool, to avoid
+     output that differs from what is expected (say, due to running on a slow
+     machine, or with many threads when few are available).")
 
    (xdoc::p
     "Tools @(tsee functions-after) and @(tsee macros-after) return names of
