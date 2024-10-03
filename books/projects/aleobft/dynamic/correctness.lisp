@@ -23,7 +23,7 @@
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
 (include-book "signer-quorum")
-(include-book "predecessor-quorum")
+(include-book "previous-quorum")
 (include-book "backward-closure")
 (include-book "unequivocal-signed-certificates")
 (include-book "unequivocal-accepted-certificates-def-and-init")
@@ -59,7 +59,7 @@
                     last-blockchain-round
                     ordered-even-blocks
                     signer-quorum
-                    predecessor-quorum
+                    previous-quorum
                     backward-closure
                     unequivocal-signed-certificates
                     unequivocal-accepted-certificates-def-and-init
