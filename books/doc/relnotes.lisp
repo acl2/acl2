@@ -132,6 +132,10 @@
     (xdoc::ahref "https://aleo.org" "Aleo blockchain")
     ".")
 
+   (xdoc::p
+    "Hanbing Liu's 2006 dissertation work on a \"defensive JVM\" has been added
+     as directory @('models/jvm/m6/').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Gaussian Elimination Library")

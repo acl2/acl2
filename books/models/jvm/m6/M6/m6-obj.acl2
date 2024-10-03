@@ -1,0 +1,4 @@
+(ld "../M6/m6.pkg")
+
+
+(certify-book "m6-obj" 5)

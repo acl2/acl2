@@ -1,0 +1,6 @@
+(defpkg "HANOI"
+    (set-difference-equal
+     (union-eq *acl2-exports* 
+	(union-eq '(s g)
+               *common-lisp-symbols-from-main-lisp-package*))
+     '(PUSH POP TOP SET GET)))

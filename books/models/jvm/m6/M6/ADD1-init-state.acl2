@@ -1,0 +1,2 @@
+(ld "../M6/m6.pkg")
+(certify-book "ADD1-init-state" 5)

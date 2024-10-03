@@ -1,0 +1,2 @@
+(ld "../M6/m6.pkg")
+(certify-book "m6-frame-manipulation-primitives" 5)

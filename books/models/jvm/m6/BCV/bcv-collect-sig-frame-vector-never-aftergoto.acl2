@@ -1,0 +1,4 @@
+(ld "../BCV/bcv.pkg")
+; Matt K. mod: Use cert-flags
+; (certify-book "bcv-collect-sig-frame-vector-never-aftergoto" 5 t :skip-proofs-okp t)
+; cert-flags: ? t :skip-proofs-okp t
