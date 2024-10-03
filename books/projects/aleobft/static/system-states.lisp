@@ -182,7 +182,7 @@
        :hints ('(:use (:instance correct-addresses-loop-subset-keys
                                  (vstates (omap::tail vstates))))))
 
-     (defrule correct-addresses-loop-of-update
+     (defruled correct-addresses-loop-of-update
        (implies (and (addressp val)
                      (validator-statep vstate)
                      (validators-statep vstates))
@@ -395,7 +395,8 @@
            (correct-addresses systate))
     :hyp (and (set::in val (correct-addresses systate))
               (validator-statep vstate))
-    :hints (("Goal" :in-theory (enable correct-addresses))))
+    :hints (("Goal" :in-theory (enable correct-addresses
+                                       correct-addresses-loop-of-update))))
 
   (defrule get-validator-state-of-update-validator-state
     (implies (and (set::in val1 (correct-addresses systate))
