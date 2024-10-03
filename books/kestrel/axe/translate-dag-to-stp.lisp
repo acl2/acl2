@@ -104,8 +104,6 @@
 
 (in-theory (disable open-output-channels open-output-channel-p1)) ; drop?
 
-;(in-theory (disable (:e nat-to-string))) ;why?
-
 ;; (defthm <-of-maxelem-of-cdr
 ;;   (implies (and (all-< items x)
 ;;                 (< 1 (len items)))
@@ -201,8 +199,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Gets the type of a constant (bv or boolean or bv-array).
 ;; Returns an axe-type, or nil if no type can be determined.
-;; todo: ensure all callers can handle nil being returned.
 (defund maybe-get-type-of-val (val)
   (declare (xargs :guard t))
   (if (natp val)
@@ -212,7 +210,7 @@
       ;;new (this is the tightest possible type, but wider element widths would also work):
       (if (and (consp val) ;new! disallows arrays of length 0
                (nat-listp val)
-               (<= 2 (len val)) ; otherwise, it's not a legal array
+               (<= 2 (len val)) ; otherwise, it's not a legal array ; todo: optimize by calling len-at-least
                )
           (make-bv-array-type (max 1 (width-of-widest-int val)) ;fixme if the values are all 0, we consider the width to be 1
                               (len val))
@@ -439,35 +437,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; ;TODO: deprecate? ;make the guard require natp?
-;; ;make a version that returns a string-tree?
-;; (defund nat-to-string-debug (n)
-;;   (declare (xargs :guard t))
-;;   (if (not (natp n))
-;;       (progn$ (cw "error: called nat-to-string on non-natural ~x0." n)
-;;               (break$) ; will put us in the debugger
-;;               )
-;;     (nat-to-string n)))
-
-;; (in-theory (disable (:e nat-to-string-debug)))
-
-;; (local
-;;   (defthm stringp-of-nat-to-string-debug
-;;     (implies (natp n)
-;;              (stringp (nat-to-string-debug n)))
-;;     :hints (("Goal" :in-theory (enable nat-to-string-debug)))))
-
-;; (local
-;;   (defthm string-treep-of-nat-to-string-debug
-;;     (implies t ;(natp n) ;todo: put back
-;;              (string-treep (nat-to-string-debug n)))
-;;     :hints (("Goal" :in-theory (enable nat-to-string-debug)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns a string-tree.
 (defund make-node-var (n)
   (declare (type (integer 0 *) n))
+  ;; would it be cheaper to use a version of nat-to-string that returns a string-tree?
   (cons "NODE" (nat-to-string n)))
 
 (local
@@ -1825,7 +1798,7 @@
                   (bv-arg (darg2 expr))
                   (bv-arg-type (get-type-of-arg-checked bv-arg dag-array-name dag-array cut-nodenum-type-alist))
                   ((when (not (bv-typep bv-arg-type)))
-                   (er hard? 'translate-dag-expr "unsigned-byte-p claim applied to non bv ~x0." bv-arg)
+                   (er hard? 'translate-dag-expr "unsigned-byte-p claim applied to non-bv ~x0." bv-arg)
                    (mv (erp-t) nil constant-array-info)) ;todo: allow this function to return an error
                   (known-width (bv-type-width bv-arg-type))
                   ((when (= 0 known-width))
@@ -2123,6 +2096,8 @@
 
 ;; Returns a string-tree that extends extra-asserts.
 ;fixme rectify this printing with the other use of this function
+;todo: pass in the ffn-symb (maybe) and the dargs
+;todo: don't throw an error (via get-type-of-arg-during-cutting) if the args are not good.
 (defund add-assert-if-a-mult (n expr dag-array-name dag-array var-type-alist print extra-asserts)
   (declare (xargs :guard (and (natp n)
                               (bounded-dag-exprp n expr)
