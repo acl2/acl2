@@ -109,10 +109,10 @@
 
 ;; bv-array-types
 
-;;
-;; The "BV array" type (an arrays of a given length containing BVs of a given size)
-;;
-
+;; The "bv-array" type represents an array of a given length containing BVs of a given size.
+;; General form: (:bv-array <element-width> <number-of-elements>), where the
+;; <element-width> is at least 1 and the <number-of-elements> is at least 2
+;; (arrays of length 1 would have 0 index bits).
 (defund bv-array-typep (type)
   (declare (xargs :guard t))
   (and (true-listp type)
@@ -303,9 +303,9 @@
              (make-bv-array-type (max (bv-array-type-element-width type1)
                                       (bv-array-type-element-width type2))
                                  (bv-array-type-len type1))
-           (prog2$ (cw "WARNING: Array length mismatch: ~x0 and ~x1" type1 type2)
+           (prog2$ (cw "WARNING: Array length mismatch: ~x0 and ~x1.~%" type1 type2)
                    (most-general-type))))
-        (t (prog2$ (cw "WARNING: Type mismatch: ~x0 and ~x1" type1 type2)
+        (t (prog2$ (cw "WARNING: Type mismatch: ~x0 and ~x1.~%" type1 type2)
                    (most-general-type)))))
 
 (defthm axe-typep-of-union-types
@@ -367,9 +367,9 @@
                (make-bv-array-type (min (bv-array-type-element-width type1)
                                         (bv-array-type-element-width type2))
                                    len1)
-             (prog2$ (cw "WARNING: Array length mismatch: ~x0 and ~x1" type1 type2)
+             (prog2$ (cw "WARNING: Array length mismatch: ~x0 and ~x1.~%" type1 type2)
                      (empty-type)))))
-        (t (prog2$ (cw "WARNING: Type mismatch: ~x0 and ~x1" type1 type2)
+        (t (prog2$ (cw "WARNING: Type mismatch: ~x0 and ~x1.~%" type1 type2)
                    (empty-type)))))
 
 (defthm axe-typep-of-intersect-types-safe
