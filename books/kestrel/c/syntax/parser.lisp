@@ -2196,6 +2196,7 @@
                                         "__asm__"
                                         "__attribute"
                                         "__attribute__"
+                                        "__auto_type"
                                         "__builtin_offsetof"
                                         "__builtin_types_compatible_p"
                                         "__builtin_va_list"
@@ -6088,7 +6089,10 @@
      would be identifier tokens, not keyword tokens.")
    (xdoc::p
     "We similarly include the GCC extension types
-     @('__int128'), @('_Float128'), @('__builtin_va_list')."))
+     @('__int128'),
+     @('_Float128'),
+     @('__builtin_va_list'), and
+     @('__auto_type')."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
       (token-keywordp token? "short")
@@ -6104,7 +6108,8 @@
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
       (token-keywordp token? "_Float128")
-      (token-keywordp token? "__builtin_va_list"))
+      (token-keywordp token? "__builtin_va_list")
+      (token-keywordp token? "__auto_type"))
   ///
 
   (defrule non-nil-when-token-type-specifier-keyword-p
@@ -6138,6 +6143,7 @@
         ((token-keywordp token "__int128") (type-spec-int128))
         ((token-keywordp token "_Float128") (type-spec-float128))
         ((token-keywordp token "__builtin_va_list") (type-spec-builtin-va-list))
+        ((token-keywordp token "__auto_type") (type-spec-auto-type))
         (t (prog2$ (impossible) (irr-type-spec))))
   :prepwork ((local (in-theory (enable token-type-specifier-keyword-p)))))
 

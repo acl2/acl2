@@ -1,0 +1,3 @@
+; Matt K. mod: Includes MI-inv.lisp, which has a skip-proofs.
+
+; cert-flags: ? t :skip-proofs-okp t

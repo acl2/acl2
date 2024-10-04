@@ -1752,7 +1752,10 @@
       "As a GCC extension, we include @('typeof'),
        along with its variants @('__typeof') and @('__typeof__').
        The argument may be an expression or a type name,
-       and therefore we also need to include the ambiguous possibility."))
+       and therefore we also need to include the ambiguous possibility.")
+     (xdoc::p
+      "As a GCC extension, we include @('__auto_type');
+       see the ABNF grammar."))
     (:void ())
     (:char ())
     (:short ())
@@ -1780,6 +1783,7 @@
                    (uscores keyword-uscores-p)))
     (:typeof-ambig ((expr/type amb-expr/tyname)
                     (uscores keyword-uscores-p)))
+    (:auto-type ())
     :pred type-specp
     :measure (two-nats-measure (acl2-count x) 0))
 

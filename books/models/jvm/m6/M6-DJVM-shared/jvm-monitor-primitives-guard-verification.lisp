@@ -1,0 +1,20 @@
+(in-package "JVM")
+(include-book "../M6-DJVM-shared/jvm-monitor-primitives")
+(include-book "../M6-DJVM-shared/jvm-thread-primitives-guard-verification")
+
+(skip-proofs (verify-guards removePendingAlarm))
+(skip-proofs (verify-guards registerAlarm))
+(skip-proofs (verify-guards dequeue-h))
+(skip-proofs (verify-guards dequeue-r))
+(skip-proofs (verify-guards obj-monitor-by-ref))
+(skip-proofs (verify-guards update-obj-monitor))
+(skip-proofs (verify-guards removeMonitorWait-inv))
+(skip-proofs (verify-guards removeMonitorWait))
+(skip-proofs (verify-guards add-to-queue-end))
+(skip-proofs (verify-guards addMonitorWait))
+(skip-proofs (verify-guards removeCondvarWait2))
+(skip-proofs (verify-guards removeCondvarWait1))
+(skip-proofs (verify-guards removeCondvarWait))
+(skip-proofs (verify-guards addCondvarWait))
+             
+

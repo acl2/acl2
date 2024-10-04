@@ -1,0 +1,4 @@
+(ld "../M6/m6.pkg")
+; (certify-book "m6-start-jvm" 5 t :skip-proofs-okp t)
+; Matt K. mod: Use cert-flags
+; cert-flags: ? t :skip-proofs-okp t

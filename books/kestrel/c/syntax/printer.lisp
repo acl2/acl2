@@ -1977,7 +1977,8 @@
           (pstate (print-tyname tyspec.type pstate))
           (pstate (print-astring ")" pstate)))
        pstate)
-     :typeof-ambig (prog2$ (impossible) (pristate-fix pstate)))
+     :typeof-ambig (prog2$ (impossible) (pristate-fix pstate))
+     :auto-type (print-astring "__auto_type" pstate))
     :measure (two-nats-measure (type-spec-count tyspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
