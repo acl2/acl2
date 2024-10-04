@@ -255,7 +255,8 @@
      :typeof-type (make-type-spec-typeof-type
                    :type (simpadd0-tyname tyspec.type)
                    :uscores tyspec.uscores)
-     :typeof-ambig (prog2$ (impossible) (irr-type-spec)))
+     :typeof-ambig (prog2$ (impossible) (irr-type-spec))
+     :auto-type (type-spec-fix tyspec))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

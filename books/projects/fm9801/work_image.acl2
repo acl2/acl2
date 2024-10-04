@@ -1,0 +1,12 @@
+(include-book "utils")
+(include-book "b-ops-aux-def")
+(include-book "ISA-def")
+(include-book "MA2-def")
+(include-book "MAETT-def")
+(include-book "invariants-def")
+(include-book "MAETT-lemmas")
+(include-book "modifier")
+
+:q
+;(excl:dumplisp :name "work_image" :checkpoint nil)
+(si::save-system "work_image")

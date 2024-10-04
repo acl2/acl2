@@ -213,7 +213,8 @@
                     :struct-empty t
                     :typeof-expr (expr-unambp tyspec.expr)
                     :typeof-type (tyname-unambp tyspec.type)
-                    :typeof-ambig nil)
+                    :typeof-ambig nil
+                    :auto-type t)
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

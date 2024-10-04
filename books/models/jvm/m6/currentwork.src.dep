@@ -1,0 +1,2332 @@
+hanoi/move.cert: hanoi/move.lisp \
+	hanoi/move.acl2 \
+	hanoi/state.cert \
+	HANOI.pkg
+
+M6/m6-object-manipulation-primitives.cert: M6/m6-object-manipulation-primitives.lisp \
+	M6/m6-object-manipulation-primitives.acl2 \
+	M6/m6-type-value.cert \
+	M6/m6-class-table.cert \
+	M6/m6-state.cert \
+	M6/m6-class-hierachy-aux.cert \
+	M6/m6-obj.cert \
+	M6/m6-thread.cert \
+	M6/m6-frame-manipulation-primitives.cert \
+	M6-DJVM-shared/jvm-object-manipulation-primitives.cert \
+	M6.pkg
+
+DJVM/INST/base-load-class-normalize-when-found.cert: DJVM/INST/base-load-class-normalize-when-found.lisp \
+	DJVM/INST/base-load-class-normalize-when-found.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-isAssignableTo-properties.cert \
+	M6-DJVM-shared/jvm-state.cert \
+	DJVM/INST/base-consistent-state-consistent-object.cert \
+	DJVM.pkg
+
+DJVM/INST/GETFIELD.cert: DJVM/INST/GETFIELD.lisp \
+	DJVM/INST/GETFIELD.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-extra.cert \
+	DJVM/INST/base-consistent-state-load-class.cert \
+	DJVM/INST/base-consistent-state-lookupfield.cert \
+	DJVM/INST/base-load-class-normalize.cert \
+	DJVM/INST/base-judgement-after-load-class-no-change.cert \
+	DJVM/INST/base-skip-proofs.cert \
+	DJVM/INST/base-consistent-state-consistent-object.cert \
+	DJVM/INST/base-load-class-normalize-when-found.cert \
+	DJVM/INST/base-consistent-state-make-state-general.cert \
+	DJVM/INST/base-consistent-object-m6-getfield.cert \
+	DJVM/INST/base-consistent-state-pushCategory2.cert \
+	DJVM/INST/base-frame-sig-expansion.cert \
+	DJVM/INST/base-m6-getfield-consistent-value.cert \
+	DJVM/INST/base-bcv.cert \
+	DJVM/INST/base-bcv-djvm-getfield.cert \
+	DJVM/INST/base-bcv-check-monotonic.cert \
+	DJVM/INST/base-bcv-step-monotonic.cert \
+	DJVM/INST/base-frame-sig-expansion.cert \
+	DJVM/INST/base-bcv-frame-sig-expansion.cert \
+	DJVM/INST/base-next-state-more-specific.cert \
+	M6/m6-bytecode.cert \
+	DJVM/consistent-state-to-untag-state.cert \
+	DJVM/INST/base-state-equiv.cert \
+	DJVM/INST/base-method-ptr-no-change.cert \
+	DJVM/INST/base-method-no-change.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-state-consistent-object.cert: DJVM/INST/base-consistent-state-consistent-object.lisp \
+	DJVM/INST/base-consistent-state-consistent-object.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-consistent-state-consistent-object-support.cert \
+	DJVM.pkg
+
+DJVM/consistent-state-to-sig-state.cert: DJVM/consistent-state-to-sig-state.lisp \
+	DJVM/consistent-state-to-sig-state.acl2 \
+	DJVM/consistent-state.cert \
+	BCV/typechecker.cert \
+	DJVM/djvm-class-table.cert \
+	DJVM/djvm-heap.cert \
+	BCV/bcv-functions-basic.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-fact-isMatchingType-consp-stk.cert: DJVM/INST/base-bcv-fact-isMatchingType-consp-stk.lisp \
+	DJVM/INST/base-bcv-fact-isMatchingType-consp-stk.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base-bind-free.cert \
+	BCV.pkg
+
+hanoi/hanoi-solution.cert: hanoi/hanoi-solution.lisp \
+	hanoi/hanoi-solution.acl2 \
+	hanoi/hanoi-model.cert \
+	HANOI.pkg
+
+DJVM/INST/base-array.cert: DJVM/INST/base-array.lisp \
+	DJVM/INST/base-array.acl2 \
+	DJVM/INST/base.cert \
+	DJVM.pkg
+
+small/bcv-find-correct-witness.cert: small/bcv-find-correct-witness.lisp \
+	small/bcv-find-correct-witness.acl2 \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/bcv-find-correct-witness-bcv-check-pre.cert \
+	small/bcv-check-pre-implies-bcv-simple-check-pre-if-all-method-verified.cert \
+	small/bcv-find-correct-witness-all-next-state.cert \
+	small/bcv-find-correct-witness-all-next-state.cert \
+	small/bcv-find-correct-witness-all-next-state.cert
+
+M6-DJVM-shared/jvm-monitor-primitives.cert: M6-DJVM-shared/jvm-monitor-primitives.lisp \
+	M6-DJVM-shared/jvm-monitor-primitives.acl2 \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-obj.cert \
+	M6-DJVM-shared/jvm-thread.cert \
+	M6-DJVM-shared/jvm-thread-primitives.cert \
+	JVM.pkg
+
+M6-DJVM-shared/jvm-frame-manipulation-primitives.cert: M6-DJVM-shared/jvm-frame-manipulation-primitives.lisp \
+	M6-DJVM-shared/jvm-frame-manipulation-primitives.acl2 \
+	M6-DJVM-shared/jvm-thread.cert \
+	JVM.pkg
+
+small/bcv-find-correct-witness-all-next-state.cert: small/bcv-find-correct-witness-all-next-state.lisp \
+	small/bcv-find-correct-witness-all-next-state.acl2 \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/bcv-find-correct-witness-bcv-check-pre.cert \
+	small/bcv-simple-execute-produce-compatible-next-states.cert \
+	small/bcv-partial-signature-vector-full-signature-vector.cert \
+	small/bcv-verified-implies-method-name-method-table-fixed.cert \
+	small/bcv-find-correct-witness-bcv-check-pre.cert \
+	small/bcv-find-correct-witness-sig-vector-1.cert
+
+BCV/bcv-searchStackFrame-reduce-support-2.cert: BCV/bcv-searchStackFrame-reduce-support-2.lisp \
+	BCV/bcv-searchStackFrame-reduce-support-2.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV/bcv-collected-frames-are-strictly-ordered.cert \
+	BCV.pkg
+
+M6-DJVM-shared/jvm-internal-primitives.cert: M6-DJVM-shared/jvm-internal-primitives.lisp \
+	M6-DJVM-shared/jvm-internal-primitives.acl2 \
+	JVM.pkg
+
+BCV/bcv-collect-sig-frame-vector-never-aftergoto.cert: BCV/bcv-collect-sig-frame-vector-never-aftergoto.lisp \
+	BCV/bcv-collect-sig-frame-vector-never-aftergoto.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV.pkg
+
+main/djvm-consistent-state-facts.cert: main/djvm-consistent-state-facts.lisp \
+	main/djvm-consistent-state-facts.acl2 \
+	main/djvm-simple.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-fact-nth-opstack-specific-env-sig.cert: DJVM/INST/base-bcv-fact-nth-opstack-specific-env-sig.lisp \
+	DJVM/INST/base-bcv-fact-nth-opstack-specific-env-sig.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base-bind-free.cert \
+	BCV.pkg
+
+M6-DJVM-shared/jvm-class-hierachy-aux.cert: M6-DJVM-shared/jvm-class-hierachy-aux.lisp \
+	M6-DJVM-shared/jvm-class-hierachy-aux.acl2 \
+	M6-DJVM-shared/jvm-class-table.cert \
+	M6-DJVM-shared/jvm-type-value.cert \
+	JVM.pkg
+
+M6-DJVM-shared/jvm-state.cert: M6-DJVM-shared/jvm-state.lisp \
+	M6-DJVM-shared/jvm-state.acl2 \
+	M6-DJVM-shared/jvm-class-table.cert \
+	M6-DJVM-shared/jvm-env.cert \
+	M6-DJVM-shared/jvm-internal-primitives.cert \
+	JVM.pkg
+
+DJVM/INST/base-branch-instrs.cert: DJVM/INST/base-branch-instrs.lisp \
+	DJVM/INST/base-branch-instrs.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM.pkg
+
+small/HALT.cert: small/HALT.lisp \
+	small/jvm-model.cert \
+	small/generic.cert \
+	small/consistent-state.cert
+
+DJVM/INST/base-good-java-type-valid-type-s.cert: DJVM/INST/base-good-java-type-valid-type-s.lisp \
+	DJVM/INST/base-good-java-type-valid-type-s.acl2 \
+	DJVM/INST/base-valid-type-s.cert \
+	BCV/bcv-functions.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	DJVM.pkg
+
+small/IFEQ.cert: small/IFEQ.lisp \
+	small/IFEQ.acl2 \
+	small/djvm-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/consistent-state-properties.cert \
+	small/bcv-method-properties.cert \
+	small/djvm-IFEQ.cert
+
+common/primitives.cert: common/primitives.lisp \
+	common/primitives.acl2 \
+	common/gen-guards.cert
+
+M6-DJVM-shared/jvm-linker-guard-verification.cert: M6-DJVM-shared/jvm-linker-guard-verification.lisp \
+	M6-DJVM-shared/jvm-linker-guard-verification.acl2 \
+	M6-DJVM-shared/jvm-linker.cert \
+	JVM.pkg
+
+M6-DJVM-shared/jvm-obj.cert: M6-DJVM-shared/jvm-obj.lisp \
+	M6-DJVM-shared/jvm-obj.acl2 \
+	M6-DJVM-shared/jvm-type-value.cert \
+	JVM.pkg
+
+M6-DJVM-shared/jvm-thread.cert: M6-DJVM-shared/jvm-thread.lisp \
+	M6-DJVM-shared/jvm-thread.acl2 \
+	M6-DJVM-shared/jvm-type-value.cert \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-obj.cert \
+	M6-DJVM-shared/jvm-internal-primitives.cert \
+	JVM.pkg
+
+M6-DJVM-shared/jvm-linker.cert: M6-DJVM-shared/jvm-linker.lisp \
+	M6-DJVM-shared/jvm-linker.acl2 \
+	M6-DJVM-shared/jvm-type-value.cert \
+	M6-DJVM-shared/jvm-loader.cert \
+	M6-DJVM-shared/jvm-class-hierachy-aux.cert \
+	M6-DJVM-shared/jvm-loader-guard-verification.cert \
+	JVM.pkg
+
+DJVM/INST/base-bcv-fact-isMatchingType-isAssignableTo.cert: DJVM/INST/base-bcv-fact-isMatchingType-isAssignableTo.lisp \
+	DJVM/INST/base-bcv-fact-isMatchingType-isAssignableTo.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-isAssignableTo-support.cert \
+	DJVM.pkg
+
+small/bcv-find-correct-witness-sig-vector-1.cert: small/bcv-find-correct-witness-sig-vector-1.lisp \
+	small/bcv-find-correct-witness-sig-vector-1.acl2 \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/bcv-if-pc-small-then-not-bound-in-witness.cert \
+	small/bcv-if-verified-then-pc-ordered.cert \
+	small/bcv-find-correct-witness-bcv-check-pre.cert
+
+DJVM/INST/base-type-size-normalize-fix-type.cert: DJVM/INST/base-type-size-normalize-fix-type.lisp \
+	DJVM/INST/base-type-size-normalize-fix-type.acl2 \
+	M6-DJVM-shared/jvm-class-table.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-consistent-state-class-names-are-string.cert \
+	DJVM.pkg
+
+DJVM/consistent-state.cert: DJVM/consistent-state.lisp \
+	DJVM/consistent-state.acl2 \
+	DJVM/djvm-state.cert \
+	DJVM/djvm-env.cert \
+	DJVM/djvm-class-table.cert \
+	DJVM/djvm-thread.cert \
+	DJVM/djvm-obj.cert \
+	DJVM/djvm-type-value.cert \
+	DJVM/djvm-linker.cert \
+	BCV/bcv-functions-basic.cert \
+	BCV/bcv-functions-basic-verify-guard.cert \
+	DJVM.pkg
+
+M6/m6-verifier.cert: M6/m6-verifier.lisp \
+	M6/m6-verifier.acl2 \
+	M6-DJVM-shared/jvm-verifier.cert \
+	M6.pkg
+
+small/bcv-make-inst.cert: small/bcv-make-inst.lisp \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert
+
+M6-DJVM-shared/cldc-classtable.cert: M6-DJVM-shared/cldc-classtable.lisp \
+	M6-DJVM-shared/cldc-classtable.acl2 \
+	M6-DJVM-shared/jvm-env.cert \
+	JVM.pkg
+
+DJVM/INST/base-consistent-state-lookupfield-bcv.cert: DJVM/INST/base-consistent-state-lookupfield-bcv.lisp \
+	DJVM/INST/base-consistent-state-lookupfield-bcv.acl2 \
+	M6-DJVM-shared/jvm-linker.cert \
+	M6-DJVM-shared/jvm-class-table.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	DJVM/INST/base-consistent-state-lookupfield-support.cert \
+	DJVM/INST/base-consistent-state-lookupfield-support.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-consistent-state-load-class.cert \
+	DJVM.pkg
+
+common/symbols.cert: common/symbols.lisp \
+	common/symbols.acl2
+
+DJVM/INST/base-bcv-check-monotonic.cert: DJVM/INST/base-bcv-check-monotonic.lisp \
+	DJVM/INST/base-bcv-check-monotonic.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-bcv-check-monotonic-support.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-consp-stk.cert \
+	DJVM/INST/base-bcv-check-monotonic-support.cert \
+	DJVM/INST/base-bcv-fact-nth-opstack.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-array.cert \
+	BCV/bcv-isAssignable-transitive.cert \
+	DJVM/INST/base-bcv-protected-check-monotonic.cert \
+	BCV.pkg
+
+main/bcv-is-effective.cert: main/bcv-is-effective.lisp \
+	main/bcv-is-effective.acl2 \
+	main/m6-simple.cert \
+	main/djvm-simple.cert \
+	main/djvm-is-safe.cert \
+	DJVM/consistent-state-bcv-on-track.cert \
+	main/on-track-with-bcv-implies-next-inst-in-range.cert \
+	main/step-preserve-state-equiv-if-on-track-with-bcv.cert \
+	main/on-track-with-bcv-remain-on-track.cert \
+	DJVM.pkg
+
+M6/m6-thread.cert: M6/m6-thread.lisp \
+	M6/m6-thread.acl2 \
+	M6-DJVM-shared/jvm-thread.cert \
+	M6.pkg
+
+DJVM/INST/base-load-class-normalize.cert: DJVM/INST/base-load-class-normalize.lisp \
+	DJVM/INST/base-load-class-normalize.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM/INST/base-load-class-normalize-support.cert \
+	DJVM/INST/base-load-class-normalize-support.cert \
+	DJVM/INST/base-load-class-normalize-deref2.cert \
+	DJVM/INST/base-load-class-normalize-class-by-name.cert \
+	DJVM.pkg
+
+DJVM/INST/base-update-array.cert: DJVM/INST/base-update-array.lisp \
+	DJVM/INST/base-update-array.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM.pkg
+
+DJVM/INST/ACONST_NULL.cert: DJVM/INST/ACONST_NULL.lisp \
+	DJVM/INST/ACONST_NULL.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-extra.cert \
+	DJVM/INST/base-bcv.cert \
+	DJVM/INST/base-bcv-check-monotonic.cert \
+	DJVM/INST/base-bcv-step-monotonic.cert \
+	DJVM/INST/base-frame-sig-expansion.cert \
+	DJVM/INST/base-bcv-frame-sig-expansion.cert \
+	DJVM/INST/base-next-state-more-specific.cert \
+	M6/m6-bytecode.cert \
+	DJVM/consistent-state-to-untag-state.cert \
+	DJVM/INST/base-state-equiv.cert \
+	DJVM/INST/base-method-ptr-no-change.cert \
+	DJVM/INST/base-method-no-change.cert \
+	DJVM.pkg
+
+main/on-track-with-bcv-remain-on-track.cert: main/on-track-with-bcv-remain-on-track.lisp \
+	main/on-track-with-bcv-remain-on-track.acl2 \
+	main/djvm-simple.cert \
+	main/m6-simple.cert \
+	DJVM/consistent-state-bcv-on-track.cert \
+	BCV/typechecker-simple.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-frame-sig-expansion.cert: DJVM/INST/base-bcv-frame-sig-expansion.lisp \
+	DJVM/INST/base-bcv-frame-sig-expansion.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-fact-nth-opstack-specific-env-sig.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-canPopCategory1.cert \
+	DJVM/INST/base-bcv-djvm-assignable.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-value-initialized.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-isAssignable.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-isAssignable.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-value-initialized.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-fact-isMatchingType-suitable-value.cert: DJVM/INST/base-bcv-fact-isMatchingType-suitable-value.lisp \
+	DJVM/INST/base-bcv-fact-isMatchingType-suitable-value.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-canPopCategory1.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-isAssignable.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM.pkg
+
+DJVM/consistent-state-strong.cert: DJVM/consistent-state-strong.lisp \
+	DJVM/consistent-state-strong.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-obj-init.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-frame-manipulation-primitives-guard-verification.cert: M6-DJVM-shared/jvm-frame-manipulation-primitives-guard-verification.lisp \
+	M6-DJVM-shared/jvm-frame-manipulation-primitives-guard-verification.acl2 \
+	M6-DJVM-shared/jvm-frame-manipulation-primitives.cert \
+	JVM.pkg
+
+M6/m6-type-value.cert: M6/m6-type-value.lisp \
+	M6/m6-type-value.acl2 \
+	M6-DJVM-shared/jvm-type-value.cert \
+	M6.pkg
+
+M6/m6-internal-primitives.cert: M6/m6-internal-primitives.lisp \
+	M6/m6-internal-primitives.acl2 \
+	M6-DJVM-shared/jvm-internal-primitives.cert \
+	M6.pkg
+
+BCV/bcv-next-inst-is.cert: BCV/bcv-next-inst-is.lisp \
+	BCV/bcv-next-inst-is.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV/bcv-collected-frames-are-strictly-ordered.cert \
+	BCV.pkg
+
+DJVM/INST/base-djvm-functions.cert: DJVM/INST/base-djvm-functions.lisp \
+	DJVM/INST/base-djvm-functions.acl2 \
+	BCV/typechecker.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM.pkg
+
+M6/m6-semantic-primitives-2.cert: M6/m6-semantic-primitives-2.lisp \
+	M6/m6-semantic-primitives-2.acl2 \
+	M6-DJVM-shared/jvm-semantic-primitives-2.cert \
+	M6/m6-state.cert \
+	M6/m6-thread.cert \
+	M6/m6-object-type-hierachy.cert \
+	M6/m6-frame-manipulation-primitives.cert \
+	M6/m6-linker.cert \
+	M6/m6-thread-primitives.cert \
+	M6/m6-monitor-failure-as-fatalError.cert \
+	M6/m6-object-manipulation-primitives.cert \
+	M6/m6-static-initializer.cert \
+	M6.pkg
+
+BCV/good-scl-strong-encapsulate.cert: BCV/good-scl-strong-encapsulate.lisp \
+	BCV/good-scl-strong-encapsulate.acl2 \
+	DJVM/consistent-state-strong.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-functions.cert \
+	BCV.pkg
+
+M6/m6-thread-primitives.cert: M6/m6-thread-primitives.lisp \
+	M6/m6-thread-primitives.acl2 \
+	M6-DJVM-shared/jvm-thread-primitives.cert \
+	M6.pkg
+
+DJVM/INST/base-bcv-fact-nth-opstack.cert: DJVM/INST/base-bcv-fact-nth-opstack.lisp \
+	DJVM/INST/base-bcv-fact-nth-opstack.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base-bind-free.cert \
+	BCV.pkg
+
+M6/m6-bytecode.cert: M6/m6-bytecode.lisp \
+	M6/m6-bytecode.acl2 \
+	M6/m6-state.cert \
+	M6/m6-frame-manipulation-primitives.cert \
+	M6/m6-exceptions.cert \
+	M6/m6-object-manipulation-primitives.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	M6/m6-native.cert \
+	M6/m6-type-value.cert \
+	M6/m6-static-initializer.cert \
+	M6/m6-loader.cert \
+	M6/m6-linker.cert \
+	M6.pkg
+
+DJVM/INST/base-object-field-always-initialized-support.cert: DJVM/INST/base-object-field-always-initialized-support.lisp \
+	DJVM/INST/base-object-field-always-initialized-support.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM.pkg
+
+BCV/bcv-good-env-encapsulate.cert: BCV/bcv-good-env-encapsulate.lisp \
+	BCV/bcv-good-env-encapsulate.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	BCV/bcv-functions.cert \
+	BCV.pkg
+
+BCV/typechecker-ext.cert: BCV/typechecker-ext.lisp \
+	BCV/typechecker-ext.acl2 \
+	BCV/typechecker.cert \
+	BCV.pkg
+
+DJVM/INST/base-extra.cert: DJVM/INST/base-extra.lisp \
+	DJVM/INST/base-extra.acl2 \
+	DJVM/consistent-state-obj-init.cert \
+	DJVM/consistent-state-strong.cert \
+	DJVM/consistent-state-obj-init-properties-export.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm.pkg.cert: M6-DJVM-shared/jvm.pkg.lisp \
+	common/symbols.cert \
+	common/primitives.cert \
+	common/no-dup-set-facts.cert
+
+small/PUSH.cert: small/PUSH.lisp \
+	small/PUSH.acl2 \
+	small/djvm-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/consistent-state-properties.cert \
+	small/bcv-method-properties.cert \
+	small/djvm-PUSH.cert
+
+M6-DJVM-shared/jvm-bytecode-guard-verification.cert: M6-DJVM-shared/jvm-bytecode-guard-verification.lisp \
+	M6-DJVM-shared/jvm-bytecode-guard-verification.acl2 \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	JVM.pkg
+
+DJVM/INST/base-frame-sig-expansion.cert: DJVM/INST/base-frame-sig-expansion.lisp \
+	DJVM/INST/base-frame-sig-expansion.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-frame-sig-expansion-support.cert \
+	DJVM/INST/base-bcv-djvm-assignable.cert \
+	DJVM/INST/base-array-facts.cert \
+	DJVM/INST/base-bcv-djvm-assignable.cert \
+	DJVM/INST/base-array-facts.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-frame-sig-after-class-loading.cert \
+	DJVM/INST/base-load-class-normalize.cert \
+	DJVM/INST/base-frame-sig-after-class-loading.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-object-field-always-initialized.cert \
+	DJVM/INST/base-lookupfield-get-field-type.cert \
+	DJVM/INST/base-consistent-state-lookupfield-support.cert \
+	DJVM/INST/base-consistent-object-m6-getfield.cert \
+	DJVM.pkg
+
+M6/m6-obj.cert: M6/m6-obj.lisp \
+	M6/m6-obj.acl2 \
+	M6-DJVM-shared/jvm-obj.cert \
+	M6.pkg
+
+main/m6-simple.cert: main/m6-simple.lisp \
+	main/m6-simple.acl2 \
+	M6/m6-bytecode.cert \
+	M6.pkg
+
+M6-DJVM-shared/jvm-exceptions-guard-verification-1.cert: M6-DJVM-shared/jvm-exceptions-guard-verification-1.lisp \
+	M6-DJVM-shared/jvm-exceptions-guard-verification-1.acl2 \
+	JVM.pkg
+
+DJVM/djvm-heap.cert: DJVM/djvm-heap.lisp \
+	DJVM/djvm-heap.acl2 \
+	DJVM/djvm-type-value.cert \
+	DJVM/djvm-obj.cert \
+	DJVM/consistent-state.cert \
+	DJVM.pkg
+
+small/djvm-model.cert: small/djvm-model.lisp \
+	small/jvm-model.cert \
+	small/consistent-state.cert
+
+main/on-track-with-bcv-implies-next-inst-in-range.cert: main/on-track-with-bcv-implies-next-inst-in-range.lisp \
+	main/on-track-with-bcv-implies-next-inst-in-range.acl2 \
+	main/djvm-simple.cert \
+	DJVM/consistent-state-bcv-on-track.cert \
+	main/djvm-consistent-state-facts.cert \
+	DJVM.pkg
+
+M6/m6-class-table.cert: M6/m6-class-table.lisp \
+	M6/m6-class-table.acl2 \
+	M6-DJVM-shared/jvm-class-table.cert \
+	M6.pkg
+
+hanoi/hanoi-safety.cert: hanoi/hanoi-safety.lisp \
+	hanoi/hanoi-safety.acl2 \
+	hanoi/state.cert \
+	hanoi/move.cert \
+	hanoi/hanoi-model.cert \
+	hanoi/hanoi-solution.cert \
+	hanoi/perm.cert \
+	HANOI.pkg
+
+BCV/bcv-functions-basic.cert: BCV/bcv-functions-basic.lisp \
+	BCV/bcv-functions-basic.acl2 \
+	BCV/typechecker.cert \
+	BCV.pkg
+
+common/gen-guards.cert: common/gen-guards.lisp
+
+M6-DJVM-shared/jvm-class-table-test-data.cert: M6-DJVM-shared/jvm-class-table-test-data.lisp \
+	M6-DJVM-shared/jvm-class-table-test-data.acl2 \
+	JVM.pkg
+
+DJVM/INST/base-bcv-djvm-assignable.cert: DJVM/INST/base-bcv-djvm-assignable.lisp \
+	DJVM/INST/base-bcv-djvm-assignable.acl2 \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-djvm-functions.cert \
+	DJVM/INST/base-bcv-isAssignable-facts.cert \
+	DJVM/INST/base-reference-type-s-good-java-type.cert \
+	DJVM/INST/base-REFp-reference-type-s.cert \
+	DJVM/INST/base-consistent-state-good-icl-etc.cert \
+	DJVM/INST/base-array.cert \
+	DJVM/INST/base-array-facts.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-array-facts.cert \
+	DJVM.pkg
+
+DJVM/INST/base-isAssignableTo-properties-support.cert: DJVM/INST/base-isAssignableTo-properties-support.lisp \
+	DJVM/INST/base-isAssignableTo-properties-support.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-consistent-state-class-names-are-string.cert \
+	DJVM.pkg
+
+DJVM/INST/base-valid-type-s.cert: DJVM/INST/base-valid-type-s.lisp \
+	DJVM/INST/base-valid-type-s.acl2 \
+	M6-DJVM-shared/jvm-type-value.cert \
+	M6-DJVM-shared/jvm-state.cert \
+	DJVM.pkg
+
+BCV/bcv-searchStackFrame-reduce.cert: BCV/bcv-searchStackFrame-reduce.lisp \
+	BCV/bcv-searchStackFrame-reduce.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV/bcv-searchStackFrame-reduce-support.cert \
+	BCV/bcv-searchStackFrame-reduce-support-2.cert \
+	BCV.pkg
+
+DJVM/INST/base-skip-proofs2.cert: DJVM/INST/base-skip-proofs2.lisp \
+	DJVM/INST/base-skip-proofs2.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-skip-proofs.cert \
+	DJVM.pkg
+
+DJVM/INST/ANEWARRAY.cert: DJVM/INST/ANEWARRAY.lisp \
+	DJVM/INST/ANEWARRAY.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-extra.cert \
+	DJVM/INST/base-skip-proofs.cert \
+	DJVM/INST/base-consistent-state-load-class.cert \
+	DJVM/INST/base-load-class-normalize.cert \
+	DJVM/INST/base-consistent-state-update-trace.cert \
+	DJVM/INST/base-consistent-state-state-set-heap.cert \
+	DJVM/INST/base-build-an-array-instance-creates-consistent-object.cert \
+	DJVM/INST/base-bcv.cert \
+	DJVM/INST/base-bcv-check-monotonic.cert \
+	DJVM/INST/base-bcv-step-monotonic.cert \
+	DJVM/INST/base-frame-sig-expansion.cert \
+	DJVM/INST/base-bcv-frame-sig-expansion.cert \
+	DJVM/INST/base-next-state-more-specific.cert \
+	M6/m6-bytecode.cert \
+	DJVM/consistent-state-to-untag-state.cert \
+	DJVM/INST/base-state-equiv.cert \
+	DJVM/INST/base-method-ptr-no-change.cert \
+	DJVM/INST/base-method-no-change.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-env-test-data.cert: M6-DJVM-shared/jvm-env-test-data.lisp \
+	M6-DJVM-shared/jvm-env-test-data.acl2 \
+	JVM.pkg
+
+DJVM/INST/base-bcv-fact-isMatchingType-value-initialized.cert: DJVM/INST/base-bcv-fact-isMatchingType-value-initialized.lisp \
+	DJVM/INST/base-bcv-fact-isMatchingType-value-initialized.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-isAssignable.cert \
+	DJVM.pkg
+
+BCV/bcv-searchStackFrame-reduce-support.cert: BCV/bcv-searchStackFrame-reduce-support.lisp \
+	BCV/bcv-searchStackFrame-reduce-support.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV/bcv-collected-frames-are-strictly-ordered.cert \
+	BCV/bcv-searchStackFrame-only-suffix-matters.cert \
+	BCV/bcv-collect-sig-frame-vector-misc.cert \
+	BCV/bcv-next-stackframe-equal-suffix-suffix.cert \
+	BCV/bcv-pc-wff-mergedcode1.cert \
+	BCV.pkg
+
+M6-DJVM-shared/jvm-loader.cert: M6-DJVM-shared/jvm-loader.lisp \
+	M6-DJVM-shared/jvm-loader.acl2 \
+	M6-DJVM-shared/jvm-loader-primitives.cert \
+	M6-DJVM-shared/jvm-loader-constant-pool-primitives.cert \
+	M6-DJVM-shared/jvm-loader-inv.cert \
+	JVM.pkg
+
+small/consistent-state-properties.cert: small/consistent-state-properties.lisp \
+	small/consistent-state-properties.acl2 \
+	small/consistent-state.cert \
+	small/bcv-simple-model.cert \
+	small/bcv-model.cert \
+	small/bcv-succeed-implies-bcv-simple-succeed.cert \
+	small/bcv-simple-method-properties.cert \
+	small/generic.cert \
+	small/bcv-simple-method-properties.cert
+
+M6/factorial-program-correct.improved.cert: M6/factorial-program-correct.improved.lisp \
+	M6/factorial-program-correct.improved.acl2 \
+	M6/m6-start-jvm.cert \
+	M6/ADD1-program-correct.improved.cert \
+	M6/factorial-program-init-state.cert \
+	M6.pkg
+
+small/bcv-simple-check-implies-djvm-check.cert: small/bcv-simple-check-implies-djvm-check.lisp \
+	small/bcv-simple-check-implies-djvm-check.acl2 \
+	small/bcv-simple-model.cert \
+	small/djvm-model.cert \
+	small/INVOKE.cert \
+	small/PUSH.cert \
+	small/POP.cert \
+	small/IFEQ.cert \
+	small/RETURN.cert \
+	small/HALT.cert
+
+DJVM/INST/base-consistent-state-step-properties.cert: DJVM/INST/base-consistent-state-step-properties.lisp \
+	DJVM/INST/base-consistent-state-step-properties.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-object-m6-getfield.cert: DJVM/INST/base-consistent-object-m6-getfield.lisp \
+	DJVM/INST/base-consistent-object-m6-getfield.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	DJVM/INST/base-consistent-state-lookupfield.cert \
+	DJVM/INST/base-consistent-state-class-names-are-string.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-consistent-state-lookupfield-support.cert \
+	DJVM/INST/base-lookupfield-fieldname-normalize.cert \
+	DJVM/INST/base-consistent-state-lookupfield-support.cert \
+	DJVM.pkg
+
+M6/m6-exceptions.cert: M6/m6-exceptions.lisp \
+	M6/m6-exceptions.acl2 \
+	M6-DJVM-shared/jvm-exceptions.cert \
+	M6.pkg
+
+small/bcv-partial-signature-vector-full-signature-vector.cert: small/bcv-partial-signature-vector-full-signature-vector.lisp \
+	small/bcv-model.cert \
+	small/generic.cert \
+	small/bcv-find-correct-witness-sig-vector-1.cert
+
+DJVM/djvm-state.cert: DJVM/djvm-state.lisp \
+	DJVM/djvm-state.acl2 \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-thread.cert \
+	M6-DJVM-shared/jvm-frame-manipulation-primitives.cert \
+	M6-DJVM-shared/jvm-linker.cert \
+	DJVM/djvm-thread.cert \
+	DJVM.pkg
+
+small/jvm-model.cert: small/jvm-model.lisp
+
+small/bcv-verified-implies-method-name-method-table-fixed.cert: small/bcv-verified-implies-method-name-method-table-fixed.lisp \
+	small/bcv-model.cert \
+	small/generic.cert \
+	small/bcv-find-correct-witness-bcv-check-pre.cert
+
+small/bcv-find-correct-witness-bcv-check-pre.cert: small/bcv-find-correct-witness-bcv-check-pre.lisp \
+	small/bcv-find-correct-witness-bcv-check-pre.acl2 \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert
+
+DJVM/INST/base-bcv-isAssignable-facts.cert: DJVM/INST/base-bcv-isAssignable-facts.lisp \
+	DJVM/INST/base-bcv-isAssignable-facts.acl2 \
+	DJVM/INST/base.cert \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/consistent-state.cert \
+	DJVM/INST/base-djvm-functions.cert \
+	DJVM/INST/base-skip-proofs.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-state-step-definition.cert: DJVM/INST/base-consistent-state-step-definition.lisp \
+	DJVM/INST/base-consistent-state-step-definition.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-loader-guard-verification.cert \
+	DJVM.pkg
+
+DJVM/INST/base-load-class-normalize-class-by-name-support.cert: DJVM/INST/base-load-class-normalize-class-by-name-support.lisp \
+	DJVM/INST/base-load-class-normalize-class-by-name-support.acl2 \
+	M6-DJVM-shared/jvm-linker.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-verifier.cert: M6-DJVM-shared/jvm-verifier.lisp \
+	M6-DJVM-shared/jvm-verifier.acl2 \
+	M6-DJVM-shared/jvm-class-table.cert \
+	M6-DJVM-shared/jvm-state.cert \
+	JVM.pkg
+
+BCV/bcv-searchStackFrame-only-suffix-matters.cert: BCV/bcv-searchStackFrame-only-suffix-matters.lisp \
+	BCV/bcv-searchStackFrame-only-suffix-matters.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV.pkg
+
+DJVM/INST/base-frame-sig-expansion-support.cert: DJVM/INST/base-frame-sig-expansion-support.lisp \
+	DJVM/INST/base-frame-sig-expansion-support.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-state-more.cert: DJVM/INST/base-consistent-state-more.lisp \
+	DJVM/INST/base-consistent-state-more.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	DJVM.pkg
+
+small/POP.cert: small/POP.lisp \
+	small/djvm-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/consistent-state-properties.cert \
+	small/bcv-method-properties.cert \
+	small/djvm-POP.cert
+
+M6/m6-monitor-failure-as-java-Exception.cert: M6/m6-monitor-failure-as-java-Exception.lisp \
+	M6/m6-monitor-failure-as-java-Exception.acl2 \
+	M6-DJVM-shared/jvm-monitor-failure-as-java-Exception.cert \
+	M6.pkg
+
+DJVM/INST/base-bcv-djvm-getfield.cert: DJVM/INST/base-bcv-djvm-getfield.lisp \
+	DJVM/INST/base-bcv-djvm-getfield.acl2 \
+	DJVM/INST/base-bcv.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-type-size-normalize-fix-type.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-isAssignableTo.cert \
+	DJVM/INST/base-consistent-state-lookupfield-bcv.cert \
+	DJVM/INST/base-consistent-state-lookupfield-bcv.cert \
+	DJVM/INST/base-consistent-state-lookupfield-bcv.cert \
+	DJVM/INST/base-bcv-fact-array-type-assignable.cert \
+	DJVM/INST/base-consistent-state-lookupfield-bcv.cert \
+	DJVM/INST/base-valid-object-type-assignable-to-java-lang-Object.cert \
+	DJVM.pkg
+
+small/bcv-if-pc-small-then-not-bound-in-witness.cert: small/bcv-if-pc-small-then-not-bound-in-witness.lisp \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/bcv-if-verified-then-pc-ordered.cert
+
+common/no-dup-set-facts.cert: common/no-dup-set-facts.lisp \
+	common/no-dup-set-facts.acl2
+
+small/generic.cert: small/generic.lisp \
+	small/jvm-model.cert \
+	small/bcv-simple-model.cert
+
+small/consistent-state-step.cert: small/consistent-state-step.lisp \
+	small/consistent-state-step.acl2 \
+	small/jvm-model.cert \
+	small/consistent-state.cert
+
+DJVM/djvm-env.cert: DJVM/djvm-env.lisp \
+	DJVM/djvm-env.acl2 \
+	M6-DJVM-shared/jvm-env.cert \
+	DJVM.pkg
+
+DJVM/INST/base-m6-getfield-consistent-value.cert: DJVM/INST/base-m6-getfield-consistent-value.lisp \
+	DJVM/INST/base-m6-getfield-consistent-value.acl2 \
+	DJVM/consistent-state.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	DJVM/INST/base-consistent-object-m6-getfield.cert \
+	DJVM.pkg
+
+hanoi/basic.cert: hanoi/basic.lisp \
+	hanoi/basic.acl2 \
+	HANOI.pkg
+
+M6-DJVM-shared/jvm-exceptions.cert: M6-DJVM-shared/jvm-exceptions.lisp \
+	M6-DJVM-shared/jvm-exceptions.acl2 \
+	M6-DJVM-shared/jvm-type-value.cert \
+	M6-DJVM-shared/jvm-object-manipulation-primitives.cert \
+	M6-DJVM-shared/jvm-thread.cert \
+	M6-DJVM-shared/jvm-thread-primitives.cert \
+	M6-DJVM-shared/jvm-linker.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	M6-DJVM-shared/jvm-monitor-primitives.cert \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-obj.cert \
+	M6-DJVM-shared/jvm-exceptions-guard-verification-1.cert \
+	JVM.pkg
+
+DJVM/INST/base-consistent-state-make-state-general.cert: DJVM/INST/base-consistent-state-make-state-general.lisp \
+	DJVM/INST/base-consistent-state-make-state-general.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM.pkg
+
+DJVM/INST/base-fatal-errorflag-not-earsed.cert: DJVM/INST/base-fatal-errorflag-not-earsed.lisp \
+	DJVM/INST/base-fatal-errorflag-not-earsed.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM.pkg
+
+DJVM/INST/base-judgement-after-load-class-no-change.cert: DJVM/INST/base-judgement-after-load-class-no-change.lisp \
+	DJVM/INST/base-judgement-after-load-class-no-change.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM/INST/base-load-class-normalize-deref2.cert \
+	DJVM/INST/base-load-class-normalize-assignmentcompatible.cert \
+	DJVM/INST/base-load-class-normalize-class-by-name.cert \
+	DJVM/INST/base-load-class-normalize-deref2.cert \
+	DJVM/INST/base-load-class-normalize-assignmentcompatible.cert \
+	DJVM/INST/base-load-class-normalize-class-by-name.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	DJVM/INST/base-load-class-normalize-isAssignableTo.cert \
+	DJVM.pkg
+
+BCV/bcv-collected-frames-are-good-frames.cert: BCV/bcv-collected-frames-are-good-frames.lisp \
+	BCV/bcv-collected-frames-are-good-frames.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV.pkg
+
+M6/ADD1-init-state.cert: M6/ADD1-init-state.lisp \
+	M6/ADD1-init-state.acl2 \
+	M6-DJVM-shared/cldc-classtable.cert \
+	M6.pkg
+
+
+
+DJVM/INST/base-bcv-fact-isAssignable-prefixclass-not-category2.cert: DJVM/INST/base-bcv-fact-isAssignable-prefixclass-not-category2.lisp \
+	DJVM/INST/base-bcv-fact-isAssignable-prefixclass-not-category2.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-state-good-icl-etc.cert: DJVM/INST/base-consistent-state-good-icl-etc.lisp \
+	DJVM/INST/base-consistent-state-good-icl-etc.acl2 \
+	DJVM/consistent-state.cert \
+	BCV/bcv-functions.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM.pkg
+
+DJVM/INST/base-load-class-normalize-class-by-name.cert: DJVM/INST/base-load-class-normalize-class-by-name.lisp \
+	DJVM/INST/base-load-class-normalize-class-by-name.acl2 \
+	M6-DJVM-shared/jvm-linker.cert \
+	DJVM/INST/base-load-class-normalize-class-by-name-support.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-thread-primitives-guard-verification.cert: M6-DJVM-shared/jvm-thread-primitives-guard-verification.lisp \
+	M6-DJVM-shared/jvm-thread-primitives-guard-verification.acl2 \
+	M6-DJVM-shared/jvm-thread-primitives.cert \
+	JVM.pkg
+
+DJVM/INST/base-consistent-state-load-class.cert: DJVM/INST/base-consistent-state-load-class.lisp \
+	DJVM/INST/base-consistent-state-load-class.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-state-make-state.cert: DJVM/INST/base-consistent-state-make-state.lisp \
+	DJVM/INST/base-consistent-state-make-state.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-object-manipulation-primitives.cert: M6-DJVM-shared/jvm-object-manipulation-primitives.lisp \
+	M6-DJVM-shared/jvm-object-manipulation-primitives.acl2 \
+	M6-DJVM-shared/jvm-class-table.cert \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-class-hierachy-aux.cert \
+	M6-DJVM-shared/jvm-obj.cert \
+	M6-DJVM-shared/jvm-frame-manipulation-primitives.cert \
+	JVM.pkg
+
+DJVM/INST/base-bcv-support.cert: DJVM/INST/base-bcv-support.lisp \
+	DJVM/INST/base-bcv-support.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	BCV/typechecker.cert \
+	DJVM/INST/base-skip-proofs.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-bcv-isAssignable-facts.cert \
+	DJVM.pkg
+
+BCV/typechecker-simple.cert: BCV/typechecker-simple.lisp \
+	BCV/typechecker-simple.acl2 \
+	BCV/typechecker.cert \
+	BCV.pkg
+
+M6-DJVM-shared/jvm-loader-guard-verification.cert: M6-DJVM-shared/jvm-loader-guard-verification.lisp \
+	M6-DJVM-shared/jvm-loader-guard-verification.acl2 \
+	M6-DJVM-shared/jvm-loader.cert \
+	M6-DJVM-shared/jvm-dynamic-loading-property.cert \
+	M6-DJVM-shared/jvm-loader-guard-verification-support-load-cp-guard.cert \
+	JVM.pkg
+
+DJVM/INST/base-state-set-local-at.cert: DJVM/INST/base-state-set-local-at.lisp \
+	DJVM/INST/base-state-set-local-at.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM/INST/base-consistent-state-step-definition.cert \
+	DJVM/INST/base-consistent-state-step-properties.cert \
+	DJVM.pkg
+
+BCV/bcv-wff-code.cert: BCV/bcv-wff-code.lisp \
+	BCV/bcv-wff-code.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	BCV/bcv-base.cert \
+	BCV.pkg
+
+small/bcv-model.cert: small/bcv-model.lisp \
+	small/jvm-model.cert
+
+DJVM/INST/base-value-sig-no-change-after-class-table-heap-extension.cert: DJVM/INST/base-value-sig-no-change-after-class-table-heap-extension.lisp \
+	DJVM/INST/base-value-sig-no-change-after-class-table-heap-extension.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-exceptions-guard-verification.cert: M6-DJVM-shared/jvm-exceptions-guard-verification.lisp \
+	M6-DJVM-shared/jvm-exceptions-guard-verification.acl2 \
+	M6-DJVM-shared/jvm-exceptions.cert \
+	M6-DJVM-shared/jvm-thread-primitives-guard-verification.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy-guard-verification.cert \
+	M6-DJVM-shared/jvm-monitor-primitives-guard-verification.cert \
+	M6-DJVM-shared/jvm-frame-manipulation-primitives-guard-verification.cert \
+	M6-DJVM-shared/jvm-linker-guard-verification.cert \
+	JVM.pkg
+
+DJVM/INST/base-consistent-state-modifying-object-support.cert: DJVM/INST/base-consistent-state-modifying-object-support.lisp \
+	DJVM/INST/base-consistent-state-modifying-object-support.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM.pkg
+
+small/bcv-succeed-implies-bcv-simple-succeed.cert: small/bcv-succeed-implies-bcv-simple-succeed.lisp \
+	small/bcv-succeed-implies-bcv-simple-succeed.acl2 \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert \
+	small/bcv-find-correct-witness.cert \
+	small/bcv-find-correct-witness-sig-vector.cert
+
+BCV/bcv-sig-do-produce-compatible-next-state.cert: BCV/bcv-sig-do-produce-compatible-next-state.lisp \
+	BCV/bcv-sig-do-produce-compatible-next-state.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV/bcv-isAssignable-transitive.cert \
+	BCV/bcv-searchStackFrame-reduce-support.cert \
+	BCV.pkg
+
+DJVM/INST/base-bcv-valid-local-index-facts.cert: DJVM/INST/base-bcv-valid-local-index-facts.lisp \
+	DJVM/INST/base-bcv-valid-local-index-facts.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM.pkg
+
+M6/m6-loader.cert: M6/m6-loader.lisp \
+	M6/m6-loader.acl2 \
+	M6-DJVM-shared/jvm-loader.cert \
+	M6.pkg
+
+main/djvm-simple.cert: main/djvm-simple.lisp \
+	main/djvm-simple.acl2 \
+	DJVM/consistent-state-strong.cert \
+	DJVM/INST/inst.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-monitor-primitives-guard-verification.cert: M6-DJVM-shared/jvm-monitor-primitives-guard-verification.lisp \
+	M6-DJVM-shared/jvm-monitor-primitives-guard-verification.acl2 \
+	M6-DJVM-shared/jvm-monitor-primitives.cert \
+	M6-DJVM-shared/jvm-thread-primitives-guard-verification.cert \
+	JVM.pkg
+
+M6-DJVM-shared/jvm-type-value.cert: M6-DJVM-shared/jvm-type-value.lisp \
+	M6-DJVM-shared/jvm-type-value.acl2 \
+	M6-DJVM-shared/jvm-class-table.cert \
+	JVM.pkg
+
+
+
+DJVM/INST/base-lookupfield-fieldname-normalize.cert: DJVM/INST/base-lookupfield-fieldname-normalize.lisp \
+	DJVM/INST/base-lookupfield-fieldname-normalize.acl2 \
+	M6-DJVM-shared/jvm-linker.cert \
+	M6-DJVM-shared/jvm-class-table.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-loader-guard-verification-support-load-cp-guard.cert: M6-DJVM-shared/jvm-loader-guard-verification-support-load-cp-guard.lisp \
+	M6-DJVM-shared/jvm-loader-guard-verification-support-load-cp-guard.acl2 \
+	M6-DJVM-shared/jvm-loader.cert \
+	M6-DJVM-shared/jvm-dynamic-loading-property.cert \
+	JVM.pkg
+
+DJVM/INST/base-loader-preserve-consistent-state.cert: DJVM/INST/base-loader-preserve-consistent-state.lisp \
+	DJVM/INST/base-loader-preserve-consistent-state.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-loader-guard-verification.cert \
+	DJVM/INST/base-consistent-state-step-definition.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/wff-data-structure.cert: M6-DJVM-shared/wff-data-structure.lisp \
+	M6-DJVM-shared/wff-data-structure.acl2 \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-thread.cert \
+	M6-DJVM-shared/jvm-frame-manipulation-primitives.cert \
+	JVM.pkg
+
+DJVM/INST/base-canPop1-consistent-sig-stack-consistent-value.cert: DJVM/INST/base-canPop1-consistent-sig-stack-consistent-value.lisp \
+	DJVM/INST/base-canPop1-consistent-sig-stack-consistent-value.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	BCV.pkg
+
+DJVM/INST/base-load-class-normalize-deref2.cert: DJVM/INST/base-load-class-normalize-deref2.lisp \
+	DJVM/INST/base-load-class-normalize-deref2.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-load-class-normalize-deref2-support.cert \
+	DJVM.pkg
+
+DJVM/INST/base-skip-proofs.cert: DJVM/INST/base-skip-proofs.lisp \
+	DJVM/INST/base-skip-proofs.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/djvm-exceptions.cert \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	DJVM/consistent-state-strong.cert \
+	DJVM.pkg
+
+M6/m6-monitor-failure-as-fatalError.cert: M6/m6-monitor-failure-as-fatalError.lisp \
+	M6/m6-monitor-failure-as-fatalError.acl2 \
+	M6-DJVM-shared/jvm-monitor-failure-as-fatalError.cert \
+	M6.pkg
+
+BCV/bcv-next-stackframe-equal-suffix-suffix.cert: BCV/bcv-next-stackframe-equal-suffix-suffix.lisp \
+	BCV/bcv-next-stackframe-equal-suffix-suffix.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV.pkg
+
+M6-DJVM-shared/jvm-bytecode.cert: M6-DJVM-shared/jvm-bytecode.lisp \
+	M6-DJVM-shared/jvm-bytecode.acl2 \
+	M6-DJVM-shared/jvm-thread.cert \
+	M6-DJVM-shared/jvm-frame-manipulation-primitives.cert \
+	M6-DJVM-shared/jvm-linker.cert \
+	JVM.pkg
+
+BCV/bcv-collect-sig-frame-vector-misc.cert: BCV/bcv-collect-sig-frame-vector-misc.lisp \
+	BCV/bcv-collect-sig-frame-vector-misc.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV.pkg
+
+DJVM/INST/AASTORE.cert: DJVM/INST/AASTORE.lisp \
+	DJVM/INST/AASTORE.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-extra.cert \
+	DJVM/INST/base-skip-proofs.cert \
+	DJVM/INST/base-update-heap.cert \
+	DJVM/INST/base-update-array.cert \
+	DJVM/INST/base-bcv.cert \
+	DJVM/INST/base-bcv-check-monotonic.cert \
+	DJVM/INST/base-bcv-step-monotonic.cert \
+	DJVM/INST/base-frame-sig-expansion.cert \
+	DJVM/INST/base-update-heap.cert \
+	DJVM/INST/base-bcv-update-heap.cert \
+	DJVM/INST/base-bcv-frame-sig-expansion.cert \
+	DJVM/INST/base-next-state-more-specific.cert \
+	M6/m6-bytecode.cert \
+	DJVM/consistent-state-to-untag-state.cert \
+	DJVM/INST/base-state-equiv.cert \
+	DJVM/INST/base-method-ptr-no-change.cert \
+	DJVM/INST/base-method-no-change.cert \
+	DJVM.pkg
+
+DJVM/djvm-type-value.cert: DJVM/djvm-type-value.lisp \
+	DJVM/djvm-type-value.acl2 \
+	M6-DJVM-shared/jvm-type-value.cert \
+	M6-DJVM-shared/jvm-class-table.cert \
+	M6-DJVM-shared/jvm-obj.cert \
+	DJVM.pkg
+
+BCV/bcv-functions.cert: BCV/bcv-functions.lisp \
+	BCV/bcv-functions.acl2 \
+	BCV/typechecker.cert \
+	DJVM/consistent-state.cert \
+	BCV/bcv-functions-basic.cert \
+	BCV.pkg
+
+small/state-equiv-def.cert: small/state-equiv-def.lisp \
+	small/jvm-model.cert \
+	small/djvm-model.cert
+
+DJVM/INST/base-bcv-fact-isAssignable-len-pushOpstack.cert: DJVM/INST/base-bcv-fact-isAssignable-len-pushOpstack.lisp \
+	DJVM/INST/base-bcv-fact-isAssignable-len-pushOpstack.acl2 \
+	BCV/typechecker.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM.pkg
+
+BCV/bcv-base.cert: BCV/bcv-base.lisp \
+	BCV/bcv-base.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	BCV/bcv-functions.cert \
+	BCV/bcv-good-env-encapsulate.cert \
+	BCV.pkg
+
+DJVM/INST/base-load-class-normalize-isAssignableTo.cert: DJVM/INST/base-load-class-normalize-isAssignableTo.lisp \
+	DJVM/INST/base-load-class-normalize-isAssignableTo.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-load-class-normalize-isAssignableTo-support.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-state-class-names-are-string.cert: DJVM/INST/base-consistent-state-class-names-are-string.lisp \
+	DJVM/INST/base-consistent-state-class-names-are-string.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM.pkg
+
+DJVM/INST/base-method-ptr-no-change.cert: DJVM/INST/base-method-ptr-no-change.lisp \
+	DJVM/INST/base-method-ptr-no-change.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-state-set-local-at.cert \
+	DJVM/INST/base-skip-proofs.cert \
+	DJVM.pkg
+
+hanoi/hanoi-model.cert: hanoi/hanoi-model.lisp \
+	hanoi/hanoi-model.acl2 \
+	hanoi/basic.cert \
+	hanoi/stack.cert \
+	hanoi/state.cert \
+	hanoi/move.cert \
+	HANOI.pkg
+
+BCV/bcv-collected-frames-are-strictly-ordered.cert: BCV/bcv-collected-frames-are-strictly-ordered.lisp \
+	BCV/bcv-collected-frames-are-strictly-ordered.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV.pkg
+
+DJVM/djvm-linker.cert: DJVM/djvm-linker.lisp \
+	DJVM/djvm-linker.acl2 \
+	M6-DJVM-shared/jvm-linker.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-modify-local-variable.cert: DJVM/INST/base-bcv-modify-local-variable.lisp \
+	DJVM/INST/base-bcv-modify-local-variable.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base-bind-free.cert \
+	BCV.pkg
+
+DJVM/INST/base-load-class-normalize-isAssignableTo-support.cert: DJVM/INST/base-load-class-normalize-isAssignableTo-support.lisp \
+	DJVM/INST/base-load-class-normalize-isAssignableTo-support.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-consistent-state-load-class.cert \
+	DJVM/INST/base-load-class-normalize-class-by-name.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-fatal-errorflag-not-earsed.cert \
+	DJVM/INST/base-isAssignableTo-properties.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-loader-inv.cert: M6-DJVM-shared/jvm-loader-inv.lisp \
+	M6-DJVM-shared/jvm-loader-inv.acl2 \
+	M6-DJVM-shared/jvm-loader-primitives.cert \
+	M6-DJVM-shared/jvm-loader-constant-pool-primitives.cert \
+	JVM.pkg
+
+small/bcv-simple-check-monotonic.cert: small/bcv-simple-check-monotonic.lisp \
+	small/bcv-simple-check-monotonic.acl2 \
+	small/bcv-simple-model.cert
+
+M6-DJVM-shared/jvm-object-type-hierachy.cert: M6-DJVM-shared/jvm-object-type-hierachy.lisp \
+	M6-DJVM-shared/jvm-object-type-hierachy.acl2 \
+	M6-DJVM-shared/jvm-loader.cert \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-type-value.cert \
+	JVM.pkg
+
+small/djvm-INVOKE.cert: small/djvm-INVOKE.lisp \
+	small/djvm-model.cert \
+	small/generic.cert \
+	small/consistent-state.cert \
+	small/consistent-state-properties.cert \
+	small/consistent-state-step.cert
+
+small/bcv-simple-model.cert: small/bcv-simple-model.lisp \
+	small/bcv-model.cert
+
+M6-DJVM-shared/jvm-class-table.cert: M6-DJVM-shared/jvm-class-table.lisp \
+	M6-DJVM-shared/jvm-class-table.acl2 \
+	M6-DJVM-shared/jvm-env.cert \
+	M6-DJVM-shared/jvm-class-table-test-data.cert \
+	JVM.pkg
+
+DJVM/INST/base-bcv-fact-isMatchingType-isAssignableTo-support.cert: DJVM/INST/base-bcv-fact-isMatchingType-isAssignableTo-support.lisp \
+	DJVM/INST/base-bcv-fact-isMatchingType-isAssignableTo-support.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-consistent-state-class-names-are-string.cert \
+	DJVM/INST/base-consistent-state-lookupfield-support.cert \
+	DJVM/INST/base-consistent-state-class-names-are-string.cert \
+	DJVM/INST/base-bcv-fact-isAssignable-prefixclass-not-category2.cert \
+	DJVM.pkg
+
+BCV/bcv-pc-wff-mergedcode1.cert: BCV/bcv-pc-wff-mergedcode1.lisp \
+	BCV/bcv-pc-wff-mergedcode1.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV.pkg
+
+BCV/typechecker.cert: BCV/typechecker.lisp \
+	BCV/typechecker.acl2 \
+	BCV.pkg
+
+DJVM/INST/base-bind-free.cert: DJVM/INST/base-bind-free.lisp
+
+DJVM/INST/base.cert: DJVM/INST/base.lisp \
+	DJVM/INST/base.acl2 \
+	DJVM/djvm-type-value.cert \
+	DJVM/djvm-frame-manipulation-primitives.cert \
+	DJVM/djvm-state.cert \
+	DJVM/djvm-exceptions.cert \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	M6-DJVM-shared/jvm-bytecode-guard-verification.cert \
+	BCV/typechecker.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	DJVM/consistent-state-to-untag-state.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-state-pushCategory2-support.cert: DJVM/INST/base-consistent-state-pushCategory2-support.lisp \
+	DJVM/INST/base-consistent-state-pushCategory2-support.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-consistent-state-step-definition.cert \
+	DJVM/INST/base-consistent-state-step-properties.cert \
+	DJVM.pkg
+
+DJVM/djvm.pkg.cert: DJVM/djvm.pkg.lisp \
+	common/symbols.cert \
+	common/primitives.cert \
+	common/no-dup-set-facts.cert \
+	M6-DJVM-shared/symbols.cert
+
+M6-DJVM-shared/jvm-thread-primitives.cert: M6-DJVM-shared/jvm-thread-primitives.lisp \
+	M6-DJVM-shared/jvm-thread-primitives.acl2 \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-thread.cert \
+	JVM.pkg
+
+DJVM/INST/base-load-class-normalize-assignmentcompatible.cert: DJVM/INST/base-load-class-normalize-assignmentcompatible.lisp \
+	DJVM/INST/base-load-class-normalize-assignmentcompatible.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-load-class-normalize-class-by-name.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-consistent-state-load-class.cert \
+	DJVM/INST/base-consistent-state-load-class.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-update-heap.cert: DJVM/INST/base-bcv-update-heap.lisp \
+	DJVM/INST/base-bcv-update-heap.acl2 \
+	DJVM/INST/base.cert \
+	DJVM.pkg
+
+small/bcv-simple-method-implies-bcv-simple-check-step-pre.cert: small/bcv-simple-method-implies-bcv-simple-check-step-pre.lisp \
+	small/bcv-simple-method-implies-bcv-simple-check-step-pre.acl2 \
+	small/bcv-simple-model.cert \
+	small/bcv-simple-method-properties.cert
+
+DJVM/INST/base-update-heap.cert: DJVM/INST/base-update-heap.lisp \
+	DJVM/INST/base-update-heap.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-consistent-state-step-definition.cert \
+	DJVM/INST/base-consistent-state-modifying-object.cert \
+	DJVM/INST/base-consistent-state-step-properties.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-fact-isMatchingType-isAssignable.cert: DJVM/INST/base-bcv-fact-isMatchingType-isAssignable.lisp \
+	DJVM/INST/base-bcv-fact-isMatchingType-isAssignable.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM.pkg
+
+small/djvm-is-safe.cert: small/djvm-is-safe.lisp \
+	small/djvm-is-safe.acl2 \
+	small/djvm-model.cert \
+	small/consistent-state.cert \
+	small/djvm-INVOKE.cert \
+	small/djvm-PUSH.cert \
+	small/djvm-IFEQ.cert \
+	small/djvm-HALT.cert \
+	small/djvm-POP.cert \
+	small/djvm-RETURN.cert
+
+M6/m6-native.cert: M6/m6-native.lisp \
+	M6/m6-native.acl2 \
+	M6/m6-internal-primitives.cert \
+	M6/m6-state.cert \
+	M6/m6-obj.cert \
+	M6/m6-type-value.cert \
+	M6/m6-thread.cert \
+	M6/m6-frame-manipulation-primitives.cert \
+	M6/m6-monitor-failure-as-java-Exception.cert \
+	M6/m6-object-manipulation-primitives.cert \
+	M6/m6-static-initializer.cert \
+	M6/m6-semantic-primitives-2.cert \
+	M6/m6-exceptions.cert \
+	M6.pkg
+
+small/djvm-HALT.cert: small/djvm-HALT.lisp \
+	small/djvm-model.cert \
+	small/generic.cert \
+	small/consistent-state.cert
+
+M6-DJVM-shared/jvm-semantic-primitives-2.cert: M6-DJVM-shared/jvm-semantic-primitives-2.lisp \
+	M6-DJVM-shared/jvm-semantic-primitives-2.acl2 \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-thread.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	JVM.pkg
+
+DJVM/INST/base-load-class-normalize-deref2-support.cert: DJVM/INST/base-load-class-normalize-deref2-support.lisp \
+	DJVM/INST/base-load-class-normalize-deref2-support.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM.pkg
+
+DJVM/consistent-state-obj-init-properties.cert: DJVM/consistent-state-obj-init-properties.lisp \
+	DJVM/consistent-state-obj-init-properties.acl2 \
+	DJVM/consistent-state-obj-init.cert \
+	DJVM/consistent-state-properties2.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM/djvm-frame-manipulation-primitives.cert \
+	DJVM/djvm-heap.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-load-class-normalize.cert \
+	DJVM.pkg
+
+small/djvm-RETURN.cert: small/djvm-RETURN.lisp \
+	small/djvm-model.cert \
+	small/generic.cert \
+	small/consistent-state.cert \
+	small/consistent-state-properties.cert \
+	small/consistent-state-step.cert
+
+DJVM/INST/base-bcv-check-monotonic-support.cert: DJVM/INST/base-bcv-check-monotonic-support.lisp \
+	DJVM/INST/base-bcv-check-monotonic-support.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	BCV/bcv-isAssignable-transitive.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base-canPop1-consistent-sig-stack-consistent-value.cert \
+	BCV.pkg
+
+M6/m6-linker.cert: M6/m6-linker.lisp \
+	M6/m6-linker.acl2 \
+	M6-DJVM-shared/jvm-linker.cert \
+	M6.pkg
+
+M6/m6.pkg.cert: M6/m6.pkg.lisp \
+	common/symbols.cert \
+	common/primitives.cert \
+	common/no-dup-set-facts.cert \
+	M6-DJVM-shared/symbols.cert
+
+M6-DJVM-shared/jvm-monitor-failure-as-java-Exception.cert: M6-DJVM-shared/jvm-monitor-failure-as-java-Exception.lisp \
+	M6-DJVM-shared/jvm-monitor-failure-as-java-Exception.acl2 \
+	M6-DJVM-shared/jvm-monitor-primitives.cert \
+	M6-DJVM-shared/jvm-obj.cert \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-exceptions.cert \
+	JVM.pkg
+
+DJVM/INST/base-update-trace-normalize.cert: DJVM/INST/base-update-trace-normalize.lisp \
+	DJVM/INST/base-update-trace-normalize.acl2 \
+	M6-DJVM-shared/jvm-state.cert \
+	DJVM/consistent-state.cert \
+	DJVM.pkg
+
+DJVM/consistent-state-bcv-on-track.cert: DJVM/consistent-state-bcv-on-track.lisp \
+	DJVM/consistent-state-bcv-on-track.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	DJVM/INST/base-djvm-functions.cert \
+	BCV/typechecker-simple.cert \
+	BCV/typechecker-ext.cert \
+	BCV/bcv-good-env-encapsulate.cert \
+	BCV/good-scl-strong-encapsulate.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-state-pushCategory2.cert: DJVM/INST/base-consistent-state-pushCategory2.lisp \
+	DJVM/INST/base-consistent-state-pushCategory2.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-consistent-state-pushCategory2-support.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-state.cert: DJVM/INST/base-consistent-state.lisp \
+	DJVM/INST/base-consistent-state.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM/INST/base-array.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base-skip-proofs.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/symbols.cert: M6-DJVM-shared/symbols.lisp \
+	M6-DJVM-shared/symbols.acl2 \
+	JVM.pkg
+
+DJVM/INST/base-consistent-state-state-set-heap.cert: DJVM/INST/base-consistent-state-state-set-heap.lisp \
+	DJVM/INST/base-consistent-state-state-set-heap.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	DJVM/INST/base-consistent-state-load-class-support.cert \
+	DJVM.pkg
+
+DJVM/INST/base-object-field-always-initialized.cert: DJVM/INST/base-object-field-always-initialized.lisp \
+	DJVM/INST/base-object-field-always-initialized.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/INST/base-object-field-always-initialized-support.cert \
+	DJVM.pkg
+
+small/djvm-POP.cert: small/djvm-POP.lisp \
+	small/djvm-model.cert \
+	small/generic.cert \
+	small/consistent-state.cert \
+	small/consistent-state-properties.cert \
+	small/consistent-state-step.cert
+
+M6/ADD1-program-correct.improved.cert: M6/ADD1-program-correct.improved.lisp \
+	M6/ADD1-program-correct.improved.acl2 \
+	M6/m6-start-jvm.cert \
+	M6-DJVM-shared/cldc-classtable.cert \
+	M6/ADD1-init-state.cert \
+	M6-DJVM-shared/wff-data-structure.cert \
+	M6.pkg
+
+M6-DJVM-shared/jvm-loader-primitives.cert: M6-DJVM-shared/jvm-loader-primitives.lisp \
+	M6-DJVM-shared/jvm-loader-primitives.acl2 \
+	M6-DJVM-shared/jvm-object-manipulation-primitives.cert \
+	M6-DJVM-shared/jvm-state.cert \
+	M6-DJVM-shared/jvm-type-value.cert \
+	JVM.pkg
+
+DJVM/INST/base-lookupfield-get-field-type.cert: DJVM/INST/base-lookupfield-get-field-type.lisp \
+	DJVM/INST/base-lookupfield-get-field-type.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-object-m6-getfield.cert \
+	DJVM/INST/base-consistent-object-m6-getfield.cert \
+	DJVM/INST/base-lookupfield-fieldname-normalize.cert \
+	DJVM.pkg
+
+small/consistent-state.cert: small/consistent-state.lisp \
+	small/jvm-model.cert \
+	small/bcv-model.cert
+
+small/bcv-simple-execute-produce-compatible-next-states.cert: small/bcv-simple-execute-produce-compatible-next-states.lisp \
+	small/bcv-simple-execute-produce-compatible-next-states.acl2 \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/bcv-find-correct-witness-bcv-check-pre.cert \
+	small/bcv-find-correct-witness-bcv-check-pre.cert
+
+M6-DJVM-shared/jvm-loader-constant-pool-primitives.cert: M6-DJVM-shared/jvm-loader-constant-pool-primitives.lisp \
+	M6-DJVM-shared/jvm-loader-constant-pool-primitives.acl2 \
+	M6-DJVM-shared/jvm-loader-primitives.cert \
+	JVM.pkg
+
+DJVM/INST/base-REFp-reference-type-s.cert: DJVM/INST/base-REFp-reference-type-s.lisp \
+	DJVM/INST/base-REFp-reference-type-s.acl2 \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM.pkg
+
+M6/m6-object-type-hierachy.cert: M6/m6-object-type-hierachy.lisp \
+	M6/m6-object-type-hierachy.acl2 \
+	M6-DJVM-shared/jvm-object-manipulation-primitives.cert \
+	M6.pkg
+
+DJVM/INST/base-state-equiv.cert: DJVM/INST/base-state-equiv.lisp \
+	DJVM/INST/base-state-equiv.acl2 \
+	DJVM/INST/base.cert \
+	M6/m6-bytecode.cert \
+	DJVM/consistent-state-to-untag-state.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM/INST/base-load-class-normalize.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM.pkg
+
+small/bcv-method-properties.cert: small/bcv-method-properties.lisp \
+	small/bcv-method-properties.acl2 \
+	small/bcv-model.cert \
+	small/bcv-if-verified-then-pc-ordered.cert \
+	small/bcv-succeed-implies-bcv-simple-succeed.cert \
+	small/bcv-succeed-implies-bcv-simple-succeed.cert \
+	small/bcv-if-pc-small-then-not-bound-in-witness.cert
+
+M6/m6-interpreter.cert: M6/m6-interpreter.lisp \
+	M6/m6-interpreter.acl2 \
+	M6/m6-bytecode.cert \
+	M6.pkg
+
+small/bcv-if-verified-then-pc-ordered.cert: small/bcv-if-verified-then-pc-ordered.lisp \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/bcv-find-correct-witness-bcv-check-pre.cert \
+	small/bcv-find-correct-witness-bcv-check-pre.cert
+
+hanoi/stack.cert: hanoi/stack.lisp \
+	hanoi/stack.acl2 \
+	HANOI.pkg
+
+
+
+DJVM/consistent-state-to-untag-state.cert: DJVM/consistent-state-to-untag-state.lisp \
+	DJVM/consistent-state-to-untag-state.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-dynamic-loading-property.cert: M6-DJVM-shared/jvm-dynamic-loading-property.lisp \
+	M6-DJVM-shared/jvm-dynamic-loading-property.acl2 \
+	M6-DJVM-shared/jvm-loader.cert \
+	JVM.pkg
+
+DJVM/INST/base-array-facts.cert: DJVM/INST/base-array-facts.lisp \
+	DJVM/INST/base-array-facts.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	BCV/typechecker.cert \
+	DJVM/INST/base-array.cert \
+	DJVM.pkg
+
+DJVM/djvm-frame-manipulation-primitives.cert: DJVM/djvm-frame-manipulation-primitives.lisp \
+	DJVM/djvm-frame-manipulation-primitives.acl2 \
+	M6-DJVM-shared/jvm-frame-manipulation-primitives.cert \
+	DJVM/consistent-state.cert \
+	DJVM.pkg
+
+DJVM/INST/base-consistent-state-lookupfield-support.cert: DJVM/INST/base-consistent-state-lookupfield-support.lisp \
+	DJVM/INST/base-consistent-state-lookupfield-support.acl2 \
+	M6-DJVM-shared/jvm-linker.cert \
+	M6-DJVM-shared/jvm-class-table.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	DJVM/consistent-state.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-lookupfield-fieldname-normalize.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv.cert: DJVM/INST/base-bcv.lisp \
+	DJVM/INST/base-bcv.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	BCV/typechecker.cert \
+	DJVM/INST/base-branch-instrs.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-canPopCategory1.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-suitable-value.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-value-initialized.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-monitor-failure-as-fatalError.cert: M6-DJVM-shared/jvm-monitor-failure-as-fatalError.lisp \
+	M6-DJVM-shared/jvm-monitor-failure-as-fatalError.acl2 \
+	M6-DJVM-shared/jvm-obj.cert \
+	M6-DJVM-shared/jvm-monitor-primitives.cert \
+	M6-DJVM-shared/jvm-state.cert \
+	JVM.pkg
+
+DJVM/INST/IFEQ.cert: DJVM/INST/IFEQ.lisp \
+	DJVM/INST/IFEQ.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-extra.cert \
+	DJVM/INST/base-branch-instrs.cert \
+	DJVM/INST/base-skip-proofs2.cert \
+	DJVM/INST/base-bcv.cert \
+	DJVM/INST/base-bcv-check-monotonic.cert \
+	DJVM/INST/base-bcv-step-monotonic.cert \
+	DJVM/INST/base-frame-sig-expansion.cert \
+	DJVM/INST/base-bcv-frame-sig-expansion.cert \
+	DJVM/INST/base-next-state-more-specific.cert \
+	M6/m6-bytecode.cert \
+	DJVM/consistent-state-to-untag-state.cert \
+	DJVM/INST/base-state-equiv.cert \
+	DJVM/INST/base-method-ptr-no-change.cert \
+	DJVM/INST/base-method-no-change.cert \
+	DJVM.pkg
+
+DJVM/INST/base-locals.cert: DJVM/INST/base-locals.lisp \
+	DJVM/INST/base-locals.acl2 \
+	DJVM/consistent-state.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-fact-array-type-assignable.cert: DJVM/INST/base-bcv-fact-array-type-assignable.lisp \
+	DJVM/INST/base-bcv-fact-array-type-assignable.acl2 \
+	BCV/typechecker.cert \
+	DJVM/consistent-state-to-sig-state.cert \
+	DJVM/INST/base-consistent-state-lookupfield-bcv.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv.cert \
+	DJVM.pkg
+
+DJVM/INST/base-next-state-more-specific.cert: DJVM/INST/base-next-state-more-specific.lisp \
+	DJVM/INST/base-next-state-more-specific.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-djvm-functions.cert \
+	DJVM/INST/base-frame-sig-expansion.cert \
+	DJVM/INST/base-bcv-frame-sig-expansion.cert \
+	DJVM/INST/base-bcv-check-monotonic-support.cert \
+	DJVM/INST/base-bcv-check-monotonic-support.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-bcv-djvm-assignable.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM/INST/base-bcv-djvm-assignable.cert \
+	DJVM/INST/base-reference-type-s-good-java-type.cert \
+	DJVM/INST/base-consistent-object-m6-getfield.cert \
+	DJVM/INST/base-bcv-isAssignable-facts.cert \
+	DJVM/INST/base-bcv-djvm-assignable.cert \
+	DJVM/INST/base-bcv-djvm-assignable.cert \
+	DJVM/INST/base-consistent-state-good-icl-etc.cert \
+	DJVM/INST/base-load-class-normalize-when-found.cert \
+	DJVM/INST/base-good-java-type-valid-type-s.cert \
+	DJVM/INST/base-reference-type-s-good-java-type.cert \
+	DJVM.pkg
+
+DJVM/INST/ASTORE.cert: DJVM/INST/ASTORE.lisp \
+	DJVM/INST/ASTORE.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM/INST/base-extra.cert \
+	DJVM/INST/base-state-set-local-at.cert \
+	DJVM/INST/base-consistent-state-more.cert \
+	DJVM/INST/base-bcv.cert \
+	DJVM/INST/base-bcv-locals.cert \
+	DJVM/INST/base-bcv-check-monotonic.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-consp-stk.cert \
+	DJVM/INST/base-bcv-step-monotonic.cert \
+	DJVM/INST/base-frame-sig-expansion.cert \
+	DJVM/INST/base-bcv-frame-sig-expansion.cert \
+	DJVM/INST/base-next-state-more-specific.cert \
+	M6/m6-bytecode.cert \
+	DJVM/consistent-state-to-untag-state.cert \
+	DJVM/INST/base-state-equiv.cert \
+	DJVM/INST/base-method-ptr-no-change.cert \
+	DJVM/INST/base-method-no-change.cert \
+	DJVM.pkg
+
+BCV/bcv-isAssignable-transitive.cert: BCV/bcv-isAssignable-transitive.lisp \
+	BCV/bcv-isAssignable-transitive.acl2 \
+	BCV/typechecker.cert \
+	DJVM/consistent-state.cert \
+	BCV/bcv-functions.cert \
+	BCV/bcv-functions.cert \
+	BCV.pkg
+
+M6/m6-class-hierachy-aux.cert: M6/m6-class-hierachy-aux.lisp \
+	M6/m6-class-hierachy-aux.acl2 \
+	M6/m6-class-table.cert \
+	M6-DJVM-shared/jvm-class-hierachy-aux.cert \
+	M6.pkg
+
+hanoi/perm.cert: hanoi/perm.lisp \
+	hanoi/perm.acl2 \
+	hanoi/basic.cert \
+	HANOI.pkg
+
+small/bcv-simple-method-properties.cert: small/bcv-simple-method-properties.lisp \
+	small/jvm-model.cert \
+	small/bcv-simple-model.cert
+
+M6/m6-frame-manipulation-primitives.cert: M6/m6-frame-manipulation-primitives.lisp \
+	M6/m6-frame-manipulation-primitives.acl2 \
+	M6/m6-type-value.cert \
+	M6/m6-thread.cert \
+	M6-DJVM-shared/jvm-frame-manipulation-primitives.cert \
+	M6.pkg
+
+DJVM/INST/base-consistent-state-update-trace.cert: DJVM/INST/base-consistent-state-update-trace.lisp \
+	DJVM/INST/base-consistent-state-update-trace.acl2 \
+	DJVM/INST/base-update-trace-normalize.cert \
+	DJVM/INST/base-consistent-state-make-state.cert \
+	DJVM.pkg
+
+M6/factorial-program-init-state.cert: M6/factorial-program-init-state.lisp \
+	M6/factorial-program-init-state.acl2 \
+	M6-DJVM-shared/cldc-classtable.cert \
+	M6/m6-interpreter.cert \
+	M6.pkg
+
+DJVM/INST/base-consistent-state-lookupfield.cert: DJVM/INST/base-consistent-state-lookupfield.lisp \
+	DJVM/INST/base-consistent-state-lookupfield.acl2 \
+	M6-DJVM-shared/jvm-linker.cert \
+	M6-DJVM-shared/jvm-class-table.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	DJVM/consistent-state.cert \
+	DJVM/INST/base-consistent-state-lookupfield-support.cert \
+	DJVM/INST/base-lookupfield-fieldname-normalize.cert \
+	DJVM.pkg
+
+DJVM/INST/base-method-no-change.cert: DJVM/INST/base-method-no-change.lisp \
+	DJVM/INST/base-method-no-change.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-load-class-normalize.cert \
+	DJVM/INST/base-skip-proofs.cert \
+	DJVM.pkg
+
+M6/m6-start-jvm.cert: M6/m6-start-jvm.lisp \
+	M6/m6-start-jvm.acl2 \
+	M6/m6-interpreter.cert \
+	M6.pkg
+
+small/bcv-find-correct-witness-sig-vector.cert: small/bcv-find-correct-witness-sig-vector.lisp \
+	small/bcv-find-correct-witness-sig-vector.acl2 \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/bcv-find-correct-witness-sig-vector-1.cert \
+	small/bcv-make-inst.cert \
+	small/bcv-find-correct-witness-bcv-check-pre.cert \
+	small/bcv-find-correct-witness-sig-vector-1.cert
+
+small/bcv-check-pre-implies-bcv-simple-check-pre-if-all-method-verified.cert: small/bcv-check-pre-implies-bcv-simple-check-pre-if-all-method-verified.lisp \
+	small/bcv-check-pre-implies-bcv-simple-check-pre-if-all-method-verified.acl2 \
+	small/bcv-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert
+
+DJVM/INST/base-consistent-state-consistent-object-support.cert: DJVM/INST/base-consistent-state-consistent-object-support.lisp \
+	DJVM/INST/base-consistent-state-consistent-object-support.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-consistent-state-class-names-are-string.cert \
+	DJVM.pkg
+
+main/djvm-is-safe.cert: main/djvm-is-safe.lisp \
+	main/djvm-is-safe.acl2 \
+	main/djvm-simple.cert \
+	main/djvm-consistent-state-facts.cert \
+	DJVM.pkg
+
+BCV/bcv-is-suffix-facts.cert: BCV/bcv-is-suffix-facts.lisp \
+	BCV/bcv-is-suffix-facts.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV.pkg
+
+DJVM/INST/base-bcv-protected-check-monotonic.cert: DJVM/INST/base-bcv-protected-check-monotonic.lisp \
+	DJVM/INST/base-bcv-protected-check-monotonic.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base-bind-free.cert \
+	BCV/bcv-isAssignable-transitive.cert \
+	BCV.pkg
+
+DJVM/consistent-state-properties.cert: DJVM/consistent-state-properties.lisp \
+	DJVM/consistent-state-properties.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/djvm-frame-manipulation-primitives.cert \
+	DJVM.pkg
+
+DJVM/djvm-exceptions.cert: DJVM/djvm-exceptions.lisp \
+	DJVM/djvm-exceptions.acl2 \
+	M6-DJVM-shared/jvm-exceptions.cert \
+	M6-DJVM-shared/jvm-exceptions-guard-verification.cert \
+	DJVM.pkg
+
+BCV/bcv-instructionIsTypeSafe-if-verified.cert: BCV/bcv-instructionIsTypeSafe-if-verified.lisp \
+	BCV/bcv-instructionIsTypeSafe-if-verified.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	BCV/bcv-base.cert \
+	BCV/bcv-wff-code.cert \
+	BCV.pkg
+
+DJVM/INST/base-consistent-state-modifying-object.cert: DJVM/INST/base-consistent-state-modifying-object.lisp \
+	DJVM/INST/base-consistent-state-modifying-object.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-consistent-state-modifying-object-support.cert \
+	DJVM.pkg
+
+BCV/bcv-succeed-implies-bcv-simple-succeed.cert: BCV/bcv-succeed-implies-bcv-simple-succeed.lisp \
+	BCV/bcv-succeed-implies-bcv-simple-succeed.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV/bcv-instructionIsTypeSafe-if-verified.cert \
+	BCV/bcv-wff-code.cert \
+	BCV/bcv-pc-wff-mergedcode1.cert \
+	BCV/bcv-is-suffix-facts.cert \
+	BCV/bcv-collect-sig-frame-vector-never-aftergoto.cert \
+	BCV/bcv-searchStackFrame-reduce.cert \
+	BCV/bcv-searchStackFrame-reduce.cert \
+	BCV/bcv-sig-do-produce-compatible-next-state.cert \
+	BCV/bcv-is-suffix-facts.cert \
+	BCV/bcv-collected-frames-are-good-frames.cert \
+	BCV/bcv-next-inst-is.cert \
+	BCV/bcv-mergedcodeIsTypesafe.cert \
+	BCV.pkg
+
+BCV/bcv-mergedcodeIsTypesafe.cert: BCV/bcv-mergedcodeIsTypesafe.lisp \
+	BCV/bcv-mergedcodeIsTypesafe.acl2 \
+	BCV/typechecker.cert \
+	BCV/typechecker-ext.cert \
+	BCV/typechecker-simple.cert \
+	BCV/bcv-base.cert \
+	BCV/bcv-searchStackFrame-reduce.cert \
+	BCV.pkg
+
+small/INVOKE.cert: small/INVOKE.lisp \
+	small/INVOKE.acl2 \
+	small/djvm-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/consistent-state-properties.cert \
+	small/bcv-method-properties.cert \
+	small/djvm-INVOKE.cert
+
+DJVM/INST/base-consistent-state-load-class-support.cert: DJVM/INST/base-consistent-state-load-class-support.lisp \
+	DJVM/INST/base-consistent-state-load-class-support.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-bytecode.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-consistent-state-make-state.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM.pkg
+
+M6-DJVM-shared/jvm-env.cert: M6-DJVM-shared/jvm-env.lisp \
+	M6-DJVM-shared/jvm-env.acl2 \
+	M6-DJVM-shared/jvm-env-test-data.cert \
+	JVM.pkg
+
+DJVM/consistent-state-obj-init-properties-export.cert: DJVM/consistent-state-obj-init-properties-export.lisp \
+	DJVM/consistent-state-obj-init-properties-export.acl2 \
+	DJVM/consistent-state-obj-init.cert \
+	DJVM/consistent-state-properties2.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM/djvm-heap.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/consistent-state-obj-init-properties.cert \
+	DJVM.pkg
+
+
+
+DJVM/djvm-class-table.cert: DJVM/djvm-class-table.lisp \
+	DJVM/djvm-class-table.acl2 \
+	M6-DJVM-shared/jvm-class-table.cert \
+	DJVM.pkg
+
+DJVM/djvm-thread.cert: DJVM/djvm-thread.lisp \
+	DJVM/djvm-thread.acl2 \
+	M6-DJVM-shared/jvm-thread.cert \
+	DJVM.pkg
+
+DJVM/INST/base-load-class-normalize-support.cert: DJVM/INST/base-load-class-normalize-support.lisp \
+	DJVM/INST/base-load-class-normalize-support.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM/INST/base-loader-preserve-consistent-state.cert \
+	DJVM.pkg
+
+main/step-preserve-state-equiv-if-on-track-with-bcv.cert: main/step-preserve-state-equiv-if-on-track-with-bcv.lisp \
+	main/step-preserve-state-equiv-if-on-track-with-bcv.acl2 \
+	main/djvm-simple.cert \
+	main/m6-simple.cert \
+	DJVM/consistent-state-bcv-on-track.cert \
+	BCV/typechecker-simple.cert \
+	main/on-track-with-bcv-implies-next-inst-in-range.cert \
+	DJVM.pkg
+
+DJVM/consistent-state-properties2.cert: DJVM/consistent-state-properties2.lisp \
+	DJVM/consistent-state-properties2.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/djvm-frame-manipulation-primitives.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/consistent-state-properties.cert \
+	DJVM.pkg
+
+DJVM/consistent-state-obj-init.cert: DJVM/consistent-state-obj-init.lisp \
+	DJVM/consistent-state-obj-init.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM.pkg
+
+DJVM/INST/base-build-an-array-instance-creates-consistent-object.cert: DJVM/INST/base-build-an-array-instance-creates-consistent-object.lisp \
+	DJVM/INST/base-build-an-array-instance-creates-consistent-object.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/INST/base-consistent-state-load-class-support.cert \
+	DJVM.pkg
+
+DJVM/INST/base-frame-sig-after-class-loading.cert: DJVM/INST/base-frame-sig-after-class-loading.lisp \
+	DJVM/INST/base-frame-sig-after-class-loading.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-value-sig-no-change-after-class-table-heap-extension.cert \
+	DJVM/INST/base-value-sig-no-change-after-class-table-heap-extension.cert \
+	DJVM/INST/base-value-sig-no-change-after-class-table-heap-extension.cert \
+	DJVM/INST/base-value-sig-no-change-after-class-table-heap-extension.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-locals.cert: DJVM/INST/base-bcv-locals.lisp \
+	DJVM/INST/base-bcv-locals.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM/INST/base-bcv-fact-isAssignable-len-pushOpstack.cert \
+	DJVM/INST/base-bcv-valid-local-index-facts.cert \
+	DJVM.pkg
+
+DJVM/djvm-obj.cert: DJVM/djvm-obj.lisp \
+	DJVM/djvm-obj.acl2 \
+	M6-DJVM-shared/jvm-obj.cert \
+	M6-DJVM-shared/jvm-object-manipulation-primitives.cert \
+	DJVM.pkg
+
+BCV/bcv-functions-basic-verify-guard.cert: BCV/bcv-functions-basic-verify-guard.lisp \
+	BCV/bcv-functions-basic-verify-guard.acl2 \
+	BCV/bcv-functions-basic.cert \
+	BCV.pkg
+
+DJVM/INST/inst.cert: DJVM/INST/inst.lisp \
+	DJVM/INST/inst.acl2 \
+	DJVM/INST/AALOAD.cert \
+	DJVM/INST/AASTORE.cert \
+	DJVM/INST/ALOAD.cert \
+	DJVM/INST/ASTORE.cert \
+	DJVM/INST/ANEWARRAY.cert \
+	DJVM/INST/ACONST_NULL.cert \
+	DJVM/INST/GETFIELD.cert \
+	DJVM/INST/IFEQ.cert \
+	DJVM.pkg
+
+DJVM/INST/base-isAssignableTo-properties.cert: DJVM/INST/base-isAssignableTo-properties.lisp \
+	DJVM/INST/base-isAssignableTo-properties.acl2 \
+	DJVM/consistent-state.cert \
+	DJVM/consistent-state-properties.cert \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	DJVM/INST/base-valid-type-s.cert \
+	DJVM/INST/base-isAssignableTo-properties-support.cert \
+	DJVM.pkg
+
+
+
+small/bcv-is-effective.cert: small/bcv-is-effective.lisp \
+	small/bcv-is-effective.acl2 \
+	small/jvm-model.cert \
+	small/djvm-model.cert \
+	small/bcv-simple-model.cert \
+	small/bcv-model.cert \
+	small/generic.cert \
+	small/state-equiv-def.cert \
+	small/bcv-simple-check-implies-djvm-check.cert \
+	small/djvm-check-succeed-implies-jvm-equiv-state.cert \
+	small/bcv-simple-check-monotonic.cert \
+	small/bcv-simple-method-implies-bcv-simple-check-step-pre.cert \
+	small/bcv-succeed-implies-bcv-simple-succeed.cert \
+	small/djvm-is-safe.cert \
+	small/djvm-is-safe.cert \
+	small/djvm-is-safe.cert
+
+small/djvm-PUSH.cert: small/djvm-PUSH.lisp \
+	small/djvm-model.cert \
+	small/generic.cert \
+	small/consistent-state.cert \
+	small/consistent-state-properties.cert \
+	small/consistent-state-step.cert
+
+small/djvm-check-succeed-implies-jvm-equiv-state.cert: small/djvm-check-succeed-implies-jvm-equiv-state.lisp \
+	small/djvm-check-succeed-implies-jvm-equiv-state.acl2 \
+	small/jvm-model.cert \
+	small/djvm-model.cert \
+	small/state-equiv-def.cert \
+	small/generic.cert
+
+DJVM/INST/ALOAD.cert: DJVM/INST/ALOAD.lisp \
+	DJVM/INST/ALOAD.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-locals.cert \
+	DJVM/INST/base-extra.cert \
+	DJVM/INST/base-bcv.cert \
+	DJVM/INST/base-bcv-locals.cert \
+	DJVM/INST/base-bcv-check-monotonic.cert \
+	DJVM/INST/base-bcv-step-monotonic.cert \
+	DJVM/INST/base-frame-sig-expansion.cert \
+	DJVM/INST/base-bcv-frame-sig-expansion.cert \
+	DJVM/INST/base-next-state-more-specific.cert \
+	M6/m6-bytecode.cert \
+	DJVM/consistent-state-to-untag-state.cert \
+	DJVM/INST/base-state-equiv.cert \
+	DJVM/INST/base-state-equiv.cert \
+	DJVM/INST/base-method-ptr-no-change.cert \
+	DJVM/INST/base-method-no-change.cert \
+	DJVM.pkg
+
+M6/m6-state.cert: M6/m6-state.lisp \
+	M6/m6-state.acl2 \
+	M6-DJVM-shared/jvm-state.cert \
+	M6.pkg
+
+DJVM/INST/base-reference-type-s-good-java-type.cert: DJVM/INST/base-reference-type-s-good-java-type.lisp \
+	DJVM/INST/base-reference-type-s-good-java-type.acl2 \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM.pkg
+
+small/RETURN.cert: small/RETURN.lisp \
+	small/RETURN.acl2 \
+	small/djvm-model.cert \
+	small/bcv-simple-model.cert \
+	small/generic.cert \
+	small/consistent-state-properties.cert \
+	small/bcv-method-properties.cert \
+	small/djvm-RETURN.cert
+
+M6-DJVM-shared/jvm-object-type-hierachy-guard-verification.cert: M6-DJVM-shared/jvm-object-type-hierachy-guard-verification.lisp \
+	M6-DJVM-shared/jvm-object-type-hierachy-guard-verification.acl2 \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	M6-DJVM-shared/jvm-loader-guard-verification.cert \
+	JVM.pkg
+
+DJVM/INST/base-valid-object-type-assignable-to-java-lang-Object.cert: DJVM/INST/base-valid-object-type-assignable-to-java-lang-Object.lisp \
+	DJVM/INST/base-valid-object-type-assignable-to-java-lang-Object.acl2 \
+	M6-DJVM-shared/jvm-object-type-hierachy.cert \
+	DJVM/consistent-state.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-fact-isMatchingType-canPopCategory1.cert: DJVM/INST/base-bcv-fact-isMatchingType-canPopCategory1.lisp \
+	DJVM/INST/base-bcv-fact-isMatchingType-canPopCategory1.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-bcv-support.cert \
+	DJVM.pkg
+
+DJVM/INST/base-bcv-fact-isMatchingType-array.cert: DJVM/INST/base-bcv-fact-isMatchingType-array.lisp \
+	DJVM/INST/base-bcv-fact-isMatchingType-array.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base-bind-free.cert \
+	BCV.pkg
+
+DJVM/INST/AALOAD.cert: DJVM/INST/AALOAD.lisp \
+	DJVM/INST/AALOAD.acl2 \
+	DJVM/INST/base.cert \
+	DJVM/INST/base-consistent-state.cert \
+	DJVM/INST/base-extra.cert \
+	DJVM/INST/base-skip-proofs.cert \
+	DJVM/INST/base-bcv.cert \
+	DJVM/INST/base-bcv-check-monotonic.cert \
+	DJVM/INST/base-bcv-step-monotonic.cert \
+	DJVM/INST/base-frame-sig-expansion.cert \
+	DJVM/INST/base-bcv-frame-sig-expansion.cert \
+	DJVM/INST/base-next-state-more-specific.cert \
+	M6/m6-bytecode.cert \
+	DJVM/consistent-state-to-untag-state.cert \
+	DJVM/INST/base-state-equiv.cert \
+	DJVM/INST/base-method-ptr-no-change.cert \
+	DJVM/INST/base-method-no-change.cert \
+	DJVM.pkg
+
+small/djvm-IFEQ.cert: small/djvm-IFEQ.lisp \
+	small/djvm-model.cert \
+	small/generic.cert \
+	small/consistent-state.cert \
+	small/consistent-state-properties.cert \
+	small/consistent-state-step.cert
+
+hanoi/state.cert: hanoi/state.lisp \
+	hanoi/state.acl2 \
+	hanoi/basic.cert \
+	hanoi/stack.cert \
+	HANOI.pkg
+
+BCV/bcv.pkg.cert: BCV/bcv.pkg.lisp \
+	common/symbols.cert \
+	common/primitives.cert \
+	common/no-dup-set-facts.cert \
+	M6-DJVM-shared/symbols.cert
+
+DJVM/INST/base-bcv-step-monotonic.cert: DJVM/INST/base-bcv-step-monotonic.lisp \
+	DJVM/INST/base-bcv-step-monotonic.acl2 \
+	BCV/typechecker.cert \
+	BCV/bcv-functions.cert \
+	DJVM/INST/base-bind-free.cert \
+	DJVM/INST/base-bcv-check-monotonic-support.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-consp-stk.cert \
+	DJVM/INST/base-bcv-fact-nth-opstack.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-array.cert \
+	DJVM/INST/base-bcv-check-monotonic-support.cert \
+	DJVM/INST/base-bcv-fact-nth-opstack.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-array.cert \
+	DJVM/INST/base-bcv-fact-isMatchingType-consp-stk.cert \
+	DJVM/INST/base-bcv-check-monotonic.cert \
+	DJVM/INST/base-bcv-modify-local-variable.cert \
+	BCV.pkg
+
+M6/m6-static-initializer.cert: M6/m6-static-initializer.lisp \
+	M6/m6-static-initializer.acl2 \
+	M6/m6-state.cert \
+	M6/m6-class-table.cert \
+	M6/m6-verifier.cert \
+	M6/m6-frame-manipulation-primitives.cert \
+	M6/m6-linker.cert \
+	M6/m6-monitor-failure-as-fatalError.cert \
+	M6.pkg
+

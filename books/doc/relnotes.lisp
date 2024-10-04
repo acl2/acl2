@@ -134,6 +134,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "FM9801")
+
+   (xdoc::p
+    "Jun Sawada's 1998-1999 dissertation work, consisting of verification for
+     the FM9801 pipelined microprocessor design, has been added as directory
+     @('projects/fm9801/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Gaussian Elimination Library")
 
    (xdoc::p
@@ -147,6 +156,14 @@
     "Added seven books to @('projects/groups/') on the topics of homomorphisms,
      direct products, the Fundamental Theorem of Finite Abelian Groups,
      symmetric groups, group actions, the Sylow theorems, and simple groups.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "M6")
+
+   (xdoc::p
+    "Hanbing Liu's 2006 dissertation work on a \"defensive JVM\" has been added
+     as directory @('models/jvm/m6/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

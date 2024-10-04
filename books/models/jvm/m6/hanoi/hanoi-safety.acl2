@@ -1,0 +1,2 @@
+(ld "hanoi.pkg")
+(certify-book "hanoi-safety" 1)

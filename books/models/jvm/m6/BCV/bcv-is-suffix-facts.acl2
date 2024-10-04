@@ -1,0 +1,4 @@
+(ld "../BCV/bcv.pkg")
+; Matt K. mod: Use cert-flags
+; (certify-book "bcv-is-suffix-facts" 5 t :skip-proofs-okp t)
+; cert-flags: ? t :skip-proofs-okp t
