@@ -199,7 +199,7 @@
       (empty-typep type) ;; represents a type contradiction
       ))
 
-;; nil is not an Axe type.  Needed for functions like get-induced-type.
+;; nil is not an Axe type.  Needed for functions like get-induced-type that return a type or nil.
 (defthm not-axe-typep-of-nil
   (not (axe-typep nil))
   :rule-classes nil)
@@ -316,37 +316,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (defund intersect-types (type1 type2)
-;;   (declare (xargs :guard (and (axe-typep type1)
-;;                               (axe-typep type2))))
-;;   (cond ((empty-typep type1) (empty-type))
-;;         ((empty-typep type2) (empty-type))
-;;         ((most-general-typep type1) type2)
-;;         ((most-general-typep type2) type1)
-;;         ((and (boolean-typep type1)
-;;               (boolean-typep type2))
-;;          (boolean-type))
-;;         ((and (bv-typep type1)
-;;               (bv-typep type2))
-;;          (make-bv-type (min (bv-type-width type1)
-;;                             (bv-type-width type2))))
-;;         ;;ffixme make sure this is sound:
-;;         ((and (bv-array-typep type1)
-;;               (bv-array-typep type2))
-;;          (let ((len1 (bv-array-type-len type1))
-;;                (len2 (bv-array-type-len type2)))
-;;            (if (equal len1 len2)
-;;                (make-bv-array-type (min (bv-array-type-element-width type1)
-;;                                         (bv-array-type-element-width type2))
-;;                                    len1)
-;;              (prog2$ (er hard? 'intersect-types "Array length mismatch: ~x0 and ~x1." len1 len2)
-;;                      (empty-type)))))
-;;         (t (prog2$ (er hard? 'intersect-types "Type mismatch: ~x0 and ~x1." type1 type2)
-;;                    (empty-type)))))
-
-;rename?
-(defund intersect-types-safe (type1 type2)
-  (declare (xargs :guard t))
+;; todo: give meanings to the types (val-satisfies-type-p) and prove expected properties of intersections of types, etc.
+(defund intersect-types (type1 type2)
+  (declare (xargs :guard (and (axe-typep type1)
+                              (axe-typep type2))))
   (cond ((empty-typep type1) (empty-type))
         ((empty-typep type2) (empty-type))
         ((most-general-typep type1) type2)
@@ -358,7 +331,8 @@
               (bv-typep type2))
          (make-bv-type (min (bv-type-width type1)
                             (bv-type-width type2))))
-        ;;ffixme make sure this is sound:
+        ;; To be compatible, 2 array types must have the same length.  The widths can differ.
+        ;; The intersection is the type with a smaller width (all elements of that type are elements of the other type too).
         ((and (bv-array-typep type1)
               (bv-array-typep type2))
          (let ((len1 (bv-array-type-len type1))
@@ -372,11 +346,11 @@
         (t (prog2$ (cw "WARNING: Type mismatch: ~x0 and ~x1.~%" type1 type2)
                    (empty-type)))))
 
-(defthm axe-typep-of-intersect-types-safe
+(defthm axe-typep-of-intersect-types
   (implies (and (axe-typep x)
                 (axe-typep y))
-           (axe-typep (intersect-types-safe x y)))
-  :hints (("Goal" :in-theory (enable intersect-types-safe))))
+           (axe-typep (intersect-types x y)))
+  :hints (("Goal" :in-theory (enable intersect-types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

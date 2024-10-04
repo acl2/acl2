@@ -407,14 +407,15 @@
 ;Returns (mv nodenum-type-alist changep)
 (defund improve-type (nodenum new-type nodenum-type-alist)
   (declare (xargs :guard (and (natp nodenum)
-                              (nodenum-type-alistp nodenum-type-alist)))) ;strengthen guard?
+                              (axe-typep new-type)
+                              (nodenum-type-alistp nodenum-type-alist))))
   (let ((binding (assoc nodenum nodenum-type-alist)))
     (if (not binding)
         (mv (acons nodenum new-type nodenum-type-alist)
             t ;no binding existed before, so we made a change
             )
       (let* ((type (cdr binding))
-             (new-type (intersect-types-safe type new-type)))
+             (new-type (intersect-types type new-type)))
         (if (equal new-type type)
             (mv nodenum-type-alist nil) ;no change
           (mv (acons nodenum new-type nodenum-type-alist) ;use acons-unique?
@@ -558,7 +559,7 @@
                                     (get-type-of-val-safe (unquote rhs)) ;used to call get-type-of-val-checked, but that could crash!
                                   (get-type-of-nodenum-safe rhs 'dag-array dag-array known-nodenum-type-alist)))
                       ;;ffixme handle incompatible types
-                      (new-type (intersect-types-safe lhs-type rhs-type)))
+                      (new-type (intersect-types lhs-type rhs-type)))
                  (if (and (not (equal new-type lhs-type))
                           (natp lhs)) ;make sure it's a nodenum
                      (improve-type lhs new-type known-nodenum-type-alist)
@@ -2478,6 +2479,7 @@
 (local
   (defthmd equal-of-cons (equal (equal x (cons y z)) (and (consp x) (equal (car x) y) (equal (cdr x) z)))))
 
+;move?
 (defthm equal-of-car-of-get-axe-disjunction-from-dag-items-and-quote
   (implies (and (bounded-possibly-negated-nodenumsp items dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
@@ -2491,7 +2493,7 @@
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: the cutting could look at shared nodes (don't cut above the shared node frontier)?
-(defund prove-node-disjunction-with-stp (disjuncts
+(defund prove-node-disjunction-with-stp (disjuncts ; these are possibly-negated nodenums
                                          dag-array ;must be named 'dag-array (todo: generalize?)
                                          dag-len
                                          dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
@@ -2518,7 +2520,7 @@
                                                          quotep-when-axe-disjunctionp)
                                                         (myquotep
                                                          quotep))))))
-  (b* (((when (not (consp disjuncts)))
+  (b* (((when (not (consp disjuncts))) ; not possible?
         (cw "(No disjuncts, so no point in calling STP.)~%")
         (mv *invalid* state))
        ;; Dig out individual disjuncts (this only preserves IFF):
@@ -2539,24 +2541,24 @@
 
        ;;All of the types computed here are known for sure; they are different from types on a term "induced" by how the term is used (e.g., only 32-bits of x are used in (bvxor 32 x y)).
        ;;fixme think about the ramifications of doing this before calculating the depths
-       (known-nodenum-type-alist ;fixme make the alist an array?
-        (build-known-nodenum-type-alist disjuncts dag-array dag-len))
+       (known-nodenum-type-alist ; todo: optimize by using an array instead of an alist?
+         (build-known-nodenum-type-alist disjuncts dag-array dag-len))
        (- (and (eq :verbose print)
                (cw "known-nodenum-type-alist: ~x0.~%" known-nodenum-type-alist)))
-       (maybe-node-given-empty-type (node-given-empty-type known-nodenum-type-alist))
+       (maybe-node-given-empty-type (node-given-empty-type known-nodenum-type-alist)) ; we could compute this as we build the alist
        ((when maybe-node-given-empty-type) ;move this test up before we print?
         (cw "(WARNING: Goal is true due to type mismatch on:~%")
         (print-dag-array-node-and-supporters 'dag-array dag-array maybe-node-given-empty-type)
         (cw ")~%")
         (mv *valid* state))
        (- (and (print-level-at-least-tp print) (cw "(Calling STP (perhaps at several depths) on ~s0.~%" base-filename)))
-       (- (and (eq :verbose print) ;fixme improve printing
+       (- (and (eq :verbose print) ; todo: improve printing
                (prog2$ (cw "Disjuncts:~% ~x0~%This case: ~x1~%Full disjuncts:~%"
                            disjuncts
                            (expressions-for-this-case disjuncts dag-array dag-len) ;call print-list on this?
                            )
                        (print-dag-array-node-and-supporters-lst (strip-nots-from-possibly-negated-nodenums disjuncts) 'dag-array dag-array))))
-       ;; First try without heuristic cuts (untranslatable things may still be cut out):
+       ;; First try without heuristic cuts (untranslatable things will still be cut out):
        ((mv result state)
         (prove-node-disjunction-with-stp-at-depth nil ;no depth limit
                                                   disjuncts
@@ -2613,10 +2615,9 @@
 ;; Attempt to use STP to prove the disjunction of the terms in CLAUSE.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;todo: pass in other options?
-;todo: this could create a theorem
 ;todo: have this print balanced parens
 ;todo: exploit boolean structure in the hyps (and conc?)
-;todo: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
+;todo?: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
 (defun prove-clause-with-stp (clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :guard (and (pseudo-term-listp clause)
                               (booleanp counterexamplep)
@@ -2627,11 +2628,8 @@
                               (stringp base-filename))
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp-when-nat-listp)))))
-  (b* ( ;; Check for bad input (todo: drop this check?):
-       ;; ((when (not (pseudo-term-listp clause)))
-       ;;  (er hard 'prove-clause-with-stp "Some disjunct in the clause is not a pseudo-term: ~x0." clause)
-       ;;  (mv *error* state))
-       ((when (not clause)) ;; check for empty clause
+  (b* (;; Handle an empty clause:
+       ((when (not clause))
         (cw "(Note: Cannot prove the empty clause.)~%")
         (mv *invalid* state))
        ;; Merge all the disjuncts in the clause into a single DAG:
@@ -2716,10 +2714,12 @@
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 (defun translate-and-prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
-  (declare (xargs :guard (and (booleanp counterexamplep)
+  (declare (xargs :guard (and ;; term is untranslated
+                              (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
+                              (print-levelp print)
                               (stringp base-filename))
                   :mode :program ;because of translate-term
                   :stobjs state))

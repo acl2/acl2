@@ -119,3 +119,20 @@
 ;;                  3)
 ;;            3)
 ;;     :print t))
+
+;; Should cut out (bar x) and (foo (bar x)).
+(defstub foo (x) t)
+(defstub bar (x) t)
+
+;; (foo x) gets replaced by a fresh BV variable of width 8
+(defthm-stp cutting-test1
+    (equal (bvplus 8 (foo x) y)
+           (bvplus 8 y (foo x)))
+    :print t)
+
+;; fails but does call STP (todo: how to check that? see prove-with-stp-tester):
+(must-fail
+  (defthm-stp cutting-test2
+    (equal (bvplus 8 (foo (bar x)) y)
+           (bvplus 8 (bar x) y))
+    :print t))

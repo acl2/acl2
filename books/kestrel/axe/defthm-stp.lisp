@@ -24,10 +24,14 @@
 
 ;returns (mv erp event state)
 (defun defthm-stp-fn (name theorem-body rule-classes counterexamplep max-conflicts print state)
-  (declare (xargs :mode :program
-                  :guard (and (booleanp counterexamplep)
+  (declare (xargs :guard (and (symbolp name)
+                              ;; theorem-body is an untranslated term
+                              ;; check the rule-classes?
+                              (booleanp counterexamplep)
                               (or (null max-conflicts)
-                                  (natp max-conflicts)))
+                                  (natp max-conflicts))
+                              (print-levelp print))
+                  :mode :program ; because this translates the theorem-body
                   :stobjs state))
   (b* (((mv result state)
         (translate-and-prove-term-with-stp theorem-body counterexamplep
