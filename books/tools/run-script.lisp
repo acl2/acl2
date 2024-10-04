@@ -42,7 +42,9 @@
  <p>NOTE: The @(see time-tracker) utility is disabled by @('run-script').
  After a call of @('run-script'), you need to evaluate @('(time-tracker t)') if
  you want to return to the default behavior (where the time-tracker capability
- is enabled).</p>
+ is enabled).  Similarly, printing of &lsquo;@('; Hons-Note')&rsquo; comments
+ are suppressed by @('run-script') (more precisely: whenever @(see state)
+ global @(''script-mode') has a non-@('nil') value).</p>
 
  <p>To use @('run-script') for regression testing, you will need
  to create three files in addition to the input file, as described below.

@@ -6,9 +6,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;'
 (in-package "ACL2")
 
-(include-book "absolute-path")
-(include-acl2-book "data-structures/array1")
-(include-acl2-book "arithmetic/top")
+(include-book "data-structures/array1" :dir :system)
+(include-book "arithmetic/top" :dir :system)
 
 (deflabel begin-trivia)
 

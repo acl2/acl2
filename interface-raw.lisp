@@ -391,7 +391,7 @@
 ; not the case for Allegro 5.0.1.  Since the result is
 ; implementation-dependent, it is natural to restrict the application of
 ; code-char to standard characters, using ACL2's guard mechanism.  But the
-; example above show that we can bypass such restrictions by using macros.
+; example above shows that we can bypass such restrictions by using macros.
 
 ; Example 3.  We can prove nil in Version_2.5 by certifying the following two
 ; books. The only cheats are that the first book needs to be certified after
@@ -1665,8 +1665,8 @@
 ;    But that led to garbage for a user defined function like
 ;    (defun foo (x) (declare (xargs :verify-guards nil)) (the integer x))
 ;    because (foo 3) = 3 but (foo t) would cause a hard error.  We now
-;    just macroexpand the just like we would any other macro.  We are not
-;    sure why we ever thought we could handle it any other way.
+;    macroexpand just like we would any other macro.  We are not sure why we
+;    ever thought we could handle it any other way.
 
    ((eq (car x) 'flet) ; (flet ((fn1 ...) (fn2 ...) ...) declare-form* body)
     (list 'flet
@@ -3489,7 +3489,7 @@
 ; tion described in :DOC package-reincarnation-import-restrictions.
 
 ; Because of the possibility of user interrupts, it is possible that we
-; can have effected some but not all of changes necessary to achieve a
+; can have effected some but not all the changes necessary to achieve a
 ; new state and then have the computation aborted.  To handle this,
 ; extend-world1 and retract-world1 both save the current world alist
 ; before they begin to make any changes.  If they are interrupted, the
@@ -4491,7 +4491,7 @@
 ;   macros.
 
 ;   Variables *hcomp-fn-alist*, *hcomp-const-alist*, and *hcomp-macro-alist*
-;   will be be let-bound to alists related to the above hash tables, in senses
+;   will be let-bound to alists related to the above hash tables, in senses
 ;   described below.
 
 ;   The variable *hcomp-fake-value* is used as a "fake value", not in any
@@ -5165,8 +5165,8 @@
 ; the sense that it restores relevant values: every add-trip symbol is given
 ; the relevant value it had before loading these, if any, else is unbound.
 
-; The variable *saved-hcomp-restore-hts* should have just been been assigned to
-; the current value of (list* *hcomp-fn-macro-restore-ht*
+; The variable *saved-hcomp-restore-hts* should have just been assigned to the
+; current value of (list* *hcomp-fn-macro-restore-ht*
 ; *hcomp-const-restore-ht*).
 
   (when (null *saved-hcomp-restore-hts*)
@@ -5649,8 +5649,8 @@
                  (eq status 'incomplete) ; so not from raw-mode include-book
                  *load-compiled-stack*)
 
-; Can the status really be INCOMPLETE?  At first glance it would seem this this
-; is impossible.  For, imagine that we are loading a book's compiled file (or
+; Can the status really be INCOMPLETE?  At first glance it would seem this is
+; impossible.  For, imagine that we are loading a book's compiled file (or
 ; expansion file) in raw Lisp prior to processing its events.  At the first
 ; INCOMPLETE status, the tree of include-book forms rooted at that top
 ; include-book is no longer consulted -- no further loads occur anywhere to the
@@ -5659,8 +5659,8 @@
 ; nil.  The argument above shows that any book with existing INCOMPLETE status
 ; must have been processed by some earlier include-book having non-nil
 ; :load-compiled-file.  But then the offending book has already been included,
-; and hence no raw-Lisp load will take place, since the offending book is on the
-; 'include-book-alist of the current world.
+; and hence no raw-Lisp load will take place, since the offending book is on
+; the 'include-book-alist of the current world.
 
 ; But we keep this case, just in case we later find a flaw in our thinking!
 ; (If this comment is removed, consider the reference to "flaw in our thinking"
@@ -8786,7 +8786,7 @@
                                   &aux
                                   (acl2-pass-2-files *acl2-pass-2-files*)
                                   system-books-dir
-                                  skip-comp-exec
+;                                 skip-comp-exec ; not used
 
 ; We avoid proclaiming types dynamically, instead doing so only via the
 ; acl2-proclaims.lisp mechanism.  See the Essay on Proclaiming.
@@ -8829,10 +8829,10 @@
 ; sure to arrange that it will be in an encapsulate with (logic) included above
 ; it -- otherwise the defthm event won't be part of the boot-strap world.
 
-  (when (null system-books-dir)
-    (let ((dir (getenv$-raw "ACL2_SYSTEM_BOOKS")))
-      (when (and dir (not (equal dir "")))
-        (setq system-books-dir dir))))
+; (when (null system-books-dir) ; always true
+  (let ((dir (getenv$-raw "ACL2_SYSTEM_BOOKS")))
+    (when (and dir (not (equal dir "")))
+      (setq system-books-dir dir)))
 
   (with-warnings-suppressed
 
@@ -9020,11 +9020,11 @@
 ; possible the subsidiary uses of state-global-let* on behalf of macroexpand1
 ; (see the comment in comp-fn for more information).
 
-     (unless skip-comp-exec
+;    (unless skip-comp-exec ; could govern the LD call just below
 
 ; Optimization: Skip this compile for generate-acl2-proclaims.
 
-       (ld '((comp-fn :exec nil "1" state))))
+     (ld '((comp-fn :exec nil "1" state)))
      (exit-boot-strap-mode)
      (initialize-pc-acl2 *the-live-state*)
 
@@ -9041,7 +9041,7 @@
 ; We now check certain invariants, for example, that we have defined certain
 ; built-in constants correctly.
 
-     (or (not acl2-pass-2-files)
+     (or ; (not acl2-pass-2-files) ; always non-nil
 
 ; The check for check-built-in-constants in check-acl2-initialization, for one,
 ; will fail if we do not make a second pass through axioms.lisp.  That is

@@ -7,10 +7,9 @@
 
 (in-package "ACL2")
 
-(include-book "absolute-path")
 (deflabel before-loading-ihs)
-(include-acl2-book "ihs/ihs-definitions")
-(include-acl2-book "ihs/ihs-lemmas")
+(include-book "ihs/ihs-definitions" :dir :system)
+(include-book "ihs/ihs-lemmas" :dir :system)
 (deflabel after-loading-ihs)
 
 (deftheory default-IHS-incompatibles

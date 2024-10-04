@@ -23460,10 +23460,7 @@
          (true-listp x)
          (<= 3 (length x)))
     (let* ((lambda-casep (eq (car x) 'LAMBDA))
-           (allow-free-varsp nil)
-           (vars (if allow-free-varsp
-                     (butlast (cadr x) 1)
-                   (cadr x)))
+           (vars (cadr x))
            (dcls (butlast (cddr x) 1))
            (body (car (last x)))
            (stobjs-out-simple (if (eq stobjs-out t)
@@ -23577,7 +23574,7 @@
                    (free-vars-guard (set-difference-eq (all-vars tguard)
                                                        vars)))
               (cond
-               ((and free-vars-guard (not allow-free-varsp))
+               (free-vars-guard
                 (trans-er+? cform x
                             ctx
                             "The guard of a LAMBDA object or lambda$ term may ~
@@ -23692,7 +23689,7 @@
                                 ignores)
                                ignorables))))
                    (cond
-                    ((and free-vars-body (not allow-free-varsp))
+                    (free-vars-body
                      (trans-er+? cform x
                                  ctx
                                  "The body of a LAMBDA object or lambda$ term ~
@@ -23770,15 +23767,7 @@
                                                  `(:GUARD ,tguard
                                                           :SPLIT-TYPES T)
                                                  edcls))))
-                                          (vars1
-                                           (if allow-free-varsp
-                                               (append
-                                                vars
-                                                (revappend free-vars-guard nil)
-                                                (set-difference-eq
-                                                 (revappend free-vars-body nil)
-                                                 free-vars-guard))
-                                               vars)))
+                                          (vars1 vars))
 
                                       (let ((new-tbody
 
