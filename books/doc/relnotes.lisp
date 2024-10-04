@@ -150,14 +150,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Leo Library")
-
-   (xdoc::p
-    "An initial ACL2 library for Leo,
-     Provable Inc.'s language for zero-knowledge applications.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 "Machine Learning Library")
 
    (xdoc::p
@@ -435,8 +427,11 @@
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
-    "Moved from @('[books]/kestrel/utilities/omaps/')
-     to @('[books]/std/omaps/').")
+    "This library have been moved
+     from @('[books]/kestrel/utilities/omaps/')
+     to @('[books]/std/omaps/').
+     So omaps are now part of the Std library,
+     as the Std/omaps sub-library.")
 
    (xdoc::p
     "Added some theorems.")
@@ -536,6 +531,10 @@
    (xdoc::h4 (xdoc::seetopic "std/strings" "Standard Strings Library"))
 
    (xdoc::p
+    "The Std/strings books extensions in @('[books]/kestrel/std/strings')
+     have been integrated into @('[books]/std/strings').")
+
+   (xdoc::p
     "The recognizers of digit characters in various bases
      have been renamed to have the suffix @('-list*p'),
      because they are loose list recognizers.
@@ -545,6 +544,10 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
+
+   (xdoc::p
+    "The Std/system books extensions in @('[books]/kestrel/std/system')
+     have been integrated into @('[books]/std/system').")
 
    (xdoc::p
     "A new utility @(tsee untranslate$) has been added,
@@ -611,6 +614,10 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "The Std/util books extensions in @('[books]/kestrel/std/util')
+     have been integrated into @('[books]/std/util').")
 
    (xdoc::p
     "The "
