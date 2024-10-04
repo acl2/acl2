@@ -213,7 +213,7 @@
 
   ;; Variant of the theorem just above with all-addresses expanded.
   ;; Useful when all-addresses is enabled in a proof.
-  (defrule correct-addresses-subset-keys-validators
+  (defruled correct-addresses-subset-keys-validators
     (set::subset (correct-addresses systate)
                  (omap::keys (system-state->validators systate)))
     :use correct-addresses-subset-all-addresses
