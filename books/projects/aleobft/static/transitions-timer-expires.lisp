@@ -46,6 +46,8 @@
   (b* (((unless (set::in val (correct-addresses systate))) nil)
        (vstate (get-validator-state val systate)))
     (timer-case (validator-state->timer vstate) :running))
+  :guard-hints
+  (("Goal" :in-theory (enable in-all-addresses-when-in-correct-addresses)))
 
   ///
 
@@ -67,7 +69,9 @@
   (b* ((vstate (get-validator-state val systate))
        (new-vstate (timer-expires-next-val vstate)))
     (update-validator-state val new-vstate systate))
-  :guard-hints (("Goal" :in-theory (enable timer-expires-possiblep)))
+  :guard-hints
+  (("Goal" :in-theory (enable timer-expires-possiblep
+                              in-all-addresses-when-in-correct-addresses)))
 
   :prepwork
   ((define timer-expires-next-val ((vstate validator-statep))

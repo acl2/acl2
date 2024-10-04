@@ -44,7 +44,9 @@
   (forall (val)
           (implies (set::in val (correct-addresses systate))
                    (evenp (validator-state->last
-                           (get-validator-state val systate))))))
+                           (get-validator-state val systate)))))
+  :guard-hints
+  (("Goal" :in-theory (enable in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

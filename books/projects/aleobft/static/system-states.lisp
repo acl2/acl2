@@ -219,7 +219,7 @@
     :use correct-addresses-subset-all-addresses
     :enable all-addresses)
 
-  (defrule in-all-addresses-when-in-correct-addresses
+  (defruled in-all-addresses-when-in-correct-addresses
     (implies (set::in val (correct-addresses systate))
              (set::in val (all-addresses systate)))
     :disable correct-addresses

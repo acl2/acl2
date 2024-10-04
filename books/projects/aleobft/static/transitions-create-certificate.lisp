@@ -369,4 +369,5 @@
                       cert
                       (set::delete (certificate->author cert)
                                    (correct-addresses systate))))))
-    :enable set::expensive-rules))
+    :enable (in-all-addresses-when-in-correct-addresses
+             set::expensive-rules)))

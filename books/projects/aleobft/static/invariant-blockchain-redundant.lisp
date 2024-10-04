@@ -78,7 +78,8 @@
                     (all-addresses systate))))
   :guard-hints
   (("Goal" :in-theory (enable system-last-is-even-p-necc
-                              system-last-anchor-present-p-necc))))
+                              system-last-anchor-present-p-necc
+                              in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

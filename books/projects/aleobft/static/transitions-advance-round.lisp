@@ -98,6 +98,7 @@
   (("Goal" :in-theory (enable evenp
                               posp
                               correct-addresses-subset-all-addresses
+                              in-all-addresses-when-in-correct-addresses
                               set::not-emptyp-when-in-of-subset)))
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
 
@@ -122,7 +123,9 @@
        (round (validator-state->round vstate))
        (new-vstate (advance-round-next-val round vstate)))
     (update-validator-state val new-vstate systate))
-  :guard-hints (("Goal" :in-theory (enable advance-round-possiblep)))
+  :guard-hints
+  (("Goal" :in-theory (enable advance-round-possiblep
+                              in-all-addresses-when-in-correct-addresses)))
 
   :prepwork
   ((define advance-round-next-val ((round posp) (vstate validator-statep))

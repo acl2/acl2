@@ -82,7 +82,9 @@
        (network (get-network-state systate))
        (new-network (set::delete msg network)))
     (update-network-state new-network systate))
-  :guard-hints (("Goal" :in-theory (enable receive-certificate-possiblep)))
+  :guard-hints
+  (("Goal" :in-theory (enable receive-certificate-possiblep
+                              in-all-addresses-when-in-correct-addresses)))
 
   :prepwork
   ((define receive-certificate-next-val ((cert certificatep)

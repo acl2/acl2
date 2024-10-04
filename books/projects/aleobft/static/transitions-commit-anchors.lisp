@@ -80,7 +80,8 @@
   (("Goal" :in-theory (enable evenp
                               posp
                               set::not-emptyp-when-in-of-subset
-                              correct-addresses-subset-all-addresses)))
+                              correct-addresses-subset-all-addresses
+                              in-all-addresses-when-in-correct-addresses)))
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
 
   ///
@@ -116,6 +117,7 @@
   :guard-hints
   (("Goal" :in-theory (enable commit-anchors-possiblep
                               correct-addresses-subset-all-addresses
+                              in-all-addresses-when-in-correct-addresses
                               set::not-emptyp-when-in-of-subset)))
 
   :prepwork

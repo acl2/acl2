@@ -56,7 +56,9 @@
                      (implies (not (equal (validator-state->last vstate) 0))
                               (last-anchor vstate
                                            (all-addresses systate))))))
-  :guard-hints (("Goal" :in-theory (enable system-last-is-even-p-necc))))
+  :guard-hints
+  (("Goal" :in-theory (enable system-last-is-even-p-necc
+                              in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

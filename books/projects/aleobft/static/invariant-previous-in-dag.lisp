@@ -56,7 +56,9 @@
           (implies (set::in val (correct-addresses systate))
                    (dag-previous-in-dag-p
                     (validator-state->dag
-                     (get-validator-state val systate))))))
+                     (get-validator-state val systate)))))
+  :guard-hints
+  (("Goal" :in-theory (enable in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

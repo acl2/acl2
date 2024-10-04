@@ -67,6 +67,8 @@
      which are formulated and proved separately
      for the different kinds of events."))
 
+  (local (in-theory (enable in-all-addresses-when-in-correct-addresses)))
+
   (defrule all-addresses-of-create-certificate-next
     (implies (create-certificate-possiblep cert systate)
              (equal (all-addresses

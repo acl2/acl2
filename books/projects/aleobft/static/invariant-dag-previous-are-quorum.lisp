@@ -55,7 +55,9 @@
                    (dag-previous-are-quorum-p
                     (validator-state->dag
                      (get-validator-state val systate))
-                    (quorum systate)))))
+                    (quorum systate))))
+  :guard-hints
+  (("Goal" :in-theory (enable in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

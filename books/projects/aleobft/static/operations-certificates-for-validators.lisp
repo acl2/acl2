@@ -153,6 +153,8 @@
                             (validator-state->buffer vstate))
                 (message-certificates-for-validator
                  val (get-network-state systate))))
+  :guard-hints
+  (("Goal" :in-theory (enable in-all-addresses-when-in-correct-addresses)))
 
   ///
 

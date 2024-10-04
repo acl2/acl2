@@ -77,7 +77,9 @@
         (certificate-set->author-set all-previous-round-certs))
        ((unless (set::subset cert.previous all-previous-round-authors)) nil))
     t)
-  :guard-hints (("Goal" :in-theory (enable posp)))
+  :guard-hints
+  (("Goal" :in-theory (enable posp
+                              in-all-addresses-when-in-correct-addresses)))
 
   ///
 
@@ -108,7 +110,9 @@
   (b* ((vstate (get-validator-state val systate))
        (new-vstate (store-certificate-next-val cert vstate)))
     (update-validator-state val new-vstate systate))
-  :guard-hints (("Goal" :in-theory (enable store-certificate-possiblep)))
+  :guard-hints
+  (("Goal" :in-theory (enable store-certificate-possiblep
+                              in-all-addresses-when-in-correct-addresses)))
 
   :prepwork
   ((define store-certificate-next-val ((cert certificatep)
