@@ -159,4 +159,5 @@
     :enable (get-validator-state
              correct-addresses
              in-of-correct-addresses-loop
-             validator-init-when-validators-statep)))
+             validator-init-when-validators-statep
+             lookup-nonnil-of-correct-addresses)))

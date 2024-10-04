@@ -135,7 +135,8 @@
                                           (get-validator-state val systate)))
     :enable (get-validator-state
              correct-addresses
-             in-of-correct-addresses-loop)))
+             in-of-correct-addresses-loop
+             lookup-nonnil-of-correct-addresses)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

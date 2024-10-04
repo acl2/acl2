@@ -226,7 +226,7 @@
     :enable (set::expensive-rules
              correct-addresses-subset-all-addresses))
 
-  (defrule lookup-nonnil-of-correct-addresses
+  (defruled lookup-nonnil-of-correct-addresses
     (implies (set::in addr (correct-addresses systate))
              (omap::lookup addr (system-state->validators systate)))
     :rule-classes (:rewrite :type-prescription)
@@ -351,7 +351,8 @@
 
   (defret validator-statep-of-get-validator-state
     (validator-statep vstate?)
-    :hyp (set::in val (correct-addresses systate)))
+    :hyp (set::in val (correct-addresses systate))
+    :hints (("Goal" :in-theory (enable lookup-nonnil-of-correct-addresses))))
 
   (defrule in-correct-validator-addresess-when-get-validator-state
     (implies (get-validator-state val systate)
@@ -362,7 +363,8 @@
 
   (defruled get-validator-state-iff-in-correct-addresses
     (iff (get-validator-state val systate)
-         (set::in val (correct-addresses systate)))))
+         (set::in val (correct-addresses systate)))
+    :hints (("Goal" :in-theory (enable lookup-nonnil-of-correct-addresses)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
