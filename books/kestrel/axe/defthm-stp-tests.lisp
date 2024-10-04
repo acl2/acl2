@@ -136,3 +136,38 @@
     (equal (bvplus 8 (foo (bar x)) y)
            (bvplus 8 (bar x) y))
     :print t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (foo s) is used in a type-inconsistent way:
+(must-fail
+  (defthm-stp type-test1
+    (booland (foo x)
+             (bvplus 8 (foo x) y))
+    :print t))
+
+;; type error: booland called on a BV
+(must-fail
+  (defthm-stp type-test2
+    (booland (bvplus 8 x y)
+             z)
+    :print t))
+
+;; This work because the whole BVPLUS node gets cut out due to the bad argument.  A warning is printed.
+(defthm-stp type-test3
+  (equal (bvplus 8 x 'foo)
+         (bvplus 8 x 'foo))
+  :rule-classes nil
+  :print t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Some tests of booleans:
+
+(must-fail (defthm-stp booland-1 (booland x y)))
+(defthm-stp booland-2 (equal (booland x y) (booland y x)))
+(defthm-stp booland-3 (not (booland x (not x))))
+
+(must-fail (defthm-stp boolor-1 (boolor x y)))
+(defthm-stp boolor-2 (equal (boolor x y) (boolor y x)))
+(defthm-stp boolor-3 (boolor x (not x)))
