@@ -788,6 +788,12 @@
      @(see documentation) displays at the terminal with the @(':')@(tsee doc)
      command as well as displays in the @(see acl2-doc) browser.")
 
+   (xdoc::p
+    "The SEO optimized copy of the web based XDOC manual has been updated to
+     take the `xkey` corresponding to the current page as a query parameter
+     instead of part of the path. This allows all the pages to be ratelimited
+     as a single page by `mod_evasive`.")
+
    ))
 
 (defxdoc note-8-5-books
