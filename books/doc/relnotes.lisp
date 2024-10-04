@@ -150,6 +150,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Leo Library")
+
+   (xdoc::p
+    "An initial ACL2 library for Leo,
+     Provable Inc.'s language for zero-knowledge applications.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Machine Learning Library")
 
    (xdoc::p
