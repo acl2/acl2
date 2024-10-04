@@ -116,7 +116,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule previous-quorum-p-when-init
+(defruled previous-quorum-p-when-init
   :short "Establishment of the invariant:
           the invariant holds in any initial system state."
   :long
