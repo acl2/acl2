@@ -14,7 +14,8 @@
 
 ; These functions are only used by the equivalence-checker.  They notably each take a var-type-alist.
 
-(include-book "translate-dag-to-stp") ; has ttags, for maybe-get-type-of-function-call, reduce?
+(include-book "translate-dag-to-stp") ; has ttags, for add-assert-if-a-mult (move that here?)
+(include-book "type-inference") ; for maybe-get-type-of-function-call, reduce?
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "supporting-nodes") ;for tag-nodenums-with-name
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -47,6 +48,51 @@
   (equal (nat-listp (reverse-list x))
          (all-natp x))
   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
+;; Returns a string-tree that extends extra-asserts.
+;; todo: should we use this more?
+;fixme rectify this printing with the other use of this function
+;todo: pass in the ffn-symb (maybe) and the dargs
+;todo: don't throw an error (via get-type-of-arg-during-cutting) if the args are not good.
+(defund add-assert-if-a-mult (n expr dag-array-name dag-array var-type-alist print extra-asserts)
+  (declare (xargs :guard (and (natp n)
+                              (bounded-dag-exprp n expr)
+                              (dag-function-call-exprp expr)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
+                              (symbol-alistp var-type-alist)
+                              (string-treep extra-asserts))
+                  :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp car-becomes-nth-of-0
+                                                           not-<-of-nth-when-bounded-darg-listp-gen
+                                                           darg-quoted-posp)))))
+  (make-string-tree (and (eq 'bvmult (ffn-symb expr))
+                         (= 3 (len (dargs expr)))
+                         (darg-quoted-posp (darg1 expr))
+                         (let ((arg2-type (get-type-of-arg-during-cutting (darg2 expr) dag-array-name dag-array var-type-alist))
+                               (arg3-type (get-type-of-arg-during-cutting (darg3 expr) dag-array-name dag-array var-type-alist)))
+                           (and (bv-typep arg2-type)
+                                (bv-typep arg3-type)
+                                ;; The sum of the widths of the arguments must be <= the width of the product for the extra assert to be helpful:
+                                (let ((arg2-width (bv-type-width arg2-type))
+                                      (arg3-width (bv-type-width arg3-type)))
+                                  (and (<= (+ arg2-width arg3-width)
+                                           (unquote (darg1 expr)))
+                                       (let ((max-product-value (* (+ -1 (expt 2 arg2-width))
+                                                                   (+ -1 (expt 2 arg3-width)))))
+                                         (prog2$ (and print (cw ", which is a BVMULT: ~x0" expr))
+                                                 (list* "ASSERT(BVLE("
+                                                        (make-node-var n)
+                                                        ","
+                                                        (translate-bv-constant max-product-value (unquote (darg1 expr)))
+                                                        "));"
+                                                        (newline-string)))))))))
+                    extra-asserts))
+
+(defthm string-treep-of-add-assert-if-a-mult
+  (implies (string-treep extra-asserts)
+           (string-treep (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist print extra-asserts)))
+  :hints (("Goal" :in-theory (enable add-assert-if-a-mult))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This assumes the miter is pure.
 ;; Only used by the equivalence checker.
