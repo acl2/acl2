@@ -1,0 +1,14 @@
+(ld "bcv.pkg.lisp")
+(defpkg "BCV" 
+         (remove-duplicates ; Matt K. mod: replacement for remove-duplicates-eql
+	    (set-difference-equal 
+               (union-eq *acl2-exports* (union-eq *no-dup-set-facts-basic-functions* 
+	                                   (union-eq JVM::*opcode-symbols*
+                                                  (union-eq *jvm-symbols* 
+                                                       (union-eq 
+                                                             JVM::*other-symbols* 
+                                                             (union-eq *primitives*
+	                                                        (union-eq *base-bind-free*			
+	                                                              *common-lisp-symbols-from-main-lisp-package*)))))))
+               '(pop pc top push monitor make-method make-array find-method))))
+

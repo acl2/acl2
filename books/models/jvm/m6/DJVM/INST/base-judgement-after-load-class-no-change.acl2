@@ -1,0 +1,4 @@
+(ld "../../DJVM/djvm.pkg")
+; (certify-book "base-judgement-after-load-class-no-change" 6 t :skip-proofs-okp t)
+; Matt K. mod: Use cert-flags
+; cert-flags: ? t :skip-proofs-okp t

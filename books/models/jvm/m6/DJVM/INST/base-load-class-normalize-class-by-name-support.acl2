@@ -1,0 +1,26 @@
+(ld "../../DJVM/djvm.pkg")
+; (certify-book "base-load-class-normalize-class-by-name-support" 6 t :skip-proofs-okp t)
+; Matt K. mod: Use cert-flags
+; cert-flags: ? t :skip-proofs-okp t
+
+; Matt K. mod: The following were after the certify-book command, so I assume
+; that they should be ignored, hence I'm commenting them out.
+#|
+(defthm class-by-name-no-change-after-resolveClassReference
+  (implies (isClassTerm (class-by-name name (instance-class-table s)))
+           (equal (class-by-name name (instance-class-table
+                                       (resolveclassreference any s)))
+                  (class-by-name name (instance-class-table s)))))
+
+
+  
+(defthm class-by-name-no-change-after-getArrayClass
+  (implies (isClassTerm (class-by-name name (instance-class-table s)))
+           (equal (class-by-name name (instance-class-table
+                                       (getArrayClass any s)))
+                  (class-by-name name (instance-class-table s))))))
+  
+
+
+(in-theory (disable resolveClassreference getArrayClass))
+|#

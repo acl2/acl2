@@ -1,0 +1,1 @@
+(certify-book "consistent-state-properties"  0 t :skip-proofs-okp nil)

@@ -108,7 +108,7 @@
                   :arg2 arg2)))
      :cond (make-expr-cond
             :test (simpadd0-expr expr.test)
-            :then (simpadd0-expr expr.then)
+            :then (simpadd0-expr-option expr.then)
             :else (simpadd0-expr expr.else))
      :comma (make-expr-comma
              :first (simpadd0-expr expr.first)
@@ -255,7 +255,8 @@
      :typeof-type (make-type-spec-typeof-type
                    :type (simpadd0-tyname tyspec.type)
                    :uscores tyspec.uscores)
-     :typeof-ambig (prog2$ (impossible) (irr-type-spec)))
+     :typeof-ambig (prog2$ (impossible) (irr-type-spec))
+     :auto-type (type-spec-fix tyspec))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1106,7 +1107,8 @@
    extdecl
    :fundef (extdecl-fundef (simpadd0-fundef extdecl.unwrap))
    :decl (extdecl-decl (simpadd0-decl extdecl.unwrap))
-   :empty (extdecl-empty))
+   :empty (extdecl-empty)
+   :asm (extdecl-fix extdecl))
   :hooks (:fix)
 
   ///

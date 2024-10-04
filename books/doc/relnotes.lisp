@@ -134,6 +134,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "FM9801")
+
+   (xdoc::p
+    "Jun Sawada's 1998-1999 dissertation work, consisting of verification for
+     the FM9801 pipelined microprocessor design, has been added as directory
+     @('projects/fm9801/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Gaussian Elimination Library")
 
    (xdoc::p
@@ -155,6 +164,14 @@
    (xdoc::p
     "An initial ACL2 library for Leo,
      Provable Inc.'s language for zero-knowledge applications.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "M6")
+
+   (xdoc::p
+    "Hanbing Liu's 2006 dissertation work on a \"defensive JVM\" has been added
+     as directory @('models/jvm/m6/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -668,10 +685,10 @@
      @(see step-limit) error printing.")
 
    (xdoc::p
-    "The @(see time-tracker) capability is now turned off by the @(tsee
-     run-script) tool, to avoid output that differs from what is expected (say,
-     due to running on a slow machine, or with many threads when few are
-     available).")
+    "The @(see time-tracker) capability and &lsquo;@('Hons-Note')&rsquo;
+     printing are now turned off by the @(tsee run-script) tool, to avoid
+     output that differs from what is expected (say, due to running on a slow
+     machine, or with many threads when few are available).")
 
    (xdoc::p
     "Tools @(tsee functions-after) and @(tsee macros-after) return names of

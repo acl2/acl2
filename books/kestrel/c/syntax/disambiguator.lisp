@@ -337,6 +337,27 @@
   :guard-hints (("Goal" :in-theory (enable acons)))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-add-ident-objfun ((ident identp) (table dimb-tablep))
+  :returns (new-table dimb-tablep)
+  :short "Add an identifier to the disambiguation table,
+          with object or function kind."
+  (dimb-add-ident ident (dimb-kind-objfun) table)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-add-idents-objfun ((idents ident-listp) (table dimb-tablep))
+  :returns (new-table dimb-tablep)
+  :short "Add all the identifiers in a list to the disambiguation table,
+          with object or function kind."
+  (cond ((endp idents) (dimb-table-fix table))
+        (t (dimb-add-idents-objfun (cdr idents)
+                                   (dimb-add-ident-objfun (car idents)
+                                                          table))))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-cast/call-to-cast ((tyname tynamep)
@@ -951,7 +972,7 @@
                 table))
        :cond
        (b* (((erp new-test table) (dimb-expr expr.test table))
-            ((erp new-then table) (dimb-expr expr.then table))
+            ((erp new-then table) (dimb-expr-option expr.then table))
             ((erp new-else table) (dimb-expr expr.else table)))
          (retok (make-expr-cond :test new-test
                                 :then new-then
@@ -1282,7 +1303,8 @@
                        table)
           :tyname (retok (make-type-spec-typeof-type :type expr/tyname.unwrap
                                                      :uscores tyspec.uscores)
-                         table)))))
+                         table)))
+       :auto-type (retok (type-spec-auto-type) (dimb-table-fix table))))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2946,6 +2968,9 @@
     "Then we add the declared function to the disambiguation table,
      so that it can be referenced from the body, in a recursive call.")
    (xdoc::p
+    "We extend the disambiguation table with the identifier @('__func__')
+     [C:6.4.2.2].")
+   (xdoc::p
     "After all of that, we disambiguate the body of the function definition,
      which is a block (i.e. compound statement) in valid code.
      But we do not push a new scope for the block,
@@ -2961,7 +2986,8 @@
         (dimb-declspec-list fundef.spec (dimb-kind-objfun) table))
        ((erp new-declor ident table) (dimb-declor fundef.declor t table))
        ((erp new-decls table) (dimb-decl-list fundef.decls table))
-       (table (dimb-add-ident ident (dimb-kind-objfun) table))
+       (table (dimb-add-ident-objfun ident table))
+       (table (dimb-add-ident-objfun (ident "__func__") table))
        ((unless (stmt-case fundef.body :compound))
         (reterr (msg "The body of the function definition ~x0 ~
                       is not a compound statement; ~
@@ -3000,6 +3026,8 @@
      (b* (((erp new-decl table) (dimb-decl extdecl.unwrap table)))
        (retok (extdecl-decl new-decl) table))
      :empty
+     (retok (extdecl-fix extdecl) (dimb-table-fix table))
+     :asm
      (retok (extdecl-fix extdecl) (dimb-table-fix table))))
   :hooks (:fix)
 
@@ -3047,22 +3075,86 @@
      For now we only add some built-ins
      that we have observed in some preprocessed files.
      We should revisit this, adding all the GCC built-ins,
-     with clear and accurate references."))
+     with clear and accurate references.")
+   (xdoc::p
+    "We also add entries for certina built-in variables
+     corresponding to the x86 registers, i.e. @('__eax') etc.
+     We could not find those documented in the GCC manual,
+     but we found them in practical code.
+     Experiments suggest that these variables are somewhat restricted in usage.
+     The normal patten seems to be something like")
+   (xdoc::codeblock
+    "unsigned long __eax = __eax;")
+   (xdoc::p
+    "after which one can use @('__eax') as a regular variable.
+     However, without the declaration above,
+     @('__eax') cannot be used as a regular variable.
+     This is odd, because the validity of the declaration above
+     presupposes that @('__eax') is already in scope.
+     It is not clear why such a declaration is needed in the first place.
+     To add to the strangeness,
+     one can change the above initializer to @('__eax + 1')
+     (and presumably other similar expressions)
+     and the compiler acceptes it.")
+   (xdoc::p
+    "However, none of this matters for the disambiguator,
+     which does not need to validate the code,
+     and is only required to return correct results
+     only if the code is indeed valid
+     (even though validity is checked after disambiguation).
+     We add these special variables to the initial disambiguation table,
+     so that declarations such as the one above
+     do not cause an error during disambiguation.
+     The declaration itself is handled by the disambiguator
+     by overriding any preceding entry with the same name
+     (see @(tsee dimb-add-ident)),
+     so after a declaration like the one above
+     @('__eax') is still in the table, with the right kind,
+     and can be used as an expression in scope.
+     However, note that these variables only make sense on an x86 platform:
+     we should refine our GCC flag with
+     a richer description of the C implementation."))
   (b* (((reterr) (irr-transunit))
        (edecls (transunit->decls tunit))
        (table (dimb-init-table))
        (table
          (if gcc
-             (b* ((table (dimb-add-ident (ident "__builtin_bswap16")
-                                         (dimb-kind-objfun)
-                                         table))
-                  (table (dimb-add-ident (ident "__builtin_bswap32")
-                                         (dimb-kind-objfun)
-                                         table))
-                  (table (dimb-add-ident (ident "__builtin_bswap64")
-                                         (dimb-kind-objfun)
-                                         table)))
-               table)
+             (dimb-add-idents-objfun
+              (list (ident "__atomic_signal_fence")
+                    (ident "__builtin_add_overflow")
+                    (ident "__builtin_bswap16")
+                    (ident "__builtin_bswap32")
+                    (ident "__builtin_bswap64")
+                    (ident "__builtin_choose_expr")
+                    (ident "__builtin_clz")
+                    (ident "__builtin_clzl")
+                    (ident "__builtin_clzll")
+                    (ident "__builtin_constant_p")
+                    (ident "__builtin_ctzl")
+                    (ident "__builtin_expect")
+                    (ident "__builtin_dynamic_object_size")
+                    (ident "__builtin_memchr")
+                    (ident "__builtin_memcmp")
+                    (ident "__builtin_memcpy")
+                    (ident "__builtin_memset")
+                    (ident "__builtin_mul_overflow")
+                    (ident "__builtin_object_size")
+                    (ident "__builtin_return_address")
+                    (ident "__builtin_strcpy")
+                    (ident "__builtin_strlen")
+                    (ident "__builtin_strncat")
+                    (ident "__builtin_strncpy")
+                    (ident "__builtin_sub_overflow")
+                    (ident "__builtin_unreachable")
+                    (ident "__eax")
+                    (ident "__ebx")
+                    (ident "__ecx")
+                    (ident "__edx")
+                    (ident "__esi")
+                    (ident "__edi")
+                    (ident "__ebp")
+                    (ident "__esp"))
+              table)
            table))
        ((erp new-edecls &) (dimb-extdecl-list edecls table)))
     (retok (transunit new-edecls)))

@@ -143,10 +143,10 @@
              certificate-set->author-set
              head-author-not-in-tail-authors-when-same-round-and-unequiv
              set::expensive-rules)
-    :disable (certificate-set->round-set-subset
+    :disable (certificate-set->round-set-monotone
               set::cardinality-of-tail-leq
               certificate-set-unequivocalp)
-    :hints ('(:use ((:instance certificate-set->round-set-subset
+    :hints ('(:use ((:instance certificate-set->round-set-monotone
                                (certs1 (set::tail certs))
                                (certs2 certs))
                     (:instance set::cardinality-of-tail-leq

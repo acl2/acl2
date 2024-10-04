@@ -1,0 +1,10 @@
+(ld "jvm.pkg.lisp")
+(defpkg "JVM" (set-difference-equal  
+               (union-eq *acl2-exports* (union-eq *no-dup-set-facts-basic-functions* 
+                                                  (union-eq *jvm-symbols* 
+                                                            (union-eq
+                                                             *primitives*
+	                                                        (union-eq *base-bind-free*
+	                                                              *common-lisp-symbols-from-main-lisp-package*)))))
+               '(pop pc top push monitor make-method make-array)))
+

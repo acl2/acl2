@@ -144,7 +144,7 @@
        "                          :arg2 arg2)))"
        "            :cond (make-expr-cond"
        "                    :test (my-simpadd0-expr expr.test)"
-       "                    :then (my-simpadd0-expr expr.then)"
+       "                    :then (my-simpadd0-expr-option expr.then)"
        "                    :else (my-simpadd0-expr expr.else))"
        "            :comma (make-expr-comma"
        "                     :first (my-simpadd0-expr expr.first)"
@@ -278,7 +278,6 @@
     (:linear c$::expr-count-of-expr-comma->next)
     (:linear c$::expr-count-of-expr-cond->else)
     (:linear c$::expr-count-of-expr-cond->test)
-    (:linear c$::expr-count-of-expr-cond->then)
     (:linear c$::expr-count-of-expr-funcall->fun)
     (:linear c$::expr-count-of-expr-gensel->control)
     (:linear c$::expr-count-of-expr-member->arg)
@@ -300,6 +299,7 @@
     (:linear c$::expr-list-count-of-expr-funcall->args)
     (:linear c$::expr-option-count-of-dirabsdeclor-array->expr?)
     (:linear c$::expr-option-count-of-dirdeclor-array->expr?)
+    (:linear c$::expr-option-count-of-expr-cond->then)
     (:linear c$::expr-option-count-of-stmt-expr->expr?)
     (:linear c$::expr-option-count-of-stmt-for-decl->next)
     (:linear c$::expr-option-count-of-stmt-for-decl->test)
@@ -693,7 +693,7 @@
                 :arg2 (,(cdr (assoc-eq 'expr names)) expr.arg2 ,@extra-args-names))
       :cond (make-expr-cond
               :test (,(cdr (assoc-eq 'expr names)) expr.test ,@extra-args-names)
-              :then (,(cdr (assoc-eq 'expr names)) expr.then ,@extra-args-names)
+              :then (,(cdr (assoc-eq 'expr-option names)) expr.then ,@extra-args-names)
               :else (,(cdr (assoc-eq 'expr names)) expr.else ,@extra-args-names))
       :comma (make-expr-comma
                :first (,(cdr (assoc-eq 'expr names)) expr.first ,@extra-args-names)
@@ -895,7 +895,8 @@
                     :uscores tyspec.uscores)
       :typeof-ambig (prog2$
                      (raise "Misusage error: ~x0." (type-spec-fix tyspec))
-                     (type-spec-fix tyspec)))
+                     (type-spec-fix tyspec))
+      :auto-type (type-spec-fix tyspec))
    '(:returns (new-tyspec type-specp)
      :measure (type-spec-count tyspec))))
 
@@ -1750,7 +1751,8 @@
       extdecl
       :fundef (extdecl-fundef (,(cdr (assoc-eq 'fundef names)) extdecl.unwrap ,@extra-args-names))
       :decl (extdecl-decl (,(cdr (assoc-eq 'decl names)) extdecl.unwrap ,@extra-args-names))
-      :empty (extdecl-empty))
+      :empty (extdecl-empty)
+      :asm (extdecl-fix extdecl))
    '(:returns (new-extdecl extdeclp))))
 
 (define deftrans-defn-extdecl-list

@@ -198,7 +198,8 @@
                    const)))
              (mv found (extdecl-fundef fundef)))
    :decl (mv nil (extdecl-fix extdecl))
-   :empty (mv nil (extdecl-fix extdecl))))
+   :empty (mv nil (extdecl-fix extdecl))
+   :asm (mv nil (extdecl-fix extdecl))))
 
 (define specialize-extdecl-list
   ((extdecls extdecl-listp)

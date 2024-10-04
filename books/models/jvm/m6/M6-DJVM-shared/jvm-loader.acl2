@@ -1,0 +1,2 @@
+(ld "../M6-DJVM-shared/jvm.pkg")
+(certify-book "jvm-loader" 4)
