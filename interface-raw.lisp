@@ -8786,7 +8786,7 @@
                                   &aux
                                   (acl2-pass-2-files *acl2-pass-2-files*)
                                   system-books-dir
-                                  skip-comp-exec
+;                                 skip-comp-exec ; not used
 
 ; We avoid proclaiming types dynamically, instead doing so only via the
 ; acl2-proclaims.lisp mechanism.  See the Essay on Proclaiming.
@@ -8829,10 +8829,10 @@
 ; sure to arrange that it will be in an encapsulate with (logic) included above
 ; it -- otherwise the defthm event won't be part of the boot-strap world.
 
-  (when (null system-books-dir)
-    (let ((dir (getenv$-raw "ACL2_SYSTEM_BOOKS")))
-      (when (and dir (not (equal dir "")))
-        (setq system-books-dir dir))))
+; (when (null system-books-dir) ; always true
+  (let ((dir (getenv$-raw "ACL2_SYSTEM_BOOKS")))
+    (when (and dir (not (equal dir "")))
+      (setq system-books-dir dir)))
 
   (with-warnings-suppressed
 
@@ -9020,11 +9020,11 @@
 ; possible the subsidiary uses of state-global-let* on behalf of macroexpand1
 ; (see the comment in comp-fn for more information).
 
-     (unless skip-comp-exec
+;    (unless skip-comp-exec ; could govern the LD call just below
 
 ; Optimization: Skip this compile for generate-acl2-proclaims.
 
-       (ld '((comp-fn :exec nil "1" state))))
+     (ld '((comp-fn :exec nil "1" state)))
      (exit-boot-strap-mode)
      (initialize-pc-acl2 *the-live-state*)
 
@@ -9041,7 +9041,7 @@
 ; We now check certain invariants, for example, that we have defined certain
 ; built-in constants correctly.
 
-     (or (not acl2-pass-2-files)
+     (or ; (not acl2-pass-2-files) ; always non-nil
 
 ; The check for check-built-in-constants in check-acl2-initialization, for one,
 ; will fail if we do not make a second pass through axioms.lisp.  That is
