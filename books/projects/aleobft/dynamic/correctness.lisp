@@ -22,6 +22,7 @@
 (include-book "quorum-intersection")
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
+(include-book "accepted-certificate-committee")
 (include-book "signer-quorum")
 (include-book "previous-quorum")
 (include-book "backward-closure")
@@ -58,6 +59,7 @@
                     quorum-intersection
                     last-blockchain-round
                     ordered-even-blocks
+                    accepted-certificate-committee
                     signer-quorum
                     previous-quorum
                     backward-closure
