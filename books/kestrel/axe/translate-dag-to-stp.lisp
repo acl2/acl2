@@ -68,6 +68,7 @@
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-if" :dir :system)
 (include-book "kestrel/bv-lists/logext-list" :dir :system)
+(include-book "kestrel/lists-light/len-at-least" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/file-io-string-trees" :dir :system)
@@ -204,15 +205,16 @@
 (defund maybe-get-type-of-val (val)
   (declare (xargs :guard t))
   (if (natp val)
-      (make-bv-type (max 1 (integer-length val)))
+      (if (= 0 val)
+          ;; Special case for 0: We use a type of BV1 since BV0 is not allowed:
+          (make-bv-type 1)
+        (make-bv-type (integer-length val)))
     (if (booleanp val)
         (boolean-type)
-      ;;new (this is the tightest possible type, but wider element widths would also work):
-      (if (and (consp val) ;new! disallows arrays of length 0
-               (nat-listp val)
-               (<= 2 (len val)) ; otherwise, it's not a legal array ; todo: optimize by calling len-at-least
-               )
-          (make-bv-array-type (max 1 (width-of-widest-int val)) ;fixme if the values are all 0, we consider the width to be 1
+      ;; this is the tightest possible type, but wider element widths would also work:
+      (if (and (len-at-least 2 val) ; otherwise, it's not a legal array for STP
+               (nat-listp val))
+          (make-bv-array-type (max 1 (width-of-widest-int val)) ;fixme if the values are all 0, we consider the element-width to be 1
                               (len val))
         ;; Could not determine the type of the constant:
         nil))))
@@ -304,6 +306,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns an axe-type, or nil if no type can be determined.
+;; Consults the alist before examining the node.
 (defund maybe-get-type-of-nodenum (nodenum
                                    dag-array-name
                                    dag-array
@@ -335,6 +338,7 @@
 
 ;; Returns an axe-type, or throws an error if no type can be determined.
 ;; todo: ensure the error is appropriate for all callers
+;; Consults the alist before examining the node.
 (defund get-type-of-nodenum-checked (nodenum
                                      dag-array-name
                                      dag-array
@@ -351,6 +355,7 @@
 ;; Returns an axe-type, possibly (most-general-type).
 ;instead of throwing an error when given a nodenum that has no type yet, this one may return (most-general-type)
 ;fixme combine with the non-safe version -- pull out a "maybe-get-type-of-nodenum"
+;; Consults the alist before examining the node.
 (defund get-type-of-nodenum-safe (nodenum
                                   dag-array-name
                                   dag-array
@@ -371,9 +376,9 @@
 
 ;get a known type (either the obvious type from looking at an expr, or a type from known-nodenum-type-alist)
 ;; Returns an axe-type, or nil if there's no known type.
-;special version for nodenums?
+;; Consults the ALIST after examining the node.
+;; todo: special version for nodenums?
 ;; todo: compare to get-type-of-arg-safe
-;; Requires the dag to be named 'dag-array.
 (defund maybe-get-type-of-arg (arg dag-array known-nodenum-type-alist)
   (declare (xargs :guard (and (or (myquotep arg)
                                   (and (natp arg)
@@ -398,6 +403,7 @@
 ;; Returns an axe-type, or throws an error if no type can be determined.
 ;ffixme can crash if given a weird constant or a nodenum of a weird constant
 ;; todo: ensure all callers can handle nil being returned.
+;; Consults the alist before examining the node.
 (defund get-type-of-arg-checked (arg ;a nodenum or quotep
                                  dag-array-name
                                  dag-array
@@ -422,6 +428,7 @@
 
 ;; Returns an axe-type, possibly (most-general-type).
 ;; deprecate?  only called once, in prove-with-stp.lisp.
+;; Consults the alist before examining the node.
 (defund get-type-of-arg-safe (arg ;a nodenum or quotep
                               dag-array-name
                               dag-array
@@ -2058,9 +2065,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;this one takes the var-type-alist
+;similar to get-type-of-nodenum-checked but this one takes the var-type-alist
 ;returns a type (bv type, array type, etc.)
-;similar to get-type-of-nodenum-checked
+; only used once, just below
 (defun get-type-of-nodenum-during-cutting (n dag-array-name dag-array var-type-alist)
   (declare (xargs :guard (and (symbol-alistp var-type-alist)
                               (natp n)
@@ -2082,6 +2089,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; note that this takes a var-type-alist
 (defund get-type-of-arg-during-cutting (arg dag-array-name dag-array var-type-alist)
   (declare (xargs :guard (and (symbol-alistp var-type-alist)
                               (or (myquotep arg)
