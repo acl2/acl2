@@ -2525,7 +2525,7 @@
        and an attributed that consists of a name and zero parameters:
        in concrete syntax, the latter would include open and closed parentheses,
        without anything in between (except white space or comments)."))
-    (:name ((name attrib-name)))
+    (:name-only ((name attrib-name)))
     (:name-param ((name attrib-name)
                   (param expr-list)))
     :pred attribp
