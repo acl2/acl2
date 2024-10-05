@@ -183,8 +183,7 @@ emacs:
 acl2-doc.el
 acl2-doc-open-url.el
 emacs-acl2.el
-# Not distributed, since it's really just a hack.
-# html-to-xdoc.el
+html-to-xdoc.el
 monitor.el
 README
 

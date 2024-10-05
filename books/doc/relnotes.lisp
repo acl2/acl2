@@ -134,6 +134,26 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Ethereum Virtual Machine")
+
+   (xdoc::p
+    "A (partial) formal specification of the Ethereum Virtual Machine (EVM) has
+    been added as @('kestrel/ethereum/evm/').  This is a work in progress.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Floating-Point Arithmetic")
+
+   (xdoc::p
+    "A new, cleanroom formalization of IEEE-754 floating point arithmetic has been
+     added as @('kestrel/floats/').  This is a work-in-progress.  It was
+     previously part of Kestrel's JVM model.  An initial specification for
+     floating-point rounding has been added, and various proofs have been added
+     to show that some notions from this library agree with the corresponding
+     notions in the RTL library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "FM9801")
 
    (xdoc::p
@@ -156,6 +176,19 @@
     "Added seven books to @('projects/groups/') on the topics of homomorphisms,
      direct products, the Fundamental Theorem of Finite Abelian Groups,
      symmetric groups, group actions, the Sylow theorems, and simple groups.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Kestrel Hints Library")
+
+   (xdoc::p
+     "A new library (@('kestrel/hints/')) has been added for manipulting
+      hints (combining, removing, applying renamings, etc.). This gathers
+      and improves existing utilities, and adds new ones.")
+
+   (xdoc::p
+     "A new hint, @(':casesx'), has been added to make a @(':cases') hint
+      with all possible combinations of a given set of cases.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -183,6 +216,22 @@
     "This added a proof of the Schroder-Berstein theorem. See
      @('projects/schroder-bernstein/README.md').")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "World Light Library")
+
+   (xdoc::p
+     "A new library (@('kestrel/world-light/')) has been added to collect
+     lightweight world utilities (querying the world, gathering event names,
+     etc.).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Zipfile Library")
+
+   (xdoc::p
+     "A new library (@('kestrel/zip/')) has been added for handling .zip files.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
@@ -205,6 +254,14 @@
      into formal ACL2 representations,
      to prove properties of the grammars,
      and to generate functions and theorems about the grammars.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "ACL2 Arrays Library (@('kestrel/acl2-arrays/'))")
+
+   (xdoc::p
+     "Various rules and tests have been added/improved, and library organization
+     has been improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -386,7 +443,37 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "JVM Models @('models/jvm/')")
+   (xdoc::h4 "Helpers Library (@('kestrel/helpers/'))")
+
+   (xdoc::p
+     "The Helpers Library has been significantly improved.")
+
+   (xdoc::p
+     "A new Proof Advice tool has been added to help create and repair ACL2
+      proofs.  The tool can get proof help over the web, from machine
+      learning models running on servers.  It also applies some proof search
+      heuristics.  Tools have also added to expermentally evaluate how well
+      the Proof Advice tool performs.")
+
+   (xdoc::p
+     "A new tool, repair-book, has been added to repair failed ACL2 proofs based on
+    information previously saved during successful proofs.")
+
+   (xdoc::p
+     "The improve-book tool has been improved.  It has also been used to
+      improve various other books and libraries.")
+
+   (xdoc::p
+     "A new utility, speed-up-book, has been added.  It attempts to speed
+      up a given book in various ways.  It has been used to speed up the
+      certification of various other books and libraries.")
+
+   (xdoc::p
+     "An ACL2 Linter tool was improved and moved to this library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "JVM Models (@('models/jvm/'))")
 
    (xdoc::p
     "A few new example proof files were added to
@@ -642,6 +729,22 @@
     "The @(tsee defines) macro was extended to allow the @(':verify-guards
      :after-returns') option. As in @(tsee define), this option delays the
      guard proof until just after the @(tsee std::returns-specifiers).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Terms Light Library (@('kestrel/terms-light/'))")
+
+   (xdoc::p
+     "A variety of term-processing utilities have been added, improved, or
+      collected.  These involve things like free variables, substitution,
+      getting rid of various kinds of unnecessary lambdas or lambda
+      bindings, etc.  Several of the utilities have had various properties
+      proved, including that they preserve the meaning of terms, preserve
+      various well-formedness properties of terms, do not introduce free
+      variables, etc.  The function pre-simplify-term (previously called
+      simplify-lambdas) combines several helpful simplifications. New books
+      have been added about functions such as all-fnnames1, get-conjuncts,
+      get-hyps-and-conc, etc.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1132,7 +1235,7 @@ building blocks for building more complex @('clause-processors').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Axe JVM toolkit @('kestrel/axe/jvm/')")
+   (xdoc::h4 "Axe JVM toolkit (@('kestrel/axe/jvm/'))")
 
    (xdoc::p "The lifters / unrollers have been improved in various ways.
 Method signatures and output types are now inferred.  Results of lifting are
@@ -1141,7 +1244,7 @@ normalized by default.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Axe x86 toolkit @('kestrel/axe/x86/'))")
+   (xdoc::h4 "Axe x86 toolkit (@('kestrel/axe/x86/'))")
 
    (xdoc::p "A very preliminary lifter for simple x86 code with loops has been
    added.")
@@ -1180,7 +1283,7 @@ normalized by default.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "BV Lists Library @('kestrel/bv-lists/')")
+   (xdoc::h4 "BV Lists Library (@('kestrel/bv-lists/'))")
 
    (xdoc::p "New rules have been added, and the library's organization has been
    improved.")
@@ -1287,7 +1390,7 @@ normalized by default.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "JVM Model @('kestrel/jvm/')")
+   (xdoc::h4 "JVM Model (@('kestrel/jvm/'))")
 
    (xdoc::p "The formalization of class tables has been improved.")
 
@@ -1388,7 +1491,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Kestrel x86 Library @('kestrel/x86/')")
+   (xdoc::h4 "Kestrel x86 Library (@('kestrel/x86/'))")
 
    (xdoc::p "Rules have been added, improved, and given better names.")
 
@@ -1396,7 +1499,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Lists Light Library @('kestrel/lists-light/')")
+   (xdoc::h4 "Lists Light Library (@('kestrel/lists-light/'))")
 
    (xdoc::p "New books have been added about @('make-list-ac'), @('resize-list'), functions that treat lists like sets, and @('replace-item').")
 
@@ -1452,7 +1555,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Random Library @('kestrel/random/')")
+   (xdoc::h4 "Random Library (@('kestrel/random/'))")
 
    (xdoc::p "Improvements have been made to @(':forward-chaining') rules.")
 
@@ -1470,7 +1573,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Sequences Library @('kestrel/sequences/')")
+   (xdoc::h4 "Sequences Library (@('kestrel/sequences/'))")
 
    (xdoc::p "@('Defforall') has been improved, including reducing the number of
    included books from 42 to 27.")
@@ -1535,7 +1638,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Strings Light Library @('kestrel/strings-light/')")
+   (xdoc::h4 "Strings Light Library (@('kestrel/strings-light/'))")
 
    (xdoc::p "New books have been added about reversing, string length, and
    checking whether a string ends with some other string.")
@@ -1545,7 +1648,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Terms Light Library @('kestrel/terms-light')")
+   (xdoc::h4 "Terms Light Library (@('kestrel/terms-light/'))")
 
    (xdoc::p "Utilities have been added to reconstruct @('let')s, serialize
 @('lambda')s, rename variables, find duplicate @('lambda') arguments, add
@@ -1565,7 +1668,7 @@ apply a substitution to a term while evaluating ground terms.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Tools @('tools/')")
+   (xdoc::h4 "Tools (@('tools/'))")
 
    (xdoc::p
     "When the tool @(tsee prove$) is interrupted (with @('Control-C')), control
@@ -1606,7 +1709,7 @@ apply a substitution to a term while evaluating ground terms.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Untranslated Terms Library @('kestrel/untranslated-terms')")
+   (xdoc::h4 "Untranslated Terms Library (@('kestrel/untranslated-terms/'))")
 
    (xdoc::p "@('Rename-functions') has been improved in various ways.")
 

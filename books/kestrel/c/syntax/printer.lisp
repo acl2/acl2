@@ -2852,7 +2852,7 @@
        here we perform a run-time check on the expressions."))
     (attrib-case
      attr
-     :name (print-attrib-name attr.name pstate)
+     :name-only (print-attrib-name attr.name pstate)
      :name-param
      (b* ((pstate (print-attrib-name attr.name pstate))
           (pstate (print-astring "(" pstate))
