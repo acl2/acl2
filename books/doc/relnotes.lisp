@@ -406,7 +406,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Helpers Library @('kestrel/helpers')")
+   (xdoc::h4 "Helpers Library (@('kestrel/helpers/'))")
 
    (xdoc::p
      "The Helpers Library has been significantly improved.")
@@ -432,7 +432,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "JVM Models @('models/jvm/')")
+   (xdoc::h4 "JVM Models (@('models/jvm/'))")
 
    (xdoc::p
     "A few new example proof files were added to
@@ -1178,7 +1178,7 @@ building blocks for building more complex @('clause-processors').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Axe JVM toolkit @('kestrel/axe/jvm/')")
+   (xdoc::h4 "Axe JVM toolkit (@('kestrel/axe/jvm/'))")
 
    (xdoc::p "The lifters / unrollers have been improved in various ways.
 Method signatures and output types are now inferred.  Results of lifting are
@@ -1187,7 +1187,7 @@ normalized by default.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Axe x86 toolkit @('kestrel/axe/x86/'))")
+   (xdoc::h4 "Axe x86 toolkit (@('kestrel/axe/x86/'))")
 
    (xdoc::p "A very preliminary lifter for simple x86 code with loops has been
    added.")
@@ -1226,7 +1226,7 @@ normalized by default.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "BV Lists Library @('kestrel/bv-lists/')")
+   (xdoc::h4 "BV Lists Library (@('kestrel/bv-lists/'))")
 
    (xdoc::p "New rules have been added, and the library's organization has been
    improved.")
@@ -1333,7 +1333,7 @@ normalized by default.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "JVM Model @('kestrel/jvm/')")
+   (xdoc::h4 "JVM Model (@('kestrel/jvm/'))")
 
    (xdoc::p "The formalization of class tables has been improved.")
 
@@ -1434,7 +1434,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Kestrel x86 Library @('kestrel/x86/')")
+   (xdoc::h4 "Kestrel x86 Library (@('kestrel/x86/'))")
 
    (xdoc::p "Rules have been added, improved, and given better names.")
 
@@ -1442,7 +1442,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Lists Light Library @('kestrel/lists-light/')")
+   (xdoc::h4 "Lists Light Library (@('kestrel/lists-light/'))")
 
    (xdoc::p "New books have been added about @('make-list-ac'), @('resize-list'), functions that treat lists like sets, and @('replace-item').")
 
@@ -1498,7 +1498,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Random Library @('kestrel/random/')")
+   (xdoc::h4 "Random Library (@('kestrel/random/'))")
 
    (xdoc::p "Improvements have been made to @(':forward-chaining') rules.")
 
@@ -1516,7 +1516,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Sequences Library @('kestrel/sequences/')")
+   (xdoc::h4 "Sequences Library (@('kestrel/sequences/'))")
 
    (xdoc::p "@('Defforall') has been improved, including reducing the number of
    included books from 42 to 27.")
@@ -1581,7 +1581,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Strings Light Library @('kestrel/strings-light/')")
+   (xdoc::h4 "Strings Light Library (@('kestrel/strings-light/'))")
 
    (xdoc::p "New books have been added about reversing, string length, and
    checking whether a string ends with some other string.")
@@ -1591,7 +1591,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Terms Light Library @('kestrel/terms-light')")
+   (xdoc::h4 "Terms Light Library (@('kestrel/terms-light/'))")
 
    (xdoc::p "Utilities have been added to reconstruct @('let')s, serialize
 @('lambda')s, rename variables, find duplicate @('lambda') arguments, add
@@ -1611,7 +1611,7 @@ apply a substitution to a term while evaluating ground terms.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Tools @('tools/')")
+   (xdoc::h4 "Tools (@('tools/'))")
 
    (xdoc::p
     "When the tool @(tsee prove$) is interrupted (with @('Control-C')), control
@@ -1652,7 +1652,7 @@ apply a substitution to a term while evaluating ground terms.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Untranslated Terms Library @('kestrel/untranslated-terms')")
+   (xdoc::h4 "Untranslated Terms Library (@('kestrel/untranslated-terms/'))")
 
    (xdoc::p "@('Rename-functions') has been improved in various ways.")
 
