@@ -134,6 +134,26 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Ethereum Virtual Machine")
+
+   (xdoc::p
+    "A (partial) formal specification of the Ethereum Virtual Machine (EVM) has
+    been added as @('kestrel/ethereum/evm/').  This is a work in progress.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Floating-Point Arithmetic")
+
+   (xdoc::p
+    "A new, cleanroom formalization of IEEE-754 floating point arithmetic has been
+     added as @('kestrel/floats/').  This is a work-in-progress.  It was
+     previously part of Kestrel's JVM model.  An initial specification for
+     floating-point rounding has been added, and various proofs have been added
+     to show that some notions from this library agree with the corresponding
+     notions in the RTL library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "FM9801")
 
    (xdoc::p
@@ -383,6 +403,32 @@
    (xdoc::p
     "A fixtype @(tsee pos-set) for sets of positive integers has been added,
      along with some operations on these sets.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Helpers Library @('kestrel/helpers')")
+
+   (xdoc::p
+     "The Helpers Library has been significantly improved.")
+
+   (xdoc::p
+     "A new Proof Advice tool has been added to help create and repair ACL2
+      proofs.  The tool can get proof help over the web, from machine
+      learning models running on servers.  It also applies some proof search
+      heuristics.  Tools have also added to expermentally evaluate how well
+      the Proof Advice tool performs.")
+
+   (xdoc::p
+     "The improve-book tool has been improved.  It has also been used to
+      improve various other books and libraries.")
+
+   (xdoc::p
+     "A new utility, speed-up-book, has been added.  It attempts to speed
+      up a given book in various ways.  It has been used to speed up the
+      certification of various other books and libraries.")
+
+   (xdoc::p
+     "An ACL2 Linter tool was improved and moved to this library.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
