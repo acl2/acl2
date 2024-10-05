@@ -179,6 +179,19 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Kestrel Hints Library")
+
+   (xdoc::p
+     "A new library (@('kestrel/hints/')) has been added for manipulting
+      hints (combining, removing, applying renamings, etc.). This gathers
+      and improves existing utilities, and adds new ones.")
+
+   (xdoc::p
+     "A new hint, @(':casesx'), has been added to make a @(':cases') hint
+      with all possible combinations of a given set of cases.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "M6")
 
    (xdoc::p
@@ -203,6 +216,22 @@
     "This added a proof of the Schroder-Berstein theorem. See
      @('projects/schroder-bernstein/README.md').")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "World Light Library")
+
+   (xdoc::p
+     "A new library (@('kestrel/world-light/')) has been added to collect
+     lightweight world utilities (querying the world, gathering event names,
+     etc.).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Zipfile Library")
+
+   (xdoc::p
+     "A new library (@('kestrel/zip/')) has been added for handling .zip files.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
@@ -225,6 +254,14 @@
      into formal ACL2 representations,
      to prove properties of the grammars,
      and to generate functions and theorems about the grammars.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "ACL2 Arrays Library (@('kestrel/acl2-arrays/'))")
+
+   (xdoc::p
+     "Various rules and tests have been added/improved, and library organization
+     has been improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -417,6 +454,10 @@
       learning models running on servers.  It also applies some proof search
       heuristics.  Tools have also added to expermentally evaluate how well
       the Proof Advice tool performs.")
+
+   (xdoc::p
+     "A new tool, repair-book, has been added to repair failed ACL2 proofs based on
+    information previously saved during successful proofs.")
 
    (xdoc::p
      "The improve-book tool has been improved.  It has also been used to
@@ -688,6 +729,22 @@
     "The @(tsee defines) macro was extended to allow the @(':verify-guards
      :after-returns') option. As in @(tsee define), this option delays the
      guard proof until just after the @(tsee std::returns-specifiers).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Terms Light Library (@('kestrel/terms-light/'))")
+
+   (xdoc::p
+     "A variety of term-processing utilities have been added, improved, or
+      collected.  These involve things like free variables, substitution,
+      getting rid of various kinds of unnecessary lambdas or lambda
+      bindings, etc.  Several of the utilities have had various properties
+      proved, including that they preserve the meaning of terms, preserve
+      various well-formedness properties of terms, do not introduce free
+      variables, etc.  The function pre-simplify-term (previously called
+      simplify-lambdas) combines several helpful simplifications. New books
+      have been added about functions such as all-fnnames1, get-conjuncts,
+      get-hyps-and-conc, etc.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
