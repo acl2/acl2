@@ -7,8 +7,7 @@
 
 (in-package "ACL2")
 
-(include-book "absolute-path")
-(include-acl2-book "data-structures/utilities")
+(include-book "data-structures/utilities" :dir :system)
 
 (u::import-as-macros
  U::A-UNIQUE-SYMBOL-IN-THE-U-PACKAGE

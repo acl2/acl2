@@ -256,9 +256,9 @@ x86_model_state *load_state_from_file(char *filename) {
 
   struct stat st;
   fstat(fd, &st);
-  state->mem = mmap(NULL, st.st_size, PROT_READ | PROT_WRITE | PROT_EXEC,
-		  MAP_PRIVATE, fd,
-		  sizeof(state_file) + (-sizeof(state_file) & 0xFFF));
+  state->mem =
+      mmap(NULL, st.st_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE,
+           fd, sizeof(state_file) + (-sizeof(state_file) & 0xFFF));
 
   munmap(file_contents, sizeof(state_file));
 
@@ -300,9 +300,11 @@ void vm_load_model_state(vm *v, x86_model_state *state) {
   vm_link_mem(v, 0, 0, (void *)((uintptr_t)v->guest_mem), (4UL << 30));
 }
 
-static uint64_t translate_addr(vcpu *vc, uint64_t linear_address) {
+static uint64_t translate_addr(vcpu *vc, uint64_t linear_address, bool *valid) {
   struct kvm_translation translation = {.linear_address = linear_address};
   ioctl(vc->fd, KVM_TRANSLATE, &translation);
+  if (valid)
+    *valid = translation.valid;
   return translation.physical_address;
 }
 
@@ -322,26 +324,29 @@ uint64_t vm_run(vm *v) {
   printf("cr2 : %lx\n", (uint64_t)sregs.cr2);
   printf("cr3 : %lx\n", (uint64_t)sregs.cr3);
   printf("rip : %lx\n", (uint64_t)regs.rip);
-  uint64_t physical_rip = translate_addr(&v->vcpu, regs.rip);
-  printf("Physical RIP: %lx\n", physical_rip);
-  printf("Bytes at rip:\n");
+  bool valid_rip_trans;
+  uint64_t physical_rip = translate_addr(&v->vcpu, regs.rip, &valid_rip_trans);
   uint8_t *arr = (uint8_t *)((uintptr_t)v->guest_mem + physical_rip);
-  for (size_t idx = 0; idx < 0x100; idx++) {
-    printf("%02x ", arr[idx]);
+  if (valid_rip_trans) {
+    printf("Physical RIP: %lx\n", physical_rip);
+    printf("Bytes at rip:\n");
+    for (size_t idx = 0; idx < 0x100; idx++) {
+      printf("%02x ", arr[idx]);
+    }
   }
   printf("\nRAX: %lx\n", (uint64_t)regs.rax);
-  printf("RAX (physical): %lx\n", translate_addr(&v->vcpu, regs.rax));
+  printf("RAX (physical): %lx\n", translate_addr(&v->vcpu, regs.rax, NULL));
   printf("RBX: %lx\n", (uint64_t)regs.rbx);
-  printf("RBX (physical): %lx\n", translate_addr(&v->vcpu, regs.rbx));
+  printf("RBX (physical): %lx\n", translate_addr(&v->vcpu, regs.rbx, NULL));
   printf("RCX: %lx\n", (uint64_t)regs.rcx);
   printf("RDX: %lx\n", (uint64_t)regs.rdx);
   printf("RDI: %lx\n", (uint64_t)regs.rdi);
-  uint64_t rdi_phys = translate_addr(&v->vcpu, regs.rdi);
+  uint64_t rdi_phys = translate_addr(&v->vcpu, regs.rdi, NULL);
   printf("RDI (physical): %lx\n", (uint64_t)rdi_phys);
   printf("RSI: %lx\n", (uint64_t)regs.rsi);
-  printf("RSI (physical): %lx\n", translate_addr(&v->vcpu, regs.rsi));
+  printf("RSI (physical): %lx\n", translate_addr(&v->vcpu, regs.rsi, NULL));
   printf("R12: %lx\n", (uint64_t)regs.r12);
-  uint64_t r12_phys = translate_addr(&v->vcpu, (uint64_t)regs.r12);
+  uint64_t r12_phys = translate_addr(&v->vcpu, (uint64_t)regs.r12, NULL);
   printf("R12 (physical): %lx\n", r12_phys);
   if (r12_phys != -1) {
     printf("R12 (string): %s\n", (char *)((uintptr_t)v->guest_mem + r12_phys));
@@ -350,19 +355,20 @@ uint64_t vm_run(vm *v) {
   // While it's possible the sequence of two bytes starting at RIP are in
   // different pages and not next to each other in physical memory, this is
   // unlikely and so I don't deal with it here. Let's hope that doesn't bite me.
-  if (*(uint16_t *)arr == 0x300f && (uint32_t)regs.rcx == 0xc0000080) {
+  if (valid_rip_trans && *(uint16_t *)arr == 0x300f && (uint32_t)regs.rcx == 0xc0000080) {
     // wrmsr
     // rcx = EFER
     sregs.efer = (regs.rdx << 32) | (uint32_t)regs.rax;
     regs.rip += 2;
-  } else if (*(uint16_t *)arr == 0x01e6) {
+  } else if (valid_rip_trans && *(uint16_t *)arr == 0x01e6) {
     // out 0x1, al
-    uint64_t rbx_phys = translate_addr(&v->vcpu, regs.rbx);
+    uint64_t rbx_phys = translate_addr(&v->vcpu, regs.rbx, NULL);
     fprintf(stderr, "%.*s", (uint16_t)regs.r13,
             (char *)((uintptr_t)v->guest_mem + rbx_phys));
     regs.rip += 2;
   } else if (v->vcpu.run->exit_reason == KVM_EXIT_MMIO) {
-    printf("%lx <-> %lx\n", v->vcpu.run->mmio.data, v->vcpu.run->mmio.phys_addr);
+    printf("%lx <-> %lx\n", v->vcpu.run->mmio.data,
+           v->vcpu.run->mmio.phys_addr);
   } else if (v->vcpu.run->exit_reason == KVM_EXIT_HLT) {
     printf("HLTed\n");
     regs.rip += 1;
@@ -373,7 +379,7 @@ uint64_t vm_run(vm *v) {
     ioctl(v->vcpu.fd, KVM_GET_SREGS, &sregs);
     printf("idt: %lx\n", (uint64_t)sregs.idt.base);
     uint64_t gate_ptr = sregs.idt.base + 16 * 3;
-    uint64_t gate_phys_ptr = translate_addr(&v->vcpu, gate_ptr);
+    uint64_t gate_phys_ptr = translate_addr(&v->vcpu, gate_ptr, NULL);
     printf("%d\n", *(char *)(3 + (uintptr_t)v->guest_mem + gate_phys_ptr));
     return regs.rip;
   }
@@ -431,7 +437,8 @@ vm *init_vm(kvm_fd *kvm_out) {
   x86_model_state *state = load_state_from_file("state.virt");
 
   vm_load_model_state(v, state);
-  printf("Some code: %lx\n", *((uint64_t*)((uintptr_t)v->guest_mem+ 0x1003C00)));
+  printf("Some code: %lx\n",
+         *((uint64_t *)((uintptr_t)v->guest_mem + 0x1003C00)));
   return v;
 }
 

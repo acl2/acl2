@@ -7,11 +7,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (in-package "ACL2")
 
-(include-book "absolute-path")
-(include-acl2-book "data-structures/array1")
-(include-acl2-book "data-structures/deflist")
-(include-acl2-book "data-structures/list-defthms")
-(include-acl2-book "data-structures/structures")
+(include-book "data-structures/array1" :dir :system)
+(include-book "data-structures/deflist" :dir :system)
+(include-book "data-structures/list-defthms" :dir :system)
+(include-book "data-structures/structures" :dir :system)
 (include-book "ihs")
 
 (include-book "trivia")

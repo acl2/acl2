@@ -657,10 +657,10 @@
      @(see step-limit) error printing.")
 
    (xdoc::p
-    "The @(see time-tracker) capability is now turned off by the @(tsee
-     run-script) tool, to avoid output that differs from what is expected (say,
-     due to running on a slow machine, or with many threads when few are
-     available).")
+    "The @(see time-tracker) capability and &lsquo;@('Hons-Note')&rsquo;
+     printing are now turned off by the @(tsee run-script) tool, to avoid
+     output that differs from what is expected (say, due to running on a slow
+     machine, or with many threads when few are available).")
 
    (xdoc::p
     "Tools @(tsee functions-after) and @(tsee macros-after) return names of
@@ -787,6 +787,12 @@
      items within @('<ul>..</ul>') or @('<ol>..</ol>').  This affects both
      @(see documentation) displays at the terminal with the @(':')@(tsee doc)
      command as well as displays in the @(see acl2-doc) browser.")
+
+   (xdoc::p
+    "The SEO optimized copy of the web based XDOC manual has been updated to
+     take the `xkey` corresponding to the current page as a query parameter
+     instead of part of the path. This allows all the pages to be ratelimited
+     as a single page by `mod_evasive`.")
 
    ))
 
