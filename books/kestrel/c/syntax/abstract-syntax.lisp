@@ -10,6 +10,9 @@
 
 (in-package "C$")
 
+; Added 10/6/2024 by Matt K. after 3 successive ACL2(p) certification failures:
+(acl2::set-waterfall-parallelism nil)
+
 (include-book "file-paths")
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)

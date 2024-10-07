@@ -1,0 +1,1 @@
+(M6::INIT-STATE2)
