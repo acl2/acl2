@@ -1,7 +1,7 @@
 ; Rules about the JVM model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -740,7 +740,7 @@
 
 (defthm jvm-statep-run
   (implies (and (jvm-statep s)
-                (acl2::all-thread-designatorp sched))
+                (all-thread-designatorp sched))
            (jvm-statep (run sched s)))
   :hints (("goal" :in-theory (enable run))))
 

@@ -1,7 +1,7 @@
 ; BV Library: leftrotate for size 32
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -173,8 +173,7 @@
            (equal (getbit n (leftrotate32 amt x))
                   (getbit (+ 32 (- amt) n) x)))
   :hints (("Goal" :in-theory (e/d (getbit unsigned-byte-p)
-                                  (bvchop-1-becomes-getbit
-                                   leftrotate32)))))
+                                  (leftrotate32)))))
 
 (defthm getbit-of-leftrotate32-high
   (implies (and (<= amt n) ;todo: other case! see rules for leftrotate
@@ -184,8 +183,7 @@
                 (natp amt))
            (equal (getbit n (leftrotate32 amt x))
                   (getbit (- n amt) x)))
-  :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit
-                                            leftrotate32)))))
+  :hints (("Goal" :in-theory (e/d (getbit) (leftrotate32)))))
 
 ;drop the syntap hyp?
 (defthmd getbit-of-leftrotate32

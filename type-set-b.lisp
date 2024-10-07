@@ -985,7 +985,7 @@
 ; Finally, there is one last problem.  Eventually the array-size of the array
 ; in one of these structures will be too small.  This manifests itself when the
 ; maximum rule index at the time we load the structure is equal to or greater
-; than the array-length.  At that time we grow the array size by 500.
+; than the array-length.  At that time we grow the array size.
 
 ; Here is how we use an enabled structure, ens, to determine if a nume, rune,
 ; or function is enabled.
@@ -2055,7 +2055,16 @@
                 (max 0 ; guarantee non-negative value, e.g. when wrld is nil
                      (1- (get-next-nume wrld)))))
          (d (access enabled-structure ens :array-length))
-         (new-d (cond ((< n d) d)
+         (new-d (cond ((and (eq augmented-p 'ext-p)
+                            (consp theory)
+                            (>= (caar theory) d))
+
+; See useless-runes-ens for setting of augmented-p to 'ext-p.  We are going to
+; update ens with a theory that starts with a nume that is not less than the
+; array dimension, hence would be out of range.
+
+                       (* 2 (1+ (caar theory))))
+                      ((< n d) d)
                       (t (max (* 2 d)
                               (+ d (* 500 (1+ (floor (- n d) 500))))))))
          (alist (if augmented-p

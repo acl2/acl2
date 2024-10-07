@@ -108,7 +108,7 @@
                   :arg2 arg2)))
      :cond (make-expr-cond
             :test (simpadd0-expr expr.test)
-            :then (simpadd0-expr expr.then)
+            :then (simpadd0-expr-option expr.then)
             :else (simpadd0-expr expr.else))
      :comma (make-expr-comma
              :first (simpadd0-expr expr.first)
@@ -248,13 +248,15 @@
      :int128 (type-spec-fix tyspec)
      :float128 (type-spec-fix tyspec)
      :builtin-va-list (type-spec-fix tyspec)
+     :struct-empty (type-spec-fix tyspec)
      :typeof-expr (make-type-spec-typeof-expr
                    :expr (simpadd0-expr tyspec.expr)
                    :uscores tyspec.uscores)
      :typeof-type (make-type-spec-typeof-type
                    :type (simpadd0-tyname tyspec.type)
                    :uscores tyspec.uscores)
-     :typeof-ambig (prog2$ (impossible) (irr-type-spec)))
+     :typeof-ambig (prog2$ (impossible) (irr-type-spec))
+     :auto-type (type-spec-fix tyspec))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -618,7 +620,8 @@
               :declor (simpadd0-structdeclor-list structdecl.declor)
               :attrib structdecl.attrib)
      :statassert (structdecl-statassert
-                  (simpadd0-statassert structdecl.unwrap)))
+                  (simpadd0-statassert structdecl.unwrap))
+     :empty (structdecl-empty))
     :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -721,6 +724,7 @@
       (make-initdeclor
        :declor (simpadd0-declor initdeclor.declor)
        :asm? initdeclor.asm?
+       :attribs initdeclor.attribs
        :init? (simpadd0-initer-option initdeclor.init?)))
     :measure (initdeclor-count initdeclor))
 
@@ -748,8 +752,7 @@
      :decl (make-decl-decl
             :extension decl.extension
             :specs (simpadd0-declspec-list decl.specs)
-            :init (simpadd0-initdeclor-list decl.init)
-            :attrib decl.attrib)
+            :init (simpadd0-initdeclor-list decl.init))
      :statassert (decl-statassert
                   (simpadd0-statassert decl.unwrap)))
     :measure (decl-count decl))
@@ -1084,6 +1087,7 @@
      :spec (simpadd0-declspec-list fundef.spec)
      :declor (simpadd0-declor fundef.declor)
      :asm? fundef.asm?
+     :attribs fundef.attribs
      :decls (simpadd0-decl-list fundef.decls)
      :body (simpadd0-stmt fundef.body)))
   :hooks (:fix)
@@ -1102,7 +1106,9 @@
   (extdecl-case
    extdecl
    :fundef (extdecl-fundef (simpadd0-fundef extdecl.unwrap))
-   :decl (extdecl-decl (simpadd0-decl extdecl.unwrap)))
+   :decl (extdecl-decl (simpadd0-decl extdecl.unwrap))
+   :empty (extdecl-empty)
+   :asm (extdecl-fix extdecl))
   :hooks (:fix)
 
   ///

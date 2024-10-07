@@ -159,13 +159,12 @@
   `(assert!-stobj
     (b* ((parstate (init-parstate ,list ,gcc parstate)))
       (mv (and (equal (parstate->bytes parstate) ,list)
-               (equal (parstate->position parstate) (position-init))
-               (equal (parstate->chars-read parstate) nil)
-               (equal (parstate->chars-unread parstate) nil)
-               (equal (parstate->tokens-read parstate) nil)
-               (equal (parstate->tokens-read-len parstate) 0)
-               (equal (parstate->tokens-unread parstate) nil)
-               (equal (parstate->checkpoints parstate) nil)
+               (equal (parstate->position parstate) (irr-position))
+               (equal (parstate->chars-length parstate) (len ,list))
+               (equal (parstate->chars-read parstate) 0)
+               (equal (parstate->chars-unread parstate) 0)
+               (equal (parstate->tokens-read parstate) 0)
+               (equal (parstate->tokens-unread parstate) 0)
                (equal (parstate->gcc parstate) ,gcc)
                (equal (parstate->size parstate) (len ,list)))
           parstate))
@@ -250,8 +249,7 @@
                     pstate0
                     :bytes (list 1 2 3)
                     :position (position 1 1)
-                    :chars-read (list (char+position 32 (position 1 0)))
-                    :size 3)))
+                    :chars-read (list (char+position 32 (position 1 0))))))
        parstate))
  parstate)
 
@@ -267,8 +265,7 @@
                     pstate0
                     :bytes (list 1 2 3)
                     :position (position 2 0)
-                    :chars-read (list (char+position 10 (position 1 0)))
-                    :size 3)))
+                    :chars-read (list (char+position 10 (position 1 0))))))
        parstate))
  parstate)
 
@@ -284,8 +281,7 @@
                     pstate0
                     :bytes (list 1 2 3)
                     :position (position 2 0)
-                    :chars-read (list (char+position 10 (position 1 0)))
-                    :size 3)))
+                    :chars-read (list (char+position 10 (position 1 0))))))
        parstate))
  parstate)
 
@@ -301,8 +297,7 @@
                     pstate0
                     :bytes (list 1 2 3)
                     :position (position 2 0)
-                    :chars-read (list (char+position 10 (position 1 0)))
-                    :size 3)))
+                    :chars-read (list (char+position 10 (position 1 0))))))
        parstate))
  parstate)
 
@@ -325,8 +320,7 @@
                     pstate0
                     :bytes nil
                     :position (position 1 1)
-                    :chars-read (list (char+position #x03a3 (position 1 0)))
-                    :size 0)))
+                    :chars-read (list (char+position #x03a3 (position 1 0))))))
        parstate))
  parstate)
 
@@ -349,8 +343,7 @@
                     pstate0
                     :bytes nil
                     :position (position 1 1)
-                    :chars-read (list (char+position #x21ba (position 1 0)))
-                    :size 0)))
+                    :chars-read (list (char+position #x21ba (position 1 0))))))
        parstate))
  parstate)
 
@@ -384,8 +377,7 @@
                     pstate0
                     :bytes nil
                     :position (position 1 1)
-                    :chars-read (list (char+position #x1d160 (position 1 0)))
-                    :size 0)))
+                    :chars-read (list (char+position #x1d160 (position 1 0))))))
        parstate))
  parstate)
 
@@ -445,29 +437,25 @@
                     pstate0
                     :bytes (list 66 67)
                     :position (position 1 1)
-                    :chars-read (list (char+position 65 (position 1 0)))
-                    :size 2))
+                    :chars-read (list (char+position 65 (position 1 0)))))
             (equal pstate2
                    (change-parstate$
                     pstate1
                     :bytes (list 67)
                     :position (position 1 2)
                     :chars-read (list (char+position 66 (position 1 1))
-                                      (char+position 65 (position 1 0)))
-                    :size 1))
+                                      (char+position 65 (position 1 0)))))
             (equal pstate3
                    (change-parstate$
                     pstate2
                     :chars-read (list (char+position 65 (position 1 0)))
-                    :chars-unread (list (char+position 66 (position 1 1)))
-                    :size 2))
+                    :chars-unread (list (char+position 66 (position 1 1)))))
             (equal pstate4
                    (change-parstate$
                     pstate3
                     :chars-read (list (char+position 66 (position 1 1))
                                       (char+position 65 (position 1 0)))
-                    :chars-unread nil
-                    :size 1))
+                    :chars-unread nil))
             (equal pstate5
                    (change-parstate$
                     pstate4
@@ -475,8 +463,7 @@
                     :position (position 1 3)
                     :chars-read (list (char+position 67 (position 1 2))
                                       (char+position 66 (position 1 1))
-                                      (char+position 65 (position 1 0)))
-                    :size 0))
+                                      (char+position 65 (position 1 0)))))
             (equal pstate6
                    pstate5))
        parstate))
@@ -529,49 +516,42 @@
                     pstate0
                     :bytes (list 10 66)
                     :position (position 1 1)
-                    :chars-read (list (char+position 65 (position 1 0)))
-                    :size 2))
+                    :chars-read (list (char+position 65 (position 1 0)))))
             (equal pstate2
                    (change-parstate$
                     pstate1
                     :bytes (list 66)
                     :position (position 2 0)
                     :chars-read (list (char+position 10 (position 1 1))
-                                      (char+position 65 (position 1 0)))
-                    :size 1))
+                                      (char+position 65 (position 1 0)))))
             (equal pstate3
                    (change-parstate$
                     pstate2
                     :chars-read nil
                     :chars-unread (list (char+position 65 (position 1 0))
-                                        (char+position 10 (position 1 1)))
-                    :size 3))
+                                        (char+position 10 (position 1 1)))))
             (equal pstate4
                    (change-parstate$
                     pstate3
                     :chars-read (list (char+position 65 (position 1 0)))
-                    :chars-unread (list (char+position 10 (position 1 1)))
-                    :size 2))
+                    :chars-unread (list (char+position 10 (position 1 1)))))
             (equal pstate5
                    (change-parstate$
                     pstate4
                     :chars-read (list (char+position 10 (position 1 1))
                                       (char+position 65 (position 1 0)))
-                    :chars-unread nil
-                    :size 1))
+                    :chars-unread nil))
             (equal pstate6
                    (change-parstate$
                     pstate5
                     :chars-read (list (char+position 65 (position 1 0)))
-                    :chars-unread (list (char+position 10 (position 1 1)))
-                    :size 2))
+                    :chars-unread (list (char+position 10 (position 1 1)))))
             (equal pstate7
                    (change-parstate$
                     pstate6
                     :chars-read (list (char+position 10 (position 1 1))
                                       (char+position 65 (position 1 0)))
-                    :chars-unread nil
-                    :size 1))
+                    :chars-unread nil))
             (equal pstate8
                    (change-parstate$
                     pstate7
@@ -579,8 +559,7 @@
                     :position (position 2 1)
                     :chars-read (list (char+position 66 (position 2 0))
                                       (char+position 10 (position 1 1))
-                                      (char+position 65 (position 1 0)))
-                    :size 0))
+                                      (char+position 65 (position 1 0)))))
             (equal pstate9
                    pstate8))
        parstate))
@@ -1109,9 +1088,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key cond gcc)
-  ;; Input is an ACL2 term with the text to parse,
-  ;; where the term evaluates to a string or a list of bytes.
+(defmacro test-parse (fn input &key pos more-inputs gcc cond)
+  ;; INPUT is an ACL2 term with the text to parse,
+  ;; where the term evaluates to a string.
+  ;; Optional POS is the initial position for the parser state.
+  ;; Optional MORE-INPUTS go just before parser state input.
+  ;; GCC flag says whether GCC extensions are enabled.
   ;; Optional COND may be over variables AST, SPAN, PARSTATE
   ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST.
   `(assert!-stobj
@@ -1119,7 +1101,9 @@
          (,(if (eq fn 'parse-external-declaration-list)
                '(mv erp ?ast ?span ?eofpos parstate)
              '(mv erp ?ast ?span parstate))
-          (,fn parstate)))
+          (,fn ,@more-inputs parstate))
+         ,@(and pos
+                `((parstate (update-parstate->position ,pos parstate)))))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             ,(or cond t)) ; assertion passes if COND is absent or else holds
@@ -1250,6 +1234,26 @@
  parse-expression
  "__builtin_offsetof(struct pt_regs, ss)"
  :gcc t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-struct-or-union-specifier
+
+(test-parse
+ parse-struct-or-union-specifier
+ "empty {}"
+ :pos (position 1 7)
+ :more-inputs (t (span (position 1 0) (position 1 6)))
+ :gcc t
+ :cond (type-spec-case ast :struct-empty))
+
+(test-parse
+ parse-struct-or-union-specifier
+ "{}"
+ :pos (position 1 7)
+ :more-inputs (t (span (position 1 0) (position 1 6)))
+ :gcc t
+ :cond (type-spec-case ast :struct-empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1600,6 +1604,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-external-declaration
+
+(test-parse
+ parse-external-declaration
+ ";"
+ :cond (extdecl-case ast :empty)
+ :gcc t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-external-declaration-list
 
 (test-parse
@@ -1817,4 +1831,15 @@ error (int __status, int __errnum, const char *__format, ...)
 (test-parse
  parse-external-declaration-list
  "int foo asm (\"myfoo\") = 2;"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "extern struct static_call_key __SCK__might_resched; extern typeof(__cond_resched) __SCT__might_resched;;"
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "({x = 0;})(x)"
+ :cond (expr-case ast :funcall)
  :gcc t)

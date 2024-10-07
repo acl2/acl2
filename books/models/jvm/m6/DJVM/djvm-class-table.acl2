@@ -1,0 +1,2 @@
+(ld "../DJVM/djvm.pkg")
+(certify-book "djvm-class-table" 6)

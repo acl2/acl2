@@ -15,7 +15,6 @@
 ;; This books contains notions related to DAGs represented as alists.  See also
 ;; dag-arrays.lisp.
 
-;(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
@@ -32,7 +31,7 @@
 (include-book "keep-nodenum-dargs")
 ;(include-book "darg-listp")
 ;(include-book "tools/flag" :dir :system)
-(local (include-book "kestrel/utilities/lists/add-to-set-theorems" :dir :system))
+(local (include-book "std/lists/add-to-set" :dir :system))
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))

@@ -103,8 +103,6 @@
 #                 a few seconds on subsequent builds, especially on slow NFS
 #                 systems.  May cause trouble if dependencies have changed.
 #
-#   ACL2_COMP=1   Causes multi-lisp compilation; not needed for most users.
-#
 #   EXCLUDED_PREFIXES=<strings>
 #                 Do not certify books that start with these prefixes.  For
 #                 instance, EXCLUDED_PREFIXES="projects workshops coi" would
@@ -126,7 +124,13 @@
 # is useful for causing make to keep going when an error is encountered (but
 # return a non-zero error status at the end).
 
-
+# Support for ACL2_COMP, to compile books for multiple Lisps, no
+# longer exists.  It has never worked particularly well, and it was
+# broken preceding the release of ACL2 Version 8.6, so support was
+# removed then.
+ifdef ACL2_COMP
+${error Error: Environment variable ACL2_COMP is no longer supported. }
+endif # ifdef ACL2_COMP
 
 ##############################
 ### Section: Preliminaries
@@ -755,11 +759,7 @@ bdd/benchmarks.lisp: bdd/cbf.cert bdd/create-benchmarks.lsp
 
 # We skip those that do not have counterparts under nonstd/ when
 # ACL2_HAS_REALS indicates a regression being done by ACL2(r) in
-# nonstd/.  Also, for simplicity, we only handle ACL2_COMP for
-# system/pcert/, and we do that in the section below, "Support for
-# ACL2_COMP".
-
-ifndef ACL2_COMP
+# nonstd/.
 
 ifeq ($(ACL2_HAS_REALS), )
 
@@ -865,293 +865,10 @@ projects/apply-model-2/phony: projects/apply-model-2-deps.cert
 
 endif # ifeq ($(ACL2_HAS_REALS), )
 
-endif # ifndef ACL2_COMP
-
 # We avoid += because we want the custom targets to start first, in
 # order to maximize parallelism.  If they go at the end, maybe we'll
 # have an expensive sequential tail in the regression.
 OK_CERTS := $(ACL2_CUSTOM_TARGETS) $(OK_CERTS)
-
-##############################
-### Section: Support for ACL2_COMP
-##############################
-
-# NOTE: Books that were certified with pcert are, in many (and
-# probably all) cases, recertified when using ACL2_COMP to build only
-# compiled files.  This is unfortunate but probably not very
-# important.  However, the book projects/stateman/stateman22.lisp
-# takes a long time to certify and depends on
-# tau/bounders/elementary-bounders.cert, which used pcert.  So we
-# exclude that book below.
-
-ifdef ACL2_COMP
-
-# Multi-lisp compilation stuff for developers.
-
-# NOTE: This build might fail for compiled files that involve
-# include-raw, that have readtime conditionals, that can cause stack
-# overflows when loading uncompiled code, etc.  We don't consider it
-# critical, however, that every compiled file get built.  See "Define
-# books to be skipped for multi-lisp compilation", above, for the
-# compiled files we do not attempt to build.
-
-# Typical making of compiled files in books/ could be done as follows.
-# First, in ACL2 sources directory:
-#   make -j 4 regression-fresh ACL2_SAVE_EXPANSION=t ACL2=acl2-ccl
-# Then, in books/ directory (where ACL2_SAVE_EXPANSION=t is optional,
-# but a good idea in case some .cert file is unexpectedly remade):
-#   make -j 4 -k ACL2_COMP=t ACL2_SAVE_EXPANSION=t ACL2=acl2-sbcl
-
-# Typical making of compiled files in books/nonstd/ could be done as follows.
-# First, in ACL2 sources directory:
-#   make -j 4 regression-nonstd-fresh ACL2_SAVE_EXPANSION=t ACL2=acl2r-ccl
-# Then, in books/nonstd/ directory (where ACL2_SAVE_EXPANSION=t is optional,
-# but a good idea in case some .cert file is unexpectedly remade):
-#   make -j 4 -k ACL2_COMP=t ACL2_SAVE_EXPANSION=t ACL2=acl2r-sbcl
-
-# Note: these targets won't work unless you've already done a build
-# using a "compatible" ACL2 (both ACL2, both ACL2(hp), etc.) after
-# first setting ACL2_SAVE_EXPANSION=t, and then you define ACL2_COMP
-# (e.g., ACL2_COMP=1) with a subsequent call of make.
-
-# We skip multi-lisp compilation for the centaur books, because these
-# may be more likely to have code conditional on the combination of
-# both features :CCL and :HONS.  That can affect checksums, thus
-# making it appear that a book certified in CCL is not certified in
-# another Lisp.  We also skip multi-lisp compilation for books that
-# depend on centaur/ books when we see a multi-lisp compilation
-# failure for books in their directories.  (Thus, even though
-# projects/security/des/ depends on GL and hence centaur/, we don't
-# exclude its books.)  We might not need to skip the y86 books, but
-# since some Lisps have trouble certifying those, we play it safe and
-# skip them.  Books under build/test/ present a problem because of
-# dollar signs ($) in filenames, which doesn't seem worth solving.
-# -- Hmmm, this filtering doesn't actually eliminate all centaur
-# books.  That's OK provided the resulting targets all build
-# successfully.
-$(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding some books (e.g., some centaur books))
-OK_CERTS := $(filter-out centaur/%, \
-              $(filter-out models/y86%, \
-                $(filter-out build/test%, \
-                  $(OK_CERTS))))
-
-ifndef NO_RESCAN
-
-$(info Scanning for "make comp" dependencies...)
-# Below, we use a different --var-prefix from the default used for the
-# cert.pl call above, since we don't want to redefine the CERT_PL_xxx
-# variables.  But note that we don't use the ACL2_COMP_xxx variables.
-REBUILD_MAKEFILE_COMP := $(shell \
-  rm -f $(BUILD_DIR)/Makefile-comp $(BUILD_DIR)/Makefile-comp.out; \
-  time (($(BUILD_DIR)/cert.pl \
-          --quiet \
-          --static-makefile $(BUILD_DIR)/Makefile-comp-pre \
-          --cache $(BUILD_DIR)/Makefile-cache \
-          --acl2-books `pwd` \
-          --targets $(BUILD_DIR)/Makefile-books \
-          --no-boilerplate \
-          --var-prefix ACL2_COMP) \
-          1>&2) ;\
-          (cat $(BUILD_DIR)/Makefile-comp-pre | sed "s/[.]cert/.$(ACL2_COMP_EXT)/g" > \
-           $(BUILD_DIR)/Makefile-comp) 1>&2 ;\
-  echo 'MFDEPS_DEBUG := $$(shell echo Reading book comp ' \
-       'Makefile-comp created on' `date` '1>&2)' \
-    >> $(BUILD_DIR)/Makefile-comp; \
-  ls -l $(BUILD_DIR)/Makefile-comp)
-$(info Done scanning.)
-
-endif # ifndef NO_RESCAN
-
-include $(BUILD_DIR)/Makefile-comp
-
-# Define books to be skipped for multi-lisp compilation.
-
-OK_CERTS := $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(OK_CERTS))
-
-# Start a sequence of assignments to BOOKS_SKIP_COMP:
-BOOKS_SKIP_COMP :=
-
-# See comment above about this book; in short, it would be recertified
-# (often taking a long time) because of its dependence on a book that,
-# in turn, is recertified because it was originally certified with
-# pcert.
-BOOKS_SKIP_COMP += projects/stateman/stateman22.$(ACL2_COMP_EXT)
-
-# Contain Lisp-specific readtime conditionals:
-BOOKS_SKIP_COMP += hacking/evalable-ld-printing.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += centaur/misc/memory-mgmt-logic.$(ACL2_COMP_EXT)
-
-# The following depend on centaur/misc/memory-mgmt-logic, which will
-# be uncertified in other lisps and hence we won't get the target
-# compiled file.
-# NOTE: The list below is incomplete.  In particular, failures can be
-# expected for centaur/ubdds/lite and centaur/esim/defmodules.  If we
-# add those, then we get more failures; six attempts didn't reach
-# closure.
-BOOKS_SKIP_COMP += centaur/misc/memory-mgmt.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += centaur/ubdds/core.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += centaur/ubdds/extra-operations.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += std/strings/pretty-tests.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += centaur/ubdds/subset.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += centaur/ubdds/param.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += centaur/ubdds/witness.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += centaur/vl2014/loader/top.$(ACL2_COMP_EXT)
-# WARNING!  See note above about "is incomplete" before attempting to
-# extend the list above.
-
-# Some attempts fail presumably due to dollar signs in filenames:
-BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard build/test/*.cert))
-
-# dft-ex.acl2 specifies no compilation; getprop.lisp can give stack
-# overflow in during the load of the expansion file -- perhaps not
-# surprising, given that (comp t) occurs in the .lisp file:
-BOOKS_SKIP_COMP += misc/dft-ex.$(ACL2_COMP_EXT) misc/getprop.$(ACL2_COMP_EXT)
-
-# aof.acl2 specifies no compilation; knuth-arch.lisp depends on aof:
-BOOKS_SKIP_COMP += workshops/1999/knuth-91/aof.$(ACL2_COMP_EXT) \
-                   workshops/1999/knuth-91/knuth-arch.$(ACL2_COMP_EXT)
-
-# The .acl2 files specify no compilation:
-BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2002/cowles-flat/support/*.cert))
-BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/fld-u-poly/*.cert))
-BOOKS_SKIP_COMP += demos/meta-wf-guarantee-example.$(ACL2_COMP_EXT)
-
-# The .acl2 file for ccg.lisp specifies no compilation, so we exclude
-# that books and books that include it.
-BOOKS_SKIP_COMP += acl2s/ccg/ccg.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += acl2s/doc.$(ACL2_COMP_EXT)
-
-# Some .acl2 files specify no compilation, including ed3.acl2, and
-# many books depend on ed3:
-BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/*.cert))
-
-# At one time we handled system/pcert/ (using -j 1), which was a
-# special case that was ignored because of its cert_pl_exclude file.
-# But the exclude is no longer there, and we got a **PCERT0->PCERT1
-# CONVERSION FAILED** error for
-# system/pcert/acl2x-pcert-test-2-include.lisp.  So we simply exclude
-# that directory.
-BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard system/pcert/*.cert))
-
-# The use of provisional certification seems to cause regeneration of
-# the @expansion.lsp file, which can be a problem because, for
-# example, GCL seems to generate "LISP" as a package name, which
-# confuses the serialize reader.
-BOOKS_SKIP_COMP += make-event/local-elided.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += make-event/local-elided-include.$(ACL2_COMP_EXT)
-
-# The .acl2 files specify no compilation:
-BOOKS_SKIP_COMP += workshops/2006/kaufmann-moore/support/rhs1-iff.$(ACL2_COMP_EXT) \
-		   workshops/2006/kaufmann-moore/support/rhs1.$(ACL2_COMP_EXT) \
-		   workshops/2006/kaufmann-moore/support/rhs2.$(ACL2_COMP_EXT) \
-		   workshops/2006/kaufmann-moore/support/warnings.$(ACL2_COMP_EXT)
-
-# There seems to be a problem with files that use include-raw.  We
-# skip those.
-# Has (include-raw "timer.lsp"):
-BOOKS_SKIP_COMP += centaur/memoize/top.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += $(patsubst %-raw.lsp, %.$(ACL2_COMP_EXT), $(shell find . -name '*-raw.lsp' -print))
-BOOKS_SKIP_COMP += system/doc/render-doc.$(ACL2_COMP_EXT)
-
-# Has readtime conditionals #+ccl and #-ccl ("not supported for this
-# host Lisp").
-BOOKS_SKIP_COMP += centaur/bridge/top.$(ACL2_COMP_EXT)
-
-# Has readtime conditionals #+cmucl and #-cmucl:
-BOOKS_SKIP_COMP += std/io/read-string-tests.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += tools/oracle-time-tests.$(ACL2_COMP_EXT)
-
-# CLISP says: "Lisp stack overflow":
-BOOKS_SKIP_COMP += workshops/2006/rager/support/ptest-mergesort.$(ACL2_COMP_EXT)
-
-# GCL says: "Condition in IF [or a callee]: INTERNAL-SIMPLE-ERROR:
-# Invocation history stack overflow."  Other Lisps had trouble too.
-BOOKS_SKIP_COMP += system/hons-check/memoize-tests.$(ACL2_COMP_EXT)
-
-# In Makefile-comp, bdd/benchmarks.$(ACL2_COMP_EXT) may depend on
-# bdd/benchmarks.lisp, but we don't want to make either, so we do this
-# explicitly:
-BOOKS_SKIP_COMP += bdd/benchmarks.$(ACL2_COMP_EXT)
-
-# Seems to have been headed for a stack overflow due to (comp t) not
-# being invoked when loading @expansion.lsp file.  Including parent
-# book too (perhaps not necessary):
-BOOKS_SKIP_COMP += system/optimize-check-aux.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += system/optimize-check.$(ACL2_COMP_EXT)
-
-# The following is a problem for CMUCL (see comment in the .lisp
-# file), so for simplicity (actually, uniformity), we skip compilation
-# in all Lisps for this book.
-BOOKS_SKIP_COMP += demos/modeling/nested-stobj-toy-isa.$(ACL2_COMP_EXT)
-
-# This book has a make-event guarded by #+Clozure, which might explain
-# why compilation failed failed for Allegro CL.
-BOOKS_SKIP_COMP += tools/oracle-timelimit-tests.$(ACL2_COMP_EXT)
-
-# The following book cannot be included without what appears to be
-# some sort of infinite loop.  The ones below it depend on that book.
-BOOKS_SKIP_COMP += hacking/evalable-ld-printing.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += acl2s/mode-acl2s-dependencies.$(ACL2_COMP_EXT)
-
-# When certification with CCL generates file top@expansion.lsp, that
-# expansion file unconditionally loads the CCL-only file
-# bridge-raw.lsp.  We thus seem to need to disqualify both of the
-# following books.
-BOOKS_SKIP_COMP += centaur/bridge/top.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += doc/top.$(ACL2_COMP_EXT)
-
-# Stack overflow in GCL, Allegro CL, and LispWorks:
-BOOKS_SKIP_COMP += system/tests/apply-timings.$(ACL2_COMP_EXT)
-
-# Errors (using LispWorks) involve quicklisp, so I won't bother to debug:
-BOOKS_SKIP_COMP += oslib/tests/ls.$(ACL2_COMP_EXT)
-BOOKS_SKIP_COMP += oslib/tests/mkdir.$(ACL2_COMP_EXT)
-
-# Has readtime conditionals for different Lisps:
-BOOKS_SKIP_COMP += system/tests/stobj-issues.$(ACL2_COMP_EXT)
-
-# GCL couldn't handle this one (tested 4/10/2020), saying "[GC Hole
-# overrun]" and then "Unrecoverable error: Segmentation violation.."
-# It's not clear why, but it doesn't seem important to figure it out.
-BOOKS_SKIP_COMP += workshops/2011/verbeek-schmaltz/sources/invariants2.$(ACL2_COMP_EXT)
-
-# Skip some compilation for GCL that included failures when using -j 8
-# on a UT CS machine with 32GB of memory when using
-# GCL_MEM_MULTIPLE=0.25.  Perhaps these wouldn't fail with -j 4, other
-# than books/projects/arm/second/fma32/addends.lisp, which probably
-# needs a well-placed (comp t) to avoid a value stack overflow (maybe
-# others too).
-KESTREL_X86_BOOKS := $(filter kestrel/x86/%, $(OK_CERTS))
-ifeq (GCL, $(ACL2_HOST_LISP))
-BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(X86ISA_BOOKS))
-# Since projects/acl2/releases2/v8-4/books/kestrel/x86/tools/flags.o
-# failed for GCL and since the above x86isa books failed, then let's
-# skip kestrel/x86/ books too with GCL.
-BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(KESTREL_X86_BOOKS))
-endif
-
-OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
-
-# Avoid trying to make compiled files; target %.$(ACL2_COMP_EXT) still
-# "executes", but only once, and doesn't cause other compiled files to
-# be out of date.
-.INTERMEDIATE: $(BOOKS_SKIP_COMP)
-
-# Note that because of the .INTERMEDIATE target above, then for the
-# next targets, "Skipping" will only be printed for skipped targets
-# that are dependencies of not-skipped targets.  Apologies for the
-# very long line.  With it broken into lines using `\', a syntax error
-# was reported on Linux using make version 3.80.  Sigh.
-%.$(ACL2_COMP_EXT): %.cert
-	@if [ "$(findstring $@, $(BOOKS_SKIP_COMP))" != "" ] ; then \
-	echo "Skipping $$PWD/$@" ; \
-	else \
-	echo "Making $$PWD/$@" ; \
-	(echo '(ld `((include-book "$(patsubst %.$(ACL2_COMP_EXT),%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2) >& $@.out) ; (ls -al $@ || (echo "**COMPILATION FAILED** for `pwd`/$@" ; exit 1)) ; fi
-
-OK_CERTS += system/pcert/sub.$(ACL2_COMP_EXT)
-
-endif # ifdef ACL2_COMP
 
 ##############################
 ### Section: Exclude EXCLUDED_PREFIXES
@@ -1414,6 +1131,7 @@ workshop2017: $(filter workshops/2017/%, $(OK_CERTS))
 workshop2018: $(filter workshops/2018/%, $(OK_CERTS))
 workshop2020: $(filter workshops/2020/%, $(OK_CERTS))
 workshop2022: $(filter workshops/2022/%, $(OK_CERTS))
+workshop2023: $(filter workshops/2023/%, $(OK_CERTS))
 
 # Projects targets:
 
@@ -1490,8 +1208,8 @@ dummy:
 
 # We now provide a way (adapted from the old Makefile-generic) for
 # developers to be able to check well-formedness of the ACL2 world
-# after including each book.  Note that we skip two problematic
-# directories for world-checking, hacking/ and
+# after including each book.  Note that we skip problematic
+# directories for world-checking, including hacking/ and
 # workshops/2007/dillinger-et-al/code/.  The problem seems likely to
 # be that in many of the books in these two directories, the first bad
 # triple is a GLOBAL-VALUE for either the unknown property
@@ -1509,6 +1227,8 @@ BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
 BOOKS_BKCHK_OUT := $(filter-out $(SLOW_BOOKS), $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
+# Includes hacking/ books; see comment about EXTEND-PROGN! above:
+BOOKS_BKCHK_OUT := $(filter-out workshops/2023/vonhippel-etal/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top-slow.bkchk.out, $(BOOKS_BKCHK_OUT))

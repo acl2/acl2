@@ -35,6 +35,7 @@
 ; you can include the individual books, which mostly try to leave the default
 ; theory alone.
 
+(include-book "add-to-set")
 (include-book "append")
 (include-book "all-equalp")
 (include-book "bits-equiv")

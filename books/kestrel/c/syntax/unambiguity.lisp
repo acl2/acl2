@@ -89,7 +89,7 @@
                :binary (and (expr-unambp expr.arg1)
                             (expr-unambp expr.arg2))
                :cond (and (expr-unambp expr.test)
-                          (expr-unambp expr.then)
+                          (expr-option-unambp expr.then)
                           (expr-unambp expr.else))
                :comma (and (expr-unambp expr.first)
                            (expr-unambp expr.next))
@@ -210,9 +210,11 @@
                     :int128 t
                     :float128 t
                     :builtin-va-list t
+                    :struct-empty t
                     :typeof-expr (expr-unambp tyspec.expr)
                     :typeof-type (tyname-unambp tyspec.type)
-                    :typeof-ambig nil)
+                    :typeof-ambig nil
+                    :auto-type t)
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -504,7 +506,8 @@
     (structdecl-case structdecl
                      :member (and (spec/qual-list-unambp structdecl.specqual)
                                   (structdeclor-list-unambp structdecl.declor))
-                     :statassert (statassert-unambp structdecl.unwrap))
+                     :statassert (statassert-unambp structdecl.unwrap)
+                     :empty t)
     :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -970,7 +973,7 @@
   (defrule expr-unambp-of-expr-cond
     (equal (expr-unambp (expr-cond test then else))
            (and (expr-unambp test)
-                (expr-unambp then)
+                (expr-option-unambp then)
                 (expr-unambp else)))
     :expand (expr-unambp (expr-cond test then else)))
 
@@ -1033,7 +1036,7 @@
                 (expr-unambp index)))
     :expand (member-designor-unambp (member-designor-sub member index)))
 
-  (defrule type-spec-unambp-when-not-atomic/struct/union/enum
+  (defrule type-spec-unambp-when-not-atomic/struct/union/enum/typeof
     ;; The formulation (type-spec-unambp (type-spec-... ...))
     ;; does not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by
@@ -1290,6 +1293,15 @@
            (statassert-unambp statassert))
     :expand (structdecl-unambp (structdecl-statassert statassert)))
 
+  (defrule structdecl-unambp-when-empty
+    ;; The formulation (structdecl-unambp (structdecl-empty))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (structdecl-case sdecl :empty)
+             (structdecl-unambp sdecl)))
+
   (defrule structdeclor-unambp-of-structdeclor
     (equal (structdeclor-unambp (structdeclor declor? expr?))
            (and (declor-option-unambp declor?)
@@ -1308,15 +1320,15 @@
            (const-expr-unambp test)))
 
   (defrule initdeclor-unambp-of-initdeclor
-    (equal (initdeclor-unambp (initdeclor declor asm? init?))
+    (equal (initdeclor-unambp (initdeclor declor asm? attribs init?))
            (and (declor-unambp declor)
                 (initer-option-unambp init?))))
 
   (defrule decl-unambp-of-decl-decl
-    (equal (decl-unambp (decl-decl extension specs init attrib))
+    (equal (decl-unambp (decl-decl extension specs init))
            (and (declspec-list-unambp specs)
                 (initdeclor-list-unambp init)))
-    :expand (decl-unambp (decl-decl extension specs init attrib)))
+    :expand (decl-unambp (decl-decl extension specs init)))
 
   (defrule decl-unambp-of-decl-statassert
     (equal (decl-unambp (decl-statassert statassert))
@@ -1569,7 +1581,7 @@
   (defrule expr-unambp-of-expr-cond->then
     (implies (and (expr-unambp expr)
                   (expr-case expr :cond))
-             (expr-unambp (expr-cond->then expr)))
+             (expr-option-unambp (expr-cond->then expr)))
     :expand (expr-unambp expr))
 
   (defrule expr-unambp-of-expr-cond->else
@@ -2348,7 +2360,8 @@
   ///
 
   (defrule fundef-unambp-of-fundef
-    (equal (fundef-unambp (fundef extension spec declor asm? decls body))
+    (equal (fundef-unambp
+            (fundef extension spec declor asm? attribs decls body))
            (and (declspec-list-unambp spec)
                 (declor-unambp declor)
                 (decl-list-unambp decls)
@@ -2377,7 +2390,9 @@
   :short "Check if an external declaration is unambiguous."
   (extdecl-case edecl
                 :fundef (fundef-unambp edecl.unwrap)
-                :decl (decl-unambp edecl.unwrap))
+                :decl (decl-unambp edecl.unwrap)
+                :empty t
+                :asm t)
   :hooks (:fix)
 
   ///
@@ -2389,6 +2404,15 @@
   (defrule extdecl-unambp-of-extdecl-decl
     (equal (extdecl-unambp (extdecl-decl decl))
            (decl-unambp decl)))
+
+  (defrule extdecl-unambp-when-not-fundef/decl
+    ;; The formulation (extdecl-unambp (extdecl-empty))
+    ;; does not work for the return theorems in the disambiguator.
+    ;; We get a subgoal of a form that is instead handled by
+    ;; the formulation we give here,
+    ;; which is not ideal because the conclusion is quite generic.
+    (implies (not (member-eq (extdecl-kind edecl) '(:fundef :decl)))
+             (extdecl-unambp edecl)))
 
   (defrule fundef-unambp-of-extdecl-fundef->unwrap
     (implies (and (extdecl-unambp edecl)

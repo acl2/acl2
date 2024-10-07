@@ -51,7 +51,7 @@
     "That is, retrieving from the buffer
      all the certificates authored by the validator
      yields the empty set @('nil')."))
-  (equal (get-certificates-with-author val (validator-state->buffer vstate))
+  (equal (certificates-with-author val (validator-state->buffer vstate))
          nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

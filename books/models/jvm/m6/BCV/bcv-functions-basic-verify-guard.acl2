@@ -1,0 +1,5 @@
+(ld "../BCV/bcv.pkg")
+(ld "../DJVM/djvm.pkg")
+; Matt K. mod: Use cert-flags
+; (certify-book "bcv-functions-basic-verify-guard" 6 t :skip-proofs-okp t)
+; cert-flags: ? t :skip-proofs-okp t

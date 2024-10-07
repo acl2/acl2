@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; TODO: Rename this book, since the clause processor function itself must already exist
+
 ;; This machinery requires a TTAG.
 
 (include-book "kestrel/utilities/pack" :dir :system)
@@ -20,7 +22,7 @@
 (defun make-clause-processor-simple-fn (suffix ;; gets added to generated names
                                         )
   (declare (xargs :guard (symbolp suffix)))
-  (let* ((clause-processor-name (pack$ suffix '-prover-clause-processor)) ; should already be defined
+  (let* ((clause-processor-name (pack$ 'prover- suffix '-clause-processor)) ; should already be defined
          (defthm-with-clause-processor-name (pack$ 'defthm-with- clause-processor-name))
          (defthm-with-clause-processor-fn-name (pack$ 'defthm-with- clause-processor-name '-fn)))
 

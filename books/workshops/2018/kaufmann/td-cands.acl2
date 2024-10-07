@@ -61,7 +61,7 @@
 ; "ACL2-HACKER"
 (include-book "hacking/hacker" :dir :system)
 ; "ABNF"
-(include-book "kestrel/abnf/portcullis" :dir :system)
+(include-book "projects/abnf/portcullis" :dir :system)
 ; "RTL" -- already included
 ; "BED"
 (include-book "centaur/bed/portcullis" :dir :system)

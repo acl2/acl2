@@ -38,6 +38,4 @@
                             logapp
                             bvplus bvcat)
                            (;bvchop-identity
-;                            plus-bvcat-with-0 ; looped
- ;                           PLUS-BVCAT-WITH-0-ALT
                             )))))

@@ -74,7 +74,7 @@
                            (+ (- (EXPT 2 LOW))
                               (* (EXPT 2 LOW) (EXPT 2 WIDTH))))
                     (+ -1 (expt 2 width))))
-    :hints (("Goal" :in-theory (e/d (slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE))))))
+    :hints (("Goal" :in-theory (e/d (slice) ())))))
 
 ;; ;;move
 ;; (defthm <-of-expt-and-expt
@@ -94,7 +94,7 @@
                               (* (EXPT 2 LOW) (EXPT 2 WIDTH))))
                     0))
     :hints (("Goal" :in-theory (e/d (slice GETBIT-OF-+)
-                                    (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                                    (
                                      <-OF-BVCHOP-HACK))))))
 
 (defthm part-select-width-low-becomes-slice
@@ -103,7 +103,7 @@
            (equal (bitops::part-select-width-low x width low)
                   (slice (+ low width -1) low x)))
   :hints (("Goal" :in-theory (e/d (bitops::part-select-width-low slice)
-                                  (bvchop-of-logtail-becomes-slice)))))
+                                  ()))))
 
 (defthm getbit-of-part-install-width-low
   (implies (and (natp m)
@@ -182,7 +182,7 @@
   :hints (("Goal" :in-theory (e/d (slice
                                    BVCHOP-OF-LOGTAIL)
                                   (SLICE-OF-BVAND
-                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+
                                    ;;for speed:
                                    UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;;UNSIGNED-BYTE-P-PLUS
@@ -204,7 +204,7 @@
   :hints (("Goal" :in-theory (e/d (slice
                                    BVCHOP-OF-LOGTAIL)
                                   (SLICE-OF-BVAND
-                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+
                                    ;;for speed:
                                    UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;;UNSIGNED-BYTE-P-PLUS

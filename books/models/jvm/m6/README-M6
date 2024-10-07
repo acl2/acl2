@@ -1,0 +1,335 @@
+[See README for an explanation of this file.]
+
+DOWNLOAD
+--------
+http://www.cs.utexas.edu/~hbl/dissertation/dist.tgz
+
+
+DIRECTORY STRUCTURE
+-------------------
+top-level-directory
+     |
+     |--- README                -- this file
+     |
+     |--- src/                  -- ACL2 inputs 
+     |     |
+     |     |--- common/         -- supporting JVM related materials
+     |     |
+     |     |--- M6-DJVM-shared/ -- data structures/operations    (Chapter 4 & 6)
+     |     |                       
+     |     |--- M6/             -- JVM model in ACL2.                (Chapter 4)
+     |     |
+     |     |--- DJVM/           -- Defensive JVM  in ACL2.           (Chapter 6)
+     |     |     |     
+     |     |     |---  INST/    -- Leaf-level lemmas and libraries (Section 7.4)
+     |     |
+     |     |--- BCV/            -- CLDC bytecode verifier (JSR139)
+     |     |
+     |     |                                         (Chapter 5 and Section 7.3)
+     |     |
+     |     |--- main/           -- Top level proof decomposition   (Section 7.2)  
+     |     |
+     |     |--- hanoi/          -- Tower hanoi example               (Chapter 3) 
+     |     |
+     |     |--- small/          -- Small machine example           (Section 7.1)
+     |                             
+     |
+     |--- data/                 -- Java libraries to run M6 with
+     |
+     |--- bin/                  -- misc. scripts  
+     |
+     |--- lib/                  -- jvm2acl2 tool (in Java)
+     |	
+     |--- papers/               
+     |     |
+           |--- dissertation/   -- the dissertation
+
+
+
+
+UNPACK AND REBUILD ALL ACL2 PROOFS 
+----------------------------------
+
+cd src/
+make ACL2=<your-acl2> BASE=.. all
+
+
+
+USING ACL2: HANOI TOWER EXAMPLE                                      (Chapter 3)
+-------------------------------
+
+ACL2 as a programming language for modeling                        (Section 3.1)
+
+  Primitives/data structures:
+
+   	 src/hanoi/stack.lisp
+   	 src/hanoi/state.lisp
+   	 src/hanoi/move.lisp
+
+  Interpreter model:
+
+         src/hanoi/hanoi-model.lisp 
+
+  The move planner:
+
+         src/hanoi/hanoi-solution.lisp  
+
+ACL2 as a mathematical logic for specification                     (Section 3.2)
+
+  Operational specifiation:
+        
+         src/hanoi/hanoi-model.lisp 
+
+  Functional specification: 
+
+         src/hanoi/hanoi-solution.lisp  
+
+  Safety specification: 
+
+         src/hanoi/hanoi-safety.lisp    
+
+
+ACL2 as a theorem prover for computer-aided verification           (Section 3.3)
+
+  meet the functional specification: 
+
+         src/hanoi/hanoi-solution.lisp  
+
+  Meet the safety specification: 
+
+         src/hanoi/hanoi-safety.lisp    
+
+
+
+JVM MODEL: M6                                                        (Chapter 4)
+-------------
+
+See src/M6/m6-*.lisp 
+    
+A good starting point is:
+
+    src/M6/m6-interpreter.lisp
+
+State representation:                                            (Section 4.2.1)
+
+    src/M6/m6-state.lisp
+    src/M6/m6-thread.lisp
+    src/M6/m6-class-table.lisp
+    ...
+
+State manipulation primitives:                                   (Section 4.2.2)
+
+    src/M6/m6-frame-manipulation-primitives.lisp  
+    ... 
+
+State transition functions:                                      (Section 4.2.3)
+
+    src/M6/m6-bytecode.lisp
+    ... 
+
+Top level interpreter loop:                                      (Section 4.3.1)
+
+    src/M6/m6-interpreter.lisp
+
+
+
+Class initialization:                                            (Section 4.3.2)
+
+    src/M6/m6-static-initializer.lisp
+
+Dynamic class loading:                                           (Section 4.3.3)
+
+    src/M6/m6-loader.lisp
+    src/M6-DJVM-shared/jvm-loader.lisp 
+
+
+
+RUNNING M6 AS A JVM SIMULATOR
+-----------------------------
+
+Assuming "acl2" is in your executable search path.
+
+1. See the rough example program: 
+
+   src/M6/example-*.lisp
+
+   including src/M6/example-parallel-factorial.lisp
+
+4. To run a new Java program: 
+     
+   a) compile your Java program 
+     
+   b) convert the .class file into format M6 can use.   
+      
+      i)   at the top level directory execute "source set-env"
+
+      ii)  java jvm2acl2 output <yourclassfiles.class>
+
+      iii) edit src/M6-DJVM-shared/cldc-classtable.lisp and merge 
+           forms from output-classtable.lisp 
+
+   c) edit src/M6/example-template.lisp to set up an initial state
+      for executing the program 
+  
+   d) start ACL2 and load the edited src/M6/example-template.lisp 
+
+
+JVM PROPERTY VERIFICATION EXAMPLE USING M6                       (Section 4.4.1)
+------------------------------------------
+
+Dynamic class loading preserves invariant on JVM state. 
+
+See src/M6-DJVM-shared/jvm-loader-property.lisp           
+
+Replay the proof: 
+
+   cd src 
+   make M6-DJVM-shared/jvm-loader-property.cert
+
+
+
+JAVA PROGRAM VERIFICATION EXAMPLE USING M6                       (Section 4.4.2)
+------------------------------------------
+
+Replay the proof: 
+
+1) ADD1 program adds one: 
+
+   cd src 
+   make M6/ADD1-program-correct.improved.cert
+   
+2) Factorial program computes factorial: 
+   
+   cd src
+   make M6/factorial-program-correct.improved.cert
+
+
+
+CLDC BYTECODE VERIFER                                                (Chapter 5)
+---------------------
+
+See src/BCV/typechecker.lisp                                       (Section 5.3)
+
+Compare with Prolog-rules
+
+    src/BCV/typechecker.pl                                         (Section 5.2)
+
+Our alternative type checker definition 
+  
+    src/BCV/typechecker-simple.lisp                              (Section 7.3.2)
+
+
+RUNNING CLDC BYTECODE VERIFER
+-----------------------------
+
+See src/BCV/typechecker-test-*.lisp
+
+
+
+
+CLDC BYTECODE VERIFIER SIMPLE PROPERTY VERIFIED                    (Section 5.4)
+-----------------------------------------------
+
+See src/BCV/typechecker-property.lisp
+
+
+
+JVM SAFETY SPECIFICATION                                             (Chapter 6)
+------------------------
+
+The defensive JVM (DJVM)                                           (Section 6.2)    
+
+    src/DJVM/djvm-*.lisp 
+    src/DJVM/INST/<INST>.lisp 
+    src/M6-DJVM-shared/jvm-*.lisp
+
+Global Inductive Invariant                                         (Section 6.4)
+ 
+    src/DJVM/consistent-state.lisp 
+    src/DJVM/consistent-state-strong.lisp
+    src/DJVM/consistent-state-bcv-on-track.lisp                    
+
+Guards for DJVM operations                                         (Section 6.5) 
+
+    src/DJVM/djvm-*.lisp 
+    src/DJVM/INST/<INST>.lisp 
+    src/M6-DJVM-shared/jvm-*.lisp
+
+
+
+FRAMEWORK AND PROOFS                                                 (Chapter 7)
+--------------------
+   
+   [
+      NOTE to replay a proof:
+ 
+      cd src/ 
+
+      make INHIBIT="" ACL2=<youracl2> BASE=.. path/to/book.cert
+ 
+      ACL2 output is saved in path/to/book.out 
+   ] 
+
+Complete proof that Small machine is safe                          (Section 7.1)
+
+    src/small/*.lisp                       
+
+    Models:                        
+        
+      M6-like interpreter:        src/small/jvm-model.lisp       (Section 7.1.1)
+
+      CLDC bytecode verifier:     src/small/bcv-model.lisp  
+
+      DJVM-like interpreter:      src/small/djvm-model.lisp      (Section 7.1.2)
+                                  src/small/djvm-<INST>.lisp
+
+      Intermediate bytecode verifier:                            
+                                  src/small/bcv-simple-model.lisp 
+
+    Approach:                                                    (Section 7.1.3)  
+
+      Alternative bytecode verifier is effective               
+
+          Leaf level lemma: 
+                                 src/small/<INST>.lisp              
+                                
+          Supporting library for proving leaf level lemma:
+               
+                                 src/small/djvm-<INST>.lisp
+
+                   
+          Overall proof: 
+                                 src/small/djvm-is-safe.lisp 
+                                 src/small/bcv-is-effective.lisp
+                   
+     "Reduction theorem": 
+      original CLDC bytecode verifier is no-less effective         
+                               
+                                 bcv-succeed-implies-bcv-simple-succeed.lisp
+       
+
+Bootstrap class loader Verified                                    (Section 7.2)
+
+     See 
+        src/DJVM/INST/base-consistent-state-load-class.lisp 
+        src/DJVM/INST/base-load-class-normalize.lisp
+        src/M6-DJVM-shared/jvm-loader-guard-verification.lisp
+
+
+Reduction theorem for CLDC bytecode verifier                       (Section 7.3)
+ 
+     See 
+        src/BCV/bcv-succeed-implies-bcv-simple-succeed.lisp        
+
+ 
+Leaf-level lemma and supporting libraries                          (Section 7.4) 
+
+     Leaf-level lemma:          src/DJVM/INST/<INST>.lisp        
+     
+     Supporting libraries:      src/DJVM/INST/base-*.lisp  
+
+     Using leaf-level lemma for constructing top level proof: 
+
+                                src/main/djvm-is-safe.lisp
+                                src/main/bcv-is-effective.lisp      
+     

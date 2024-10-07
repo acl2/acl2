@@ -233,8 +233,7 @@
   :hints (("Goal"
            :in-theory (e/d (getbit slice bvxor
                                    bvchop-of-logtail)
-                           (bvchop-1-becomes-getbit
-                            bvchop-of-logtail-becomes-slice)))))
+                           ()))))
 
 ;if the size is 1 this rebuilds the term (bvxor 1 x y) - may be a bit innefficient
 (defthm getbit-0-of-bvxor
@@ -478,8 +477,7 @@
                          (slice highbit lowbit x)
                          (slice highbit lowbit y))))
   :hints (("Goal" :in-theory (e/d (slice bvxor natp bvchop-of-logtail)
-                                  (bvchop-of-logtail-becomes-slice
-                                   logtail-of-bvchop-becomes-slice)))))
+                                  ()))))
 
 ;bozo or just use SLICE-TOO-HIGH-IS-0 - which is cheaper?
 ;or just pass slice through?
@@ -506,8 +504,7 @@
                              (slice (+ -1 size) low x)
                              (slice (+ -1 size) low y))))))
   :hints (("Goal" :in-theory (e/d (slice bvxor natp bvchop-of-logtail)
-                                  (bvchop-of-logtail-becomes-slice
-                                   logtail-of-bvchop-becomes-slice)))))
+                                  ()))))
 
 (defthm bvxor-cancel-2-of-more-and-1-of-more
   (equal (equal (bvxor size y (bvxor size x z)) (bvxor size x w))

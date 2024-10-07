@@ -208,6 +208,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-typequal/attribspec
+  :short "An irrelevant type qualifier or attribute specifier."
+  :type typequal/attribspec-p
+  :body (typequal/attribspec-tyqual (irr-type-qual)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-initer
   :short "An irrelevant initializer."
   :type initerp
@@ -288,10 +295,7 @@
 (defirrelevant irr-structdecl
   :short "An irrelevant structure declaration."
   :type structdeclp
-  :body (make-structdecl-member :extension nil
-                                :specqual nil
-                                :declor nil
-                                :attrib nil))
+  :body (make-structdecl-empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -324,10 +328,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-attrib-name
+  :short "An irrelevant attribute name."
+  :type attrib-namep
+  :body (attrib-name-ident (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-attrib
   :short "An irrelevant attribute."
   :type attribp
-  :body (attrib-name (irr-ident)))
+  :body (attrib-name-only (irr-attrib-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -341,7 +352,10 @@
 (defirrelevant irr-initdeclor
   :short "An irrelevant initializer declarator."
   :type initdeclorp
-  :body (make-initdeclor :declor (irr-declor) :asm? nil :init? nil))
+  :body (make-initdeclor :declor (irr-declor)
+                         :asm? nil
+                         :attribs nil
+                         :init? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -350,8 +364,7 @@
   :type declp
   :body (make-decl-decl :extension nil
                         :specs nil
-                        :init nil
-                        :attrib nil))
+                        :init nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -373,6 +386,20 @@
   :short "An irrelevant assembler input operand."
   :type asm-inputp
   :body (make-asm-input :name nil :constraint nil :rvalue (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-asm-stmt
+  :short "An irrelevant assembler statement."
+  :type asm-stmtp
+  :body (make-asm-stmt :uscores (keyword-uscores-none)
+                       :quals nil
+                       :template nil
+                       :num-colons 0
+                       :outputs nil
+                       :inputs nil
+                       :clobbers nil
+                       :labels nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -439,6 +466,7 @@
                      :spec nil
                      :declor (irr-declor)
                      :asm? nil
+                     :attribs nil
                      :decls nil
                      :body (irr-stmt)))
 

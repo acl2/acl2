@@ -1293,63 +1293,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-type-qual-list ((tyquals type-qual-listp) (pstate pristatep))
-  :guard (consp tyquals)
-  :returns (new-pstate pristatep)
-  :short "Print a list of one or more type qualifiers, separated by spaces."
-  (b* (((unless (mbt (consp tyquals))) (pristate-fix pstate))
-       (pstate (print-type-qual (car tyquals) pstate))
-       ((when (endp (cdr tyquals))) pstate)
-       (pstate (print-astring " " pstate)))
-    (print-type-qual-list (cdr tyquals) pstate))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-type-qual-list-list ((tyqualss type-qual-list-listp)
-                                   (pstate pristatep))
-  :guard (consp tyqualss)
-  :returns (new-pstate pristatep)
-  :short "Print a list or one or more lists of type qualifiers,
-          corresponding to a `pointer' in the grammar."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Our abstract syntax uses lists of lists of type qualifiers
-     to model what the grammar calls `pointer',
-     which is a sequence of one or more stars,
-     each star followed by zero or more type qualifiers;
-     see @(tsee declor) and @(tsee absdeclor).
-     Here we print such a `pointer',
-     from its representation as a list of lists of type qualifiers.")
-   (xdoc::p
-    "The outer list must not be empty, as required in the guard.
-     We go through each inner list, printing a star for each;
-     if the inner list under consideration is empty,
-     the star is all we print;
-     if the inner list is not empty,
-     we also print a space,
-     the type qualifiers (separated by spaces),
-     and a space.
-     That is, we provide separation when there are type qualifiers.
-     But there are no extra separations for stars,
-     e.g. we print @('**') for the list of lists @('(list nil nil)').
-     Note that the last inner list is printed as just star."))
-  (b* (((unless (mbt (consp tyqualss))) (pristate-fix pstate))
-       (pstate (print-astring "*" pstate))
-       (tyquals (car tyqualss))
-       (pstate (if (consp tyquals)
-                   (b* ((pstate (print-astring " " pstate))
-                        (pstate (print-type-qual-list tyquals pstate))
-                        (pstate (print-astring " " pstate)))
-                     pstate)
-                 pstate))
-       ((when (endp (cdr tyqualss))) pstate))
-    (print-type-qual-list-list (cdr tyqualss) pstate))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define print-fun-spec ((funspec fun-specp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a function specifier."
@@ -1444,6 +1387,25 @@
        ((when (endp (cdr clobbers))) pstate)
        (pstate (print-astring ", " pstate)))
     (print-asm-clobber-list (cdr clobbers) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-attrib-name ((attrname attrib-namep) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an attribute name."
+  (attrib-name-case
+   attrname
+   :ident (print-ident attrname.unwrap pstate)
+   :keyword (b* ((chars (acl2::string=>nats attrname.unwrap))
+                 ((unless (grammar-character-listp chars))
+                  (raise "Misusage error: ~
+                          the attribute name keyword consists of ~
+                          the character codes ~x0, ~
+                          not all of which are allowed by the ABNF grammar."
+                         chars)
+                  (pristate-fix pstate)))
+              (print-astring attrname.unwrap pstate)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1701,14 +1663,14 @@
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ") {" pstate))
-                ((unless expr.elems)
-                 (raise "Misusage error: ~
-                         empty initializer list.")
-                 (pristate-fix pstate))
-                (pstate (print-desiniter-list expr.elems pstate))
-                (pstate (if expr.final-comma
-                            (print-astring ", }" pstate)
-                          (print-astring "}" pstate))))
+                (pstate
+                 (if (consp expr.elems)
+                     (b* ((pstate (print-desiniter-list expr.elems pstate))
+                          (pstate (if expr.final-comma
+                                      (print-astring ", }" pstate)
+                                    (print-astring "}" pstate))))
+                       pstate)
+                   (print-astring " }" pstate))))
              pstate)
            :unary
            (if (or (unop-case expr.op :postinc)
@@ -1787,12 +1749,18 @@
                  (priopt->paren-nested-conds (pristate->options pstate)))
                 (pstate (print-expr expr.test (expr-priority-logor) pstate))
                 (pstate (print-astring " ? " pstate))
-                (pstate (print-expr expr.then
-                                    (if raise-prio
-                                        (expr-priority-logor)
-                                      (expr-priority-expr))
-                                    pstate))
-                (pstate (print-astring " : " pstate))
+                (pstate (expr-option-case
+                         expr.then
+                         :some (b* ((pstate
+                                     (print-expr expr.then.val
+                                                 (if raise-prio
+                                                     (expr-priority-logor)
+                                                   (expr-priority-expr))
+                                                 pstate))
+                                    (pstate (print-astring " " pstate)))
+                                 pstate)
+                         :none pstate))
+                (pstate (print-astring ": " pstate))
                 (pstate (print-expr expr.else
                                     (if raise-prio
                                         (expr-priority-logor)
@@ -1982,6 +1950,15 @@
      :int128 (print-astring "__int128" pstate)
      :float128 (print-astring "_Float128" pstate)
      :builtin-va-list (print-astring "__builtin_va_list" pstate)
+     :struct-empty (b* ((pstate (print-astring "struct" pstate))
+                        (pstate (if tyspec.name?
+                                    (b* ((pstate (print-astring " " pstate))
+                                         (pstate (print-ident tyspec.name?
+                                                              pstate)))
+                                      pstate)
+                                  pstate))
+                        (pstate (print-astring " { }" pstate)))
+                     pstate)
      :typeof-expr
      (b* ((pstate (keyword-uscores-case
                    tyspec.uscores
@@ -2000,7 +1977,8 @@
           (pstate (print-tyname tyspec.type pstate))
           (pstate (print-astring ")" pstate)))
        pstate)
-     :typeof-ambig (prog2$ (impossible) (pristate-fix pstate)))
+     :typeof-ambig (prog2$ (impossible) (pristate-fix pstate))
+     :auto-type (print-astring "__auto_type" pstate))
     :measure (two-nats-measure (type-spec-count tyspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2084,6 +2062,90 @@
          (pstate (print-astring " " pstate)))
       (print-declspec-list (cdr declspecs) pstate))
     :measure (two-nats-measure (declspec-list-count declspecs) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-typequal/attribspec ((tyqualattrib typequal/attribspec-p)
+                                     (pstate pristatep))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a type qualifier or attribute specifier."
+    (typequal/attribspec-case
+     tyqualattrib
+     :tyqual (print-type-qual tyqualattrib.unwrap pstate)
+     :attrib (print-attrib-spec tyqualattrib.unwrap pstate))
+    :measure (two-nats-measure (typequal/attribspec-count tyqualattrib) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-typequal/attribspec-list
+    ((tyqualattribs typequal/attribspec-listp)
+     (pstate pristatep))
+    :guard (consp tyqualattribs)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a list of one or more
+            type qualifiers and attribute specifiers,
+            separated by spaces."
+    (b* (((unless (mbt (consp tyqualattribs))) (pristate-fix pstate))
+         (pstate (print-typequal/attribspec (car tyqualattribs) pstate))
+         ((when (endp (cdr tyqualattribs))) pstate)
+         (pstate (print-astring " " pstate)))
+      (print-typequal/attribspec-list (cdr tyqualattribs) pstate))
+    :measure (two-nats-measure (typequal/attribspec-list-count tyqualattribs) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-typequal/attribspec-list-list
+    ((tyqualattribss typequal/attribspec-list-listp)
+     (pstate pristatep))
+    :guard (consp tyqualattribss)
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a list or one or more lists of
+            type qualifiers and attribute specifiers
+            corresponding to a `pointer' in the grammar."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Our abstract syntax uses lists of lists of
+       type qualifiers and attribute specifiers
+       to model what the grammar calls `pointer',
+       which is a sequence of one or more stars,
+       each star followed by zero or more
+       type qualifiers and attribute specifiers;
+       see @(tsee declor) and @(tsee absdeclor).
+       Here we print such a `pointer',
+       from its representation as a list of lists of
+       type qualifiers and attribute specifiers.")
+     (xdoc::p
+      "The outer list must not be empty, as required in the guard.
+       We go through each inner list, printing a star for each;
+       if the inner list under consideration is empty,
+       the star is all we print;
+       if the inner list is not empty,
+       we also print a space,
+       the type qualifiers and attribute specifiers (separated by spaces),
+       and a space.
+       That is, we provide separation when there are
+       type qualifiers or attribute specifiers.
+       But there are no extra separations for stars,
+       e.g. we print @('**') for the list of lists @('(list nil nil)').
+       Note that the last inner list is printed as just star."))
+    (b* (((unless (mbt (consp tyqualattribss))) (pristate-fix pstate))
+         (pstate (print-astring "*" pstate))
+         (tyqualattribs (car tyqualattribss))
+         (pstate (if (consp tyqualattribs)
+                     (b* ((pstate (print-astring " " pstate))
+                          (pstate (print-typequal/attribspec-list tyqualattribs
+                                                                  pstate))
+                          (pstate (print-astring " " pstate)))
+                       pstate)
+                   pstate))
+         ((when (endp (cdr tyqualattribss))) pstate))
+      (print-typequal/attribspec-list-list (cdr tyqualattribss) pstate))
+    :measure (two-nats-measure
+              (typequal/attribspec-list-list-count tyqualattribss) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2195,7 +2257,8 @@
     :short "Print a declarator."
     (b* (((declor declor) declor)
          (pstate (if (consp declor.pointers)
-                     (print-type-qual-list-list declor.pointers pstate)
+                     (print-typequal/attribspec-list-list declor.pointers
+                                                          pstate)
                    pstate))
          (pstate (print-dirdeclor declor.decl pstate)))
       pstate)
@@ -2229,7 +2292,7 @@
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirdeclor.tyquals
-                      (print-type-qual-list dirdeclor.tyquals pstate)
+                      (print-typequal/attribspec-list dirdeclor.tyquals pstate)
                     pstate))
           (pstate (if (and dirdeclor.tyquals
                            dirdeclor.expr?)
@@ -2246,8 +2309,9 @@
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
           (pstate (print-astring "static " pstate))
           (pstate (if dirdeclor.tyquals
-                      (b* ((pstate (print-type-qual-list dirdeclor.tyquals
-                                                         pstate))
+                      (b* ((pstate (print-typequal/attribspec-list
+                                    dirdeclor.tyquals
+                                    pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
@@ -2260,7 +2324,7 @@
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            pstate)
-          (pstate (print-type-qual-list dirdeclor.tyquals pstate))
+          (pstate (print-typequal/attribspec-list dirdeclor.tyquals pstate))
           (pstate (print-astring " static " pstate))
           (pstate (print-expr dirdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
@@ -2269,8 +2333,9 @@
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirdeclor.tyquals
-                      (b* ((pstate (print-type-qual-list dirdeclor.tyquals
-                                                         pstate))
+                      (b* ((pstate (print-typequal/attribspec-list
+                                    dirdeclor.tyquals
+                                    pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
@@ -2324,7 +2389,8 @@
                   empty abstract declarator.")
           (pristate-fix pstate))
          (pstate (if absdeclor.pointers
-                     (print-type-qual-list-list absdeclor.pointers pstate)
+                     (print-typequal/attribspec-list-list absdeclor.pointers
+                                                          pstate)
                    pstate))
          (pstate (if (dirabsdeclor-option-case absdeclor.decl? :some)
                      (print-dirabsdeclor (dirabsdeclor-option-some->val
@@ -2360,7 +2426,8 @@
                     pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirabsdeclor.tyquals
-                      (print-type-qual-list dirabsdeclor.tyquals pstate)
+                      (print-typequal/attribspec-list dirabsdeclor.tyquals
+                                                      pstate)
                     pstate))
           (pstate (if (and dirabsdeclor.tyquals
                            dirabsdeclor.expr?)
@@ -2381,8 +2448,9 @@
                     pstate))
           (pstate (print-astring "static " pstate))
           (pstate (if dirabsdeclor.tyquals
-                      (b* ((pstate (print-type-qual-list dirabsdeclor.tyquals
-                                                         pstate))
+                      (b* ((pstate (print-typequal/attribspec-list
+                                    dirabsdeclor.tyquals
+                                    pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
@@ -2399,7 +2467,7 @@
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            (pristate-fix pstate))
-          (pstate (print-type-qual-list dirabsdeclor.tyquals pstate))
+          (pstate (print-typequal/attribspec-list dirabsdeclor.tyquals pstate))
           (pstate (print-astring " static " pstate))
           (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
@@ -2602,7 +2670,8 @@
                     pstate))
           (pstate (print-astring ";" pstate)))
        pstate)
-     :statassert (print-statassert structdecl.unwrap pstate))
+     :statassert (print-statassert structdecl.unwrap pstate)
+     :empty (print-astring ";" pstate))
     :measure (two-nats-measure (structdecl-count structdecl) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2783,9 +2852,9 @@
        here we perform a run-time check on the expressions."))
     (attrib-case
      attr
-     :name (print-ident attr.name pstate)
+     :name-only (print-attrib-name attr.name pstate)
      :name-param
-     (b* ((pstate (print-ident attr.name pstate))
+     (b* ((pstate (print-attrib-name attr.name pstate))
           (pstate (print-astring "(" pstate))
           ((unless (expr-list-unambp attr.param))
            (raise "Internal error: ambiguous expressions in attribute ~x0."
@@ -2859,6 +2928,12 @@
                           (pstate (print-asm-name-spec initdeclor.asm? pstate)))
                        pstate)
                    pstate))
+         (pstate (if (consp initdeclor.attribs)
+                     (b* ((pstate (print-astring " " pstate))
+                          (pstate (print-attrib-spec-list initdeclor.attribs
+                                                          pstate)))
+                       pstate)
+                   pstate))
          ((when (initer-option-case initdeclor.init? :none)) pstate)
          (pstate (print-astring " = " pstate))
          (pstate (print-initer (initer-option-some->val initdeclor.init?)
@@ -2916,11 +2991,6 @@
                     (pstate (print-initdeclor-list decl.init pstate)))
                  pstate)
              pstate))
-          (pstate (if decl.attrib
-                      (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-attrib-spec-list decl.attrib pstate)))
-                        pstate)
-                    pstate))
           (pstate (print-astring ";" pstate)))
        pstate)
      :statassert
@@ -3067,6 +3137,100 @@
          (pstate (print-astring ", " pstate)))
       (print-asm-input-list (cdr inputs) pstate))
     :measure (two-nats-measure (asm-input-list-count inputs) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-asm-stmt ((asm asm-stmtp) (pstate pristatep))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print an assembler statement."
+    (b* (((asm-stmt stmt) asm)
+         (pstate (print-indent pstate))
+         (pstate (keyword-uscores-case
+                  stmt.uscores
+                  :none (print-astring "asm" pstate)
+                  :start (print-astring "__asm" pstate)
+                  :both (print-astring "__asm__" pstate)))
+         (pstate (if (consp stmt.quals)
+                     (b* ((pstate (print-astring " " pstate))
+                          (pstate (print-asm-qual-list stmt.quals pstate)))
+                       pstate)
+                   pstate))
+         (pstate (print-astring " (" pstate))
+         ((unless (consp stmt.template))
+          (raise "Misusage error: no string literals in assembler template.")
+          pstate)
+         (pstate (print-stringlit-list stmt.template pstate))
+         ((unless (case stmt.num-colons
+                    (0 (and (endp stmt.outputs)
+                            (endp stmt.inputs)
+                            (endp stmt.clobbers)
+                            (endp stmt.labels)))
+                    (1 (and (endp stmt.inputs)
+                            (endp stmt.clobbers)
+                            (endp stmt.labels)))
+                    (2 (and (endp stmt.clobbers)
+                            (endp stmt.labels)))
+                    (3 (endp stmt.labels))
+                    (4 t)
+                    (otherwise nil)))
+          (raise "Misusage error: ~
+                  non-empty outputs, inputs, clobbers, or labels ~
+                  with insufficient number of colons ~
+                  in assembler statement ~x0."
+                 (asm-stmt-fix stmt))
+          pstate)
+         (pstate
+          (if (>= stmt.num-colons 1)
+              (b* ((pstate (print-astring " :" pstate))
+                   (pstate
+                    (if (consp stmt.outputs)
+                        (b* ((pstate (print-astring " " pstate))
+                             (pstate (print-asm-output-list stmt.outputs
+                                                            pstate)))
+                          pstate)
+                      pstate)))
+                pstate)
+            pstate))
+         (pstate
+          (if (>= stmt.num-colons 2)
+              (b* ((pstate (print-astring " :" pstate))
+                   (pstate
+                    (if (consp stmt.inputs)
+                        (b* ((pstate (print-astring " " pstate))
+                             (pstate (print-asm-input-list stmt.inputs
+                                                           pstate)))
+                          pstate)
+                      pstate)))
+                pstate)
+            pstate))
+         (pstate
+          (if (>= stmt.num-colons 3)
+              (b* ((pstate (print-astring " :" pstate))
+                   (pstate
+                    (if (consp stmt.clobbers)
+                        (b* ((pstate (print-astring " " pstate))
+                             (pstate (print-asm-clobber-list stmt.clobbers
+                                                             pstate)))
+                          pstate)
+                      pstate)))
+                pstate)
+            pstate))
+         (pstate
+          (if (>= stmt.num-colons 4)
+              (b* ((pstate (print-astring " :" pstate))
+                   (pstate
+                    (if (consp stmt.labels)
+                        (b* ((pstate (print-astring " " pstate))
+                             (pstate (print-ident-list stmt.labels pstate)))
+                          pstate)
+                      pstate)))
+                pstate)
+            pstate))
+         (pstate (print-astring " );" pstate))
+         (pstate (print-new-line pstate)))
+      pstate)
+    :measure (two-nats-measure (asm-stmt-count asm) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3299,91 +3463,7 @@
           (pstate (print-new-line pstate)))
        pstate)
      :asm
-     (b* ((pstate (print-indent pstate))
-          (pstate (keyword-uscores-case
-                   stmt.uscores
-                   :none (print-astring "asm" pstate)
-                   :start (print-astring "__asm" pstate)
-                   :both (print-astring "__asm__" pstate)))
-          (pstate (if (consp stmt.quals)
-                      (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-asm-qual-list stmt.quals pstate)))
-                        pstate)
-                    pstate))
-          (pstate (print-astring " (" pstate))
-          ((unless (consp stmt.template))
-           (raise "Misusage error: no string literals in assembler template.")
-           pstate)
-          (pstate (print-stringlit-list stmt.template pstate))
-          ((unless (case stmt.num-colons
-                     (0 (and (endp stmt.outputs)
-                             (endp stmt.inputs)
-                             (endp stmt.clobbers)
-                             (endp stmt.labels)))
-                     (1 (and (endp stmt.inputs)
-                             (endp stmt.clobbers)
-                             (endp stmt.labels)))
-                     (2 (and (endp stmt.clobbers)
-                             (endp stmt.labels)))
-                     (3 (endp stmt.labels))
-                     (4 t)
-                     (otherwise nil)))
-           (raise "Misusage error: ~
-                   non-empty outputs, inputs, clobbers, or labels ~
-                   with insufficient number of colons ~
-                   in assembler statement ~x0."
-                  (stmt-fix stmt))
-           pstate)
-          (pstate
-           (if (>= stmt.num-colons 1)
-               (b* ((pstate (print-astring " :" pstate))
-                    (pstate
-                     (if (consp stmt.outputs)
-                         (b* ((pstate (print-astring " " pstate))
-                              (pstate (print-asm-output-list stmt.outputs
-                                                             pstate)))
-                           pstate)
-                       pstate)))
-                 pstate)
-             pstate))
-          (pstate
-           (if (>= stmt.num-colons 2)
-               (b* ((pstate (print-astring " :" pstate))
-                    (pstate
-                     (if (consp stmt.inputs)
-                         (b* ((pstate (print-astring " " pstate))
-                              (pstate (print-asm-input-list stmt.inputs
-                                                            pstate)))
-                           pstate)
-                       pstate)))
-                 pstate)
-             pstate))
-          (pstate
-           (if (>= stmt.num-colons 3)
-               (b* ((pstate (print-astring " :" pstate))
-                    (pstate
-                     (if (consp stmt.clobbers)
-                         (b* ((pstate (print-astring " " pstate))
-                              (pstate (print-asm-clobber-list stmt.clobbers
-                                                              pstate)))
-                           pstate)
-                       pstate)))
-                 pstate)
-             pstate))
-          (pstate
-           (if (>= stmt.num-colons 4)
-               (b* ((pstate (print-astring " :" pstate))
-                    (pstate
-                     (if (consp stmt.labels)
-                         (b* ((pstate (print-astring " " pstate))
-                              (pstate (print-ident-list stmt.labels pstate)))
-                           pstate)
-                       pstate)))
-                 pstate)
-             pstate))
-          (pstate (print-astring " );" pstate))
-          (pstate (print-new-line pstate)))
-       pstate))
+     (print-asm-stmt stmt.unwrap pstate))
     :measure (two-nats-measure (stmt-count stmt) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3494,22 +3574,27 @@
        ((unless fundef.spec)
         (raise "Misusage error: no declaration specifiers.")
         pstate)
-       ((unless (stmt-case fundef.body :compound))
-        (raise "Misusage error: function body is not a compound statement.")
-        (pristate-fix pstate))
+       (pstate (print-declspec-list fundef.spec pstate))
+       (pstate (print-astring " " pstate))
+       (pstate (print-declor fundef.declor pstate))
        (pstate (if fundef.asm?
                    (b* ((pstate (print-astring " " pstate))
                         (pstate (print-asm-name-spec fundef.asm? pstate)))
                      pstate)
                  pstate))
-       (pstate (print-declspec-list fundef.spec pstate))
-       (pstate (print-astring " " pstate))
-       (pstate (print-declor fundef.declor pstate))
+       (pstate (if (consp fundef.attribs)
+                   (b* ((pstate (print-astring " " pstate))
+                        (pstate (print-attrib-spec-list fundef.attribs pstate)))
+                     pstate)
+                 pstate))
        (pstate (if fundef.decls
                    (b* ((pstate (print-new-line pstate))
                         (pstate (print-decl-list fundef.decls pstate)))
                      pstate)
                  (print-astring " " pstate)))
+       ((unless (stmt-case fundef.body :compound))
+        (raise "Misusage error: function body is not a compound statement.")
+        (pristate-fix pstate))
        (pstate (print-block (stmt-compound->items fundef.body) pstate))
        (pstate (print-new-line pstate)))
     pstate)
@@ -3524,7 +3609,11 @@
   (extdecl-case
    extdecl
    :fundef (print-fundef extdecl.unwrap pstate)
-   :decl (print-decl extdecl.unwrap pstate))
+   :decl (print-decl extdecl.unwrap pstate)
+   :empty (b* ((pstate (print-astring ";" pstate))
+               (pstate (print-new-line pstate)))
+            pstate)
+   :asm (print-asm-stmt extdecl.unwrap pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

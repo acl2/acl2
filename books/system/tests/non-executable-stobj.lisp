@@ -119,8 +119,7 @@
 ; 29)) = 536870911.  The implementation of defstobj checks that the size of an
 ; array field is strictly less than this number.  We thus make the test below
 ; depend on the Lisp, with a robust test for all Lisps besides LispWorks.
-; This event is local to support compilation for multiple Lisps by setting
-; "make" variable ACL2_COMP=1.
+; This event is local to support compilation for multiple Lisps.
 (local
  (defstobj big ; maybe too big by far if executable
    (ar :type (array t (#+lispworks

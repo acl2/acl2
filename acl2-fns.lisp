@@ -2337,6 +2337,11 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; in other Lisps.
 
 #+gcl
+(when (or (< si::*gcl-major-version* 2)
+          (and (= si::*gcl-major-version* 2)
+               (or (< si::*gcl-minor-version* 6)
+                   (and (= si::*gcl-minor-version* 6)
+                        (<= si::*gcl-extra-version* 12)))))
 (progn
 compiler::
 (defun c2funcall-new (funob args &optional loc info)
@@ -2385,13 +2390,8 @@ compiler::
     (otherwise (baboon))
     ))
 
-(when (or (< si::*gcl-major-version* 2)
-          (and (= si::*gcl-major-version* 2)
-               (or (< si::*gcl-minor-version* 6)
-                   (and (= si::*gcl-minor-version* 6)
-                        (<= si::*gcl-extra-version* 12)))))
-  (setf (symbol-function 'compiler::c2funcall)
-        (symbol-function 'compiler::c2funcall-new))))
+(setf (symbol-function 'compiler::c2funcall)
+      (symbol-function 'compiler::c2funcall-new))))
 
 #+gcl
 (eval-when

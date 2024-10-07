@@ -41,6 +41,7 @@
 (include-book "kestrel/utilities/make-or" :dir :system)
 (include-book "kestrel/utilities/make-doublets" :dir :system)
 (include-book "kestrel/utilities/make-and" :dir :system)
+(include-book "kestrel/utilities/add-prefix" :dir :system)
 (local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -445,8 +446,8 @@
 ;;; end variant that is true-listp
 
 ;it is an error to have no list formals - check for that?
-(defun defforall-fn (forall-fn-name all-formals term fixed declares guard guard-hints true-listp verbose)
-  (declare (xargs :guard (and (symbolp forall-fn-name)
+(defun defforall-fn (forall-fn all-formals term fixed declares guard guard-hints true-listp verbose)
+  (declare (xargs :guard (and (symbolp forall-fn)
                               (symbol-listp all-formals)
                               (pseudo-termp term)
                               (or (symbolp fixed)
@@ -458,8 +459,6 @@
          (declares (if guard-hints (cons `(xargs :guard-hints ,guard-hints) declares) declares)) ;todo: combine the xargs
          (fixed-formals (if (and (symbolp fixed) fixed) (list fixed) fixed))
          (list-formals (set-difference-eq all-formals fixed-formals))
-         (forall-fn forall-fn-name ;(or forall-fn-name (pack$ 'map- fn))
-                    )
          (atom-tests (wrap-list '(atom x) 'x list-formals))
          (null-tests (wrap-list '(null x) 'x list-formals))
          ;; true-listp variants
@@ -500,7 +499,7 @@
                  (bindings-no-fresh `((generic-predicate (lambda (,list-formal) ,term))
                                       (,generic-forall (lambda (,list-formal) (,forall-fn ,@all-formals)))))
                  (theorems
-                  `((defthm ,(pack$ forall-fn '-of-cons)
+                  `((defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-cons)
                       (equal (,forall-fn ,@(sublis-var-simple-lst
                                             (acons list-formal `(cons ,fresh-var ,list-formal) nil)
                                             all-formals))
@@ -514,7 +513,7 @@
                                ,@theory)))
 
                     ;; TODO: Think about what name to use here (if the term representing the predicate is not a function call, the name is awkward).
-                    (defthm ,(pack$ 'use- forall-fn '-for-car)
+                    (defthm ,(pack-in-package-of-symbol forall-fn 'use- forall-fn '-for-car)
                       (implies (and (,forall-fn ,@all-formals)
                                     (consp (double-rewrite ,list-formal)))
                                ,(sublis-var-simple (acons list-formal `(car ,list-formal) nil)
@@ -524,7 +523,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ 'use- forall-fn '-for-car-of-last)
+                    (defthm ,(pack-in-package-of-symbol forall-fn 'use- forall-fn '-for-car-of-last)
                       (implies (and (,forall-fn ,@all-formals)
                                     (consp (double-rewrite ,list-formal)))
                                ,(sublis-var-simple (acons list-formal `(car (last ,list-formal)) nil)
@@ -534,7 +533,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ forall-fn '-of-append)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-append)
                       (equal (,forall-fn ,@(sublis-var-simple-lst
                                             (acons list-formal `(append ,list-formal ,fresh-var) nil)
                                             all-formals))
@@ -553,7 +552,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ forall-fn '-of-union-equal)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-union-equal)
                       (equal (,forall-fn ,@(sublis-var-simple-lst
                                             (acons list-formal `(union-equal ,list-formal ,fresh-var) nil)
                                             all-formals))
@@ -572,7 +571,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ forall-fn '-when-not-consp)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-when-not-consp)
                       (implies (not (consp (double-rewrite ,list-formal)))
                                ,(if true-listp
                                     `(equal (,forall-fn ,@all-formals)
@@ -585,7 +584,7 @@
                                ,@theory)))
 
                     ;; proven from the one just above
-                    (defthm ,(pack$ forall-fn '-when-not-consp-cheap)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-when-not-consp-cheap)
                       (implies (not (consp (double-rewrite ,list-formal)))
                                ,(if true-listp
                                     `(equal (,forall-fn ,@all-formals)
@@ -593,10 +592,10 @@
                                   `(equal (,forall-fn ,@all-formals)
                                           t)))
                       :rule-classes ((:rewrite :backchain-limit-lst (0)))
-                      :hints (("Goal" :use ,(pack$ forall-fn '-when-not-consp)
+                      :hints (("Goal" :use ,(pack-in-package-of-symbol forall-fn forall-fn '-when-not-consp)
                                :in-theory (theory 'minimal-theory))))
 
-                    (defthm ,(pack$ forall-fn '-of-revappend)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-revappend)
                       (implies (and (,forall-fn ,@all-formals)
                                     (,forall-fn ,@(sublis-var-simple-lst
                                                    (acons list-formal fresh-var nil)
@@ -610,7 +609,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ forall-fn '-of-cdr)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-cdr)
                       (implies (,forall-fn ,@all-formals)
                                (equal (,forall-fn ,@(sublis-var-simple-lst
                                                      (acons list-formal `(cdr ,list-formal) nil)
@@ -622,7 +621,7 @@
                                ,@theory)))
 
                     ;;from here down, the fresh var name should be nXXX?
-                    (defthm ,(pack$ forall-fn '-of-nthcdr)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-nthcdr)
                       (implies (,forall-fn ,@all-formals)
                                (equal (,forall-fn ,@(sublis-var-simple-lst
                                                      (acons list-formal `(nthcdr ,fresh-var ,list-formal) nil)
@@ -634,7 +633,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ forall-fn '-of-firstn)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-firstn)
                       (implies (,forall-fn ,@all-formals)
                                (equal (,forall-fn ,@(sublis-var-simple-lst
                                                      (acons list-formal `(firstn ,fresh-var ,list-formal) nil)
@@ -646,7 +645,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ forall-fn '-of-remove1-equal)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-remove1-equal)
                       (implies (,forall-fn ,@all-formals)
                                (,forall-fn ,@(sublis-var-simple-lst
                                               (acons list-formal `(remove1-equal ,fresh-var ,list-formal) nil)
@@ -657,7 +656,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ forall-fn '-of-remove-equal)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-remove-equal)
                       (implies (,forall-fn ,@all-formals)
                                (,forall-fn ,@(sublis-var-simple-lst
                                               (acons list-formal `(remove-equal ,fresh-var ,list-formal) nil)
@@ -668,7 +667,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ forall-fn '-of-last)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-last)
                       (implies (,forall-fn ,@all-formals)
                                (,forall-fn ,@(sublis-var-simple-lst
                                               (acons list-formal `(last ,list-formal) nil)
@@ -678,7 +677,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ forall-fn '-of-take)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-take)
                       (implies (and (,forall-fn ,@all-formals)
                                     (<= ,fresh-var (len (double-rewrite ,list-formal))))
                                (equal (,forall-fn ,@(sublis-var-simple-lst
@@ -692,21 +691,21 @@
                                ,@theory)))
 
                     ,@(if true-listp
-                          `((defthmd ,(pack$ 'true-listp-when- forall-fn) ;disabled by default
+                          `((defthmd ,(pack-in-package-of-symbol forall-fn 'true-listp-when- forall-fn) ;disabled by default
                               (implies (,forall-fn ,@all-formals)
                                        (true-listp ,list-formal))
                               :hints (("Goal" :use (:instance (:functional-instance ,(pack$ 'true-listp-when- generic-forall) ,@bindings)
                                                               (x ,list-formal)
                                                               ,@fixed-formal-bindings)
                                        ,@theory)))
-                            (defthmd ,(pack$ 'true-listp-when- forall-fn '-forward)
+                            (defthmd ,(pack-in-package-of-symbol forall-fn 'true-listp-when- forall-fn '-forward)
                               (implies (,forall-fn ,@all-formals)
                                        (true-listp ,list-formal))
                               :rule-classes ((:forward-chaining))
-                              :hints (("Goal" :use ,(pack$ 'true-listp-when- forall-fn) :in-theory nil))))
+                              :hints (("Goal" :use ,(pack-in-package-of-symbol forall-fn 'true-listp-when- forall-fn) :in-theory nil))))
                         nil) ;this is not true in the non-true-listp case
 
-                    (defthmd ,(pack$ forall-fn '-when-perm)
+                    (defthmd ,(pack-in-package-of-symbol forall-fn forall-fn '-when-perm)
                       (implies (perm ,list-formal ,fresh-var)
                                (equal (,forall-fn ,@all-formals)
                                       ,(if true-listp
@@ -723,7 +722,7 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
 
-                    (defthm ,(pack$ forall-fn '-of-true-list-fix)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-true-list-fix)
                       ,(if true-listp
                            `(implies (,forall-fn ,@all-formals)
                                      (,forall-fn ,@(sublis-var-simple-lst
@@ -742,14 +741,14 @@
                            ;;here we use the specific theorem proved just above (not a generic theorem)
                            `((defcong perm equal (,forall-fn ,@all-formals) ,(position-of list-formal all-formals)
                                :package :function
-                               :hints (("Goal" :use (:instance ,(pack$ forall-fn '-when-perm)
+                               :hints (("Goal" :use (:instance ,(pack-in-package-of-symbol forall-fn forall-fn '-when-perm)
 ;(,list-formal x)
                                                                (,fresh-var ,(pack-in-package-of-symbol forall-fn list-formal '-equiv))
                                                                ))))))
 
-                    (defthm ,(pack$ 'use- forall-fn)
-                      (implies (and (,forall-fn ,@(sublis-var-simple-lst (acons list-formal (pack$ 'free- list-formal) nil) all-formals))
-                                    (memberp x ,(pack$ 'free- list-formal))
+                    (defthm ,(pack-in-package-of-symbol forall-fn 'use- forall-fn)
+                      (implies (and (,forall-fn ,@(sublis-var-simple-lst (acons list-formal (pack-in-package-of-symbol forall-fn 'free- list-formal) nil) all-formals))
+                                    (memberp x ,(pack-in-package-of-symbol forall-fn 'free- list-formal))
 ;                                    ,(cons-onto-all 'memberp (sublis-var-simple-lst (pairlis$ list-formals (pack-onto-all 'free list-formals)) all-formals)) ;overkill if there is oly 1 list formal
                                     )
                                ,(sublis-var-simple (acons list-formal 'x nil) term)) ;fixme what if term is not suitable to be a rewrite rule?
@@ -761,16 +760,16 @@
 ;fffixme think about fresh formals!
                       :hints (("Goal" :do-not-induct t
                                :use (:instance (:functional-instance ,(pack$ 'generic-predicate-when- generic-forall) ,@bindings-no-fresh)
-                                               (free ,(pack$ 'free- list-formal))
+                                               (free ,(pack-in-package-of-symbol forall-fn 'free- list-formal))
 ;                                                      (x ,list-formal)
 ;,@fixed-formal-bindings
                                                )
                                ,@theory)))
 
                     ;; same as above but with hyps reordered
-                    (defthm ,(pack$ 'use- forall-fn "-2")
-                      (implies (and (memberp x ,(pack$ 'free- list-formal))
-                                    (,forall-fn ,@(sublis-var-simple-lst (acons list-formal (pack$ 'free- list-formal) nil) all-formals))
+                    (defthm ,(pack-in-package-of-symbol forall-fn 'use- forall-fn "-2")
+                      (implies (and (memberp x ,(pack-in-package-of-symbol forall-fn 'free- list-formal))
+                                    (,forall-fn ,@(sublis-var-simple-lst (acons list-formal (pack-in-package-of-symbol forall-fn 'free- list-formal) nil) all-formals))
 ;                                    ,(cons-onto-all 'memberp (sublis-var-simple-lst (pairlis$ list-formals (pack-onto-all 'free list-formals)) all-formals)) ;overkill if there is oly 1 list formal
                                     )
                                ,(sublis-var-simple (acons list-formal 'x nil) term)) ;fixme what if term is not suitable to be a rewrite rule?
@@ -782,12 +781,12 @@
                       ;; same hints as above:
                       :hints (("Goal" :do-not-induct t
                                :use (:instance (:functional-instance ,(pack$ 'generic-predicate-when- generic-forall) ,@bindings-no-fresh)
-                                               (free ,(pack$ 'free- list-formal))
+                                               (free ,(pack-in-package-of-symbol forall-fn 'free- list-formal))
 ;                                                      (x ,list-formal)
 ;,@fixed-formal-bindings
                                                )
                                ,@theory)))
-                    (defthm ,(pack$ forall-fn '-of-add-to-set-equal)
+                    (defthm ,(pack-in-package-of-symbol forall-fn forall-fn '-of-add-to-set-equal)
                       (equal (,forall-fn ,@(sublis-var-simple-lst
                                             (acons list-formal `(add-to-set-equal ,fresh-var ,list-formal) nil)
                                             all-formals))
@@ -813,15 +812,18 @@
     event))
 
 (defun defforall-simple-fn (pred name guard guard-hints true-listp verbose)
-  (declare (xargs :mode :program))
+  (declare (xargs :guard (and (symbolp pred)
+                              (symbolp name) ; may be nil
+                              (booleanp true-listp)
+                              (booleanp verbose))
+                  :mode :program))
   (defforall-fn
     (or name ;use name if supplied
-        (pack$ 'all- pred) ;;(pack-in-package-of-symbol pred 'all- fn) ;this was causing things to be put in the common lisp package, which was a problem for all-rationalp  maybe use ACL2 if the symbol is in that package?
-        )
+        (add-prefix-to-fn "ALL-" pred))
     '(x) ;fixme: would really like this to be "xs" or "vals" or something indicating that this is a list
     `(,pred x)
-    nil   ;no fixed args
-    nil   ;no declares
+    nil ;no fixed args
+    nil ;no declares
     guard
     guard-hints
     true-listp

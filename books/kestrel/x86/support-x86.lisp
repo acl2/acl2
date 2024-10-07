@@ -734,9 +734,7 @@
    (equal (+ (- (ACL2::BVCHOP 6 SRC)) (ACL2::BVCAT 1 1 6 SRC))
           (ACL2::BVCAT 1 1 6 0))
    :hints (("Goal" :in-theory (e/d (acl2::bvcat acl2::logapp)
-                                   (ACL2::PLUS-BVCAT-WITH-0 ;loop
-                                    ACL2::PLUS-BVCAT-WITH-0-ALT
-                                    ))))))
+                                   ())))))
 
 ;; the normal definition splits with an if!
 ;; well, this one has an if too, but it's perhaps less bad since the shift amount will often be constant

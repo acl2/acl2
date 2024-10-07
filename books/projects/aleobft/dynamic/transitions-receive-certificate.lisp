@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "system-states")
+(include-book "committees")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -39,6 +40,34 @@
      the author-round pair of the certificate is removed from
      the set of endorsed author-round pairs;
      see @(see transitions-create-certificate) about these pairs.")
+   (xdoc::p
+    "Importantly, a validator accepts the certificate from the network
+     only if its signers form a quorum
+     in the active committee for the certificate round.
+     Thus, the validator must be able to calculate (from its blockchain)
+     the committee for the certificate's round, in order to perform the check.
+     This check is important because, in our formal model,
+     nothing prevents the creation of a new certificate
+     with signers completely disjoint from the validator's committee;
+     these would have to be faulty signers,
+     but our formal model, which models all possible validators,
+     could contain many faulty validators that can sign a certificate.
+     So this bad certificate could very well cause equivocation,
+     if a validator blindly accepted it from the network.
+     Instead, by having the receiving validator check the signers,
+     we avoid that, as proved elsewhere.")
+   (xdoc::p
+    "Also importantly, and for a similar reason,
+     a validator accepts the certificate from the network
+     only if the referenced previous certificates
+     form a quorum in the active committee
+     of the round just before the certificate,
+     unless the certificate's round is 1,
+     in which case the certificate
+     must have no references to previous certificates.
+     If the certificate's round is not 1,
+     in order to make the quorum check,
+     the validator must be able to calculate that active committee.")
    (xdoc::p
     "A message may be received by any validator in the system,
      not only validators in the current committee.
@@ -87,16 +116,49 @@
      not just the ones in the committee.")
    (xdoc::p
     "We actually make the stronger check that the validator is a correct one.
-     This is actually an invariant,
+     This is in fact an invariant,
      because @(tsee create-certificate-next) only creates messages
      with addresses of correct validators as destination.
      But we do not have that invariant available here,
      since we prove that from the definitions of the transitions,
-     which therefore must be defined before we can prove the invariant."))
-  (and (set::in (message-fix msg)
-                (get-network-state systate))
-       (set::in (message->destination msg)
-                (correct-addresses systate)))
+     which therefore must be defined before we can prove the invariant.")
+   (xdoc::p
+    "The validator must be able to calculate
+     the active committee for the certificate's round,
+     and the signers of the certificate must form a quorum.")
+   (xdoc::p
+    "If the certificate's round is 1,
+     the certificate must have no references to previous certificates."))
+  (b* (((unless (set::in (message-fix msg)
+                         (get-network-state systate)))
+        nil)
+       (dest (message->destination msg))
+       ((certificate cert) (message->certificate msg))
+       ((unless (set::in dest (correct-addresses systate)))
+        nil)
+       (vstate (get-validator-state dest systate))
+       (commtt (active-committee-at-round cert.round
+                                          (validator-state->blockchain vstate)
+                                          (all-addresses systate)))
+       ((unless commtt) nil)
+       (signers (certificate->signers cert))
+       ((unless (set::subset signers (committee-members commtt)))
+        nil)
+       ((unless (= (set::cardinality signers)
+                   (committee-quorum commtt)))
+        nil))
+    (if (= cert.round 1)
+        (= (set::cardinality cert.previous)
+           0)
+      (b* ((prev-commtt (active-committee-at-round
+                         (1- cert.round)
+                         (validator-state->blockchain vstate)
+                         (all-addresses systate))))
+        (and prev-commtt
+             (set::subset cert.previous (committee-members prev-commtt))
+             (= (set::cardinality cert.previous)
+                (committee-quorum prev-commtt))))))
+  :guard-hints (("Goal" :in-theory (enable posp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

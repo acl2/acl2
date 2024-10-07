@@ -1905,7 +1905,7 @@
     (('INDUCTION-RULE nume (pattern . condition) scheme . rune)
      (and (pseudo-numep nume)
           (pseudo-termp pattern)
-          (pseudo-termp condition)
+          (pseudo-term-listp condition)
           (pseudo-termp scheme)
           (pseudo-runep rune)))
     (& nil)))

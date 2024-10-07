@@ -199,7 +199,7 @@
                  (natp width))
             (equal (getbit n (leftrotate width amt x))
                    (getbit (- n amt) x)))
-   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
+   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (
                                                         ))))))
 
 (local
@@ -212,7 +212,7 @@
                  (natp width))
             (equal (getbit n (leftrotate width amt x))
                    (getbit (+ width (- amt) n) x)))
-   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
+   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (
                                                         ))))))
 
 ;; todo: restrict to the case when we can resolve the (< n width) test?
@@ -227,7 +227,7 @@
                           (getbit (+ width (- (mod amt width)) n) x)
                         (getbit (- n (mod amt width)) x))
                     0)))
-  :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
+  :hints (("Goal" :in-theory (e/d (getbit leftrotate) (
                                                        )))))
 
 ;; no mod in rhs
@@ -244,8 +244,7 @@
                           (getbit (+ width (- amt) n) x)
                         (getbit (- n amt) x))
                     0)))
-  :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
-                                                       )))))
+  :hints (("Goal" :in-theory (e/d (getbit leftrotate) ()))))
 
 (defthm equal-of-leftrotate-and-leftrotate
   (implies (natp size)

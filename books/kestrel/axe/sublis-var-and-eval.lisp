@@ -1,7 +1,7 @@
 ; A tool to apply a substitution to terms and evaluate function calls as it goes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,6 +13,8 @@
 (in-package "ACL2")
 
 ;; See also sublis-var-and-eval-basic.lisp.
+
+;; TODO: Can we generate this the way we do similar functions (and also make a subcor-var version)?
 
 (include-book "evaluator") ;; Brings in skip-proofs
 (include-book "dag-arrays")

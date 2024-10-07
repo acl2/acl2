@@ -8,7 +8,8 @@
 ;  "system/doc/acl2-doc-broken-links.lsp" :dir :system)
 
 ; The output will conclude with an alist that is the intended value of the
-; constant *acl2-broken-links-alist*, defined in acl2-doc.lisp.  (Indeed, these
+; constant *acl2-broken-links-alist*, defined in acl2-doc.lisp, with obvious
+; editing easily accomplished in Emacs with a keyboard macro.  (Indeed, these
 ; events were created by modifying a comment originally in that definition.)
 ; It is then advisable to update *acl2-broken-links-alist* accordingly.
 
