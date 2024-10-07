@@ -154,8 +154,8 @@
        #-acl2-par :break
 
 ; Except: In ACL2(p), when waterfall-parallelism is enabled, hons-get will fail
-; the fast alist discipline when it is called from any any thread other than
-; the top-level thread.  We avoid breaking in that case.
+; the fast alist discipline when it is called from any thread other than the
+; top-level thread.  We avoid breaking in that case.
 
        #+acl2-par :warning)
 

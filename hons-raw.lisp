@@ -1264,9 +1264,9 @@
 ;
 ; Classic Honsing only.  B is any ACL2 Object and CTABLES is the ctables
 ; structure from a Hons Space.  We return the flex alist that an ACL2 Object X
-; = (A . B), for some A, must belong to for classic honsing.  Note that even
-; though the NIL-HT starts out as a hash table, we can still regard it as a
-; flex alist.
+; = (A . B), for some A, must belong to (when using classic honsing).  Note
+; that even though the NIL-HT starts out as a hash table, we can still regard
+; it as a flex alist.
 
   `(let ((b ,b)
          (ctables ,ctables))

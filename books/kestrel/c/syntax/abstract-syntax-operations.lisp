@@ -338,7 +338,7 @@
 (defirrelevant irr-attrib
   :short "An irrelevant attribute."
   :type attribp
-  :body (attrib-name (irr-attrib-name)))
+  :body (attrib-name-only (irr-attrib-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
