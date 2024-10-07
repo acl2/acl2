@@ -12668,7 +12668,7 @@
        ;; If token is anything else, the attribute is just a name.
        (t ; name other
         (b* ((parstate (if token (unread-token parstate) parstate))) ; name
-          (retok (attrib-name name) name-span parstate)))))
+          (retok (attrib-name-only name) name-span parstate)))))
     :measure (two-nats-measure (parsize parstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

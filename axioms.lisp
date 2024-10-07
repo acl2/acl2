@@ -1308,7 +1308,7 @@
 ; Every time the state global variable 'brr-evisc-tuple is set via
 ; set-site-evisc-tuple (actually by set-brr-evisc-tuple1) we also set this raw
 ; Lisp var, *wormhole-brr-evisc-tuple*, to the same value.  This variable can
-; thus be thought of a ``mirror'' of brr-evisc-tuple.  Unwind protection in
+; thus be thought of as a ``mirror'' of brr-evisc-tuple.  Unwind protection in
 ; wormhole1 undoes the setting of the state global value of 'brr-evisc-tuple
 ; when we pop out of break-rewrite, but cleanup does not mess with the mirrored
 ; value.  The function brr-evisc-tuple-oracle-update is called in
@@ -2759,11 +2759,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Therefore, we decided to code strip-cars (and strip-cdrs) in the style of
 ; strip-cars3 above.
 
-; However, we did not want to do define strip-cars tail-recursively because
-; proofs about strip-cars -- both in our system build and in user theorems
-; about strip-cars -- would have to use the accumulator-style generalization.
-; So we decided to keep strip-cars defined, logically, just as it was and to
-; make its #-acl2-loop-only executable code be tail recursive, as above.
+; However, we did not want to define strip-cars tail-recursively because proofs
+; about strip-cars -- both in our system build and in user theorems about
+; strip-cars -- would have to use the accumulator-style generalization.  So we
+; decided to keep strip-cars defined, logically, just as it was and to make its
+; #-acl2-loop-only executable code be tail recursive, as above.
 
 ; The next paragraph is bogus!  But it used to read as follows (where
 ; strip-cars1 was essentially what we now call reverse-strip-cars).
@@ -5804,7 +5804,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Logically, we imagine that a package exists for every string (serving as the
 ; symbol-package-name of its symbols) except "".  Of course, at any given time
-; only finite many packages have been specified (either being built-in, or
+; only finitely many packages have been specified (either being built-in, or
 ; specified with defpkg); and, ACL2 will prohibit explicit specification of
 ; packages for certain strings, such as "ACL2_INVISIBLE".
 
@@ -8215,7 +8215,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro unquote (x) (list 'cadr x))
 
 ; We originally added the following three defthm forms at the request of Jared
-; Davis, who noted that many book that seem to depend on community book
+; Davis, who noted that many books that seem to depend on community book
 ; books/arithmetic/top.lisp can get by with just these three theorems.  We
 ; might consider adding analogues for multiplication as well, but that could
 ; break a lot of books.  Since we already build in linear arithmetic but not
@@ -8366,7 +8366,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; A nil dcl is interpreted as though we'd seen a simple lambda with no dcl.
 ; But a nil body is an ill-formed answer because nil is not a term.
 
-; Lambda-object-formals is always *1* cadr.  But lambda-object-dcl and
+; Lambda-object-formals is always *1*cadr.  But lambda-object-dcl and
 ; lambda-object-body have to decide whether an ill-formed lambda object, x, is
 ; supposed to be treated like a simple lambda or a declared one.  The answer is
 ; if it's a true-list of len 3, it's simple, if it's a true-list of len 4, it's
@@ -10440,7 +10440,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; To see the potential problem with defaxiom, imagine an event such as
 ; (encapsulate () (local (defaxiom temp <formula>)) (defthm foo <formula>)).
 ; Such an event would leave us in an ACL2 logical world for which <formula> is
-; stored under the name foo as through it were a logical consequence of the
+; stored under the name foo as though it were a logical consequence of the
 ; axioms in that logical world, which presumably it is not.  Our solution is to
 ; disallow defaxiom events in the scope of LOCAL.  This is a bit tricky since
 ; the LOCAL may not be lexically apparent, as when a defaxiom occurs inside a
@@ -12408,10 +12408,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; (object actual-array to-go-array header), where object is an alist;
 ; actual-array, is the current ``real'' array associated with object under
 ; name; to-go-array is an array of length one whose content is the number of
-; additional conses that may be added before compresses is required; and header
+; additional conses that may be added before compress is required; and header
 ; is the first pair beginning with :header in object.  (To-go-array is kept as
-; an array rather than as a mere integer in order to avoid number boxing.)
-; We use a one-slot cache for efficiency; see the Essay on Array Caching.
+; an array rather than as a mere integer in order to avoid number boxing.)  We
+; use a one-slot cache for efficiency; see the Essay on Array Caching.
 
 #-acl2-loop-only
 (progn
@@ -13167,8 +13167,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         (cons #\2 (length l))
                         (cons #\3 (maximum-length name l)))))
 
-; Determine whether l is already is in normal form (header first, strictly
-; ordered keys, no default values, no extra header.)
+; Determine whether l is already in normal form (header first, strictly ordered
+; keys, no default values, no extra header.)
 
     (when order
       (cond ((eq (caar l) :header)
@@ -14816,7 +14816,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Since this check is cheap and not performed while we're doing proofs, we
 ; leave it.  That being said, we do not realistically expect to receive this
 ; error for a very long time, because it will be a very long time until the
-; number of CPU cores is within a factor of 4 of 10,000.  David Rager actually
+; number of CPU cores is within a factor of 4 of 10,000.  (That statement was
+; written some time ago and may now be out of date.)  David Rager actually
 ; found this check useful once upon a time (back when the limit was 50),
 ; because he was testing ACL2(p) on one of the IBM 64-core machines and forgot
 ; that this limit needed to be increased.
