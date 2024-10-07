@@ -5607,7 +5607,7 @@ specialization of @(tsee r1cs::verify-r1cs).")
  <p>Additions and improvements have been made to the SAT proof-checker
  directories, under @('projects/sat/lrat/').  In particular, the proof was
  completed for the incremental checker (subdirectory @('incremental/') with an
- improved soundness theorem; a new directory was addded (@('cube/'), as
+ improved soundness theorem; a new directory was added (@('cube/'), as
  mentioned above); and renamed subdirectory @('main/') to @('sorted/').  The
  key subdirectory is @('incremental/'); a new top-level book @('top.lisp')
  includes the top-level book in that subdirectory.</p>
