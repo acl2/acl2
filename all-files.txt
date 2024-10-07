@@ -31,6 +31,9 @@ doc
 doc.lisp
 # doc.lisp.backup -- not distributed or under source control
 emacs
+float-a.lisp
+float-b.lisp
+float-raw.lisp
 futures-raw.lisp
 # gitlog-all.txt -- not distributed or under source control
 GNUmakefile
@@ -136,6 +139,7 @@ windows7.html
 windows-gcl-jared.html
 
 # The following is distributed but is not under source control.
+# All subdirectories here are similarly not under source control.
 # Note that since we don't distribute books, we also don't distribute
 # image files that support the books.
 doc/manual:
@@ -145,10 +149,8 @@ LICENSE
 res
 *.*
 
-# The following is distributed but is not under source control
 doc/manual/download:
 
-# The following is distributed but is not under source control
 doc/manual/lib:
 *.*
 katex
@@ -178,9 +180,10 @@ doc/manual/res/tours:
 *.gif
 
 emacs:
-acl2-doc-open-url.el
 acl2-doc.el
+acl2-doc-open-url.el
 emacs-acl2.el
+html-to-xdoc.el
 monitor.el
 README
 

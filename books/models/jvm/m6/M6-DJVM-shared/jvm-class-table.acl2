@@ -1,0 +1,3 @@
+(ld "../M6-DJVM-shared/jvm.pkg")
+(certify-book "jvm-class-table" 4)
+

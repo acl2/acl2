@@ -1,0 +1,15 @@
+This directory is based on the dissertation work completed by Jun
+Sawada at the University of Texas at Austin.  For an overview,
+see:
+
+https://www.cs.utexas.edu/~boyer/sawada/FM9801/viewer.html
+
+Jun Sawada completed this work in 1998 and 1999.  Matt Kaufmann made
+updates in October, 2024, so that the books would certify with the
+latest ACL2.  Each such update is marked with a "Matt K. mod" comment.
+None of the original events used skip-proofs; Matt used skip-proofs on
+three defthm events that were no longer proved by ACL2 some 25 years
+later, either due to ACL2 changes or due to library changes.  Anyone
+is welcome to figure out how to remove them!
+
+See file LICENSE for copyright and license information.

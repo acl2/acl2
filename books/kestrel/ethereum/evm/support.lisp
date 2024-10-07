@@ -34,9 +34,11 @@
            (unsigned-byte-p size y))))
 
 
-(defthm eqlable-listp-when-nat-listp
-  (implies (nat-listp vals)
-           (eqlable-listp vals)))
+;; also in std
+(local
+  (defthm eqlable-listp-when-nat-listp
+    (implies (nat-listp x)
+             (eqlable-listp x))))
 
 ;move
 (defthm unsigned-byte-p-of-bool-to-bit

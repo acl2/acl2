@@ -1,7 +1,7 @@
 ; Logical negation of a bit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -79,9 +79,7 @@
            (equal (getbit 1 (+ 2 x))
                   (bitnot (getbit 1 x))))
   :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (
-                                   bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+                                  ()))))
 
 (local
  (defthmd bvnot-1-becomes-bitnot
@@ -102,7 +100,6 @@
                              bvnot ;bozo
                              ) (getbit-when-equal-of-constant-and-bvchop-constant-version
                                 bvchop-lognot-bvchop
-                                bvchop-1-becomes-getbit
                                 UNSIGNED-BYTE-P-OF-GETBIT)))))
 
 ;fixme redo things to go to bitnot and bitxor and redo rules to trigger on those?

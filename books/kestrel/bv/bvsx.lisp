@@ -106,8 +106,8 @@
                                          )
                                    ( ; BVPLUS-OF-*-ARG2 ;
                                     ;;BVCAT-OF-+-HIGH ;looped
-                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                                    BVCHOP-1-BECOMES-GETBIT
+
+
 
                                     ))
            :cases ((equal (GETBIT (+ -1 n) X) 0) (equal (GETBIT (+ -1 n) X) 1)))))
@@ -135,8 +135,7 @@
                   bit))
   :hints (("Goal" :in-theory (e/d (repeatbit getbit slice
                                              expt-diff-collect)
-                                  (BVCHOP-CHOP-LEADING-CONSTANT
-                                    BVCHOP-1-BECOMES-GETBIT  BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                                  (BVCHOP-CHOP-LEADING-CONSTANT)))))
 
 (defthm getbit-of-bvsx
   (implies (and (<= old-size new-size)
@@ -276,7 +275,7 @@
                   (bvsx (+ 1 high (- low))
                         1
                         (getbit (+ -1 n) x))))
-  :hints (("Goal" :in-theory (e/d (slice logext repeatbit bvsx) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
+  :hints (("Goal" :in-theory (e/d (slice logext repeatbit bvsx) (BVCHOP-OF-LOGTAIL)))))
 
 (defthm bvchop-of-logext-becomes-bvsx
   (implies (and (< size2 size)
@@ -298,7 +297,7 @@
                         (- n low)
                         (slice (+ -1 n) low x))))
   :hints (("Goal" :in-theory (e/d (slice logext repeatbit bvsx LOGTAIL-OF-BVCHOP)
-                                  (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
+                                  (BVCHOP-OF-LOGTAIL)))))
 
 ;add -becomes-bvsx to name
 (defthm slice-of-logext-gen

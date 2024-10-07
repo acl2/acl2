@@ -10,6 +10,9 @@
 
 (in-package "C$")
 
+; Added 10/6/2024 by Matt K. after 3 successive ACL2(p) certification failures:
+(acl2::set-waterfall-parallelism nil)
+
 (include-book "file-paths")
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
@@ -1098,32 +1101,6 @@
   (:atomic ())
   :pred type-qualp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist type-qual-list
-  :short "Fixtype of lists of type qualifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Type qualifiers are defined in @(tsee type-qual)."))
-  :elt-type type-qual
-  :true-listp t
-  :elementp-of-nil nil
-  :pred type-qual-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist type-qual-list-list
-  :short "Fixtype of lists of lists of type qualifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Type qualifiers are defined in @(tsee type-qual)."))
-  :elt-type type-qual-list
-  :true-listp t
-  :elementp-of-nil t
-  :pred type-qual-list-listp)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fun-spec
@@ -1239,6 +1216,20 @@
   :true-listp t
   :elementp-of-nil nil
   :pred asm-clobber-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum attrib-name
+  :short "Fixtype of attribute names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Attributes are a GCC extension.
+     An attribute name is an identifier or a keyword: see the ABNF grammar.
+     We use an ACL2 string to represent a keyword."))
+  (:ident ((unwrap ident)))
+  (:keyword ((unwrap string)))
+  :pred attrib-namep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1377,7 +1368,8 @@
        the presence of absence of the final comma
        just after the <i>initializer-list</i>.
        We formalize <i>initializer-list</i> [C:6.7.9] [C:A.2.2]
-       as a list (which should be non-empty) of pairs each consisting of
+       as a list (which should be non-empty, unless GCC extensions are enabled)
+       of pairs each consisting of
        some designators and an initializer (see @(tsee desiniter).")
      (xdoc::p
       "The comma sequentialization operator is modeled
@@ -1525,6 +1517,10 @@
        Also see how @(see parser) handles
        possibly ambiguous cast expressions.")
      (xdoc::p
+      "As a GCC extension, we allow the omission of
+       the `then' sub-expression of a conditional expression.
+       See the ABNF grammar.")
+     (xdoc::p
       "As a GCC extension, we include statement expressions,
        i.e. expressions consisting of compound statements.
        The @(':stmt') case of this fixtype includes
@@ -1570,7 +1566,7 @@
               (arg1 expr)
               (arg2 expr)))
     (:cond ((test expr)
-            (then expr)
+            (then expr-option)
             (else expr)))
     (:comma ((first expr)
              (next expr)))
@@ -1753,10 +1749,16 @@
        and we indeed verified that it is accepted as a type
        in at least an implementation of GCC in macOS.")
      (xdoc::p
+      "As a GCC extension, we allow a structure type specifier with no members,
+       and with an optional name; see the ABNF grammar.")
+     (xdoc::p
       "As a GCC extension, we include @('typeof'),
        along with its variants @('__typeof') and @('__typeof__').
        The argument may be an expression or a type name,
-       and therefore we also need to include the ambiguous possibility."))
+       and therefore we also need to include the ambiguous possibility.")
+     (xdoc::p
+      "As a GCC extension, we include @('__auto_type');
+       see the ABNF grammar."))
     (:void ())
     (:char ())
     (:short ())
@@ -1777,12 +1779,14 @@
     (:int128 ())
     (:float128 ())
     (:builtin-va-list ())
+    (:struct-empty ((name? ident-option)))
     (:typeof-expr ((expr expr)
                    (uscores keyword-uscores-p)))
     (:typeof-type ((type tyname)
                    (uscores keyword-uscores-p)))
     (:typeof-ambig ((expr/type amb-expr/tyname)
                     (uscores keyword-uscores-p)))
+    (:auto-type ())
     :pred type-specp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1897,6 +1901,49 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (fty::deftagsum typequal/attribspec
+    :parents (abstract-syntax exprs/decls/stmts)
+    :short "Fixtype of type qualifiers and attribute specifiers."
+    (:tyqual ((unwrap type-qual)))
+    (:attrib ((unwrap attrib-spec)))
+    :pred typequal/attribspec-p
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist typequal/attribspec-list
+    :parents (abstract-syntax exprs/decls/stmts)
+    :short "Fixtype of lists of type qualifiers and attribute specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Type qualifiers and attribute specifiers are defined in
+       @(tsee typequal/attribspec)."))
+    :elt-type typequal/attribspec
+    :true-listp t
+    :elementp-of-nil nil
+    :pred typequal/attribspec-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist typequal/attribspec-list-list
+    :parents (abstract-syntax exprs/decls/stmts)
+    :short "Fixtype of lists of lists of
+            type qualifiers and attribute specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Lists of type qualifiers and attribute specifiers are defined in
+       @(tsee typequal/attribspec-list)."))
+    :elt-type typequal/attribspec-list
+    :true-listp t
+    :elementp-of-nil t
+    :pred typequal/attribspec-list-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (fty::deftagsum initer
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of initializers [C:6.7.9] [C:A.2.2]."
@@ -2007,12 +2054,14 @@
       "This corresponds to <i>declarator</i> in the grammar in [C].
        The optional <i>pointer</i> that precedes the <i>direct-declarator</i>
        is a sequence of stars each optionally followed by
-       an optional sequence of type qualifiers.
-       We model this as a list of lists of type qualifiers:
+       an optional sequence of type qualifiers and attribute specifiers.
+       We model this as
+       a list of lists of type qualifiers and attribute specifiers:
        the outer list corresponds to each star,
-       and each inner list corresponds to the type qualifiers
+       and each inner list corresponds to
+       the type qualifiers and attribute specifiers
        that immediately follow the star."))
-    ((pointers type-qual-list-list)
+    ((pointers typequal/attribspec-list-list)
      (decl dirdeclor))
     :pred declorp
     :measure (two-nats-measure (acl2-count x) 1))
@@ -2070,16 +2119,16 @@
     (:ident ((unwrap ident)))
     (:paren ((unwrap declor)))
     (:array ((decl dirdeclor)
-             (tyquals type-qual-list)
+             (tyquals typequal/attribspec-list)
              (expr? expr-option)))
     (:array-static1 ((decl dirdeclor)
-                     (tyquals type-qual-list)
+                     (tyquals typequal/attribspec-list)
                      (expr expr)))
     (:array-static2 ((decl dirdeclor)
-                     (tyquals type-qual-list)
+                     (tyquals typequal/attribspec-list)
                      (expr expr)))
     (:array-star ((decl dirdeclor)
-                  (tyquals type-qual-list)))
+                  (tyquals typequal/attribspec-list)))
     (:function-params ((decl dirdeclor)
                        (params paramdecl-list)
                        (ellipsis bool)))
@@ -2106,7 +2155,7 @@
        both an empty list of pointers
        and an absent direct abstract declarator.
        This constraint is currently not enforced in this fixtype."))
-    ((pointers type-qual-list-list)
+    ((pointers typequal/attribspec-list-list)
      (decl? dirabsdeclor-option))
     :pred absdeclorp
     :measure (two-nats-measure (acl2-count x) 2))
@@ -2144,13 +2193,13 @@
     (:dummy-base ())
     (:paren ((unwrap absdeclor)))
     (:array ((decl? dirabsdeclor-option)
-             (tyquals type-qual-list)
+             (tyquals typequal/attribspec-list)
              (expr? expr-option)))
     (:array-static1 ((decl? dirabsdeclor-option)
-                     (tyquals type-qual-list)
+                     (tyquals typequal/attribspec-list)
                      (expr expr)))
     (:array-static2 ((decl? dirabsdeclor-option)
-                     (tyquals type-qual-list)
+                     (tyquals typequal/attribspec-list)
                      (expr expr)))
     (:array-star ((decl? dirabsdeclor-option)))
     (:function ((decl? dirabsdeclor-option)
@@ -2264,8 +2313,12 @@
       "This fixtype is a little broader than the grammar,
        because it allows an absent name and no members.
        But this definition is simpler,
-       and the disallowed case can be rules out
-       via predicates over the abstract syntax."))
+       and the disallowed case can be ruled out
+       via predicates over the abstract syntax.")
+     (xdoc::p
+      "This fixtype does not cover structure types with no members,
+       which is a GCC extension;
+       this is covered as a separate case in @(tsee type-spec)."))
     ((name ident-option)
      (members structdecl-list))
     :pred strunispecp
@@ -2296,15 +2349,19 @@
      (xdoc::p
       "As a GCC extension, we include
        a possibly empty list of attribute specifiers,
-       which come after the declarator (cf. the grammar)"))
+       which come after the declarator (cf. the grammar).")
+     (xdoc::p
+      "As explained in our ABNF grammar,
+       we also include an empty external declaration,
+       which syntactically consists of a semicolon."))
     (:member ((extension bool) ; GCC extension
               (specqual spec/qual-list)
               (declor structdeclor-list)
               (attrib attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
+    (:empty ()) ; GCC extension
     :pred structdeclp
-    :base-case-override :statassert
-    :measure (two-nats-measure (acl2-count x) 3))
+    :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -2467,17 +2524,12 @@
        containing a list of zero or more expressions,
        which covers all three kinds of parameters.")
      (xdoc::p
-      "Although an attribute name could be an identifier or a keyword,
-       since grammatically keywords are also identifiers,
-       we just use identifiers in this definition of attributes.
-       We can always identify which identifiers are in fact keywords.")
-     (xdoc::p
       "Note the distinction between an attribute that is just a name,
        and an attributed that consists of a name and zero parameters:
        in concrete syntax, the latter would include open and closed parentheses,
        without anything in between (except white space or comments)."))
-    (:name ((name ident)))
-    (:name-param ((name ident)
+    (:name-only ((name attrib-name)))
+    (:name-param ((name attrib-name)
                   (param expr-list)))
     :pred attribp
     :measure (two-nats-measure (acl2-count x) 0))
@@ -2540,8 +2592,16 @@
   (fty::defprod initdeclor
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of initializer declarators [C:6.7] [C:A.2.2]."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "As GCC extensions, we allow
+       an optional assembler name specifier
+       and a possibly empty of attribute specifiers.
+       See the ABNF grammar."))
     ((declor declor)
      (asm? asm-name-spec-option)
+     (attribs attrib-spec-list)
      (init? initer-option))
     :pred initdeclorp
     :measure (two-nats-measure (acl2-count x) 3))
@@ -2572,21 +2632,13 @@
     (xdoc::topstring
      (xdoc::p
       "As a GCC extension,
-       we also include a list of zero or more attribute specifiers
-       as part of a declaration, meant to come after all the declarators.
-       This is not fully general, but it covers a set of cases of interest.
-       The list is empty if there are no attribute specifiers,
-       e.g. when sticking to standard C without GCC extensions.")
-     (xdoc::p
-      "As a GCC extension,
        we include the possibility that
        the declaration starts with the @('__extension__') GCC keyword.
        We model this as a boolean saying whether
        the keyword is present or absent."))
     (:decl ((extension bool)
             (specs declspec-list)
-            (init initdeclor-list)
-            (attrib attrib-spec-list)))
+            (init initdeclor-list)))
     (:statassert ((unwrap statassert)))
     :pred declp
     :base-case-override :statassert
@@ -2698,6 +2750,44 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (fty::defprod asm-stmt
+    :parents (abstract-syntax exprs/decls/stmts)
+    :short "Fixtype of assembler statements."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is a GCC extension.
+       Our abstract syntax of assembler statements
+       is based on their definition in the ABNF grammar,
+       which is in turn derived from the GCC documentation.
+       As in the grammar,
+       we unify the representation of basic and extended assembler statements.
+       The grammar contains four nested optional parts (output operands etc.);
+       the nesting is such that any prefix of the sequence of four parts,
+       ranging from no parts to all four parts, may be present.
+       In the abstract syntax, we include a component
+       that counts the number of parts, or equivalently the number of colons,
+       since each part starts with a colon.
+       Then each part consists of a list of things, four lists, one per part.
+       If @('num-colons') is less than 4,
+       the fourth list must be empty;
+       if @('num-colons') is less than 3,
+       the fourth and third lists must be empty;
+       and so on, but we do not explicitly capture
+       these constraints in the fixtype."))
+    ((uscores keyword-uscores)
+     (quals asm-qual-list)
+     (template stringlit-list)
+     (num-colons nat)
+     (outputs asm-output-list)
+     (inputs asm-input-list)
+     (clobbers asm-clobber-list)
+     (labels ident-list))
+    :pred asm-stmtp
+    :measure (two-nats-measure (acl2-count x) 2))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (fty::deftagsum stmt
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of statements [C:6.8] [C:A.2.3]."
@@ -2729,24 +2819,7 @@
        the initialization part of a @('for') looks like,
        when it is an expression.")
      (xdoc::p
-      "As a GCC extension, we also include assembler statements.
-       These are based on their definition in the ABNF grammar,
-       which is in turn derived from the GCC documentation.
-       As is in the grammar,
-       we unify the representation of basic and extended assembler statements.
-       The grammar contains four nested optional parts (output operands etc.);
-       the nesting is such that any prefix of the sequence of four parts,
-       ranging from no parts to all four parts, may be present.
-       In the abstract syntax, we include a component
-       that counts the number of parts, or equivalently the number of colons,
-       since each part starts with a colon.
-       Then each part consists of a list of things, four lists, one per part.
-       If @('num-colons') is less than 4,
-       the fourth list must be empty;
-       if @('num-colons') is less than 3,
-       the fourth and third lists must be empty;
-       and so on, but we do not explicitly capture
-       these constraints in the fixtype."))
+      "As a GCC extension, we include assembler statements."))
     (:labeled ((label label)
                (stmt stmt)))
     (:compound ((items block-item-list)))
@@ -2778,14 +2851,7 @@
     (:continue ())
     (:break ())
     (:return ((expr? expr-option)))
-    (:asm ((uscores keyword-uscores)
-           (quals asm-qual-list)
-           (template stringlit-list)
-           (num-colons nat)
-           (outputs asm-output-list)
-           (inputs asm-input-list)
-           (clobbers asm-clobber-list)
-           (labels ident-list)))
+    (:asm ((unwrap asm-stmt)))
     :pred stmtp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -3061,11 +3127,17 @@
      we include the possibility that
      the function definition starts with the @('__extension__') GCC keyword.
      We model this as a boolean saying whether
-     the keyword is present or absent."))
+     the keyword is present or absent.")
+   (xdoc::p
+    "We also allow an optional assembler name specifier
+     and zero or more attribute specifiers,
+     as GCC extensions;
+     see the ABNF grammar."))
   ((extension bool) ; GCC extension
    (spec declspec-list)
    (declor declor)
-   (asm? asm-name-spec-option)
+   (asm? asm-name-spec-option) ; GCC extension
+   (attribs attrib-spec-list) ; GCC extension
    (decls decl-list)
    (body stmt))
   :pred fundefp)
@@ -3088,9 +3160,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>external-declaration</i> in the grammar in [C]."))
+    "This corresponds to <i>external-declaration</i> in the grammar in [C].")
+   (xdoc::p
+    "As explained in our ABNF grammar,
+     we also include an empty external declaration,
+     which syntactically consists of a semicolon.")
+   (xdoc::p
+    "As a GCC extension, we also allow an assembler statement.
+     See the ABNF grammar."))
   (:fundef ((unwrap fundef)))
   (:decl ((unwrap decl)))
+  (:empty ()) ; GCC extension
+  (:asm ((unwrap asm-stmt))) ; GCC extension
   :pred extdeclp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

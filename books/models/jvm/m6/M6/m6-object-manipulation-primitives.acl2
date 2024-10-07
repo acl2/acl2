@@ -1,0 +1,3 @@
+(ld "../M6/m6.pkg")
+
+(certify-book "m6-object-manipulation-primitives" 5)

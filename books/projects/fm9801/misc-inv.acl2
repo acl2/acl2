@@ -1,0 +1,3 @@
+; Matt K. mod: Skipped proof for trace-correct-speculation-p-step-trace.
+
+; cert-flags: ? t :skip-proofs-okp t

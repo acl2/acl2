@@ -26,7 +26,7 @@
  functions, and macros; in particular, it includes the list of functions
  documented in @(see system-utilities).</p>
 
- <p><b>NOTE</b>To ensure that @('*acl2-system-exports*') is defined, include
+ <p><b>NOTE</b> To ensure that @('*acl2-system-exports*') is defined, include
  the appropriate book, as follows.</p>
 
  @({

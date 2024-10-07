@@ -50,11 +50,7 @@
 (in-theory (disable ZF-SPEC-THM)) ;bad?
 
 (local (in-theory (disable ACL2::LOGTAIL-OF-ONE-MORE ACL2::LOGTAIL-OF-ONE-LESS ; bad, matches a constant
-                           ACL2::PLUS-BVCAT-WITH-0 ;looped
-                           ACL2::PLUS-BVCAT-WITH-0-ALT ;looped
                            )))
-
-
 
 (local (in-theory (enable acl2::slice-becomes-getbit
                           ;logapp ;todo looped

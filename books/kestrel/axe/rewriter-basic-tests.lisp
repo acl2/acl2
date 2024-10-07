@@ -816,3 +816,49 @@
                        nil)
    (and (not erp)
         (equal res (make-term-into-dag-simple! '(boolif test 'nil 't))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; test with a binding hyp
+(local (include-book "kestrel/lists-light/append" :dir :system))
+(defthm rule1
+  (implies (and (axe-binding-hyp (equal xlen (len x))) ; bind x to the length of y
+                (< 5 xlen)
+                )
+           (equal (len (append x y))
+                  (+ xlen (len y)))))
+
+(assert!
+ (mv-let (erp term)
+   (simp-term-basic '(len (binary-append '(1 2 3 4 5 6) y))
+                    nil     ; assumptions
+                    (make-rule-alist! '(rule1) (w state))
+                    nil     ; interpreted-function-alist
+                    nil     ; monitored-symbols
+                    nil     ; fns-to-elide
+                    t       ; memoizep
+                    t       ; count-hits
+                    t       ; print
+                    nil     ; normalize-xors
+                    (w state))
+   (and (not erp) ;no error
+        ;; resulting term is (FOO X):
+        (equal term '(binary-+ '6 (len y))))))
+
+;; the rule doesn't fire because of the (< 5 xlen) hyp
+(assert!
+ (mv-let (erp term)
+   (simp-term-basic '(len (binary-append '(1 2 3) y))
+                    nil     ; assumptions
+                    (make-rule-alist! '(rule1) (w state))
+                    nil     ; interpreted-function-alist
+                    nil     ; monitored-symbols
+                    nil     ; fns-to-elide
+                    t       ; memoizep
+                    t       ; count-hits
+                    t       ; print
+                    nil     ; normalize-xors
+                    (w state))
+   (and (not erp) ;no error
+        ;; resulting term is (FOO X):
+        (equal term '(len (binary-append '(1 2 3) y))))))

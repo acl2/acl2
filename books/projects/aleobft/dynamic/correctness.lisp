@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "owned-certificates")
+(include-book "certificates-of-validators")
 (include-book "same-owned-certificates")
 (include-book "no-self-messages")
 (include-book "no-self-buffer")
@@ -22,10 +22,17 @@
 (include-book "quorum-intersection")
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
-(include-book "signers-quorum-in-committee")
-(include-book "unequivocal-certificates-def-and-init")
+(include-book "signer-quorum")
+(include-book "predecessor-quorum")
+(include-book "backward-closure")
+(include-book "unequivocal-signed-certificates")
+(include-book "unequivocal-accepted-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees")
+(include-book "unequivocal-accepted-certificates-next")
+(include-book "unequivocal-dags")
+(include-book "anchors-of-validators")
+(include-book "last-anchor-present")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,7 +47,7 @@
      is the non-forking of blockchains,
      which we have already proved for static committees;
      here we are generalizing it for dynamic committees."))
-  :order-subtopics (owned-certificates
+  :order-subtopics (certificates-of-validators
                     same-owned-certificates
                     no-self-messages
                     no-self-buffer
@@ -51,9 +58,16 @@
                     quorum-intersection
                     last-blockchain-round
                     ordered-even-blocks
-                    signers-quorum-in-committee
-                    unequivocal-certificates-def-and-init
+                    signer-quorum
+                    predecessor-quorum
+                    backward-closure
+                    unequivocal-signed-certificates
+                    unequivocal-accepted-certificates-def-and-init
                     nonforking-blockchains-def-and-init
-                    same-committees))
+                    same-committees
+                    unequivocal-accepted-certificates-next
+                    unequivocal-dags
+                    anchors-of-validators
+                    last-anchor-present))
 
 ; TODO: continue

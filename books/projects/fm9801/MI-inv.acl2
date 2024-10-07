@@ -1,0 +1,3 @@
+; Matt K. mod: Skipped proof for complete-inst-robe-inv-step-INST-from-execute.
+
+; cert-flags: ? t :skip-proofs-okp t

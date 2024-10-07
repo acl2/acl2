@@ -1,7 +1,7 @@
 ; A structure that represents equality assumptions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,6 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "known-booleans")
 
 ;;;
@@ -28,13 +27,12 @@
        (pseudo-termp (car item)) ;must be a function call?
        (pseudo-termp (cdr item))))
 
-(defforall all-equality-pairp (items) (equality-pairp items)
-  :declares ((type t items)))
-
-(defund equality-pairsp (items)
+(defund equality-pairsp (pairs)
   (declare (xargs :guard t))
-  (and (true-listp items)
-       (all-equality-pairp items)))
+  (if (not (consp pairs))
+      (null pairs)
+    (and (equality-pairp (first pairs))
+         (equality-pairsp (rest pairs)))))
 
 (defthmd pseudo-termp-of-car-of-car-when-equality-pairsp
   (implies (and (equality-pairsp equality-pairs)

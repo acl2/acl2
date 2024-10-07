@@ -23,7 +23,7 @@
     "[YP:9.1] defines the size of words as 256 bits.
      We formalize words as
      the elements of the set @($\\mathbb{N}_{256}$) [YP:3],
-     i.e. natural numbers below 256.")))
+     i.e. natural numbers below @($2^{256}$).")))
 
 (fty::defbyte word
   :size 256

@@ -41,12 +41,12 @@
      because all blockchains are empty in the iniital state.")
    (xdoc::p
     "The preservation of this invariant relies on another invariant,
-     namely that certificates are unequivocal.
-     This is defined in @(see unequivocal-certificates-def-and-init),
+     namely that certificates are unequivocal across validators.
+     This is defined in @(see unequivocal-accepted-certificates-def-and-init),
      where it is also explained how that and this invariant
      must be proved together in the induction.")
    (xdoc::p
-    "Similarly to @(see unequivocal-certificates-def-and-init),
+    "Similarly to @(see unequivocal-accepted-certificates-def-and-init),
      here we define the invariant,
      and we also prove that it holds in the initial states."))
   :order-subtopics t
@@ -73,6 +73,14 @@
 (defruled nonforking-blockchains-p-when-init
   :short "Establishment of the invariant:
           the invariant holds in any initial state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Initially the blockchains are the same (both empty),
+     so they clearly do not fork.
+     The proof does not even depend on their emptiness,
+     just their equality, since both validators' states
+     is @(tsee validator-init)."))
   (implies (system-initp systate)
            (nonforking-blockchains-p systate))
   :enable (nonforking-blockchains-p

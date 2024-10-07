@@ -59,4 +59,4 @@
            (equal (getbit 0 (bvplus n x y))
                   (bitxor (getbit 0 x)
                           (getbit 0 y))))
-  :hints (("Goal" :in-theory (e/d ( getbit) ( BVCHOP-1-BECOMES-GETBIT)))))
+  :hints (("Goal" :in-theory (enable getbit))))

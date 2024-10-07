@@ -211,7 +211,6 @@
 (defun type-rules ()
   (declare (xargs :guard t))
   '(integerp-of-ceiling-of-lg natp-of-ceiling-of-lg
-    <-of-ceiling-of-lg-and-constant ;move? not a type rule!
     integerp-of-bitand natp-of-bitand
     integerp-of-bitor natp-of-bitor
     integerp-of-bitxor natp-of-bitxor
@@ -1842,7 +1841,6 @@
   (declare (xargs :guard t))
   '(true-listp-of-myif
 
-    ;bytes-to-bits-of-bv-array-write ;move
     integerp-of-myif
 
     all-unsigned-byte-p-of-cons
@@ -2210,7 +2208,7 @@
      bvif-t-x-and-bitxor-1-x
      bvif-t-bitxor-1-x-and-x
      ;;    bitxor-associative ;caused problems removing 1/12/09
-     bvuminus-equal-constant-alt-dag
+     equal-of-bvuminus-and-constant ; move
      getbit-0-of-bool-to-bit
      logext-when-top-bit-0 ;move?
      <-becomes-bvlt-dag
@@ -2387,7 +2385,7 @@
      slice-31-2-minus-4
      getbit-of-+-becomes-getbit-of-bvplus
      bvplus-minus-7-tighten-30
-     unsigned-byte-p-of-plus-minus-4-gen-dag
+     unsigned-byte-p-of-plus-minus-4-gen-axe
      equal-1-slice-4-2-5
 
 ;     bvlt-transitive-free-back
@@ -3716,7 +3714,7 @@
              ;; jvm::acl2-numberp-of-call-stack-size ;trying
              equal-of-append
              bvmult-tighten-axe-power-of-2
-             bvplus-tighten-better
+             bvplus-tighten-axe
              bvmult-tighten-axe ;can we do better for a power of 2?? ffixme
              true-listp-of-group2
              bvmult-of-bvplus-hack-gen-constant-version

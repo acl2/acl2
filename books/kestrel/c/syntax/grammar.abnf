@@ -447,6 +447,7 @@ gcc-keyword = %s"__alignof"
             / %s"__asm__"
             / %s"__attribute"
             / %s"__attribute__"
+            / %s"__auto_type"
             / %s"__builtin_offsetof"
             / %s"__builtin_types_compatible_p"
             / %s"__builtin_va_list"
@@ -795,6 +796,15 @@ lexeme = token
 ; We render that as an extension of our ABNF grammar;
 ; note that the second argument is a restricted form of expressions.
 
+; As a GCC extension, we allow empty compound literals.
+; GCC extensions for compound literals are described in
+; https://gcc.gnu.org/onlinedocs/gcc/Compound-Literals.html,
+; which does not actually mention empty compound literals,
+; but we have encountered them in practical code.
+
+; As a GCC extensions, we allow conditional with omitted operands,
+; documented at https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
@@ -832,6 +842,7 @@ postfix-expression = primary-expression
                    / postfix-expression "--"
                    / "(" type-name ")" "{" initializer-list "}"
                    / "(" type-name ")" "{" initializer-list "," "}"
+                   / "(" type-name ")" "{" "}" ; GCC extension
 
 argument-expression-list = assignment-expression
                          / argument-expression-list "," assignment-expression
@@ -895,6 +906,7 @@ logical-or-expression = logical-and-expression
 conditional-expression =
       logical-or-expression
     / logical-or-expression "?" expression ":" conditional-expression
+    / logical-or-expression "?" ":" conditional-expression ; GCC extension
 
 assignment-expression =
       conditional-expression
@@ -928,16 +940,13 @@ constant-expression = conditional-expression
 ; The GCC documentation mentions three kinds of attributes:
 ; empty, names, and names with parameters.
 ; For now we do not model empty ones.
-; We model the other two as consistsing of an identifier
+; We model the other two as consistsing of an attribute name
 ; optionally followed by a parenthesized list of one or more parameters.
-
-; The GCC documentation allows identifiers or reserved words as attribute names,
+; An attribute name is an identifier or a keyword:
+; the GCC documentation mentions
+; identifiers and reserved words as attribute names,
 ; where 'reserved word' is presumably a synonym of 'keyword',
 ; according to the official nomenclature in [C].
-; However, grammatically keywords are identifiers,
-; and thus we just use identifiers for simplicity in our grammar rules;
-; it is easy to recognize grammatical identifiers that are in fact keywords,
-; or any other reserved word in case they are not quite the same as keywords.
 
 ; The GCC documentation mentions three kinds of parameters,
 ; where each kind seems to refer to the whole list of parameters
@@ -957,12 +966,15 @@ constant-expression = conditional-expression
 ; because otherwise the grouping would be ambiguous,
 ; if an expression included the comma operator.
 
+attribute-name = identifier / keyword
+
 attribute-parameters =
     "(" [ assignment-expression *( "," assignment-expression ) ] ")"
 
-attribute = identifier [ attribute-parameters ]
+attribute = attribute-name [ attribute-parameters ]
 
-; An attribute specifiers consists of the keyword '__attribute__'
+; An attribute specifiers consists of
+; the keyword '__attribute__' or '__attribute',
 ; followed by zero or more comma-separated attributes
 ; enclosed in double parentheses.
 ; We regard each double (open or closed) parenthesis
@@ -1048,10 +1060,10 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; these can be easily distinguished from other declaration specifiers
 ; by the starting '__attribute__' or '__attribute' GCC keyword.
 
-; As a GCC extension,
-; we allow one or more attribute specifiers
-; to occur just before the ending semicolon of
-; a declaration and a structure declaration.
+; As a GCC extension, allow a list of type qualifiers
+; to also contains attribute specifiers.
+; Thus we use type-qualifier-and-attribute-specifier-list
+; instead of just type-qualifier-list.
 
 ; The above may not the only places where attribute specifiers may occur,
 ; in the full GCC extensions, but they are places that have been observed.
@@ -1075,10 +1087,32 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; This is documented at https://gcc.gnu.org/onlinedocs/gcc/Typeof.html.
 ; This must fit into the grammar as a type specifier.
 
+; As a GCC extension, we include the '__auto_type' abbreviation
+; (see the end of https://gcc.gnu.org/onlinedocs/gcc/Typeof.html),
+; which is a type specifier.
+
+; As a GCC extension, we allow attribute specifiers
+; at the end of a top-level declarator in an initialization declarator,
+; just after the assembler name specifier if any.
+; This extension,
+; including the fact that it follows the assembler name specifier if any,
+; is documented in https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html,
+; under 'All other attributes', 5th paragraph
+; (this reference might change as the GCC manual gets updated).
+
+; As a GCC extension, we allow structures with no members:
+; see https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.
+
+; We also allow a lone semicolon as a structure declaration.
+; This is definitely not grammatical according to [C],
+; and we did not find it anywhere in the GCC documentation;
+; nonetheless, we encountered it in practical code.
+; Presumably, it may make it easier to write certain macros.
+; Semantically, it amounts to nothing, i.e. it is ignored.
+
 declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
               [ init-declarator-list ]
-              *attribute-specifier ; GCC extension
               ";"
             / static-assert-declaration
 
@@ -1093,8 +1127,9 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
 init-declarator-list = init-declarator
                      / init-declarator-list "," init-declarator
 
-init-declarator = declarator [ asm-name-specifier ]
-                / declarator [ asm-name-specifier ] "=" initializer
+init-declarator =
+      declarator [ asm-name-specifier ] *attribute-specifier
+    / declarator [ asm-name-specifier ] *attribute-specifier "=" initializer
 
 storage-class-specifier = %s"typedef"
                         / %s"extern"
@@ -1124,10 +1159,12 @@ type-specifier = %s"void"
                / %s"__builtin_va_list"
                / typeof-keyword "(" expression ")"
                / typeof-keyword "(" type-name ")"
+               / %s"__auto_type"
 
 struct-or-union-specifier =
       struct-or-union [ identifier ] "{" struct-declaration-list "}"
     / struct-or-union identifier
+    / %s"struct" [ identifier ] "{" "}" ; GCC extension
 
 struct-or-union = %s"struct"
                 / %s"union"
@@ -1141,6 +1178,7 @@ struct-declaration = [ %s"__extension__" ] ; GCC extension
                      *attribute-specifier ; GCC extension
                      ";"
                    / static-assert-declaration
+                   / ";"
 
 specifier-qualifier-list = type-specifier [ specifier-qualifier-list ]
                          / type-qualifier [ specifier-qualifier-list ]
@@ -1183,20 +1221,28 @@ direct-declarator =
       identifier
     / "(" declarator ")"
     / direct-declarator
-      "[" [ type-qualifier-list ] [ assignment-expression ] "]"
+      "[" [ type-qualifier-and-attribute-specifier-list ]
+          [ assignment-expression ] "]"
     / direct-declarator
-      "[" %s"static" [ type-qualifier-list ] assignment-expression "]"
+      "[" %s"static" [ type-qualifier-and-attribute-specifier-list ]
+          assignment-expression "]"
     / direct-declarator
-      "[" type-qualifier-list %s"static" assignment-expression "]"
-    / direct-declarator "[" [ type-qualifier-list ] "*" "]"
+      "[" type-qualifier-and-attribute-specifier-list %s"static"
+          assignment-expression "]"
+    / direct-declarator
+      "[" [ type-qualifier-and-attribute-specifier-list ] "*" "]"
     / direct-declarator "(" parameter-type-list ")"
     / direct-declarator "(" [ identifier-list ] ")"
 
-pointer = "*" [ type-qualifier-list ]
-        / "*" [ type-qualifier-list ] pointer
+pointer = "*" [ type-qualifier-and-attribute-specifier-list ]
+        / "*" [ type-qualifier-and-attribute-specifier-list ] pointer
 
-type-qualifier-list = type-qualifier
-                    / type-qualifier-list type-qualifier
+type-qualifier-or-attribute-specifier = type-qualifier / attribute-specifier
+
+type-qualifier-and-attribute-specifier-list =
+      type-qualifier-or-attribute-specifier
+    / type-qualifier-and-attribute-specifier-list
+      type-qualifier-or-attribute-specifier
 
 parameter-type-list = parameter-list
                     / parameter-list "," "..."
@@ -1218,11 +1264,14 @@ abstract-declarator = pointer
 direct-abstract-declarator =
       "(" abstract-declarator ")"
     / [ direct-abstract-declarator ]
-      "[" [ type-qualifier-list ] [ assignment-expression ] "]"
+      "[" [ type-qualifier-and-attribute-specifier-list ]
+          [ assignment-expression ] "]"
     / [ direct-abstract-declarator ]
-      "[" %s"static" [ type-qualifier-list ] assignment-expression "]"
+      "[" %s"static" [ type-qualifier-and-attribute-specifier-list ]
+          assignment-expression "]"
     / [ direct-abstract-declarator ]
-      "[" type-qualifier-list %s"static" assignment-expression "]"
+      "[" type-qualifier-and-attribute-specifier-list %s"static"
+          assignment-expression "]"
     / [ direct-abstract-declarator ] "[" "*" "]"
     / [ direct-abstract-declarator ] "(" [ parameter-type-list ] ")"
 
@@ -1304,17 +1353,38 @@ jump-statement = %s"goto" identifier ";"
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a function definition.
 ; We also allow an assembler name specifier
-; just after the declarator of a function definition.
+; just after the declarator of a function definition,
+; possibly followed by zero or more attribute specifiers;
+; this is similar to initializer declarators.
+
+; We also allow a lone semicolon as an external declaration.
+; This is definitely not grammatical according to [C],
+; and we did not find it anywhere in the GCC documentation;
+; nonetheless, we encountered it in practical code.
+; Presumably, it may make it easier to write certain macros.
+; Semantically, it amounts to nothing, i.e. it is ignored.
+; Note that this is not a null statement,
+; because we are the top level.
+
+; As a GCC extension, we allow assembler statements at the top level,
+; i.e. as external declarations.
+; We could not find a place in the GCC documentation saying that
+; assembler statements can occur at the top level,
+; but we encountered that in practical code.
 
 translation-unit = external-declaration
                  / translation-unit external-declaration
 
 external-declaration = function-definition
                      / declaration
+                     / ";" ; GCC extension
+                     / asm-statement ; GCC extension
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers
-                      declarator [asm-name-specifier]
+                      declarator
+                      [asm-name-specifier] ; GCC extension
+                      *attribute-specifier ; GCC extension
                       [ declaration-list ]
                       compound-statement
 

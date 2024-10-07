@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "add-to-set-theorems")
 (include-book "append-theorems")
 (include-book "index-of-theorems")
 (include-book "intersection-theorems")

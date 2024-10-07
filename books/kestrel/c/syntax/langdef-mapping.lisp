@@ -389,6 +389,7 @@
              ((erp declor1) (ldm-dirdeclor-obj dirdeclor.decl))
              ((when dirdeclor.tyquals)
               (reterr (msg "Unsupported type qualifiers ~
+                            or attribute specifiers ~
                             in direct declarator ~x0 for object."
                            (dirdeclor-fix dirdeclor))))
              ((when (not dirdeclor.expr?))
@@ -432,15 +433,17 @@
 
   :prepwork
   ((define ldm-declor-obj-loop ((declor1 c::obj-declorp)
-                                (pointers type-qual-list-listp))
+                                (pointers typequal/attribspec-list-listp))
      :returns (mv erp (declor2 c::obj-declorp))
      :parents nil
      (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
           ((when (endp pointers)) (retok (c::obj-declor-fix declor1)))
-          (tyquals (car pointers))
-          ((unless (endp tyquals))
-           (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (type-qual-list-fix tyquals))))
+          (tyqualattribs (car pointers))
+          ((unless (endp tyqualattribs))
+           (reterr (msg "Unsupported type qualifiers ~
+                         or attribute specifiers ~
+                         ~x0 in pointer."
+                        (typequal/attribspec-list-fix tyqualattribs))))
           ((erp declor2) (ldm-declor-obj-loop declor1 (cdr pointers))))
        (retok (c::obj-declor-pointer declor2)))
      :hooks (:fix))))
@@ -470,6 +473,7 @@
        ((dirabsdeclor-array dirabsdeclor) dirabsdeclor)
        ((when dirabsdeclor.tyquals)
         (reterr (msg "Unsupported type qualifiers ~
+                      or attribute specifiers ~
                       in direct abstract declarator ~x0 for object."
                      (dirabsdeclor-fix dirabsdeclor))))
        ((erp iconst?)
@@ -522,15 +526,17 @@
 
   :prepwork
   ((define ldm-absdeclor-obj-loop ((adeclor1 c::obj-adeclorp)
-                                   (pointers type-qual-list-listp))
+                                   (pointers typequal/attribspec-list-listp))
      :returns (mv erp (adeclor2 c::obj-adeclorp))
      :parents nil
      (b* (((reterr) (c::obj-adeclor-none))
           ((when (endp pointers)) (retok (c::obj-adeclor-fix adeclor1)))
           (tyquals (car pointers))
           ((unless (endp tyquals))
-           (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (type-qual-list-fix tyquals))))
+           (reterr (msg "Unsupported type qualifiers ~
+                         or attribute specifiers ~
+                         ~x0 in pointer."
+                        (typequal/attribspec-list-fix tyquals))))
           ((erp adeclor2) (ldm-absdeclor-obj-loop adeclor1 (cdr pointers))))
        (retok (c::obj-adeclor-pointer adeclor2)))
      :hooks (:fix))))
@@ -664,6 +670,11 @@
                     (op (ldm-binop expr.op)))
                  (retok (c::make-expr-binary :op op :arg1 arg1 :arg2 arg2)))
        :cond (b* (((erp test) (ldm-expr expr.test))
+                  ((when (expr-option-case expr.then :none))
+                   (reterr (msg "Unsupported conditional expression ~
+                                 with omitted operand ~x0."
+                                (expr-fix expr))))
+                  (expr.then (expr-option-some->val expr.then))
                   ((erp then) (ldm-expr expr.then))
                   ((erp else) (ldm-expr expr.else)))
                (retok (c::make-expr-cond :test test :then then :else else)))
@@ -729,6 +740,8 @@
   (b* (((reterr) (c::struct-declon (c::tyspecseq-void)
                                    (c::obj-declor-ident
                                     (c::ident "irrelevant"))))
+       ((when (structdecl-case structdecl :empty))
+        (reterr (msg "Unsupported empty structure declaration.")))
        ((when (structdecl-case structdecl :statassert))
         (reterr (msg "Unsupported structure declaration ~x0."
                      (structdecl-fix structdecl))))
@@ -836,15 +849,10 @@
        (extension (decl-decl->extension decl))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
-       (attrib (decl-decl->attrib decl))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
-       ((when attrib)
-        (reterr (msg "Unsupported GCC attributes ~x0 ~
-                      for tag (i.e. structure/union/enumeration) declaration."
-                     attrib)))
        ((when initdeclors)
         (reterr (msg "Unsupported initialization declarators ~x0 ~
                       for tag (i.e. structure/union/enumeration) declaration."
@@ -1017,7 +1025,7 @@
 
   :prepwork
   ((define ldm-declor-fun-loop ((declor1 c::fun-declorp)
-                                (pointers type-qual-list-listp))
+                                (pointers typequal/attribspec-list-listp))
      :returns (mv erp (declor2 c::fun-declorp))
      :parents nil
      (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
@@ -1025,7 +1033,7 @@
           (tyquals (car pointers))
           ((unless (endp tyquals))
            (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (type-qual-list-fix tyquals))))
+                        (typequal/attribspec-list-fix tyquals))))
           ((erp declor2) (ldm-declor-fun-loop declor1 (cdr pointers))))
        (retok (c::fun-declor-pointer declor2)))
      :hooks (:fix))))
@@ -1057,15 +1065,10 @@
        (extension (decl-decl->extension decl))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
-       (attrib (decl-decl->attrib decl))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
-       ((when attrib)
-        (reterr (msg "Unsupported GCC attributes ~x0 ~
-                      for tag (i.e. structure/union/enumeration) declaration."
-                     attrib)))
        ((mv okp tyspecs) (check-declspec-list-all-tyspec declspecs))
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifier list ~
@@ -1086,6 +1089,10 @@
         (reterr (msg "Unsupported assembler name specifier ~x0 ~
                       for function declaration."
                      initdeclor.asm?)))
+       ((unless (endp initdeclor.attribs))
+        (reterr (msg "Unsupported attribute specifiers ~x0 ~
+                      for function declaration."
+                     initdeclor.attribs)))
        ((erp fundeclor) (ldm-declor-fun initdeclor.declor)))
     (retok (c::make-fun-declon :tyspec tyspecseq :declor fundeclor)))
   :hooks (:fix))
@@ -1168,15 +1175,10 @@
        (extension (decl-decl->extension decl))
        (declspecs (decl-decl->specs decl))
        (initdeclors (decl-decl->init decl))
-       (attrib (decl-decl->attrib decl))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
-       ((when attrib)
-        (reterr (msg "Unsupported GCC attributes ~x0 ~
-                      for tag (i.e. structure/union/enumeration) declaration."
-                     attrib)))
        ((mv okp tyspecs stor-specs)
         (check-declspec-list-all-tyspec/storspec declspecs))
        ((unless okp)
@@ -1196,6 +1198,10 @@
         (reterr (msg "Unsupported assembler name specifier ~x0 ~
                       for object declaration."
                      initdeclor.asm?)))
+       ((unless (endp initdeclor.attribs))
+        (reterr (msg "Unsupported attribute specifiers ~x0 ~
+                      for function declaration."
+                     initdeclor.attribs)))
        ((when (not initdeclor.init?))
         (retok (c::make-obj-declon :scspec scspecseq
                                    :tyspec tyspecseq
@@ -1355,6 +1361,10 @@
         (reterr (msg "Unsupported assembler name specifier ~
                       in function definition ~x0."
                      (fundef-fix fundef))))
+       ((when fundef.attribs)
+        (reterr (msg "Unsupported attribute specifiers ~
+                      in function definition ~x0."
+                     (fundef-fix fundef))))
        ((when fundef.decls)
         (reterr (msg "Unsupported declarations ~
                       in function definition ~x0."
@@ -1389,6 +1399,10 @@
                   (c::fundef (c::tyspecseq-void)
                              (c::fun-declor-base (c::ident "irrelevant") nil)
                              nil)))
+       ((when (extdecl-case extdecl :empty))
+        (reterr (msg "Unsupported empty external declaration.")))
+       ((when (extdecl-case extdecl :asm))
+        (reterr (msg "Unsupported assembler statement at the top level.")))
        ((when (extdecl-case extdecl :fundef))
         (b* (((erp fundef) (ldm-fundef (extdecl-fundef->unwrap extdecl))))
           (retok (c::ext-declon-fundef fundef))))

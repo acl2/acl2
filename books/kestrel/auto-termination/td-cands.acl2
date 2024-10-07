@@ -63,14 +63,15 @@
 (INCLUDE-BOOK "kestrel/crypto/mimc/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/isar/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/x86isa/portcullis/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "centaur/bigmem-asymmetric/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/bigmems/bigmem-asymmetric/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/bigmems/bigmem/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/execloader/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/solidity/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/simpl-imp/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/json/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/c/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/acl2pl/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "kestrel/abnf/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "projects/abnf/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/keccak/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/hdwallet/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "projects/irv/portcullis" :DIR :SYSTEM)
@@ -86,7 +87,7 @@
 (INCLUDE-BOOK "rtl/rel11/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/java/portcullis" :DIR :SYSTEM)
-(INCLUDE-BOOK "centaur/bigmem/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "centaur/bigmems/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/defrstobj2/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/defrstobj/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "centaur/gl/portcullis" :DIR :SYSTEM)
@@ -128,7 +129,7 @@
 ; "ACL2-HACKER"
 (include-book "hacking/hacker" :dir :system)
 ; "ABNF"
-(include-book "kestrel/abnf/portcullis" :dir :system)
+(include-book "projects/abnf/portcullis" :dir :system)
 ; "RTL"
 (include-book "rtl/rel11/portcullis" :dir :system)
 ; "BED"

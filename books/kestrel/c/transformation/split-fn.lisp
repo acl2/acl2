@@ -186,7 +186,7 @@
 (define abstract-fn
   ((new-fn-name identp)
    (spec declspec-listp)
-   (pointers type-qual-list-listp)
+   (pointers typequal/attribspec-list-listp)
    (items block-item-listp)
    (decls ident-paramdecl-mapp))
   :short "Create a new function from the block items following the @(tsee
@@ -254,7 +254,7 @@
   ((new-fn-name identp)
    (items block-item-listp)
    (spec declspec-listp)
-   (pointers type-qual-list-listp)
+   (pointers typequal/attribspec-list-listp)
    (decls ident-paramdecl-mapp)
    (split-point natp))
   :short "Transform a list of block items."
@@ -374,7 +374,9 @@
                   :some (retok t (list (extdecl-fundef fundef1)
                                        (extdecl-fundef fundef2.val)))
                   :none (retok nil (list (extdecl-fundef fundef1)))))
-      :decl (retok nil (list (extdecl-fix extdecl))))))
+      :decl (retok nil (list (extdecl-fix extdecl)))
+      :empty (retok nil (list (extdecl-fix extdecl)))
+      :asm (retok nil (list (extdecl-fix extdecl))))))
 
 (define split-fn-extdecl-list
   ((target-fn identp)
@@ -441,7 +443,7 @@
    (new-fn-name identp)
    (tunits transunit-ensemblep)
    (split-point natp))
-  :short "Transform a translation unit ensumble."
+  :short "Transform a translation unit ensemble."
   :returns (mv er
                (new-tunits transunit-ensemblep))
   (b* (((transunit-ensemble tunits) tunits)

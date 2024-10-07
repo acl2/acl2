@@ -131,7 +131,7 @@
           (and (equal author (certificate->author cert))
                (certificate-fix cert)))
          (prev-certs
-          (get-certificates-with-authors+round (certificate->previous cert)
+          (certificates-with-authors+round (certificate->previous cert)
                                                (1- (certificate->round cert))
                                                dag)))
       (path-to-author+round-set prev-certs author round dag))
@@ -156,7 +156,9 @@
   :hints
   (("Goal"
     :in-theory (enable set::cardinality
-                       pos-fix)
+                       pos-fix
+                       certificate->round-in-certificate-set->round-set
+                       certificate-set->round-set-monotone)
     :use ((:instance acl2::pos-set-max->=-element
                      (elem (certificate->round (set::head certs)))
                      (set (certificate-set->round-set certs)))
@@ -164,7 +166,7 @@
                      (set1 (certificate-set->round-set (set::tail certs)))
                      (set2 (certificate-set->round-set certs)))
           (:instance
-           certificate-set->round-set-of-get-certificates-with-authors+round
+           certificate-set->round-set-of-certificates-with-authors+round
            (authors (certificate->previous cert))
            (round (1- (certificate->round cert)))
            (certs dag)))))
@@ -174,9 +176,11 @@
     :in-theory (enable posp
                        pos-fix
                        acl2::pos-set->=-pos-element
-                       acl2::pos-set->=-pos-subset)
+                       acl2::pos-set->=-pos-subset
+                       certificate->round-in-certificate-set->round-set
+                       certificate-set->round-set-monotone)
     :use (:instance
-          certificate-set->round-set-of-get-certificates-with-authors+round
+          certificate-set->round-set-of-certificates-with-authors+round
           (authors (certificate->previous cert))
           (round (1- (certificate->round cert)))
           (certs dag))))
@@ -233,15 +237,19 @@
       (implies previous-cert?
                (<= round (pos-set-max (certificate-set->round-set certs))))
       :fn path-to-author+round-set)
-    :hints (("Goal" :in-theory (enable* path-to-author+round
-                                        path-to-author+round-set
-                                        set::expensive-rules))
-            '(:use ((:instance acl2::pos-set-max->=-element
-                               (set (certificate-set->round-set certs))
-                               (elem (certificate->round (set::head certs))))
-                    (:instance acl2::pos-set-max->=-subset
-                               (set1 (certificate-set->round-set (tail certs)))
-                               (set2 (certificate-set->round-set certs)))))))
+    :hints
+    (("Goal"
+      :in-theory (enable* path-to-author+round
+                          path-to-author+round-set
+                          set::expensive-rules
+                          certificate->round-in-certificate-set->round-set
+                          certificate-set->round-set-monotone))
+     '(:use ((:instance acl2::pos-set-max->=-element
+                        (set (certificate-set->round-set certs))
+                        (elem (certificate->round (set::head certs))))
+             (:instance acl2::pos-set-max->=-subset
+                        (set1 (certificate-set->round-set (tail certs)))
+                        (set2 (certificate-set->round-set certs)))))))
 
   (in-theory (disable round-leq-when-path-to-author+round
                       round-leq-when-path-to-author+round-set))
@@ -316,7 +324,7 @@
     :returns (hist certificate-setp)
     (b* (((certificate cert) cert)
          ((when (= cert.round 1)) (set::insert (certificate-fix cert) nil))
-         (prev-certs (get-certificates-with-authors+round cert.previous
+         (prev-certs (certificates-with-authors+round cert.previous
                                                           (1- cert.round)
                                                           dag))
          (prev-hist (certificate-set-causal-history prev-certs dag)))
@@ -339,7 +347,10 @@
 
   :hints ; termination
   (("Goal"
-    :in-theory (enable pos-fix set::cardinality)
+    :in-theory (enable pos-fix
+                       set::cardinality
+                       certificate->round-in-certificate-set->round-set
+                       certificate-set->round-set-monotone)
     :use ((:instance acl2::pos-set-max->=-element
                      (elem (certificate->round (set::head certs)))
                      (set (certificate-set->round-set certs)))
@@ -347,7 +358,7 @@
                      (set1 (certificate-set->round-set (set::tail certs)))
                      (set2 (certificate-set->round-set certs)))
           (:instance
-           certificate-set->round-set-of-get-certificates-with-authors+round
+           certificate-set->round-set-of-certificates-with-authors+round
            (authors (certificate->previous cert))
            (round (1- (certificate->round cert)))
            (certs dag)))))

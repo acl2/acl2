@@ -1,0 +1,2 @@
+(ld "../BCV/bcv.pkg")
+(certify-book "typechecker-simple" 5)

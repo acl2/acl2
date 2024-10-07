@@ -7,7 +7,7 @@
    $index = 'DOCINDEX'; // index page
    
    $basedir=pathinfo($_SERVER["SCRIPT_NAME"],PATHINFO_DIRNAME)."/";
-   $scriptdir=$_SERVER["SCRIPT_NAME"].'/';
+   $scriptname=$_SERVER["SCRIPT_NAME"];
    error_reporting(E_ALL);
    ini_set('display_errors', 1);
    
@@ -38,8 +38,8 @@
       exit();
    }
    
-   if(isset($_SERVER["PATH_INFO"]) && (strlen($_SERVER["PATH_INFO"])>1))
-        $key = pathinfo($_SERVER["PATH_INFO"],PATHINFO_BASENAME);
+   if(isset($_GET['xkey']) && (strlen($_GET['xkey'])>1))
+        $key = $_GET['xkey'];
    else $key = $top;
    $showIndex=false;
    if($key=="*") {$showIndex=true;$key=$index;unset($_GET['path']);}
@@ -54,12 +54,12 @@
      $page = $ret->fetchArray(SQLITE3_ASSOC);
    }else 
    if(!$showIndex){
-     $preferedURL=$scriptdir.$page['XKEY'];
+     $preferedURL=xkey_url($page['XKEY']);
      header("Content-Location: ".$preferedURL);
    }
    
    if(!$page) { // fallback when not even the 404 page was found
-     header("Location: ".$scriptdir);
+     header("Location: ".$scriptname);
      die();
    }
    
@@ -117,11 +117,19 @@
    }
    
    function disp($str){
-     global $scriptdir;
+     global $scriptname;
      echo str_replace(
-        array('<see topic="'        ,'</see>','<code>'            ,'</code>')
-       ,array('<a href="'.$scriptdir,'</a>'  ,'<pre class="code">','</pre>')
+        array('<see topic="'         ,'</see>','<code>'            ,'</code>')
+       ,array('<a href="'.$scriptname.'?xkey=','</a>'  ,'<pre class="code">','</pre>')
        ,$str);
+   }
+
+   function xkey_url($xkey, $path = "") {
+      global $scriptname;
+      $url = $scriptname.'?xkey='.$xkey;
+      if ($path !== "")
+         $url .= '&path='.$path;
+      return $url;
    }
 ?><!DOCTYPE html>
 <html>
@@ -146,11 +154,11 @@
   <table border="0" id="toolbar">
     <tr>
       <th>
-	<a href="<?= $scriptdir ?>ACL2____TOP">
+	<a href="<?= xkey_url('ACL2____TOP') ?>">
 	  <img class="toolbutton" src="<?= $basedir ?>xdoc-home.png"
 	       data-powertip="<p>Go to the Top topic.</p>">
 	</a>&nbsp; &nbsp;</th><th>
-	<a href="<?= $scriptdir ?>*">
+	<a href="<?= xkey_url('*') ?>">
 	  <img class="toolbutton" src="<?= $basedir ?>view_flat.png"
 	       data-powertip="<p>View sitemap.</p>"/>
 	</a>
@@ -175,10 +183,10 @@
       $cur = lookup_by_xkey($top);
       $path_reversed[] = $page['ID'];
       function show_rec($cur,$newpath){
-        global $path_reversed, $scriptdir;
+        global $path_reversed;
         echo '<LI style="list-style-type:';
         if(strlen($cur['CHILDREN'])) echo 'disc'; else echo 'circle';
-        echo '"><nobr><A HREF="'.$scriptdir.$cur['XKEY'].'?path='.$newpath.'" title="'.htmlentities(strip_tags($cur['SHORTDESC'])).'">'.$cur['TITLE'].'</A></nobr>';
+        echo '"><nobr><A HREF="'.xkey_url($cur['XKEY'], $newpath).'" title="'.htmlentities(strip_tags($cur['SHORTDESC'])).'">'.$cur['TITLE'].'</A></nobr>';
         if(array_search($cur['ID'],$path_reversed)!==FALSE){
           $children=explode(',',$cur['CHILDREN']);
           if(count($children)){
@@ -206,7 +214,7 @@
     <UL> <?php
       foreach($ps as $id){
         $cur=lookup_by_id($id);
-        echo '<li><a id="'.$id.'" href="'.$scriptdir.$cur['XKEY'].'?path='.$path.'"';
+        echo '<li><a id="'.$id.'" href="'.xkey_url($cur['XKEY'], $path).'"';
         echo ' title="'.htmlentities(strip_tags($cur['SHORTDESC'])).'">'.$cur['TITLE'].'</a></li>';
       } ?>
     </UL></div><?php
@@ -225,7 +233,7 @@
         $ret = $db->query("SELECT XKEY,TITLE,SHORTDESC,PACKAGE from xdoc_data ORDER BY TITLE");
         while($cur=$ret->fetchArray(SQLITE3_ASSOC)){
           if(strlen($cur['PACKAGE'])){
-            echo '<LI><a href="'.$scriptdir.$cur['XKEY'].'" title="'.htmlentities(strip_tags($cur['SHORTDESC'])).'">';
+            echo '<LI><a href="'.xkey_url($cur['XKEY']).'" title="'.htmlentities(strip_tags($cur['SHORTDESC'])).'">';
             echo $cur['TITLE'];
             echo '</a></li>';
           }
@@ -239,7 +247,7 @@
         $childs = explode(',',$page['CHILDREN']);
         for($i=1;$i<count($childs);$i++){
           $cur = lookup_by_xkey($childs[$i]);
-          echo '<DT><a href="'.$scriptdir.$cur['XKEY'].'?path='.$path.'">';
+          echo '<DT><a href="'.xkey_url($cur['XKEY'], $path).'">';
           echo $cur['TITLE'];
           echo '</a></dt><dd>';
           disp($cur['SHORTDESC']);

@@ -241,7 +241,7 @@
            (set::subset
             (set::union (incoming cert dag)
                         (outgoing cert1 dag))
-            (get-certificates-with-round (1+ (certificate->round cert)) dag)))
+            (certificates-with-round (1+ (certificate->round cert)) dag)))
   :enable set::expensive-rules
   :use ((:instance incoming-subset-of-next-round)
         (:instance outgoing-subset-of-previous-round (cert cert1)))
@@ -261,7 +261,8 @@
                              (outgoing cert1 dag))))
                1))
   :rule-classes :linear
-  :enable cardinality-of-subset-of-round-set-of-round
+  :enable (cardinality-of-subset-of-round-set-of-round
+           certificate-set->author-set-monotone)
   :use incoming+outgoing-subset-same-round
   :disable (incoming+outgoing-subset-same-round
             certificate-set->round-set-of-union))
@@ -284,6 +285,7 @@
   :enable (incoming+outgoing-same-round
            cardinality-bound-when-same-round-and-unequiv
            certificate-set-unequivocalp-when-subset
+           certificate-set->author-set-monotone
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
             certificate-set->round-set-of-union))
@@ -561,11 +563,11 @@
            certificate-set-unequivocalp-when-subset)
   :use ((:instance cardinality-of-authors-when-same-round-and-unequiv
                    (certs (incoming anchor dag)))
-        (:instance certificate-set->author-set-subset
+        (:instance certificate-set->author-set-monotone
                    (certs1 (incoming anchor dag))
                    (certs2 dag)))
   :disable (cardinality-of-authors-when-same-round-and-unequiv
-            certificate-set->author-set-subset))
+            certificate-set->author-set-monotone))
 
 ; The following is the actual base case,
 ; where instead of a generic round r and r+1

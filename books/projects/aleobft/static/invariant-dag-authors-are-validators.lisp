@@ -97,7 +97,7 @@
 
   (local
    (defund thecert (author certs)
-     (set::head (get-certificates-with-author author certs))))
+     (set::head (certificates-with-author author certs))))
 
   (defrulel thecert-lemma
     (implies (and (certificate-setp certs)
@@ -105,9 +105,9 @@
              (and (set::in (thecert author certs) certs)
                   (equal (certificate->author (thecert author certs))
                          author)))
-    :use (:instance set::in-head (x (get-certificates-with-author author certs)))
+    :use (:instance set::in-head (x (certificates-with-author author certs)))
     :enable (thecert
-             emptyp-of-get-certificates-with-author-if-no-author))
+             emptyp-of-certificates-with-author-if-no-author))
 
   (defrulel subset-lemma
     (implies (and (system-signers-are-validators-p systate)
