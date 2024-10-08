@@ -62,10 +62,16 @@
 (define validator-previous-quorum-p ((cert certificatep)
                                      (vstate validator-statep)
                                      (all-vals address-setp))
+  :guard (or (equal (certificate->round cert) 1)
+             (active-committee-at-round (1- (certificate->round cert))
+                                        (validator-state->blockchain vstate)
+                                        all-vals))
   :returns (yes/no booleanp)
   :short "Check if the certificate accepted by
           a validator (represented by its state)
-          satisfies the invariant."
+          either has round 1 or its references to previous certificates
+          are in the committee for the certificate's round
+          and form a quorum in that committee."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -77,10 +83,9 @@
      it must have no references to previous certificates;
      this check does not actually depend on the validator state.
      If the certificate's round is not 1,
-     then the validator must be able to calculate
-     the active committee at the previous round,
-     and the references to the previous certificates
-     must form a quorum in that committee."))
+     then the references to the previous certificates
+     must form a quorum in the certificate's round's committee.
+     The guard ensures that the validator can calculate the committee."))
   (b* (((validator-state vstate) vstate)
        ((certificate cert) cert))
     (if (= cert.round 1)
@@ -88,8 +93,7 @@
       (b* ((commtt (active-committee-at-round (1- cert.round)
                                               vstate.blockchain
                                               all-vals)))
-        (and commtt
-             (set::subset cert.previous (committee-members commtt))
+        (and (set::subset cert.previous (committee-members commtt))
              (equal (set::cardinality cert.previous)
                     (committee-quorum commtt))))))
   :guard-hints (("Goal" :in-theory (enable posp))))
@@ -97,22 +101,38 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk previous-quorum-p ((systate system-statep))
+  :guard (accepted-certificate-committee-p systate)
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           for each certificate accepted by a validator,
           either the certificate's round is 1
           and the certificate has no references to previous certificates,
           or the certificate's round is not 1
-          and the validator can calculate
-          the active committee in the previous round
-          where the referenced previous certificates form a quorum."
+          and the references to previous certificates
+          form a quorum in the committee of
+          the preceding round of the certificate."
   (forall (val cert)
           (implies (and (set::in val (correct-addresses systate))
                         (set::in cert (accepted-certificates val systate)))
                    (validator-previous-quorum-p
                     cert
                     (get-validator-state val systate)
-                    (all-addresses systate)))))
+                    (all-addresses systate))))
+  :guard-hints
+  (("Goal"
+    :use
+    (:instance active-committee-at-earlier-round-when-at-later-round
+               (earlier (1- (certificate->round
+                             (mv-nth 1 (previous-quorum-p-witness systate)))))
+               (later (certificate->round
+                       (mv-nth 1 (previous-quorum-p-witness systate))))
+               (blocks (validator-state->blockchain
+                        (get-validator-state
+                         (mv-nth 0 (previous-quorum-p-witness systate))
+                         systate)))
+               (all-vals (all-addresses systate)))
+    :in-theory (enable accepted-certificate-committee-p-necc
+                       posp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -431,7 +451,9 @@
   (defruled validator-previous-quorum-p-of-commit-anchors-next
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
                   (set::in val1 (correct-addresses systate))
+                  (set::in cert (accepted-certificates val1 systate))
                   (validator-previous-quorum-p
                    cert
                    (get-validator-state val1 systate)
@@ -442,6 +464,12 @@
               (get-validator-state
                val1 (commit-anchors-next val systate))
               (all-addresses systate)))
+    :use (:instance active-committee-at-earlier-round-when-at-later-round
+                    (earlier (1- (certificate->round cert)))
+                    (later (certificate->round cert))
+                    (blocks (validator-state->blockchain
+                             (get-validator-state val systate)))
+                    (all-vals (all-addresses systate)))
     :enable (validator-previous-quorum-p
              validator-state->blockchain-of-commit-anchors-next
              active-committee-at-round-of-extend-blockchain-no-change
@@ -454,12 +482,14 @@
              blocks-last-round
              posp
              pos-fix
-             evenp))
+             evenp
+             accepted-certificate-committee-p-necc-fixing-binding))
 
   (defruled previous-quorum-p-of-commit-anchors-next
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
                   (previous-quorum-p systate)
+                  (accepted-certificate-committee-p systate)
                   (commit-anchors-possiblep val systate))
              (previous-quorum-p
               (commit-anchors-next val systate)))
@@ -501,6 +531,7 @@
     (implies (and (signer-quorum-p systate)
                   (ordered-even-p systate)
                   (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
                   (previous-quorum-p systate)
                   (event-possiblep event systate))
              (previous-quorum-p (event-next event systate)))
