@@ -291,7 +291,7 @@
     "We check that the old variable is not already a key in the alist,
      and that the new variable is not already a value in the alist.
      This is always the case when processing statically safe code,
-     because variables are addded to the renaming list as they get in scope,
+     because variables are added to the renaming list as they get in scope,
      and the static safety checks ensure that
      only variables not in scope are added to the scope.
      In fact, by checking this,

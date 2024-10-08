@@ -1510,7 +1510,9 @@
   :hints (("Goal" :use ((:instance expo>= (x (m k z)) (n (- k (prec f))))
                         (:instance mod-force (a 1) (n (expt 2 (- k (prec f)))) (m (sum (m k z) k p mode))))
 	          :nonlinearp t
-                  :in-theory (enable bits-mod c rnd-const sl sum))))
+                  :in-theory (e/d (bits-mod c rnd-const sl sum)
+                                  ;; for speed:
+                                  (acl2::default-minus acl2::default-expt-2)))))
 
 (local-defthmd rdia-9
   (let* ((p (prec f))
@@ -1765,7 +1767,12 @@
                         (:instance drnd-tiny-a (x (* (spn f) z)))
 			(:instance drnd-tiny-c (x (* (spn f) z))))
 		  :nonlinearp t
-		  :in-theory (enable c rnd-const sum))))
+		  :in-theory (e/d (c rnd-const sum)
+                                  ;; for speed:
+                                  (acl2::default-minus
+                                   acl2::default-times-1
+                                   acl2::|(< (if a b c) x)|
+                                   acl2::prefer-positive-addends-<)))))
 
 (local-defthmd rdia-20
   (let* ((p (prec f))
@@ -1791,7 +1798,13 @@
                         (:instance drnd-tiny-a (x (* (spn f) z)))
 			(:instance drnd-tiny-c (x (* (spn f) z))))
 		  :nonlinearp t
-		  :in-theory (enable c rnd-const sum))))
+		  :in-theory (e/d (c rnd-const sum)
+                                  ;; for speed:
+                                  (acl2::default-minus
+                                   acl2::default-times-1
+                                   acl2::default-expt-2
+                                   acl2::|(< x (if a b c))|
+                                   acl2::|(< (if a b c) x)|)))))
 
 (local-defthmd rdia-21
   (let* ((p (prec f))
@@ -1818,7 +1831,12 @@
 			(:instance drnd-tiny-a (x (* (spn f) z)))
 			(:instance drnd-tiny-c (x (* (spn f) z))))
 		  :nonlinearp t
-		  :in-theory (enable c rnd-const sum))))
+		  :in-theory (e/d (c rnd-const sum)
+                                  ;; for speed:
+                                  (acl2::default-minus
+                                   acl2::default-times-1
+                                   acl2::default-expt-2
+                                   acl2::|(+ x (if a b c))|)))))
 
 (local-defthmd rdia-22
   (let* ((p (prec f))
@@ -1865,7 +1883,21 @@
 			(:instance drnd-tiny-a (x (* (spn f) z)))
 			(:instance drnd-tiny-c (x (* (spn f) z))))
 		  :nonlinearp t
-		  :in-theory (enable c rnd-const sum))))
+		  :in-theory (e/d (c rnd-const sum)
+                                  ;; for speed:
+                                  (acl2::default-times-1
+                                   acl2::prefer-positive-addends-<
+                                   acl2::|(+ x (if a b c))|
+                                   acl2::|(< (if a b c) x)|
+                                   acl2::|(< x (if a b c))|
+                                   acl2::|(equal (if a b c) x)|
+                                   acl2::|(equal x (if a b c))|
+                                   acl2::|(expt x (if a b c))|
+                                   acl2::default-times-2
+                                   acl2::default-plus-1
+                                   acl2::default-plus-2
+                                   acl2::default-minus
+                                   acl2::default-expt-2)))))
 
 (local-defthmd rdia-24
   (let* ((p (prec f))
@@ -3267,7 +3299,10 @@
 		  (< x s))
 	    (iff (<= m e)
 	         (< (raz m p) (expt 2 (1- k))))))
-  :hints (("Goal" :in-theory (disable fp+)
+                 :hints (("Goal" :in-theory (disable fp+
+                                ;; for speed:
+                                acl2::default-expt-2
+                                )
                   :use (rdif-22 rdif-21
                         (:instance raz-exactp-c (x (m k z)) (n (prec f)) (a (- (expt 2 (1- k)) (expt 2 (1- (- k (prec f)))))))
 			(:instance raz-lower-pos (x (m k z)) (n (prec f)))
@@ -3404,7 +3439,9 @@
 			                     (n (expt 2 (- k (prec f))))
 					     (a 1)
 					     (r (expt 2 (1- (- k (prec f)))))))
-		  :in-theory (enable bits-mod))))
+	   :in-theory (e/d (bits-mod)
+                           ;; for speed:
+                           (acl2::mod-bounds-1 acl2::DEFAULT-EXPT-2 acl2::DEFAULT-MOD-RATIO)))))
 
 (local-defthmd rdif-29
   (let* ((p (prec f))
@@ -3430,7 +3467,11 @@
 		         (expt 2 (- k p)))
 	            (bits sum (1- (- k p)) 0))))
   :hints (("Goal" :use ((:instance mod-sum (a (c k (prec f) mode)) (b (m k z)) (n (expt 2 (- k (prec f))))))
-		  :in-theory (enable c rnd-const sum bits-mod))))
+		 :in-theory (e/d (c rnd-const sum bits-mod)
+                 ;; for speed:
+                 (acl2::default-mod-ratio
+                  acl2::mod-bounds-1
+                  acl2::|(mod y (if a b c))|)))))
 
 (local-defthmd rdif-30
   (let* ((p (prec f))
@@ -3454,7 +3495,12 @@
 		  (= (bitn m (1- (- k p))) 0))
              (<  (bits sum (1- (- k p)) 0)
 	         (expt 2 (1- (- k p))))))
-  :hints (("Goal" :use (rdif-28 rdif-29))))
+  :hints (("Goal" :use (rdif-28 rdif-29)
+           ;; for speed:
+           :in-theory (disable acl2::default-mod-ratio
+                               acl2::default-minus
+                               acl2::default-expt-2
+                               acl2::default-plus-1))))
 
 (local-defthmd rdif-31
   (let* ((p (prec f))
@@ -3564,7 +3610,11 @@
                         (:instance mod-force (m (+ (bits (m k z) (1- (- k (prec f))) 0) (c k (prec f) mode)))
                                              (a 1)
 					     (n (expt 2 (- k (prec f))))))
-		  :in-theory (enable bits-mod c rnd-const))))
+	   :in-theory (e/d (bits-mod c rnd-const)
+                           ;; for speed:
+                           (acl2::default-minus
+                            acl2::|(mod (if a b c) x)|
+                            acl2::|(/ (expt x n))|)))))
 
 (local-defthmd rdif-35
   (let* ((p (prec f))
@@ -3638,7 +3688,10 @@
 		  (or (= mode 'raz) (= mode 'rup))
 	          (< x s))
              (iff (= g 1) (>= (raz m p) (expt 2 (1- k))))))
-  :hints (("Goal" :use (rdif-23 rdif-25 rdif-31 rdif-36 rdif-32))))
+  :hints (("Goal" :use (rdif-23 rdif-25 rdif-31 rdif-36 rdif-32)
+           ;; for speed:
+           :in-theory (disable acl2::default-plus-1
+                               acl2::default-expt-2))))
 
 (local-defthmd rdif-38
   (let* ((p (prec f))
@@ -3755,7 +3808,9 @@
 			(:instance bits-bounds (x (m k z)) (i (- (- k (prec f)) 2)) (j 0))
 			(:instance bitn-plus-expt-1 (x (m k z)) (n (1- (- k (prec f))))))
 	          :nonlinearp t
-                  :in-theory (enable c rnd-const sum))))
+                  :in-theory (e/d (c rnd-const sum)
+                                  ;; for speed:
+                                  (acl2::default-minus)))))
 
 (defthmd rnd-drnd-inject-g-i
   (let* ((p (prec f))
@@ -4177,7 +4232,9 @@
   :hints (("Goal" :use (rdif-20 rdif-21 rdig-14 rdig-13 rdig-15
                         (:instance rne-force (n (prec f)) (x (m k z)) (y (- (expt 2 (1- k)) (expt 2 (1- (- k (prec f)))))))
                         (:instance rna-force (n (prec f)) (x (m k z)) (y (- (expt 2 (1- k)) (expt 2 (1- (- k (prec f))))))))
-		  :in-theory (enable rnd))))
+	   :in-theory (e/d (rnd)
+                           ;; for speed:
+                           (acl2::default-expt-2)))))
 
 (local-defthmd rdig-20
   (let* ((p (prec f))
