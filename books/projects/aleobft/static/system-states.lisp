@@ -261,7 +261,7 @@
   :hooks (:fix)
   ///
 
-  (defrule faulty-addresses-subset-all-addresses
+  (defruled faulty-addresses-subset-all-addresses
     (set::subset (faulty-addresses systate)
                  (all-addresses systate))))
 
