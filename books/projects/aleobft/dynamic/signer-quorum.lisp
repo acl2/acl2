@@ -68,14 +68,13 @@
   :returns (yes/no booleanp)
   :short "Check if the signers of a certificate
           are a subset of the committee for a certificate's round
-          and form a quorum in that committee."
+          and form a quorum in that committee,
+          where the committee is calculated by a validator
+          (represented by its state)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used by @(tsee signer-quorum-p)
-     to define our invariant.
-     The validator whose state is @('vstate') is
-     the one that has the accepted certificate.
+    "This is used by @(tsee signer-quorum-p) to define our invariant.
      The guard ensures that the validator can calculate the committee."))
   (b* (((validator-state vstate) vstate)
        ((certificate cert) cert)

@@ -67,24 +67,18 @@
                                         (validator-state->blockchain vstate)
                                         all-vals))
   :returns (yes/no booleanp)
-  :short "Check if the certificate accepted by
-          a validator (represented by its state)
-          either has round 1 or its references to previous certificates
+  :short "Check if either a certificate has round 1
+          or its references to previous certificates
           are in the committee for the certificate's round
-          and form a quorum in that committee."
+          and form a quorum in that committee,
+          where the committee is calculated by a validator
+          (represented by its state)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used by @(tsee previous-quorum-p) to define our invariant.
      The validator whose state is @('vstate') is
-     the one that has the accepted certificate.")
-   (xdoc::p
-    "If the certificate's round is 1,
-     it must have no references to previous certificates;
-     this check does not actually depend on the validator state.
-     If the certificate's round is not 1,
-     then the references to the previous certificates
-     must form a quorum in the certificate's round's committee.
+     the one that has the accepted certificate.
      The guard ensures that the validator can calculate the committee."))
   (b* (((validator-state vstate) vstate)
        ((certificate cert) cert))
