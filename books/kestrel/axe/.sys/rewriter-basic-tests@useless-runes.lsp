@@ -2,3 +2,4 @@
 (FOO)
 (IF-SAME)
 (<-TRANS-SIMPLE)
+(RULE1)

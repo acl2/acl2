@@ -1,0 +1,2 @@
+(HANOI::DO-MOVE)
+(HANOI::PLAY)

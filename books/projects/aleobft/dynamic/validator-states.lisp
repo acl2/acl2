@@ -11,6 +11,9 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
+; Added 10/6/2024 by Matt K. after 3 successive ACL2(p) certification failures:
+(acl2::set-waterfall-parallelism nil)
+
 (include-book "blocks")
 (include-book "certificates")
 
