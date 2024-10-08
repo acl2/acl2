@@ -285,7 +285,7 @@
     :enable (all-addresses
              omap::size-to-cardinality-of-keys))
 
-  (defrule number-validator-gt-0-when-nonempty-all-addresses
+  (defruled number-validator-gt-0-when-nonempty-all-addresses
     (implies (not (set::emptyp (all-addresses systate)))
              (> (number-validators systate) 0))
     :rule-classes :linear))
