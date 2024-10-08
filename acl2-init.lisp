@@ -197,7 +197,7 @@ implementations.")
 ; The following has been superseded; see the section on reading characters from
 ; files in acl2.lisp.
 ;  ; Dave Greve reported a problem: the saved_acl2 script in CLISP had characters
-;  ; that, contrary to expectation, were not being interpreter as newlines.  The
+;  ; that, contrary to expectation, were not being interpreted as newlines.  The
 ;  ; CLISP folks explained that "CUSTOM:*DEFAULT-FILE-ENCODING* defaults to :DOS
 ;  ; on cygwin, so #\Newline is printed as '\r\n' (CRLF)."  We expect that the
 ;  ; following setting will fix the problem; Dave tried an experiment for us that
@@ -210,21 +210,20 @@ implementations.")
 
 ; For LispWorks, we extend the stack size to avoid stack overflows.
 
-; We have also also considered setting system::*stack-overflow-behaviour* to
-; nil (as we did in ACL2 Version 7.4 and some (perhaps many) versions earlier
-; -- or :warn, as we did similarly for ACL2(p).  However, it seems best not to
-; mess with the default of :error: a stack overflow seems unlikely to be caught
-; with safety 0, and with safety 3, we prefer to see the error rather than
-; having the stack automatically extended, so that we can find the offending
-; loop and fix it.  For example, for the community book
-; books/centaur/truth/perm4.lisp, we sent a bug report to LispWorks (during
-; post-7.4 development) for a hang in "Computing the guard conjecture for
-; RECORD-ALL-NPN4-PERMS-TOP"; but the problem was simply a stack overflow.  We
-; didn't catch the problem with safety 3 because
-; system::*stack-overflow-behaviour* was nil, so the stack grew automatically.
-; Why not set it to nil for safety 0 and :error for safety 3?  Because perhaps
-; (not sure) when investigating an issue with safety 3, we could get stack
-; overflows that aren't actually the problem.
+; We have also considered setting system::*stack-overflow-behaviour* to nil (as
+; we did in ACL2 Version 7.4 and some (perhaps many) versions earlier -- or
+; :warn, as we did similarly for ACL2(p).  However, it seems best not to mess
+; with the default of :error: a stack overflow seems unlikely to be caught with
+; safety 0, and with safety 3, we prefer to see the error rather than having
+; the stack automatically extended, so that we can find the offending loop and
+; fix it.  For example, for the community book books/centaur/truth/perm4.lisp,
+; we sent a bug report to LispWorks (during post-7.4 development) for a hang in
+; "Computing the guard conjecture for RECORD-ALL-NPN4-PERMS-TOP"; but the
+; problem was simply a stack overflow.  We didn't catch the problem with safety
+; 3 because system::*stack-overflow-behaviour* was nil, so the stack grew
+; automatically.  Why not set it to nil for safety 0 and :error for safety 3?
+; Because perhaps (not sure) when investigating an issue with safety 3, we
+; could get stack overflows that aren't actually the problem.
 
 ; We choose 20000 somewhat arbitrarily.  The value of 400 (representing a 4x
 ; addition, i.e., increasing the stack by a factor of 5) was insufficient for
@@ -297,7 +296,7 @@ with ordinary ACL2 builds on the same set of books."))))
     (error "This Lisp implementation is not a suitable host for ACL2:
 the values of most-negative-fixnum and most-positive-fixnum are
 ~s and ~s (respectively),
-but ACL2 assumes that this these have absolute values that are
+but ACL2 assumes that these have absolute values that are
 respectively at least (1- (expt 2 29)) and (expt 2 29), which are
 ~s and ~s, respectively."
            most-positive-fixnum
@@ -697,7 +696,7 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
 ; this operation is a part.  Wart:  Since probe-file does not check names with
 ; wildcards, we skip those.
 
-; This function calls error rathert than exit-with-build-error simply because
+; This function calls error rather than exit-with-build-error simply because
 ; we don't expect it to be called much by users and if a user does call it,
 ; then it might be from within an existing session, not at build time.
 
@@ -1647,10 +1646,10 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
         (if use-thisscriptdir-p *thisscriptdir-def* ""))
 
 ; We pass options "-init -" and "-siteinit -" to inhibit loading init and patch
-; files because because we assume that whatever such files were to be loaded,
-; were in fact loaded at the time the original Lispworks executable was saved.
-; Of course, individual users who doesn't like this decision and know better
-; could always edit this script file, i.e., lw-exec-file, in the same spirit as
+; files because we assume that whatever such files were to be loaded, were in
+; fact loaded at the time the original Lispworks executable was saved.  Of
+; course, individual users who doesn't like this decision and know better could
+; always edit this script file, i.e., lw-exec-file, in the same spirit as
 ; changing the underlying Lisp implementation before building ACL2 (again,
 ; presumably based on knowledge of the host Lisp implementation).
 
@@ -2009,7 +2008,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 ; On October 9, 2020 we added --tls-limit 8192, because certification of
 ; community book books/kestrel/apt/schemalg-template-proofs.lisp failed with
-; ACL2 built on SBCL.  The error was "Thread local storage exhausted", which we
+; ACL2 built on SBCL.  The error was "Thread local storage exhausted", which
 ; apparently indicates too many special variables.  The SBCL 1.5.2 release
 ; notes say that "command-line option "--tls-limit" can be used to alter the
 ; maximum number of thread-local symbols from its default of 4096".  We chose
