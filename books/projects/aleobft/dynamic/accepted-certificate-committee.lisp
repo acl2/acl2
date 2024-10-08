@@ -61,7 +61,22 @@
                     (certificate->round cert)
                     (validator-state->blockchain
                      (get-validator-state val systate))
-                    (all-addresses systate)))))
+                    (all-addresses systate))))
+
+  ///
+
+  (defruled accepted-certificate-committee-p-necc-fixing-binding
+    (implies (and (accepted-certificate-committee-p systate)
+                  (set::in (address-fix val) (correct-addresses systate))
+                  (set::in cert (accepted-certificates val systate))
+                  (equal blockchain
+                         (validator-state->blockchain
+                          (get-validator-state val systate))))
+             (active-committee-at-round (certificate->round cert)
+                                        blockchain
+                                        (all-addresses systate)))
+    :use (:instance accepted-certificate-committee-p-necc
+                    (val (address-fix val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
