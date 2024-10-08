@@ -134,6 +134,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "CSV Library (@('kestrel/csv/'))")
+
+   (xdoc::p
+     "This library contains a parser for CSV (comma separated value) files and
+      utilities for handling parsed CSV files.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Ethereum Virtual Machine")
 
    (xdoc::p
@@ -674,13 +682,80 @@ was added.")
      goal by induction, and label them accordingly.")
 
    (xdoc::p
-     "A large number of other improvements was made to this library, including
-new utilities, new books, and improved utilities.")
+     "Various new utilities have been added, including
+      @('most-recent-failed-theorem-goal'), @('translatable-term-listp'),
+      @('dir-of-path'), @('all-included-books'), @('defthms-in-world'),
+      @('extend-pathnames$'), @('sys-call-event'), @('split-path'),
+      @('reduce-print-level'), @('pack-in-package'), @('eval-tests'),
+      @('setenv$-event'), @('prove$-nice-trying-hints'),
+      @('prove$-nice-with-time-and-steps'), @('last-prover-steps$'),
+      @('merge-sort-string<'), and utilities for parsing strings.")
+
+   (xdoc::p
+     "New data structures have been added, including @('fast-alist-set') (an
+      efficient implementation of sets using fast-alists) and
+      @('array-stobj') (a stobj containing a single array, of elements of any
+      type)")
+
+   (xdoc::p
+     "New books on have been created about @('read-acl2-oracle'),
+      @('update-acl2-oracle'), @('invariant-risk'), @('getenv$'),
+      @('get-serialize-character'), @('plist-worldp'), @('char-code'), widening
+      margins, @('strip-cadrs'), @('>=-len'), @('our-digit-char-p'),
+      @('read-run-time'), @('get-cpu-time'), @('get-real-time'), @('put-global')
+      and @('get-global'), @('ppr2'), @('doublet-listp'), and @('add-prefix') and
+      @('add-prefix-to-fn').")
+
+   (xdoc::p
+     "Various rules have been added (e.g., about @('world'), @('state'), channels,
+      @('assoc-keyword') setting margins, @('coerce'), non-trivial-bindings,
+      @('map-symbol-name'), @('merge-sort-symbol<'), and @('acl2-count')).")
+
+   (xdoc::p
+  "Library organization has been improved (e.g., splitting out material on
+  @('byte-array-stobj') and @('unquote-list') into new books.  Also, more tests
+  have been added.")
+
+   (xdoc::p
+  "Various improvement have been made, including to @('prove$-nice') and
+  @('prove$+'), the declare-handling utilities, @('defxdoc-for-macro'),
+  @('ubi'), the utilities dealing with temporary directories, and to material
+  about conjuncts/disjuncts, @('acl2-count'), @('my-get-event') (add support
+  for @('defmacro') and @('deftheory')), @('print-to-hundredths') (support
+  negative values), and @('ld-history').")
+
+   (xdoc::p
+  "The utility @('defopeners-mut-rec') has been deprecated (just use
+  @('defopeners')).")
+
+   (xdoc::p
+  "The utility @('archive-topics-for-books-tree') has a new option,
+@(':include-defxdoc-raw-topicsp').")
+
+   (xdoc::p
+  "The @('defmergesort') utility has been improved (@(':extra-theorems') option),
+   and the first two arguments of @('defmergesort') have been swapped (putting
+   the name of the sorting function, not the merging function, first).")
+
+   (xdoc::p
+  "New utilities @('shuffle-array-stobj'), @('shuffle-array-stobj2'),
+  @('shuffle-list'), and @('shuffle-list2') were added.  These use a
+  Fisher-Yates shuffle.")
+
+   (xdoc::p
+  "The @('defstobj+') utility has been improved.  It generates more
+   theorems (e.g., about hash-table fields, although these are still not fully
+   supported) and puts in better hints.  More tests have been added.")
+
+   (xdoc::p
+  "The utility @('make-var-name-range') has been renamed to
+  @('make-var-names-from').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Lists Light Library (@('kestrel/lists-light/'))")
 
-(xdoc::p
+   (xdoc::p
   "Various rules about list functions have been added or collected (e.g., rules
   about @('union-equal') and @('remove-equal')). Various books have been
   added (e.g., about @('position-equal-ac') and @('position-equal')).  Various
@@ -1348,7 +1423,8 @@ building blocks for building more complex @('clause-processors').")
    help developing books, including very preliminary tools to find hints, prove
    return type theorems, and improve existing books.")
 
-   (xdoc::p "A new utility be used to process dependency information.")
+   (xdoc::p "A new utility has been added for processing dependency
+             information.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
