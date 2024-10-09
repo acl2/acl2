@@ -661,33 +661,164 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-simple-escape ((esc simple-escapep))
+  :returns (code natp)
+  :short "Validate a simple escape."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Simple escapes are always valid.
+     This function returns their ASCII codes."))
+  (simple-escape-case
+   esc
+   :squote 39
+   :dquote 34
+   :qmark 63
+   :bslash 92
+   :a 7
+   :b 8
+   :f 12
+   :n 10
+   :r 13
+   :t 9
+   :v 11)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-oct-escape ((esc oct-escapep) (prefix? cprefix-optionp))
+  :returns (mv erp (code natp))
+  :short "Validate an octal escape."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[C:6.4.4.4/9] states restrictions on
+     the numeric value of an octal constant,
+     based on the prefix of the character constant:
+     this is why this function takes that optional prefix as input.
+     Since for now we do not model the specifics of
+     the @('wchar_t'), @('char16_t'), and @('char32_t'),
+     we only enforce restrictions for the case in which there is no prefix:
+     in this case, the numeric value must fit within @('unsigned char')."))
+  (b* (((reterr) 0)
+       (code (oct-escape-case
+              esc
+              :one (str::oct-digit-char-value esc.digit)
+              :two (str::oct-digit-chars-value (list esc.digit1
+                                                     esc.digit2))
+              :three (str::oct-digit-chars-value (list esc.digit1
+                                                       esc.digit2
+                                                       esc.digit3)))))
+    (if prefix?
+        (retok code)
+      (if (<= code (uchar-max))
+          (retok code)
+        (reterr (msg "The octal escape sequence ~x0 ~
+                      has value ~x1, which is out of range ~
+                      given that there is no character constant prefix."
+                     (oct-escape-fix esc)
+                     code)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-escape ((esc escapep) (prefix? cprefix-optionp))
+  :returns (mv erp (code natp))
+  :short "Validate an escape sequence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the escape sequence is valid, we return its character code.
+     For simple and octal escapes, and for universal character names,
+     we use separate validation functions.
+     For a hexadecimal escape, we calculate the numeric value,
+     which must be subjected to the restrictions in [C:6.4.4.4/9].
+     Since for now we do not model the specifics of
+     the @('wchar_t'), @('char16_t'), and @('char32_t'),
+     we only enforce restrictions for the case in which there is no prefix:
+     in this case, the numeric value must fit within @('unsigned char')."))
+  (b* (((reterr) 0))
+    (escape-case
+     esc
+     :simple (retok (valid-simple-escape esc.unwrap))
+     :oct (valid-oct-escape esc.unwrap prefix?)
+     :hex (b* ((code (str::hex-digit-chars-value esc.unwrap)))
+            (if prefix?
+                (retok code)
+              (if (<= code (uchar-max))
+                  (retok code)
+                (reterr (msg "The hexadecimal escape sequence ~x0 ~
+                              has value ~x1, which is out of range ~
+                              given that there is ~
+                              no character constant prefix."
+                             (escape-fix esc)
+                             code)))))
+     :univ (valid-univ-char-name esc.unwrap)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-c-char ((cchar c-char-p) (prefix? cprefix-optionp))
+  :returns (mv erp (code natp))
+  :short "Validate a character of a character constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If validation succeeds, we return the character code.
+     [C] does not appear to state restrictions on the ranges of the codes,
+     except for octal and hexadecimal escapes [C:6.4.4.4/9].
+     We may need to revise this in the future."))
+  (b* (((reterr) 0))
+    (c-char-case
+     cchar
+     :char (retok cchar.unwrap)
+     :escape (valid-escape cchar.unwrap prefix?)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-c-char-list ((cchars c-char-listp) (prefix? cprefix-optionp))
+  :returns (mv erp (codes nat-listp))
+  :short "Validate a list of characters of a character constant."
+  (b* (((reterr) nil)
+       ((when (endp cchars)) (retok nil))
+       ((erp code) (valid-c-char (car cchars) prefix?))
+       ((erp codes) (valid-c-char-list (cdr cchars) prefix?)))
+    (retok (cons code codes)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define valid-cconst ((cconst cconstp))
-  :returns (type typep)
+  :returns (mv erp (type typep))
   :short "Validate a character constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C:6.4.4.4] states a number of requirements,
-     but for now we do not actually impose any requirement,
-     and we just return the type of the character constant.")
+    "We check the characters that form the constant,
+     with respect to the prefix (if any).
+     If validation is successful, we return the type of the constant.
+     According to [C:6.4.4.4/10],
+     a character constant without prefix has type @('int').
+     According to [C:6.4.4.4/11],
+     a character constant with a prefix has type
+     @('wchar_t'), @('char16_t'), or @('char32_t');
+     since for now we do not model these,
+     we return an unknown type in this case.")
    (xdoc::p
-    "The requirements have to do with the size of the characters
-     with respect to the optional prefix of the character constant.
-     However, those refer to types defined in the standard library,
-     specifically @('wchar_t'), @('char16_t'), and @('char32_t').
-     These may vary across implementations.
+    "The types @('wchar_t'), @('char16_t'), and @('char32_t')
+     may vary across implementations.
      In order to handle these in a general way,
      we should probably extend our implementation environments
      with information about which built-in types those types expand to.
-     We do not do that for now, which is why we do not impose requirements.")
-   (xdoc::p
-    "The character constant may also have one of those types [C:6.4.4.4/11].
-     So, for now, we return type @('int') if there is no prefix [C:6.4.4.4/10],
-     and instead we return an unknown type if there is a prefix."))
-  (b* (((cconst cconst) cconst))
+     Once we do that, we will be able to perform
+     a full validation of character constants here."))
+  (b* (((reterr) (type-void))
+       ((cconst cconst) cconst)
+       ((erp &) (valid-c-char-list cconst.cchars cconst.prefix?)))
     (if cconst.prefix?
-        (type-unknown)
-      (type-sint)))
+        (retok (type-unknown))
+      (retok (type-sint))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
