@@ -37,7 +37,7 @@
 ; when an untame function is applied.)  The ``badge'' of a function describes
 ; how it uses its formals.  Badges report the arity of the symbol and the
 ; ``ilks'' of its formals (tokens indicating whether the value of the formal is
-; treated as an as ordinary objects, a function, or an expression).
+; treated as an ordinary object, a function, or an expression).
 
 ; The ``warrant'' of a symbol fn is a 0-ary predicate named APPLY$-WARRANT-fn,
 ; which specifies the badge of 'fn and the conditions under which (apply$ 'fn
