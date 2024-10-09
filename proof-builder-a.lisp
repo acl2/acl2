@@ -523,7 +523,7 @@
 
 (defmacro with-output-forced (output-chan signature code)
 
-; Use this to force output to output-chan after executing the give code.  See
+; Use this to force output to output-chan after executing the given code.  See
 ; print-pc-prompt and print-prompt for examples that make the usage pretty
 ; obvious.
 
