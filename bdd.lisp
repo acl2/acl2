@@ -137,9 +137,9 @@
 ; stringp on the second value returned.  We take advantage of that in the
 ; definition of bdd-mv-let.
 
-; Note that the order of the first two values should not be changed:  we
-; declare mx-id to be a fixnum at some point, and we we want the second
-; position to be tested by stringp to see if we have an "error" situation.
+; Note that the order of the first two values should not be changed: we declare
+; mx-id to be a fixnum at some point, and we want the second position to be
+; tested by stringp to see if we have an "error" situation.
 
 ; Keep this in sync with bdd-mv-let.
 
@@ -2298,8 +2298,8 @@
 ; computations having to do with commutativity.
 
 ; Actually, a few experiments suggest that we should have left this branch
-; where it was, jut before the next branch involving 'equal.  But that makes no
-; sense!  Since the performance degradation seemed to be at most a couple of
+; where it was, just before the next branch involving 'equal.  But that makes
+; no sense!  Since the performance degradation seemed to be at most a couple of
 ; percent, we'll leave it this way for now.
 
      (mvf mx-id *cst-t* op-ht if-ht
@@ -2411,7 +2411,7 @@
                 (t
                  (let ((min-var (min-var nil args)))
 
-; There is certainly a potential here for more case splitting than me might
+; There is certainly a potential here for more case splitting than we might
 ; desire.  For, notice that min-var could be non-nil even though all of the
 ; args are leaves, because split-var (called by min-var) is happy to return a
 ; leaf that is known to be Boolean (and not t or nil).  However, our current

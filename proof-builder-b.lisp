@@ -2003,7 +2003,7 @@
 ; Address is a valid address for the term, term.  This function returns a
 ; geneqv g such that if one substitutes a subterm u of term at the given
 ; address such that (g term u), resulting in a term term', then (geneqv term
-; term').  As usual, we may return nil for to represent the geneqv for equal.
+; term').  As usual, we may return nil to represent the geneqv for equal.
 
   (cond ((null addr)
          geneqv)
