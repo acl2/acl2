@@ -45,6 +45,11 @@
 (include-book "../top-level-memory")
 (include-book "fp/base")
 
+(local (in-theory (disable not
+                           select-operand-size
+                           mv-nth-0-of-add-to-*ip-when-64-bit-modep
+                           mv-nth-1-of-add-to-*ip-when-64-bit-modep)))
+
 (define write-mm-regs ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
                        (inst-ac? booleanp)
                        (seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
@@ -123,6 +128,15 @@
                           (unsigned-byte-p 16 (xr :fp-opcode i x86))
                           :hints (("Goal" :use (:instance elem-p-of-xr-fp-opcode (i i) (x86$a x86))
                                    :in-theory (disable elem-p-of-xr-fp-opcode))))))
+
+          :guard-hints
+          (("Goal" :in-theory (disable select-operand-size-values)
+            :use (:instance select-operand-size-values
+                            (byte-operand? nil)
+                            (imm? nil)
+                            (default64? nil)
+                            (ignore-rex? nil)
+                            (ignore-p3-64? nil))))
 
           :body
 
@@ -296,6 +310,15 @@
 
           :prepwork
           ((local (in-theory (disable unsigned-byte-p signed-byte-p))))
+
+          :guard-hints
+          (("Goal" :in-theory (disable select-operand-size-values)
+            :use (:instance select-operand-size-values
+                            (byte-operand? nil)
+                            (imm? nil)
+                            (default64? nil)
+                            (ignore-rex? nil)
+                            (ignore-p3-64? nil))))
 
           :body
 

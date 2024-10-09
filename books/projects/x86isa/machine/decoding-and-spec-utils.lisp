@@ -2201,7 +2201,29 @@ reference made from privilege level 3.</blockquote>"
                      (the (unsigned-byte 8) (prefixes->opr prefixes)))))
         (if (= cs.d 1)
             (if p3? 2 4)
-          (if p3? 4 2))))))
+          (if p3? 4 2)))))
+  ///
+  (defthm select-operand-size-range
+          (and (<= 1 (select-operand-size proc-mode byte-operand? rex-byte imm?
+                                          prefixes default64? ignore-rex? ignore-p3-64? x86))
+               (<= (select-operand-size proc-mode byte-operand? rex-byte imm?
+                                        prefixes default64? ignore-rex? ignore-p3-64? x86)
+                   8))
+          :rule-classes :linear)
+
+ (defthm select-operand-size-values
+         (or (equal (select-operand-size proc-mode byte-operand? rex-byte
+                                         imm? prefixes default64? ignore-rex? ignore-p3-64? x86)
+                    1)
+             (equal (select-operand-size proc-mode byte-operand? rex-byte
+                                         imm? prefixes default64? ignore-rex? ignore-p3-64? x86)
+                    2)
+             (equal (select-operand-size proc-mode byte-operand? rex-byte
+                                         imm? prefixes default64? ignore-rex? ignore-p3-64? x86)
+                    4)
+             (equal (select-operand-size proc-mode byte-operand? rex-byte
+                                         imm? prefixes default64? ignore-rex? ignore-p3-64? x86)
+                    8))))
 
 ;; ======================================================================
 
