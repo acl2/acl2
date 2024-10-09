@@ -1300,20 +1300,23 @@
 
 ; SECTION: Safe-incf
 
-(defun safe-incf-aux-error (x inc where)
-  (declare (type mfixnum x inc))
-  (cond
-   (where
-    (error "~%; SAFE-INCF-AUX: ** Error: ~a."
-           (list :x x :inc inc :where where)))
-   (t (setf (the mfixnum x)
-            most-positive-mfixnum)))
-  nil)
+(defmacro safe-incf-aux-error (x inc where)
+
+; X and inc are to be evaluated, but where is a symbol that needs to be quoted.
+
+  `(cond
+    (',where
+     (error "~%; SAFE-INCF-AUX: ** Error: ~a."
+            (list :x ,x :inc ,inc :where ',where)))
+    (t (progn (setf (the mfixnum ,x)
+                    most-positive-mfixnum)
+              nil))))
 
 (defmacro safe-incf-aux (x inc &optional where)
 
 ; This is essentially safe-incf, but where inc is known to have a positive
-; integer value.
+; integer value.  X and inc are to be evaluated, but if where is provided, then
+; it is a symbol that needs to be quoted.
 
   (cond
    ((not (or (symbolp inc)
@@ -1332,7 +1335,7 @@
                      ,(nth 1 x)
                      ,idx)
                     ,inc
-                    ',where))))
+                    ,where))))
    (t (let ((v (make-symbol "V")))
         `(let ((,v (the-mfixnum ,x)))
            (declare (type mfixnum ,v))
@@ -1342,13 +1345,14 @@
                   (setf (the mfixnum ,x)
                         (the-mfixnum (+ ,v (the-mfixnum ,inc))))
                   nil)
-                 (t (safe-incf-aux-error ',x ',inc ',where))))))))
+                 (t (safe-incf-aux-error ,x ,inc ,where))))))))
 
 (defmacro safe-incf (x inc &optional where)
 
-; Summary: we increment nonnegative mfixnum x by nonnegative mfixnum inc,
-; returning nil.  But if the result is too large to be of type mfixnum, then we
-; cause an error if where is non-nil, else we set x to most-positive-mfixnum.
+; Summary: we increment the place represented by x, which is a non-negative
+; mfixnum, by the nonnegative mfixnum represented by inc, returning nil.  But
+; if the result is too large to be of type mfixnum, then we cause an error if
+; where is non-nil, else we set x to most-positive-mfixnum.
 
 ; SAFE-INCF is a raw Lisp macro that behaves the same as INCF when both X and
 ; INC are nonnegative MFIXNUMs and their sum is a nonnegative MFIXNUM.  In a
@@ -1364,7 +1368,7 @@
 ; effects are prohibited.
 
 ; An optional third parameter is merely to help with error location
-; identification.
+; identification.  If it is provided, then it should be a symbol (not quoted).
 
 ; In (SAFE-INCF (AREF A (FOO)) INC), (FOO) is only evaluated once.
 ; Same for SVREF.

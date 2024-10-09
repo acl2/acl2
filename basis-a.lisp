@@ -240,10 +240,11 @@
 
 ; In order to allow user interaction with a wormhole, e.g., as provided by
 ; break-rewrite, the function wormhole is provided.  Roughly speaking, it takes
-; a wormhole name, a lambda expression, an arbitray object, input, and a quoted
-; untranslated term, first-form.  Wormhole does not take state.  It applies the
-; lambda expression to the persistent-whs of the named wormhole and if the
-; resulting persistent-whs has car :ENTER (actually, if the car is not :SKIP),
+; a wormhole name, a lambda expression, an arbitrary object, input, and a
+; quoted untranslated term, first-form.  Wormhole does not take state.  It
+; applies the lambda expression to the persistent-whs of the named wormhole and
+; if the resulting persistent-whs has car :ENTER (actually, if the car is not
+; :SKIP),
 
 ; (a) provisions are made so that all allowed state changes are undone upon
 ;     exit,
@@ -262,7 +263,7 @@
 
 ; (f) wormhole returns nil.
 
-; Entering a wormhole is thus expensive, which is why its gated by the lambda
+; Entering a wormhole is thus expensive, which is why it's gated by the lambda
 ; expression and wormhole-eval (which are implemented efficiently).
 
 ; Historical Note: Once upon a time (Version 3.6 and earlier) the wormhole
@@ -300,7 +301,7 @@
 ; So :monitor is defined in terms of wormhole-eval.  So if the user adds a new
 ; :monitor while inside brr, the persistent-whs of the brr wormhole is changed.
 
-; ``Wormhole coherence'' is concept that the persistent-whs and the
+; ``Wormhole coherence'' is the concept that the persistent-whs and the
 ; ephemeral-whs are equal.  Think of the persistent-whs as the value of a
 ; remote memory location and the ephemeral-whs as a nearby cache.
 
@@ -317,7 +318,7 @@
 ; writes to a wormhole's status are done with wormhole-eval, you needn't even
 ; think about coherence.  There is never an ephemeral-whs; all operations are
 ; done at a single location, the persistent-whs.  It's only when interaction is
-; allowed that one is might need to worry about two copies of ``the'' status.)
+; allowed that one might need to worry about two copies of ``the'' status.)
 
 ; A better way, from within a wormhole, to change the status is to change both,
 ; using set-persistent-whs-and-ephemeral-whs.
@@ -7704,8 +7705,8 @@
                           (t str))))
 
 ; We do not use io? here, because when commentp holds, io? makes a wormhole
-; call that seems to avoid avoiding having the throw from hard-error go all the
-; way to the top level.
+; call that seems to avoid having the throw from hard-error go all the way to
+; the top level.
 
            ,(cond
              (commentp
@@ -8302,7 +8303,7 @@
 ; accessor-name updater-name length-name resize-name resizable).  The last
 ; three fields are nil unless type has the form (ARRAY ptype (n)), in which
 ; case ptype is a primitive type and n is a positive integer.  Init is the evg
-; of a constant term, i.e., should be quoted to be a treated as a term.
+; of a constant term, i.e., should be quoted to be treated as a term.
 
   (mv-let
    (erp field-descriptors key-alist)
@@ -8632,7 +8633,7 @@
 ; as a hash-table key.  It will be replaced in *current-stobj-gensym-ht*
 ; whenever we undo a defstobj or defabsstobj for name.  The prefix "current"
 ; emphasizes that this table associates only currently-defined stobjs with
-; has-table keys.  When a stobj is undone then its name is removed as a key
+; hash-table keys.  When a stobj is undone then its name is removed as a key
 ; in *current-stobj-gensym-ht*; see maybe-push-undo-stack.
 
   (declare (type symbol name))

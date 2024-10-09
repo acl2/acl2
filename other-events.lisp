@@ -9302,7 +9302,7 @@
 ; representing a project directory, and file-name is a string representing a
 ; file or directory name.  We return a string representing the interpretation
 ; of file-name with respect to dir0.  We attempt to return such a string that
-; is a canonical pathname, e.g., with soft links resoved.  If you want to
+; is a canonical pathname, e.g., with soft links resolved.  If you want to
 ; insist that the result be canonical, returning nil otherwise, use
 ; extend-pathname+ instead (with argument canon-p = t).
 
@@ -10287,7 +10287,7 @@
 
 ; As mentioned at the outset above, this function also adds defpkg events.  We
 ; trust that the portcullis is a legal sequence of commands (actually, events),
-; so the only point is to added hidden packages as per the Essay on Hidden
+; so the only point is to add hidden packages as per the Essay on Hidden
 ; Packages.
 
 ; Call this function using the same names parameter as that used when verifying
@@ -13051,7 +13051,7 @@
 
 ; This checks that an object file named file can be opened for input.  It
 ; either causes an error or returns t.  It can change the state -- because it
-; may open and closes a channel to the file -- and it may well be that the file
+; may open and close a channel to the file -- and it may well be that the file
 ; does not exist in the state returned!  C'est la guerre.  The purpose of this
 ; function is courtesy to the user.  It is nice to rather quickly determine, in
 ; include-book for example, whether an alleged file exists.
@@ -14280,10 +14280,10 @@
 ; "bar")) and (local (my-macro)), where my-macro is defined in bar.lisp.  With
 ; 'initialize-acl2, chk-embedded-event-form recurs through the local calls and
 ; reports that (my-macro) is not an embedded event form (because the local
-; inclusion of "bar" prevent my-macro from being defined).  With 'include-book,
-; we can include the book.  More generally, Eric would like uncertified books
-; to be treated by include-book much like certified books, in order to assist
-; his development process.  That seems reasonable.
+; inclusion of "bar" prevents my-macro from being defined).  With
+; 'include-book, we can include the book.  More generally, Eric would like
+; uncertified books to be treated by include-book much like certified books, in
+; order to assist his development process.  That seems reasonable.
 
                                 (value 'include-book))
                                (ttags-allowed1
@@ -17540,7 +17540,7 @@
 
 ; With fast-cert mode active, we don't roll back the world, so we might have
 ; local-include book commands in the certification world.  We punt and simply
-; record nil here for the pre-alist , which forces us to rely on the build
+; record nil here for the pre-alist, which forces us to rely on the build
 ; system to check that the included books from the portcullis commands (or at
 ; least those that would be included non-locally at include-book time) are all
 ; certified.  Future work could perhaps sort out which included books are local
@@ -21438,7 +21438,7 @@
 ; E*-correspondence: the values of stobjs in the actual ACL2 state
 ; E*-correspond to the values in a logical version of the ACL2 state.  Our
 ; task, then, is to modify the argument above to accommodate E*-correspondence.
-; We define E*-correspondence below, recursivelly: E*-corresponds is a relation
+; We define E*-correspondence below, recursively: E*-corresponds is a relation
 ; defined with a predicate that mentions E*-corresponds.  That predicate is
 ; monotone in E*-corresponds: when E*-corresponds is enlarged, the relation
 ; defined by one "step" of the predicate is too.  As usual, such a recursion
@@ -22534,7 +22534,7 @@
                                   exec
                                   field0
                                   (if st-new 0 1)
-                                  st-new                                  
+                                  st-new
                                   see-doc))
                          ((and (eq type :CREATOR)
                                (not (and (null stobjs-in-logic)
@@ -23777,7 +23777,7 @@
    ((endp old)
     nil)
    (t
-    (let* ((field-old (car old)) 
+    (let* ((field-old (car old))
            (updater-old (cadr (assoc-keyword :updater (cdr field-old)))))
       (cond
        (updater-old
@@ -24128,7 +24128,7 @@
 ; There is no need to update ext-gens or ext-gen-barriers in the world when all
 ; that is left to do, before making that recursive call, is to call
 ; chk-defabsstobj-guards.
-; 
+;
 
                                            wrld3
                                          (defabsstobj-update-ext-gens
@@ -26765,7 +26765,7 @@
 ; level, but when we get a failure, we set it to :FAILED so that we can return
 ; nil at the end.
 
-; This function a No-Change Loser when keep-unify-subst is nil.  In order to
+; This function is a No-Change Loser when keep-unify-subst is nil.  In order to
 ; accomplish this without requiring it have to test the answer to its own
 ; recursive calls, we have to pass down the original unify-subst and ttree so
 ; that when it fails it can return them instead of the accumulated versions.
