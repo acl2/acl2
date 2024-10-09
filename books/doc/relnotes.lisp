@@ -889,6 +889,13 @@ was added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "rtl::rtl" "RTL Library"))
+
+   (xdoc::p
+     "Some proofs have been significantly sped up.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Sequences Library (@('kestrel/sequences/'))")
 
    (xdoc::p
