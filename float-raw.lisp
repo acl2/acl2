@@ -75,10 +75,16 @@
   `(progn
      (defun ,name (x y)
        (declare (type double-float x y))
-       (the double-float
-            (df-signal? (,op (the double-float x)
-                             (the double-float y))
-                        ,op)))))
+
+; At one time we included a wrapper (the double-float ...) around the body in
+; defun-df-binary and defun-df-unary.  But Camm Maguire pointed out that for
+; df-atanh-fn, the result can have an imaginary part, hence not be of type
+; double-float.  Since all calls of defun-df-binary and defun-df-unary are on
+; inlined function symbols, that wrapper is unnecessary anyhow.
+
+       (df-signal? (,op (the double-float x)
+                        (the double-float y))
+                   ,op))))
 
 (defmacro defun-df-unary (name op)
 
@@ -91,9 +97,12 @@
   `(progn
      (defun ,name (x)
        (declare (type double-float x))
-       (the double-float
-            (df-signal? (,op (the double-float x))
-                        ,op)))))
+
+; See comment in defun-df-binary for why we do not include a wrapper here of
+; (the double-float ...).
+
+       (df-signal? (,op (the double-float x))
+                   ,op))))
 
 (defun-df-binary binary-df+ +)
 (defun-df-binary binary-df* *)
