@@ -210,6 +210,12 @@
    (implies (character-listp x)
             (character-listp (reverse x)))))
 
+(local
+; Matt K. addition: It is surprising that this lemma is needed for ACL2(r), but
+; without it, a proof fails in ACL2(r) for the define form below.
+ (defthm realp-len
+   (real/rationalp (len x))))
+
 (define sva-str-zerop ((x stringp))
   "Check that a verilog string is all zero until the base character"
   (b* ((l (reverse (coerce x 'list))))
