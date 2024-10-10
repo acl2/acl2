@@ -72,19 +72,28 @@
 ; We can perhaps avoid calling df-signal? in cases where overflow is
 ; impossible, but we don't; see defun-df-unary.
 
-  `(progn
-     (defun ,name (x y)
-       (declare (type double-float x y))
+  (let ((body `(df-signal? (,op (the double-float x)
+                                (the double-float y))
+                           ,op)))
+    `(progn
+       (defun ,name (x y)
+         (declare (type double-float x y))
 
-; At one time we included a wrapper (the double-float ...) around the body in
-; defun-df-binary and defun-df-unary.  But Camm Maguire pointed out that for
-; df-atanh-fn, the result can have an imaginary part, hence not be of type
-; double-float.  Since all calls of defun-df-binary and defun-df-unary are on
-; inlined function symbols, that wrapper is unnecessary anyhow.
+; At one time we unconditionally included the above wrapper (the double-float
+; ...) around the body in defun-df-binary and defun-df-unary.  But Camm Maguire
+; pointed out that for df-atanh-fn, the compiler warns because the result can
+; have an imaginary part, hence not be of type double-float.  Since all calls
+; of defun-df-binary and defun-df-unary are on inlined function symbols, that
+; wrapper seems unnecessary anyhow in GCL.  We considered removing the wrapper
+; for all Lisps, but when we tried that, experiments using SBCL showed a
+; slowdown of several percent.  We considered restricting the types of the
+; inputs, as suggested by Camm Maguire for df-atanh-fn where one could declare
+; the input type to be (double-float (-1.0) (1.0)).  But this is problematic
+; for expt, where the guard on the inputs cannot be expressed exactly with
+; types.
 
-       (df-signal? (,op (the double-float x)
-                        (the double-float y))
-                   ,op))))
+         #-gcl (the double-float ,body)
+         #+gcl ,body))))
 
 (defmacro defun-df-unary (name op)
 
@@ -94,15 +103,17 @@
 ; and Allegro CL, we keep things simple and apply df-signal? unconditionally.
 ; That could change if there are complaints.
 
-  `(progn
-     (defun ,name (x)
-       (declare (type double-float x))
+  (let ((body `(df-signal? (,op (the double-float x))
+                           ,op)))
+    `(progn
+       (defun ,name (x)
+         (declare (type double-float x))
 
-; See comment in defun-df-binary for why we do not include a wrapper here of
-; (the double-float ...).
+; See comment in defun-df-binary for an explanation of the two cases below.
 
-       (df-signal? (,op (the double-float x))
-                   ,op))))
+         #-gcl
+         (the double-float ,body)
+         #+gcl ,body))))
 
 (defun-df-binary binary-df+ +)
 (defun-df-binary binary-df* *)
