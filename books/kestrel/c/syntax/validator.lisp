@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-operations")
 (include-book "implementation-environments")
+(include-book "unambiguity")
 
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -1035,6 +1036,90 @@
                      prefixes))))
     (retok (type-array)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
+
+(defines valid-exprs/decls/stmts
+  :short "Validate expressions, declarations, statements,
+          and related artifacts."
+
+  (define valid-expr ((expr exprp) (table valid-tablep) (ienv ienvp))
+    :guard (expr-unambp expr)
+    :returns (mv erp (type typep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If validation is successful, we return the type of the expression.")
+     (xdoc::p
+      "A variable (i.e. identifier) is valid if
+       it is found in the validation table,
+       recorded as denoting an object or function
+       [C:6.5.1/2].
+       The type is obtained from the table.")
+     (xdoc::p
+      "A constant or (list of) string literal(s) is validated
+       via separate functions; see their documentation.")
+     (xdoc::p
+      "A parenthesized expression is validated
+       by validating the expression inside the parentheses.")
+     (xdoc::p
+      "For now we allow all generic selections,
+       returning the unknown type for them."))
+    (b* (((reterr) (type-void)))
+      (expr-case
+       expr
+       :ident
+       (b* (((mv info &) (valid-lookup-ord expr.unwrap table))
+            ((unless info)
+             (reterr (msg "The variable ~x0 is not in scope." expr.unwrap)))
+            ((unless (valid-ord-info-case info :objfun))
+             (reterr (msg "The identifier ~x0, used as a variable, ~
+                           is in scope, but does not denote ~
+                           an object or function."
+                          expr.unwrap))))
+         (retok (valid-ord-info-objfun->type info)))
+       :const (valid-const expr.unwrap table ienv)
+       :string (valid-stringlit-list expr.literals)
+       :paren (valid-expr expr.unwrap table ienv)
+       :gensel (retok (type-unknown))
+       :arrsub (reterr :todo)
+       :funcall (reterr :todo)
+       :member (reterr :todo)
+       :memberp (reterr :todo)
+       :complit (reterr :todo)
+       :unary (reterr :todo)
+       :sizeof (reterr :todo)
+       :alignof (reterr :todo)
+       :cast (reterr :todo)
+       :binary (reterr :todo)
+       :cond (reterr :todo)
+       :comma (reterr :todo)
+       :stmt (reterr :todo)
+       :tycompat (reterr :todo)
+       :offsetof (reterr :todo)
+       :otherwise (prog2$ (impossible) (reterr t))))
+    :measure (expr-count expr))
+
+  (define valid-expr-list ((exprs expr-listp) (table valid-tablep) (ienv ienvp))
+    :returns (mv erp (type typep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of expressions."
+    (b* (((reterr) (type-void)))
+      (reterr (list :todo
+                    (expr-list-fix exprs)
+                    (valid-table-fix table)
+                    (ienv-fix ienv))))
+    :measure (expr-list-count exprs))
+
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+
+  ///
+
+  (fty::deffixequiv-mutual valid-exprs/decls/stmts))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
