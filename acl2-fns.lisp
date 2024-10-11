@@ -1116,12 +1116,13 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun maybe-make-package (name)
 
-; We formerly had a long comment here explaining that this definition CMU
-; Common Lisp 19e.  At that time, maybe-make-package was a macro with a #+cmu
-; body of `(defpackage ,name (:use)).  But CMU Common Lisp 21a does not have
-; this problem, so we have changed maybe-make-package from a macro to a
-; function, which allows its callers to be functions as well.  That, in turn,
-; may avoid compilation required for macro calls in some Lisps, including CCL.
+; We formerly had a long comment here explaining that this definition didn't
+; work for CMU Common Lisp 19e.  At that time, maybe-make-package was a macro
+; with a #+cmu body of `(defpackage ,name (:use)).  But CMU Common Lisp 21a
+; does not have this problem, so we have changed maybe-make-package from a
+; macro to a function, which allows its callers to be functions as well.  That,
+; in turn, may avoid compilation required for macro calls in some Lisps,
+; including CCL.
 
   (when (not (find-package name))
     (make-package name :use nil)))
@@ -2021,7 +2022,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; also needed in hons-raw.lisp, which is compiled earlier, and CCL (at least)
 ; needs to know that we indeed have a macro here -- so the definition can't be
 ; put off until loading interface-raw.lisp.  In Version_3.2, hons-raw.lisp was
-; only included in special builds, so we did't want to put this definition
+; only included in special builds, so we didn't want to put this definition
 ; there; thus, we put it here.  (Even in August 2021, we saw no reason to move
 ; it.)
 
@@ -2337,6 +2338,11 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; in other Lisps.
 
 #+gcl
+(when (or (< si::*gcl-major-version* 2)
+          (and (= si::*gcl-major-version* 2)
+               (or (< si::*gcl-minor-version* 6)
+                   (and (= si::*gcl-minor-version* 6)
+                        (<= si::*gcl-extra-version* 12)))))
 (progn
 compiler::
 (defun c2funcall-new (funob args &optional loc info)
@@ -2385,13 +2391,8 @@ compiler::
     (otherwise (baboon))
     ))
 
-(when (or (< si::*gcl-major-version* 2)
-          (and (= si::*gcl-major-version* 2)
-               (or (< si::*gcl-minor-version* 6)
-                   (and (= si::*gcl-minor-version* 6)
-                        (<= si::*gcl-extra-version* 12)))))
-  (setf (symbol-function 'compiler::c2funcall)
-        (symbol-function 'compiler::c2funcall-new))))
+(setf (symbol-function 'compiler::c2funcall)
+      (symbol-function 'compiler::c2funcall-new))))
 
 #+gcl
 (eval-when

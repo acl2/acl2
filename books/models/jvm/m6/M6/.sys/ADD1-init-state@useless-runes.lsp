@@ -1,0 +1,2 @@
+(M6::INIT-STATE)
+(M6::INIT-STATE-X)

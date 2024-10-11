@@ -164,7 +164,7 @@ is using two characters to indicate a new line?"))
               (when #-clisp (not (eql (char-code temp) i))
 
 ; In CLISP we find character 10 (Newline) at position 13 (expected Return).
-; Perhaps this has something to do CLISP's attempt to comply with the CL
+; Perhaps this has something to do with CLISP's attempt to comply with the CL
 ; HyperSpec Section 13.1.8, "Treatment of Newline during Input and Output".
 ; But something is amiss.  Consider for example the following log (with some
 ; output edited in the case of the first two forms, but no editing of output

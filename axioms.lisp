@@ -6611,6 +6611,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (true-listp x))
   :rule-classes :forward-chaining)
 
+#-acl2-loop-only
+(defvar *throw-nonexec-error*
+
+; This variable should always have a non-nil value.  Its only use is in
+; throw-nonexec-error, so as to defeat a GCL 2.7.0 warning reported by Camm
+; Maguire.  That warning was about a type mismatch from a term (to-df (non-exec
+; (constrained-df-expt-fn x y))): non-exec was deduces as returning nil.  The
+; reason is that throw-nonexec-error doesn't return: (non-exec X) expands to
+; (prog2$ (throw-nonexec-error :non-exec 'X) X).  We defeat that warning by
+; having throw-nonexec-error consult this variable before throwing or causing
+; an error.
+
+  t)
+
 (defun throw-nonexec-error (fn actuals)
   (declare (xargs :mode :logic
                   :guard
@@ -6630,9 +6644,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            #+acl2-loop-only
            (ignore fn actuals))
   #-acl2-loop-only
-  (progn
-    (throw-raw-ev-fncall
-     (list* 'ev-fncall-null-body-er
+  (when *throw-nonexec-error* ; always t; see comment in *throw-nonexec-error*
+    (progn
+      (throw-raw-ev-fncall
+       (list* 'ev-fncall-null-body-er
 
 ; The following nil means that we never blame non-executability on aokp.  Note
 ; that defproxy is not relevant here, since that macro generates a call of
@@ -6640,19 +6655,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; to lay down a call of throw-or-attach.  So in the defproxy case,
 ; throw-nonexec-error doesn't get called!
 
-            nil
-            fn
-            (if (eq fn :non-exec)
-                actuals
-              (replace-live-stobjs-in-list
-               (if (true-listp actuals)
-                   actuals
-                 (error "Unexpected case: Ill-formed actuals for ~
-                         throw-nonexec-error!"))))))
+              nil
+              fn
+              (if (eq fn :non-exec)
+                  actuals
+                (replace-live-stobjs-in-list
+                 (if (true-listp actuals)
+                     actuals
+                   (error "Unexpected case: Ill-formed actuals for ~
+                           throw-nonexec-error!"))))))
 
 ; Just in case throw-raw-ev-fncall doesn't throw -- though it always should.
 
-    (error "This error is caused by what should be dead code!"))
+      (error "This error is caused by what should be dead code!")))
   nil)
 
 (defun evens (l)
@@ -14872,19 +14887,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; No key of this alist should also be a key of *initial-ld-special-bindings*.
 
-  `((abbrev-evisc-tuple . :default)
-    (abort-soft . t)
-    (accumulated-ttree . nil) ; just what succeeded; tracking the rest is hard
-    (acl2-raw-mode-p . nil)
-    (acl2-sources-dir .
+; We break this into an append of smaller lists, to avoid a GCL error reported
+; by Camm Maguire related to call-arguments-limit.  In case this list is
+; expanded later, we play it safe by breaking, initially, into sub-lists of
+; length 50.
+
+  (append
+   `((abbrev-evisc-tuple . :default)
+     (abort-soft . t)
+     (accumulated-ttree . nil) ; just what succeeded; tracking the rest is hard
+     (acl2-raw-mode-p . nil)
+     (acl2-sources-dir .
 
 ; This variable is not (as of this writing) used in our own sources.  But it
 ; could be convenient for users.  In particular, it is used (starting
 ; mid-October, 2014) by the XDOC system to find the location of the ACL2
 ; sources graphics/ subdirectory.
 
-                      nil) ; set by initialize-state-globals
-    (acl2-version .
+                       nil) ; set by initialize-state-globals
+     (acl2-version .
 
 ; Keep this value in sync with the value assigned to
 ; acl2::*copy-of-acl2-version* in file acl2.lisp.
@@ -14916,18 +14937,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; are also collapsed by `fill-format-string', so one has to be careful when
 ; reformatting :DOC comments.
 
-                  ,(concatenate 'string
-                                "ACL2 Version 8.5"
-                                #+non-standard-analysis
-                                "(r)"
-                                #+(and mcl (not ccl))
-                                "(mcl)"))
-    (acl2-world-alist . nil)
-    (acl2p-checkpoints-for-summary . nil)
-    (axiomsp . nil)
-    (bddnotes . nil)
-    (book-hash-alistp . nil) ; set in LP
-    (boot-strap-flg .
+                   ,(concatenate 'string
+                                 "ACL2 Version 8.5"
+                                 #+non-standard-analysis
+                                 "(r)"
+                                 #+(and mcl (not ccl))
+                                 "(mcl)"))
+     (acl2-world-alist . nil)
+     (acl2p-checkpoints-for-summary . nil)
+     (axiomsp . nil)
+     (bddnotes . nil)
+     (book-hash-alistp . nil) ; set in LP
+     (boot-strap-flg .
 
 ; Keep this state global in sync with world global of the same name.  We expect
 ; both this and the corresponding world global both to be constant, except when
@@ -14938,27 +14959,27 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the world global, it seems simple and reasonable to record the value in this
 ; corresponding state global.
 
-                    t)
-    (brr-evisc-tuple . :default) ; see About brr-evisc-tuple and Its Mirror
-    (cert-data . nil)
-    (certify-book-info .
+                     t)
+     (brr-evisc-tuple . :default) ; see About brr-evisc-tuple and Its Mirror
+     (cert-data . nil)
+     (certify-book-info .
 
 ; Certify-book-info is non-nil when certifying a book, in which case it is a
 ; certify-book-info record.
 
-                       nil)
-    (check-invariant-risk . :WARNING)
-    (check-sum-weirdness . nil)
-    (checkpoint-forced-goals . nil) ; default in :doc
-    (checkpoint-processors . ; avoid unbound var error with collect-checkpoints
-                           ,*initial-checkpoint-processors*)
-    (checkpoint-summary-limit . (nil . 3))
-    (compiled-file-extension . nil) ; set by initialize-state-globals
-    (compiler-enabled . nil) ; Lisp-specific; set by initialize-state-globals
-    (connected-book-directory . nil)  ; set-cbd couldn't have put this!
-    (current-acl2-world . nil)
-    (current-package . "ACL2")
-    (debug-pspv .
+                        nil)
+     (check-invariant-risk . :WARNING)
+     (check-sum-weirdness . nil)
+     (checkpoint-forced-goals . nil) ; default in :doc
+     (checkpoint-processors . ; avoid unbound var error with collect-checkpoints
+                            ,*initial-checkpoint-processors*)
+     (checkpoint-summary-limit . (nil . 3))
+     (compiled-file-extension . nil) ; set by initialize-state-globals
+     (compiler-enabled . nil) ; Lisp-specific; set by initialize-state-globals
+     (connected-book-directory . nil) ; set-cbd couldn't have put this!
+     (current-acl2-world . nil)
+     (current-package . "ACL2")
+     (debug-pspv .
 
 ; This variable is used with #+acl2-par for printing information when certain
 ; modifications are made to the pspv in the waterfall.  David Rager informs us
@@ -14968,163 +14989,163 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; (e.g., argument lists of various functions that take a debug-pspv argument
 ; would need to change).
 
-                nil)
-    (debugger-enable . nil) ; keep in sync with :doc set-debugger-enable
-    (defaxioms-okp-cert . t) ; t when not inside certify-book
-    (deferred-ttag-notes . :not-deferred)
-    (deferred-ttag-notes-saved . nil)
-    (dmrp . nil)
-    (event-data-fal . nil)
-    (evisc-hitp-without-iprint . nil)
-    (eviscerate-hide-terms . nil)
-    (fast-cert-status . nil)
-    (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
-    (fmt-soft-right-margin . ,*fmt-soft-right-margin-default*)
-    (gag-mode . nil) ; set in lp
-    (gag-mode-evisc-tuple . nil)
-    (gag-state . nil)
-    (gag-state-saved . nil) ; saved when gag-state is set to nil
-    (get-internal-time-as-realtime . nil) ; seems harmless to change
-    (giant-lambda-object . nil)
-    (global-ctx . nil)
-    (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
-    (gstackp . nil)
-    (guard-checking-on . t)
-    (host-lisp . nil)
-    (ignore-cert-files . nil)
-    (illegal-to-certify-message . nil)
-    (in-local-flg . nil)
-    (in-prove-flg . nil)
-    (in-verify-flg . nil) ; value can be set to the ld-level
-    (including-uncertified-p . nil) ; valid only during include-book
-    (inhibit-er-hard . nil)
-    (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
-                                     ; will print a summary for each event.
-                                     ; Exit-boot-strap-mode sets this list
-                                     ; to nil.
-    (inhibit-output-lst-stack . nil)
-    (inhibited-summary-types . nil)
-    (inside-progn-fn1 . nil)
-    (inside-skip-proofs . nil)
-    (iprint-ar . ,(init-iprint-ar *iprint-hard-bound-default* nil))
-    (iprint-fal . nil)
-    (iprint-hard-bound . ,*iprint-hard-bound-default*)
-    (iprint-soft-bound . ,*iprint-soft-bound-default*)
-    (keep-tmp-files . nil)
-    (last-event-data . nil)
-    (last-make-event-expansion . nil)
-    (last-step-limit . -1) ; any number should be OK
-    (ld-history . nil)
-    (ld-level . 0)
-    (ld-okp . :default) ; see :DOC calling-ld-in-bad-contexts
-    (logic-fns-with-raw-code . ,*initial-logic-fns-with-raw-code*)
-    (macros-with-raw-code . ,*initial-macros-with-raw-code*)
-    (main-timer . 0)
-    (make-event-debug . nil)
-    (make-event-debug-depth . 0)
-    (match-free-error . nil) ; if t, modify :doc for set-match-free-error
-    (modifying-include-book-dir-alist . nil)
-    (parallel-execution-enabled . nil)
-    (parallelism-hazards-action . nil) ; nil or :error, else treated as :warn
-    (pc-erp . nil)
-    (pc-info . nil) ; set in LP
-    (pc-output . nil)
-    (pc-ss-alist . nil)
-    (pc-val . nil)
-    (port-file-enabled . t)
-    (ppr-flat-right-margin . 40)
-    (print-base . 10)
-    (print-case . :upcase)
-    (print-circle . nil)
-    (print-circle-files . t) ; set to nil for #+gcl in LP
-    (print-clause-ids . nil)
-    (print-escape . t)
-    (print-gv-defaults . nil)
-    (print-length . nil)
-    (print-level . nil)
-    (print-lines . nil)
-    (print-pretty . nil) ; default in Common Lisp is implementation dependent
-    (print-radix . nil)
-    (print-readably . nil)
-    (print-right-margin . nil)
-    (program-fns-with-raw-code . ,*initial-program-fns-with-raw-code*)
-    (prompt-function . default-print-prompt)
-    (prompt-memo . nil)
-    (proof-tree . nil)
-    (proof-tree-buffer-width . ,*fmt-soft-right-margin-default*)
-    (proof-tree-ctx . nil)
-    (proof-tree-indent . "|  ")
-    (proof-tree-start-printed . nil)
-    (protect-memoize-statistics . nil)
-    (raw-guard-warningp . nil)
-    (raw-include-book-dir!-alist . :ignore)
-    (raw-include-book-dir-alist . :ignore)
-    (raw-proof-format . nil)
-    (raw-warning-format . nil)
-    (redo-flat-fail . nil)
-    (redo-flat-succ . nil)
-    (redundant-with-raw-code-okp . nil)
-    (retrace-p . nil)
-    (safe-mode . nil)
-    (save-expansion-file . nil) ; potentially set in LP
-    (saved-output-p . nil)
-    (saved-output-reversed . nil)
-    (saved-output-token-lst . nil)
-    (script-mode . nil)
-    (serialize-character . nil)
-    (serialize-character-system . nil) ; set in LP
-    (show-custom-keyword-hint-expansion . nil)
-    (skip-notify-on-defttag . nil)
-    (skip-proofs-by-system . nil)
-    (skip-proofs-okp-cert . t) ; t when not inside certify-book
-    (skip-reset-prehistory . nil) ; non-nil skips (reset-prehistory nil)
-    (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
-    (splitter-output . t)
-    (step-limit-record . nil)
-    (system-attachments-cache . nil) ; see modified-system-attachments
-    (temp-touchable-fns . nil)
-    (temp-touchable-vars . nil)
-    (term-evisc-tuple . :default)
-    (timer-alist . nil)
-    (tmp-dir . nil) ; initialized by initialize-state-globals
-    (total-parallelism-work-limit ; for #+acl2-par
-     . ,(default-total-parallelism-work-limit))
-    (total-parallelism-work-limit-error . t) ; for #+acl2-par
-    (trace-co . acl2-output-channel::standard-character-output-0)
-    (trace-specs . nil)
-    (triple-print-prefix . " ")
-    (ttags-allowed . :all)
-    (undone-worlds-kill-ring . (nil nil nil))
+                 nil)
+     (debugger-enable . nil)  ; keep in sync with :doc set-debugger-enable
+     (defaxioms-okp-cert . t) ; t when not inside certify-book
+     (deferred-ttag-notes . :not-deferred)
+     (deferred-ttag-notes-saved . nil)
+     (dmrp . nil)
+     (event-data-fal . nil)
+     (evisc-hitp-without-iprint . nil)
+     (eviscerate-hide-terms . nil)
+     (fast-cert-status . nil)
+     (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
+     (fmt-soft-right-margin . ,*fmt-soft-right-margin-default*)
+     (gag-mode . nil) ; set in lp
+     (gag-mode-evisc-tuple . nil)
+     (gag-state . nil)
+     (gag-state-saved . nil)               ; saved when gag-state is set to nil
+     (get-internal-time-as-realtime . nil) ; seems harmless to change
+     (giant-lambda-object . nil)
+     (global-ctx . nil)
+     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
+     (gstackp . nil)
+     (guard-checking-on . t)
+     (host-lisp . nil)
+     (ignore-cert-files . nil)
+     (illegal-to-certify-message . nil))
+   `((in-local-flg . nil)
+     (in-prove-flg . nil)
+     (in-verify-flg . nil)           ; value can be set to the ld-level
+     (including-uncertified-p . nil) ; valid only during include-book
+     (inhibit-er-hard . nil)
+     (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
+; will print a summary for each event.
+; Exit-boot-strap-mode sets this list
+; to nil.
+     (inhibit-output-lst-stack . nil)
+     (inhibited-summary-types . nil)
+     (inside-progn-fn1 . nil)
+     (inside-skip-proofs . nil)
+     (iprint-ar . ,(init-iprint-ar *iprint-hard-bound-default* nil))
+     (iprint-fal . nil)
+     (iprint-hard-bound . ,*iprint-hard-bound-default*)
+     (iprint-soft-bound . ,*iprint-soft-bound-default*)
+     (keep-tmp-files . nil)
+     (last-event-data . nil)
+     (last-make-event-expansion . nil)
+     (last-step-limit . -1) ; any number should be OK
+     (ld-history . nil)
+     (ld-level . 0)
+     (ld-okp . :default) ; see :DOC calling-ld-in-bad-contexts
+     (logic-fns-with-raw-code . ,*initial-logic-fns-with-raw-code*)
+     (macros-with-raw-code . ,*initial-macros-with-raw-code*)
+     (main-timer . 0)
+     (make-event-debug . nil)
+     (make-event-debug-depth . 0)
+     (match-free-error . nil) ; if t, modify :doc for set-match-free-error
+     (modifying-include-book-dir-alist . nil)
+     (parallel-execution-enabled . nil)
+     (parallelism-hazards-action . nil) ; nil or :error, else treated as :warn
+     (pc-erp . nil)
+     (pc-info . nil) ; set in LP
+     (pc-output . nil)
+     (pc-ss-alist . nil)
+     (pc-val . nil)
+     (port-file-enabled . t)
+     (ppr-flat-right-margin . 40)
+     (print-base . 10)
+     (print-case . :upcase)
+     (print-circle . nil)
+     (print-circle-files . t) ; set to nil for #+gcl in LP
+     (print-clause-ids . nil)
+     (print-escape . t)
+     (print-gv-defaults . nil)
+     (print-length . nil)
+     (print-level . nil)
+     (print-lines . nil)
+     (print-pretty . nil) ; default in Common Lisp is implementation dependent
+     (print-radix . nil)
+     (print-readably . nil))
+   `((print-right-margin . nil)
+     (program-fns-with-raw-code . ,*initial-program-fns-with-raw-code*)
+     (prompt-function . default-print-prompt)
+     (prompt-memo . nil)
+     (proof-tree . nil)
+     (proof-tree-buffer-width . ,*fmt-soft-right-margin-default*)
+     (proof-tree-ctx . nil)
+     (proof-tree-indent . "|  ")
+     (proof-tree-start-printed . nil)
+     (protect-memoize-statistics . nil)
+     (raw-guard-warningp . nil)
+     (raw-include-book-dir!-alist . :ignore)
+     (raw-include-book-dir-alist . :ignore)
+     (raw-proof-format . nil)
+     (raw-warning-format . nil)
+     (redo-flat-fail . nil)
+     (redo-flat-succ . nil)
+     (redundant-with-raw-code-okp . nil)
+     (retrace-p . nil)
+     (safe-mode . nil)
+     (save-expansion-file . nil) ; potentially set in LP
+     (saved-output-p . nil)
+     (saved-output-reversed . nil)
+     (saved-output-token-lst . nil)
+     (script-mode . nil)
+     (serialize-character . nil)
+     (serialize-character-system . nil) ; set in LP
+     (show-custom-keyword-hint-expansion . nil)
+     (skip-notify-on-defttag . nil)
+     (skip-proofs-by-system . nil)
+     (skip-proofs-okp-cert . t)    ; t when not inside certify-book
+     (skip-reset-prehistory . nil) ; non-nil skips (reset-prehistory nil)
+     (slow-array-action . :break)  ; set to :warning in exit-boot-strap-mode
+     (splitter-output . t)
+     (step-limit-record . nil)
+     (system-attachments-cache . nil) ; see modified-system-attachments
+     (temp-touchable-fns . nil)
+     (temp-touchable-vars . nil)
+     (term-evisc-tuple . :default)
+     (timer-alist . nil)
+     (tmp-dir . nil)               ; initialized by initialize-state-globals
+     (total-parallelism-work-limit ; for #+acl2-par
+      . ,(default-total-parallelism-work-limit))
+     (total-parallelism-work-limit-error . t) ; for #+acl2-par
+     (trace-co . acl2-output-channel::standard-character-output-0)
+     (trace-specs . nil)
+     (triple-print-prefix . " ")
+     (ttags-allowed . :all)
+     (undone-worlds-kill-ring . (nil nil nil))
 
 ; By making the above list of nils be of length n you can arrange for ACL2 to
 ; save n worlds for undoing undos.  If n is 0, no undoing of undos is possible.
 ; If n is 1, the last undo can be undone.
 
-    (useless-runes . nil)
-    (user-home-dir . nil) ; set first time entering lp
-    (verbose-theory-warning . t)
-    (verify-termination-on-raw-program-okp
-     .
-     (apply$-lambda apply$-prim plist-worldp-with-formals ilks-plist-worldp
-                    iprint-ar-aref1))
-    (walkabout-alist . nil)
-    (warnings-as-errors . nil) ; nil or a warnings-as-errors record
-    (waterfall-parallelism . nil) ; for #+acl2-par
-    (waterfall-parallelism-timing-threshold
-     . 10000) ; #+acl2-par -- microsec limit for resource-and-timing-based mode
-    (waterfall-printing . :full) ; for #+acl2-par
-    (waterfall-printing-when-finished . nil) ; for #+acl2-par
-    (window-interface-postlude
-     . "#>\\>#<\\<e(acl2-window-postlude ?~sw ~xt ~xp)#>\\>")
-    (window-interface-prelude
-     . "~%#<\\<e(acl2-window-prelude ?~sw ~xc)#>\\>#<\\<~sw")
-    (window-interfacep . nil)
-    (wormhole-name . nil)
-    (wormhole-status . nil)
-    (write-acl2x . nil)
-    (write-bookdata . nil) ; see maybe-write-bookdata
-    (write-for-read . nil)
-    (writes-okp . t)))
+     (useless-runes . nil)
+     (user-home-dir . nil)) ; set first time entering lp
+   '((verbose-theory-warning . t)
+     (verify-termination-on-raw-program-okp
+      .
+      (apply$-lambda apply$-prim plist-worldp-with-formals ilks-plist-worldp
+                     iprint-ar-aref1))
+     (walkabout-alist . nil)
+     (warnings-as-errors . nil)    ; nil or a warnings-as-errors record
+     (waterfall-parallelism . nil) ; for #+acl2-par
+     (waterfall-parallelism-timing-threshold
+      . 10000) ; #+acl2-par -- microsec limit for resource-and-timing-based mode
+     (waterfall-printing . :full)             ; for #+acl2-par
+     (waterfall-printing-when-finished . nil) ; for #+acl2-par
+     (window-interface-postlude
+      . "#>\\>#<\\<e(acl2-window-postlude ?~sw ~xt ~xp)#>\\>")
+     (window-interface-prelude
+      . "~%#<\\<e(acl2-window-prelude ?~sw ~xc)#>\\>#<\\<~sw")
+     (window-interfacep . nil)
+     (wormhole-name . nil)
+     (wormhole-status . nil)
+     (write-acl2x . nil)
+     (write-bookdata . nil) ; see maybe-write-bookdata
+     (write-for-read . nil)
+     (writes-okp . t))))
 
 (defun merge-symbol-alistp (a1 a2)
   (declare (xargs :mode :program))
@@ -20531,43 +20552,50 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; code in may-need-slashes-fn are consistent.  This is checked at build time by
 ; the function check-slashable.
 
-  (list (CODE-CHAR 0) (CODE-CHAR 1) (CODE-CHAR 2) (CODE-CHAR 3)
-        (CODE-CHAR 4) (CODE-CHAR 5) (CODE-CHAR 6) (CODE-CHAR 7)
-        (CODE-CHAR 8) (CODE-CHAR 9) (CODE-CHAR 10) (CODE-CHAR 11)
-        (CODE-CHAR 12) (CODE-CHAR 13) (CODE-CHAR 14) (CODE-CHAR 15)
-        (CODE-CHAR 16) (CODE-CHAR 17) (CODE-CHAR 18) (CODE-CHAR 19)
-        (CODE-CHAR 20) (CODE-CHAR 21) (CODE-CHAR 22) (CODE-CHAR 23)
-        (CODE-CHAR 24) (CODE-CHAR 25) (CODE-CHAR 26) (CODE-CHAR 27)
-        (CODE-CHAR 28) (CODE-CHAR 29) (CODE-CHAR 30) (CODE-CHAR 31)
-        (CODE-CHAR 32) (CODE-CHAR 34) (CODE-CHAR 35) (CODE-CHAR 39)
-        (CODE-CHAR 40) (CODE-CHAR 41) (CODE-CHAR 44) (CODE-CHAR 58)
-        (CODE-CHAR 59) (CODE-CHAR 92) (CODE-CHAR 96) (CODE-CHAR 97)
-        (CODE-CHAR 98) (CODE-CHAR 99) (CODE-CHAR 100) (CODE-CHAR 101)
-        (CODE-CHAR 102) (CODE-CHAR 103) (CODE-CHAR 104) (CODE-CHAR 105)
-        (CODE-CHAR 106) (CODE-CHAR 107) (CODE-CHAR 108) (CODE-CHAR 109)
-        (CODE-CHAR 110) (CODE-CHAR 111) (CODE-CHAR 112) (CODE-CHAR 113)
-        (CODE-CHAR 114) (CODE-CHAR 115) (CODE-CHAR 116) (CODE-CHAR 117)
-        (CODE-CHAR 118) (CODE-CHAR 119) (CODE-CHAR 120) (CODE-CHAR 121)
-        (CODE-CHAR 122) (CODE-CHAR 124) (CODE-CHAR 127) (CODE-CHAR 128)
-        (CODE-CHAR 129) (CODE-CHAR 130) (CODE-CHAR 131) (CODE-CHAR 132)
-        (CODE-CHAR 133) (CODE-CHAR 134) (CODE-CHAR 135) (CODE-CHAR 136)
-        (CODE-CHAR 137) (CODE-CHAR 138) (CODE-CHAR 139) (CODE-CHAR 140)
-        (CODE-CHAR 141) (CODE-CHAR 142) (CODE-CHAR 143) (CODE-CHAR 144)
-        (CODE-CHAR 145) (CODE-CHAR 146) (CODE-CHAR 147) (CODE-CHAR 148)
-        (CODE-CHAR 149) (CODE-CHAR 150) (CODE-CHAR 151) (CODE-CHAR 152)
-        (CODE-CHAR 153) (CODE-CHAR 154) (CODE-CHAR 155) (CODE-CHAR 156)
-        (CODE-CHAR 157) (CODE-CHAR 158) (CODE-CHAR 159) (CODE-CHAR 160)
-        (CODE-CHAR 168) (CODE-CHAR 170) (CODE-CHAR 175) (CODE-CHAR 178)
-        (CODE-CHAR 179) (CODE-CHAR 180) (CODE-CHAR 181) (CODE-CHAR 184)
-        (CODE-CHAR 185) (CODE-CHAR 186) (CODE-CHAR 188) (CODE-CHAR 189)
-        (CODE-CHAR 190) (CODE-CHAR 224) (CODE-CHAR 225) (CODE-CHAR 226)
-        (CODE-CHAR 227) (CODE-CHAR 228) (CODE-CHAR 229) (CODE-CHAR 230)
-        (CODE-CHAR 231) (CODE-CHAR 232) (CODE-CHAR 233) (CODE-CHAR 234)
-        (CODE-CHAR 235) (CODE-CHAR 236) (CODE-CHAR 237) (CODE-CHAR 238)
-        (CODE-CHAR 239) (CODE-CHAR 240) (CODE-CHAR 241) (CODE-CHAR 242)
-        (CODE-CHAR 243) (CODE-CHAR 244) (CODE-CHAR 245) (CODE-CHAR 246)
-        (CODE-CHAR 248) (CODE-CHAR 249) (CODE-CHAR 250) (CODE-CHAR 251)
-        (CODE-CHAR 252) (CODE-CHAR 253) (CODE-CHAR 254) (CODE-CHAR 255)))
+; We break this into an append of smaller lists, to avoid a GCL error reported
+; by Camm Maguire related to call-arguments-limit.  In case this list is
+; expanded later, we play it safe by breaking, initially, into sub-lists of
+; length 50.
+
+  (append
+   (list (CODE-CHAR 0) (CODE-CHAR 1) (CODE-CHAR 2) (CODE-CHAR 3)
+         (CODE-CHAR 4) (CODE-CHAR 5) (CODE-CHAR 6) (CODE-CHAR 7)
+         (CODE-CHAR 8) (CODE-CHAR 9) (CODE-CHAR 10) (CODE-CHAR 11)
+         (CODE-CHAR 12) (CODE-CHAR 13) (CODE-CHAR 14) (CODE-CHAR 15)
+         (CODE-CHAR 16) (CODE-CHAR 17) (CODE-CHAR 18) (CODE-CHAR 19)
+         (CODE-CHAR 20) (CODE-CHAR 21) (CODE-CHAR 22) (CODE-CHAR 23)
+         (CODE-CHAR 24) (CODE-CHAR 25) (CODE-CHAR 26) (CODE-CHAR 27)
+         (CODE-CHAR 28) (CODE-CHAR 29) (CODE-CHAR 30) (CODE-CHAR 31)
+         (CODE-CHAR 32) (CODE-CHAR 34) (CODE-CHAR 35) (CODE-CHAR 39)
+         (CODE-CHAR 40) (CODE-CHAR 41) (CODE-CHAR 44) (CODE-CHAR 58)
+         (CODE-CHAR 59) (CODE-CHAR 92) (CODE-CHAR 96) (CODE-CHAR 97)
+         (CODE-CHAR 98) (CODE-CHAR 99) (CODE-CHAR 100) (CODE-CHAR 101)
+         (CODE-CHAR 102) (CODE-CHAR 103))
+   (list (CODE-CHAR 104) (CODE-CHAR 105)
+         (CODE-CHAR 106) (CODE-CHAR 107) (CODE-CHAR 108) (CODE-CHAR 109)
+         (CODE-CHAR 110) (CODE-CHAR 111) (CODE-CHAR 112) (CODE-CHAR 113)
+         (CODE-CHAR 114) (CODE-CHAR 115) (CODE-CHAR 116) (CODE-CHAR 117)
+         (CODE-CHAR 118) (CODE-CHAR 119) (CODE-CHAR 120) (CODE-CHAR 121)
+         (CODE-CHAR 122) (CODE-CHAR 124) (CODE-CHAR 127) (CODE-CHAR 128)
+         (CODE-CHAR 129) (CODE-CHAR 130) (CODE-CHAR 131) (CODE-CHAR 132)
+         (CODE-CHAR 133) (CODE-CHAR 134) (CODE-CHAR 135) (CODE-CHAR 136)
+         (CODE-CHAR 137) (CODE-CHAR 138) (CODE-CHAR 139) (CODE-CHAR 140)
+         (CODE-CHAR 141) (CODE-CHAR 142) (CODE-CHAR 143) (CODE-CHAR 144)
+         (CODE-CHAR 145) (CODE-CHAR 146) (CODE-CHAR 147) (CODE-CHAR 148)
+         (CODE-CHAR 149) (CODE-CHAR 150) (CODE-CHAR 151) (CODE-CHAR 152)
+         (CODE-CHAR 153) (CODE-CHAR 154) (CODE-CHAR 155) (CODE-CHAR 156))
+   (list (CODE-CHAR 157) (CODE-CHAR 158) (CODE-CHAR 159) (CODE-CHAR 160)
+         (CODE-CHAR 168) (CODE-CHAR 170) (CODE-CHAR 175) (CODE-CHAR 178)
+         (CODE-CHAR 179) (CODE-CHAR 180) (CODE-CHAR 181) (CODE-CHAR 184)
+         (CODE-CHAR 185) (CODE-CHAR 186) (CODE-CHAR 188) (CODE-CHAR 189)
+         (CODE-CHAR 190) (CODE-CHAR 224) (CODE-CHAR 225) (CODE-CHAR 226)
+         (CODE-CHAR 227) (CODE-CHAR 228) (CODE-CHAR 229) (CODE-CHAR 230)
+         (CODE-CHAR 231) (CODE-CHAR 232) (CODE-CHAR 233) (CODE-CHAR 234)
+         (CODE-CHAR 235) (CODE-CHAR 236) (CODE-CHAR 237) (CODE-CHAR 238)
+         (CODE-CHAR 239) (CODE-CHAR 240) (CODE-CHAR 241) (CODE-CHAR 242)
+         (CODE-CHAR 243) (CODE-CHAR 244) (CODE-CHAR 245) (CODE-CHAR 246)
+         (CODE-CHAR 248) (CODE-CHAR 249) (CODE-CHAR 250) (CODE-CHAR 251)
+         (CODE-CHAR 252) (CODE-CHAR 253) (CODE-CHAR 254) (CODE-CHAR 255))))
 
 (defun some-slashable (l)
   (declare (xargs :guard (character-listp l)))

@@ -479,7 +479,7 @@
 ; elements.
 
 ; If a :guard is specified, it is added as an additional conjunct to the guard
-; we can compute from from the TYPE specs.
+; we can compute from the TYPE specs.
 
 ; We'll build lambda$ expressions for each of these pairs of terms, e.g.,
 ; (lambda$ (v) (declare (xargs :guard g1)) t1) might be the lambda$ expression
@@ -1282,9 +1282,9 @@
 ;  finallyc                        ; an unfinished carton for the finally val
 ;  finp                            ; non-nil when there is a FINALLY clause.
 
-; When no finally clause is provided then finallyc is as though though FINALLY
-; (RETURN NIL) was parsed, except that finp is nil to indicate that there was
-; no FINALLY clause.  We may consult finp when returning other than a single
+; When no finally clause is provided then finallyc is as though FINALLY (RETURN
+; NIL) was parsed, except that finp is nil to indicate that there was no
+; FINALLY clause.  We may consult finp when returning other than a single
 ; ordinary value (see translated-fin-body in translate11-loop$).
 
 ; However, the type specs may be omitted, initialization forms may be omitted
@@ -2359,7 +2359,7 @@
 
 ; The following example shows why we use rassoc-eq instead of rassoc-equal
 ; below (as we did through Version_8.2).  The fundamental problem is that
-; distinct (non-eq) bit-arrays can be satisfy Common Lisp's equal.
+; distinct (non-eq) bit-arrays can satisfy Common Lisp's equal.
 
 ;   (defstobj st1 (fld1 :type (array bit (8)) :initially 0))
 ;   (defstobj st2 (fld2 :type (array bit (8)) :initially 0) :congruent-to st1)
@@ -4447,8 +4447,8 @@
 ; We originally defined the apply$-badge and the commonly used generic badges in
 ; apply-prim.lisp but they're needed earlier now.
 
-; We evaluate the defrec below in :logic mode so that the its accessors can be
-; used in doppelganger-badge-userfn.
+; We evaluate the defrec below in :logic mode so that its accessors can be used
+; in doppelganger-badge-userfn.
 (encapsulate () (logic)
 (defrec apply$-badge
 
@@ -5059,7 +5059,7 @@
 ; that X has value NIL under ev$.  But clearly, if you apply$ the second lambda
 ; to '(456) you get 456.
 
-; The second example illustrate why tameness is crucial.  Consider
+; The second example illustrates why tameness is crucial.  Consider
 
 ; `(LAMBDA (FN) ((LAMBDA (A) '123) (APPLY$ FN '(1 2))))
 
@@ -8001,10 +8001,10 @@
      (let (#-acl2-loop-only (*aokp*
 
 ; See the #-acl2-loop-only definition of return-last and the comment just
-; below.  Note that fn is not mbe1-raw, so this binding is appropriate.
-; We are being a bit more generous here in our binding of *aokp*, but it seems
-; fine to keep it simple here, and for since evaluation of arg2 does not affect
-; the logical result, there is no soundness issue here.
+; below.  Note that fn is not mbe1-raw, so this binding is appropriate.  We are
+; being a bit more generous here in our binding of *aokp*, but it seems fine to
+; keep it simple here, and since evaluation of arg2 does not affect the logical
+; result, there is no soundness issue here.
 
                              t))
        (ev-rec arg2 alist w user-stobj-alist
@@ -13558,8 +13558,8 @@
 ; Of course, this time includes checking the guard that *tenk-tenk* is a list
 ; of integers.  That however takes an insignificant amount of time; if we run
 ; bar in raw Lisp (which doesn't actually check the guard but just plows into
-; the compiled raw Lisp loop) the time is indistiguishable from the time in the
-; ACL2 read-eval-print loop.
+; the compiled raw Lisp loop) the time is indistinguishable from the time in
+; the ACL2 read-eval-print loop.
 
 ; Running the loop$ in the loop is a little faster too, because all the lambdas
 ; encountered by the top-level are :GOOD and compiled.  Recall that when guard
@@ -14341,7 +14341,7 @@
 ;   constant-nil-function-arity-0 (no untranslation), or
 ;   untranslate-lambda-object-cheat (untranslate using the quoted lambda$).
 
-; - It is illegal for a stobj to be declared in a WITH clauses.  Rather, known
+; - It is illegal for a stobj to be declared in a WITH clause.  Rather, known
 ;   stobjs are implicitly available in the value terms in those clauses, and
 ;   they are also available -- both for reference and for binding with SETQ and
 ;   MV-SETQ -- in the DO body and the FINALLY clause.
@@ -14399,7 +14399,7 @@
 
 ; - Function translate11-do-clause is used for combining the
 ;   separately-translated parts of a DO loop$.  We are careful to translate
-;   with stobjs-out = t when we do that, since we already dealing with
+;   with stobjs-out = t when we do that, since we are already dealing with
 ;   translated terms at that point and thus, in particular, we need to avoid
 ;   stobj violations, since our terms represent stobjs in alists.  (But we are
 ;   careful to maintain true single-threadedness; see the Algorithm Description
@@ -15449,7 +15449,7 @@
 ; although untranslated lambda applications can use IGNORE declarations,
 ; translated terms do not have this capability; and translated terms are, of
 ; course, the terms seen by the ACL2 rewriter.  Since we can't include IGNORE
-; declarations in the translated terms, how to we inform the rewriter not to do
+; declarations in the translated terms, how do we inform the rewriter not to do
 ; needless simplification in such cases?  This is accomplished by the
 ; introduction of HIDE for ignored variables, as we now illustrate.  Consider a
 ; modification of the first LET-expression above, which was (let ((x 0))
@@ -17218,7 +17218,7 @@
               ((not (equal (length (formals accessor wrld))
                            (length (cdr actual))))
 
-; Even if this case is caught be translation, it seems reasonable to provide an
+; Even if this case is caught by translation, it seems reasonable to provide an
 ; error specific to stobj-let right here.
 
                (msg "The function symbol ~x0 is called with ~n1 ~
@@ -18191,7 +18191,7 @@
 ; To return to WARNING above, we have considered simplifying a special case,
 ; namely, replacing '(lambda (x) (fn x)) by 'fn provided fn is a tame function
 ; symbol of arity 1, x is a legal variable, and there is no TYPE spec and no
-; guard.  We regard the latter function object as esthetically more pleasing
+; guard.  We regard the latter function object as aesthetically more pleasing
 ; than the lambda$.
 
 ; But we have decided against this on two grounds.  First, history generally
@@ -18214,7 +18214,7 @@
 ; compiled.  For example, on a list of the first million positive integers, the
 ; former takes 0.42 seconds while the latter takes 0.13 seconds.  Here sq,
 ; which fixed its argument before squaring it, was guard verified with a guard
-; of t.  So this aesthetic decision couldslow down execution!
+; of t.  So this aesthetic decision could slow down execution!
 
 ; WARNING: See vars-specs-and-targets where we explore the form generated here
 ; to recover the type specs of the variables.
@@ -18665,9 +18665,9 @@
 ; our special ``xargs'' sense of :guard is as the value of a local variable or
 ; as the term provided as a :measure or :guard.  But local variable values are
 ; always preceded by =-sign.  So our strategy here is to look for :guard among
-; the elements and if it preceded by DO or FINALLY we delete the :guard and its
-; term and recur.  Similarly for :measure and :values preceded by DO (possibly
-; after removing one of those keywords and its associated value).
+; the elements and if it is preceded by DO or FINALLY we delete the :guard and
+; its term and recur.  Similarly for :measure and :values preceded by DO
+; (possibly after removing one of those keywords and its associated value).
 
   (cond ((endp args) nil)
         ((symbolp (car args))
@@ -23181,8 +23181,8 @@
 ; input signature (st1); and args is (st2), i.e., we are considering the call
 ; (f st2).  Then alist-in-out is ((st1 . st2)).  We apply the mapping,
 ; alist-in-out, in reverse to stobjs-out-x = (st2), to deduce that the
-; stobjs-out of fn should be (st1).  Note that if we we then apply alist-in-out
-; to this computed stobjs-out of fn, (st1), then we get (st2), which is the
+; stobjs-out of fn should be (st1).  Note that if we then apply alist-in-out to
+; this computed stobjs-out of fn, (st1), then we get (st2), which is the
 ; expected stobjs-out-x.
 
         (let ((bindings
@@ -23460,10 +23460,7 @@
          (true-listp x)
          (<= 3 (length x)))
     (let* ((lambda-casep (eq (car x) 'LAMBDA))
-           (allow-free-varsp nil)
-           (vars (if allow-free-varsp
-                     (butlast (cadr x) 1)
-                   (cadr x)))
+           (vars (cadr x))
            (dcls (butlast (cddr x) 1))
            (body (car (last x)))
            (stobjs-out-simple (if (eq stobjs-out t)
@@ -23577,7 +23574,7 @@
                    (free-vars-guard (set-difference-eq (all-vars tguard)
                                                        vars)))
               (cond
-               ((and free-vars-guard (not allow-free-varsp))
+               (free-vars-guard
                 (trans-er+? cform x
                             ctx
                             "The guard of a LAMBDA object or lambda$ term may ~
@@ -23692,7 +23689,7 @@
                                 ignores)
                                ignorables))))
                    (cond
-                    ((and free-vars-body (not allow-free-varsp))
+                    (free-vars-body
                      (trans-er+? cform x
                                  ctx
                                  "The body of a LAMBDA object or lambda$ term ~
@@ -23770,15 +23767,7 @@
                                                  `(:GUARD ,tguard
                                                           :SPLIT-TYPES T)
                                                  edcls))))
-                                          (vars1
-                                           (if allow-free-varsp
-                                               (append
-                                                vars
-                                                (revappend free-vars-guard nil)
-                                                (set-difference-eq
-                                                 (revappend free-vars-body nil)
-                                                 free-vars-guard))
-                                               vars)))
+                                          (vars1 vars))
 
                                       (let ((new-tbody
 

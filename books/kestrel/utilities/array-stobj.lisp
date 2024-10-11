@@ -1,4 +1,4 @@
-; A stob containing a single array, of elements of any type.
+; A stobj containing a single array, of elements of any type.
 ;
 ; Copyright (C) 2022 Kestrel Institute
 ;

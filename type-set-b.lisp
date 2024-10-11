@@ -6018,9 +6018,9 @@
 ; On recursion
 
 ; Through Version_8.2 we overcounted accumulated frames for a rule applied
-; recursively, in the sense that it already on the stack discussed above when
-; it is again pushed onto the stack.  The problem was documented essentially as
-; follows.
+; recursively, in the sense that it is already on the stack discussed above
+; when it is again pushed onto the stack.  The problem was documented
+; essentially as follows.
 
 ;    Consider the following example.
 ;
@@ -7035,7 +7035,7 @@
 ; print the accumulated-persistence data, we enter the wormhole to do it --
 ; even accumulated persistence has not been turned on.  So we have to set the
 ; code to :ENTER.  But we have to remember to turn it back off upon leaving the
-; wormhole.  How to we know, once we're in the wormhole, whether to set the
+; wormhole.  How do we know, once we're in the wormhole, whether to set the
 ; code to :SKIP or :ENTER?  When we switch :SKIP to :ENTER to go inside we set
 ; the data field to :RETURN-TO-SKIP.  This doesn't hurt anything because if the
 ; code was :SKIP, the data was nil anyway.  Once inside, if the data is
@@ -9619,7 +9619,7 @@
 ; to true and is removed.  Bummer.
 
 ; Previously, the conclusion of a :use hint or of a fact derived from
-; a generalization rule would, in affect, be rewritten (the first
+; a generalization rule would, in effect, be rewritten (the first
 ; time) under the type-alist of the overall goal to be proved.  We now
 ; handle IMPLIES differently in order to return to this original
 ; behavior.
