@@ -839,6 +839,20 @@
     "Encoding prefixes are defined in @(tsee eprefix)."))
   :pred eprefix-optionp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist eprefix-option-list
+  :short "Fixtype of lists of optional encoding prefixes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Optional encoding prefixes are defined in @(tsee eprefix-option)."))
+  :elt-type eprefix-option
+  :true-listp t
+  :elementp-of-nil t
+  :pred eprefix-option-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod stringlit
