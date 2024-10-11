@@ -610,7 +610,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-univ-char-name ((ucn univ-char-name-p))
+(define valid-univ-char-name ((ucn univ-char-name-p) (max natp))
   :returns (mv erp (code natp))
   :short "Validate a universal character name."
   :long
@@ -619,9 +619,14 @@
     "If validation is successful, we return the numeric code of the character.")
    (xdoc::p
     "[C:6.4.3/2] states some restriction on the character code.
-     Another implicit restriction is that it should be
-     within the current range of Unicode character codes,
-     i.e. at most @('10FFFFh')."))
+     [C:6.4.4.4/4] and (implicitly) [C:6.4.5/4]
+     state type-based restrictions on
+     the character codes of octal and hexadecimal escapes,
+     based on the (possibly absent) prefix of
+     the character constant or string literal.
+     But it seems reasonable that the same range restrictions
+     should also apply to universal character names;
+     some experiments with the C compiler on Mac confirms this."))
   (b* (((reterr) 0)
        (code (univ-char-name-case
               ucn
@@ -652,10 +657,10 @@
         (reterr (msg "The universal character name ~x0 ~
                       has a code ~x1 between D800h and DFFFh."
                      (univ-char-name-fix ucn) code)))
-       ((when (> code #x10ffff))
+       ((when (> code (nfix max)))
         (reterr (msg "The universal character name ~x0 ~
-                      has a code ~x1 above 10FFFFh."
-                     (univ-char-name-fix ucn) code))))
+                      has a code ~x1 above ~x2."
+                     (univ-char-name-fix ucn) code (nfix max)))))
     (retok code))
   :hooks (:fix))
 
@@ -668,13 +673,15 @@
   (xdoc::topstring
    (xdoc::p
     "Simple escapes are always valid.
-     This function returns their ASCII codes."))
+     This function returns their ASCII codes.
+     Note that these always fit in any of the types
+     mentioned in [C:6.4.4.4/4]."))
   (simple-escape-case
    esc
-   :squote 39
-   :dquote 34
-   :qmark 63
-   :bslash 92
+   :squote (char-code #\')
+   :dquote (char-code #\")
+   :qmark (char-code #\?)
+   :bslash (char-code #\\)
    :a 7
    :b 8
    :f 12
@@ -686,20 +693,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-oct-escape ((esc oct-escapep) (prefix? cprefix-optionp))
+(define valid-oct-escape ((esc oct-escapep) (max natp))
   :returns (mv erp (code natp))
   :short "Validate an octal escape."
   :long
   (xdoc::topstring
    (xdoc::p
     "[C:6.4.4.4/9] states restrictions on
-     the numeric value of an octal constant,
-     based on the prefix of the character constant:
-     this is why this function takes that optional prefix as input.
-     Since for now we do not model the specifics of
-     the @('wchar_t'), @('char16_t'), and @('char32_t'),
-     we only enforce restrictions for the case in which there is no prefix:
-     in this case, the numeric value must fit within @('unsigned char')."))
+     the numeric value of an octal escape used in a character constant,
+     based on the prefix of the character constant;
+     similarly restrictions apply to octal escapes in string literals
+     [C:6.4.5/4].
+     This ACL2 function is used to check
+     both octal escapes in character constants
+     and octal escapes in string literals:
+     we pass as input the maximum allowed character code,
+     which is determined from the character constant or string literal prefix
+     if present (see callers),
+     and suffices to express the applicable restrictions."))
   (b* (((reterr) 0)
        (code (oct-escape-case
               esc
@@ -709,20 +720,19 @@
               :three (str::oct-digit-chars-value (list esc.digit1
                                                        esc.digit2
                                                        esc.digit3)))))
-    (if prefix?
+    (if (<= code (nfix max))
         (retok code)
-      (if (<= code (uchar-max))
-          (retok code)
-        (reterr (msg "The octal escape sequence ~x0 ~
-                      has value ~x1, which is out of range ~
-                      given that there is no character constant prefix."
-                     (oct-escape-fix esc)
-                     code)))))
+      (reterr (msg "The octal escape sequence ~x0 ~
+                    has value ~x1, which exceeds the maximum allowed ~x2, ~
+                    required in the context of where this octal escape occurs."
+                   (oct-escape-fix esc)
+                   code
+                   (nfix max)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-escape ((esc escapep) (prefix? cprefix-optionp))
+(define valid-escape ((esc escapep) (max natp))
   :returns (mv erp (code natp))
   :short "Validate an escape sequence."
   :long
@@ -732,28 +742,30 @@
      For simple and octal escapes, and for universal character names,
      we use separate validation functions.
      For a hexadecimal escape, we calculate the numeric value,
-     which must be subjected to the restrictions in [C:6.4.4.4/9].
-     Since for now we do not model the specifics of
-     the @('wchar_t'), @('char16_t'), and @('char32_t'),
-     we only enforce restrictions for the case in which there is no prefix:
-     in this case, the numeric value must fit within @('unsigned char')."))
+     and we subject them to same restrictions as octal escapes
+     [C:6.4.4.4/9] [C:6.4.5/4].")
+   (xdoc::p
+    "Although [C] does not seem to state that explicitly,
+     it seems reasonable that the same restriction applies to
+     universal character names;
+     we will revise this if that turns out to be not the case."))
   (b* (((reterr) 0))
     (escape-case
      esc
      :simple (retok (valid-simple-escape esc.unwrap))
-     :oct (valid-oct-escape esc.unwrap prefix?)
+     :oct (valid-oct-escape esc.unwrap max)
      :hex (b* ((code (str::hex-digit-chars-value esc.unwrap)))
-            (if prefix?
+            (if (<= code (nfix max))
                 (retok code)
-              (if (<= code (uchar-max))
-                  (retok code)
-                (reterr (msg "The hexadecimal escape sequence ~x0 ~
-                              has value ~x1, which is out of range ~
-                              given that there is ~
-                              no character constant prefix."
-                             (escape-fix esc)
-                             code)))))
-     :univ (valid-univ-char-name esc.unwrap)))
+              (reterr (msg "The hexadecimal escape sequence ~x0 ~
+                            has value ~x1, which exceeds ~
+                            the maximum allowed ~x2, ~
+                            required in the context where ~
+                            this hexadecimal escape occurs."
+                           (escape-fix esc)
+                           code
+                           (nfix max)))))
+     :univ (valid-univ-char-name esc.unwrap max)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -764,15 +776,53 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If validation succeeds, we return the character code.
-     [C] does not appear to state restrictions on the ranges of the codes,
-     except for octal and hexadecimal escapes [C:6.4.4.4/9].
-     We may need to revise this in the future."))
-  (b* (((reterr) 0))
+    "If validation succeeds, we return the character code.")
+   (xdoc::p
+    "The grammar [C:6.4.4.4/1] excludes (direct) character codes
+     for single quote and new-line.
+     For the latter, we check both line feed and carriage return.
+     Note that our lexer normalizes both to line feed,
+     and excludes line feed when lexing @('c-char');
+     here we make an independent check,
+     but in the future we could make that
+     an invariant in the abstract syntax.")
+   (xdoc::p
+    "[C:6.4.4.4/4] says that, based on the (possibly absent) prefix
+     of the character constant of which this character is part,
+     the character code of an octal or hexadecimal escape must fit in
+     @('unsigned char'), or
+     @('wchar_t'), or
+     @('char16_t'), or
+     @('char32_t').
+     To properly capture the range of the latter three types,
+     we should probably extend our implementation environments
+     with information about which built-in types those types expand to,
+     and then use again the implementation environment
+     to obtain the maximun values of such built-in types.
+     For now, we just use the maximum Unicode code points,
+     i.e. effectively we do not enforce any restriction."))
+  (b* (((reterr) 0)
+       (max (if prefix?
+                #x10ffff
+              (uchar-max))))
     (c-char-case
      cchar
-     :char (retok cchar.unwrap)
-     :escape (valid-escape cchar.unwrap prefix?)))
+     :char (cond ((= cchar.unwrap (char-code #\'))
+                  (reterr (msg "Single quote cannot be used directly ~
+                                in a character constant.")))
+                 ((= cchar.unwrap 10)
+                  (reterr (msg "Line feed cannot be used directly ~
+                                in a character constant.")))
+                 ((= cchar.unwrap 13)
+                  (reterr (msg "Carriage return cannot be used directly ~
+                                in a character constant.")))
+                 ((> cchar.unwrap max)
+                  (reterr (msg "The character with code ~x0 ~
+                                exceeed the maximum ~x1 allowed for ~
+                                a character constant with prefix ~x2."
+                               cchar.unwrap max (cprefix-option-fix prefix?))))
+                 (t (retok cchar.unwrap)))
+     :escape (valid-escape cchar.unwrap max)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -819,6 +869,124 @@
     (if cconst.prefix?
         (retok (type-unknown))
       (retok (type-sint))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-enum-const ((econst identp) (table valid-tablep))
+  :returns (mv erp (type typep))
+  :short "Validate an enumeration constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we validate an enumeration constant that occurs as an expression.
+     Thus, the validation table must include that (ordinary) identifier,
+     with the information of being an enumeration constant.
+     Its type is always @('int') [C:6.7.2.2/3],
+     so this function always returns that type if validation succeeds;
+     so we could have this function return nothing if there's no error,
+     but we have it return the @('int') type for uniformity and simplicity."))
+  (b* (((reterr) (type-void))
+       ((mv info &) (valid-lookup-ord econst table))
+       ((unless info)
+        (reterr (msg "The identifier ~x0, used as an enumeration constant, ~
+                      is not in scope."
+                     (ident-fix econst))))
+       ((unless (valid-ord-info-case info :enumconst))
+        (reterr (msg "The identifier ~x0, used as an enumeration constant, ~
+                      is in scope, but it is not an enumeration constant: ~
+                      its information is ~x1."
+                     (ident-fix econst) info))))
+    (retok (type-sint)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-const ((const constp) (table valid-tablep) (ienv ienvp))
+  :returns (mv erp (type typep))
+  :short "Validate a constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If validation is successful, we return the type of the constant."))
+  (const-case
+   const
+   :int (valid-iconst const.unwrap ienv)
+   :float (retok (valid-fconst const.unwrap))
+   :enum (valid-enum-const const.unwrap table)
+   :char (valid-cconst const.unwrap))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-s-char ((schar s-char-p) (prefix? eprefix-optionp))
+  :returns (mv erp (code natp))
+  :short "Validate a character of a string literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If validation succeeds, we return the character code.
+     [C:6.4.5/4] says that the same restrictions that apply
+     to @('c-char')s in character constants
+     also apply to @('s-char')s in string literals.
+     So this function is similar to @(tsee valid-c-char),
+     except that we prohibit double quote instead of single quote,
+     based on the grammar in [C:6.4.5/1]."))
+  (b* (((reterr) 0)
+       (max (if prefix?
+                #x10ffff
+              (uchar-max))))
+    (s-char-case
+     schar
+     :char (cond ((= schar.unwrap (char-code #\"))
+                  (reterr (msg "Double quote cannot be used directly ~
+                                in a string literal.")))
+                 ((= schar.unwrap 10)
+                  (reterr (msg "Line feed cannot be used directly ~
+                                in a character consant.")))
+                 ((= schar.unwrap 13)
+                  (reterr (msg "Carriage return cannot be used directly ~
+                                in a character consant.")))
+                 ((> schar.unwrap max)
+                  (reterr (msg "The character with code ~x0 ~
+                                exceeed the maximum ~x1 allowed for ~
+                                a character constant with prefix ~x2."
+                               schar.unwrap max (eprefix-option-fix prefix?))))
+                 (t (retok schar.unwrap)))
+     :escape (valid-escape schar.unwrap max)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-s-char-list ((cchars s-char-listp) (prefix? eprefix-optionp))
+  :returns (mv erp (codes nat-listp))
+  :short "Validate a list of characters of a string literal."
+  (b* (((reterr) nil)
+       ((when (endp cchars)) (retok nil))
+       ((erp code) (valid-s-char (car cchars) prefix?))
+       ((erp codes) (valid-s-char-list (cdr cchars) prefix?)))
+    (retok (cons code codes)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-stringlit ((strlit stringlitp))
+  :returns (mv erp (type typep))
+  :short "Validate a string literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check the characters that form the string literal,
+     with respect to the prefix (if any).
+     If validation is successful, we return the type of the string literal,
+     which according to [C:6.4.5/6], is an array type
+     of @('char') or @('wchar_t') or @('char16_t') or @('char32_t').
+     In our current approximate type system,
+     we just have a single type for arrays, so we return that."))
+  (b* (((reterr) (type-void))
+       ((stringlit strlit) strlit)
+       ((erp &) (valid-s-char-list strlit.schars strlit.prefix?)))
+    (retok (type-array)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
