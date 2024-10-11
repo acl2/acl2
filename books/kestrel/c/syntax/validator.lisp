@@ -991,4 +991,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-stringlit-list ((strlits stringlit-listp))
+  :returns (mv erp (type typep))
+  :short "Validate a list of string literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Our abstract syntax preserves information about
+     adjacent string literals [C:5.1.1.2/6],
+     by using lists of string literals, instead of single string literals,
+     in various places.
+     So the validator also operates on such lists of string literals.")
+   (xdoc::p
+    "One basic requirement is that the list is not empty,
+     because there must be at least one string literal;
+     in the future we could built that constraint into the abstract syntax,
+     but for now we put that as a check in the validator.")
+   (xdoc::p
+    "Another requirement is that
+     there cannot be both UTF-8 and wide prefixes [C:6.4.5/2],
+     where these kinds of prefixes are defined in [C:6.4.5/3].
+     We check that by projecting the optional prefixes
+     and checking for incompatible occurrences.")
+   (xdoc::p
+    "Whether string literals with different prefixes
+     (satisfying the requirement just mentioned)
+     can be concatenated, and what their combined type is,
+     is implementation-defined [C:6.4.5/5].
+     We plan to extend our implementation environments
+     with information about how to treat those cases,
+     but for now we allow all concatenations,
+     and the resulting type is just our approximate type for all arrays."))
+  (b* (((reterr) (type-void))
+       ((unless (consp strlits))
+        (reterr (msg "There must be at least one string literal.")))
+       (prefixes (stringlit-list->prefix?-list strlits))
+       ((when (and (member-equal (eprefix-locase-u8) prefixes)
+                   (or (member-equal (eprefix-locase-u) prefixes)
+                       (member-equal (eprefix-upcase-u) prefixes)
+                       (member-equal (eprefix-upcase-l) prefixes))))
+        (reterr (msg "Incompatible prefixes ~x0 ~
+                      in the list of string literals."
+                     prefixes))))
+    (retok (type-array)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: continue
