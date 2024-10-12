@@ -356,7 +356,7 @@
     :hints (("Goal" :in-theory (enable lookup-nonnil-of-correct-addresses))))
   (in-theory (disable validator-statep-of-get-validator-state))
 
-  (defrule in-correct-validator-addresess-when-get-validator-state
+  (defruled in-correct-validator-addresess-when-get-validator-state
     (implies (get-validator-state val systate)
              (set::in val (correct-addresses systate)))
     :enable (correct-addresses
@@ -366,7 +366,11 @@
   (defruled get-validator-state-iff-in-correct-addresses
     (iff (get-validator-state val systate)
          (set::in val (correct-addresses systate)))
-    :hints (("Goal" :in-theory (enable lookup-nonnil-of-correct-addresses)))))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable lookup-nonnil-of-correct-addresses
+              in-correct-validator-addresess-when-get-validator-state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
