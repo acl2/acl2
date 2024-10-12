@@ -189,6 +189,137 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-standard-signed-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a standard signed integer type [C:6.2.5/4]."
+  (and (member-eq (type-kind type) '(:schar :sshort :sint :slong :sllong))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-signed-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a signed integer type [C:6.2.5/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we do not model any extended signed integer types,
+     so the signed integer types coincide with
+     the standard signed integer types."))
+  (type-standard-signed-integerp type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-standard-unsigned-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a standard unsigned integer type [C:6.2.5/6]."
+  (and (member-eq (type-kind type) '(:bool :uchar :ushort :uint :ulong :ullong))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-unsigned-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an unsigned integer type [C:6.2.5/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we do not model any extended unsigned integer types,
+     so the unsigned integer types coincide with
+     the standard unsigned integer types."))
+  (type-standard-unsigned-integerp type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-standard-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a standard integer type [C:6.2.5/7]."
+  (or (type-standard-signed-integerp type)
+      (type-standard-unsigned-integerp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-real-floatingp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a real floating type [C:6.2.5/10]."
+  (and (member-eq (type-kind type) '(:float :double :ldouble))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-complexp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a complex type [C:6.2.5/11]."
+  (and (member-eq (type-kind type) '(:floatc :doublec :ldoublec))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-floatingp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a floating type [C:6.2.5/11]."
+  (or (type-real-floatingp type)
+      (type-complexp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-basicp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a basic type [C:6.2.5/14]."
+  (or (type-case type :char)
+      (type-signed-integerp type)
+      (type-unsigned-integerp type)
+      (type-floatingp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-characterp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a character type [C:6.2.5/15]."
+  (and (member-eq (type-kind type) '(:char :schar :uchar))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an integer type [C:6.2.5/17]."
+  (or (type-case type :char)
+      (type-signed-integerp type)
+      (type-unsigned-integerp type)
+      (type-case type :enum))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-realp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a real type [C:6.2.5/17]."
+  (or (type-integerp type)
+      (type-real-floatingp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-arithmeticp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an arithmetic type [C:6.2.5/18]."
+  (or (type-integerp type)
+      (type-floatingp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum linkage
   :short "Fixtype of linkages."
   :long
@@ -1044,6 +1175,19 @@
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
           and related artifacts."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since we currently have an approximate model of types,
+     with the `unknown type' among them (see @(tsee type)),
+     wherever a certain kind of type is required (e.g. an integer type),
+     we also need to allow the unknown type,
+     because that could the required kind of type.
+     Our currently approximate validator must not reject valid programs,
+     because it needs to deal with any practical programs we encounter.
+     Eventually, when we refine our validator and our model of types
+     to no longer be approximate and include the unknown type,
+     we will rescind this extra allowance for the unknown type."))
 
   (define valid-expr ((expr exprp) (table valid-tablep) (ienv ienvp))
     :guard (expr-unambp expr)
@@ -1068,7 +1212,14 @@
        by validating the expression inside the parentheses.")
      (xdoc::p
       "For now we allow all generic selections,
-       returning the unknown type for them."))
+       returning the unknown type for them.")
+     (xdoc::p
+      "In an array subscripting expression,
+       one sub-expression must have pointer type,
+       and the other sub-expression must have integer type.
+       The expression should have the type referenced by the pointer type,
+       but since for now we model just one pointer type,
+       the type of the expression is unknown."))
     (b* (((reterr) (type-void)))
       (expr-case
        expr
@@ -1086,7 +1237,22 @@
        :string (valid-stringlit-list expr.literals)
        :paren (valid-expr expr.unwrap table ienv)
        :gensel (retok (type-unknown))
-       :arrsub (reterr :todo)
+       :arrsub
+       (b* (((erp type1) (valid-expr expr.arg1 table ienv))
+            ((erp type2) (valid-expr expr.arg2 table ienv))
+            ((unless (or (and (or (type-case type1 :pointer)
+                                  (type-case type1 :unknown))
+                              (or (type-integerp type2)
+                                  (type-case type2 :unknown)))
+                         (and (or (type-integerp type1)
+                                  (type-case type1 :unknown))
+                              (or (type-case type2 :pointer)
+                                  (type-case type2 :unknown)))))
+             (reterr (msg "In the array subscripting expression ~x0, ~
+                           the first sub-expression has type ~x1, ~
+                           and the second sub-expression has type ~x2."
+                          (expr-fix expr) type1 type2))))
+         (retok (type-unknown)))
        :funcall (reterr :todo)
        :member (reterr :todo)
        :memberp (reterr :todo)
@@ -1117,7 +1283,11 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
+  :verify-guards nil ; done below
+
   ///
+
+  (verify-guards valid-expr)
 
   (fty::deffixequiv-mutual valid-exprs/decls/stmts))
 
