@@ -362,7 +362,7 @@
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
 
-  (defrule in-of-certificate-with-authors
+  (defrule in-of-certificates-with-authors
     (implies (certificate-setp certs)
              (equal (set::in cert
                              (certificates-with-authors authors certs))
