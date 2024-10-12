@@ -25,7 +25,7 @@
 (include-book "kestrel/bv/bvif" :dir :system) ; since the prover knows about BVIF
 (include-book "kestrel/bv/bool-to-bit" :dir :system) ; since the prover knows about BOOL-TO-BIT
 (include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
-(include-book "merge-sort-less-than")
+;(include-book "merge-sort-less-than")
 (include-book "supporting-nodes")
 (include-book "dag-array-builders")
 (include-book "dag-array-info")
@@ -1642,8 +1642,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm axe-tree-listp-of-wrap-all
-  (equal (axe-tree-listp (wrap-all 'not atoms))
-         (axe-tree-listp (true-list-fix atoms)))
+  (equal (axe-tree-listp (wrap-all 'not trees))
+         (axe-tree-listp (true-list-fix trees)))
   :hints (("Goal" :in-theory (enable axe-tree-listp wrap-all))))
 
 (defund prover-resultp (result)

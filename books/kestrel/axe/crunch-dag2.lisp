@@ -1,7 +1,7 @@
 ; More tools for crunching DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -52,8 +52,7 @@
 ;move
 ;make local to axe?
 (defthm <=-of-array-len-with-slack
-  (implies (and
-                (natp slack-amount)
+  (implies (and (natp slack-amount)
                 (natp len))
            (equal (< (array-len-with-slack len slack-amount) len)
                   (< *max-1d-array-length* len)))
@@ -86,11 +85,11 @@
 ;move
 (defthm all->-of--1-when-nat-listp
   (implies (nat-listp x)
-           (all-> x '-1)))
+           (all-> x -1)))
 
 (defthm all->-of--1-when-all-natp
   (implies (all-natp x)
-           (all-> x '-1))
+           (all-> x -1))
   :hints (("Goal" :in-theory (enable all-natp all->))))
 
 (local
@@ -211,9 +210,7 @@
            (consp (mv-nth 1 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))))
   :hints (("Goal" :in-theory (enable drop-non-supporters-array-node-list))))
 
-;;;
-;;; crunch-dag-array2
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv dag-array dag-len renamed-nodenums).
 ;; Since nodes will in general be renumbered, this returns
@@ -332,22 +329,18 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< nodenums dag-len))
            (pseudo-dag-arrayp dag-array-name
-                              (mv-nth 0
-                                      (crunch-dag-array2 dag-array-name
-                                                         dag-array dag-len nodenums))
-                              (mv-nth 1
-                                      (crunch-dag-array2 dag-array-name
-                                                         dag-array dag-len nodenums))))
+                              (mv-nth 0 (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))
+                              (mv-nth 1 (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))))
   :hints (("Goal" :in-theory (enable crunch-dag-array2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Crunch DAG-ARRAY to contain only the NODENUMS and the nodes that support
 ;; them.  Since nodes will in general be renumbered, this returns
 ;; renamed-nodenums, which gives the new numbers of the NODENUMS.
 ;; Returns (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renamed-nodenums).
 ;; TODO: Could we optimize this to make the indices as we crunch?
-(defund crunch-dag-array2-with-indices (dag-array-name dag-array dag-len
-                                                       dag-parent-array-name
-                                                       nodenums)
+(defund crunch-dag-array2-with-indices (dag-array-name dag-array dag-len dag-parent-array-name nodenums)
   (declare (xargs :guard (and (true-listp nodenums)
                               (all-natp nodenums)
                               (consp nodenums) ; so we can call maxelem
@@ -361,37 +354,6 @@
         (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)))
     (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renamed-nodenums)))
 
-;gen?
-(defthm natp-of-mv-nth-1-of-crunch-dag-array2-with-indices
-  (implies (and (true-listp nodenums)
-                (all-natp nodenums)
-                (consp nodenums) ; so we can call maxelem
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (symbolp dag-parent-array-name)
-                (all-< nodenums dag-len))
-           (natp (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
-  :hints (("Goal" :in-theory (e/d (crunch-dag-array2-with-indices) (natp)))))
-
-(defthm dag-constant-alistp-of-mv-nth-3-of-crunch-dag-array2-with-indices
-  (implies (and (true-listp nodenums)
-                (all-natp nodenums)
-                (consp nodenums) ; so we can call maxelem
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (symbolp dag-parent-array-name)
-                (all-< nodenums dag-len))
-           (dag-constant-alistp (mv-nth 3 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
-  :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
-
-(defthm dag-variable-alistp-of-mv-nth-4-of-crunch-dag-array2-with-indices
-  (implies (and (true-listp nodenums)
-                (all-natp nodenums)
-                (consp nodenums) ; so we can call maxelem
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (symbolp dag-parent-array-name)
-                (all-< nodenums dag-len))
-           (dag-variable-alistp (mv-nth 4 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
-  :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
-
 (defthm pseudo-dag-arrayp-of-mv-nth-0-of-crunch-dag-array2-with-indices
   (implies (and (true-listp nodenums)
                 (all-natp nodenums)
@@ -403,6 +365,29 @@
                               (mv-nth 0 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
                               (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
   :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
+
+(defthm alen1-of-mv-nth-0-of-crunch-dag-array2-with-indices
+  (implies (and (true-listp nodenums)
+                (all-natp nodenums)
+                (consp nodenums) ; so we can call maxelem
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (symbolp dag-parent-array-name)
+                (all-< nodenums dag-len))
+           (equal (alen1 dag-array-name (mv-nth 0 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))
+                  (array-len-with-slack (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
+                                        (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))))
+  :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
+
+;gen?
+(defthm natp-of-mv-nth-1-of-crunch-dag-array2-with-indices
+  (implies (and (true-listp nodenums)
+                (all-natp nodenums)
+                (consp nodenums) ; so we can call maxelem
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (symbolp dag-parent-array-name)
+                (all-< nodenums dag-len))
+           (natp (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
+  :hints (("Goal" :in-theory (e/d (crunch-dag-array2-with-indices) (natp)))))
 
 (defthm bounded-dag-parent-arrayp-of-mv-nth-2-of-crunch-dag-array2-with-indices
   (implies (and (true-listp nodenums)
@@ -416,6 +401,28 @@
                                (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
   :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
 
+(defthm alen1-of-mv-nth-2-of-crunch-dag-array2-with-indices
+  (implies (and (true-listp nodenums)
+                (all-natp nodenums)
+                (consp nodenums) ; so we can call maxelem
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (symbolp dag-parent-array-name)
+                (all-< nodenums dag-len))
+           (equal (alen1 dag-parent-array-name (mv-nth 2 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))
+                  (array-len-with-slack (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
+                                        (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))))
+  :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
+
+(defthm dag-constant-alistp-of-mv-nth-3-of-crunch-dag-array2-with-indices
+  (implies (and (true-listp nodenums)
+                (all-natp nodenums)
+                (consp nodenums) ; so we can call maxelem
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (symbolp dag-parent-array-name)
+                (all-< nodenums dag-len))
+           (dag-constant-alistp (mv-nth 3 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
+  :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
+
 (defthm bounded-dag-constant-alistp-of-mv-nth-3-of-crunch-dag-array2-with-indices
   (implies (and (true-listp nodenums)
                 (all-natp nodenums)
@@ -425,6 +432,16 @@
                 (all-< nodenums dag-len))
            (bounded-dag-constant-alistp (mv-nth 3 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
                                         (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
+  :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
+
+(defthm dag-variable-alistp-of-mv-nth-4-of-crunch-dag-array2-with-indices
+  (implies (and (true-listp nodenums)
+                (all-natp nodenums)
+                (consp nodenums) ; so we can call maxelem
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (symbolp dag-parent-array-name)
+                (all-< nodenums dag-len))
+           (dag-variable-alistp (mv-nth 4 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
   :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
 
 (defthm bounded-dag-variable-alistp-of-mv-nth-4-of-crunch-dag-array2-with-indices
@@ -469,31 +486,7 @@
            (nat-listp (mv-nth 5 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
   :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
 
-(defthm alen1-of-mv-nth-2-of-crunch-dag-array2-with-indices
-  (implies (and (true-listp nodenums)
-                (all-natp nodenums)
-                (consp nodenums) ; so we can call maxelem
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (symbolp dag-parent-array-name)
-                (all-< nodenums dag-len))
-           (equal (alen1 dag-parent-array-name (mv-nth 2 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))
-                  (array-len-with-slack (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
-                                        (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))))
-  :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
-
-(defthm alen1-of-mv-nth-0-of-crunch-dag-array2-with-indices
-  (implies (and (true-listp nodenums)
-                (all-natp nodenums)
-                (consp nodenums) ; so we can call maxelem
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (symbolp dag-parent-array-name)
-                (all-< nodenums dag-len))
-           (equal (alen1 dag-array-name (mv-nth 0 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))
-                  (array-len-with-slack (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
-                                        (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))))
-  :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
-
-(defthm wf-dagp-of-mv-nth-4-of-crunch-dag-array2-with-indices
+(defthm wf-dagp-after-crunch-dag-array2-with-indices
   (implies (and (true-listp nodenums)
                 (all-natp nodenums)
                 (consp nodenums) ; so we can call maxelem
@@ -509,12 +502,11 @@
                     (mv-nth 4 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
   :hints (("Goal" :in-theory (enable wf-dagp crunch-dag-array2-with-indices))))
 
-;;;
-;;; maybe-crunch-dag-array2
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Leave enabled, or prove rules about it.
 ;; Returns (mv erp nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;; todo: don't return erp
 (defun maybe-crunch-dag-array2 (crunchp nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   (declare (xargs :guard (and (booleanp crunchp)
                               (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)

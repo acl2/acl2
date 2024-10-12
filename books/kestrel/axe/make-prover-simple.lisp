@@ -54,8 +54,9 @@
 (include-book "kestrel/utilities/defconst-computed" :dir :system)
 (include-book "kestrel/utilities/equal" :dir :system) ; for equal-same
 (include-book "kestrel/utilities/doublets2" :dir :system)
+(include-book "axe-bind-free-result-okayp")
+(include-book "rewriter-common") ; for alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep
 (include-book "kestrel/utilities/rational-printing" :dir :system)
-(include-book "rewriter-common") ; for axe-bind-free-result-okayp, etc.
 ;(include-book "contexts") ;for max-nodenum-in-context
 (include-book "unify-term-and-dag-fast")
 (include-book "hit-counts")

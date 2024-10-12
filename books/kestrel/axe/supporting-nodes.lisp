@@ -1,7 +1,7 @@
 ; Computing sets of DAG nodes that support DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -213,6 +213,8 @@
            (all-taggedp-with-name nodenums tag-array-name (tag-supporters-of-nodes-with-name-aux n dag-array-name dag-array tag-array-name tag-array)))
   :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name-aux NAT-LISTP))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns the TAG-ARRAY, named TAG-ARRAY-NAME, which maps each nodenum to a
 ;; boolean indicating whether it is a supporter of any of the NODENUMS (nodes
 ;; are considered their own supporters).
@@ -345,6 +347,8 @@
                   nodenum))
   :hints (("Goal" :use (:instance aref1-of-tag-supporters-of-nodes-with-name-and-maxelem (nodenums (list nodenum)) (max-nodenum nodenum))
            :in-theory (e/d (tag-supporters-of-node-with-name) (aref1-of-tag-supporters-of-nodes-with-name-and-maxelem)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;
 ;;; dropping non-supporters
@@ -813,7 +817,9 @@
            (<= (car (car (drop-non-supporters-array-with-name dag-array-name dag-array top-nodenum print)))
                *max-1d-array-index*))
   :hints (("Goal" :use (:instance <=-of-len-of-drop-non-supporters-array-with-name)
-           :in-theory (e/d (CAR-OF-CAR-WHEN-PSEUDO-DAGP) (<=-of-len-of-drop-non-supporters-array-with-name)))))
+           :in-theory (e/d (car-of-car-when-pseudo-dagp) (<=-of-len-of-drop-non-supporters-array-with-name)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Returns (mv renamed-smaller-nodenum renamed-larger-nodenum dag).
 ;; Only used by the equivalence checker.
@@ -834,6 +840,8 @@
             (mv (aref1 'translation-array translation-array smaller-nodenum)
                 (aref1 'translation-array translation-array larger-nodenum)
                 dag-lst))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Removes irrelevant nodes (nodes that do not support the top node) and renumbers the remaining nodes.
 ;; Returns a dag or a quotep.  Uses arrays internally for speed.
@@ -893,6 +901,8 @@
   :hints (("Goal" :use (:instance consp-of-drop-non-supporters)
            :in-theory (disable consp-of-drop-non-supporters))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Extracts the subdag with only the nodes needed to support NODENUM-OR-QUOTEP.
 ;this builds some arrays to do its job fast
 ;maybe some callers of this function would be okay with just the result of the nthcdr
@@ -912,6 +922,8 @@
     (drop-non-supporters (nthcdr (+ -1 (- (len dag) nodenum-or-quotep)) dag) ;this requires the nodenums be consecutive
                          )))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;returns a list of the indices whose elements in the array are non-nil (smaller indices come first)
 ;; The "-with-name" suffix indicates that this function takes the tag-array-name as an argument.
 (defund harvest-non-nil-indices-with-name (n tag-array-name array acc)
@@ -926,10 +938,13 @@
                                  (cons n acc)
                                acc))))
 
-(defthm true-listp-of-harvest-non-nil-indices-with-name
-  (equal (true-listp (harvest-non-nil-indices-with-name n tag-array-name array acc))
-         (true-listp acc))
-  :hints (("Goal" :in-theory (enable harvest-non-nil-indices-with-name))))
+(local
+  (defthm true-listp-of-harvest-non-nil-indices-with-name
+    (equal (true-listp (harvest-non-nil-indices-with-name n tag-array-name array acc))
+           (true-listp acc))
+    :hints (("Goal" :in-theory (enable harvest-non-nil-indices-with-name)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a list of the nodenums that support NODENUM (a node counts as its own supporter).
 ;; See also make-supporters-array.
