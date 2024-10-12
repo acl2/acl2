@@ -514,6 +514,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define certificates-with-authors ((authors address-setp)
+                                   (certs certificate-setp))
+  :returns (certs-with-authors certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with author in a given set."
+  (b* (((when (set::emptyp certs)) nil)
+       ((certificate cert) (set::head certs)))
+    (if (set::in cert.author
+                 (address-set-fix authors))
+        (set::insert (certificate-fix cert)
+                     (certificates-with-authors authors (set::tail certs)))
+      (certificates-with-authors authors (set::tail certs))))
+  :verify-guards :after-returns
+  ///
+
+  (fty::deffixequiv certificates-with-authors
+    :args ((authors address-setp)))
+
+  (defret certificates-with-authors-subset
+    (implies (certificate-setp certs)
+             (set::subset certs-with-authors certs))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* set::subset
+                                 set::expensive-rules))))
+
+  (in-theory (disable certificates-with-authors-subset))
+
+  (defruled in-of-certificates-with-authors
+    (implies (certificate-setp certs)
+             (equal (set::in cert (certificates-with-authors authors certs))
+                    (and (set::in cert certs)
+                         (set::in (certificate->author cert)
+                                  (address-set-fix authors)))))
+    :induct t)
+
+  (defruled author-set-of-certificates-with-authors
+    (equal (certificate-set->author-set
+            (certificates-with-authors authors certs))
+           (set::intersect (address-set-fix authors)
+                           (certificate-set->author-set certs)))
+    :induct t
+    :enable (certificate-set->author-set
+             certificate-set->author-set-of-insert
+             set::expensive-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define certificates-with-authors+round ((authors address-setp)
                                          (round posp)
                                          (certs certificate-setp))
