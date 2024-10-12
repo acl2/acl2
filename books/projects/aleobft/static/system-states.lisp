@@ -306,7 +306,6 @@
     (("Goal"
       :in-theory (acl2::enable number-validators
                                correct-addresses-subset-all-addresses))))
-
   (in-theory (disable number-correct-upper-bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -355,6 +354,7 @@
     (validator-statep vstate?)
     :hyp (set::in val (correct-addresses systate))
     :hints (("Goal" :in-theory (enable lookup-nonnil-of-correct-addresses))))
+  (in-theory (disable validator-statep-of-get-validator-state))
 
   (defrule in-correct-validator-addresess-when-get-validator-state
     (implies (get-validator-state val systate)
