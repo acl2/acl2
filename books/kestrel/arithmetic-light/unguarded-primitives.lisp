@@ -111,7 +111,7 @@
 
 (defund complex-unguarded (x y)
   (declare (xargs :guard t))
-  (complex (rfix x) (rfix y)))
+  (complex (realfix x) (realfix y)))
 
 (defthm complex-unguarded-correct
   (equal (complex-unguarded x y)
