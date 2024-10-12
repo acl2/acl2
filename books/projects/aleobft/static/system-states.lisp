@@ -305,7 +305,9 @@
     :hints
     (("Goal"
       :in-theory (acl2::enable number-validators
-                               correct-addresses-subset-all-addresses)))))
+                               correct-addresses-subset-all-addresses))))
+
+  (in-theory (disable number-correct-upper-bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
