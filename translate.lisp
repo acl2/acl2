@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -12810,7 +12810,7 @@
 ; (May, 2019).  Extensive comments in the code and documentation topics
 ; describe ``FOR loop$s'' but refer to them simply as ``loop$s'' because no
 ; other kind of ACL2 loop$ was supported.  When DO loop$s were introduced
-; (Version 8.5, circa 2022?) an effort was made to clarify whether comments and
+; (Version_8.5, circa 2022?) an effort was made to clarify whether comments and
 ; documentation referred to ``FOR loop$s'' or ``DO loop$s''.  But the word
 ; ``loop$'' occurs over 1500 times in the sources) and we are not confident
 ; that all ambiguity has been eliminated.  So when reading the comments and

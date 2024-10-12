@@ -2,10 +2,4 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Forcing recertification 9/4/2024 for commit, "Fixed a soundness bug
-that exploited incorrect generation of raw Lisp code for the
-recognizer of a stobj field of a concrete stobj."  The reason is that
-the raw Lisp code for the defstobj and defabsstobj macros depends on
-the ACL2 built-in record type,
-defstobj-redundant-raw-lisp-discriminator-value, which was modified in
-support of fixing this bug.
+Version 8.6 release
