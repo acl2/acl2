@@ -660,9 +660,7 @@
                                    certs))))))
     :use (if-part only-if-part)
     :enable certificate-set-unequivocalp-when-subset
-
     :prep-lemmas
-
     ((defruled if-part
        (implies (and (certificate-set-unequivocalp certs)
                      (or (set::in cert certs)
@@ -678,7 +676,6 @@
                                          (set::insert cert certs))))
                        (certs certs))
        :enable certificate-with-author+round-when-element)
-
      (defruled only-if-part
        (implies (and (certificate-setp certs)
                      (certificate-set-unequivocalp (set::insert cert certs)))
