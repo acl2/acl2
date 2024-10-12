@@ -36,6 +36,7 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
@@ -1658,7 +1659,8 @@
 
 (defthm eff-addrs-okp-of-1
   (equal (eff-addrs-okp 1 eff-addr seg-reg x86)
-         (eff-addr-okp eff-addr seg-reg x86)))
+         (eff-addr-okp eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable fix))))
 
   ;; (if (equal (segment-expand-down-bit seg-reg x86) 0)
   ;;     ;;expand-up segment:
@@ -3615,7 +3617,8 @@
                                      segment-min-eff-addr32
                                      segment-max-eff-addr32
                                      rb
-                                     ea-to-la))))
+                                     ea-to-la
+                                     fix))))
 
 (defthm mv-nth-2-of-rime-size$inline
   (implies (app-view x86)

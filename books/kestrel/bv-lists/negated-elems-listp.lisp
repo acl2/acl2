@@ -1,7 +1,7 @@
 ; Checking if a bv-list is the negation of another bv-list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/lists-light/firstn" :dir :system)
+(include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "bvnot-list")
 
 ;; Check whether each item of LST1 is the negation of the corresponding item in LST2.

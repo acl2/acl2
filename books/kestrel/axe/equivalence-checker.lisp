@@ -43,6 +43,7 @@
 (include-book "kestrel/typed-lists-light/map-strip-cars" :dir :system)
 (include-book "kestrel/lists-light/union-eql-tail" :dir :system)
 (include-book "strengthen-facts")
+(include-book "prove-with-stp2")
 (include-book "tailtohead")
 (include-book "unroller")
 (include-book "contexts2")
