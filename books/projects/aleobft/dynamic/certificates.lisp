@@ -523,8 +523,10 @@
           with author in a given set and with a given round."
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs)))
-    (if (and (set::in cert.author authors)
-             (equal cert.round round))
+    (if (and (set::in cert.author
+                      (address-set-fix authors))
+             (equal cert.round
+                    (pos-fix round)))
         (set::insert (certificate-fix cert)
                      (certificates-with-authors+round authors
                                                       round
@@ -535,6 +537,9 @@
   :verify-guards :after-returns
 
   ///
+
+  (fty::deffixequiv certificates-with-authors+round
+    :args ((authors address-setp) (round posp)))
 
   (defruled certificate-set->round-set-of-certificates-with-authors+round
     (b* ((rounds (certificate-set->round-set
