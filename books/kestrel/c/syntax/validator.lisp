@@ -1197,7 +1197,14 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "If validation is successful, we return the type of the expression.")
+      "If validation is successful, we return the type of the expression.
+       For now we do not distinguish lvalues [C:6.3.2.1/1].
+       To do that, we will introduce a richer notion of expression type
+       that includes a type and also
+       an indication of whether the expression is an lvalue;
+       we will also perform lvalue conversion where needed.
+       This is already done in @(see c::static-semantics),
+       for the subset of C that is formalized.")
      (xdoc::p
       "A variable (i.e. identifier) is valid if
        it is found in the validation table,
