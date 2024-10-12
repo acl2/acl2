@@ -16,6 +16,8 @@
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
+;; cert_param: (non-acl2r)
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
