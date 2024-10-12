@@ -346,6 +346,7 @@
 (define certificates-with-authors ((authors address-setp)
                                        (certs certificate-setp))
   :returns (certs-with-authors certificate-setp)
+  :short "Retrieve the set of certificates with given authors from a set."
   (cond ((set::emptyp authors) nil)
         (t (set::union
             (certificates-with-author (set::head authors) certs)
