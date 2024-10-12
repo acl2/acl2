@@ -1170,6 +1170,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-var ((var identp) (table valid-tablep))
+  :returns (mv erp (type typep))
+  :short "Validate a variable."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to validate the @(':ident') case of the @(tsee expr) fixtype.
+     This is the case of a variable, not an enumeration constant,
+     which is part of the @(':const') case of @(tsee expr).
+     Recall that the parser initially parses all identifiers used as expressions
+     under the @(':ident') case, but the disambiguator re-classifies
+     some of them under the @(':const) case, as appropriate.")
+   (xdoc::p
+    "A variable (i.e. identifier) is valid if
+     it is found in the validation table,
+     recorded as denoting an object or function
+     [C:6.5.1/2].
+     The type is obtained from the table."))
+  (b* (((reterr) (type-void))
+       ((mv info &) (valid-lookup-ord var table))
+       ((unless info)
+        (reterr (msg "The variable ~x0 is not in scope." (ident-fix var))))
+       ((unless (valid-ord-info-case info :objfun))
+        (reterr (msg "The identifier ~x0, used as a variable, ~
+                      is in scope, but does not denote ~
+                      an object or function."
+                     (ident-fix var)))))
+    (retok (valid-ord-info-objfun->type info)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
 
 (defines valid-exprs/decls/stmts
@@ -1206,12 +1238,6 @@
        This is already done in @(see c::static-semantics),
        for the subset of C that is formalized.")
      (xdoc::p
-      "A variable (i.e. identifier) is valid if
-       it is found in the validation table,
-       recorded as denoting an object or function
-       [C:6.5.1/2].
-       The type is obtained from the table.")
-     (xdoc::p
       "A constant or (list of) string literal(s) is validated
        via separate functions; see their documentation.")
      (xdoc::p
@@ -1230,16 +1256,7 @@
     (b* (((reterr) (type-void)))
       (expr-case
        expr
-       :ident
-       (b* (((mv info &) (valid-lookup-ord expr.unwrap table))
-            ((unless info)
-             (reterr (msg "The variable ~x0 is not in scope." expr.unwrap)))
-            ((unless (valid-ord-info-case info :objfun))
-             (reterr (msg "The identifier ~x0, used as a variable, ~
-                           is in scope, but does not denote ~
-                           an object or function."
-                          expr.unwrap))))
-         (retok (valid-ord-info-objfun->type info)))
+       :ident (valid-var expr.unwrap table)
        :const (valid-const expr.unwrap table ienv)
        :string (valid-stringlit-list expr.literals)
        :paren (valid-expr expr.unwrap table ienv)
