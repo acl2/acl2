@@ -646,7 +646,8 @@
   (fty::deffixequiv certificates-with-authors+round
     :args ((authors address-setp) (round posp)))
 
-  (defruled certificate-set->round-set-of-certificates-with-authors+round
+  (defruled
+    certificate-set->round-set-of-certificates-with-authors+round-not-empty
     (b* ((rounds (certificate-set->round-set
                   (certificates-with-authors+round authors round certs))))
       (implies (not (set::emptyp rounds))

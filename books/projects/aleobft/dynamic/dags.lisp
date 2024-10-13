@@ -156,17 +156,18 @@
                        certificate-set->round-set-monotone
                        emptyp-of-certificate-set->round-set
                        certificate->round-in-certificate-set->round-set)
-    :use ((:instance acl2::pos-set-max->=-element
-                     (elem (certificate->round (set::head certs)))
-                     (set (certificate-set->round-set certs)))
-          (:instance acl2::pos-set-max->=-subset
-                     (set1 (certificate-set->round-set (set::tail certs)))
-                     (set2 (certificate-set->round-set certs)))
-          (:instance
-           certificate-set->round-set-of-certificates-with-authors+round
-           (authors (certificate->previous cert))
-           (round (1- (certificate->round cert)))
-           (certs dag)))))
+    :use
+    ((:instance acl2::pos-set-max->=-element
+                (elem (certificate->round (set::head certs)))
+                (set (certificate-set->round-set certs)))
+     (:instance acl2::pos-set-max->=-subset
+                (set1 (certificate-set->round-set (set::tail certs)))
+                (set2 (certificate-set->round-set certs)))
+     (:instance
+      certificate-set->round-set-of-certificates-with-authors+round-not-empty
+      (authors (certificate->previous cert))
+      (round (1- (certificate->round cert)))
+      (certs dag)))))
 
   :guard-hints
   (("Goal"
@@ -177,11 +178,12 @@
                        certificate-set->round-set-monotone
                        emptyp-of-certificate-set->round-set
                        certificate->round-in-certificate-set->round-set)
-    :use (:instance
-          certificate-set->round-set-of-certificates-with-authors+round
-          (authors (certificate->previous cert))
-          (round (1- (certificate->round cert)))
-          (certs dag))))
+    :use
+    (:instance
+     certificate-set->round-set-of-certificates-with-authors+round-not-empty
+     (authors (certificate->previous cert))
+     (round (1- (certificate->round cert)))
+     (certs dag))))
 
   :flag-local nil
 
@@ -292,17 +294,18 @@
                        set::cardinality
                        certificate-set->round-set-monotone
                        certificate->round-in-certificate-set->round-set)
-    :use ((:instance acl2::pos-set-max->=-element
-                     (elem (certificate->round (set::head certs)))
-                     (set (certificate-set->round-set certs)))
-          (:instance acl2::pos-set-max->=-subset
-                     (set1 (certificate-set->round-set (set::tail certs)))
-                     (set2 (certificate-set->round-set certs)))
-          (:instance
-           certificate-set->round-set-of-certificates-with-authors+round
-           (authors (certificate->previous cert))
-           (round (1- (certificate->round cert)))
-           (certs dag)))))
+    :use
+    ((:instance acl2::pos-set-max->=-element
+                (elem (certificate->round (set::head certs)))
+                (set (certificate-set->round-set certs)))
+     (:instance acl2::pos-set-max->=-subset
+                (set1 (certificate-set->round-set (set::tail certs)))
+                (set2 (certificate-set->round-set certs)))
+     (:instance
+      certificate-set->round-set-of-certificates-with-authors+round-not-empty
+      (authors (certificate->previous cert))
+      (round (1- (certificate->round cert)))
+      (certs dag)))))
 
   :verify-guards nil ; done below
 
