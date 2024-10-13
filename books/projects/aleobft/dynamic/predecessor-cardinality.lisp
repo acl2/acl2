@@ -34,7 +34,18 @@
     "This is a consequence of the previously proved invariant
      @(see previous-quorum),
      which is about the references to the predecessor certificates,
-     in the form of the authors of those certificates."))
+     in the form of the authors of those certificates.")
+   (xdoc::p
+    "The non-equivocation of certificates in DAGs
+     means that there is a bijection between
+     the certificates at a round and their authors
+     (since they have the same round, their authors must be distinct).
+     The backward closure of the DAG means that
+     there are certificates, in the predecessor round,
+     for all the authors referenced by a certificate at a round.
+     Putting these two things together,
+     we get that the number of predecessor certificates in the DAG
+     is the same as the number of references to previous certificates."))
   :order-subtopics t
   :default-parent t)
 
