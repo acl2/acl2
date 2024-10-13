@@ -607,7 +607,7 @@
                                   (address-set-fix authors)))))
     :induct t)
 
-  (defruled author-set-of-certificates-with-authors
+  (defruled certificate-set->author-set-of-certificates-with-authors
     (equal (certificate-set->author-set
             (certificates-with-authors authors certs))
            (set::intersect (address-set-fix authors)
