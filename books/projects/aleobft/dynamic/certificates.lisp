@@ -396,7 +396,6 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-
   (in-theory (disable certificates-with-author-subset))
 
   (defruled in-of-certificates-with-author
@@ -406,6 +405,18 @@
                          (equal (certificate->author cert)
                                 (address-fix author)))))
     :induct t)
+
+  (defruled certificate-set->author-set-of-certificates-with-author
+    (implies (certificate-setp certs)
+             (equal (certificate-set->author-set
+                     (certificates-with-author author certs))
+                    (if (set::in (address-fix author)
+                                 (certificate-set->author-set certs))
+                        (set::insert (address-fix author) nil)
+                      nil)))
+    :induct t
+    :enable (certificate-set->author-set
+             certificate-set->author-set-of-insert))
 
   (defruled in-certificate-set->author-set-iff-certificates-with-author
     (implies (and (certificate-setp certs)
@@ -462,7 +473,14 @@
                          nil))
              (not (certificate-with-author+round author round certs)))
     :use certificate-with-author+round-in-certificates-with-author
-    :disable certificates-with-author))
+    :disable certificates-with-author)
+
+  (defruled emptyp-of-certificates-with-author-if-no-author
+    (equal (set::emptyp (certificates-with-author author certs))
+           (not (set::in (address-fix author)
+                         (certificate-set->author-set certs))))
+    :induct t
+    :enable certificate-set->author-set))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
