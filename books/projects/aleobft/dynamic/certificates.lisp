@@ -653,7 +653,44 @@
                (equal rounds
                       (set::insert (pos-fix round) nil))))
     :induct t
-    :enable certificate-set->round-set-of-insert))
+    :enable certificate-set->round-set-of-insert)
+
+  (defruled in-of-certificates-with-authors+round
+    (implies (certificate-setp certs)
+             (equal (set::in cert
+                             (certificates-with-authors+round authors
+                                                              round
+                                                              certs))
+                    (and (set::in cert certs)
+                         (equal (certificate->round cert)
+                                (pos-fix round))
+                         (set::in (certificate->author cert)
+                                  (address-set-fix authors)))))
+    :induct t)
+
+  (defruled certificates-with-authors+round-to-authors-of-round
+    (implies (certificate-setp certs)
+             (equal (certificates-with-authors+round authors round certs)
+                    (certificates-with-authors
+                     authors (certificates-with-round round certs))))
+    :enable (set::expensive-rules
+             set::double-containment-no-backchain-limit
+             in-of-certificates-with-authors+round
+             in-of-certificates-with-authors
+             in-of-certificates-with-round)
+    :disable certificates-with-authors+round)
+
+  (defruled certificates-with-authors+round-to-round-of-authors
+    (implies (certificate-setp certs)
+             (equal (certificates-with-authors+round authors round certs)
+                    (certificates-with-round
+                     round (certificates-with-authors authors certs))))
+    :enable (set::expensive-rules
+             set::double-containment-no-backchain-limit
+             in-of-certificates-with-authors+round
+             in-of-certificates-with-authors
+             in-of-certificates-with-round)
+    :disable certificates-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
