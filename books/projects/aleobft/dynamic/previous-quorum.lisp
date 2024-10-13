@@ -185,7 +185,8 @@
                val (create-certificate-next cert systate))
               (all-addresses systate)))
     :enable (validator-previous-quorum-p
-             validator-state->blockchain-of-create-certificate-next))
+             validator-state->blockchain-of-create-certificate-next
+             certificate->author-of-path-to-author+round))
 
   (defruled signer-in-committee-when-validator-signer-quorum-p
     (implies (and (validator-signer-quorum-p cert vstate all-vals)
@@ -477,7 +478,8 @@
              posp
              pos-fix
              evenp
-             accepted-certificate-committee-p-necc-fixing-binding))
+             accepted-certificate-committee-p-necc-fixing-binding
+             certificate->round-of-certificate-with-author+round))
 
   (defruled previous-quorum-p-of-commit-anchors-next
     (implies (and (ordered-even-p systate)

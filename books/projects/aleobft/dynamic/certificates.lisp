@@ -303,12 +303,14 @@
              (equal (certificate->author cert?)
                     (address-fix author)))
     :hints (("Goal" :induct t)))
+  (in-theory (disable certificate->author-of-certificate-with-author+round))
 
   (defret certificate->round-of-certificate-with-author+round
     (implies cert?
              (equal (certificate->round cert?)
                     (pos-fix round)))
     :hints (("Goal" :induct t)))
+  (in-theory (disable certificate->round-of-certificate-with-author+round))
 
   (defruled certificate-with-author+round-element
     (implies (and (certificate-setp certs)
@@ -356,7 +358,8 @@
                                             round
                                             (set::delete cert certs))
              (certificate-with-author+round author round certs))
-    :enable certificate-with-author+round-when-subset)
+    :enable (certificate-with-author+round-when-subset
+             certificate->author-of-certificate-with-author+round))
 
   (defruled certificate-with-author+round-of-delete
     (implies (and (certificate-with-author+round author round certs)
@@ -464,7 +467,8 @@
              (set::in (certificate-with-author+round author round certs)
                       (certificates-with-author author certs)))
     :enable (in-of-certificates-with-author
-             certificate-with-author+round-element)
+             certificate-with-author+round-element
+             certificate->author-of-certificate-with-author+round)
     :disable certificates-with-author)
 
   (defruled no-certificate-with-author+round-if-no-certificates-with-author
@@ -509,7 +513,6 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-
   (in-theory (disable certificates-with-round-subset))
 
   (defruled in-of-certificates-with-round
@@ -557,7 +560,6 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-
   (in-theory (disable certificates-with-authors-subset))
 
   (defruled in-of-certificates-with-authors
@@ -762,7 +764,9 @@
                                (certificate->round cert)
                                certs))
                        (certs (set::insert cert certs)))
-       :enable certificate-with-author+round-element))))
+       :enable (certificate-with-author+round-element
+                certificate->author-of-certificate-with-author+round
+                certificate->round-of-certificate-with-author+round)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -951,7 +955,9 @@
                                (certificate->round cert)
                                certs2))
                        (certs1 (set::insert cert certs1)))
-       :enable certificate-with-author+round-element))))
+       :enable (certificate-with-author+round-element
+                certificate->author-of-certificate-with-author+round
+                certificate->round-of-certificate-with-author+round)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

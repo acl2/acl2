@@ -229,6 +229,7 @@
        :hints (("Goal"
                 :induct t
                 :in-theory (enable* set::expensive-rules))))
+     (in-theory (disable correct-addresses-loop-subset))
 
      (defruled in-of-correct-addresses-loop
        (implies (validators-statep vstates)
@@ -238,7 +239,8 @@
        :induct t
        :enable (omap::assoc
                 omap::lookup
-                set::expensive-rules)
+                set::expensive-rules
+                correct-addresses-loop-subset)
        :hints ('(:use (:instance omap::head-key-not-in-keys-of-tail
                                  (map vstates))))
        :disable omap::head-key-not-in-keys-of-tail)
@@ -265,7 +267,8 @@
   (defrule correct-addresses-subset
     (set::subset (correct-addresses systate)
                  (all-addresses systate))
-    :enable all-addresses))
+    :enable (all-addresses
+             correct-addresses-loop-subset)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -319,7 +322,8 @@
     :hyp (set::in (address-fix val) (correct-addresses systate))
     :hints (("Goal" :in-theory (enable* all-addresses
                                         correct-addresses
-                                        set::expensive-rules))))
+                                        set::expensive-rules
+                                        correct-addresses-loop-subset))))
 
   (defret correct-addresses-of-update-validator-state
     (equal (correct-addresses new-systate)

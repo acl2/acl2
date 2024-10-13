@@ -278,6 +278,6 @@
   (in-theory (disable validator-state->dag-of-advance-round-next
                       validator-state->buffer-of-advance-round-next
                       validator-state->endorsed-of-advance-round-next
-                      validator-state->blockchain-of-advance-round-next
+                      validator-state->last-of-advance-round-next
                       validator-state->blockchain-of-advance-round-next
                       get-network-state-of-advance-round-next)))

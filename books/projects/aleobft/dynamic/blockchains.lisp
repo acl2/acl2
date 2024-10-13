@@ -145,14 +145,12 @@
            (or (consp blockchain)
                (consp anchors)))
     :hints (("Goal" :induct t)))
-
   (in-theory (disable consp-of-extend-blockchain))
 
   (defret round-of-car-of-extend-blockchain
     (equal (block->round (car new-blockchain))
            (certificate->round (car anchors)))
     :hyp (consp anchors))
-
   (in-theory (disable round-of-car-of-extend-blockchain))
 
   (defret blocks-ordered-even-p-of-extend-blockchain
@@ -168,7 +166,6 @@
              :in-theory (enable blocks-ordered-even-p
                                 certificates-ordered-even-p
                                 last))))
-
   (in-theory (disable blocks-ordered-even-p-of-extend-blockchain))
 
   (defruled extend-blockchain-as-append
