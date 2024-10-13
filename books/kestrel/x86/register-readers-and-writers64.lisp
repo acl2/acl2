@@ -20,9 +20,9 @@
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
 ;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
-(include-book "support-x86") ; todo: reduce, for integerp-of-xr...
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "readers-and-writers64") ; drop?
+(include-book "readers-and-writers")
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/signed-byte-p" :dir :system))
 

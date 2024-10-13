@@ -28,6 +28,7 @@
 (include-book "projects/x86isa/proofs/utilities/disjoint" :dir :system) ; for separate
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-addressp
 (include-book "kestrel/x86/register-readers-and-writers64" :dir :system) ; for rsp
+(include-book "kestrel/bv/bvmult" :dir :system)
 ;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 ;; todo: reduce:
 (local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ; drop?
