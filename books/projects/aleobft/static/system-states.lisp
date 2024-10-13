@@ -435,7 +435,7 @@
   :hooks (:fix)
   ///
 
-  (defrule get-network-state-of-update-validator-state
+  (defruled get-network-state-of-update-validator-state
     (equal (get-network-state (update-validator-state val vstate systate))
            (get-network-state systate))
     :enable update-validator-state))

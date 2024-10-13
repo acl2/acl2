@@ -376,4 +376,5 @@
                       (set::delete (certificate->author cert)
                                    (correct-addresses systate))))))
     :enable (in-all-addresses-when-in-correct-addresses
+             get-network-state-of-update-validator-state
              set::expensive-rules)))

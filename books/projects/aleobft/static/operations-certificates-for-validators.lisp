@@ -210,6 +210,7 @@
            receive-certificate-next-val
            certificates-for-validator
            get-validator-state-of-update-validator-state
+           get-network-state-of-update-validator-state
            set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -226,6 +227,7 @@
            store-certificate-next-val
            certificates-for-validator
            get-validator-state-of-update-validator-state
+           get-network-state-of-update-validator-state
            set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -241,7 +243,8 @@
            advance-round-next
            advance-round-next-val
            certificates-for-validator
-           get-validator-state-of-update-validator-state))
+           get-validator-state-of-update-validator-state
+           get-network-state-of-update-validator-state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -256,7 +259,8 @@
            commit-anchors-next
            commit-anchors-next-val
            certificates-for-validator
-           get-validator-state-of-update-validator-state))
+           get-validator-state-of-update-validator-state
+           get-network-state-of-update-validator-state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -271,4 +275,5 @@
            timer-expires-next
            timer-expires-next-val
            certificates-for-validator
-           get-validator-state-of-update-validator-state))
+           get-validator-state-of-update-validator-state
+           get-network-state-of-update-validator-state))
