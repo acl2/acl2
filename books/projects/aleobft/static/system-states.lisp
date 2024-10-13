@@ -410,7 +410,7 @@
     :hints (("Goal" :in-theory (enable correct-addresses
                                        correct-addresses-loop-of-update))))
 
-  (defrule get-validator-state-of-update-validator-state
+  (defruled get-validator-state-of-update-validator-state
     (implies (and (set::in val1 (correct-addresses systate))
                   (validator-statep vstate))
              (equal (get-validator-state

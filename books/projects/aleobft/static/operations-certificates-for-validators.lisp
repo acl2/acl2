@@ -209,6 +209,7 @@
            receive-certificate-next
            receive-certificate-next-val
            certificates-for-validator
+           get-validator-state-of-update-validator-state
            set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -224,6 +225,7 @@
            store-certificate-next
            store-certificate-next-val
            certificates-for-validator
+           get-validator-state-of-update-validator-state
            set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -238,7 +240,8 @@
   :enable (advance-round-possiblep
            advance-round-next
            advance-round-next-val
-           certificates-for-validator))
+           certificates-for-validator
+           get-validator-state-of-update-validator-state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -252,7 +255,8 @@
   :enable (commit-anchors-possiblep
            commit-anchors-next
            commit-anchors-next-val
-           certificates-for-validator))
+           certificates-for-validator
+           get-validator-state-of-update-validator-state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -266,4 +270,5 @@
   :enable (timer-expires-possiblep
            timer-expires-next
            timer-expires-next-val
-           certificates-for-validator))
+           certificates-for-validator
+           get-validator-state-of-update-validator-state))

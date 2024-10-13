@@ -173,7 +173,8 @@
                     (validator-state->round
                      (get-validator-state val systate))))
     :enable (commit-anchors-next-val
-             commit-anchors-possiblep))
+             commit-anchors-possiblep
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->dag-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
@@ -184,7 +185,8 @@
                     (validator-state->dag
                      (get-validator-state val systate))))
     :enable (commit-anchors-next-val
-             commit-anchors-possiblep))
+             commit-anchors-possiblep
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->last-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
@@ -200,6 +202,7 @@
                        (get-validator-state val systate)))))
     :enable (commit-anchors-possiblep
              commit-anchors-next-val
+             get-validator-state-of-update-validator-state
              nfix))
 
   (defrule validator-state->blockchain-of-commit-anchors-next
@@ -232,4 +235,5 @@
                (get-validator-state val systate)))))
     :enable (commit-anchors-next-val
              commit-anchors-possiblep
+             get-validator-state-of-update-validator-state
              extend-blockchain)))
