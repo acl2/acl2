@@ -531,7 +531,44 @@
                           (certificates-with-round round certs2)))
     :enable (in-of-certificates-with-round
              set::expensive-rules)
-    :disable certificates-with-round))
+    :disable certificates-with-round)
+
+  (defruled certificate-set->round-set-of-certificates-with-round-not-empty
+    (b* ((rounds (certificate-set->round-set
+                  (certificates-with-round round certs))))
+      (implies (not (set::emptyp rounds))
+               (equal rounds
+                      (set::insert (pos-fix round) nil))))
+    :induct t
+    :enable certificate-set->round-set-of-insert)
+
+  (defruled cardinality-of-round-set-of-certificates-with-round
+    (<= (set::cardinality
+         (certificate-set->round-set
+          (certificates-with-round round certs)))
+        1)
+    :rule-classes :linear
+    :expand (set::cardinality
+             (certificate-set->round-set
+              (certificates-with-round round certs)))
+    :enable certificate-set->round-set-of-certificates-with-round-not-empty
+    :disable certificates-with-round)
+
+  (defruled cardinality-of-subset-of-round-set-of-round
+    (implies (set::subset certs0
+                          (certificates-with-round round certs))
+             (<= (set::cardinality
+                  (certificate-set->round-set certs0))
+                 1))
+    :rule-classes :linear
+    :enable (cardinality-of-round-set-of-certificates-with-round
+             certificate-set->round-set-monotone)
+    :use ((:instance set::subset-cardinality
+                     (x (certificate-set->round-set certs0))
+                     (y (certificate-set->round-set
+                         (certificates-with-round round certs)))))
+    :disable (set::subset-cardinality
+              certificates-with-round)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
