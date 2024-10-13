@@ -770,7 +770,37 @@
      when a set of certificates is extended.
      Either the added certificate is already in the initial set,
      or the initial set has no certificate with
-     the added certificate's author and round."))
+     the added certificate's author and round.")
+   (xdoc::p
+    "The theorem @('equal-certificate-authors-when-unequiv-and-same-round')
+     says that if the certificates in an unequivocal sets
+     have all the same round,
+     then two certificates in that set are the same
+     if they have the same author.
+     We phrase it as a rewrite rule
+     in the typical form of an injectivity rewrite rule.")
+   (xdoc::p
+    "The theorem
+     @('head-author-not-in-tail-authors-when-unequiv-and-all-same-round')
+     is mainly a consequence of the previous one,
+     considering the first certificate in a set
+     and a generic one in the rest of the set.")
+   (xdoc::p
+    "The previous theorem is used to prove
+     @('cardinality-of-authors-when-unequiv-and-all-same-rounds'),
+     which says that the number of authors
+     of a set of certificates all in the same round
+     is the same as the number of those certificates:
+     unequivocation means that there is a bijection between
+     those authors and those certificates.")
+   (xdoc::p
+    "The previous theorem is used to prove
+     @('cardinality-of-certificates-with-authors+round-when-subset'),
+     which in a sense specializes the previous one to
+     the certificates returned by @(tsee certificates-with-authors+round).
+     Note that this returns certificates all in the same round,
+     so they are in bijection with their authors,
+     given that the certificates are unequivocal."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 certs)
                         (set::in cert2 certs)
@@ -841,7 +871,90 @@
                        (certs (set::insert cert certs)))
        :enable (certificate-with-author+round-element
                 certificate->author-of-certificate-with-author+round
-                certificate->round-of-certificate-with-author+round)))))
+                certificate->round-of-certificate-with-author+round))))
+
+  (defruled equal-certificate-authors-when-unequiv-and-same-round
+    (implies (and (certificate-set-unequivocalp certs)
+                  (<= (set::cardinality (certificate-set->round-set certs)) 1)
+                  (set::in cert1 certs)
+                  (set::in cert2 certs))
+             (equal (equal (certificate->author cert1)
+                           (certificate->author cert2))
+                    (equal cert1 cert2)))
+    :use (certificate-set-unequivocalp-necc
+          same-certificate-round-when-cardinality-leq-1)
+    :disable (certificate-set-unequivocalp
+              certificate-set-unequivocalp-necc))
+
+  (defruled head-author-not-in-tail-authors-when-unequiv-and-all-same-round
+    (implies (and (certificate-setp certs)
+                  (certificate-set-unequivocalp certs)
+                  (<= (set::cardinality (certificate-set->round-set certs)) 1)
+                  (not (set::emptyp certs)))
+             (not (set::in (certificate->author (set::head certs))
+                           (certificate-set->author-set (set::tail certs)))))
+    :use ((:instance set::in-head
+                     (x (certificates-with-author
+                         (certificate->author (head certs))
+                         (tail certs))))
+          (:instance set::in-head
+                     (x certs)))
+    :enable (certificates-with-author-subset
+             in-of-certificates-with-author
+             emptyp-of-certificates-with-author-if-no-author
+             equal-certificate-authors-when-unequiv-and-same-round)
+    :disable (set::in-head
+              certificate-set-unequivocalp
+              certificate-set-unequivocalp-necc))
+
+  (defruled cardinality-of-authors-when-unequiv-and-all-same-rounds
+    (implies (and (certificate-setp certs)
+                  (certificate-set-unequivocalp certs)
+                  (<= (set::cardinality (certificate-set->round-set certs)) 1))
+             (equal (set::cardinality (certificate-set->author-set certs))
+                    (set::cardinality certs)))
+    :induct t
+    :enable (set::cardinality
+             certificate-set->author-set
+             head-author-not-in-tail-authors-when-unequiv-and-all-same-round
+             certificate-set-unequivocalp-when-subset
+             set::expensive-rules)
+    :disable (certificate-set->round-set-monotone
+              certificate-set-unequivocalp
+              certificate-set-unequivocalp-necc)
+    :hints ('(:use (:instance certificate-set->round-set-monotone
+                              (certs1 (set::tail certs))
+                              (certs2 certs)))))
+
+  (defruled cardinality-of-certificates-with-authors+round-when-subset
+    (implies (and (certificate-setp certs)
+                  (certificate-set-unequivocalp certs)
+                  (set::subset (address-set-fix authors)
+                               (certificate-set->author-set
+                                (certificates-with-round round certs))))
+             (equal (set::cardinality
+                     (certificates-with-authors+round authors round certs))
+                    (set::cardinality (address-set-fix authors))))
+    :use ((:instance cardinality-of-authors-when-unequiv-and-all-same-rounds
+                     (certs
+                      (certificates-with-authors+round authors round certs)))
+          (:instance cardinality-of-subset-of-round-set-of-round
+                     (certs0 (certificates-with-authors
+                              authors
+                              (certificates-with-round round certs))))
+          (:instance set::subset-transitive
+                     (x (certificates-with-authors
+                         authors (certificates-with-round round certs)))
+                     (y (certificates-with-round round certs))
+                     (z certs)))
+    :enable (certificates-with-authors+round-to-authors-of-round
+             certificate-set->author-set-of-certificates-with-authors
+             certificates-with-authors-subset
+             certificates-with-round-subset
+             certificate-set-unequivocalp-when-subset)
+    :disable (set::subset-transitive
+              certificate-set-unequivocalp
+              certificate-set-unequivocalp-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
