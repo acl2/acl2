@@ -215,7 +215,6 @@
 (defruled cardinality-of-voters/previous-intersection
   (implies (and (certificate-setp certs1)
                 (certificate-setp certs2)
-                (certificate-set-unequivocalp (set::union certs1 certs2))
                 (<= (set::cardinality
                      (certificate-set->round-set (set::union certs1 certs2)))
                     1)
