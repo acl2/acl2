@@ -1,5 +1,5 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -41,7 +41,7 @@
   "manual/")
 
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/v8-5/combined-manual/")
+  "http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/")
 
 (defconst *bleeding-edge-manual*
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/")
@@ -53,7 +53,7 @@
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-8-5                            ;;; g   ; current release notes
+    note-8-6                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -278,7 +278,7 @@ alt=\"FTP icon\" border=0></a>
 <a href=\"~sg\"><img src=\"HTML/note02.gif\" alt=\"paper note icon\" border=0></a>
 </td>
 <td>
-<a href=\"~sg\">Differences from Version 8.4</a><a href=\"~sq\"> <img
+<a href=\"~sg\">Differences from Version 8.5</a><a href=\"~sq\"> <img
 src=\"HTML/twarning.gif\" alt=\"tiny warning icon\"></a>
 </td>
 <td align=center valign=MIDDLE>
@@ -389,12 +389,12 @@ href=\"~ss\">DOCUMENTATION</a></CODE>.
 
 <ul>
 
-<li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.5)</li>
+<li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.6)</li>
 
 <li><a href=\"~s3\">ACL2+Books Manual</a> (for
 <a href=\"HTML/installation/obtaining-and-installing.html#GitHub\">GitHub</a> distributions)</li>
 
-<li><a href=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</a> (Version 8.5)</li>
+<li><a href=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</a> (Version 8.6)</li>
 
 </ul>
 
@@ -435,7 +435,7 @@ developed by many users over the years.  These books contain definitions and
 theorems that you might find useful in your models and proofs.  In addition,
 some books contain ACL2 tools built by users to help with reasoning,
 programming, interfaces, debugging, and testing; see <a
-href='http://www.cs.utexas.edu/users/moore/acl2/v8-5/combined-manual/index.html'>
+href='http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html'>
 the documentation</a>.  Some relevant papers may be found by following links in
 the pages on <a
 href='http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html'>

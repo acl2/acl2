@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -917,7 +917,7 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
 ;       /projects/acl2/devel-misc/release.cmds
 ;       for release instructions.
 
-  nil)
+  t)
 
 (defun acl2-snapshot-info ()
   (let* ((var "ACL2_SNAPSHOT_INFO")

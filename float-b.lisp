@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -61,7 +61,7 @@
                  (t x))))
     (cond ((acl2-numberp x)
 
-; Translate will check that numeric arguments of a df primitive are 
+; Translate will check that numeric arguments of a df primitive are
 
            (cond ((dfp x)
 
@@ -207,7 +207,7 @@
 
   (declare (xargs :guard t))
   `((df-expt-fn (x y)
-                
+
 ; We cannot allow x to be negative, since te CL HyperSpec says that "expt is
 ; defined as b^x = e^x log b" (here b is our x and x is our y), and ACL2 does
 ; not support complex floats.  Here are a couple of relevant examples in CCL.
@@ -216,7 +216,7 @@
 ;   #C(6.123234S-17 1.0S0)
 ;   ? (expt -2.0 3.0)
 ;   #C(-7.999999999999998 2.9391523179536467E-15)
-;   ? 
+;   ?
 
 ; Also, we don't want the base and exponent to both be (df0), because the CL
 ; HyperSpec entry on expt says that "the consequences are undefined if
@@ -236,7 +236,7 @@
     (df-abs-fn (x))
     (df-sin-fn (x))
     (df-cos-fn (x))
-    (df-tan-fn (x) 
+    (df-tan-fn (x)
 
 ; It seems possible that (tan x) could be undefined because (cos x) is 0.  But
 ; that might be rare; for example, in CCL (tan (acos 0.0D0)) =
@@ -255,7 +255,7 @@
     (df-atan-fn (x))
     (df-sinh-fn (x))
     (df-cosh-fn (x))
-    (df-tanh-fn (x) 
+    (df-tanh-fn (x)
                 (not (df= (,(if flg
                                 'constrained-df-cosh-fn
                               'df-cosh-fn)
