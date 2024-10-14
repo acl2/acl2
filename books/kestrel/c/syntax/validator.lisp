@@ -327,6 +327,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-apconvert ((type typep))
+  :returns (new-type typep)
+  :short "Convert array types to pointer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This performs the conversion in [C:6.3.2.1/3].
+     It leaves non-array types unchanged.")
+   (xdoc::p
+    "In our currently approximate type system,
+     there is just one type for arrays and one type for pointers."))
+  (if (type-case type :array)
+      (type-pointer)
+    (type-fix type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum linkage
   :short "Fixtype of linkages."
   :long
@@ -1220,20 +1238,23 @@
     "The types of the two sub-expressions are
      calculated (recursively) by @(tsee valid-expr).")
    (xdoc::p
-    "One sub-expression must have pointer type,
+    "After converting array types to pointer types [C:6.3.2.1/3],
+     one sub-expression must have pointer type,
      and the other sub-expression must have integer type.
      The expression should have the type referenced by the pointer type,
      but since for now we model just one pointer type,
      the type of the expression is unknown."))
   (b* (((reterr) (irr-type))
-       ((unless (or (and (or (type-case type1 :pointer)
-                             (type-case type1 :unknown))
-                         (or (type-integerp type2)
-                             (type-case type2 :unknown)))
+       (ctype1 (type-apconvert type1))
+       (ctype2 (type-apconvert type2))
+       ((unless (or (and (or (type-case ctype1 :pointer)
+                             (type-case ctype1 :unknown))
+                         (or (type-integerp ctype2)
+                             (type-case ctype2 :unknown)))
                     (and (or (type-integerp type1)
-                             (type-case type1 :unknown))
-                         (or (type-case type2 :pointer)
-                             (type-case type2 :unknown)))))
+                             (type-case ctype1 :unknown))
+                         (or (type-case ctype2 :pointer)
+                             (type-case ctype2 :unknown)))))
         (reterr (msg "In the array subscripting expression ~x0, ~
                       the first sub-expression has type ~x1, ~
                       and the second sub-expression has type ~x2."
