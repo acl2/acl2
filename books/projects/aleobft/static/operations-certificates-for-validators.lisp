@@ -209,7 +209,6 @@
            receive-certificate-next
            receive-certificate-next-val
            certificates-for-validator
-           get-validator-state-of-update-validator-state
            set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

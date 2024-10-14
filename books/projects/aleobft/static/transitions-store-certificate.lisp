@@ -174,8 +174,7 @@
                       (validator-state->dag
                        (get-validator-state val systate)))))
     :enable (store-certificate-next-val
-             store-certificate-possiblep
-             get-validator-state-of-update-validator-state))
+             store-certificate-possiblep))
 
   (defrule validator-state->dag-subset-store-certificate-next
     (implies (and (set::in val (correct-addresses systate))

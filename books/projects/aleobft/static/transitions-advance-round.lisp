@@ -152,8 +152,7 @@
                       (validator-state->round
                        (get-validator-state val systate)))))
     :enable (advance-round-next-val
-             advance-round-possiblep
-             get-validator-state-of-update-validator-state))
+             advance-round-possiblep))
 
   (defrule validator-state->dag-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))

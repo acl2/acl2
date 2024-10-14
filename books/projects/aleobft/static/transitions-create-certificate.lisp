@@ -292,8 +292,7 @@
                                       (get-validator-state val systate)))
                       (validator-state->dag
                        (get-validator-state val systate)))))
-    :enable (create-certificate-next-val
-             get-validator-state-of-update-validator-state))
+    :enable create-certificate-next-val)
 
   (defrule validator-state->dag-subset-create-certificate-next
     (implies (and (set::in val (correct-addresses systate))

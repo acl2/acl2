@@ -174,7 +174,6 @@
            commit-anchors-next
            commit-anchors-next-val
            commit-anchors-possiblep
-           get-validator-state-of-update-validator-state
            nfix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

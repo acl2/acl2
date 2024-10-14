@@ -419,6 +419,29 @@
                         vstate
                       (get-validator-state val systate))))
     :enable (get-validator-state
+             omap::lookup))
+
+  (defrule get-validator-state-of-update-validator-state-same
+    (implies (and (set::in val (correct-addresses systate))
+                  (validator-statep vstate))
+             (equal (get-validator-state val
+                                         (update-validator-state val
+                                                                 vstate
+                                                                 systate))
+                    vstate))
+    :enable (get-validator-state
+             omap::lookup))
+
+  (defrule get-validator-state-of-update-validator-state-diff
+    (implies (and (set::in val1 (correct-addresses systate))
+                  (not (equal val val1))
+                  (validator-statep vstate))
+             (equal (get-validator-state val
+                                         (update-validator-state val1
+                                                                 vstate
+                                                                 systate))
+                    (get-validator-state val systate)))
+    :enable (get-validator-state
              omap::lookup)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
