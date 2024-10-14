@@ -1,7 +1,7 @@
 ; Cert params for defthm-stp-tests.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -10,4 +10,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; cert-flags: ? T :TTAGS :ALL
+;; todo: remove the :skip-proofs-okp after having defthm-stp use the clause processor:
+; cert-flags: ? T :skip-proofs-okp t :TTAGS :ALL

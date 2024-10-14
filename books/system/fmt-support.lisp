@@ -241,7 +241,7 @@
               (and (<= 0
                        (cdr (assoc-equal 'print-base (nth 2 state))))
                    (<= (cdr (assoc-equal 'print-base (nth 2 state)))
-                       16))))))) 
+                       16)))))))
 
 (defthm fmt-state-p-forward
   (implies (fmt-state-p state)
@@ -1555,8 +1555,8 @@
   :hints (("Goal" :in-theory (enable max-width)))
   :rule-classes (:rewrite :type-prescription))
 
-(defthm integerp-implies-rationalp
-  (implies (integerp x) (rationalp x)))
+(defthm integerp-implies-real/rationalp
+  (implies (integerp x) (real/rationalp x)))
 
 (defthm difference-of-smalls
   (implies (and (signed-byte-p *small-bits* x)

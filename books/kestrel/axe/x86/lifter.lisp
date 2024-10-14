@@ -95,6 +95,7 @@
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
 (include-book "kestrel/arithmetic-light/ash" :dir :system) ; for ash-of-0, mentioned in a rule-list
+(include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (include-book "ihs/logops-lemmas" :dir :system) ;for logext-identity
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))

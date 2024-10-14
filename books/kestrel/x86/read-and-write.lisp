@@ -151,6 +151,7 @@
 ;; Negative canonical addresses get mapped to the upper half of the 2^48 byte
 ;; range.
 ;todo: enable this less below, using rules instead?
+;todo: could we instead express this as a bv-array-read 48 on the memory (converted to a bv-array)?
 (defund read-byte (addr x86)
   (declare (xargs :stobjs x86
                   :guard (integerp addr)))
@@ -186,8 +187,8 @@
            (< (read-byte addr x86) k)))
 
 ;; maybe just needed for Axe
-;rename to have not in the name
-(defthmd <-of-constant-and-read-byte
+;; not used
+(defthmd not-<-of-constant-and-read-byte
   (implies (and (syntaxp (quotep k))
                 (<= 255 k) ; gets computed
                 )

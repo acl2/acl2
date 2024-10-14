@@ -12,9 +12,6 @@
 
 (in-package "ACL2")
 
-; Because of complex-unguarded-correct (todo):
-; cert_param: (non-acl2r)
-
 (defund binary-+-unguarded (x y)
   (declare (xargs :guard t))
   (binary-+ (fix x) (fix y)))
@@ -111,7 +108,7 @@
 
 (defund complex-unguarded (x y)
   (declare (xargs :guard t))
-  (complex (rfix x) (rfix y)))
+  (complex (realfix x) (realfix y)))
 
 (defthm complex-unguarded-correct
   (equal (complex-unguarded x y)

@@ -15,11 +15,23 @@
 (local (include-book "channels"))
 (local (include-book "open-output-channel-p"))
 (local (include-book "typed-io-listp"))
-(local (include-book "kestrel/utilities/explode-atom" :dir :system))
 
 (in-theory (disable princ$))
 
 (local (in-theory (disable open-output-channels open-output-channel-p1)))
+
+; Matt K. mod: formerly the system book "kestrel/utilities/explode-atom" was
+; locally included.  But that caused problems for devel-check with ACL2(r).
+; Instead, proved the following two lemmas.
+
+(local
+ (defthm character-listp-of-explode-nonnegative-integer
+   (implies (character-listp ans)
+            (character-listp (explode-nonnegative-integer x print-base ans)))))
+
+(local
+ (defthm character-listp-of-explode-atom
+   (character-listp (explode-atom x print-base))))
 
 (local
  (defthm character-listp-of-explode-atom+
