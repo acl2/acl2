@@ -917,7 +917,7 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
 ;       /projects/acl2/devel-misc/release.cmds
 ;       for release instructions.
 
-  t)
+  nil)
 
 (defun acl2-snapshot-info ()
   (let* ((var "ACL2_SNAPSHOT_INFO")
