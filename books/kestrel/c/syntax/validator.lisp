@@ -194,6 +194,20 @@
     "Types are defined in @(tsee type)."))
   :pred type-optionp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist type-list
+  :short "Fixtype of lists of types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Types are defined in @(tsee type)."))
+  :elt-type type
+  :true-listp t
+  :elementp-of-nil nil
+  :pred type-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-standard-signed-integerp ((type typep))
@@ -1227,7 +1241,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-arrsub ((expr exprp) (type1 typep) (type2 typep))
+(define valid-arrsub ((expr exprp) (type-arg1 typep) (type-arg2 typep))
   :guard (expr-case expr :arrsub)
   :returns (mv erp (type typep))
   :short "Validate an array subscripting expression,
@@ -1245,20 +1259,22 @@
      but since for now we model just one pointer type,
      the type of the expression is unknown."))
   (b* (((reterr) (irr-type))
-       (ctype1 (type-apconvert type1))
-       (ctype2 (type-apconvert type2))
-       ((unless (or (and (or (type-case ctype1 :pointer)
-                             (type-case ctype1 :unknown))
-                         (or (type-integerp ctype2)
-                             (type-case ctype2 :unknown)))
+       (type1 (type-apconvert type-arg1))
+       (type2 (type-apconvert type-arg2))
+       ((unless (or (and (or (type-case type1 :pointer)
+                             (type-case type1 :unknown))
+                         (or (type-integerp type2)
+                             (type-case type2 :unknown)))
                     (and (or (type-integerp type1)
-                             (type-case ctype1 :unknown))
-                         (or (type-case ctype2 :pointer)
-                             (type-case ctype2 :unknown)))))
+                             (type-case type1 :unknown))
+                         (or (type-case type2 :pointer)
+                             (type-case type2 :unknown)))))
         (reterr (msg "In the array subscripting expression ~x0, ~
                       the first sub-expression has type ~x1, ~
                       and the second sub-expression has type ~x2."
-                     (expr-fix expr) (type-fix type1) (type-fix type2)))))
+                     (expr-fix expr)
+                     (type-fix type-arg1)
+                     (type-fix type-arg2)))))
     (retok (type-unknown)))
   :hooks (:fix))
 
@@ -1336,14 +1352,20 @@
     :measure (expr-count expr))
 
   (define valid-expr-list ((exprs expr-listp) (table valid-tablep) (ienv ienvp))
-    :returns (mv erp (type typep))
+    :guard (expr-list-unambp exprs)
+    :returns (mv erp (types type-listp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of expressions."
-    (b* (((reterr) (irr-type)))
-      (reterr (list :todo
-                    (expr-list-fix exprs)
-                    (valid-table-fix table)
-                    (ienv-fix ienv))))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We validate all the expressions, one after the other,
+       and we return the resulting types, in the same order."))
+    (b* (((reterr) nil)
+         ((when (endp exprs)) (retok nil))
+         ((erp type) (valid-expr (car exprs) table ienv))
+         ((erp types) (valid-expr-list (cdr exprs) table ienv)))
+      (retok (cons type types)))
     :measure (expr-list-count exprs))
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
