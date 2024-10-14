@@ -998,7 +998,14 @@
      a second set consisting of two equivocal certificates,
      and the addition of one of these two certificates to the first set:
      the resulting pair of sets is equivocal;
-     but the non-equivocation of the second set prevents that."))
+     but the non-equivocation of the second set prevents that.")
+   (xdoc::p
+    "The theorem @('certificate-set-unequivocalp-of-union')
+     says that given two sets of certificates
+     that are individually and jointly unequivocal,
+     their union is unequivocal.
+     This is is easy to prove by cases of
+     where the two witness certificates come from."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 certs1)
                         (set::in cert2 certs2)
@@ -1145,7 +1152,38 @@
                        (certs1 (set::insert cert certs1)))
        :enable (certificate-with-author+round-element
                 certificate->author-of-certificate-with-author+round
-                certificate->round-of-certificate-with-author+round)))))
+                certificate->round-of-certificate-with-author+round))))
+
+  (defruled certificate-set-unequivocalp-of-union
+    (implies (and (certificate-set-unequivocalp certs1)
+                  (certificate-set-unequivocalp certs2)
+                  (certificate-sets-unequivocalp certs1 certs2))
+             (certificate-set-unequivocalp (set::union certs1 certs2)))
+    :enable (certificate-set-unequivocalp
+             set::expensive-rules)
+    :disable certificate-sets-unequivocalp
+    :use ((:instance certificate-set-unequivocalp-necc
+                     (cert1 (mv-nth 0 (certificate-set-unequivocalp-witness
+                                       (union certs1 certs2))))
+                     (cert2 (mv-nth 1 (certificate-set-unequivocalp-witness
+                                       (union certs1 certs2))))
+                     (certs certs1))
+          (:instance certificate-set-unequivocalp-necc
+                     (cert1 (mv-nth 0 (certificate-set-unequivocalp-witness
+                                       (union certs1 certs2))))
+                     (cert2 (mv-nth 1 (certificate-set-unequivocalp-witness
+                                       (union certs1 certs2))))
+                     (certs certs2))
+          (:instance certificate-sets-unequivocalp-necc
+                     (cert1 (mv-nth 0 (certificate-set-unequivocalp-witness
+                                       (union certs1 certs2))))
+                     (cert2 (mv-nth 1 (certificate-set-unequivocalp-witness
+                                       (union certs1 certs2)))))
+          (:instance certificate-sets-unequivocalp-necc
+                     (cert1 (mv-nth 1 (certificate-set-unequivocalp-witness
+                                       (union certs1 certs2))))
+                     (cert2 (mv-nth 0 (certificate-set-unequivocalp-witness
+                                       (union certs1 certs2))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
