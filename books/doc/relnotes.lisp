@@ -257,7 +257,7 @@
    (xdoc::h4 "Kestrel Hints Library")
 
    (xdoc::p
-     "A new library (@('kestrel/hints/')) has been added for manipulting
+     "A new library (@('kestrel/hints/')) has been added for manipulating
       hints (combining, removing, applying renamings, etc.). This gathers
       and improves existing utilities, and adds new ones.")
 
@@ -296,7 +296,7 @@
    (xdoc::h4 "Schroder-Bernstein Library")
 
    (xdoc::p
-    "This added a proof of the Schroder-Berstein theorem. See
+    "This added a proof of the Schroder-Bernstein theorem. See
      @('projects/schroder-bernstein/README.md').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -514,13 +514,13 @@ added to the @('stp-clause-processor').")
    (xdoc::p
      "The @('ACL2_STP_VARIETY') environment variable now controls how STP is to be
 called, specifically the max conflicts option.  The default is 2, and a value
-of 3 should work with the latest STP.  See (tsee stp).")
+of 3 should work with the latest STP.  See @(tsee stp).")
 
    (xdoc::p
      "A @(':max-conflicts') option was added to the query tool.")
 
    (xdoc::p
-     "The @('prove-equivalence2') tool was renamed to to @('prove-equal-with-tactics').")
+     "The @('prove-equivalence2') tool was renamed to @('prove-equal-with-tactics').")
 
    (xdoc::p
      "Evaluation was improved to build more functions into the evaluators.")
@@ -804,7 +804,7 @@ improved.")
 
    (xdoc::p
     "A soundness issue was fixed in @(tsee tshell-call), which was modified to
-     take and return @(tsee state). To accomodate users who do not wish to
+     take and return @(tsee state). To accommodate users who do not wish to
      refactor to this new stateful variant, the old version was retained and
      moved to a new book under the name @(tsee tshell-call-unsound).")
 
@@ -838,7 +838,7 @@ improved.")
 
    (xdoc::p
      "Formal specifications have been added for the AES block cipher, the TEA block
-     cipher, and the the SHA-3 hash function.  Proofs have been done to connect
+     cipher, and the SHA-3 hash function.  Proofs have been done to connect
      the SHA-3 spec to the Keccak spec.")
 
    (xdoc::p
@@ -912,7 +912,7 @@ library organization has been improved.  New books have been added (e.g., about
      "A new Proof Advice tool has been added to help create and repair ACL2
       proofs.  The tool can get proof help over the web, from machine
       learning models running on servers.  It also applies some proof search
-      heuristics.  Tools have also added to expermentally evaluate how well
+      heuristics.  Tools have also added to experimentally evaluate how well
       the Proof Advice tool performs.")
 
    (xdoc::p
