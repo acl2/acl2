@@ -1298,6 +1298,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-funcall ((expr exprp) (type-fun typep) (types-arg type-listp))
+  :guard (expr-case expr :funcall)
+  :returns (mv erp (type typep))
+  :short "Validate a function call expression,
+          given the types of the sub-expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The types of the two sub-expressions are
+     calculated (recursively) by @(tsee valid-expr).")
+   (xdoc::p
+    "After converting function types to pointer types,
+     the first sub-expression must have pointer type;
+     since we currently have just one pointer type,
+     we cannot check that it is a pointer to a function.
+     For the same reason,
+     we do not check the argument types against the function type.
+     Also for the same reason,
+     we return the unknown type,
+     because we do not have information about the result."))
+  (declare (ignore types-arg))
+  (b* (((reterr) (irr-type))
+       (type (type-fpconvert type-fun))
+       ((unless (type-case type :pointer))
+        (reterr (msg "In the function call expression ~x0, ~
+                      the first sub-expression has type ~x1."
+                     (expr-fix expr)
+                     (type-fix type-fun)))))
+    (retok (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
 
 (defines valid-exprs/decls/stmts
@@ -1349,10 +1382,12 @@
        :string (valid-stringlit-list expr.literals)
        :paren (valid-expr expr.unwrap table ienv)
        :gensel (retok (type-unknown))
-       :arrsub (b* (((erp type1) (valid-expr expr.arg1 table ienv))
-                    ((erp type2) (valid-expr expr.arg2 table ienv)))
-                 (valid-arrsub expr type1 type2))
-       :funcall (reterr :todo)
+       :arrsub (b* (((erp type-arg1) (valid-expr expr.arg1 table ienv))
+                    ((erp type-arg2) (valid-expr expr.arg2 table ienv)))
+                 (valid-arrsub expr type-arg1 type-arg2))
+       :funcall (b* (((erp type-fun) (valid-expr expr.fun table ienv))
+                     ((erp types-arg) (valid-expr-list expr.args table ienv)))
+                  (valid-funcall expr type-fun types-arg))
        :member (reterr :todo)
        :memberp (reterr :todo)
        :complit (reterr :todo)
