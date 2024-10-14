@@ -148,6 +148,7 @@
            system-signers-have-author+round-p
            certificates-for-validator
            get-network-state
+           validator-init-when-system-initp
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

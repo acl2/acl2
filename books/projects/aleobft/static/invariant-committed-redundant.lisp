@@ -117,6 +117,7 @@
   (implies (system-state-initp systate)
            (system-committed-redundantp systate))
   :enable (system-state-initp
+           validator-init-when-system-initp
            validator-init
            system-committed-redundantp
            validator-committed-redundantp))

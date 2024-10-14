@@ -95,6 +95,7 @@
   (implies (system-state-initp systate)
            (system-blockchain-redundantp systate))
   :enable (system-state-initp
+           validator-init-when-system-initp
            validator-init
            system-blockchain-redundantp
            validator-blockchain-redundantp

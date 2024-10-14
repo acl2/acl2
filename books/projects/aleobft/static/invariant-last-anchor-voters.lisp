@@ -110,6 +110,7 @@
   :enable (system-last-anchor-voters-p
            validator-last-anchor-voters-p
            system-state-initp
+           validator-init-when-system-initp
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

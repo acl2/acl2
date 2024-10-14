@@ -63,6 +63,7 @@
            (system-last-is-even-p systate))
   :enable (system-last-is-even-p
            system-state-initp
+           validator-init-when-system-initp
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
