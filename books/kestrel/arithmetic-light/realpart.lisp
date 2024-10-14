@@ -10,9 +10,6 @@
 
 (in-package "ACL2")
 
-;; todo (for realpart-of-*-when-rationalp-arg1):
-; cert_param: (non-acl2r)
-
 (local (include-book "complex"))
 (local (include-book "imagpart"))
 
