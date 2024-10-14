@@ -220,7 +220,9 @@
              system-fault-tolerant-p-necc
              validator-fault-tolerant-p-necc
              in-owned-certificates-when-in-accepted-certificates
-             in-signed-certificates-when-in-owned-and-signer)
+             in-signed-certificates-when-in-owned-and-signer
+             certificate->author-of-certificate-with-author+round
+             certificate->round-of-certificate-with-author+round)
     :use ((:instance accepted-certificate-committee-p-necc
                      (cert (certificate-with-author+round
                             (certificate->author cert)
@@ -329,7 +331,9 @@
              unequivocal-signed-certificates-p-necc
              in-owned-certificates-when-in-accepted-certificates
              in-signed-certificates-when-in-owned-and-signer
-             message-certificate-in-owned-certificates)
+             message-certificate-in-owned-certificates
+             certificate->author-of-certificate-with-author+round
+             certificate->round-of-certificate-with-author+round)
     :use ((:instance accepted-certificate-committee-p-necc
                      (cert (certificate-with-author+round
                             (certificate->author (message->certificate msg))

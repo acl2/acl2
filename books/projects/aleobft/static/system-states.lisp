@@ -305,7 +305,8 @@
     :hints
     (("Goal"
       :in-theory (acl2::enable number-validators
-                               correct-addresses-subset-all-addresses)))))
+                               correct-addresses-subset-all-addresses))))
+  (in-theory (disable number-correct-upper-bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -353,8 +354,9 @@
     (validator-statep vstate?)
     :hyp (set::in val (correct-addresses systate))
     :hints (("Goal" :in-theory (enable lookup-nonnil-of-correct-addresses))))
+  (in-theory (disable validator-statep-of-get-validator-state))
 
-  (defrule in-correct-validator-addresess-when-get-validator-state
+  (defruled in-correct-validator-addresess-when-get-validator-state
     (implies (get-validator-state val systate)
              (set::in val (correct-addresses systate)))
     :enable (correct-addresses
@@ -364,7 +366,11 @@
   (defruled get-validator-state-iff-in-correct-addresses
     (iff (get-validator-state val systate)
          (set::in val (correct-addresses systate)))
-    :hints (("Goal" :in-theory (enable lookup-nonnil-of-correct-addresses)))))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable lookup-nonnil-of-correct-addresses
+              in-correct-validator-addresess-when-get-validator-state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -404,7 +410,7 @@
     :hints (("Goal" :in-theory (enable correct-addresses
                                        correct-addresses-loop-of-update))))
 
-  (defrule get-validator-state-of-update-validator-state
+  (defruled get-validator-state-of-update-validator-state
     (implies (and (set::in val1 (correct-addresses systate))
                   (validator-statep vstate))
              (equal (get-validator-state
@@ -412,6 +418,29 @@
                     (if (equal val val1)
                         vstate
                       (get-validator-state val systate))))
+    :enable (get-validator-state
+             omap::lookup))
+
+  (defrule get-validator-state-of-update-validator-state-same
+    (implies (and (set::in val (correct-addresses systate))
+                  (validator-statep vstate))
+             (equal (get-validator-state val
+                                         (update-validator-state val
+                                                                 vstate
+                                                                 systate))
+                    vstate))
+    :enable (get-validator-state
+             omap::lookup))
+
+  (defrule get-validator-state-of-update-validator-state-diff
+    (implies (and (set::in val1 (correct-addresses systate))
+                  (not (equal val val1))
+                  (validator-statep vstate))
+             (equal (get-validator-state val
+                                         (update-validator-state val1
+                                                                 vstate
+                                                                 systate))
+                    (get-validator-state val systate)))
     :enable (get-validator-state
              omap::lookup)))
 

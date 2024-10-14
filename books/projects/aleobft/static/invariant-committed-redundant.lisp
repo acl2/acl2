@@ -117,6 +117,7 @@
   (implies (system-state-initp systate)
            (system-committed-redundantp systate))
   :enable (system-state-initp
+           validator-init-when-system-initp
            validator-init
            system-committed-redundantp
            validator-committed-redundantp))
@@ -331,7 +332,8 @@
              certificate-with-author+round-element-when-not-nil
              system-paths-to-last-anchor-p-when-other-invariants
              set::expensive-rules
-             evenp)
+             evenp
+             get-validator-state-of-update-validator-state)
     :use ((:instance
            dag-all-path-to-p-necc
            (cert (last-anchor (get-validator-state val systate)

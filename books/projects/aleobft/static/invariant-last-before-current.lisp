@@ -74,6 +74,7 @@
            (system-last-before-current-p systate))
   :enable (system-last-before-current-p
            system-state-initp
+           validator-init-when-system-initp
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

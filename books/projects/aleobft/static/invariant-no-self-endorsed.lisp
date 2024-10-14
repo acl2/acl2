@@ -275,7 +275,8 @@
              (system-endorsed-not-self-p
               (add-endorsed endorsers author round systate)))
     :induct t
-    :enable (add-endorsed
+    :enable (in-correct-validator-addresess-when-get-validator-state
+             add-endorsed
              address+pos-not-address-p
              set::expensive-rules)
     :prep-lemmas

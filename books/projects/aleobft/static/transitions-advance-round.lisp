@@ -163,7 +163,8 @@
                     (validator-state->dag
                      (get-validator-state val systate))))
     :enable (advance-round-next-val
-             advance-round-possiblep))
+             advance-round-possiblep
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->last-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
@@ -176,6 +177,7 @@
                      (get-validator-state val systate))))
     :enable (advance-round-possiblep
              advance-round-next-val
+             get-validator-state-of-update-validator-state
              nfix))
 
   (defrule validator-state->blockchain-of-advance-round-next
@@ -188,7 +190,8 @@
                     (validator-state->blockchain
                      (get-validator-state val systate))))
     :enable (advance-round-possiblep
-             advance-round-next-val))
+             advance-round-next-val
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->committed-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
@@ -200,4 +203,5 @@
                     (validator-state->committed
                      (get-validator-state val systate))))
     :enable (advance-round-possiblep
-             advance-round-next-val)))
+             advance-round-next-val
+             get-validator-state-of-update-validator-state)))

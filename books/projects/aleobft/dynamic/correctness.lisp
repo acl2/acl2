@@ -32,6 +32,7 @@
 (include-book "same-committees")
 (include-book "unequivocal-accepted-certificates-next")
 (include-book "unequivocal-dags")
+(include-book "predecessor-cardinality")
 (include-book "anchors-of-validators")
 (include-book "last-anchor-present")
 

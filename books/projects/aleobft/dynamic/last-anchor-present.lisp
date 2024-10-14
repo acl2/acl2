@@ -287,7 +287,8 @@
                 last-blockchain-round-p-necc-fixing
                 blocks-last-round
                 posp
-                evenp))))
+                evenp
+                certificate->round-of-certificate-with-author+round))))
 
   (defruled last-anchor-present-p-of-commit-anchors-next
     (implies (and (ordered-even-p systate)

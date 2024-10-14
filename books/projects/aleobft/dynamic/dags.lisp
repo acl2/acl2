@@ -156,17 +156,18 @@
                        certificate-set->round-set-monotone
                        emptyp-of-certificate-set->round-set
                        certificate->round-in-certificate-set->round-set)
-    :use ((:instance acl2::pos-set-max->=-element
-                     (elem (certificate->round (set::head certs)))
-                     (set (certificate-set->round-set certs)))
-          (:instance acl2::pos-set-max->=-subset
-                     (set1 (certificate-set->round-set (set::tail certs)))
-                     (set2 (certificate-set->round-set certs)))
-          (:instance
-           certificate-set->round-set-of-certificates-with-authors+round
-           (authors (certificate->previous cert))
-           (round (1- (certificate->round cert)))
-           (certs dag)))))
+    :use
+    ((:instance acl2::pos-set-max->=-element
+                (elem (certificate->round (set::head certs)))
+                (set (certificate-set->round-set certs)))
+     (:instance acl2::pos-set-max->=-subset
+                (set1 (certificate-set->round-set (set::tail certs)))
+                (set2 (certificate-set->round-set certs)))
+     (:instance
+      certificate-set->round-set-of-certificates-with-authors+round-not-empty
+      (authors (certificate->previous cert))
+      (round (1- (certificate->round cert)))
+      (certs dag)))))
 
   :guard-hints
   (("Goal"
@@ -177,11 +178,12 @@
                        certificate-set->round-set-monotone
                        emptyp-of-certificate-set->round-set
                        certificate->round-in-certificate-set->round-set)
-    :use (:instance
-          certificate-set->round-set-of-certificates-with-authors+round
-          (authors (certificate->previous cert))
-          (round (1- (certificate->round cert)))
-          (certs dag))))
+    :use
+    (:instance
+     certificate-set->round-set-of-certificates-with-authors+round-not-empty
+     (authors (certificate->previous cert))
+     (round (1- (certificate->round cert)))
+     (certs dag))))
 
   :flag-local nil
 
@@ -198,6 +200,8 @@
                (equal (certificate->author previous-cert?)
                       (address-fix author)))
       :fn path-to-author+round-set))
+  (in-theory (disable certificate->author-of-path-to-author+round
+                      certificate->author-of-path-to-author+round-set))
 
   (defret-mutual certificate->round-of-path-to-author+round
     (defret certificate->round-of-path-to-author+round
@@ -209,7 +213,9 @@
       (implies previous-cert?
                (equal (certificate->round previous-cert?)
                       (pos-fix round)))
-      :fn path-to-author+round-set)))
+      :fn path-to-author+round-set))
+  (in-theory (disable certificate->round-of-path-to-author+round
+                      certificate->round-of-path-to-author+round-set)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -288,17 +294,18 @@
                        set::cardinality
                        certificate-set->round-set-monotone
                        certificate->round-in-certificate-set->round-set)
-    :use ((:instance acl2::pos-set-max->=-element
-                     (elem (certificate->round (set::head certs)))
-                     (set (certificate-set->round-set certs)))
-          (:instance acl2::pos-set-max->=-subset
-                     (set1 (certificate-set->round-set (set::tail certs)))
-                     (set2 (certificate-set->round-set certs)))
-          (:instance
-           certificate-set->round-set-of-certificates-with-authors+round
-           (authors (certificate->previous cert))
-           (round (1- (certificate->round cert)))
-           (certs dag)))))
+    :use
+    ((:instance acl2::pos-set-max->=-element
+                (elem (certificate->round (set::head certs)))
+                (set (certificate-set->round-set certs)))
+     (:instance acl2::pos-set-max->=-subset
+                (set1 (certificate-set->round-set (set::tail certs)))
+                (set2 (certificate-set->round-set certs)))
+     (:instance
+      certificate-set->round-set-of-certificates-with-authors+round-not-empty
+      (authors (certificate->previous cert))
+      (round (1- (certificate->round cert)))
+      (certs dag)))))
 
   :verify-guards nil ; done below
 
@@ -334,9 +341,11 @@
   (successors-loop (certificates-with-round
                     (1+ (certificate->round cert)) dag)
                    (certificate->author cert))
+
   :prepwork
+
   ((define successors-loop ((certs certificate-setp) (prev addressp))
-     :returns (successors-certs certificate-setp)
+     :returns (successors certificate-setp)
      :parents nil
      (b* (((when (set::emptyp certs)) nil)
           (cert (set::head certs)))
@@ -344,7 +353,39 @@
            (set::insert (certificate-fix cert)
                         (successors-loop (set::tail certs) prev))
          (successors-loop (set::tail certs) prev)))
-     :verify-guards :after-returns)))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret successors-loop-subset
+       (set::subset successors certs)
+       :hyp (certificate-setp certs)
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable* set::expensive-rules))))
+     (in-theory (disable successors-loop-subset))))
+
+  ///
+
+  (defret successors-subset-of-next-round
+    (set::subset certs
+                 (certificates-with-round (1+ (certificate->round cert)) dag))
+    :hints (("Goal" :in-theory (enable successors-loop-subset))))
+  (in-theory (disable successors-subset-of-next-round))
+
+  (defret successors-subset-of-dag
+    (set::subset certs dag)
+    :hyp (certificate-setp dag)
+    :hints (("Goal"
+             :in-theory (e/d (certificates-with-round-subset
+                              successors-subset-of-next-round)
+                             (successors))
+             :use (:instance set::subset-transitive
+                             (x (successors cert dag))
+                             (y (certificates-with-round
+                                 (1+ (certificate->round cert)) dag))
+                             (z dag)))))
+  (in-theory (disable successors-subset-of-dag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -376,7 +417,27 @@
     (certificates-with-authors+round (certificate->previous cert)
                                      (1- (certificate->round cert))
                                      dag))
-  :guard-hints (("Goal" :in-theory (enable posp))))
+  :guard-hints (("Goal" :in-theory (enable posp)))
+
+  ///
+
+  (defret predecessors-subset
+    (set::subset certs dag)
+    :hyp (certificate-setp dag)
+    :hints
+    (("Goal" :in-theory (enable certificates-with-authors+round-subset))))
+  (in-theory (disable predecessors-subset))
+
+  (defret predecessors-subset-of-previous-round
+    (set::subset certs
+                 (certificates-with-round (1- (certificate->round cert)) dag))
+    :hyp (certificate-setp dag)
+    :hints
+    (("Goal"
+      :in-theory (enable certificates-with-authors+round-to-round-of-authors
+                         certificates-with-round-monotone
+                         certificates-with-authors-subset))))
+  (in-theory (disable predecessors-subset-of-previous-round)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

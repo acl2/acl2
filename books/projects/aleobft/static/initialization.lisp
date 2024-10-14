@@ -151,7 +151,7 @@
 
   ///
 
-  (defrule validator-init-when-system-initp
+  (defruled validator-init-when-system-initp
     (implies (and (system-state-initp systate)
                   (set::in val (correct-addresses systate)))
              (equal (get-validator-state val systate)

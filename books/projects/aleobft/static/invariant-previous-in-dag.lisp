@@ -73,6 +73,7 @@
            (system-previous-in-dag-p systate))
   :enable (system-previous-in-dag-p
            dag-previous-in-dag-p
+           validator-init-when-system-initp
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

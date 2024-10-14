@@ -93,7 +93,8 @@
                     (validator-state->round
                      (get-validator-state val systate))))
     :enable (timer-expires-next-val
-             timer-expires-possiblep))
+             timer-expires-possiblep
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->dag-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
@@ -104,7 +105,8 @@
                     (validator-state->dag
                      (get-validator-state val systate))))
     :enable (timer-expires-next-val
-             timer-expires-possiblep))
+             timer-expires-possiblep
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->last-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
@@ -117,6 +119,7 @@
                      (get-validator-state val systate))))
     :enable (timer-expires-possiblep
              timer-expires-next-val
+             get-validator-state-of-update-validator-state
              nfix))
 
   (defrule validator-state->blockchain-of-timer-expires-next
@@ -129,7 +132,8 @@
                     (validator-state->blockchain
                      (get-validator-state val systate))))
     :enable (timer-expires-possiblep
-             timer-expires-next-val))
+             timer-expires-next-val
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->committed-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
@@ -141,4 +145,5 @@
                     (validator-state->committed
                      (get-validator-state val systate))))
     :enable (timer-expires-possiblep
-             timer-expires-next-val)))
+             timer-expires-next-val
+             get-validator-state-of-update-validator-state)))

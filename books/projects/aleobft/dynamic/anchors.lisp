@@ -170,7 +170,8 @@
   :guard-hints
   (("Goal"
     :in-theory (enable evenp
-                       active-committee-at-earlier-round-when-at-later-round)))
+                       active-committee-at-earlier-round-when-at-later-round
+                       certificate->round-of-path-to-author+round)))
 
   ///
 
@@ -181,7 +182,6 @@
     (equal (car anchors)
            (certificate-fix current-anchor))
     :hints (("Goal" :induct t)))
-
   (in-theory (disable car-of-collect-anchors))
 
   (defret certificates-ordered-even-p-of-collect-anchors
@@ -193,8 +193,8 @@
     :hints (("Goal"
              :induct t
              :in-theory (enable certificates-ordered-even-p
-                                car-of-collect-anchors))))
-
+                                car-of-collect-anchors
+                                certificate->round-of-path-to-author+round))))
   (in-theory (disable certificates-ordered-even-p-of-collect-anchors))
 
   (defret collect-anchors-above-last-committed-round
@@ -204,8 +204,8 @@
             last-committed-round)
     :hints (("Goal"
              :induct t
-             :in-theory (enable last))))
-
+             :in-theory (enable last
+                                certificate->round-of-path-to-author+round))))
   (in-theory (disable collect-anchors-above-last-committed-round)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -232,7 +232,9 @@
                  author round (signed-certificates signer systate)))
            (signer-record-p
             author round (get-validator-state signer systate)))
-  :enable certificate-with-author+round-element
+  :enable (certificate-with-author+round-element
+           certificate->author-of-certificate-with-author+round
+           certificate->round-of-certificate-with-author+round)
   :use (:instance signer-records-p-necc
                   (cert (certificate-with-author+round
                          author round (signed-certificates signer systate)))))

@@ -119,7 +119,8 @@
                     (validator-state->round
                      (get-validator-state val systate))))
     :enable (receive-certificate-next-val
-             receive-certificate-possiblep))
+             receive-certificate-possiblep
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->dag-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
@@ -131,7 +132,8 @@
                     (validator-state->dag
                      (get-validator-state val systate))))
     :enable (receive-certificate-next-val
-             receive-certificate-possiblep))
+             receive-certificate-possiblep
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->last-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
@@ -144,6 +146,7 @@
                      (get-validator-state val systate))))
     :enable (receive-certificate-possiblep
              receive-certificate-next-val
+             get-validator-state-of-update-validator-state
              nfix))
 
   (defrule validator-state->blockchain-of-receive-certificate-next
@@ -156,7 +159,8 @@
                     (validator-state->blockchain
                      (get-validator-state val systate))))
     :enable (receive-certificate-possiblep
-             receive-certificate-next-val))
+             receive-certificate-next-val
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->committed-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
@@ -168,4 +172,5 @@
                     (validator-state->committed
                      (get-validator-state val systate))))
     :enable (receive-certificate-possiblep
-             receive-certificate-next-val)))
+             receive-certificate-next-val
+             get-validator-state-of-update-validator-state)))

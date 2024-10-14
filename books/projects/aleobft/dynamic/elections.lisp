@@ -88,7 +88,8 @@
       (addressp (leader-at-round round commtt)))
 
     (defrule leader-in-committee
-      (set::in (leader-at-round round commtt) (committee-members commtt)))
+      (set::in (leader-at-round round commtt) (committee-members commtt))
+      :enable not-emptyp-of-committee-members)
 
     (defrule leader-at-round-of-pos-fix
       (equal (leader-at-round (pos-fix round) commtt)
