@@ -176,6 +176,13 @@
   (:unknown ())
   :pred typep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-type
+  :short "An irrelevant type."
+  :type typep
+  :body (type-void))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption type-option
@@ -638,7 +645,7 @@
      We formalize that table here, and we return the type of the constant.
      If the constant is too large,
      it does not have a type, and it is invalid."))
-  (b* (((reterr) (type-void))
+  (b* (((reterr) (irr-type))
        ((iconst iconst) iconst)
        (value (valid-dec/oct/hex-const iconst.core)))
     (cond
@@ -737,7 +744,7 @@
           ((or (fsuffix-case suffix? :locase-l)
                (fsuffix-case suffix? :upcase-l))
            (type-ldouble))
-          (t (prog2$ (impossible) (type-void)))))
+          (t (prog2$ (impossible) (irr-type)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -995,7 +1002,7 @@
      with information about which built-in types those types expand to.
      Once we do that, we will be able to perform
      a full validation of character constants here."))
-  (b* (((reterr) (type-void))
+  (b* (((reterr) (irr-type))
        ((cconst cconst) cconst)
        ((erp &) (valid-c-char-list cconst.cchars cconst.prefix?)))
     (if cconst.prefix?
@@ -1018,7 +1025,7 @@
      so this function always returns that type if validation succeeds;
      so we could have this function return nothing if there's no error,
      but we have it return the @('int') type for uniformity and simplicity."))
-  (b* (((reterr) (type-void))
+  (b* (((reterr) (irr-type))
        ((mv info &) (valid-lookup-ord econst table))
        ((unless info)
         (reterr (msg "The identifier ~x0, used as an enumeration constant, ~
@@ -1115,7 +1122,7 @@
      of @('char') or @('wchar_t') or @('char16_t') or @('char32_t').
      In our current approximate type system,
      we just have a single type for arrays, so we return that."))
-  (b* (((reterr) (type-void))
+  (b* (((reterr) (irr-type))
        ((stringlit strlit) strlit)
        ((erp &) (valid-s-char-list strlit.schars strlit.prefix?)))
     (retok (type-array)))
@@ -1154,7 +1161,7 @@
      with information about how to treat those cases,
      but for now we allow all concatenations,
      and the resulting type is just our approximate type for all arrays."))
-  (b* (((reterr) (type-void))
+  (b* (((reterr) (irr-type))
        ((unless (consp strlits))
         (reterr (msg "There must be at least one string literal.")))
        (prefixes (stringlit-list->prefix?-list strlits))
@@ -1188,7 +1195,7 @@
      recorded as denoting an object or function
      [C:6.5.1/2].
      The type is obtained from the table."))
-  (b* (((reterr) (type-void))
+  (b* (((reterr) (irr-type))
        ((mv info &) (valid-lookup-ord var table))
        ((unless info)
         (reterr (msg "The variable ~x0 is not in scope." (ident-fix var))))
@@ -1218,7 +1225,7 @@
      The expression should have the type referenced by the pointer type,
      but since for now we model just one pointer type,
      the type of the expression is unknown."))
-  (b* (((reterr) (type-void))
+  (b* (((reterr) (irr-type))
        ((unless (or (and (or (type-case type1 :pointer)
                              (type-case type1 :unknown))
                          (or (type-integerp type2)
@@ -1279,7 +1286,7 @@
      (xdoc::p
       "For now we allow all generic selections,
        returning the unknown type for them."))
-    (b* (((reterr) (type-void)))
+    (b* (((reterr) (irr-type)))
       (expr-case
        expr
        :ident (valid-var expr.unwrap table)
@@ -1311,7 +1318,7 @@
     :returns (mv erp (type typep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of expressions."
-    (b* (((reterr) (type-void)))
+    (b* (((reterr) (irr-type)))
       (reterr (list :todo
                     (expr-list-fix exprs)
                     (valid-table-fix table)
