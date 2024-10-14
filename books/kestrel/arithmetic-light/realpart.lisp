@@ -10,14 +10,11 @@
 
 (in-package "ACL2")
 
-;; todo (for realpart-of-*-when-rationalp-arg1):
-; cert_param: (non-acl2r)
-
 (local (include-book "complex"))
 (local (include-book "imagpart"))
 
 (defthm realpart-when-rationalp
-  (implies (rationalp x)
+  (implies (real/rationalp x)
            (equal (realpart x)
                   x)))
 
@@ -68,21 +65,21 @@
                             (y2 (- (imagpart (- x)))))))))
 
 (defthm realpart-of-*-of-i
-  (implies (rationalp x)
+  (implies (real/rationalp x)
            (equal (realpart (* #C(0 1) x))
                   0))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable realpart-redef))))
 
 (defthm realpart-of-*-when-rationalp-arg1
-  (implies (rationalp x)
+  (implies (real/rationalp x)
            (equal (realpart (* x y))
                   (* x (realpart y))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use ((:instance complex-split (x y))))))
 
 (defthm realpart-of-*-when-rationalp-arg2
-  (implies (rationalp y)
+  (implies (real/rationalp y)
            (equal (realpart (* x y))
                   (* y (realpart x))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
