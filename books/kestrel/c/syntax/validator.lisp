@@ -357,6 +357,24 @@
     (type-fix type))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-fpconvert ((type typep))
+  :returns (new-type typep)
+  :short "Convert function types to pointer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This performs the conversion in [C:6.3.2.1/4].
+     It leaves non-function types unchanged.")
+   (xdoc::p
+    "In our currently approximate type system,
+     there is just one type for functions and one type for pointers."))
+  (if (type-case type :function)
+      (type-pointer)
+    (type-fix type))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum linkage
