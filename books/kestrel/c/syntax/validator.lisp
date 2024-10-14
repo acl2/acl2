@@ -1272,7 +1272,8 @@
    (xdoc::p
     "After converting array types to pointer types [C:6.3.2.1/3],
      one sub-expression must have pointer type,
-     and the other sub-expression must have integer type.
+     and the other sub-expression must have integer type
+     [C:6.5.2.1/1].
      The expression should have the type referenced by the pointer type,
      but since for now we model just one pointer type,
      the type of the expression is unknown."))
@@ -1310,14 +1311,14 @@
      calculated (recursively) by @(tsee valid-expr).")
    (xdoc::p
     "After converting function types to pointer types,
-     the first sub-expression must have pointer type;
+     the first sub-expression must have pointer type [C:6.5.2.2/1];
      since we currently have just one pointer type,
      we cannot check that it is a pointer to a function.
      For the same reason,
-     we do not check the argument types against the function type.
+     we do not check the argument types against the function type [C:6.5.2.2/2].
      Also for the same reason,
      we return the unknown type,
-     because we do not have information about the result."))
+     because we do not have information about the result type."))
   (declare (ignore types-arg))
   (b* (((reterr) (irr-type))
        (type (type-fpconvert type-fun))
