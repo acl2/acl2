@@ -1332,7 +1332,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
+(define valid-member ((expr exprp) (type-arg typep))
+  :guard (expr-case expr :member)
+  :returns (mv erp (type typep))
+  :short "Validate a member expression,
+          given the type of the sub-expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type of the sub-expression is
+     calculated (recursively) by @(tsee valid-expr).")
+   (xdoc::p
+    "The argument type must be a structure or union type [C:6.5.2.3/1].
+     Since a pointer type is not allowed here,
+     there is no need to convert arrays to pointers [C:6.3.2.1/3].")
+   (xdoc::p
+    "For now we only have one type for structures and one type for unions.
+     We cannot look up the member type, so we return the unknown type."))
+  (b* (((reterr) (irr-type))
+       ((unless (or (type-case type-arg :struct)
+                    (type-case type-arg :union)))
+        (reterr (msg "In the member expression ~x0, ~
+                      the sub-expression has type ~x1."
+                     (expr-fix expr) (type-fix type-arg)))))
+    (retok (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-memberp ((expr exprp) (type-arg typep))
+  :guard (expr-case expr :memberp)
+  :returns (mv erp (type typep))
+  :short "Validate a member pointer expression,
+          given the type of the sub-expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type of the sub-expression is
+     calculated (recursively) by @(tsee valid-expr).")
+   (xdoc::p
+    "The argument type must be a pointer to a structure or union type
+     [C:6.5.2.3/2].
+     We need to convert arrays to pointers,
+     and then we just check that we have the (one) pointer type;
+     we will refine this when we refine our type system.")
+   (xdoc::p
+    "Since we cannot yet look up members in structure and union types,
+     we return the unknown type."))
+  (b* (((reterr) (irr-type))
+       (type (type-apconvert type-arg))
+       ((unless (type-case type :pointer))
+        (reterr (msg "In the member pointer expression ~x0, ~
+                      the sub-expression has type ~x1."
+                     (expr-fix expr) (type-fix type-arg)))))
+    (retok (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
@@ -1389,8 +1445,10 @@
        :funcall (b* (((erp type-fun) (valid-expr expr.fun table ienv))
                      ((erp types-arg) (valid-expr-list expr.args table ienv)))
                   (valid-funcall expr type-fun types-arg))
-       :member (reterr :todo)
-       :memberp (reterr :todo)
+       :member (b* (((erp type-arg) (valid-expr expr.arg table ienv)))
+                 (valid-member expr type-arg))
+       :memberp (b* (((erp type-arg) (valid-expr expr.arg table ienv)))
+                  (valid-memberp expr type-arg))
        :complit (reterr :todo)
        :unary (reterr :todo)
        :sizeof (reterr :todo)
