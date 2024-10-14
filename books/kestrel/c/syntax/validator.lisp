@@ -1202,6 +1202,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-arrsub ((expr exprp) (type1 typep) (type2 typep))
+  :guard (expr-case expr :arrsub)
+  :returns (mv erp (type typep))
+  :short "Validate an array subscripting expression,
+          given the types of the two sub-expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The types of the two sub-expressions are
+     calculated (recursively) by @(tsee valid-expr).")
+   (xdoc::p
+    "One sub-expression must have pointer type,
+     and the other sub-expression must have integer type.
+     The expression should have the type referenced by the pointer type,
+     but since for now we model just one pointer type,
+     the type of the expression is unknown."))
+  (b* (((reterr) (type-void))
+       ((unless (or (and (or (type-case type1 :pointer)
+                             (type-case type1 :unknown))
+                         (or (type-integerp type2)
+                             (type-case type2 :unknown)))
+                    (and (or (type-integerp type1)
+                             (type-case type1 :unknown))
+                         (or (type-case type2 :pointer)
+                             (type-case type2 :unknown)))))
+        (reterr (msg "In the array subscripting expression ~x0, ~
+                      the first sub-expression has type ~x1, ~
+                      and the second sub-expression has type ~x2."
+                     (expr-fix expr) (type-fix type1) (type-fix type2)))))
+    (retok (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
 
 (defines valid-exprs/decls/stmts
@@ -1238,21 +1272,13 @@
        This is already done in @(see c::static-semantics),
        for the subset of C that is formalized.")
      (xdoc::p
-      "A constant or (list of) string literal(s) is validated
-       via separate functions; see their documentation.")
-     (xdoc::p
-      "A parenthesized expression is validated
-       by validating the expression inside the parentheses.")
+      "We use separate functions to validate the various kinds of expressions,
+       to minimize case splits in the mutually recursive clique of functions.
+       But we need to calculate types for sub-expressions recursively here,
+       and pass the types to those separate functions.")
      (xdoc::p
       "For now we allow all generic selections,
-       returning the unknown type for them.")
-     (xdoc::p
-      "In an array subscripting expression,
-       one sub-expression must have pointer type,
-       and the other sub-expression must have integer type.
-       The expression should have the type referenced by the pointer type,
-       but since for now we model just one pointer type,
-       the type of the expression is unknown."))
+       returning the unknown type for them."))
     (b* (((reterr) (type-void)))
       (expr-case
        expr
@@ -1261,22 +1287,9 @@
        :string (valid-stringlit-list expr.literals)
        :paren (valid-expr expr.unwrap table ienv)
        :gensel (retok (type-unknown))
-       :arrsub
-       (b* (((erp type1) (valid-expr expr.arg1 table ienv))
-            ((erp type2) (valid-expr expr.arg2 table ienv))
-            ((unless (or (and (or (type-case type1 :pointer)
-                                  (type-case type1 :unknown))
-                              (or (type-integerp type2)
-                                  (type-case type2 :unknown)))
-                         (and (or (type-integerp type1)
-                                  (type-case type1 :unknown))
-                              (or (type-case type2 :pointer)
-                                  (type-case type2 :unknown)))))
-             (reterr (msg "In the array subscripting expression ~x0, ~
-                           the first sub-expression has type ~x1, ~
-                           and the second sub-expression has type ~x2."
-                          (expr-fix expr) type1 type2))))
-         (retok (type-unknown)))
+       :arrsub (b* (((erp type1) (valid-expr expr.arg1 table ienv))
+                    ((erp type2) (valid-expr expr.arg2 table ienv)))
+                 (valid-arrsub expr type1 type2))
        :funcall (reterr :todo)
        :member (reterr :todo)
        :memberp (reterr :todo)
