@@ -215,9 +215,7 @@
   (defret get-network-state-of-add-endorsed
     (equal (get-network-state new-systate)
            (get-network-state systate))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable get-network-state-of-update-validator-state))))
+    :hints (("Goal" :induct t)))
 
   (defret all-addresses-of-add-endorsed
     (equal (all-addresses new-systate)

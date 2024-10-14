@@ -193,5 +193,4 @@
            commit-anchors-next
            timer-expires-possiblep
            timer-expires-next
-           system-messages-not-self-p
-           get-network-state-of-update-validator-state))
+           system-messages-not-self-p))
