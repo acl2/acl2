@@ -393,8 +393,8 @@
     :args ((author addressp)))
 
   (defret certificates-with-author-subset
-    (implies (certificate-setp certs)
-             (set::subset certs-with-author certs))
+    (set::subset certs-with-author certs)
+    :hyp (certificate-setp certs)
     :hints (("Goal"
              :induct t
              :in-theory (enable* set::subset
@@ -507,8 +507,8 @@
     :args ((round posp)))
 
   (defret certificates-with-round-subset
-    (implies (certificate-setp certs)
-             (set::subset certs-with-round certs))
+    (set::subset certs-with-round certs)
+    :hyp (certificate-setp certs)
     :hints (("Goal"
              :induct t
              :in-theory (enable* set::subset
@@ -591,8 +591,8 @@
     :args ((authors address-setp)))
 
   (defret certificates-with-authors-subset
-    (implies (certificate-setp certs)
-             (set::subset certs-with-authors certs))
+    (set::subset certs-with-authors certs)
+    :hyp (certificate-setp certs)
     :hints (("Goal"
              :induct t
              :in-theory (enable* set::subset
