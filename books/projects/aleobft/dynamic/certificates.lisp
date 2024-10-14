@@ -646,6 +646,15 @@
   (fty::deffixequiv certificates-with-authors+round
     :args ((authors address-setp) (round posp)))
 
+  (defret certificates-with-authors+round-subset
+    (set::subset certs-with-authors-and-round certs)
+    :hyp (certificate-setp certs)
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* set::subset
+                                 set::expensive-rules))))
+  (in-theory (disable certificates-with-authors+round-subset))
+
   (defruled
     certificate-set->round-set-of-certificates-with-authors+round-not-empty
     (b* ((rounds (certificate-set->round-set
