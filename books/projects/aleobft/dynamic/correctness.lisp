@@ -35,6 +35,7 @@
 (include-book "predecessor-cardinality")
 (include-book "anchors-of-validators")
 (include-book "last-anchor-present")
+(include-book "successor-predecessor-intersection")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -71,6 +72,7 @@
                     unequivocal-accepted-certificates-next
                     unequivocal-dags
                     anchors-of-validators
-                    last-anchor-present))
+                    last-anchor-present
+                    successor-predecessor-intersection))
 
 ; TODO: continue
